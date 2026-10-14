@@ -4,13 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:just_audio/just_audio.dart';
 
+import 'native_tts_bridge.dart';
 import 'sentence_splitter.dart';
 import 'speech_state.dart';
 import 'tts_config.dart';
 
 class SpeechController extends StateNotifier<SpeechState> {
   SpeechController() : super(const SpeechState()) {
-    _initTts();
+    _initLocalTts();
   }
 
   final FlutterTts _localTts = FlutterTts();
@@ -23,29 +24,30 @@ class SpeechController extends StateNotifier<SpeechState> {
   String? _currentCode;
   int _generation = 0;
   bool _disposed = false;
+  Completer<bool>? _nativeDoneCompleter;
 
   // A-B
   String _abState = 'idle';
   int? _abChunkA;
   int? _abChunkB;
 
-  Future<void> _initTts() async {
-    await _localTts.awaitSpeakCompletion(true);
-    _localTts.setCompletionHandler(() {});
-    _localTts.setCancelHandler(() {});
-    _localTts.setErrorHandler((_) {});
+  Future<void> _initLocalTts() async {
+    try {
+      await _localTts.awaitSpeakCompletion(true);
+      _localTts.setCompletionHandler(() {});
+      _localTts.setCancelHandler(() {});
+      _localTts.setErrorHandler((_) {});
+    } catch (_) {}
   }
 
   // ═══════════════════════════════════════════════════════════════
   // API عمومی
   // ═══════════════════════════════════════════════════════════════
 
-  /// toggle: play/pause/resume/start-new
   Future<String> toggle(
     String text,
     String code, {
     int? startCharOffset,
-    List<int>? sentenceBoundaries,
   }) async {
     if (text.isEmpty) return 'unsupported';
 
@@ -59,7 +61,9 @@ class SpeechController extends StateNotifier<SpeechState> {
 
     // همان متن، paused → resume
     if (_currentKey == newKey && state.status == SpeechStatus.paused) {
-      await _resume();
+      _generation++;
+      state = state.copyWith(status: SpeechStatus.playing);
+      unawaited(_playFrom(_chunkIndex));
       return 'ok';
     }
 
@@ -172,7 +176,8 @@ class SpeechController extends StateNotifier<SpeechState> {
   }
 
   int getChunkCount() => _chunks.length;
-  String getChunkText(int idx) => (idx >= 0 && idx < _chunks.length) ? _chunks[idx].text : '';
+  String getChunkText(int idx) =>
+      (idx >= 0 && idx < _chunks.length) ? _chunks[idx].text : '';
   String get fullText => _fullText;
   int get currentChunk => _chunkIndex;
 
@@ -184,20 +189,16 @@ class SpeechController extends StateNotifier<SpeechState> {
     _generation++;
     try {
       await _localTts.stop();
+      await NativeTtsBridge.stop();
       await _onlinePlayer.pause();
     } catch (_) {}
     state = state.copyWith(status: SpeechStatus.paused);
   }
 
-  Future<void> _resume() async {
-    state = state.copyWith(status: SpeechStatus.playing);
-    _generation++;
-    unawaited(_playFrom(_chunkIndex));
-  }
-
   Future<void> _stopAll() async {
     try {
       await _localTts.stop();
+      await NativeTtsBridge.stop();
       await _onlinePlayer.stop();
     } catch (_) {}
   }
@@ -205,13 +206,9 @@ class SpeechController extends StateNotifier<SpeechState> {
   Future<void> _playFrom(int idx) async {
     if (_disposed) return;
     if (idx >= _chunks.length) {
-      // پایان متن
       if (state.globalRepeat == -1) {
         unawaited(_playFrom(0));
         return;
-      }
-      if (state.globalRepeat > 0) {
-        // بعداً می‌تونیم اینجا تکرار رو اعمال کنیم
       }
       _chunkIndex = 0;
       state = state.copyWith(status: SpeechStatus.idle, chunkIndex: 0);
@@ -234,43 +231,107 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
 
     final code = _currentCode ?? 'en';
-    final useOnline = TtsConfig.onlineOnly.contains(code);
 
-    if (useOnline) {
-      await _playOnline(idx, cleanText, code, myGen);
-    } else {
-      await _playLocal(idx, cleanText, code, myGen);
+    // ═══════════════════════════════════════════════════════════════
+    // زنجیره: Piper (Android) → Phone TTS → Edge (Worker)
+    // ═══════════════════════════════════════════════════════════════
+
+    // ۱. Piper نیتیو (اگه مدل نصب باشه)
+    if (NativeTtsBridge.isAvailable) {
+      final ready = await NativeTtsBridge.isModelReady(code);
+      if (ready) {
+        final ok = await _playNative(idx, cleanText, code, myGen);
+        if (ok && myGen == _generation) return;
+      }
     }
+
+    // ۲. TTS خود گوشی
+    if (NativeTtsBridge.isAvailable) {
+      final ok = await _playSystemTts(idx, cleanText, code, myGen);
+      if (ok && myGen == _generation) return;
+    }
+
+    // ۳. Edge TTS از Worker (همیشه کار می‌کنه)
+    await _playOnline(idx, cleanText, code, myGen);
   }
 
-  Future<void> _playLocal(
+  Future<bool> _playNative(
     int idx,
     String text,
     String code,
     int myGen,
   ) async {
-    final locale = TtsConfig.locale[code] ?? 'en-US';
     try {
+      _nativeDoneCompleter = Completer<bool>();
+      NativeTtsBridge.onDone(() {
+        if (_nativeDoneCompleter?.isCompleted == false) {
+          _nativeDoneCompleter!.complete(true);
+        }
+      });
+      final ok = await NativeTtsBridge.speak(text, code, state.rate);
+      if (!ok || myGen != _generation) return false;
+      await _nativeDoneCompleter!.future.timeout(
+        Duration(seconds: 30 + text.length ~/ 10),
+        onTimeout: () => true,
+      );
+      if (myGen != _generation) return false;
+      await _gapThenNext(idx, text, myGen);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _playSystemTts(
+    int idx,
+    String text,
+    String code,
+    int myGen,
+  ) async {
+    try {
+      _nativeDoneCompleter = Completer<bool>();
+      NativeTtsBridge.onDone(() {
+        if (_nativeDoneCompleter?.isCompleted == false) {
+          _nativeDoneCompleter!.complete(true);
+        }
+      });
+      final ok = await NativeTtsBridge.speakSystem(text, code, state.rate);
+      if (!ok || myGen != _generation) return false;
+      await _nativeDoneCompleter!.future.timeout(
+        Duration(seconds: 30 + text.length ~/ 10),
+        onTimeout: () => true,
+      );
+      if (myGen != _generation) return false;
+      await _gapThenNext(idx, text, myGen);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// روی وب: flutter_tts (Web Speech API)
+  Future<bool> _playWebSpeech(
+    int idx,
+    String text,
+    String code,
+    int myGen,
+  ) async {
+    try {
+      final locale = TtsConfig.locale[code] ?? 'en-US';
       await _localTts.setLanguage(locale);
       await _localTts.setSpeechRate(state.rate);
       await _localTts.setVolume(state.muted ? 0.0 : 1.0);
       await _localTts.setPitch(1.0);
 
-      if (myGen != _generation) return;
+      if (myGen != _generation) return false;
 
       final ok = await _localTts.speak(text);
-      if (ok != 1 || myGen != _generation) return;
+      if (ok != 1 || myGen != _generation) return false;
 
-      // مکث کوتاه بین جمله‌ها
-      final gap = _gapMs(chunk: text, rate: state.rate);
-      await Future.delayed(Duration(milliseconds: gap));
-      if (myGen != _generation) return;
-
-      unawaited(_playFrom(idx + 1));
+      await _gapThenNext(idx, text, myGen);
+      return true;
     } catch (_) {
-      if (myGen != _generation) return;
-      // fallback به آنلاین
-      await _playOnline(idx, text, code, myGen);
+      return false;
     }
   }
 
@@ -280,6 +341,13 @@ class SpeechController extends StateNotifier<SpeechState> {
     String code,
     int myGen,
   ) async {
+    // قبل از آنلاین، flutter_tts رو امتحان کن (فقط روی وب)
+    if (!NativeTtsBridge.isAvailable) {
+      final localOk = await _playWebSpeech(idx, text, code, myGen);
+      if (localOk && myGen == _generation) return;
+    }
+
+    // آنلاین: Edge TTS از Worker
     final voice = TtsConfig.edgeVoice[code] ?? 'en-US-AriaNeural';
     final url = '${TtsConfig.backendUrl}/api/tts'
         '?voice=${Uri.encodeComponent(voice)}'
@@ -306,7 +374,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       await completer.future;
       if (myGen != _generation) return;
 
-      unawaited(_playFrom(idx + 1));
+      await _gapThenNext(idx, text, myGen);
     } catch (_) {
       if (myGen != _generation) return;
       state = state.copyWith(
@@ -314,6 +382,13 @@ class SpeechController extends StateNotifier<SpeechState> {
         error: 'خطا در پخش صدا',
       );
     }
+  }
+
+  Future<void> _gapThenNext(int idx, String text, int myGen) async {
+    final gap = _gapMs(chunk: text, rate: state.rate);
+    await Future.delayed(Duration(milliseconds: gap));
+    if (myGen != _generation) return;
+    unawaited(_playFrom(idx + 1));
   }
 
   int _chunkIndexForOffset(int offset) {
@@ -324,7 +399,8 @@ class SpeechController extends StateNotifier<SpeechState> {
   }
 
   int _gapMs({required String chunk, required double rate}) {
-    final last = chunk.trimRight().characters.lastOrNull;
+    final trimmed = chunk.trimRight();
+    final last = trimmed.isEmpty ? '' : trimmed[trimmed.length - 1];
     final base = switch (last) {
       '!' || '！' => 420,
       '?' || '؟' || '？' => 400,
