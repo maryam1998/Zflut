@@ -36,10 +36,44 @@ class AccountHeader extends ConsumerWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
+          padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
           child: Row(
             children: [
-              // آواتار (سمت شروع در RTL = راست)
+              // ═══ منوی تنظیمات — سمت راست (شروع در RTL) ═══
+              InkWell(
+                onTap: onMenuTap,
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.menu,
+                    color: c.headerText,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+
+              // ═══ متن «از ... به ...» ═══
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.only(start: 4),
+                  child: Text(
+                    headerText,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      color: c.headerText.withOpacity(0.92),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              // ═══ آواتار — سمت چپ (پایان در RTL) ═══
               GestureDetector(
                 onTap: onAvatarTap,
                 child: Container(
@@ -66,35 +100,6 @@ class AccountHeader extends ConsumerWidget {
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // متن «از ... به ...»
-              Expanded(
-                child: Text(
-                  headerText,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.start,
-                  style: TextStyle(
-                    color: c.headerText.withOpacity(0.92),
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-
-              // منوی همبرگری (سمت پایان در RTL = چپ)
-              InkWell(
-                onTap: onMenuTap,
-                borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Icon(
-                    Icons.menu,
-                    color: c.headerText,
-                    size: 24,
                   ),
                 ),
               ),
