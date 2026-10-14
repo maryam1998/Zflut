@@ -1,32 +1,33 @@
 import 'package:flutter/material.dart';
 
-/// معادلِ TAB_META در appPrefs.js.
 @immutable
 class TabMeta {
   final String key;
-  final String labelKey;   // کلید ARB
+  final String labelKey;
   final IconData icon;
-  final String route;      // برای go_router
+  final String route;
+  final bool isAiPowered;
 
   const TabMeta({
     required this.key,
     required this.labelKey,
     required this.icon,
     required this.route,
+    this.isAiPowered = false,
   });
 }
 
 const List<TabMeta> kTabMetaList = [
-  TabMeta(key: 'conversations', labelKey: 'tab_conversations', icon: Icons.forum,          route: '/conversations'),
-  TabMeta(key: 'story',         labelKey: 'tab_story',         icon: Icons.auto_awesome,   route: '/story'),
-  TabMeta(key: 'saved',         labelKey: 'tab_saved',         icon: Icons.bookmark,       route: '/saved'),
-  TabMeta(key: 'grammar',       labelKey: 'tab_grammar',       icon: Icons.spellcheck,     route: '/grammar'),
-  TabMeta(key: 'speaking',      labelKey: 'tab_speaking',      icon: Icons.mic,            route: '/speaking'),
-  TabMeta(key: 'words',         labelKey: 'tab_words',         icon: Icons.menu_book,      route: '/words'),
-  TabMeta(key: 'vocabInUse',    labelKey: 'tab_vocab_in_use',  icon: Icons.layers,         route: '/vocab-in-use'),
-  TabMeta(key: 'slang',         labelKey: 'tab_slang',         icon: Icons.format_quote,   route: '/slang'),
-  TabMeta(key: 'favorites',     labelKey: 'tab_favorites',     icon: Icons.favorite,       route: '/favorites'),
-  TabMeta(key: 'review',        labelKey: 'tab_review',        icon: Icons.inventory_2,    route: '/review'),
+  TabMeta(key: 'conversations', labelKey: 'tab_conversations', icon: Icons.chat_bubble_outline, route: '/conversations'),
+  TabMeta(key: 'story',         labelKey: 'tab_story',         icon: Icons.feather,             route: '/story',    isAiPowered: true),
+  TabMeta(key: 'saved',         labelKey: 'tab_saved',         icon: Icons.bookmark_outline,    route: '/saved'),
+  TabMeta(key: 'grammar',       labelKey: 'tab_grammar',       icon: Icons.pilcrow,             route: '/grammar',  isAiPowered: true),
+  TabMeta(key: 'speaking',      labelKey: 'tab_speaking',      icon: Icons.mic_none_outlined,   route: '/speaking', isAiPowered: true),
+  TabMeta(key: 'words',         labelKey: 'tab_words',         icon: Icons.menu_book_outlined,  route: '/words'),
+  TabMeta(key: 'vocabInUse',    labelKey: 'tab_vocab_in_use',  icon: Icons.layers_outlined,     route: '/vocab-in-use'),
+  TabMeta(key: 'slang',         labelKey: 'tab_slang',         icon: Icons.format_quote_outlined, route: '/slang'),
+  TabMeta(key: 'favorites',     labelKey: 'tab_favorites',     icon: Icons.favorite_outline,    route: '/favorites'),
+  TabMeta(key: 'review',        labelKey: 'tab_review',        icon: Icons.repeat,              route: '/review'),
 ];
 
 final Map<String, TabMeta> kTabMeta = {
