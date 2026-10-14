@@ -39,10 +39,18 @@ class LingoLearnApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       builder: (context, child) {
-        final locale = Localizations.localeOf(context).languageCode;
-        final dir = (locale == 'fa' || locale == 'ar')
-            ? TextDirection.rtl
-            : TextDirection.ltr;
+        // ═══════════════════════════════════════════════════════════
+        // UI اپ همیشه راست‌چین است — مستقل از زبان رابط.
+        //
+        // تغییر زبان رابط (uiLang) فقط ترجمه‌ی متن‌ها را عوض می‌کند،
+        // ولی چیدمان و جهت هیچ‌وقت تغییر نمی‌کند. این باعث می‌شود:
+        //   • تب‌ها همیشه در جای خودشان بمانند
+        //   • آواتار همیشه سمت راست، منو همیشه سمت چپ
+        //   • انیمیشن‌ها و اسلایدها در جهت درست اجرا شوند
+        //   • حتی وقتی زبان مقصد کاربر انگلیسی است، UI به‌هم نریزد
+        // ═══════════════════════════════════════════════════════════
+        const dir = TextDirection.rtl;
+
         return Directionality(
           textDirection: dir,
           child: MediaQuery(
