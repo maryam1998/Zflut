@@ -14,7 +14,7 @@ class LanguagePicker extends ConsumerWidget {
     final sel = ref.watch(languageSelectionProvider);
     final notifier = ref.read(languageSelectionProvider.notifier);
 
-    // ═══ زبان مادری — ترتیب دلخواه ═══
+    // زبان مادری — ترتیب دلخواه
     final nativeOrder = ref.watch(nativeOrderProvider);
     final nativeDefaults = kSupportedLanguages.map((l) => l.code).toList();
     final nativeOrderList = nativeOrder.isEmpty
@@ -27,7 +27,7 @@ class LanguagePicker extends ConsumerWidget {
         .map((code) => kSupportedLanguages.firstWhere((l) => l.code == code))
         .toList();
 
-    // ═══ زبان‌های مقصد ═══
+    // زبان‌های مقصد — انتخاب‌شده‌ها اول
     final targetDisplayOrder = ref.watch(targetDisplayOrderProvider);
     final selected = sel.targets.toList();
     final selectedLangs = selected
@@ -56,13 +56,13 @@ class LanguagePicker extends ConsumerWidget {
 
     return Container(
       color: c.headerFrom,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ═══ زبان مادری ═══
+          // زبان مادری
           const _SectionLabel(text: 'زبان مادری'),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           _DragRow(
             key: const ValueKey('native-row'),
             languages: nativeLanguages,
@@ -74,11 +74,11 @@ class LanguagePicker extends ConsumerWidget {
             },
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
 
-          // ═══ زبان‌های مقصد ═══
+          // زبان‌های مقصد
           const _SectionLabel(text: 'زبان‌های مقصد'),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           _DragRow(
             key: const ValueKey('target-row'),
             languages: [...selectedLangs, ...unselectedLangs],
@@ -97,14 +97,14 @@ class LanguagePicker extends ConsumerWidget {
             },
           ),
 
-          // ═══ ترتیب ترجمه‌ها ═══
+          // ترتیب ترجمه‌ها — چیپ‌های باریک
           if (sel.targets.length > 1) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
             const _SectionLabel(
               text: 'ترتیب نمایش ترجمه‌ها (بکش تا جابجا بشه)',
               small: true,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 3),
             _ReorderableChips(
               targets: sel.targets,
               onReorder: notifier.reorderTargets,
@@ -127,14 +127,14 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.appColors;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Align(
         alignment: AlignmentDirectional.centerStart,
         child: Text(
           text,
           style: TextStyle(
-            color: c.headerText.withOpacity(small ? 0.6 : 0.75),
-            fontSize: small ? 10.5 : 12,
+            color: c.headerText.withOpacity(small ? 0.55 : 0.75),
+            fontSize: small ? 9.5 : 11,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -143,8 +143,6 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// ردیف دایره‌های قابل‌کشیدن — drag فوری مثل وب
 // ═══════════════════════════════════════════════════════════════════
 class _DragRow extends StatelessWidget {
   final List<SupportedLanguage> languages;
@@ -165,10 +163,10 @@ class _DragRow extends StatelessWidget {
     final c = context.appColors;
 
     return SizedBox(
-      height: 60,
+      height: 46,
       child: ReorderableListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         itemCount: languages.length,
         onReorder: onReorder,
         buildDefaultDragHandles: false,
@@ -176,12 +174,11 @@ class _DragRow extends StatelessWidget {
           return AnimatedBuilder(
             animation: animation,
             builder: (context, _) {
-              final scale = 1.0 + (animation.value * 0.15);
               return Transform.scale(
-                scale: scale,
+                scale: 1.0 + (animation.value * 0.12),
                 child: Material(
                   color: Colors.transparent,
-                  elevation: 12,
+                  elevation: 8,
                   shape: const CircleBorder(),
                   child: child,
                 ),
@@ -192,10 +189,9 @@ class _DragRow extends StatelessWidget {
         itemBuilder: (context, i) {
           final lang = languages[i];
           final active = selectedCodes.contains(lang.code);
-
           return Padding(
             key: ValueKey('circle-${lang.code}'),
-            padding: const EdgeInsetsDirectional.only(end: 10),
+            padding: const EdgeInsetsDirectional.only(end: 8),
             child: _CircleItem(
               index: i,
               abbr: lang.abbr,
@@ -227,17 +223,14 @@ class _CircleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // دایره با drag فوری — مثل نسخه وب
-    // تپ سریع (بدون حرکت) → onTap
-    // کشیدن فوری → drag
     return ReorderableDragStartListener(
       index: index,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          width: 48,
-          height: 48,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: active ? c.gold : c.headerText.withOpacity(0.04),
@@ -249,8 +242,8 @@ class _CircleItem extends StatelessWidget {
                 ? [
                     BoxShadow(
                       color: c.gold.withOpacity(0.45),
-                      blurRadius: 10,
-                      spreadRadius: 1,
+                      blurRadius: 8,
+                      spreadRadius: 0.5,
                     ),
                   ]
                 : null,
@@ -260,9 +253,9 @@ class _CircleItem extends StatelessWidget {
             abbr,
             style: TextStyle(
               color: active ? c.headerTo : c.headerText,
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
+              letterSpacing: 0.4,
             ),
           ),
         ),
@@ -272,7 +265,7 @@ class _CircleItem extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// چیپ‌های ترتیب ترجمه‌ها
+// چیپ‌های ترتیب — باریک‌تر از قبل
 // ═══════════════════════════════════════════════════════════════════
 class _ReorderableChips extends StatelessWidget {
   final List<String> targets;
@@ -288,10 +281,10 @@ class _ReorderableChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 42,
+      height: 32,
       child: ReorderableListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         itemCount: targets.length,
         onReorder: onReorder,
         buildDefaultDragHandles: false,
@@ -307,7 +300,7 @@ class _ReorderableChips extends StatelessWidget {
           final code = targets[index];
           return Padding(
             key: ValueKey('chip-$code'),
-            padding: const EdgeInsetsDirectional.only(end: 8),
+            padding: const EdgeInsetsDirectional.only(end: 6),
             child: _OrderChip(
               index: index,
               code: code,
@@ -337,7 +330,7 @@ class _OrderChip extends StatelessWidget {
     return ReorderableDragStartListener(
       index: index,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(999),
@@ -349,30 +342,30 @@ class _OrderChip extends StatelessWidget {
             GestureDetector(
               onTap: onRemove,
               child: Container(
-                width: 20,
-                height: 20,
+                width: 16,
+                height: 16,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: c.rose.withOpacity(0.12),
+                  color: c.rose.withOpacity(0.15),
                 ),
                 alignment: Alignment.center,
-                child: Icon(Icons.close, size: 12, color: c.rose),
+                child: Icon(Icons.close, size: 10, color: c.rose),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             Text(
               langFaName(code),
               style: TextStyle(
                 color: c.ink,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             Icon(
               Icons.drag_indicator,
-              size: 16,
-              color: c.inkSoft.withOpacity(0.6),
+              size: 13,
+              color: c.inkSoft.withOpacity(0.5),
             ),
           ],
         ),
