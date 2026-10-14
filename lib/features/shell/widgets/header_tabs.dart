@@ -56,11 +56,16 @@ class HeaderTabs extends StatelessWidget {
 
   static String _labelFor(AppLocalizations L, String key) {
     switch (key) {
-      case 'group_talk':     return L.group_talk;
-      case 'group_story':    return L.group_story;
-      case 'group_words':    return L.group_words;
-      case 'group_practice': return L.group_practice;
-      default:               return key;
+      case 'group_talk':
+        return L.group_talk;
+      case 'group_story':
+        return L.group_story;
+      case 'group_words':
+        return L.group_words;
+      case 'group_practice':
+        return L.group_practice;
+      default:
+        return key;
     }
   }
 }
@@ -83,9 +88,7 @@ class _HeaderChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: active
-          ? Colors.white.withValues(alpha: 0.18)
-          : Colors.transparent,
+      color: active ? Colors.white.withOpacity(0.18) : Colors.transparent,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
@@ -96,12 +99,14 @@ class _HeaderChip extends StatelessWidget {
             children: [
               Icon(icon, size: 18, color: headerText),
               const SizedBox(width: 6),
-              Text(label,
-                  style: TextStyle(
-                    color: headerText,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 14,
-                  )),
+              Text(
+                label,
+                style: TextStyle(
+                  color: headerText,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 14,
+                ),
+              ),
             ],
           ),
         ),
