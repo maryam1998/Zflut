@@ -1,0 +1,49 @@
+import 'package:flutter/foundation.dart';
+
+enum SortMode {
+  defaultOrder,   // پیش‌فرض
+  alphabetical,   // الفبایی
+  byLevel,        // بر اساس سطح
+  recent,         // اخیراً
+}
+
+extension SortModeX on SortMode {
+  String get faLabel {
+    switch (this) {
+      case SortMode.defaultOrder: return 'پیش‌فرض';
+      case SortMode.alphabetical: return 'الفبایی';
+      case SortMode.byLevel:      return 'سطح (A→C)';
+      case SortMode.recent:       return 'اخیراً اضافه‌شده';
+    }
+  }
+}
+
+@immutable
+class WordsFilterState {
+  /// سطح انتخاب‌شده — 'all' یا 'A1'..'C2'
+  final String level;
+
+  /// متن جستجو (خالی = بدون فیلتر)
+  final String query;
+
+  /// حالت مرتب‌سازی
+  final SortMode sort;
+
+  const WordsFilterState({
+    this.level = 'all',
+    this.query = '',
+    this.sort = SortMode.defaultOrder,
+  });
+
+  WordsFilterState copyWith({
+    String? level,
+    String? query,
+    SortMode? sort,
+  }) {
+    return WordsFilterState(
+      level: level ?? this.level,
+      query: query ?? this.query,
+      sort: sort ?? this.sort,
+    );
+  }
+}
