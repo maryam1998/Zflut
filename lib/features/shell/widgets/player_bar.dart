@@ -16,6 +16,8 @@ class PlayerBar extends ConsumerWidget {
 
     final isActive = state.status != SpeechStatus.idle && state.key != null;
     final isPlaying = state.status == SpeechStatus.playing;
+    final progress =
+        (isActive && state.total > 0) ? (state.chunkIndex + 1) / state.total : 0.0;
 
     return Container(
       decoration: BoxDecoration(
@@ -23,7 +25,7 @@ class PlayerBar extends ConsumerWidget {
         border: Border(top: BorderSide(color: c.cardBorder, width: 1)),
         boxShadow: [
           BoxShadow(
-            color: c.ink.withOpacity(0.06),
+            color: c.ink.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, -4),
           ),
@@ -36,7 +38,7 @@ class PlayerBar extends ConsumerWidget {
           children: [
             // ═══ نوار پیشرفت ═══
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
               child: Row(
                 children: [
                   Text(
@@ -52,9 +54,7 @@ class PlayerBar extends ConsumerWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(2),
                       child: LinearProgressIndicator(
-                        value: isActive && state.total > 0
-                            ? (state.chunkIndex + 1) / state.total
-                            : 0,
+                        value: progress,
                         minHeight: 4,
                         backgroundColor: c.cardBorder,
                         valueColor: AlwaysStoppedAnimation(c.gold),
@@ -76,17 +76,24 @@ class PlayerBar extends ConsumerWidget {
 
             // ═══ ردیف دکمه‌ها ═══
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   // ضبط صدا
                   _IconBtn(
                     icon: Icons.mic_none_outlined,
                     color: c.rose,
-                    onTap: () {},
-                    size: 22,
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('ضبط صدا به‌زودی'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
                   ),
+
                   // بی‌صدا
                   _IconBtn(
                     icon: state.muted
@@ -94,77 +101,66 @@ class PlayerBar extends ConsumerWidget {
                         : Icons.volume_up_outlined,
                     color: state.muted ? c.rose : c.gold,
                     onTap: ctrl.toggleMuted,
-                    size: 20,
                   ),
-                  // تکرار
+
+                  // تکرار (0 → 2 → 3 → ∞)
                   _IconBtn(
                     icon: Icons.repeat,
                     color: state.globalRepeat != 0 ? c.gold : c.inkSoft,
                     onTap: ctrl.cycleRepeat,
-                    size: 20,
                     badge: state.globalRepeat == -1
                         ? '∞'
-                        : state.globalRepeat == 0
+                        : (state.globalRepeat == 0
                             ? null
-                            : '${state.globalRepeat}',
+                            : '${state.globalRepeat}'),
                   ),
+
                   // A-B
                   _TextBtn(
                     label: 'A-B',
-                    color: c.inkSoft,
+                    color: isActive ? c.inkSoft : c.cardBorder,
                     onTap: isActive ? ctrl.markAB : null,
                   ),
+
                   // قبلی
                   _IconBtn(
                     icon: Icons.skip_previous,
                     color: isActive ? c.ink : c.cardBorder,
                     onTap: isActive ? ctrl.prevChunk : null,
-                    size: 24,
                   ),
-                  // پخش/توقف
-                  _PlayButton(
+
+                  // پخش/توقف مرکزی
+                  _PlayBtn(
                     isPlaying: isPlaying,
                     isActive: isActive,
                     onTap: () {
-                      if (isActive && state.key != null) {
-                        final parts = state.key!.split('::');
-                        if (parts.length == 2) {
-                          ctrl.toggle(parts[1], _codeFromLocale(parts[0]));
-                        }
+                      if (!isActive || state.key == null) return;
+                      final parts = state.key!.split('::');
+                      if (parts.length == 2) {
+                        ctrl.toggle(parts[1], _codeFromLocale(parts[0]));
                       }
                     },
                   ),
+
                   // بعدی
                   _IconBtn(
                     icon: Icons.skip_next,
                     color: isActive ? c.ink : c.cardBorder,
                     onTap: isActive ? ctrl.nextChunk : null,
-                    size: 24,
                   ),
+
                   // سرعت
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: c.paperDark,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: c.cardBorder),
-                    ),
-                    child: Text(
-                      '${state.rate.toStringAsFixed(1)}×',
-                      style: TextStyle(
-                        color: c.gold,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                  _SpeedBtn(
+                    rate: state.rate,
+                    color: c.gold,
+                    onTap: () => _showSpeedSheet(context, ref),
                   ),
-                  // شفافیت
+
+                  // ریستارت
                   _IconBtn(
-                    icon: Icons.opacity,
-                    color: c.inkSoft,
-                    onTap: () {},
-                    size: 18,
+                    icon: Icons.replay,
+                    color: isActive ? c.gold : c.cardBorder,
+                    onTap: isActive ? () => ctrl.seekToChunk(0) : null,
                   ),
                 ],
               ),
@@ -175,14 +171,95 @@ class PlayerBar extends ConsumerWidget {
     );
   }
 
-  static String _codeFromLocale(String locale) {
-    final map = {
-      'fa-IR': 'fa', 'en-US': 'en', 'de-DE': 'de', 'es-ES': 'es',
-      'fr-FR': 'fr', 'ar-SA': 'ar', 'tr-TR': 'tr', 'zh-CN': 'zh',
-      'ru-RU': 'ru', 'it-IT': 'it', 'ko-KR': 'ko', 'ja-JP': 'ja',
-      'hi-IN': 'hi',
-    };
-    return map[locale] ?? 'en';
+  static String _codeFromLocale(String loc) {
+    final p = loc.split('-').first.toLowerCase();
+    return p.isEmpty ? 'en' : p;
+  }
+
+  void _showSpeedSheet(BuildContext context, WidgetRef ref) {
+    final ctrl = ref.read(speechControllerProvider.notifier);
+    final state = ref.read(speechControllerProvider);
+    final c = context.appColors;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: c.paper,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.speed, color: c.gold),
+                const SizedBox(width: 10),
+                Text(
+                  'سرعت پخش',
+                  style: TextStyle(
+                    color: c.ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${state.rate.toStringAsFixed(1)}×',
+                  style: TextStyle(
+                    color: c.gold,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Slider(
+              value: state.rate,
+              min: 0.25,
+              max: 2.0,
+              divisions: 35,
+              activeColor: c.gold,
+              inactiveColor: c.cardBorder,
+              onChanged: (v) => ctrl.setRate(v),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((r) {
+                final selected = (state.rate - r).abs() < 0.01;
+                return GestureDetector(
+                  onTap: () => ctrl.setRate(r),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected ? c.gold : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: selected ? c.gold : c.cardBorder,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      '${r}×',
+                      style: TextStyle(
+                        color: selected ? c.paper : c.ink,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -191,14 +268,12 @@ class _IconBtn extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback? onTap;
-  final double size;
   final String? badge;
 
   const _IconBtn({
     required this.icon,
     required this.color,
     required this.onTap,
-    this.size = 20,
     this.badge,
   });
 
@@ -209,21 +284,22 @@ class _IconBtn extends StatelessWidget {
       children: [
         InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Icon(icon, size: size, color: color),
+            padding: const EdgeInsets.all(8),
+            child: Icon(icon, size: 22, color: color),
           ),
         ),
         if (badge != null)
           Positioned(
-            top: 0,
+            top: 2,
             right: 0,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
                 color: color,
-                borderRadius: BorderRadius.circular(5),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 badge!,
@@ -255,9 +331,9 @@ class _TextBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       child: Padding(
-        padding: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(8),
         child: Text(
           label,
           style: TextStyle(
@@ -272,12 +348,12 @@ class _TextBtn extends StatelessWidget {
   }
 }
 
-class _PlayButton extends StatelessWidget {
+class _PlayBtn extends StatelessWidget {
   final bool isPlaying;
   final bool isActive;
   final VoidCallback onTap;
 
-  const _PlayButton({
+  const _PlayBtn({
     required this.isPlaying,
     required this.isActive,
     required this.onTap,
@@ -300,6 +376,37 @@ class _PlayButton extends StatelessWidget {
             isPlaying ? Icons.pause : Icons.play_arrow,
             color: c.paper,
             size: 28,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SpeedBtn extends StatelessWidget {
+  final double rate;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _SpeedBtn({
+    required this.rate,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        child: Text(
+          '${rate.toStringAsFixed(1)}×',
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ),
