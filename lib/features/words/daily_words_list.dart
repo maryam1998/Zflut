@@ -22,6 +22,7 @@ class DailyWordsList extends ConsumerWidget {
     final langsToShow = ref.watch(displayLangsProvider);
 
     return CustomScrollView(
+      cacheExtent: 700,
       slivers: [
         const SliverToBoxAdapter(
           child: FilterBar(
@@ -38,11 +39,15 @@ class DailyWordsList extends ConsumerWidget {
         else
           SliverList(
             delegate: SliverChildBuilderDelegate(
-              (context, i) => _WordCard(
-                word: words[i],
-                langsToShow: langsToShow,
+              (context, i) => RepaintBoundary(
+                child: _WordCard(
+                  word: words[i],
+                  langsToShow: langsToShow,
+                ),
               ),
               childCount: words.length,
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: false,
             ),
           ),
         const SliverToBoxAdapter(child: SizedBox(height: 110)),

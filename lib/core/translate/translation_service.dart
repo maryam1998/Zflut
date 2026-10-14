@@ -251,6 +251,25 @@ class TranslationService {
     return null;
   }
 
+  /// خواندنِ سریع و همگام از کش (برای اسکرولِ روان: بدون await و بدون فلیکر).
+  /// فقط اگر مقدارِ کش‌شده از کنترل کیفیت رد شود برمی‌گرداند؛ وگرنه null.
+  String? peekCached(String text, String from, String to) {
+    if (text.trim().isEmpty || to.isEmpty) return null;
+    final key = _cacheKey(text, from, to);
+    var v = _mem[key];
+    if (v == null) {
+      try {
+        final disk = _prefs.getString('$_kCachePrefix$key');
+        if (disk != null && disk.isNotEmpty) {
+          _mem[key] = disk;
+          v = disk;
+        }
+      } catch (_) {}
+    }
+    if (v == null) return null;
+    return looksLikelyMistranslated(text, v, to, sourceLang: from) ? null : v;
+  }
+
   /// ذخیره در کش (حافظه همیشه؛ دیسک best-effort مثل وب)
   Future<void> cachePut(
       String text, String from, String to, String value) async {

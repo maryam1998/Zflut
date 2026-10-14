@@ -70,18 +70,31 @@ class _TranslationRowState extends ConsumerState<TranslationRow> {
     }
     final service = ref.read(translationServiceProvider);
     final ai = ref.read(aiSettingsProvider);
-    service
-        .translate(
-          text: widget.text,
-          targetLang: widget.langCode,
-          sourceLang: widget.sourceLang,
-          aiSettings: ai,
-          forceVerify: widget.forceVerify,
-        )
-        .then((t) {
-      if (!mounted || gen != _gen || t.isEmpty) return;
-      setState(() => _text = t);
-    }).catchError((_) {});
+
+    // کش معتبر → همان لحظه و بدون فلیکر (اسکرولِ روان)
+    final hit =
+        service.peekCached(widget.text, widget.sourceLang, widget.langCode);
+    if (hit != null) {
+      _text = hit;
+      return;
+    }
+
+    // ردیف‌هایی که با اسکرولِ سریع فقط لحظه‌ای دیده می‌شوند درخواستِ شبکه نمی‌سازند
+    Future.delayed(const Duration(milliseconds: 220), () {
+      if (!mounted || gen != _gen) return;
+      service
+          .translate(
+            text: widget.text,
+            targetLang: widget.langCode,
+            sourceLang: widget.sourceLang,
+            aiSettings: ai,
+            forceVerify: widget.forceVerify,
+          )
+          .then((t) {
+        if (!mounted || gen != _gen || t.isEmpty) return;
+        setState(() => _text = t);
+      }).catchError((_) {});
+    });
   }
 
   Future<void> _retry() async {
