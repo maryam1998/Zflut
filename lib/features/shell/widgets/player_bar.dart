@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/scroll/global_scroll.dart';
 import '../../../core/providers/speech_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/tts/speech_state.dart';
