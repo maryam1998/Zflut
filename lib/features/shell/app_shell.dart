@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/models/tab_group.dart';
+import '../../core/providers/language_selection_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import 'widgets/account_header.dart';
 import 'widgets/header_tabs.dart';
@@ -30,59 +31,77 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
 
     final c = context.appColors;
+    final sel = ref.watch(languageSelectionProvider);
+    final hasSubtabs = currentGroup.tabs.length > 1;
+    final hasChips = sel.targets.length > 1;
+
+    // ═══════════════════════════════════════════════════════════════
+    // ارتفاع هدر — جمع همه‌ی ردیف‌ها:
+    //   AccountHeader    ~56
+    //   LanguagePicker   ~168  (+66 اگر چیپ ترتیب داشته باشه)
+    //   HeaderTabs       ~60
+    //   SubTabsRow       ~48   (فقط اگر گروه > ۱ تب)
+    // ═══════════════════════════════════════════════════════════════
+    final contentHeight = 56.0 +
+        168.0 +
+        (hasChips ? 66.0 : 0.0) +
+        60.0 +
+        (hasSubtabs ? 48.0 : 0.0);
 
     return Scaffold(
       backgroundColor: c.paper,
-      // ═══════════════════════════════════════════════════════════════
-      // NestedScrollView: هدر با اسکرول کاربر می‌ره بالا، با برگشت به بالا
-      // دوباره ظاهر می‌شه. دقیقاً همون رفتاری که در نسخه‌ی وب داشتی.
-      //
-      // • headerSliverBuilder → همه‌ی هدر (حساب + زبان + تب‌ها)
-      // • body → محتوای تب که اسکرول داخلی خودش رو داره
-      //
-      // محتوای هر تب (مثل WordsTab) باید یک CustomScrollView / ListView
-      // باشه که از PrimaryScrollController استفاده می‌کنه (پیش‌فرض).
-      // ═══════════════════════════════════════════════════════════════
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
-            SliverToBoxAdapter(
-              child: AccountHeader(
-                onMenuTap: () => SettingsSheet.show(context),
-                onAvatarTap: () => SettingsSheet.show(context),
-              ),
-            ),
-            const SliverToBoxAdapter(
-              child: LanguagePicker(),
-            ),
-            SliverToBoxAdapter(
-              child: HeaderTabs(
-                activeGroupKey: currentGroup.key,
-                onGroupSelected: (group) {
-                  context.go(_routeOf(group.tabs.first));
-                },
-                onSettingsTap: () => SettingsSheet.show(context),
-              ),
-            ),
-            if (currentGroup.tabs.length > 1)
-              SliverToBoxAdapter(
-                child: SubTabsRow(
-                  group: currentGroup,
-                  activeTabKey: _normalize(tabKey),
-                  onTabSelected: (tab) => context.go(_routeOf(tab)),
+            // ═══════════════════════════════════════════════════════════
+            // SliverAppBar با floating + snap:
+            //   • اسکرول پایین  → هدر می‌ره بالا (پنهان)
+            //   • اسکرول بالا   → هدر فوراً برمی‌گرده (snap)
+            // دقیقاً همون رفتاری که در وب‌اپت داشتی.
+            // ═══════════════════════════════════════════════════════════
+            SliverAppBar(
+              floating: true,
+              snap: true,
+              pinned: false,
+              automaticallyImplyLeading: false,
+              expandedHeight: contentHeight,
+              toolbarHeight: contentHeight,
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.none,
+                background: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AccountHeader(
+                      onMenuTap: () => SettingsSheet.show(context),
+                      onAvatarTap: () => SettingsSheet.show(context),
+                    ),
+                    const LanguagePicker(),
+                    HeaderTabs(
+                      activeGroupKey: currentGroup.key,
+                      onGroupSelected: (group) {
+                        context.go(_routeOf(group.tabs.first));
+                      },
+                      onSettingsTap: () => SettingsSheet.show(context),
+                    ),
+                    if (hasSubtabs)
+                      SubTabsRow(
+                        group: currentGroup,
+                        activeTabKey: _normalize(tabKey),
+                        onTabSelected: (tab) => context.go(_routeOf(tab)),
+                      ),
+                  ],
                 ),
-              ),
-            // پایین‌ترین لایه‌ی هدر یک خط جداکننده‌ی ظریف برای وضوح
-            SliverToBoxAdapter(
-              child: Container(
-                height: 1,
-                color: c.cardBorder.withOpacity(0.5),
               ),
             ),
           ];
         },
         body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
+          duration: const Duration(milliseconds: 180),
           transitionBuilder: (child, animation) => FadeTransition(
             opacity: animation,
             child: child,
