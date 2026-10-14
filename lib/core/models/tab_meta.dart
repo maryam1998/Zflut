@@ -18,16 +18,69 @@ class TabMeta {
 }
 
 const List<TabMeta> kTabMetaList = [
-  TabMeta(key: 'conversations', labelKey: 'tab_conversations', icon: Icons.chat_bubble_outline, route: '/conversations'),
-  TabMeta(key: 'story',         labelKey: 'tab_story',         icon: Icons.feather,             route: '/story',    isAiPowered: true),
-  TabMeta(key: 'saved',         labelKey: 'tab_saved',         icon: Icons.bookmark_outline,    route: '/saved'),
-  TabMeta(key: 'grammar',       labelKey: 'tab_grammar',       icon: Icons.pilcrow,             route: '/grammar',  isAiPowered: true),
-  TabMeta(key: 'speaking',      labelKey: 'tab_speaking',      icon: Icons.mic_none_outlined,   route: '/speaking', isAiPowered: true),
-  TabMeta(key: 'words',         labelKey: 'tab_words',         icon: Icons.menu_book_outlined,  route: '/words'),
-  TabMeta(key: 'vocabInUse',    labelKey: 'tab_vocab_in_use',  icon: Icons.layers_outlined,     route: '/vocab-in-use'),
-  TabMeta(key: 'slang',         labelKey: 'tab_slang',         icon: Icons.format_quote_outlined, route: '/slang'),
-  TabMeta(key: 'favorites',     labelKey: 'tab_favorites',     icon: Icons.favorite_outline,    route: '/favorites'),
-  TabMeta(key: 'review',        labelKey: 'tab_review',        icon: Icons.repeat,              route: '/review'),
+  TabMeta(
+    key: 'conversations',
+    labelKey: 'tab_conversations',
+    icon: Icons.chat_bubble_outline,
+    route: '/conversations',
+  ),
+  TabMeta(
+    key: 'story',
+    labelKey: 'tab_story',
+    icon: Icons.feather,
+    route: '/story',
+    isAiPowered: true,
+  ),
+  TabMeta(
+    key: 'saved',
+    labelKey: 'tab_saved',
+    icon: Icons.bookmark_outline,
+    route: '/saved',
+  ),
+  TabMeta(
+    key: 'grammar',
+    labelKey: 'tab_grammar',
+    icon: Icons.pilcrow,
+    route: '/grammar',
+    isAiPowered: true,
+  ),
+  TabMeta(
+    key: 'speaking',
+    labelKey: 'tab_speaking',
+    icon: Icons.mic_none_outlined,
+    route: '/speaking',
+    isAiPowered: true,
+  ),
+  TabMeta(
+    key: 'words',
+    labelKey: 'tab_words',
+    icon: Icons.menu_book_outlined,
+    route: '/words',
+  ),
+  TabMeta(
+    key: 'vocabInUse',
+    labelKey: 'tab_vocab_in_use',
+    icon: Icons.layers_outlined,
+    route: '/vocab-in-use',
+  ),
+  TabMeta(
+    key: 'slang',
+    labelKey: 'tab_slang',
+    icon: Icons.format_quote_outlined,
+    route: '/slang',
+  ),
+  TabMeta(
+    key: 'favorites',
+    labelKey: 'tab_favorites',
+    icon: Icons.favorite_outline,
+    route: '/favorites',
+  ),
+  TabMeta(
+    key: 'review',
+    labelKey: 'tab_review',
+    icon: Icons.repeat,
+    route: '/review',
+  ),
 ];
 
 final Map<String, TabMeta> kTabMeta = {
