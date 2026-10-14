@@ -14,23 +14,46 @@ class LanguagePicker extends ConsumerWidget {
     final sel = ref.watch(languageSelectionProvider);
     final notifier = ref.read(languageSelectionProvider.notifier);
 
-    // ═══════════════════════════════════════════════════════════════
-    // زبان‌های مقصد — هم‌ترتیب با چیپ‌ها.
-    // اول زبان‌های انتخاب‌شده به ترتیب targets، بعد بقیه به ترتیب پیش‌فرض.
-    // یعنی وقتی کاربر چیپ‌ها را جابجا می‌کند، دایره‌ها هم خودکار جابجا می‌شوند.
-    // ═══════════════════════════════════════════════════════════════
-    final orderedTargets = <SupportedLanguage>[];
-    for (final code in sel.targets) {
-      final lang = kSupportedLanguages
-          .where((l) => l.code == code)
-          .cast<SupportedLanguage?>()
-          .firstWhere((l) => l != null, orElse: () => null);
-      if (lang != null) orderedTargets.add(lang);
-    }
-    final unselectedTargets = kSupportedLanguages
-        .where((l) => !sel.targets.contains(l.code))
+    // ═══ زبان مادری — ترتیب دلخواه ═══
+    final nativeOrder = ref.watch(nativeOrderProvider);
+    final nativeDefaults = kSupportedLanguages.map((l) => l.code).toList();
+    final nativeOrderList = nativeOrder.isEmpty
+        ? nativeDefaults
+        : [
+            ...nativeOrder.where(nativeDefaults.contains),
+            ...nativeDefaults.where((c) => !nativeOrder.contains(c)),
+          ];
+    final nativeLanguages = nativeOrderList
+        .map((code) => kSupportedLanguages.firstWhere((l) => l.code == code))
         .toList();
-    final allTargetsInOrder = [...orderedTargets, ...unselectedTargets];
+
+    // ═══ زبان‌های مقصد — انتخاب‌شده‌ها اول، بعد بقیه ═══
+    final targetDisplayOrder = ref.watch(targetDisplayOrderProvider);
+    final selected = sel.targets.toList();
+    // دایره‌های انتخاب‌شده به ترتیب targets
+    final selectedLangs = selected
+        .map((code) => kSupportedLanguages.firstWhere(
+              (l) => l.code == code,
+              orElse: () => kSupportedLanguages.first,
+            ))
+        .toList();
+    // بقیه به ترتیب دلخواه یا پیش‌فرض
+    final unselectedCodes = targetDisplayOrder.isEmpty
+        ? kSupportedLanguages
+            .where((l) => !selected.contains(l.code))
+            .map((l) => l.code)
+            .toList()
+        : [
+            ...targetDisplayOrder.where(
+              (c) => !selected.contains(c) && kSupportedLanguages.any((l) => l.code == c),
+            ),
+            ...kSupportedLanguages
+                .map((l) => l.code)
+                .where((c) => !selected.contains(c) && !targetDisplayOrder.contains(c)),
+          ];
+    final unselectedLangs = unselectedCodes
+        .map((code) => kSupportedLanguages.firstWhere((l) => l.code == code))
+        .toList();
 
     return Container(
       color: c.headerFrom,
@@ -38,26 +61,47 @@ class LanguagePicker extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ══ زبان مادری ══
+          // ═══ زبان مادری ═══
           const _SectionLabel(text: 'زبان مادری'),
           const SizedBox(height: 6),
-          _NativeRow(
-            selectedCode: sel.native,
+          _DraggableCircleRow(
+            key: const ValueKey('native-row'),
+            languages: nativeLanguages,
+            selectedCodes: {sel.native},
             onTap: (code) => notifier.setNative(code),
+            onReorder: (oldIdx, newIdx) {
+              ref.read(nativeOrderProvider.notifier)
+                  .reorder(nativeOrderList, oldIdx, newIdx);
+            },
           ),
 
           const SizedBox(height: 10),
 
-          // ══ زبان‌های مقصد (چند-انتخابی، هم‌ترتیب با چیپ‌ها) ══
+          // ═══ زبان‌های مقصد ═══
           const _SectionLabel(text: 'زبان‌های مقصد'),
           const SizedBox(height: 6),
-          _TargetsRow(
-            languages: allTargetsInOrder,
-            selectedCodes: sel.targets.toSet(),
+          _DraggableCircleRow(
+            key: const ValueKey('target-row'),
+            languages: [...selectedLangs, ...unselectedLangs],
+            selectedCodes: selected.toSet(),
             onTap: (code) => notifier.toggleTarget(code),
+            onReorder: (oldIdx, newIdx) {
+              // فقط اگر هر دو آیتم در محدوده‌ی «انتخاب‌شده‌ها» باشند،
+              // ترتیب targets را عوض می‌کنیم.
+              if (oldIdx < selected.length && newIdx <= selected.length) {
+                notifier.reorderTargets(oldIdx, newIdx);
+              } else {
+                // در غیر این صورت فقط ترتیب نمایش دایره‌ها را عوض کن.
+                final allLangs = [...selectedLangs, ...unselectedLangs]
+                    .map((l) => l.code)
+                    .toList();
+                ref.read(targetDisplayOrderProvider.notifier)
+                    .reorder(allLangs, oldIdx, newIdx);
+              }
+            },
           ),
 
-          // ══ ترتیب ترجمه‌ها (drag) ══
+          // ═══ ترتیب ترجمه‌ها (drag chips) ═══
           if (sel.targets.length > 1) ...[
             const SizedBox(height: 12),
             const _SectionLabel(
@@ -104,72 +148,56 @@ class _SectionLabel extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ردیف زبان مادری (تک‌انتخابی، ترتیب پیش‌فرض)
+// ردیف دایره‌های قابل‌کشیدن
 // ═══════════════════════════════════════════════════════════════════
-class _NativeRow extends StatelessWidget {
-  final String selectedCode;
-  final ValueChanged<String> onTap;
-
-  const _NativeRow({
-    required this.selectedCode,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    return SizedBox(
-      height: 56,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: kSupportedLanguages.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) {
-          final lang = kSupportedLanguages[i];
-          return _LangCircle(
-            code: lang.abbr,
-            active: lang.code == selectedCode,
-            c: c,
-            onTap: () => onTap(lang.code),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// ردیف زبان‌های مقصد (چند-انتخابی، هم‌ترتیب با چیپ‌ها)
-// ═══════════════════════════════════════════════════════════════════
-class _TargetsRow extends StatelessWidget {
+class _DraggableCircleRow extends StatelessWidget {
   final List<SupportedLanguage> languages;
   final Set<String> selectedCodes;
   final ValueChanged<String> onTap;
+  final void Function(int oldIndex, int newIndex) onReorder;
 
-  const _TargetsRow({
+  const _DraggableCircleRow({
+    super.key,
     required this.languages,
     required this.selectedCodes,
     required this.onTap,
+    required this.onReorder,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
+
     return SizedBox(
-      height: 56,
-      child: ListView.separated(
+      height: 60,
+      child: ReorderableListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         itemCount: languages.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) {
+        onReorder: onReorder,
+        buildDefaultDragHandles: false,
+        proxyDecorator: (child, index, animation) {
+          return Material(
+            color: Colors.transparent,
+            elevation: 8,
+            shape: const CircleBorder(),
+            child: child,
+          );
+        },
+        itemBuilder: (context, i) {
           final lang = languages[i];
-          return _LangCircle(
-            code: lang.abbr,
-            active: selectedCodes.contains(lang.code),
-            c: c,
-            onTap: () => onTap(lang.code),
+          final active = selectedCodes.contains(lang.code);
+
+          return Padding(
+            key: ValueKey('circle-${lang.code}'),
+            padding: const EdgeInsetsDirectional.only(end: 10),
+            child: _DraggableCircle(
+              index: i,
+              code: lang.abbr,
+              active: active,
+              c: c,
+              onTap: () => onTap(lang.code),
+            ),
           );
         },
       ),
@@ -177,14 +205,15 @@ class _TargetsRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-class _LangCircle extends StatelessWidget {
+class _DraggableCircle extends StatelessWidget {
+  final int index;
   final String code;
   final bool active;
   final dynamic c;
   final VoidCallback onTap;
 
-  const _LangCircle({
+  const _DraggableCircle({
+    required this.index,
     required this.code,
     required this.active,
     required this.c,
@@ -193,7 +222,7 @@ class _LangCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final circle = GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -227,6 +256,12 @@ class _LangCircle extends StatelessWidget {
           ),
         ),
       ),
+    );
+
+    // لمس طولانی → شروع drag، تپ سریع → toggle
+    return ReorderableDelayedDragStartListener(
+      index: index,
+      child: circle,
     );
   }
 }
