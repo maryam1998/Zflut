@@ -16,53 +16,66 @@ class LanguagePicker extends ConsumerWidget {
 
     return Container(
       color: c.headerFrom,
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── زبان مادری ──
-          _SectionLabel(text: 'زبان مادری', c: c),
-          const SizedBox(height: 8),
+          // ══ زبان مادری ══
+          const _SectionLabel(text: 'زبان مادری'),
+          const SizedBox(height: 6),
           _ChipRow(
-            languages: kSupportedLanguages,
-            selectedCode: sel.native,
-            c: c,
-            onSelected: (code) => notifier.setNative(code),
+            selectedCodes: {sel.native},
+            onTap: (code) => notifier.setNative(code),
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
-          // ── زبان مقصد ──
-          _SectionLabel(text: 'زبان مقصد', c: c),
-          const SizedBox(height: 8),
+          // ══ زبان‌های مقصد (چند-انتخابی) ══
+          const _SectionLabel(text: 'زبان‌های مقصد'),
+          const SizedBox(height: 6),
           _ChipRow(
-            languages: kSupportedLanguages,
-            selectedCode: sel.primaryTarget,
-            c: c,
-            onSelected: (code) => notifier.setPrimaryTarget(code),
+            selectedCodes: sel.targets.toSet(),
+            onTap: (code) => notifier.toggleTarget(code),
           ),
+
+          // ══ ترتیب ترجمه‌ها (drag) ══
+          if (sel.targets.length > 1) ...[
+            const SizedBox(height: 12),
+            const _SectionLabel(
+              text: 'ترتیب نمایش ترجمه‌ها (بکش تا جابجا بشه)',
+              small: true,
+            ),
+            const SizedBox(height: 6),
+            _ReorderableChips(
+              targets: sel.targets,
+              onReorder: notifier.reorderTargets,
+              onRemove: notifier.removeTarget,
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
 class _SectionLabel extends StatelessWidget {
   final String text;
-  final dynamic c;
-  const _SectionLabel({required this.text, required this.c});
+  final bool small;
+  const _SectionLabel({required this.text, this.small = false});
 
   @override
   Widget build(BuildContext context) {
+    final c = context.appColors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Align(
-        alignment: AlignmentDirectional.centerEnd,
+        alignment: AlignmentDirectional.centerStart,
         child: Text(
           text,
           style: TextStyle(
-            color: c.headerText.withOpacity(0.75),
-            fontSize: 12,
+            color: c.headerText.withOpacity(small ? 0.6 : 0.75),
+            fontSize: small ? 10.5 : 12,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -71,36 +84,36 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// ردیف دایره‌های زبان (تک یا چند-انتخابی)
+// ═══════════════════════════════════════════════════════════════════
 class _ChipRow extends StatelessWidget {
-  final List<SupportedLanguage> languages;
-  final String? selectedCode;
-  final dynamic c;
-  final ValueChanged<String> onSelected;
+  final Set<String> selectedCodes;
+  final ValueChanged<String> onTap;
 
   const _ChipRow({
-    required this.languages,
-    required this.selectedCode,
-    required this.c,
-    required this.onSelected,
+    required this.selectedCodes,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = context.appColors;
     return SizedBox(
       height: 56,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: languages.length,
+        itemCount: kSupportedLanguages.length,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
-          final lang = languages[i];
-          final active = lang.code == selectedCode;
+          final lang = kSupportedLanguages[i];
+          final active = selectedCodes.contains(lang.code);
           return _LangCircle(
             code: lang.abbr,
             active: active,
             c: c,
-            onTap: () => onSelected(lang.code),
+            onTap: () => onTap(lang.code),
           );
         },
       ),
@@ -131,13 +144,9 @@ class _LangCircle extends StatelessWidget {
         height: 48,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: active
-              ? c.gold
-              : c.headerText.withOpacity(0.04),
+          color: active ? c.gold : c.headerText.withOpacity(0.04),
           border: Border.all(
-            color: active
-                ? c.gold
-                : c.headerText.withOpacity(0.35),
+            color: active ? c.gold : c.headerText.withOpacity(0.35),
             width: active ? 2 : 1,
           ),
           boxShadow: active
@@ -160,6 +169,117 @@ class _LangCircle extends StatelessWidget {
             letterSpacing: 0.5,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// چیپ‌های ترتیب ترجمه‌ها (drag + X)
+// ═══════════════════════════════════════════════════════════════════
+class _ReorderableChips extends StatelessWidget {
+  final List<String> targets;
+  final void Function(int oldIndex, int newIndex) onReorder;
+  final void Function(String code) onRemove;
+
+  const _ReorderableChips({
+    required this.targets,
+    required this.onReorder,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: ReorderableListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: targets.length,
+        onReorder: onReorder,
+        buildDefaultDragHandles: false,
+        proxyDecorator: (child, index, animation) {
+          return Material(
+            color: Colors.transparent,
+            child: child,
+          );
+        },
+        itemBuilder: (context, index) {
+          final code = targets[index];
+          return Padding(
+            key: ValueKey('chip-$code'),
+            padding: const EdgeInsetsDirectional.only(end: 8),
+            child: _OrderChip(
+              index: index,
+              code: code,
+              onRemove: () => onRemove(code),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _OrderChip extends StatelessWidget {
+  final int index;
+  final String code;
+  final VoidCallback onRemove;
+
+  const _OrderChip({
+    required this.index,
+    required this.code,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: c.cardBorder, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // X برای حذف
+          GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: c.rose.withOpacity(0.12),
+              ),
+              alignment: Alignment.center,
+              child: Icon(Icons.close, size: 12, color: c.rose),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // نام زبان
+          Text(
+            langFaName(code),
+            style: TextStyle(
+              color: c.ink,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 6),
+          // دسته‌ی drag
+          ReorderableDragStartListener(
+            index: index,
+            child: Icon(
+              Icons.drag_indicator,
+              size: 16,
+              color: c.inkSoft.withOpacity(0.6),
+            ),
+          ),
+        ],
       ),
     );
   }
