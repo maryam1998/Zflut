@@ -31,6 +31,9 @@ class SpeechController extends StateNotifier<SpeechState> {
   int? _abChunkA;
   int? _abChunkB;
 
+  // شمارنده‌ی تکرار برای هر چانک — کلید: ایندکس چانک
+  final Map<int, int> _chunkRepeatsDone = {};
+
   Future<void> _initLocalTts() async {
     try {
       await _localTts.awaitSpeakCompletion(true);
@@ -73,6 +76,7 @@ class SpeechController extends StateNotifier<SpeechState> {
 
     _fullText = text;
     _chunks = SentenceSplitter.split(text);
+    _chunkRepeatsDone.clear();
     _currentKey = newKey;
     _currentCode = code;
 
@@ -102,6 +106,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     _fullText = '';
     _chunks = [];
     _chunkIndex = 0;
+    _chunkRepeatsDone.clear();
     _currentKey = null;
     _currentCode = null;
     _abState = 'idle';
@@ -115,6 +120,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     final clamped = idx.clamp(0, _chunks.length - 1);
     _generation++;
     await _stopAll();
+    _chunkRepeatsDone.remove(clamped);
     _chunkIndex = clamped;
     state = state.copyWith(chunkIndex: clamped, status: SpeechStatus.playing);
     unawaited(_playFrom(clamped));
@@ -148,10 +154,16 @@ class SpeechController extends StateNotifier<SpeechState> {
     } catch (_) {}
   }
 
+  /// چرخه‌ی تکرار:
+  /// 1 کلیک: 0 → 2 (هر جمله ۲ بار)
+  /// 2 کلیک: 2 → 3 (هر جمله ۳ بار)
+  /// 3 کلیک: 3 → -1 (بی‌نهایت)
+  /// 4 کلیک: -1 → 0 (خاموش)
   void cycleRepeat() {
     final order = [0, 2, 3, -1];
     final i = order.indexOf(state.globalRepeat);
-    state = state.copyWith(globalRepeat: order[(i + 1) % order.length]);
+    final next = order[(i + 1) % order.length];
+    state = state.copyWith(globalRepeat: next);
   }
 
   void markAB() {
@@ -206,6 +218,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   Future<void> _playFrom(int idx) async {
     if (_disposed) return;
     if (idx >= _chunks.length) {
+      // پایان متن
       if (state.globalRepeat == -1) {
         unawaited(_playFrom(0));
         return;
@@ -232,11 +245,7 @@ class SpeechController extends StateNotifier<SpeechState> {
 
     final code = _currentCode ?? 'en';
 
-    // ═══════════════════════════════════════════════════════════════
-    // زنجیره: Piper (Android) → Phone TTS → Edge (Worker)
-    // ═══════════════════════════════════════════════════════════════
-
-    // ۱. Piper نیتیو (اگه مدل نصب باشه)
+    // ۱. Piper نیتیو
     if (NativeTtsBridge.isAvailable) {
       final ready = await NativeTtsBridge.isModelReady(code);
       if (ready) {
@@ -251,7 +260,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       if (ok && myGen == _generation) return;
     }
 
-    // ۳. Edge TTS از Worker (همیشه کار می‌کنه)
+    // ۳. Edge TTS / Web Speech
     await _playOnline(idx, cleanText, code, myGen);
   }
 
@@ -309,7 +318,6 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
   }
 
-  /// روی وب: flutter_tts (Web Speech API)
   Future<bool> _playWebSpeech(
     int idx,
     String text,
@@ -341,13 +349,13 @@ class SpeechController extends StateNotifier<SpeechState> {
     String code,
     int myGen,
   ) async {
-    // قبل از آنلاین، flutter_tts رو امتحان کن (فقط روی وب)
+    // روی وب: اول flutter_tts
     if (!NativeTtsBridge.isAvailable) {
       final localOk = await _playWebSpeech(idx, text, code, myGen);
       if (localOk && myGen == _generation) return;
     }
 
-    // آنلاین: Edge TTS از Worker
+    // Edge TTS از Worker
     final voice = TtsConfig.edgeVoice[code] ?? 'en-US-AriaNeural';
     final url = '${TtsConfig.backendUrl}/api/tts'
         '?voice=${Uri.encodeComponent(voice)}'
@@ -384,10 +392,36 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // مکث + منطق تکرار
+  // ═══════════════════════════════════════════════════════════════
   Future<void> _gapThenNext(int idx, String text, int myGen) async {
     final gap = _gapMs(chunk: text, rate: state.rate);
     await Future.delayed(Duration(milliseconds: gap));
     if (myGen != _generation) return;
+
+    // ═══ A-B looping ═══
+    if (_abState == 'looping' && _abChunkB != null && idx == _abChunkB) {
+      final targetA = _abChunkA ?? 0;
+      _chunkRepeatsDone.remove(idx);
+      unawaited(_playFrom(targetA));
+      return;
+    }
+
+    // ═══ تکرار ═══
+    final target = state.globalRepeat; // 0=خاموش، 2، 3، -1=∞
+    if (target != 0) {
+      final done = _chunkRepeatsDone[idx] ?? 1;
+      final needRepeat = target == -1 ? true : done < target;
+      if (needRepeat) {
+        _chunkRepeatsDone[idx] = done + 1;
+        unawaited(_playFrom(idx));
+        return;
+      }
+    }
+
+    // تکرار تموم شد
+    _chunkRepeatsDone.remove(idx);
     unawaited(_playFrom(idx + 1));
   }
 
