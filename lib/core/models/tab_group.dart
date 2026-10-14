@@ -6,7 +6,7 @@ class TabGroup {
   final String labelKey;
   final IconData icon;
   final List<String> tabs;
-  final bool isAiPowered;   // 👈 جدید
+  final bool isAiPowered;
 
   const TabGroup({
     required this.key,
@@ -27,9 +27,9 @@ const List<TabGroup> kTabGroups = [
   TabGroup(
     key: 'story',
     labelKey: 'group_story',
-    icon: Icons.feather,              // 👈 بهتر از Sparkles
+    icon: Icons.feather,
     tabs: ['story', 'saved'],
-    isAiPowered: true,                // 👈 AI دارد
+    isAiPowered: true,
   ),
   TabGroup(
     key: 'words',
@@ -40,7 +40,14 @@ const List<TabGroup> kTabGroups = [
   TabGroup(
     key: 'practice',
     labelKey: 'group_practice',
-    icon: Icons.repeat,               // 👈 بهتر از Boxes
+    icon: Icons.repeat,
     tabs: ['review'],
   ),
 ];
+
+TabGroup groupOfTab(String tabKey) {
+  return kTabGroups.firstWhere(
+    (g) => g.tabs.contains(tabKey),
+    orElse: () => kTabGroups.first,
+  );
+}
