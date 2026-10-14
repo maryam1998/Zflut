@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants/app_font_sizes.dart';
 import '../../../core/constants/app_fonts.dart';
@@ -68,8 +67,6 @@ class SettingsSheet extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Drag handle
-// ═══════════════════════════════════════════════════════════════════
 class _DragHandle extends StatelessWidget {
   const _DragHandle();
 
@@ -89,8 +86,6 @@ class _DragHandle extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Section title
 // ═══════════════════════════════════════════════════════════════════
 class _SectionTitle extends StatelessWidget {
   final IconData? icon;
@@ -121,7 +116,7 @@ class _SectionTitle extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Account section — avatar + name + email + logout
+// Account — با پشتیبانی از مهمان (kSkipLogin)
 // ═══════════════════════════════════════════════════════════════════
 class _AccountSection extends ConsumerWidget {
   const _AccountSection();
@@ -129,11 +124,27 @@ class _AccountSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
-    final user = Supabase.instance.client.auth.currentUser;
-    final email = user?.email ?? 'مهمان';
-    final meta = user?.userMetadata;
-    final name = (meta?['name'] as String?) ??
-        email.split('@').first;
+
+    // دسترسی امن به Supabase — اگر init نشده باشد، null برمی‌گردد.
+    String displayName = 'مهمان';
+    String displayEmail = 'حساب متصل نیست';
+    bool isSignedIn = false;
+
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final user = repo.currentSession?.user;
+      if (user != null) {
+        isSignedIn = true;
+        displayEmail = user.email ?? '—';
+        final meta = user.userMetadata;
+        displayName = (meta?['name'] as String?) ??
+            (displayEmail.contains('@')
+                ? displayEmail.split('@').first
+                : displayEmail);
+      }
+    } catch (_) {
+      // Supabase init نشده — مهمان.
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +162,6 @@ class _AccountSection extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  // Avatar
                   Container(
                     width: 48,
                     height: 48,
@@ -165,7 +175,9 @@ class _AccountSection extends ConsumerWidget {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '؟',
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : '؟',
                       style: TextStyle(
                         color: c.headerText,
                         fontSize: 20,
@@ -179,7 +191,7 @@ class _AccountSection extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          name,
+                          displayName,
                           style: TextStyle(
                             color: c.ink,
                             fontSize: 15,
@@ -188,7 +200,7 @@ class _AccountSection extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          email,
+                          displayEmail,
                           style: TextStyle(
                             color: c.inkSoft,
                             fontSize: 12,
@@ -201,25 +213,32 @@ class _AccountSection extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              // Logout button
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await ref.read(authRepositoryProvider).signOut();
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                  icon: Icon(Icons.logout, size: 16, color: c.rose),
-                  label: Text(
-                    'خروج از حساب',
-                    style: TextStyle(color: c.rose, fontSize: 13),
+              if (isSignedIn)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      try {
+                        await ref.read(authRepositoryProvider).signOut();
+                      } catch (_) {}
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                    icon: Icon(Icons.logout, size: 16, color: c.rose),
+                    label: Text(
+                      'خروج از حساب',
+                      style: TextStyle(color: c.rose, fontSize: 13),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: c.rose.withOpacity(0.4)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: c.rose.withOpacity(0.4)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
+                )
+              else
+                Text(
+                  'برای ذخیره‌ی پیشرفت، وارد حساب شوید.',
+                  style: TextStyle(color: c.inkSoft, fontSize: 12),
                 ),
-              ),
             ],
           ),
         ),
@@ -228,8 +247,6 @@ class _AccountSection extends ConsumerWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Language section — dropdown
 // ═══════════════════════════════════════════════════════════════════
 class _LanguageSection extends ConsumerWidget {
   const _LanguageSection();
@@ -277,8 +294,6 @@ class _LanguageSection extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Theme section — 16 swatches
-// ═══════════════════════════════════════════════════════════════════
 class _ThemeSection extends ConsumerWidget {
   const _ThemeSection();
 
@@ -294,7 +309,6 @@ class _ThemeSection extends ConsumerWidget {
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
-            // 6 ستون در عرض
             const cols = 6;
             const spacing = 10.0;
             final size =
@@ -371,8 +385,6 @@ class _ThemeSwatch extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Font section — 6 fonts
-// ═══════════════════════════════════════════════════════════════════
 class _FontSection extends ConsumerWidget {
   const _FontSection();
 
@@ -404,8 +416,6 @@ class _FontSection extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Font size section — 4 sizes
-// ═══════════════════════════════════════════════════════════════════
 class _FontSizeSection extends ConsumerWidget {
   const _FontSizeSection();
 
@@ -436,8 +446,6 @@ class _FontSizeSection extends ConsumerWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Choice chip — used for fonts and sizes
 // ═══════════════════════════════════════════════════════════════════
 class _ChoiceChip extends StatelessWidget {
   final String label;
@@ -483,8 +491,6 @@ class _ChoiceChip extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Target text section — slider for size + bold options
-// ═══════════════════════════════════════════════════════════════════
 class _TargetTextSection extends ConsumerWidget {
   const _TargetTextSection();
 
@@ -502,8 +508,6 @@ class _TargetTextSection extends ConsumerWidget {
           label: 'اندازه‌ی فونت زبان‌های مقصد',
         ),
         const SizedBox(height: 12),
-
-        // Slider row: − [slider] + [value]
         Row(
           children: [
             IconButton(
@@ -553,8 +557,6 @@ class _TargetTextSection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-
-        // Bold options
         const _SectionTitle(label: 'بولد شدن متن زبان مقصد'),
         const SizedBox(height: 12),
         Wrap(
@@ -615,8 +617,6 @@ class _BoldChip extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Footer
 // ═══════════════════════════════════════════════════════════════════
 class _FooterVersion extends StatelessWidget {
   const _FooterVersion();
