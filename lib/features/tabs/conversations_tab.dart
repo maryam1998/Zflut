@@ -8,6 +8,93 @@ import '../../core/providers/speech_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 
+// ═══════════════════════════════════════════════════════════════════
+// نگاشتِ موضوع → آیکون
+// ═══════════════════════════════════════════════════════════════════
+IconData iconForTopic(String topic) {
+  final t = topic.toLowerCase();
+
+  // روزمره
+  if (t.contains('greetings')) return Icons.waving_hand_outlined;
+  if (t.contains('introducing people')) return Icons.person_add_outlined;
+  if (t.contains('visiting an old friend')) return Icons.home_outlined;
+  if (t.contains('getting acquainted')) return Icons.question_answer_outlined;
+  if (t.contains('accepting or refusing')) return Icons.mark_email_read_outlined;
+  if (t.contains('invitations')) return Icons.mail_outline;
+  if (t.contains('saying goodbye')) return Icons.door_front_door_outlined;
+  if (t.contains('telephone')) return Icons.phone_outlined;
+  if (t.contains('transportation')) return Icons.directions_bus_outlined;
+  if (t.contains('gas station')) return Icons.local_gas_station_outlined;
+  if (t.contains('weather')) return Icons.cloud_outlined;
+  if (t.contains('restaurant') || t.contains('café') || t.contains('cafe')) return Icons.restaurant_outlined;
+  if (t.contains('shopping (clothes')) return Icons.shopping_bag_outlined;
+  if (t.contains('at a hotel')) return Icons.hotel_outlined;
+  if (t.contains('health and doctor')) return Icons.medical_services_outlined;
+  if (t.contains('directions') || t.contains('landmarks')) return Icons.explore_outlined;
+  if (t.contains('plans and free time') || t.contains('hobbies')) return Icons.palette_outlined;
+  if (t.contains('work and workplace')) return Icons.work_outline;
+  if (t.contains('time and appointments')) return Icons.schedule_outlined;
+  if (t.contains('expressing opinions')) return Icons.favorite_border;
+  if (t.contains('asking for help')) return Icons.help_outline;
+  if (t.contains('politeness and compliments')) return Icons.auto_awesome_outlined;
+  if (t.contains('travel and experiences')) return Icons.flight_outlined;
+  if (t.contains('apologies and forgiveness')) return Icons.handshake_outlined;
+  if (t.contains('family and cultural')) return Icons.groups_outlined;
+  if (t.contains('sports and fitness')) return Icons.fitness_center_outlined;
+  if (t.contains('technology and communication')) return Icons.laptop_outlined;
+  if (t.contains('holidays and celebrations')) return Icons.celebration_outlined;
+  if (t.contains('pets and animals')) return Icons.pets_outlined;
+  if (t.contains('learning a language')) return Icons.translate_outlined;
+  if (t.contains('emergency')) return Icons.emergency_outlined;
+  if (t.contains('city attractions')) return Icons.location_city_outlined;
+  if (t.contains('schools and education')) return Icons.school_outlined;
+  if (t.contains('money and expenses')) return Icons.account_balance_wallet_outlined;
+  if (t.contains('books and reading')) return Icons.menu_book_outlined;
+  if (t.contains('environment and nature')) return Icons.eco_outlined;
+  if (t.contains('cooking and recipes')) return Icons.restaurant_menu_outlined;
+  if (t.contains('movies and tv')) return Icons.movie_outlined;
+  if (t == 'music' || t.contains('|music|')) return Icons.music_note_outlined;
+  if (t.contains('banking and financial')) return Icons.account_balance_outlined;
+  if (t.contains('post office')) return Icons.local_post_office_outlined;
+  if (t.contains('neighbors and community')) return Icons.diversity_3_outlined;
+  if (t.contains('future plans and dreams')) return Icons.auto_awesome_outlined;
+  if (t.contains('memories and past')) return Icons.history_outlined;
+
+  // موضوعی (فارسی)
+  if (topic.contains('طبیعت')) return Icons.park_outlined;
+  if (topic.contains('احساسات')) return Icons.mood_outlined;
+  if (topic.contains('مذهب')) return Icons.menu_book_outlined;
+  if (topic.contains('خرید')) return Icons.storefront_outlined;
+  if (topic.contains('علوم')) return Icons.science_outlined;
+  if (topic.contains('مسائل اجتماعی')) return Icons.public_outlined;
+  if (topic.contains('فناوری')) return Icons.memory_outlined;
+  if (topic.contains('سفر و گردشگری')) return Icons.flight_takeoff_outlined;
+  if (topic.contains('غذا و آشپزی')) return Icons.soup_kitchen_outlined;
+  if (topic.contains('جنگ')) return Icons.shield_outlined;
+  if (topic.contains('شغل')) return Icons.work_outline;
+  if (topic.contains('شخصیت')) return Icons.fingerprint;
+  if (topic.contains('بدن انسان')) return Icons.favorite_outline;
+  if (topic.contains('کسب و کار')) return Icons.trending_up;
+  if (topic.contains('لباس و مد')) return Icons.checkroom_outlined;
+  if (topic.contains('جرم و قانون')) return Icons.gavel_outlined;
+  if (topic.contains('فرهنگ')) return Icons.temple_buddhist_outlined;
+  if (topic.contains('آموزش و تحصیل')) return Icons.school_outlined;
+  if (topic.contains('رسانه')) return Icons.newspaper_outlined;
+  if (topic.contains('حیوانات')) return Icons.pets_outlined;
+  if (topic.contains('خانه')) return Icons.home_outlined;
+
+  // پیش‌فرض
+  return Icons.chat_bubble_outline;
+}
+
+// رنگ‌های دایره‌ی آیکون — ۴ رنگ ملایم که بین کارت‌ها می‌چرخه
+const List<Color> _badgeColors = [
+  Color(0xFFEAF4F1), // سبز آبی
+  Color(0xFFFBF0DA), // کرم
+  Color(0xFFF3ECFB), // بنفش ملایم
+  Color(0xFFFBE9E4), // صورتی-نارنجی ملایم
+];
+
 class ConversationsTab extends ConsumerStatefulWidget {
   const ConversationsTab({super.key});
 
@@ -18,14 +105,11 @@ class ConversationsTab extends ConsumerStatefulWidget {
 class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   String? _activeTopic;
   int? _openScenario;
-  String _levelFilter = 'all';
   String _query = '';
 
-  // بازه نمایش
   int _rangeFrom = 1;
   int _rangeTo = 60;
 
-  // خوانده‌شده
   final Set<String> _topicRead = {};
   final Set<String> _scenarioRead = {};
 
@@ -36,17 +120,13 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 
     if (topics.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Text(
-            'داده‌ای بارگذاری نشد',
-            style: TextStyle(color: c.inkSoft, fontSize: 15),
-          ),
+        child: Text(
+          'داده‌ای بارگذاری نشد',
+          style: TextStyle(color: c.inkSoft, fontSize: 15),
         ),
       );
     }
 
-    // فیلتر سرچ
     final filtered = topics.where((t) {
       if (_query.trim().isEmpty) return true;
       final q = _query.trim().toLowerCase();
@@ -69,8 +149,6 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // صفحه‌ی شبکه‌ی موضوعات
-  // ═══════════════════════════════════════════════════════════════════
   Widget _buildTopicsGrid(BuildContext context, List<ConversationTopic> topics) {
     final c = context.appColors;
     final total = topics.length;
@@ -84,18 +162,17 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       );
     }
 
-    // تنظیم محدوده
     final from = _rangeFrom.clamp(1, total);
     final to = _rangeTo.clamp(from, total);
     final visible = topics.sublist(from - 1, to);
 
-    final readInRange = visible.where((t) => _topicRead.contains(t.topic)).length;
+    final readInRange =
+        visible.where((t) => _topicRead.contains(t.topic)).length;
     final readTotal = topics.where((t) => _topicRead.contains(t.topic)).length;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 90),
       children: [
-        // ═══ کارت بازه + پیشرفت ═══
         _RangeCard(
           from: from,
           to: to,
@@ -119,10 +196,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             });
           },
         ),
-
         const SizedBox(height: 14),
-
-        // ═══ شبکه‌ی موضوعات ═══
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -130,7 +204,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             crossAxisCount: 3,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
-            childAspectRatio: 0.95,
+            // نسبت ارتفاع/عرض ثابت → اندازه‌ی همه یکسان
+            childAspectRatio: 0.85,
           ),
           itemCount: visible.length,
           itemBuilder: (_, i) {
@@ -138,6 +213,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             final isRead = _topicRead.contains(topic.topic);
             return _TopicCard(
               topic: topic,
+              icon: iconForTopic(topic.topic),
+              badgeColor: _badgeColors[i % _badgeColors.length],
               isRead: isRead,
               onTap: () => setState(() {
                 _activeTopic = topic.topic;
@@ -158,15 +235,12 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // صفحه‌ی سناریوهای یک موضوع
-  // ═══════════════════════════════════════════════════════════════════
   Widget _buildTopicView(BuildContext context, ConversationTopic topic) {
     final c = context.appColors;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 90),
       children: [
-        // ═══ دکمه‌ی بازگشت ═══
         InkWell(
           onTap: () => setState(() {
             _activeTopic = null;
@@ -191,11 +265,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           ),
         ),
         const SizedBox(height: 8),
-
-        // ═══ هدر موضوع ═══
         Row(
           children: [
-            Icon(Icons.chat_bubble_outline, size: 22, color: c.teal),
+            Icon(iconForTopic(topic.topic), size: 22, color: c.teal),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -210,8 +282,6 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           ],
         ),
         const SizedBox(height: 12),
-
-        // ═══ سناریوها ═══
         ...List.generate(topic.scenarios.length, (i) {
           final sc = topic.scenarios[i];
           final isOpen = _openScenario == i;
@@ -237,7 +307,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// کارت بازه + پیشرفت
+// کارت بازه
 // ═══════════════════════════════════════════════════════════════════
 class _RangeCard extends StatefulWidget {
   final int from;
@@ -313,7 +383,6 @@ class _RangeCardState extends State<_RangeCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ردیف بازه
           Row(
             children: [
               _NumberField(
@@ -326,7 +395,9 @@ class _RangeCardState extends State<_RangeCard> {
                 },
               ),
               const SizedBox(width: 8),
-              Text('تا', style: TextStyle(color: c.teal, fontSize: 14, fontWeight: FontWeight.w700)),
+              Text('تا',
+                  style: TextStyle(
+                      color: c.teal, fontSize: 14, fontWeight: FontWeight.w700)),
               const SizedBox(width: 8),
               _NumberField(
                 controller: _toCtrl,
@@ -348,10 +419,7 @@ class _RangeCardState extends State<_RangeCard> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          // نوار پیشرفت
           ClipRRect(
             borderRadius: BorderRadius.circular(99),
             child: LinearProgressIndicator(
@@ -361,23 +429,17 @@ class _RangeCardState extends State<_RangeCard> {
               valueColor: AlwaysStoppedAnimation(c.teal),
             ),
           ),
-
           const SizedBox(height: 12),
-
-          // متن پیشرفت
           Text(
             'خوانده‌شده: ${widget.readTotal} از ${widget.total} • ${widget.readInRange} از ${widget.to - widget.from + 1} در این بازه',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: const Color(0xFF2E7D6C),
+            style: const TextStyle(
+              color: Color(0xFF2E7D6C),
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
             ),
           ),
-
           const SizedBox(height: 12),
-
-          // دکمه‌ها
           Row(
             children: [
               Expanded(
@@ -392,7 +454,7 @@ class _RangeCardState extends State<_RangeCard> {
                     'علامت‌گذاری همه به خوانده‌شده',
                     style: TextStyle(
                       color: c.teal,
-                      fontSize: 11.5,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -411,7 +473,7 @@ class _RangeCardState extends State<_RangeCard> {
                     'پاک کردن علامت این بازه',
                     style: TextStyle(
                       color: c.teal,
-                      fontSize: 11.5,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -448,7 +510,8 @@ class _NumberField extends StatelessWidget {
         ),
         decoration: InputDecoration(
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
             borderSide: BorderSide(color: c.cardBorder),
@@ -468,16 +531,20 @@ class _NumberField extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// کارت موضوع
+// کارت موضوع — آیکون اختصاصی، اندازه‌ی ثابت
 // ═══════════════════════════════════════════════════════════════════
 class _TopicCard extends StatelessWidget {
   final ConversationTopic topic;
+  final IconData icon;
+  final Color badgeColor;
   final bool isRead;
   final VoidCallback onTap;
   final VoidCallback onToggleRead;
 
   const _TopicCard({
     required this.topic,
+    required this.icon,
+    required this.badgeColor,
     required this.isRead,
     required this.onTap,
     required this.onToggleRead,
@@ -491,55 +558,62 @@ class _TopicCard extends StatelessWidget {
       onTap: onTap,
       child: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isRead ? const Color(0xFFF8F2DE) : Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isRead ? const Color(0xFFE3D2A2) : c.cardBorder,
-                width: 1,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 6),
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isRead
-                        ? Colors.white.withOpacity(0.7)
-                        : const Color(0xFFEAF4F1),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.chat_bubble_outline,
-                    size: 22,
-                    color: isRead ? const Color(0xFF2E7D6C) : c.teal,
-                  ),
+          // بدنه کارت — کل ارتفاع رو پر می‌کنه
+          Positioned.fill(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(6, 22, 6, 8),
+              decoration: BoxDecoration(
+                color: isRead ? const Color(0xFFF8F2DE) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isRead ? const Color(0xFFE3D2A2) : c.cardBorder,
+                  width: 1,
                 ),
-                const SizedBox(height: 8),
-                Flexible(
-                  child: Text(
-                    topic.topic,
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: c.ink,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      height: 1.3,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // دایره آیکون
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isRead
+                          ? Colors.white.withOpacity(0.7)
+                          : badgeColor,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      icon,
+                      size: 24,
+                      color: isRead ? const Color(0xFF2E7D6C) : c.teal,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  // عنوان — همیشه ۲ خط رزرو می‌کنه برای یکسانی اندازه
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Text(
+                        topic.topic,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: c.ink,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          // دایره‌ی خوانده‌شده — بالا-راست
+          // دایره‌ی خوانده‌شده — گوشه بالا-راست
           Positioned(
             top: 4,
             right: 4,
@@ -560,8 +634,7 @@ class _TopicCard extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: isRead
-                    ? const Icon(Icons.check,
-                        size: 11, color: Colors.white)
+                    ? const Icon(Icons.check, size: 11, color: Colors.white)
                     : null,
               ),
             ),
@@ -573,7 +646,7 @@ class _TopicCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// کارت سناریو
+// کارت سناریو (بدون تغییر)
 // ═══════════════════════════════════════════════════════════════════
 class _ScenarioCard extends StatelessWidget {
   final ConversationScenario scenario;
@@ -605,7 +678,6 @@ class _ScenarioCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // هدر سناریو
           InkWell(
             onTap: onToggle,
             borderRadius: BorderRadius.circular(14),
@@ -613,7 +685,6 @@ class _ScenarioCard extends StatelessWidget {
               padding: const EdgeInsets.all(13),
               child: Row(
                 children: [
-                  // چک‌باکس خوانده‌شده
                   GestureDetector(
                     onTap: onToggleRead,
                     child: Container(
@@ -675,27 +746,20 @@ class _ScenarioCard extends StatelessWidget {
               ),
             ),
           ),
-
-          // محتوای سناریو
           if (isOpen) ...[
             const Divider(height: 1),
-
-            // speakerA
             if (scenario.speakerA.isNotEmpty)
               _SpeakerBox(
                 title: 'می‌شنوی',
                 color: c.teal,
                 lines: scenario.speakerA,
               ),
-
-            // speakerB
             if (scenario.speakerB.isNotEmpty)
               _SpeakerBox(
                 title: 'می‌گی',
                 color: c.gold,
                 lines: scenario.speakerB,
               ),
-
             const SizedBox(height: 10),
           ],
         ],
@@ -704,8 +768,6 @@ class _ScenarioCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// بخش speaker (می‌شنوی / می‌گی)
 // ═══════════════════════════════════════════════════════════════════
 class _SpeakerBox extends ConsumerWidget {
   final String title;
@@ -757,8 +819,6 @@ class _SpeakerBox extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ردیف خط مکالمه — با آیکون صدا وصل
-// ═══════════════════════════════════════════════════════════════════
 class _LineRow extends ConsumerWidget {
   final ConversationLine line;
   const _LineRow({required this.line});
@@ -769,7 +829,6 @@ class _LineRow extends ConsumerWidget {
     final ctrl = ref.read(speechControllerProvider.notifier);
     final sel = ref.watch(languageSelectionProvider);
 
-    // زبان‌های نمایش
     final langsToShow = <String>[
       if (sel.native != 'en') sel.native,
       ...sel.targets.where((t) => t != 'en'),
@@ -786,14 +845,13 @@ class _LineRow extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // متن انگلیسی — LTR
           Directionality(
             textDirection: TextDirection.ltr,
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 5, vertical: 1.5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                   decoration: BoxDecoration(
                     color: c.paperDark,
                     borderRadius: BorderRadius.circular(5),
@@ -821,7 +879,6 @@ class _LineRow extends ConsumerWidget {
                     textAlign: TextAlign.left,
                   ),
                 ),
-                // 🔊 — آیکون صدا وصل
                 InkWell(
                   onTap: () => ctrl.toggle(line.en, 'en'),
                   borderRadius: BorderRadius.circular(20),
@@ -837,8 +894,6 @@ class _LineRow extends ConsumerWidget {
               ],
             ),
           ),
-
-          // ترجمه‌ها
           ...langsToShow.map((code) {
             final knownText = code == 'fa' ? line.fa : null;
             return _TranslationLine(
@@ -853,8 +908,6 @@ class _LineRow extends ConsumerWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// ردیف ترجمه — با 🔊 وصل
 // ═══════════════════════════════════════════════════════════════════
 class _TranslationLine extends ConsumerWidget {
   final String en;
@@ -872,12 +925,10 @@ class _TranslationLine extends ConsumerWidget {
     final c = context.appColors;
     final ctrl = ref.read(speechControllerProvider.notifier);
 
-    // فارسی — از دیتا
     if (knownText != null && knownText!.isNotEmpty) {
       return _build(c, ctrl, knownText!);
     }
 
-    // بقیه — از provider
     final async = ref.watch(
       translationProvider(
           (text: en, to: langCode, from: 'en', verify: false)),
