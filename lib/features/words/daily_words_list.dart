@@ -21,16 +21,13 @@ class DailyWordsList extends ConsumerWidget {
 
     // زبان‌هایی که برای هر لغت باید ترجمه نشون داده بشه:
     //   زبان مادری (اگر en نباشه) + همه‌ی زبان‌های مقصد (بدون en خودش)
-    final langsToShow = <String>{
+    final langsToShow = <String>[
       if (sel.native != 'en') sel.native,
       ...sel.targets.where((t) => t != 'en'),
-    }.toList();
+    ];
 
     return CustomScrollView(
-      // ⚠️ از PrimaryScrollController استفاده می‌کنه تا با NestedScrollView
-      // در AppShell هماهنگ بشه
       slivers: [
-        // FilterBar بالای محتوا — با لیست اسکرول می‌شه
         const SliverToBoxAdapter(
           child: FilterBar(
             searchHint: 'جستجوی لغت...',
@@ -38,8 +35,6 @@ class DailyWordsList extends ConsumerWidget {
             showSort: true,
           ),
         ),
-
-        // محتوا: لیست یا empty state
         if (words.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
@@ -53,19 +48,14 @@ class DailyWordsList extends ConsumerWidget {
                 langsToShow: langsToShow,
               ),
               childCount: words.length,
-              addAutomaticKeepAlives: false,
-              addRepaintBoundaries: true,
             ),
           ),
-
-        // فاصله‌ی پایین — پلیر روی محتوا نره
         const SliverToBoxAdapter(child: SizedBox(height: 110)),
       ],
     );
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
 class _EmptyState extends StatelessWidget {
   final dynamic c;
   final bool hasData;
@@ -112,9 +102,6 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// کارت لغت — با ترجمه‌ی همه‌ی زبان‌ها
-// ═══════════════════════════════════════════════════════════════════
 class _WordCard extends StatelessWidget {
   final DailyWord word;
   final List<String> langsToShow;
@@ -149,7 +136,6 @@ class _WordCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Level badge
               Container(
                 width: 40,
                 height: 40,
@@ -179,10 +165,8 @@ class _WordCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // POS badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                 decoration: BoxDecoration(
                   color: c.paperDark,
                   borderRadius: BorderRadius.circular(6),
@@ -198,8 +182,6 @@ class _WordCard extends StatelessWidget {
               ),
             ],
           ),
-
-          // ترجمه‌ها برای هر زبان
           if (langsToShow.isNotEmpty) ...[
             const SizedBox(height: 8),
             ...langsToShow.map(
@@ -250,9 +232,6 @@ class _WordCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// ردیف ترجمه — async، با کش
-// ═══════════════════════════════════════════════════════════════════
 class _TranslationRow extends ConsumerWidget {
   final String en;
   final String knownFa;
@@ -268,12 +247,15 @@ class _TranslationRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
 
-    // فارسی — از قبل در دیتا داریم، بدون درخواست شبکه
+    // فارسی — از دیتای JSON
     if (langCode == 'fa' && knownFa.isNotEmpty) {
       return _row(context, c, knownFa);
     }
 
-    final async = ref.watch(translationProvider((text: en, to: langCode)));
+    final async = ref.watch(
+      translationProvider((text: en, to: langCode, from: 'en')),
+    );
+
     return async.when(
       loading: () => _row(context, c, '…', loading: true),
       error: (_, __) => const SizedBox.shrink(),
