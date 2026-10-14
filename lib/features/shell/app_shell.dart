@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/config/app_config.dart';
 import '../../core/models/tab_group.dart';
 import '../../core/theme/app_theme_colors.dart';
 import 'widgets/header_tabs.dart';
+import 'widgets/settings_sheet.dart';
 import 'widgets/sub_tabs_row.dart';
 
-/// قالب اصلیِ بعد از ورود — معادلِ PhrasebookMain.
-/// فقط ساختار هدر + ردیف زیرتب‌ها + محتوای تب جاری.
-/// پلیر پایین، ماسکات، انتخاب متن، و بقیه‌ی موارد سراسری در فازهای بعدی.
 class AppShell extends ConsumerStatefulWidget {
   final Widget child;
   const AppShell({super.key, required this.child});
@@ -20,15 +17,13 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  // گروه فعال از URL جاری استنباط می‌شود.
   String _activeGroupKey = kTabGroups.first.key;
 
   @override
   Widget build(BuildContext context) {
     final loc = GoRouterState.of(context).matchedLocation;
-    final tabKey = _normalize(loc.replaceFirst('/', ''));
+    final tabKey = loc.replaceFirst('/', '').replaceAll('-', '');
 
-    // گروه جاری از tabKey.
     final currentGroup = kTabGroups.firstWhere(
       (g) => g.tabs.any((t) => _normalize(t) == tabKey),
       orElse: () => kTabGroups.first,
@@ -44,38 +39,35 @@ class _AppShellState extends ConsumerState<AppShell> {
           HeaderTabs(
             activeGroupKey: _activeGroupKey,
             onGroupSelected: (group) {
-              // اولین تبِ گروه را باز می‌کنیم.
-              final firstTab = group.tabs.first;
-              context.go(_routeOf(firstTab));
+              context.go(_routeOf(group.tabs.first));
             },
+            onSettingsTap: () => SettingsSheet.show(context),
           ),
           if (currentGroup.tabs.length > 1)
             SubTabsRow(
               group: currentGroup,
-              activeTabKey: currentGroup.tabs.firstWhere(
-                (t) => _normalize(t) == tabKey,
-                orElse: () => currentGroup.tabs.first,
-              ),
+              activeTabKey: _normalize(tabKey),
               onTabSelected: (tab) => context.go(_routeOf(tab)),
             ),
-          Expanded(child: widget.child),
-          if (kSkipLogin)
-            Container(
-              width: double.infinity,
-              color: c.paperDark,
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(
-                '$kBuildStamp · login skipped (dev)',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 10, color: c.inkSoft),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+              child: KeyedSubtree(
+                key: ValueKey(tabKey),
+                child: widget.child,
               ),
             ),
+          ),
         ],
       ),
     );
   }
 
-  static String _normalize(String key) => key.replaceAll('-', '').toLowerCase();
+  static String _normalize(String key) => key.replaceAll('-', '');
 
   String _routeOf(String tabKey) {
     switch (tabKey) {
