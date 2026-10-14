@@ -5,8 +5,8 @@ import '../../core/models/daily_word.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/words_filter_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../shell/widgets/filter_bar.dart';
 
-/// Sliver (نه ویجت اسکرول‌دار) تا داخل CustomScrollViewِ تب قرار بگیرد.
 class DailyWordsList extends ConsumerWidget {
   const DailyWordsList({super.key});
 
@@ -16,62 +16,94 @@ class DailyWordsList extends ConsumerWidget {
     final words = ref.watch(filteredDailyWordsProvider);
     final all = ref.watch(allDailyWordsProvider);
 
-    if (words.isEmpty) {
-      return SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: c.gold.withOpacity(0.10),
-                  border: Border.all(color: c.gold.withOpacity(0.3), width: 1.5),
-                ),
-                child: Icon(Icons.search_off, size: 30, color: c.gold),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                all.isEmpty ? 'داده‌ای بارگذاری نشد' : 'چیزی پیدا نشد',
-                style: TextStyle(
-                  color: c.ink,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                all.isEmpty
-                    ? 'فایل daily_words.json را چک کن.'
-                    : 'فیلتر سطح یا جستجو را تغییر بده.',
-                style: TextStyle(color: c.inkSoft, fontSize: 12),
-              ),
-            ],
+    // ═══════════════════════════════════════════════════════════════
+    // یک CustomScrollView که هم FilterBar هم لیست رو با هم اسکرول می‌کنه.
+    // این ساختار با NestedScrollView که در AppShell است درست کار می‌کنه.
+    // ═══════════════════════════════════════════════════════════════
+    return CustomScrollView(
+      // از primary استفاده می‌کنیم تا NestedScrollView هماهنگی داشته باشه
+      slivers: [
+        // FilterBar — با محتوا اسکرول می‌شه
+        const SliverToBoxAdapter(
+          child: FilterBar(
+            searchHint: 'جستجوی لغت...',
+            showLevels: true,
+            showSort: true,
           ),
         ),
-      ));
-    }
 
-    return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(10, 4, 10, 12),
-      sliver: SliverFixedExtentList(
-        itemExtent: 66, // ارتفاع ثابت = سرعت بالاتر
-        delegate: SliverChildBuilderDelegate(
-          (_, i) => _WordCard(word: words[i]),
-          childCount: words.length,
-          addAutomaticKeepAlives: false,
-          addRepaintBoundaries: true,
+        if (words.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: _EmptyState(
+              c: c,
+              hasData: all.isNotEmpty,
+            ),
+          )
+        else
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, i) => _WordCard(word: words[i]),
+              childCount: words.length,
+            ),
+          ),
+
+        // پایین‌ترین فاصله — تا آخرین کارت زیر پلیر پنهان نشه
+        const SliverToBoxAdapter(child: SizedBox(height: 90)),
+      ],
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final dynamic c;
+  final bool hasData;
+  const _EmptyState({required this.c, required this.hasData});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: c.gold.withOpacity(0.10),
+                border: Border.all(color: c.gold.withOpacity(0.3), width: 1.5),
+              ),
+              child: Icon(Icons.search_off, size: 32, color: c.gold),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              hasData ? 'چیزی پیدا نشد' : 'داده‌ای بارگذاری نشد',
+              style: TextStyle(
+                color: c.ink,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              hasData
+                  ? 'فیلتر سطح یا جستجو را تغییر بده.'
+                  : 'فایل daily_words.json را چک کن.',
+              style: TextStyle(color: c.inkSoft, fontSize: 13),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// کارت لغت — سایز متعادل (نه بزرگ قبلی، نه ریز آخری)
+// ═══════════════════════════════════════════════════════════════════
 class _WordCard extends StatelessWidget {
   final DailyWord word;
   const _WordCard({required this.word});
@@ -82,36 +114,43 @@ class _WordCard extends StatelessWidget {
     final levelColor = _levelColor(word.level);
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c.cardBorder, width: 0.8),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: c.cardBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: c.ink.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          // سطح — کوچیک‌تر
+          // Level badge — متعادل: 40px
           Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: levelColor.withOpacity(0.14),
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.center,
             child: Text(
               word.level,
               style: TextStyle(
                 color: levelColor,
-                fontSize: 10.5,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w800,
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
 
-          // کلمه + معنی
+          // Word + meaning
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +160,7 @@ class _WordCard extends StatelessWidget {
                   word.en,
                   style: TextStyle(
                     color: c.ink,
-                    fontSize: 14.5,
+                    fontSize: 15.5,
                     fontWeight: FontWeight.w700,
                     height: 1.15,
                   ),
@@ -131,7 +170,7 @@ class _WordCard extends StatelessWidget {
                   word.fa,
                   style: TextStyle(
                     color: c.inkSoft,
-                    fontSize: 12,
+                    fontSize: 13,
                     height: 1.2,
                   ),
                 ),
@@ -139,18 +178,18 @@ class _WordCard extends StatelessWidget {
             ),
           ),
 
-          // POS — کوچیک
+          // POS badge — متعادل
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
             decoration: BoxDecoration(
               color: c.paperDark,
-              borderRadius: BorderRadius.circular(5),
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               _posFa(word.pos),
               style: TextStyle(
                 color: c.inkSoft,
-                fontSize: 9.5,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
               ),
             ),
