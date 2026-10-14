@@ -8,21 +8,18 @@ class WordsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Filter + List رو در یک CustomScrollView می‌گذاریم
-    // تا وقتی کاربر لیست رو می‌کشه، Search هم باهاش بره بالا.
-    return CustomScrollView(
+    // یک CustomScrollView واحد (داخل NestedScrollViewِ شل):
+    // فیلتر + لیست با هم اسکرول می‌شوند، و هدر اپ هم با همین اسکرول بالا می‌رود.
+    return const CustomScrollView(
       slivers: [
-        const SliverToBoxAdapter(
+        SliverToBoxAdapter(
           child: FilterBar(
             searchHint: 'جستجوی لغت...',
             showLevels: true,
             showSort: true,
           ),
         ),
-        const SliverFillRemaining(
-          hasScrollBody: true,
-          child: DailyWordsList(),
-        ),
+        DailyWordsList(),
       ],
     );
   }

@@ -57,21 +57,29 @@ Widget _errorBuilder(BuildContext _, GoRouterState state) => Scaffold(
       body: Center(child: Text('Route not found: ${state.uri}')),
     );
 
+/// تب‌ها بدون انیمیشنِ صفحه: چون همه‌ی تب‌ها داخل یک NestedScrollView با
+/// یک PrimaryScrollController هستند و نباید هم‌زمان دو صفحه زنده باشند.
+GoRoute _tab(String path, Widget Function() build) => GoRoute(
+      path: path,
+      pageBuilder: (_, state) =>
+          NoTransitionPage<void>(key: state.pageKey, child: build()),
+    );
+
 final List<RouteBase> _routes = [
   GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
   ShellRoute(
     builder: (context, state, child) => AppShell(child: child),
     routes: [
-      GoRoute(path: '/conversations', builder: (_, __) => const ConversationsTab()),
-      GoRoute(path: '/story',         builder: (_, __) => const StoryTab()),
-      GoRoute(path: '/saved',         builder: (_, __) => const SavedTab()),
-      GoRoute(path: '/grammar',       builder: (_, __) => const GrammarTab()),
-      GoRoute(path: '/speaking',      builder: (_, __) => const SpeakingTab()),
-      GoRoute(path: '/words',         builder: (_, __) => const WordsTab()),
-      GoRoute(path: '/vocab-in-use',  builder: (_, __) => const VocabInUseTab()),
-      GoRoute(path: '/slang',         builder: (_, __) => const SlangTab()),
-      GoRoute(path: '/favorites',     builder: (_, __) => const FavoritesTab()),
-      GoRoute(path: '/review',        builder: (_, __) => const ReviewTab()),
+      _tab('/conversations', () => const ConversationsTab()),
+      _tab('/story', () => const StoryTab()),
+      _tab('/saved', () => const SavedTab()),
+      _tab('/grammar', () => const GrammarTab()),
+      _tab('/speaking', () => const SpeakingTab()),
+      _tab('/words', () => const WordsTab()),
+      _tab('/vocab-in-use', () => const VocabInUseTab()),
+      _tab('/slang', () => const SlangTab()),
+      _tab('/favorites', () => const FavoritesTab()),
+      _tab('/review', () => const ReviewTab()),
     ],
   ),
 ];

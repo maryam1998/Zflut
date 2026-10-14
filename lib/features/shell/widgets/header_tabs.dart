@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../app.dart';
 import '../../../core/models/tab_group.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/theme/screen_scale.dart';
 
+/// چهار تبِ اصلی — هم‌عرض، کل عرض صفحه را پر می‌کنند (مثل اسکرین‌شات).
 class HeaderTabs extends StatelessWidget {
   final String activeGroupKey;
   final void Function(TabGroup) onGroupSelected;
@@ -21,29 +23,29 @@ class HeaderTabs extends StatelessWidget {
     final L = context.l10n;
     final c = context.appColors;
 
-    return Container(
-      color: c.headerFrom,
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: SizedBox(
-        height: 48,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          itemCount: kTabGroups.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (_, i) {
-            final group = kTabGroups[i];
-            final active = group.key == activeGroupKey;
-            return _HeaderChip(
-              icon: group.icon,
-              label: _labelFor(L, group.labelKey),
-              active: active,
-              isAi: group.isAiPowered,
-              c: c,
-              onTap: () => onGroupSelected(group),
-            );
-          },
+    final children = <Widget>[];
+    for (var i = 0; i < kTabGroups.length; i++) {
+      final group = kTabGroups[i];
+      if (i > 0) children.add(SizedBox(width: context.px(13)));
+      children.add(
+        Expanded(
+          child: _HeaderChip(
+            // تب‌های هوش مصنوعی آیکن ستاره‌ای می‌گیرند (به‌جای بج AI)
+            icon: group.isAiPowered ? Icons.auto_awesome : group.icon,
+            label: _labelFor(L, group.labelKey),
+            active: group.key == activeGroupKey,
+            c: c,
+            onTap: () => onGroupSelected(group),
+          ),
         ),
+      );
+    }
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: context.px(34)),
+      child: SizedBox(
+        height: context.px(92),
+        child: Row(children: children),
       ),
     );
   }
@@ -63,7 +65,6 @@ class _HeaderChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool active;
-  final bool isAi;
   final dynamic c;
   final VoidCallback onTap;
 
@@ -71,89 +72,42 @@ class _HeaderChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.active,
-    required this.isAi,
     required this.c,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color fg = active ? c.headerText as Color : c.ink as Color;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: context.px(14)),
         decoration: BoxDecoration(
-          color: active ? c.gold : c.headerText.withOpacity(0.08),
+          // فعال: تیره (headerTo)، غیرفعال: کرمِ تیره (paperDark)
+          color: active ? c.headerTo as Color : c.paperDark as Color,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: active
-                ? c.gold
-                : c.headerText.withOpacity(0.20),
-            width: 1,
-          ),
-          boxShadow: active
-              ? [
-                  BoxShadow(
-                    color: c.gold.withOpacity(0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: active ? c.headerTo : c.headerText,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: active ? c.headerTo : c.headerText,
-                fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                fontSize: 13,
+        alignment: Alignment.center,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: context.px(40), color: fg),
+              SizedBox(width: context.px(12)),
+              Text(
+                label,
+                maxLines: 1,
+                style: TextStyle(
+                  color: fg,
+                  fontWeight: active ? FontWeight.w800 : FontWeight.w700,
+                  fontSize: context.px(31),
+                ),
               ),
-            ),
-            if (isAi) ...[
-              const SizedBox(width: 6),
-              _AiDot(active: active, c: c),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AiDot extends StatelessWidget {
-  final bool active;
-  final dynamic c;
-  const _AiDot({required this.active, required this.c});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: active
-              ? [const Color(0xFF8B7CF6), const Color(0xFF6366F1)]
-              : [const Color(0xFFA78BFA), const Color(0xFF818CF8)],
-        ),
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: const Text(
-        'AI',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 8,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.4,
+          ),
         ),
       ),
     );

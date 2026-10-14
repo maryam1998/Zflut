@@ -6,6 +6,7 @@ import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/words_filter_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 
+/// Sliver (نه ویجت اسکرول‌دار) تا داخل CustomScrollViewِ تب قرار بگیرد.
 class DailyWordsList extends ConsumerWidget {
   const DailyWordsList({super.key});
 
@@ -16,7 +17,9 @@ class DailyWordsList extends ConsumerWidget {
     final all = ref.watch(allDailyWordsProvider);
 
     if (words.isEmpty) {
-      return Center(
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
@@ -51,16 +54,20 @@ class DailyWordsList extends ConsumerWidget {
             ],
           ),
         ),
-      );
+      ));
     }
 
-    return ListView.builder(
+    return SliverPadding(
       padding: const EdgeInsets.fromLTRB(10, 4, 10, 12),
-      itemCount: words.length,
-      addAutomaticKeepAlives: false,
-      addRepaintBoundaries: true,
-      itemExtent: 66, // ← ارتفاع ثابت = سرعت بالاتر
-      itemBuilder: (_, i) => _WordCard(word: words[i]),
+      sliver: SliverFixedExtentList(
+        itemExtent: 66, // ارتفاع ثابت = سرعت بالاتر
+        delegate: SliverChildBuilderDelegate(
+          (_, i) => _WordCard(word: words[i]),
+          childCount: words.length,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: true,
+        ),
+      ),
     );
   }
 }

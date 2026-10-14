@@ -57,7 +57,8 @@ class PlaceholderTab extends StatelessWidget {
           ),
 
           // محتوای اصلی
-          Center(
+          Align(
+            alignment: Alignment.topCenter,
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
               child: Column(

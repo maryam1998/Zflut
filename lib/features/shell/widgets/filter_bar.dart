@@ -5,6 +5,7 @@ import '../../../core/constants/cefr_levels.dart';
 import '../../../core/models/filter_state.dart';
 import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/theme/screen_scale.dart';
 
 class FilterBar extends ConsumerStatefulWidget {
   final String searchHint;
@@ -47,7 +48,12 @@ class _FilterBarState extends ConsumerState<FilterBar> {
 
     return Container(
       color: c.paper,
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+      padding: EdgeInsets.fromLTRB(
+        context.px(34),
+        context.px(26),
+        context.px(34),
+        context.px(30),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -57,7 +63,7 @@ class _FilterBarState extends ConsumerState<FilterBar> {
               c: c,
               onSelect: notifier.setLevel,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: context.px(34)),
           ],
           if (widget.showSort) ...[
             _SortRow(
@@ -65,7 +71,7 @@ class _FilterBarState extends ConsumerState<FilterBar> {
               c: c,
               onSelect: notifier.setSort,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: context.px(27)),
           ],
           _SearchField(
             controller: _searchCtrl,
@@ -94,11 +100,11 @@ class _LevelRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final levels = ['all', ...kCefrLevels];
     return SizedBox(
-      height: 36,
+      height: context.px(81),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: levels.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        separatorBuilder: (_, __) => SizedBox(width: context.px(20)),
         itemBuilder: (_, i) {
           final lvl = levels[i];
           final active = lvl == selected;
@@ -108,23 +114,18 @@ class _LevelRow extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               padding: EdgeInsets.symmetric(
-                horizontal: lvl == 'all' ? 14 : 12,
-                vertical: 8,
+                horizontal: context.px(lvl == 'all' ? 36 : 28),
               ),
               decoration: BoxDecoration(
-                color: active ? c.headerFrom : Colors.transparent,
+                color: active ? c.headerTo as Color : Colors.white,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: active ? c.headerFrom : c.cardBorder,
-                  width: 1,
-                ),
               ),
               alignment: Alignment.center,
               child: Text(
                 label,
                 style: TextStyle(
-                  color: active ? c.headerText : c.inkSoft,
-                  fontSize: 12,
+                  color: active ? c.headerText as Color : c.ink as Color,
+                  fontSize: context.px(30),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -150,7 +151,7 @@ class _SortRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: AlignmentDirectional.centerEnd,
+      alignment: AlignmentDirectional.centerStart,
       child: PopupMenuButton<SortMode>(
         initialValue: current,
         onSelected: onSelect,
@@ -176,27 +177,26 @@ class _SortRow extends StatelessWidget {
           );
         }).toList(),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          height: context.px(56),
+          padding: EdgeInsets.symmetric(horizontal: context.px(28)),
           decoration: BoxDecoration(
-            color: c.paperDark.withOpacity(0.5),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: c.cardBorder),
+            border: Border.all(color: c.cardBorder, width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.sort, size: 14, color: c.inkSoft),
-              const SizedBox(width: 5),
+              Icon(Icons.swap_vert, size: context.px(30), color: c.ink),
+              SizedBox(width: context.px(10)),
               Text(
                 'مرتب‌سازی: ${current.faLabel}',
                 style: TextStyle(
                   color: c.ink,
-                  fontSize: 11,
+                  fontSize: context.px(27),
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 3),
-              Icon(Icons.keyboard_arrow_down, size: 14, color: c.inkSoft),
             ],
           ),
         ),
@@ -221,24 +221,32 @@ class _SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 44,
+      height: context.px(97),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c.cardBorder, width: 1),
+        borderRadius: BorderRadius.circular(context.px(48)),
+        border: Border.all(color: c.cardBorder.withOpacity(0.7), width: 1),
       ),
+      alignment: Alignment.center,
       child: TextField(
         controller: controller,
         onChanged: onChanged,
-        textAlign: TextAlign.right,
-        style: TextStyle(color: c.ink, fontSize: 13.5),
+        textAlign: TextAlign.start,
+        style: TextStyle(color: c.ink, fontSize: context.px(30)),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: c.inkSoft.withOpacity(0.6), fontSize: 13.5),
-          prefixIcon: Icon(Icons.search, color: c.inkSoft, size: 19),
+          hintStyle: TextStyle(
+            color: c.inkSoft.withOpacity(0.6),
+            fontSize: context.px(30),
+          ),
+          prefixIcon: Icon(Icons.search, color: c.ink, size: context.px(42)),
+          prefixIconConstraints: BoxConstraints(
+            minWidth: context.px(100),
+            minHeight: context.px(60),
+          ),
           border: InputBorder.none,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          isCollapsed: true,
+          contentPadding: EdgeInsets.zero,
         ),
       ),
     );

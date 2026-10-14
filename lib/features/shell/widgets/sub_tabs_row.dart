@@ -4,6 +4,7 @@ import '../../../app.dart';
 import '../../../core/models/tab_group.dart';
 import '../../../core/models/tab_meta.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/theme/screen_scale.dart';
 
 class SubTabsRow extends StatelessWidget {
   final TabGroup group;
@@ -23,18 +24,18 @@ class SubTabsRow extends StatelessWidget {
     final c = context.appColors;
 
     return Container(
-      decoration: BoxDecoration(
-        color: c.paperDark,
-        border: Border(
-          bottom: BorderSide(color: c.cardBorder, width: 1),
-        ),
-      ),
-      height: 48,
+      color: c.paperDark,
+      height: context.px(140),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: EdgeInsetsDirectional.fromSTEB(
+          context.px(34),
+          context.px(26),
+          context.px(17),
+          context.px(26),
+        ),
         itemCount: group.tabs.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => SizedBox(width: context.px(17)),
         itemBuilder: (_, i) {
           final key = group.tabs[i];
           final meta = kTabMeta[key]!;
@@ -88,24 +89,21 @@ class _SubChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color ink = c.ink as Color;
+    final Color fg = active ? c.headerText as Color : ink;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       decoration: BoxDecoration(
-        color: active ? c.paper : Colors.transparent,
+        color: active
+            ? c.headerTo as Color
+            : (c.paper as Color).withOpacity(0.55),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: active ? c.gold.withOpacity(0.55) : Colors.transparent,
-          width: 1.2,
+          color: active
+              ? c.headerTo as Color
+              : (c.cardBorder as Color).withOpacity(0.7),
+          width: context.px(2),
         ),
-        boxShadow: active
-            ? [
-                BoxShadow(
-                  color: c.gold.withOpacity(0.15),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -113,42 +111,38 @@ class _SubChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: EdgeInsets.symmetric(horizontal: context.px(34)),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  size: 15,
-                  color: active ? c.gold : c.inkSoft,
-                ),
-                const SizedBox(width: 6),
+                Icon(icon, size: context.px(38), color: fg),
+                SizedBox(width: context.px(14)),
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 13,
-                    color: active ? c.ink : c.inkSoft,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: context.px(31),
+                    color: fg,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w600,
                   ),
                 ),
                 if (isAi) ...[
-                  const SizedBox(width: 5),
+                  SizedBox(width: context.px(10)),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 1.5,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: context.px(10),
+                      vertical: context.px(3),
                     ),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFF8B7CF6), Color(0xFF6366F1)],
                       ),
-                      borderRadius: BorderRadius.circular(5),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
+                    child: Text(
                       'AI',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 8,
+                        fontSize: context.px(18),
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.4,
                       ),
