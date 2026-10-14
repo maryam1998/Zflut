@@ -3,8 +3,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'core/constants/app_fonts.dart';
 import 'core/constants/app_font_sizes.dart';
+import 'core/constants/app_fonts.dart';
+import 'core/constants/app_themes.dart';
 import 'core/providers/app_prefs_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/theme_builder.dart';
@@ -33,7 +34,6 @@ class LingoLearnApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      // جهت اپ بر اساس زبان رابط تعیین می‌شود (fa/ar = rtl).
       builder: (context, child) {
         final locale = Localizations.localeOf(context).languageCode;
         final dir = (locale == 'fa' || locale == 'ar')
@@ -42,7 +42,6 @@ class LingoLearnApp extends ConsumerWidget {
         return Directionality(
           textDirection: dir,
           child: MediaQuery(
-            // جایگزین CSS zoom در نسخه‌ی وب.
             data: MediaQuery.of(context).copyWith(
               textScaler: TextScaler.linear(sizePreset.scale),
             ),
@@ -55,7 +54,6 @@ class LingoLearnApp extends ConsumerWidget {
   }
 }
 
-// دسترسی راحت به AppLocalizations بدون !، فقط برای خوانایی.
 extension AppL10nX on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 }
