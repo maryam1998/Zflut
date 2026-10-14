@@ -36,8 +36,8 @@ class _AppShellState extends ConsumerState<AppShell> {
     final hasSubtabs = currentGroup.tabs.length > 1;
     final hasChips = sel.targets.length > 1;
 
-    // ارتفاع هدر (برای SliverAppBar)
-    final contentHeight = 56.0 +
+    // ارتفاع کل هدر (برای SliverAppBar)
+    final headerHeight = 56.0 +
         168.0 +
         (hasChips ? 66.0 : 0.0) +
         60.0 +
@@ -53,8 +53,8 @@ class _AppShellState extends ConsumerState<AppShell> {
               snap: true,
               pinned: false,
               automaticallyImplyLeading: false,
-              expandedHeight: contentHeight,
-              toolbarHeight: contentHeight,
+              expandedHeight: headerHeight,
+              toolbarHeight: headerHeight,
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
               shadowColor: Colors.transparent,
@@ -65,15 +65,15 @@ class _AppShellState extends ConsumerState<AppShell> {
                 background: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // ═══ هدر حساب (تنظیمات راست، نام چپ) ═══
+                    // هدر حساب — تنظیمات سمت راست، نام و آواتار سمت چپ
                     AccountHeader(
                       onMenuTap: () => SettingsSheet.show(context),
                       onAvatarTap: () => SettingsSheet.show(context),
                       userName: null,
                     ),
-                    // ═══ انتخابگر زبان ═══
+                    // انتخابگر زبان (مادری + مقصدها)
                     const LanguagePicker(),
-                    // ═══ گروه‌های تب ═══
+                    // گروه‌های اصلی (Talk / Story / Words / Practice)
                     HeaderTabs(
                       activeGroupKey: currentGroup.key,
                       onGroupSelected: (group) {
@@ -81,7 +81,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                       },
                       onSettingsTap: () => SettingsSheet.show(context),
                     ),
-                    // ═══ زیرتب‌ها ═══
+                    // زیرتب‌های گروه فعال (فقط اگه بیش از یکی باشه)
                     if (hasSubtabs)
                       SubTabsRow(
                         group: currentGroup,
@@ -106,7 +106,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           ),
         ),
       ),
-      // ═══ پلیر پایین صفحه ═══
+      // پلیر پایین صفحه — ثابت در همه‌ی تب‌ها
       bottomNavigationBar: const PlayerBar(),
     );
   }
