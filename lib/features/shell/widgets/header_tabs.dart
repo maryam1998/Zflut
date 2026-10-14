@@ -40,6 +40,7 @@ class HeaderTabs extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
+            // ردیف بالا: تنظیمات + لوگو
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
               child: Row(
@@ -47,6 +48,7 @@ class HeaderTabs extends StatelessWidget {
                   IconButton(
                     onPressed: onSettingsTap,
                     icon: Icon(Icons.settings_outlined, color: c.headerText),
+                    tooltip: 'Settings',
                   ),
                   const Spacer(),
                   Row(
@@ -84,6 +86,8 @@ class HeaderTabs extends StatelessWidget {
                 ],
               ),
             ),
+
+            // ردیف پایین: گروه‌ها + AI badge
             SizedBox(
               height: 52,
               child: ListView.separated(
@@ -98,8 +102,8 @@ class HeaderTabs extends StatelessWidget {
                     icon: group.icon,
                     label: _labelFor(L, group.labelKey),
                     active: active,
-                    headerText: c.headerText,
                     isAi: group.isAiPowered,
+                    headerText: c.headerText,
                     onTap: () => onGroupSelected(group),
                   );
                 },
@@ -194,7 +198,7 @@ class _HeaderChip extends StatelessWidget {
   }
 }
 
-/// نشان کوچک AI با گرادیانت بنفش-آبی (رنگ استاندارد AI).
+/// نشان کوچک AI با گرادیانت بنفش-آبی.
 class _AiBadge extends StatelessWidget {
   final bool active;
   const _AiBadge({required this.active});
@@ -226,9 +230,9 @@ class _AiBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.auto_awesome, size: 9, color: Colors.white),
+          const Icon(Icons.auto_awesome, size: 9, color: Colors.white),
           const SizedBox(width: 2),
-          Text(
+          const Text(
             'AI',
             style: TextStyle(
               color: Colors.white,
