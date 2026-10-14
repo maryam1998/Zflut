@@ -25,7 +25,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   Widget build(BuildContext context) {
     final loc = GoRouterState.of(context).matchedLocation;
-    final tabKey = loc.replaceFirst('/', '').replaceAll('-', '');
+    final tabKey = _normalize(loc.replaceFirst('/', ''));
 
     // گروه جاری از tabKey.
     final currentGroup = kTabGroups.firstWhere(
@@ -51,7 +51,10 @@ class _AppShellState extends ConsumerState<AppShell> {
           if (currentGroup.tabs.length > 1)
             SubTabsRow(
               group: currentGroup,
-              activeTabKey: _normalize(tabKey),
+              activeTabKey: currentGroup.tabs.firstWhere(
+                (t) => _normalize(t) == tabKey,
+                orElse: () => currentGroup.tabs.first,
+              ),
               onTabSelected: (tab) => context.go(_routeOf(tab)),
             ),
           Expanded(child: widget.child),
@@ -60,7 +63,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
   }
 
-  static String _normalize(String key) => key.replaceAll('-', '');
+  static String _normalize(String key) => key.replaceAll('-', '').toLowerCase();
 
   String _routeOf(String tabKey) {
     switch (tabKey) {

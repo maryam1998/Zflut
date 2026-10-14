@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// لایه‌ی نازک روی Supabase Auth — معادلِ LoginScreen + supabaseClient.
@@ -30,12 +31,23 @@ class AuthRepository {
 
   Future<void> signOut() => _client.auth.signOut();
 
-  /// ورود گوگل — در وب از OAuth redirect؛ در اندروید از deep-link
-  /// com.linglearn.app://login-callback (پیاده‌سازی نیتیو در فاز ۶).
+  /// ورود گوگل — در وب به همین صفحه (بدون hash/query) برمی‌گردد؛
+  /// در اندروید با deep-link com.linglearn.app://login-callback.
   Future<bool> signInWithGoogle() async {
     return _client.auth.signInWithOAuth(
       OAuthProvider.google,
-      redirectTo: 'com.linglearn.app://login-callback',
+      redirectTo: kIsWeb ? _webRedirectUrl() : 'com.linglearn.app://login-callback',
     );
+  }
+
+  static String _webRedirectUrl() {
+    final b = Uri.base;
+    final path = b.path.endsWith('/') ? b.path : '${b.path}/';
+    return Uri(
+      scheme: b.scheme,
+      host: b.host,
+      port: b.hasPort ? b.port : null,
+      path: path,
+    ).toString();
   }
 }

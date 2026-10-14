@@ -12,8 +12,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="LingoLearn">
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="favicon.png">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
   <title>LingoLearn</title>
   <style>
     html, body {
@@ -27,10 +25,22 @@
       position: fixed;
       inset: 0;
       display: flex;
+      flex-direction: column;
+      gap: 16px;
       align-items: center;
       justify-content: center;
       background: #EFE6C9;
       z-index: 9999;
+    }
+    #loading pre {
+      display: none;
+      max-width: 90%;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #9E3B3B;
+      font-size: 12px;
+      direction: ltr;
     }
     #loading .spinner {
       width: 48px;
@@ -46,9 +56,27 @@
   </style>
 </head>
 <body>
-  <div id="loading"><div class="spinner"></div></div>
+  <div id="loading"><div class="spinner"></div><pre id="boot-error"></pre></div>
   <script src="flutter_bootstrap.js" async></script>
   <script>
+    // اگر برنامه بالا نیامد، به‌جای صفحه‌ی خالی، دلیلش را روی صفحه نشان بده.
+    function showBootError(msg) {
+      var pre = document.getElementById('boot-error');
+      if (!pre) return;
+      pre.style.display = 'block';
+      pre.textContent += msg + '\n';
+    }
+    window.addEventListener('error', function (e) {
+      showBootError('JS error: ' + (e.message || e) + (e.filename ? ' @ ' + e.filename : ''));
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      showBootError('Promise error: ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+    });
+    setTimeout(function () {
+      if (document.getElementById('loading')) {
+        showBootError('App did not start after 20s. Check network access to www.gstatic.com / fonts.gstatic.com (VPN/filter?) and the browser console.');
+      }
+    }, 20000);
     window.addEventListener('flutter-first-frame', function () {
       var el = document.getElementById('loading');
       if (el) el.remove();

@@ -20,12 +20,17 @@ import '../../features/tabs/words_tab.dart';
 /// روتر — معادلِ تصمیم App.jsx بین LoginScreen و PhrasebookMain.
 /// redirect بر اساس سشن Supabase.
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  // GoRouter فقط یک‌بار ساخته می‌شود؛ تغییر سشن از طریق refreshListenable
+  // redirect را دوباره اجرا می‌کند (قبلاً با هر تغییر، روتر از نو ساخته می‌شد).
+  final refresh = ValueNotifier<int>(0);
+  ref.listen(authStateProvider, (_, __) => refresh.value++);
+  ref.onDispose(refresh.dispose);
 
   return GoRouter(
     initialLocation: '/story',
+    refreshListenable: refresh,
     redirect: (context, state) {
-      final loggedIn = authState.valueOrNull?.session != null;
+      final loggedIn = ref.read(authRepositoryProvider).currentSession != null;
       final goingToLogin = state.matchedLocation == '/login';
       if (!loggedIn) return goingToLogin ? null : '/login';
       if (goingToLogin) return '/story';
