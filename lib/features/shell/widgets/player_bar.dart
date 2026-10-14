@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/scroll/global_scroll.dart';
 import '../../../core/providers/speech_provider.dart';
+import '../../../core/scroll/global_scroll.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/tts/speech_state.dart';
 
@@ -104,7 +104,7 @@ class PlayerBar extends ConsumerWidget {
                     onTap: ctrl.toggleMuted,
                   ),
 
-                  // 🔁 تکرار — 1 کلیک=2x، 2 کلیک=3x، 3 کلیک=∞، 4 کلیک=خاموش
+                  // 🔁 تکرار
                   _IconBtn(
                     icon: Icons.repeat,
                     color: state.globalRepeat != 0 ? c.gold : c.inkSoft,
@@ -116,7 +116,7 @@ class PlayerBar extends ConsumerWidget {
                             : '${state.globalRepeat}'),
                   ),
 
-                  // A-B — بازه‌ی تکرار
+                  // A-B
                   _ABBtn(
                     isActive: isActive,
                     abState: state.abState,
@@ -161,21 +161,11 @@ class PlayerBar extends ConsumerWidget {
                     onTap: () => _showSpeedSheet(context, ref),
                   ),
 
-                  // ↻ رفتن به بالای صفحه (scroll to top)
+                  // ↻ رفتن به بالای صفحه
                   _IconBtn(
                     icon: Icons.vertical_align_top_rounded,
                     color: c.gold,
-                    onTap: () {
-                      // اسکرول همه‌ی Scrollable‌های فعال به بالا
-                      final scrollables = Scrollable.of(context);
-                      if (scrollables != null) {
-                        scrollables.position.animateTo(
-                          0,
-                          duration: const Duration(milliseconds: 400),
-                          curve: Curves.easeOutCubic,
-                        );
-                      }
-                    },
+                    onTap: () => GlobalScroll.toTop(),
                   ),
                 ],
               ),
