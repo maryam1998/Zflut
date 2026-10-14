@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
-import '_placeholder_tab.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class FavoritesTab extends StatelessWidget {
+import '../../core/providers/conversation_provider.dart';
+import '../../core/providers/words_filter_provider.dart';
+import '../words/widgets/word_list_view.dart';
+
+class FavoritesTab extends ConsumerWidget {
   const FavoritesTab({super.key});
 
   @override
-  Widget build(BuildContext context) => const PlaceholderTab(
-        icon: Icons.favorite_outline,
-        title: 'منتخب‌ها',
-        subtitle:
-            'لغات و عبارت‌هایی که با ⭐ علامت زدی،\nهمه‌شون اینجا جمع می‌شن.',
-        previewChips: ['لغات', 'عبارات', 'داستان‌ها'],
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final words = ref.watch(filteredDailyWordsProvider);
+    final all = ref.watch(allDailyWordsProvider);
+    return WordListView(
+      words: words,
+      hasAnyData: all.isNotEmpty,
+    );
+  }
 }
