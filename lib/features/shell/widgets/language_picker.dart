@@ -14,6 +14,24 @@ class LanguagePicker extends ConsumerWidget {
     final sel = ref.watch(languageSelectionProvider);
     final notifier = ref.read(languageSelectionProvider.notifier);
 
+    // ═══════════════════════════════════════════════════════════════
+    // زبان‌های مقصد — هم‌ترتیب با چیپ‌ها.
+    // اول زبان‌های انتخاب‌شده به ترتیب targets، بعد بقیه به ترتیب پیش‌فرض.
+    // یعنی وقتی کاربر چیپ‌ها را جابجا می‌کند، دایره‌ها هم خودکار جابجا می‌شوند.
+    // ═══════════════════════════════════════════════════════════════
+    final orderedTargets = <SupportedLanguage>[];
+    for (final code in sel.targets) {
+      final lang = kSupportedLanguages
+          .where((l) => l.code == code)
+          .cast<SupportedLanguage?>()
+          .firstWhere((l) => l != null, orElse: () => null);
+      if (lang != null) orderedTargets.add(lang);
+    }
+    final unselectedTargets = kSupportedLanguages
+        .where((l) => !sel.targets.contains(l.code))
+        .toList();
+    final allTargetsInOrder = [...orderedTargets, ...unselectedTargets];
+
     return Container(
       color: c.headerFrom,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -23,17 +41,18 @@ class LanguagePicker extends ConsumerWidget {
           // ══ زبان مادری ══
           const _SectionLabel(text: 'زبان مادری'),
           const SizedBox(height: 6),
-          _ChipRow(
-            selectedCodes: {sel.native},
+          _NativeRow(
+            selectedCode: sel.native,
             onTap: (code) => notifier.setNative(code),
           ),
 
           const SizedBox(height: 10),
 
-          // ══ زبان‌های مقصد (چند-انتخابی) ══
+          // ══ زبان‌های مقصد (چند-انتخابی، هم‌ترتیب با چیپ‌ها) ══
           const _SectionLabel(text: 'زبان‌های مقصد'),
           const SizedBox(height: 6),
-          _ChipRow(
+          _TargetsRow(
+            languages: allTargetsInOrder,
             selectedCodes: sel.targets.toSet(),
             onTap: (code) => notifier.toggleTarget(code),
           ),
@@ -85,14 +104,14 @@ class _SectionLabel extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ردیف دایره‌های زبان (تک یا چند-انتخابی)
+// ردیف زبان مادری (تک‌انتخابی، ترتیب پیش‌فرض)
 // ═══════════════════════════════════════════════════════════════════
-class _ChipRow extends StatelessWidget {
-  final Set<String> selectedCodes;
+class _NativeRow extends StatelessWidget {
+  final String selectedCode;
   final ValueChanged<String> onTap;
 
-  const _ChipRow({
-    required this.selectedCodes,
+  const _NativeRow({
+    required this.selectedCode,
     required this.onTap,
   });
 
@@ -108,10 +127,9 @@ class _ChipRow extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
           final lang = kSupportedLanguages[i];
-          final active = selectedCodes.contains(lang.code);
           return _LangCircle(
             code: lang.abbr,
-            active: active,
+            active: lang.code == selectedCode,
             c: c,
             onTap: () => onTap(lang.code),
           );
@@ -121,6 +139,45 @@ class _ChipRow extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// ردیف زبان‌های مقصد (چند-انتخابی، هم‌ترتیب با چیپ‌ها)
+// ═══════════════════════════════════════════════════════════════════
+class _TargetsRow extends StatelessWidget {
+  final List<SupportedLanguage> languages;
+  final Set<String> selectedCodes;
+  final ValueChanged<String> onTap;
+
+  const _TargetsRow({
+    required this.languages,
+    required this.selectedCodes,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return SizedBox(
+      height: 56,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: languages.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) {
+          final lang = languages[i];
+          return _LangCircle(
+            code: lang.abbr,
+            active: selectedCodes.contains(lang.code),
+            c: c,
+            onTap: () => onTap(lang.code),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
 class _LangCircle extends StatelessWidget {
   final String code;
   final bool active;
@@ -139,7 +196,7 @@ class _LangCircle extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 200),
         width: 48,
         height: 48,
         decoration: BoxDecoration(
@@ -191,7 +248,7 @@ class _ReorderableChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 40,
+      height: 42,
       child: ReorderableListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -201,6 +258,8 @@ class _ReorderableChips extends StatelessWidget {
         proxyDecorator: (child, index, animation) {
           return Material(
             color: Colors.transparent,
+            elevation: 4,
+            borderRadius: BorderRadius.circular(999),
             child: child,
           );
         },
@@ -245,7 +304,6 @@ class _OrderChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // X برای حذف
           GestureDetector(
             onTap: onRemove,
             child: Container(
@@ -260,7 +318,6 @@ class _OrderChip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          // نام زبان
           Text(
             langFaName(code),
             style: TextStyle(
@@ -270,7 +327,6 @@ class _OrderChip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          // دسته‌ی drag
           ReorderableDragStartListener(
             index: index,
             child: Icon(
