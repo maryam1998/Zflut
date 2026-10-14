@@ -27,7 +27,7 @@ const List<TabMeta> kTabMetaList = [
   TabMeta(
     key: 'story',
     labelKey: 'tab_story',
-    icon: Icons.feather,
+    icon: Icons.auto_stories,
     route: '/story',
     isAiPowered: true,
   ),
@@ -40,7 +40,7 @@ const List<TabMeta> kTabMetaList = [
   TabMeta(
     key: 'grammar',
     labelKey: 'tab_grammar',
-    icon: Icons.pilcrow,
+    icon: Icons.text_format,
     route: '/grammar',
     isAiPowered: true,
   ),
