@@ -40,28 +40,31 @@ class HeaderTabs extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            // ── ردیف بالایی: لوگو + عنوان + تنظیمات ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: onSettingsTap,
                     icon: Icon(Icons.settings_outlined, color: c.headerText),
-                    tooltip: 'Settings',
                   ),
                   const Spacer(),
                   Row(
                     children: [
                       Container(
-                        width: 28,
-                        height: 28,
+                        width: 30,
+                        height: 30,
                         decoration: BoxDecoration(
-                          color: c.headerText.withOpacity(0.15),
+                          gradient: LinearGradient(
+                            colors: [
+                              c.headerText.withOpacity(0.25),
+                              c.headerText.withOpacity(0.10),
+                            ],
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
-                          Icons.translate,
+                          Icons.translate_rounded,
                           size: 18,
                           color: c.headerText,
                         ),
@@ -71,9 +74,9 @@ class HeaderTabs extends StatelessWidget {
                         'LingoLearn',
                         style: TextStyle(
                           color: c.headerText,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.4,
                         ),
                       ),
                     ],
@@ -81,8 +84,6 @@ class HeaderTabs extends StatelessWidget {
                 ],
               ),
             ),
-
-            // ── ردیف پایینی: گروه‌ها ──
             SizedBox(
               height: 52,
               child: ListView.separated(
@@ -98,6 +99,7 @@ class HeaderTabs extends StatelessWidget {
                     label: _labelFor(L, group.labelKey),
                     active: active,
                     headerText: c.headerText,
+                    isAi: group.isAiPowered,
                     onTap: () => onGroupSelected(group),
                   );
                 },
@@ -124,6 +126,7 @@ class _HeaderChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool active;
+  final bool isAi;
   final Color headerText;
   final VoidCallback onTap;
 
@@ -131,6 +134,7 @@ class _HeaderChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.active,
+    required this.isAi,
     required this.headerText,
     required this.onTap,
   });
@@ -141,16 +145,21 @@ class _HeaderChip extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOut,
       decoration: BoxDecoration(
-        color: active
-            ? Colors.white.withOpacity(0.20)
-            : Colors.transparent,
+        color: active ? Colors.white.withOpacity(0.22) : Colors.transparent,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: active
-              ? Colors.white.withOpacity(0.35)
-              : Colors.transparent,
+          color: active ? Colors.white.withOpacity(0.45) : Colors.transparent,
           width: 1,
         ),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -158,23 +167,77 @@ class _HeaderChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 18, color: headerText),
+                Icon(icon, size: 17, color: headerText),
                 const SizedBox(width: 6),
                 Text(
                   label,
                   style: TextStyle(
                     color: headerText,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w500,
                     fontSize: 14,
                   ),
                 ),
+                if (isAi) ...[
+                  const SizedBox(width: 6),
+                  _AiBadge(active: active),
+                ],
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// نشان کوچک AI با گرادیانت بنفش-آبی (رنگ استاندارد AI).
+class _AiBadge extends StatelessWidget {
+  final bool active;
+  const _AiBadge({required this.active});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: active
+              ? [const Color(0xFF8B7CF6), const Color(0xFF6366F1)]
+              : [
+                  Colors.white.withOpacity(0.30),
+                  Colors.white.withOpacity(0.15),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF6366F1).withOpacity(0.5),
+                  blurRadius: 6,
+                  spreadRadius: 0.5,
+                ),
+              ]
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.auto_awesome, size: 9, color: Colors.white),
+          const SizedBox(width: 2),
+          Text(
+            'AI',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
