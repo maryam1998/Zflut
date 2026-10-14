@@ -7,13 +7,8 @@ import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 
 class FilterBar extends ConsumerStatefulWidget {
-  /// برچسبِ جستجو (مثلاً 'جستجوی لغت...' یا 'جستجوی مکالمه...')
   final String searchHint;
-
-  /// آیا ردیف سطح نشون داده بشه؟
   final bool showLevels;
-
-  /// آیا ردیف مرتب‌سازی نشون داده بشه؟
   final bool showSort;
 
   const FilterBar({
@@ -55,7 +50,6 @@ class _FilterBarState extends ConsumerState<FilterBar> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── ردیف سطح ──
           if (widget.showLevels) ...[
             _LevelRow(
               selected: filter.level,
@@ -64,8 +58,6 @@ class _FilterBarState extends ConsumerState<FilterBar> {
             ),
             const SizedBox(height: 12),
           ],
-
-          // ── ردیف مرتب‌سازی ──
           if (widget.showSort) ...[
             _SortRow(
               current: filter.sort,
@@ -74,8 +66,6 @@ class _FilterBarState extends ConsumerState<FilterBar> {
             ),
             const SizedBox(height: 12),
           ],
-
-          // ── جستجو ──
           _SearchField(
             controller: _searchCtrl,
             hint: widget.searchHint,
@@ -88,8 +78,6 @@ class _FilterBarState extends ConsumerState<FilterBar> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Level chips
 // ═══════════════════════════════════════════════════════════════════
 class _LevelRow extends StatelessWidget {
   final String selected;
@@ -124,14 +112,10 @@ class _LevelRow extends StatelessWidget {
                 vertical: 10,
               ),
               decoration: BoxDecoration(
-                color: active
-                    ? c.headerFrom
-                    : Colors.transparent,
+                color: active ? c.headerFrom : Colors.transparent,
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
-                  color: active
-                      ? c.headerFrom
-                      : c.cardBorder,
+                  color: active ? c.headerFrom : c.cardBorder,
                   width: 1.2,
                 ),
               ),
@@ -152,8 +136,6 @@ class _LevelRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Sort dropdown
 // ═══════════════════════════════════════════════════════════════════
 class _SortRow extends StatelessWidget {
   final SortMode current;
@@ -222,8 +204,6 @@ class _SortRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// Search field
 // ═══════════════════════════════════════════════════════════════════
 class _SearchField extends StatelessWidget {
   final TextEditingController controller;
