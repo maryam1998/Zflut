@@ -6,8 +6,11 @@ class StoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const PlaceholderTab(
-        icon: Icons.auto_awesome_outlined,
+        icon: Icons.auto_stories,
         title: 'داستان‌ساز',
-        subtitle: 'با هوش مصنوعی داستان بساز، لغات انتخاب کن،\nاز PDF یا لینک وارد کن، و با صدا بخون.',
+        subtitle:
+            'با هوش مصنوعی داستان شخصی‌سازی‌شده بساز،\nاز PDF، عکس، لینک یا متن وارد کن، و با صدا بخوان.',
+        isAiPowered: true,
+        previewChips: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
       );
 }

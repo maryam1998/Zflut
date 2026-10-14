@@ -7,7 +7,9 @@ class SlangTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const PlaceholderTab(
         icon: Icons.format_quote_outlined,
-        title: 'اسلنگ',
-        subtitle: 'اصطلاحات عامیانه و اسلنگ‌های روزمره\nبا معنی، مثال و تلفظ.',
+        title: 'اصطلاحات عامیانه',
+        subtitle:
+            'اسلنگ‌ها و اصطلاحات روزمره‌ی زبان‌های مقصد،\nبا معنی، مثال و تلفظ صحیح.',
+        previewChips: ['انگلیسی', 'اسپانیایی', 'فرانسوی'],
       );
 }

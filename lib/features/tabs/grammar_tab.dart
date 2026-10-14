@@ -6,8 +6,11 @@ class GrammarTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const PlaceholderTab(
-        icon: Icons.spellcheck,
+        icon: Icons.text_format,
         title: 'گرامر',
-        subtitle: 'یادداشت‌های گرامری، پرسش از معلم هوشمند،\nو تمرین ساخت جمله با ساختارهای جدید.',
+        subtitle:
+            'یادداشت‌های گرامری خودت رو بنویس،\nاز معلم هوشمند بپرس، و با تمرین جمله‌سازی تثبیت کن.',
+        isAiPowered: true,
+        previewChips: ['یادداشت', 'معلم هوشمند', 'تمرین جمله'],
       );
 }

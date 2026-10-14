@@ -8,6 +8,9 @@ class SpeakingTab extends StatelessWidget {
   Widget build(BuildContext context) => const PlaceholderTab(
         icon: Icons.mic_none_outlined,
         title: 'تمرین مکالمه',
-        subtitle: 'با معلم هوشمند مکالمه کن، تلفظت رو بسنج،\nو بازخورد فوری بگیر.',
+        subtitle:
+            'با معلم هوشمند مکالمه کن، تلفظت رو بسنج،\nو بازخورد فوری بگیر.',
+        isAiPowered: true,
+        previewChips: ['چت آزاد', 'سناریو', 'تصحیح تلفظ'],
       );
 }

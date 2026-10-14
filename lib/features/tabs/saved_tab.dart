@@ -8,6 +8,8 @@ class SavedTab extends StatelessWidget {
   Widget build(BuildContext context) => const PlaceholderTab(
         icon: Icons.bookmark_outline,
         title: 'لغات ذخیره‌شده',
-        subtitle: 'هر لغتی که موقع خواندن ذخیره کردی،\nاینجا جمع می‌شه تا در داستان بعدی استفاده کنی.',
+        subtitle:
+            'هر لغتی که موقع خواندن داستان‌ها ذخیره می‌کنی،\nاینجا جمع می‌شه تا در داستان بعدی استفاده کنی.',
+        previewChips: ['ذخیره از داستان', 'افزودن به داستان بعدی'],
       );
 }

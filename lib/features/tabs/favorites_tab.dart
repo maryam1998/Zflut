@@ -8,6 +8,8 @@ class FavoritesTab extends StatelessWidget {
   Widget build(BuildContext context) => const PlaceholderTab(
         icon: Icons.favorite_outline,
         title: 'منتخب‌ها',
-        subtitle: 'لغات و عبارت‌هایی که با ⭐ علامت زدی،\nهمه‌شون اینجا جمع می‌شن.',
+        subtitle:
+            'لغات و عبارت‌هایی که با ⭐ علامت زدی،\nهمه‌شون اینجا جمع می‌شن.',
+        previewChips: ['لغات', 'عبارات', 'داستان‌ها'],
       );
 }

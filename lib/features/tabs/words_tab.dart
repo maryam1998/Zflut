@@ -7,7 +7,9 @@ class WordsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const PlaceholderTab(
         icon: Icons.menu_book_outlined,
-        title: 'لغات',
-        subtitle: 'لیست کامل لغات A تا Z با سطح‌بندی CEFR،\nجستجو، فیلتر سطح و علامت‌گذاری خوانده‌شده.',
+        title: 'دیکشنری من',
+        subtitle:
+            'لیست کامل لغات A تا Z با سطح‌بندی CEFR،\nجستجو، فیلتر سطح و علامت‌گذاری خوانده‌شده.',
+        previewChips: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
       );
 }

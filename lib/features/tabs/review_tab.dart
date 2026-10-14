@@ -6,8 +6,10 @@ class ReviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const PlaceholderTab(
-        icon: Icons.inventory_2_outlined,
-        title: 'مرور',
-        subtitle: 'سیستم جعبه‌ی لایتنر برای مرور هوشمند لغات\nدر فواصل زمانی بهینه‌شده.',
+        icon: Icons.repeat,
+        title: 'مرور با جعبه‌ی لایتنر',
+        subtitle:
+            'سیستم مرور هوشمند در فواصل زمانی بهینه،\nلغات رو از حافظه‌ی کوتاه‌مدت به بلندمدت منتقل می‌کنه.',
+        previewChips: ['امروز', 'این هفته', 'یاد گرفته'],
       );
 }

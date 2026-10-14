@@ -8,6 +8,8 @@ class VocabInUseTab extends StatelessWidget {
   Widget build(BuildContext context) => const PlaceholderTab(
         icon: Icons.layers_outlined,
         title: 'لغات کاربردی',
-        subtitle: 'لغات در قالب جمله‌های واقعی با تمرین‌های\nچندگزینه‌ای و کاربرد در موقعیت‌های روزمره.',
+        subtitle:
+            'لغات در قالب جمله‌های واقعی با تمرین‌های\nچندگزینه‌ای و کاربرد در موقعیت‌های روزمره.',
+        previewChips: ['مبتدی', 'متوسط', 'پیشرفته'],
       );
 }
