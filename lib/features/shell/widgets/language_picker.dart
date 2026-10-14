@@ -14,7 +14,7 @@ class LanguagePicker extends ConsumerWidget {
     final sel = ref.watch(languageSelectionProvider);
     final notifier = ref.read(languageSelectionProvider.notifier);
 
-    // زبان مادری — ترتیب دلخواه
+    // زبان مادری
     final nativeOrder = ref.watch(nativeOrderProvider);
     final nativeDefaults = kSupportedLanguages.map((l) => l.code).toList();
     final nativeOrderList = nativeOrder.isEmpty
@@ -206,6 +206,7 @@ class _DragRow extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
 class _CircleItem extends StatelessWidget {
   final int index;
   final String abbr;
@@ -223,7 +224,7 @@ class _CircleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ReorderableDragStartListener(
+    return ReorderableDelayedDragStartListener(
       index: index,
       child: GestureDetector(
         onTap: onTap,
@@ -311,6 +312,7 @@ class _ReorderableChips extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
 class _OrderChip extends StatelessWidget {
   final int index;
   final String code;
@@ -325,7 +327,7 @@ class _OrderChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    return ReorderableDragStartListener(
+    return ReorderableDelayedDragStartListener(
       index: index,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
