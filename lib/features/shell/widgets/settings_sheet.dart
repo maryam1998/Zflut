@@ -6,6 +6,7 @@ import '../../../core/constants/app_fonts.dart';
 import '../../../core/constants/app_languages.dart';
 import '../../../core/constants/app_themes.dart';
 import '../../../core/models/text_prefs.dart';
+import '../../../core/providers/ai_settings_provider.dart';
 import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/providers/text_prefs_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
@@ -36,7 +37,7 @@ class SettingsSheet extends ConsumerWidget {
         top: false,
         child: DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.88,
+          initialChildSize: 0.9,
           minChildSize: 0.5,
           maxChildSize: 0.95,
           builder: (_, controller) => ListView(
@@ -56,6 +57,8 @@ class SettingsSheet extends ConsumerWidget {
               _FontSizeSection(),
               SizedBox(height: 24),
               _TargetTextSection(),
+              SizedBox(height: 24),
+              _BackendUrlSection(),
               SizedBox(height: 24),
               _FooterVersion(),
             ],
@@ -116,7 +119,7 @@ class _SectionTitle extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Account — با پشتیبانی از مهمان (kSkipLogin)
+// Account
 // ═══════════════════════════════════════════════════════════════════
 class _AccountSection extends ConsumerWidget {
   const _AccountSection();
@@ -125,7 +128,6 @@ class _AccountSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
 
-    // دسترسی امن به Supabase — اگر init نشده باشد، null برمی‌گردد.
     String displayName = 'مهمان';
     String displayEmail = 'حساب متصل نیست';
     bool isSignedIn = false;
@@ -142,9 +144,7 @@ class _AccountSection extends ConsumerWidget {
                 ? displayEmail.split('@').first
                 : displayEmail);
       }
-    } catch (_) {
-      // Supabase init نشده — مهمان.
-    }
+    } catch (_) {}
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,6 +248,8 @@ class _AccountSection extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// Language
+// ═══════════════════════════════════════════════════════════════════
 class _LanguageSection extends ConsumerWidget {
   const _LanguageSection();
 
@@ -293,6 +295,8 @@ class _LanguageSection extends ConsumerWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Theme
 // ═══════════════════════════════════════════════════════════════════
 class _ThemeSection extends ConsumerWidget {
   const _ThemeSection();
@@ -385,6 +389,8 @@ class _ThemeSwatch extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// Font
+// ═══════════════════════════════════════════════════════════════════
 class _FontSection extends ConsumerWidget {
   const _FontSection();
 
@@ -415,6 +421,8 @@ class _FontSection extends ConsumerWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Font Size
 // ═══════════════════════════════════════════════════════════════════
 class _FontSizeSection extends ConsumerWidget {
   const _FontSizeSection();
@@ -490,6 +498,8 @@ class _ChoiceChip extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Target Text
 // ═══════════════════════════════════════════════════════════════════
 class _TargetTextSection extends ConsumerWidget {
   const _TargetTextSection();
@@ -613,6 +623,124 @@ class _BoldChip extends StatelessWidget {
       label: label,
       selected: value == current,
       onTap: onTap,
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Backend URL — آدرس Cloudflare Worker
+// ═══════════════════════════════════════════════════════════════════
+class _BackendUrlSection extends ConsumerStatefulWidget {
+  const _BackendUrlSection();
+
+  @override
+  ConsumerState<_BackendUrlSection> createState() => _BackendUrlSectionState();
+}
+
+class _BackendUrlSectionState extends ConsumerState<_BackendUrlSection> {
+  late final TextEditingController _ctrl;
+  bool _saved = false;
+
+  // URL پیش‌فرض — همون Worker خودت
+  static const String _defaultUrl =
+      'https://phrasebook-api.maryam-s-sharifiyan.workers.dev';
+
+  @override
+  void initState() {
+    super.initState();
+    final current = ref.read(aiSettingsProvider).backendUrl;
+    _ctrl = TextEditingController(
+      text: current.isEmpty ? _defaultUrl : current,
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    await ref.read(aiSettingsProvider.notifier).setBackendUrl(_ctrl.text);
+    if (mounted) {
+      setState(() => _saved = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ آدرس ذخیره شد'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      // بعد از ۲ ثانیه، تیک رو برداشت
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) setState(() => _saved = false);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(
+          icon: Icons.cloud_outlined,
+          label: 'آدرس سرور هوش مصنوعی (Cloudflare Worker)',
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'برای ترجمه‌ی دقیق‌تر و ساخت داستان با AI، آدرس Worker خودت را این‌جا وارد کن.',
+          style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.6),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _ctrl,
+          textAlign: TextAlign.left,
+          keyboardType: TextInputType.url,
+          textDirection: TextDirection.ltr,
+          style: TextStyle(color: c.ink, fontSize: 12.5),
+          decoration: InputDecoration(
+            hintText: 'https://...',
+            hintStyle: TextStyle(color: c.inkSoft.withOpacity(0.5)),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: c.cardBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: c.cardBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: c.gold, width: 1.5),
+            ),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: _saved ? const Color(0xFF2E9E7B) : c.gold,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            onPressed: _save,
+            icon: Icon(
+              _saved ? Icons.check : Icons.save_outlined,
+              size: 18,
+            ),
+            label: Text(_saved ? 'ذخیره شد' : 'ذخیره'),
+          ),
+        ),
+      ],
     );
   }
 }
