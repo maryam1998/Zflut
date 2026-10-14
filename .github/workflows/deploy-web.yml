@@ -33,6 +33,14 @@ jobs:
           flutter-version: '3.22.x'
           cache: true
 
+      - name: Generate web folder if missing
+        run: |
+          if [ ! -d web ]; then
+            flutter create --platforms=web --project-name lingolearn --org app.lingolearn /tmp/scaffold
+            cp -r /tmp/scaffold/web .
+            sed -i 's|<title>.*</title>|<title>LingoLearn</title>|' web/index.html
+          fi
+
       - name: Install dependencies
         run: flutter pub get
 
