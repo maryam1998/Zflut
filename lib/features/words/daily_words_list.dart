@@ -344,7 +344,7 @@ class _TranslationRow extends ConsumerWidget {
     }
 
     final async = ref.watch(
-      translationProvider((text: en, to: langCode, from: 'en')),
+      translationProvider((text: en, to: langCode, from: 'en', verify: false)),
     );
 
     return async.when(
