@@ -1,99 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/level_colors.dart';
+import '../../core/constants/topic_icons.dart';
 import '../../core/models/conversation.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/speech_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
-
-// ═══════════════════════════════════════════════════════════════════
-// نگاشتِ موضوع → آیکون
-// ═══════════════════════════════════════════════════════════════════
-IconData iconForTopic(String topic) {
-  final t = topic.toLowerCase();
-
-  // روزمره
-  if (t.contains('greetings')) return Icons.waving_hand_outlined;
-  if (t.contains('introducing people')) return Icons.person_add_outlined;
-  if (t.contains('visiting an old friend')) return Icons.home_outlined;
-  if (t.contains('getting acquainted')) return Icons.question_answer_outlined;
-  if (t.contains('accepting or refusing')) return Icons.mark_email_read_outlined;
-  if (t.contains('invitations')) return Icons.mail_outline;
-  if (t.contains('saying goodbye')) return Icons.door_front_door_outlined;
-  if (t.contains('telephone')) return Icons.phone_outlined;
-  if (t.contains('transportation')) return Icons.directions_bus_outlined;
-  if (t.contains('gas station')) return Icons.local_gas_station_outlined;
-  if (t.contains('weather')) return Icons.cloud_outlined;
-  if (t.contains('restaurant') || t.contains('café') || t.contains('cafe')) return Icons.restaurant_outlined;
-  if (t.contains('shopping (clothes')) return Icons.shopping_bag_outlined;
-  if (t.contains('at a hotel')) return Icons.hotel_outlined;
-  if (t.contains('health and doctor')) return Icons.medical_services_outlined;
-  if (t.contains('directions') || t.contains('landmarks')) return Icons.explore_outlined;
-  if (t.contains('plans and free time') || t.contains('hobbies')) return Icons.palette_outlined;
-  if (t.contains('work and workplace')) return Icons.work_outline;
-  if (t.contains('time and appointments')) return Icons.schedule_outlined;
-  if (t.contains('expressing opinions')) return Icons.favorite_border;
-  if (t.contains('asking for help')) return Icons.help_outline;
-  if (t.contains('politeness and compliments')) return Icons.auto_awesome_outlined;
-  if (t.contains('travel and experiences')) return Icons.flight_outlined;
-  if (t.contains('apologies and forgiveness')) return Icons.handshake_outlined;
-  if (t.contains('family and cultural')) return Icons.groups_outlined;
-  if (t.contains('sports and fitness')) return Icons.fitness_center_outlined;
-  if (t.contains('technology and communication')) return Icons.laptop_outlined;
-  if (t.contains('holidays and celebrations')) return Icons.celebration_outlined;
-  if (t.contains('pets and animals')) return Icons.pets_outlined;
-  if (t.contains('learning a language')) return Icons.translate_outlined;
-  if (t.contains('emergency')) return Icons.emergency_outlined;
-  if (t.contains('city attractions')) return Icons.location_city_outlined;
-  if (t.contains('schools and education')) return Icons.school_outlined;
-  if (t.contains('money and expenses')) return Icons.account_balance_wallet_outlined;
-  if (t.contains('books and reading')) return Icons.menu_book_outlined;
-  if (t.contains('environment and nature')) return Icons.eco_outlined;
-  if (t.contains('cooking and recipes')) return Icons.restaurant_menu_outlined;
-  if (t.contains('movies and tv')) return Icons.movie_outlined;
-  if (t == 'music' || t.contains('|music|')) return Icons.music_note_outlined;
-  if (t.contains('banking and financial')) return Icons.account_balance_outlined;
-  if (t.contains('post office')) return Icons.local_post_office_outlined;
-  if (t.contains('neighbors and community')) return Icons.diversity_3_outlined;
-  if (t.contains('future plans and dreams')) return Icons.auto_awesome_outlined;
-  if (t.contains('memories and past')) return Icons.history_outlined;
-
-  // موضوعی (فارسی)
-  if (topic.contains('طبیعت')) return Icons.park_outlined;
-  if (topic.contains('احساسات')) return Icons.mood_outlined;
-  if (topic.contains('مذهب')) return Icons.menu_book_outlined;
-  if (topic.contains('خرید')) return Icons.storefront_outlined;
-  if (topic.contains('علوم')) return Icons.science_outlined;
-  if (topic.contains('مسائل اجتماعی')) return Icons.public_outlined;
-  if (topic.contains('فناوری')) return Icons.memory_outlined;
-  if (topic.contains('سفر و گردشگری')) return Icons.flight_takeoff_outlined;
-  if (topic.contains('غذا و آشپزی')) return Icons.soup_kitchen_outlined;
-  if (topic.contains('جنگ')) return Icons.shield_outlined;
-  if (topic.contains('شغل')) return Icons.work_outline;
-  if (topic.contains('شخصیت')) return Icons.fingerprint;
-  if (topic.contains('بدن انسان')) return Icons.favorite_outline;
-  if (topic.contains('کسب و کار')) return Icons.trending_up;
-  if (topic.contains('لباس و مد')) return Icons.checkroom_outlined;
-  if (topic.contains('جرم و قانون')) return Icons.gavel_outlined;
-  if (topic.contains('فرهنگ')) return Icons.temple_buddhist_outlined;
-  if (topic.contains('آموزش و تحصیل')) return Icons.school_outlined;
-  if (topic.contains('رسانه')) return Icons.newspaper_outlined;
-  if (topic.contains('حیوانات')) return Icons.pets_outlined;
-  if (topic.contains('خانه')) return Icons.home_outlined;
-
-  // پیش‌فرض
-  return Icons.chat_bubble_outline;
-}
-
-// رنگ‌های دایره‌ی آیکون — ۴ رنگ ملایم که بین کارت‌ها می‌چرخه
-const List<Color> _badgeColors = [
-  Color(0xFFEAF4F1), // سبز آبی
-  Color(0xFFFBF0DA), // کرم
-  Color(0xFFF3ECFB), // بنفش ملایم
-  Color(0xFFFBE9E4), // صورتی-نارنجی ملایم
-];
 
 class ConversationsTab extends ConsumerStatefulWidget {
   const ConversationsTab({super.key});
@@ -106,10 +21,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   String? _activeTopic;
   int? _openScenario;
   String _query = '';
-
   int _rangeFrom = 1;
   int _rangeTo = 60;
-
   final Set<String> _topicRead = {};
   final Set<String> _scenarioRead = {};
 
@@ -120,10 +33,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 
     if (topics.isEmpty) {
       return Center(
-        child: Text(
-          'داده‌ای بارگذاری نشد',
-          style: TextStyle(color: c.inkSoft, fontSize: 15),
-        ),
+        child: Text('داده‌ای بارگذاری نشد',
+            style: TextStyle(color: c.inkSoft, fontSize: 15)),
       );
     }
 
@@ -138,34 +49,28 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     }).toList();
 
     if (_activeTopic != null) {
-      final topic = topics.firstWhere(
-        (t) => t.topic == _activeTopic,
-        orElse: () => topics.first,
-      );
+      final topic = topics.firstWhere((t) => t.topic == _activeTopic,
+          orElse: () => topics.first);
       return _buildTopicView(context, topic);
     }
-
     return _buildTopicsGrid(context, filtered);
   }
 
-  // ═══════════════════════════════════════════════════════════════════
-  Widget _buildTopicsGrid(BuildContext context, List<ConversationTopic> topics) {
+  Widget _buildTopicsGrid(
+      BuildContext context, List<ConversationTopic> topics) {
     final c = context.appColors;
     final total = topics.length;
 
     if (total == 0) {
       return Center(
-        child: Text(
-          'چیزی پیدا نشد',
-          style: TextStyle(color: c.inkSoft, fontSize: 14),
-        ),
+        child: Text('چیزی پیدا نشد',
+            style: TextStyle(color: c.inkSoft, fontSize: 14)),
       );
     }
 
     final from = _rangeFrom.clamp(1, total);
     final to = _rangeTo.clamp(from, total);
     final visible = topics.sublist(from - 1, to);
-
     final readInRange =
         visible.where((t) => _topicRead.contains(t.topic)).length;
     final readTotal = topics.where((t) => _topicRead.contains(t.topic)).length;
@@ -181,20 +86,16 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           readTotal: readTotal,
           onFromChanged: (v) => setState(() => _rangeFrom = v),
           onToChanged: (v) => setState(() => _rangeTo = v),
-          onMarkAllRead: () {
-            setState(() {
-              for (final t in visible) {
-                _topicRead.add(t.topic);
-              }
-            });
-          },
-          onClearRange: () {
-            setState(() {
-              for (final t in visible) {
-                _topicRead.remove(t.topic);
-              }
-            });
-          },
+          onMarkAllRead: () => setState(() {
+            for (final t in visible) {
+              _topicRead.add(t.topic);
+            }
+          }),
+          onClearRange: () => setState(() {
+            for (final t in visible) {
+              _topicRead.remove(t.topic);
+            }
+          }),
         ),
         const SizedBox(height: 14),
         GridView.builder(
@@ -204,24 +105,23 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             crossAxisCount: 3,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
-            // نسبت ارتفاع/عرض ثابت → اندازه‌ی همه یکسان
             childAspectRatio: 0.85,
           ),
           itemCount: visible.length,
           itemBuilder: (_, i) {
             final topic = visible[i];
-            final isRead = _topicRead.contains(topic.topic);
+            final visual = visualForTopic(topic.topic);
             return _TopicCard(
               topic: topic,
-              icon: iconForTopic(topic.topic),
-              badgeColor: _badgeColors[i % _badgeColors.length],
-              isRead: isRead,
+              visual: visual,
+              badgeColor: kTopicBadgeColors[i % kTopicBadgeColors.length],
+              isRead: _topicRead.contains(topic.topic),
               onTap: () => setState(() {
                 _activeTopic = topic.topic;
                 _openScenario = 0;
               }),
               onToggleRead: () => setState(() {
-                if (isRead) {
+                if (_topicRead.contains(topic.topic)) {
                   _topicRead.remove(topic.topic);
                 } else {
                   _topicRead.add(topic.topic);
@@ -234,9 +134,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════
   Widget _buildTopicView(BuildContext context, ConversationTopic topic) {
     final c = context.appColors;
+    final visual = visualForTopic(topic.topic);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 90),
@@ -252,14 +152,11 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
               children: [
                 Icon(Icons.arrow_back, size: 18, color: c.teal),
                 const SizedBox(width: 6),
-                Text(
-                  'بازگشت به موضوعات',
-                  style: TextStyle(
-                    color: c.teal,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Text('بازگشت به موضوعات',
+                    style: TextStyle(
+                        color: c.teal,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700)),
               ],
             ),
           ),
@@ -267,17 +164,14 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         const SizedBox(height: 8),
         Row(
           children: [
-            Icon(iconForTopic(topic.topic), size: 22, color: c.teal),
+            Icon(visual.icon, size: 22, color: visual.color),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                topic.topic,
-                style: TextStyle(
-                  color: c.ink,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              child: Text(topic.topic,
+                  style: TextStyle(
+                      color: c.ink,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -290,7 +184,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             scenario: sc,
             isOpen: isOpen,
             isRead: isRead,
-            onToggle: () => setState(() => _openScenario = isOpen ? null : i),
+            onToggle: () =>
+                setState(() => _openScenario = isOpen ? null : i),
             onToggleRead: () => setState(() {
               final key = '${topic.topic}::$i';
               if (isRead) {
@@ -310,15 +205,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 // کارت بازه
 // ═══════════════════════════════════════════════════════════════════
 class _RangeCard extends StatefulWidget {
-  final int from;
-  final int to;
-  final int total;
-  final int readInRange;
-  final int readTotal;
-  final ValueChanged<int> onFromChanged;
-  final ValueChanged<int> onToChanged;
-  final VoidCallback onMarkAllRead;
-  final VoidCallback onClearRange;
+  final int from, to, total, readInRange, readTotal;
+  final ValueChanged<int> onFromChanged, onToChanged;
+  final VoidCallback onMarkAllRead, onClearRange;
 
   const _RangeCard({
     required this.from,
@@ -337,21 +226,13 @@ class _RangeCard extends StatefulWidget {
 }
 
 class _RangeCardState extends State<_RangeCard> {
-  late TextEditingController _fromCtrl;
-  late TextEditingController _toCtrl;
+  late TextEditingController _fromCtrl, _toCtrl;
 
   @override
   void initState() {
     super.initState();
     _fromCtrl = TextEditingController(text: '${widget.from}');
     _toCtrl = TextEditingController(text: '${widget.to}');
-  }
-
-  @override
-  void didUpdateWidget(covariant _RangeCard old) {
-    super.didUpdateWidget(old);
-    if (old.from != widget.from) _fromCtrl.text = '${widget.from}';
-    if (old.to != widget.to) _toCtrl.text = '${widget.to}';
   }
 
   @override
@@ -364,7 +245,8 @@ class _RangeCardState extends State<_RangeCard> {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    final pct = widget.total > 0 ? (widget.readTotal / widget.total) * 100 : 0.0;
+    final pct =
+        widget.total > 0 ? (widget.readTotal / widget.total) * 100 : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -385,7 +267,7 @@ class _RangeCardState extends State<_RangeCard> {
         children: [
           Row(
             children: [
-              _NumberField(
+              _NumField(
                 controller: _fromCtrl,
                 onChanged: (v) {
                   final n = int.tryParse(v);
@@ -397,9 +279,11 @@ class _RangeCardState extends State<_RangeCard> {
               const SizedBox(width: 8),
               Text('تا',
                   style: TextStyle(
-                      color: c.teal, fontSize: 14, fontWeight: FontWeight.w700)),
+                      color: c.teal,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700)),
               const SizedBox(width: 8),
-              _NumberField(
+              _NumField(
                 controller: _toCtrl,
                 onChanged: (v) {
                   final n = int.tryParse(v);
@@ -409,14 +293,11 @@ class _RangeCardState extends State<_RangeCard> {
                 },
               ),
               const Spacer(),
-              Text(
-                'موضوع‌ها از مجموع ${widget.total}',
-                style: TextStyle(
-                  color: c.inkSoft,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text('از مجموع ${widget.total}',
+                  style: TextStyle(
+                      color: c.inkSoft,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 12),
@@ -434,10 +315,9 @@ class _RangeCardState extends State<_RangeCard> {
             'خوانده‌شده: ${widget.readTotal} از ${widget.total} • ${widget.readInRange} از ${widget.to - widget.from + 1} در این بازه',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFF2E7D6C),
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-            ),
+                color: Color(0xFF2E7D6C),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
           Row(
@@ -450,14 +330,11 @@ class _RangeCardState extends State<_RangeCard> {
                     side: const BorderSide(color: Color(0xFFCFE6DF)),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  child: Text(
-                    'علامت‌گذاری همه به خوانده‌شده',
-                    style: TextStyle(
-                      color: c.teal,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: Text('علامت‌گذاری همه به خوانده‌شده',
+                      style: TextStyle(
+                          color: c.teal,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700)),
                 ),
               ),
               const SizedBox(width: 8),
@@ -469,14 +346,11 @@ class _RangeCardState extends State<_RangeCard> {
                     side: BorderSide(color: c.cardBorder),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  child: Text(
-                    'پاک کردن علامت این بازه',
-                    style: TextStyle(
-                      color: c.teal,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: Text('پاک کردن علامت این بازه',
+                      style: TextStyle(
+                          color: c.teal,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700)),
                 ),
               ),
             ],
@@ -487,11 +361,10 @@ class _RangeCardState extends State<_RangeCard> {
   }
 }
 
-class _NumberField extends StatelessWidget {
+class _NumField extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
-
-  const _NumberField({required this.controller, required this.onChanged});
+  const _NumField({required this.controller, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -504,10 +377,7 @@ class _NumberField extends StatelessWidget {
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: c.teal,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-        ),
+            color: c.teal, fontSize: 13, fontWeight: FontWeight.w700),
         decoration: InputDecoration(
           isDense: true,
           contentPadding:
@@ -531,19 +401,18 @@ class _NumberField extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// کارت موضوع — آیکون اختصاصی، اندازه‌ی ثابت
+// کارت موضوع
 // ═══════════════════════════════════════════════════════════════════
 class _TopicCard extends StatelessWidget {
   final ConversationTopic topic;
-  final IconData icon;
+  final TopicVisual visual;
   final Color badgeColor;
   final bool isRead;
-  final VoidCallback onTap;
-  final VoidCallback onToggleRead;
+  final VoidCallback onTap, onToggleRead;
 
   const _TopicCard({
     required this.topic,
-    required this.icon,
+    required this.visual,
     required this.badgeColor,
     required this.isRead,
     required this.onTap,
@@ -558,7 +427,6 @@ class _TopicCard extends StatelessWidget {
       onTap: onTap,
       child: Stack(
         children: [
-          // بدنه کارت — کل ارتفاع رو پر می‌کنه
           Positioned.fill(
             child: Container(
               padding: const EdgeInsets.fromLTRB(6, 22, 6, 8),
@@ -566,14 +434,14 @@ class _TopicCard extends StatelessWidget {
                 color: isRead ? const Color(0xFFF8F2DE) : Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isRead ? const Color(0xFFE3D2A2) : c.cardBorder,
+                  color:
+                      isRead ? const Color(0xFFE3D2A2) : c.cardBorder,
                   width: 1,
                 ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // دایره آیکون
                   Container(
                     width: 48,
                     height: 48,
@@ -581,17 +449,18 @@ class _TopicCard extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: isRead
                           ? Colors.white.withOpacity(0.7)
-                          : badgeColor,
+                          : badgeBgColor(visual.color),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
-                      icon,
+                      visual.icon,
                       size: 24,
-                      color: isRead ? const Color(0xFF2E7D6C) : c.teal,
+                      color: isRead
+                          ? const Color(0xFF2E7D6C)
+                          : visual.color,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // عنوان — همیشه ۲ خط رزرو می‌کنه برای یکسانی اندازه
                   Expanded(
                     child: Align(
                       alignment: Alignment.topCenter,
@@ -613,7 +482,6 @@ class _TopicCard extends StatelessWidget {
               ),
             ),
           ),
-          // دایره‌ی خوانده‌شده — گوشه بالا-راست
           Positioned(
             top: 4,
             right: 4,
@@ -624,7 +492,9 @@ class _TopicCard extends StatelessWidget {
                 height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isRead ? const Color(0xFF3F9B72) : Colors.white,
+                  color: isRead
+                      ? const Color(0xFF3F9B72)
+                      : Colors.white,
                   border: Border.all(
                     color: isRead
                         ? const Color(0xFF276E4F)
@@ -634,7 +504,8 @@ class _TopicCard extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: isRead
-                    ? const Icon(Icons.check, size: 11, color: Colors.white)
+                    ? const Icon(Icons.check,
+                        size: 11, color: Colors.white)
                     : null,
               ),
             ),
@@ -646,14 +517,12 @@ class _TopicCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// کارت سناریو (بدون تغییر)
+// کارت سناریو
 // ═══════════════════════════════════════════════════════════════════
 class _ScenarioCard extends StatelessWidget {
   final ConversationScenario scenario;
-  final bool isOpen;
-  final bool isRead;
-  final VoidCallback onToggle;
-  final VoidCallback onToggleRead;
+  final bool isOpen, isRead;
+  final VoidCallback onToggle, onToggleRead;
 
   const _ScenarioCard({
     required this.scenario,
@@ -673,8 +542,7 @@ class _ScenarioCard extends StatelessWidget {
         color: isRead ? const Color(0xFFF8F2DE) : Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isRead ? const Color(0xFFE3D2A2) : c.cardBorder,
-        ),
+            color: isRead ? const Color(0xFFE3D2A2) : c.cardBorder),
       ),
       child: Column(
         children: [
@@ -714,34 +582,24 @@ class _ScenarioCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          scenario.scenario,
-                          style: TextStyle(
-                            color: c.ink,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        Text(scenario.scenario,
+                            style: TextStyle(
+                                color: c.ink,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700)),
                         if (scenario.context != null) ...[
                           const SizedBox(height: 2),
-                          Text(
-                            scenario.context!,
-                            style: TextStyle(
-                              color: c.inkSoft,
-                              fontSize: 11.5,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          Text(scenario.context!,
+                              style: TextStyle(
+                                  color: c.inkSoft, fontSize: 11.5),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
                         ],
                       ],
                     ),
                   ),
-                  Icon(
-                    isOpen ? Icons.expand_less : Icons.expand_more,
-                    color: c.teal,
-                    size: 22,
-                  ),
+                  Icon(isOpen ? Icons.expand_less : Icons.expand_more,
+                      color: c.teal, size: 22),
                 ],
               ),
             ),
@@ -750,16 +608,14 @@ class _ScenarioCard extends StatelessWidget {
             const Divider(height: 1),
             if (scenario.speakerA.isNotEmpty)
               _SpeakerBox(
-                title: 'می‌شنوی',
-                color: c.teal,
-                lines: scenario.speakerA,
-              ),
+                  title: 'می‌شنوی',
+                  color: c.teal,
+                  lines: scenario.speakerA),
             if (scenario.speakerB.isNotEmpty)
               _SpeakerBox(
-                title: 'می‌گی',
-                color: c.gold,
-                lines: scenario.speakerB,
-              ),
+                  title: 'می‌گی',
+                  color: c.gold,
+                  lines: scenario.speakerB),
             const SizedBox(height: 10),
           ],
         ],
@@ -795,19 +651,14 @@ class _SpeakerBox extends ConsumerWidget {
                 width: 14,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(4),
-                ),
+                    color: color, borderRadius: BorderRadius.circular(4)),
               ),
               const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  color: c.ink,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              Text(title,
+                  style: TextStyle(
+                      color: c.ink,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800)),
             ],
           ),
           const SizedBox(height: 8),
@@ -849,19 +700,20 @@ class _LineRow extends ConsumerWidget {
             textDirection: TextDirection.ltr,
             child: Row(
               children: [
+                // ✅ بج سطح رنگی — هم‌رنگ با تب لغات
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: c.paperDark,
-                    borderRadius: BorderRadius.circular(5),
+                    color: levelBgColor(line.level),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     line.level,
                     style: TextStyle(
-                      color: c.inkSoft,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
+                      color: levelColor(line.level),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
@@ -880,7 +732,13 @@ class _LineRow extends ConsumerWidget {
                   ),
                 ),
                 InkWell(
-                  onTap: () => ctrl.toggle(line.en, 'en'),
+                  onTap: () {
+                    try {
+                      ctrl.toggle(line.en, 'en');
+                    } catch (e) {
+                      debugPrint('speak error: $e');
+                    }
+                  },
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
                     padding: const EdgeInsets.all(4),
@@ -897,10 +755,7 @@ class _LineRow extends ConsumerWidget {
           ...langsToShow.map((code) {
             final knownText = code == 'fa' ? line.fa : null;
             return _TranslationLine(
-              en: line.en,
-              knownText: knownText,
-              langCode: code,
-            );
+                en: line.en, knownText: knownText, langCode: code);
           }),
         ],
       ),
@@ -944,7 +799,8 @@ class _TranslationLine extends ConsumerWidget {
     );
   }
 
-  Widget _build(dynamic c, dynamic ctrl, String text, {bool loading = false}) {
+  Widget _build(dynamic c, dynamic ctrl, String text,
+      {bool loading = false}) {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Padding(
@@ -952,7 +808,8 @@ class _TranslationLine extends ConsumerWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
               decoration: BoxDecoration(
                 color: c.paperDark,
                 borderRadius: BorderRadius.circular(5),
@@ -983,7 +840,13 @@ class _TranslationLine extends ConsumerWidget {
             ),
             if (!loading)
               InkWell(
-                onTap: () => ctrl.toggle(text, langCode),
+                onTap: () {
+                  try {
+                    ctrl.toggle(text, langCode);
+                  } catch (e) {
+                    debugPrint('speak error: $e');
+                  }
+                },
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
                   padding: const EdgeInsets.all(3),
