@@ -103,7 +103,7 @@ class PlayerBar extends ConsumerWidget {
                     onTap: ctrl.toggleMuted,
                   ),
 
-                  // تکرار (0 → 2 → 3 → ∞)
+                  // 🔁 تکرار — 1 کلیک=2x، 2 کلیک=3x، 3 کلیک=∞، 4 کلیک=خاموش
                   _IconBtn(
                     icon: Icons.repeat,
                     color: state.globalRepeat != 0 ? c.gold : c.inkSoft,
@@ -115,10 +115,14 @@ class PlayerBar extends ConsumerWidget {
                             : '${state.globalRepeat}'),
                   ),
 
-                  // A-B
-                  _TextBtn(
-                    label: 'A-B',
-                    color: isActive ? c.inkSoft : c.cardBorder,
+                  // A-B — بازه‌ی تکرار
+                  _ABBtn(
+                    isActive: isActive,
+                    abState: state.abState,
+                    chunkA: state.abChunkA,
+                    chunkB: state.abChunkB,
+                    color: c.gold,
+                    disabledColor: c.cardBorder,
                     onTap: isActive ? ctrl.markAB : null,
                   ),
 
@@ -129,7 +133,7 @@ class PlayerBar extends ConsumerWidget {
                     onTap: isActive ? ctrl.prevChunk : null,
                   ),
 
-                  // پخش/توقف مرکزی
+                  // پخش/توقف
                   _PlayBtn(
                     isPlaying: isPlaying,
                     isActive: isActive,
@@ -156,11 +160,21 @@ class PlayerBar extends ConsumerWidget {
                     onTap: () => _showSpeedSheet(context, ref),
                   ),
 
-                  // ریستارت
+                  // ↻ رفتن به بالای صفحه (scroll to top)
                   _IconBtn(
-                    icon: Icons.replay,
-                    color: isActive ? c.gold : c.cardBorder,
-                    onTap: isActive ? () => ctrl.seekToChunk(0) : null,
+                    icon: Icons.vertical_align_top_rounded,
+                    color: c.gold,
+                    onTap: () {
+                      // اسکرول همه‌ی Scrollable‌های فعال به بالا
+                      final scrollables = Scrollable.of(context);
+                      if (scrollables != null) {
+                        scrollables.position.animateTo(
+                          0,
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOutCubic,
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
@@ -234,8 +248,8 @@ class PlayerBar extends ConsumerWidget {
                 return GestureDetector(
                   onTap: () => ctrl.setRate(r),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: selected ? c.gold : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
@@ -295,8 +309,7 @@ class _IconBtn extends StatelessWidget {
             top: 2,
             right: 0,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(6),
@@ -316,38 +329,81 @@ class _IconBtn extends StatelessWidget {
   }
 }
 
-class _TextBtn extends StatelessWidget {
-  final String label;
+// ═══════════════════════════════════════════════════════════════════
+class _ABBtn extends StatelessWidget {
+  final bool isActive;
+  final String abState;
+  final int? chunkA;
+  final int? chunkB;
   final Color color;
+  final Color disabledColor;
   final VoidCallback? onTap;
 
-  const _TextBtn({
-    required this.label,
+  const _ABBtn({
+    required this.isActive,
+    required this.abState,
+    required this.chunkA,
+    required this.chunkB,
     required this.color,
+    required this.disabledColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
+    final enabled = isActive;
+    final active = abState == 'waitingB' || abState == 'looping';
+    final badge = abState == 'waitingB'
+        ? 'A'
+        : (abState == 'looping' ? '↻' : null);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              'A-B',
+              style: TextStyle(
+                color: enabled
+                    ? (active ? color : Colors.grey.shade700)
+                    : disabledColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ),
           ),
         ),
-      ),
+        if (badge != null)
+          Positioned(
+            top: 0,
+            right: -2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                badge,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
 class _PlayBtn extends StatelessWidget {
   final bool isPlaying;
   final bool isActive;
@@ -383,6 +439,7 @@ class _PlayBtn extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
 class _SpeedBtn extends StatelessWidget {
   final double rate;
   final Color color;
