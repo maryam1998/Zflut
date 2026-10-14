@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+    flutter_tts: ^4.0.2
+just_audio: ^0.9.36
   flutter_localizations:
     sdk: flutter
   intl: any
