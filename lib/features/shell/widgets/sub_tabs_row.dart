@@ -23,44 +23,28 @@ class SubTabsRow extends StatelessWidget {
     final c = context.appColors;
 
     return Container(
-      color: c.paperDark,
-      height: 44,
+      decoration: BoxDecoration(
+        color: c.paperDark,
+        border: Border(
+          bottom: BorderSide(color: c.cardBorder, width: 1),
+        ),
+      ),
+      height: 48,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         itemCount: group.tabs.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
           final key = group.tabs[i];
           final meta = kTabMeta[key]!;
           final active = key == activeTabKey;
-          final label = _labelFor(L, meta.labelKey);
-
-          return Material(
-            color: active ? c.paper : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: () => onTabSelected(key),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Row(
-                  children: [
-                    Icon(meta.icon, size: 14,
-                        color: active ? c.gold : c.inkSoft),
-                    const SizedBox(width: 6),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: active ? c.ink : c.inkSoft,
-                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          return _SubChip(
+            icon: meta.icon,
+            label: _labelFor(L, meta.labelKey),
+            active: active,
+            c: c,
+            onTap: () => onTabSelected(key),
           );
         },
       ),
@@ -81,5 +65,73 @@ class SubTabsRow extends StatelessWidget {
       case 'tab_review':        return L.tab_review;
       default:                  return key;
     }
+  }
+}
+
+class _SubChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final dynamic c;
+  final VoidCallback onTap;
+
+  const _SubChip({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.c,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        color: active ? c.paper : Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: active ? c.gold.withOpacity(0.55) : Colors.transparent,
+          width: 1.2,
+        ),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: c.gold.withOpacity(0.15),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(999),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 15,
+                  color: active ? c.gold : c.inkSoft,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: active ? c.ink : c.inkSoft,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
