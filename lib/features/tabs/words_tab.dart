@@ -8,14 +8,21 @@ class WordsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        FilterBar(
-          searchHint: 'جستجوی لغت...',
-          showLevels: true,
-          showSort: false,
+    // Filter + List رو در یک CustomScrollView می‌گذاریم
+    // تا وقتی کاربر لیست رو می‌کشه، Search هم باهاش بره بالا.
+    return CustomScrollView(
+      slivers: [
+        const SliverToBoxAdapter(
+          child: FilterBar(
+            searchHint: 'جستجوی لغت...',
+            showLevels: true,
+            showSort: true,
+          ),
         ),
-        Expanded(child: DailyWordsList()),
+        const SliverFillRemaining(
+          hasScrollBody: true,
+          child: DailyWordsList(),
+        ),
       ],
     );
   }
