@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/models/tab_group.dart';
+import '../../core/providers/language_selection_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import 'widgets/account_header.dart';
 import 'widgets/header_tabs.dart';
 import 'widgets/language_picker.dart';
+import 'widgets/player_bar.dart';
 import 'widgets/settings_sheet.dart';
 import 'widgets/sub_tabs_row.dart';
 
@@ -30,39 +32,48 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
 
     final c = context.appColors;
+    final sel = ref.watch(languageSelectionProvider);
     final hasSubtabs = currentGroup.tabs.length > 1;
+    final hasChips = sel.targets.length > 1;
+
+    // ارتفاع هدر (برای SliverAppBar)
+    final contentHeight = 56.0 +
+        168.0 +
+        (hasChips ? 66.0 : 0.0) +
+        60.0 +
+        (hasSubtabs ? 48.0 : 0.0);
 
     return Scaffold(
       backgroundColor: c.paper,
       body: NestedScrollView(
-        // ═════════════════════════════════════════════════════════════
-        // رفتار هدر دقیقاً مثل وب‌اپ: هدر «جزوِ خودِ صفحه»ست، نه شناور.
-        //   • اسکرول به پایین → هدر همراهِ محتوا از بالا بیرون می‌رود
-        //   • اسکرول به بالا  → هدر فقط وقتی دیده می‌شود که به بالای صفحه برسی
-        // ارتفاعِ هدر دیگر حدسی/ثابت نیست (قبلاً با context.px جور درنمی‌آمد و
-        // هدر بریده/پنهان می‌شد)؛ ارتفاعِ واقعیِ ویجت‌ها استفاده می‌شود.
-        // ═════════════════════════════════════════════════════════════
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverToBoxAdapter(
-            // RepaintBoundary: هدر یک‌بار رسم و به‌صورت لایه جابه‌جا می‌شود،
-            // پس موقعِ اسکرول هزینه‌ی رسمِ دوباره ندارد.
-            child: RepaintBoundary(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [c.headerTo, c.headerFrom],
-                  ),
-                ),
-                child: Column(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              floating: true,
+              snap: true,
+              pinned: false,
+              automaticallyImplyLeading: false,
+              expandedHeight: contentHeight,
+              toolbarHeight: contentHeight,
+              backgroundColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              flexibleSpace: FlexibleSpaceBar(
+                collapseMode: CollapseMode.none,
+                background: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // ═══ هدر حساب (تنظیمات راست، نام چپ) ═══
                     AccountHeader(
                       onMenuTap: () => SettingsSheet.show(context),
                       onAvatarTap: () => SettingsSheet.show(context),
+                      userName: null,
                     ),
+                    // ═══ انتخابگر زبان ═══
                     const LanguagePicker(),
+                    // ═══ گروه‌های تب ═══
                     HeaderTabs(
                       activeGroupKey: currentGroup.key,
                       onGroupSelected: (group) {
@@ -70,6 +81,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                       },
                       onSettingsTap: () => SettingsSheet.show(context),
                     ),
+                    // ═══ زیرتب‌ها ═══
                     if (hasSubtabs)
                       SubTabsRow(
                         group: currentGroup,
@@ -80,15 +92,22 @@ class _AppShellState extends ConsumerState<AppShell> {
                 ),
               ),
             ),
+          ];
+        },
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: child,
           ),
-        ],
-        // بدون AnimatedSwitcher: در زمانِ فید، دو لیست هم‌زمان به یک
-        // PrimaryScrollController وصل می‌شدند (خطا/لگ). روتر هم بدون انیمیشن است.
-        body: KeyedSubtree(
-          key: ValueKey(tabKey),
-          child: widget.child,
+          child: KeyedSubtree(
+            key: ValueKey(tabKey),
+            child: widget.child,
+          ),
         ),
       ),
+      // ═══ پلیر پایین صفحه ═══
+      bottomNavigationBar: const PlayerBar(),
     );
   }
 
