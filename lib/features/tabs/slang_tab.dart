@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
-import '_placeholder_tab.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SlangTab extends StatelessWidget {
+import '../../core/providers/conversation_provider.dart';
+import '../../core/providers/words_filter_provider.dart';
+import '../words/widgets/word_list_view.dart';
+
+class SlangTab extends ConsumerWidget {
   const SlangTab({super.key});
 
   @override
-  Widget build(BuildContext context) => const PlaceholderTab(
-        icon: Icons.format_quote_outlined,
-        title: 'اصطلاحات عامیانه',
-        subtitle:
-            'اسلنگ‌ها و اصطلاحات روزمره‌ی زبان‌های مقصد،\nبا معنی، مثال و تلفظ صحیح.',
-        previewChips: ['انگلیسی', 'اسپانیایی', 'فرانسوی'],
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final words = ref.watch(filteredDailyWordsProvider);
+    final all = ref.watch(allDailyWordsProvider);
+    return WordListView(
+      words: words,
+      hasAnyData: all.isNotEmpty,
+    );
+  }
 }
