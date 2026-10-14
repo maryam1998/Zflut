@@ -27,7 +27,7 @@ const List<TabGroup> kTabGroups = [
   TabGroup(
     key: 'story',
     labelKey: 'group_story',
-    icon: Icons.feather,
+    icon: Icons.auto_stories,
     tabs: ['story', 'saved'],
     isAiPowered: true,
   ),
