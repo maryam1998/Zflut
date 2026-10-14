@@ -10,8 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-    flutter_tts: ^4.0.2
-just_audio: ^0.9.36
   flutter_localizations:
     sdk: flutter
   intl: any
@@ -29,11 +27,15 @@ just_audio: ^0.9.36
   dio: ^5.5.0
   supabase_flutter: ^2.5.6
 
-  # Deep links (Google OAuth callback)
+  # Deep links
   app_links: ^6.0.0
 
   # Icons
   lucide_icons: ^0.257.0
+
+  # TTS + Audio
+  flutter_tts: ^4.0.2
+  just_audio: ^0.9.36
 
 dev_dependencies:
   flutter_test:
@@ -45,4 +47,3 @@ flutter:
   generate: true
   assets:
     - assets/data/
-  # فونت‌ها را فاز ۱ تزریق می‌کنیم؛ فعلاً از فونت پیش‌فرض استفاده می‌شود.
