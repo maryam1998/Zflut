@@ -1,34 +1,27 @@
 # Data assets
 
-فایل‌های JSON دیتاست آموزشی این‌جا قرار می‌گیرند.
+این پوشه شامل داده‌های آموزشی اپ است که به‌صورت JSON ذخیره می‌شوند.
 
-## ساختار (به‌زودی)
+## فایل‌ها
 
 ### `words.json`
-```json
-[
-  {
-    "id": "w_00001",
-    "level": "A1",
-    "pos": "noun",
-    "en": "hello",
-    "fa": "سلام",
-    "translations": {
-      "en": "hello",
-      "fa": "سلام",
-      "de": "hallo"
-    },
-    "examples": ["Hello, my friend!"]
-  }
-]
-```
+لیست لغات A-Z با ساختار:
+- `id` — شناسه‌ی یکتا (مثل `w0001`)
+- `level` — سطح CEFR (A1 تا C2)
+- `pos` — نقش دستوری (noun, verb, adjective, ...)
+- `en` — کلمه‌ی انگلیسی
+- `fa` — معنی فارسی
+- `translations` — دیکشنری چندزبانه (فعلاً fa, en, de)
 
-conversations.json
+## اضافه‌کردن داده‌ی جدید
 
-vocab_in_use.json
+فایل‌های آینده که در همین پوشه اضافه می‌شوند:
+- `conversations.json` — مکالمات روزمره و موضوعی
+- `vocab_in_use.json` — لغات کاربردی
+- `slang.json` — اصطلاحات عامیانه
+- `saved_words.json` — لغات ذخیره‌شده‌ی کاربر
 
-slang.json
+## حجم داده
 
-daily_words.json
-
-words_az.json
+برای بارگذاری سریع، فایل‌ها بهتر است تکه‌تکه بارگذاری شوند. اگر از 500KB بیشتر شدند،
+به چند فایل تقسیم شوند (مثلاً `words_A1.json`, `words_A2.json`).
