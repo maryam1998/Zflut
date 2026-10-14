@@ -17,6 +17,7 @@ class TabGroup {
   });
 }
 
+// ✅ ترتیب جدید: Talk → Words → Story → Practice
 const List<TabGroup> kTabGroups = [
   TabGroup(
     key: 'talk',
@@ -25,17 +26,17 @@ const List<TabGroup> kTabGroups = [
     tabs: ['conversations', 'speaking', 'grammar'],
   ),
   TabGroup(
+    key: 'words',
+    labelKey: 'group_words',
+    icon: Icons.menu_book_outlined,
+    tabs: ['words', 'vocabInUse', 'slang', 'favorites'],
+  ),
+  TabGroup(
     key: 'story',
     labelKey: 'group_story',
     icon: Icons.auto_stories,
     tabs: ['story', 'saved'],
     isAiPowered: true,
-  ),
-  TabGroup(
-    key: 'words',
-    labelKey: 'group_words',
-    icon: Icons.menu_book_outlined,
-    tabs: ['words', 'vocabInUse', 'slang', 'favorites'],
   ),
   TabGroup(
     key: 'practice',
