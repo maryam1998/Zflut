@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/providers/auth_provider.dart';
+import '../config/app_config.dart';
 import '../../features/auth/ui/login_screen.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/tabs/conversations_tab.dart';
@@ -20,8 +21,19 @@ import '../../features/tabs/words_tab.dart';
 /// روتر — معادلِ تصمیم App.jsx بین LoginScreen و PhrasebookMain.
 /// redirect بر اساس سشن Supabase.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  // حالت توسعه: بدون ورود. هیچ‌چیز از Supabase خوانده نمی‌شود.
+  if (kSkipLogin) {
+    return GoRouter(
+      initialLocation: '/story',
+      redirect: (context, state) =>
+          state.matchedLocation == '/login' ? '/story' : null,
+      routes: _routes,
+      errorBuilder: _errorBuilder,
+    );
+  }
+
   // GoRouter فقط یک‌بار ساخته می‌شود؛ تغییر سشن از طریق refreshListenable
-  // redirect را دوباره اجرا می‌کند (قبلاً با هر تغییر، روتر از نو ساخته می‌شد).
+  // redirect را دوباره اجرا می‌کند.
   final refresh = ValueNotifier<int>(0);
   ref.listen(authStateProvider, (_, __) => refresh.value++);
   ref.onDispose(refresh.dispose);
@@ -36,26 +48,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (goingToLogin) return '/story';
       return null;
     },
-    routes: [
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      ShellRoute(
-        builder: (context, state, child) => AppShell(child: child),
-        routes: [
-          GoRoute(path: '/conversations', builder: (_, __) => const ConversationsTab()),
-          GoRoute(path: '/story',         builder: (_, __) => const StoryTab()),
-          GoRoute(path: '/saved',         builder: (_, __) => const SavedTab()),
-          GoRoute(path: '/grammar',       builder: (_, __) => const GrammarTab()),
-          GoRoute(path: '/speaking',      builder: (_, __) => const SpeakingTab()),
-          GoRoute(path: '/words',         builder: (_, __) => const WordsTab()),
-          GoRoute(path: '/vocab-in-use',  builder: (_, __) => const VocabInUseTab()),
-          GoRoute(path: '/slang',         builder: (_, __) => const SlangTab()),
-          GoRoute(path: '/favorites',     builder: (_, __) => const FavoritesTab()),
-          GoRoute(path: '/review',        builder: (_, __) => const ReviewTab()),
-        ],
-      ),
-    ],
-    errorBuilder: (_, state) => Scaffold(
-      body: Center(child: Text('Route not found: ${state.uri}')),
-    ),
+    routes: _routes,
+    errorBuilder: _errorBuilder,
   );
 });
+
+Widget _errorBuilder(BuildContext _, GoRouterState state) => Scaffold(
+      body: Center(child: Text('Route not found: ${state.uri}')),
+    );
+
+final List<RouteBase> _routes = [
+  GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+  ShellRoute(
+    builder: (context, state, child) => AppShell(child: child),
+    routes: [
+      GoRoute(path: '/conversations', builder: (_, __) => const ConversationsTab()),
+      GoRoute(path: '/story',         builder: (_, __) => const StoryTab()),
+      GoRoute(path: '/saved',         builder: (_, __) => const SavedTab()),
+      GoRoute(path: '/grammar',       builder: (_, __) => const GrammarTab()),
+      GoRoute(path: '/speaking',      builder: (_, __) => const SpeakingTab()),
+      GoRoute(path: '/words',         builder: (_, __) => const WordsTab()),
+      GoRoute(path: '/vocab-in-use',  builder: (_, __) => const VocabInUseTab()),
+      GoRoute(path: '/slang',         builder: (_, __) => const SlangTab()),
+      GoRoute(path: '/favorites',     builder: (_, __) => const FavoritesTab()),
+      GoRoute(path: '/review',        builder: (_, __) => const ReviewTab()),
+    ],
+  ),
+];

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/models/tab_group.dart';
 import '../../core/theme/app_theme_colors.dart';
 import 'widgets/header_tabs.dart';
@@ -58,6 +59,17 @@ class _AppShellState extends ConsumerState<AppShell> {
               onTabSelected: (tab) => context.go(_routeOf(tab)),
             ),
           Expanded(child: widget.child),
+          if (kSkipLogin)
+            Container(
+              width: double.infinity,
+              color: c.paperDark,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                '$kBuildStamp · login skipped (dev)',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 10, color: c.inkSoft),
+              ),
+            ),
         ],
       ),
     );

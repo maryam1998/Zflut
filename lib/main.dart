@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
+import 'core/config/app_config.dart';
 import 'core/storage/local_storage.dart' show sharedPrefsProvider;
 
 // مقادیر واقعی از --dart-define (در GitHub Actions از Secrets) می‌آیند.
@@ -49,23 +50,24 @@ Future<void> main() async {
       ]);
     }
 
+    // Supabase: در حالت kSkipLogin شکست آن مانع اجرای اپ نمی‌شود.
+    String? supabaseError;
     if (_supabaseUrl.isEmpty || _supabaseAnonKey.isEmpty) {
-      runApp(const StartupErrorApp(
-        title: 'تنظیمات Supabase پیدا نشد',
-        details:
-            'SUPABASE_URL و SUPABASE_ANON_KEY هنگام build تنظیم نشده‌اند.\n'
-            'در GitHub: Settings ← Secrets and variables ← Actions ← New repository secret\n'
-            'دو secret با همین نام‌ها بساز و workflow را دوباره اجرا کن.',
-      ));
-      return;
+      supabaseError =
+          'SUPABASE_URL و SUPABASE_ANON_KEY هنگام build تنظیم نشده‌اند.\n'
+          'در GitHub: Settings ← Secrets and variables ← Actions ← New repository secret\n'
+          'دو secret با همین نام‌ها بساز و workflow را دوباره اجرا کن.';
+    } else {
+      try {
+        await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey);
+      } catch (e) {
+        supabaseError = '$e';
+      }
     }
-
-    try {
-      await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey);
-    } catch (e) {
+    if (supabaseError != null && !kSkipLogin) {
       runApp(StartupErrorApp(
-        title: 'اتصال به Supabase برقرار نشد',
-        details: '$e',
+        title: 'تنظیمات/اتصال Supabase مشکل دارد',
+        details: supabaseError,
       ));
       return;
     }
