@@ -19,15 +19,12 @@ class LanguageSelectionNotifier extends StateNotifier<LanguageSelection> {
     await _storage.writeJson(PrefsKeys.languageSelection, next.toJson());
   }
 
-  /// زبان مادری — تک‌انتخابی.
   Future<void> setNative(String code) =>
       _persist(state.copyWith(native: code));
 
-  /// تاگل یک زبان مقصد.
   Future<void> toggleTarget(String code) {
     final list = [...state.targets];
     if (list.contains(code)) {
-      // همیشه حداقل یک زبان مقصد بمونه.
       if (list.length > 1) list.remove(code);
     } else {
       list.add(code);
@@ -35,14 +32,13 @@ class LanguageSelectionNotifier extends StateNotifier<LanguageSelection> {
     return _persist(state.copyWith(targets: list));
   }
 
-  /// حذف صریح یک زبان مقصد (از X چیپ).
   Future<void> removeTarget(String code) {
     final list = [...state.targets]..remove(code);
     if (list.isEmpty) list.add('en');
     return _persist(state.copyWith(targets: list));
   }
 
-  /// جابجایی ترتیب زبان‌های مقصد (drag).
+  /// جابجایی ترتیب زبان‌های مقصد — هم از چیپ، هم از دایره.
   Future<void> reorderTargets(int oldIndex, int newIndex) {
     final list = [...state.targets];
     if (newIndex > oldIndex) newIndex -= 1;
@@ -50,11 +46,66 @@ class LanguageSelectionNotifier extends StateNotifier<LanguageSelection> {
     list.insert(newIndex, item);
     return _persist(state.copyWith(targets: list));
   }
+
+  /// جابجایی ترتیب دایره‌های زبان مادری (فقط ترتیب نمایش).
+  Future<void> reorderNativeDisplay(int oldIndex, int newIndex) {
+    // در provider ذخیره نمی‌شه — فقط در memory برای نمایش.
+    return Future.value();
+  }
 }
 
 final languageSelectionProvider =
     StateNotifierProvider<LanguageSelectionNotifier, LanguageSelection>((ref) {
   return LanguageSelectionNotifier(ref.watch(localStorageProvider));
+});
+
+/// ترتیب دلخواه دایره‌های زبان مادری (فقط در memory).
+class NativeOrderNotifier extends StateNotifier<List<String>> {
+  NativeOrderNotifier() : super([]);
+
+  void reorder(List<String> defaultOrder, int oldIndex, int newIndex) {
+    final list = state.isEmpty ? [...defaultOrder] : [...state];
+    if (newIndex > oldIndex) newIndex -= 1;
+    final item = list.removeAt(oldIndex);
+    list.insert(newIndex, item);
+    state = list;
+  }
+
+  List<String> currentOr(List<String> defaultOrder) {
+    if (state.isEmpty) return defaultOrder;
+    // sync: هر زبان جدیدی که در defaults هست ولی در state نیست را اضافه کن.
+    final result = [...state.where((c) => defaultOrder.contains(c))];
+    for (final c in defaultOrder) {
+      if (!result.contains(c)) result.add(c);
+    }
+    return result;
+  }
+}
+
+final nativeOrderProvider =
+    StateNotifierProvider<NativeOrderNotifier, List<String>>((ref) {
+  return NativeOrderNotifier();
+});
+
+/// ترتیب دلخواه دایره‌های زبان مقصد (فقط در memory).
+/// منطق: انتخاب‌شده‌ها اول (به ترتیب targets)، بعد بقیه به ترتیب دلخواه.
+class TargetDisplayOrderNotifier extends StateNotifier<List<String>> {
+  TargetDisplayOrderNotifier() : super([]);
+
+  void setOrder(List<String> order) => state = order;
+
+  void reorder(List<String> currentOrder, int oldIndex, int newIndex) {
+    final list = [...currentOrder];
+    if (newIndex > oldIndex) newIndex -= 1;
+    final item = list.removeAt(oldIndex);
+    list.insert(newIndex, item);
+    state = list;
+  }
+}
+
+final targetDisplayOrderProvider =
+    StateNotifierProvider<TargetDisplayOrderNotifier, List<String>>((ref) {
+  return TargetDisplayOrderNotifier();
 });
 
 /// نگاشت کد → نام فارسی.
