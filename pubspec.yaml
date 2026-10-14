@@ -1,0 +1,46 @@
+name: lingolearn
+description: LingoLearn — language learning app (Flutter rewrite)
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
+  # State
+  flutter_riverpod: ^2.5.1
+
+  # Routing
+  go_router: ^14.2.0
+
+  # Storage
+  shared_preferences: ^2.2.3
+
+  # Network
+  dio: ^5.5.0
+  supabase_flutter: ^2.5.6
+
+  # Deep links (Google OAuth callback)
+  app_links: ^6.0.0
+
+  # Icons
+  lucide_icons: ^0.257.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/data/
+  # فونت‌ها را فاز ۱ تزریق می‌کنیم؛ فعلاً از فونت پیش‌فرض استفاده می‌شود.
