@@ -5,7 +5,6 @@ import '../../../core/constants/cefr_levels.dart';
 import '../../../core/models/filter_state.dart';
 import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
-import '../../../core/theme/screen_scale.dart';
 
 class FilterBar extends ConsumerStatefulWidget {
   final String searchHint;
@@ -48,12 +47,7 @@ class _FilterBarState extends ConsumerState<FilterBar> {
 
     return Container(
       color: c.paper,
-      padding: EdgeInsets.fromLTRB(
-        context.px(34),
-        context.px(26),
-        context.px(34),
-        context.px(30),
-      ),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -63,7 +57,7 @@ class _FilterBarState extends ConsumerState<FilterBar> {
               c: c,
               onSelect: notifier.setLevel,
             ),
-            SizedBox(height: context.px(34)),
+            const SizedBox(height: 10),
           ],
           if (widget.showSort) ...[
             _SortRow(
@@ -71,7 +65,7 @@ class _FilterBarState extends ConsumerState<FilterBar> {
               c: c,
               onSelect: notifier.setSort,
             ),
-            SizedBox(height: context.px(27)),
+            const SizedBox(height: 10),
           ],
           _SearchField(
             controller: _searchCtrl,
@@ -85,6 +79,7 @@ class _FilterBarState extends ConsumerState<FilterBar> {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
 class _LevelRow extends StatelessWidget {
   final String selected;
   final dynamic c;
@@ -100,11 +95,11 @@ class _LevelRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final levels = ['all', ...kCefrLevels];
     return SizedBox(
-      height: context.px(81),
+      height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: levels.length,
-        separatorBuilder: (_, __) => SizedBox(width: context.px(20)),
+        separatorBuilder: (_, __) => const SizedBox(width: 7),
         itemBuilder: (_, i) {
           final lvl = levels[i];
           final active = lvl == selected;
@@ -114,18 +109,23 @@ class _LevelRow extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               padding: EdgeInsets.symmetric(
-                horizontal: context.px(lvl == 'all' ? 36 : 28),
+                horizontal: lvl == 'all' ? 15 : 13,
+                vertical: 9,
               ),
               decoration: BoxDecoration(
-                color: active ? c.headerTo as Color : Colors.white,
+                color: active ? c.headerFrom : Colors.transparent,
                 borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: active ? c.headerFrom : c.cardBorder,
+                  width: 1.1,
+                ),
               ),
               alignment: Alignment.center,
               child: Text(
                 label,
                 style: TextStyle(
-                  color: active ? c.headerText as Color : c.ink as Color,
-                  fontSize: context.px(30),
+                  color: active ? c.headerText : c.inkSoft,
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -137,6 +137,7 @@ class _LevelRow extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
 class _SortRow extends StatelessWidget {
   final SortMode current;
   final dynamic c;
@@ -151,7 +152,7 @@ class _SortRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: AlignmentDirectional.centerStart,
+      alignment: AlignmentDirectional.centerEnd,
       child: PopupMenuButton<SortMode>(
         initialValue: current,
         onSelected: onSelect,
@@ -162,41 +163,42 @@ class _SortRow extends StatelessWidget {
         itemBuilder: (_) => SortMode.values.map((mode) {
           return PopupMenuItem<SortMode>(
             value: mode,
-            height: 38,
+            height: 40,
             child: Row(
               children: [
                 if (mode == current)
-                  Icon(Icons.check, size: 15, color: c.gold)
+                  Icon(Icons.check, size: 16, color: c.gold)
                 else
-                  const SizedBox(width: 15),
+                  const SizedBox(width: 16),
                 const SizedBox(width: 8),
                 Text(mode.faLabel,
-                    style: TextStyle(color: c.ink, fontSize: 13)),
+                    style: TextStyle(color: c.ink, fontSize: 13.5)),
               ],
             ),
           );
         }).toList(),
         child: Container(
-          height: context.px(56),
-          padding: EdgeInsets.symmetric(horizontal: context.px(28)),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: c.paperDark.withOpacity(0.5),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: c.cardBorder, width: 1),
+            border: Border.all(color: c.cardBorder),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.swap_vert, size: context.px(30), color: c.ink),
-              SizedBox(width: context.px(10)),
+              Icon(Icons.sort, size: 15, color: c.inkSoft),
+              const SizedBox(width: 6),
               Text(
                 'مرتب‌سازی: ${current.faLabel}',
                 style: TextStyle(
                   color: c.ink,
-                  fontSize: context.px(27),
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(width: 3),
+              Icon(Icons.keyboard_arrow_down, size: 15, color: c.inkSoft),
             ],
           ),
         ),
@@ -205,6 +207,7 @@ class _SortRow extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════
 class _SearchField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -221,32 +224,32 @@ class _SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: context.px(97),
+      height: 50,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(context.px(48)),
-        border: Border.all(color: c.cardBorder.withOpacity(0.7), width: 1),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: c.cardBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: c.ink.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      alignment: Alignment.center,
       child: TextField(
         controller: controller,
         onChanged: onChanged,
-        textAlign: TextAlign.start,
-        style: TextStyle(color: c.ink, fontSize: context.px(30)),
+        textAlign: TextAlign.right,
+        style: TextStyle(color: c.ink, fontSize: 14),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(
-            color: c.inkSoft.withOpacity(0.6),
-            fontSize: context.px(30),
-          ),
-          prefixIcon: Icon(Icons.search, color: c.ink, size: context.px(42)),
-          prefixIconConstraints: BoxConstraints(
-            minWidth: context.px(100),
-            minHeight: context.px(60),
-          ),
+          hintStyle:
+              TextStyle(color: c.inkSoft.withOpacity(0.6), fontSize: 14),
+          prefixIcon: Icon(Icons.search, color: c.inkSoft, size: 20),
           border: InputBorder.none,
-          isCollapsed: true,
-          contentPadding: EdgeInsets.zero,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
     );
