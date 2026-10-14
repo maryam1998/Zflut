@@ -1,55 +1,69 @@
+import 'dart:convert';
+
+import 'package:flutter/services.dart' show rootBundle;
+
 import '../models/filter_state.dart';
 import '../models/word_entry.dart';
 
-/// مخزن داده‌ها — فعلاً خالی. در فاز بعد با خواندن JSON از assets پر می‌شود.
-///
-/// ساختار داده‌ی آینده:
-///   assets/data/words.json       → لیست WordEntry
-///   assets/data/conversations.json
-///   assets/data/vocab_in_use.json
-///   assets/data/slang.json
+/// مخزن داده‌های آموزشی — فایل‌های JSON را از assets می‌خواند
+/// و عملیات فیلتر/جستجو/مرتب‌سازی روی آن‌ها انجام می‌دهد.
 class DataRepository {
   DataRepository._();
   static final DataRepository instance = DataRepository._();
 
   List<WordEntry> _words = const [];
   bool _loaded = false;
+  String? _error;
 
   bool get isLoaded => _loaded;
+  String? get error => _error;
   int get wordsCount => _words.length;
 
-  /// این تابع بعداً از rootBundle می‌خواند.
+  /// بارگذاری از `assets/data/words.json`.
+  /// فقط یک‌بار انجام می‌شود؛ فراخوانی‌های بعدی no-op هستند.
   Future<void> load() async {
-    // TODO(data): rootBundle.loadString('assets/data/words.json')
-    // _words = ...;
-    _loaded = true;
+    if (_loaded) return;
+    try {
+      final raw = await rootBundle.loadString('assets/data/words.json');
+      final List<dynamic> parsed = jsonDecode(raw) as List<dynamic>;
+      _words = parsed
+          .map((e) => WordEntry.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false);
+      _loaded = true;
+      _error = null;
+    } catch (e) {
+      _error = e.toString();
+      _loaded = false;
+    }
   }
 
-  /// فیلتر کردن روی لیست فعلی.
+  /// فیلتر کردن روی لیست فعلی — دقیقاً منطق نسخه‌ی وب.
   List<WordEntry> filterWords(WordsFilterState filter) {
     var list = [..._words];
 
-    // سطح
+    // ۱. فیلتر سطح
     if (filter.level != 'all') {
       list = list.where((w) => w.level == filter.level).toList();
     }
 
-    // جستجو
+    // ۲. جستجو در انگلیسی، فارسی، و همه‌ی ترجمه‌ها
     if (filter.query.trim().isNotEmpty) {
       final q = filter.query.trim().toLowerCase();
-      list = list.where((w) =>
-          w.en.toLowerCase().contains(q) ||
-          w.fa.contains(q) ||
-          w.translations.values.any((t) => t.toLowerCase().contains(q))
-      ).toList();
+      list = list
+          .where((w) =>
+              w.en.toLowerCase().contains(q) ||
+              w.fa.contains(q) ||
+              w.translations.values
+                  .any((t) => t.toLowerCase().contains(q)))
+          .toList();
     }
 
-    // مرتب‌سازی
+    // ۳. مرتب‌سازی
     switch (filter.sort) {
       case SortMode.defaultOrder:
         break;
       case SortMode.alphabetical:
-        list.sort((a, b) => a.en.compareTo(b.en));
+        list.sort((a, b) => a.en.toLowerCase().compareTo(b.en.toLowerCase()));
         break;
       case SortMode.byLevel:
         list.sort((a, b) => a.level.compareTo(b.level));
