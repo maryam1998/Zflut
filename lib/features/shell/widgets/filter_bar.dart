@@ -28,8 +28,9 @@ class _FilterBarState extends ConsumerState<FilterBar> {
   @override
   void initState() {
     super.initState();
-    final q = ref.read(wordsFilterProvider).query;
-    _searchCtrl = TextEditingController(text: q);
+    _searchCtrl = TextEditingController(
+      text: ref.read(wordsFilterProvider).query,
+    );
   }
 
   @override
@@ -46,7 +47,7 @@ class _FilterBarState extends ConsumerState<FilterBar> {
 
     return Container(
       color: c.paper,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -56,7 +57,7 @@ class _FilterBarState extends ConsumerState<FilterBar> {
               c: c,
               onSelect: notifier.setLevel,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
           ],
           if (widget.showSort) ...[
             _SortRow(
@@ -64,7 +65,7 @@ class _FilterBarState extends ConsumerState<FilterBar> {
               c: c,
               onSelect: notifier.setSort,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
           ],
           _SearchField(
             controller: _searchCtrl,
@@ -78,7 +79,6 @@ class _FilterBarState extends ConsumerState<FilterBar> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
 class _LevelRow extends StatelessWidget {
   final String selected;
   final dynamic c;
@@ -94,11 +94,11 @@ class _LevelRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final levels = ['all', ...kCefrLevels];
     return SizedBox(
-      height: 42,
+      height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: levels.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
         itemBuilder: (_, i) {
           final lvl = levels[i];
           final active = lvl == selected;
@@ -106,17 +106,17 @@ class _LevelRow extends StatelessWidget {
           return GestureDetector(
             onTap: () => onSelect(lvl),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
+              duration: const Duration(milliseconds: 150),
               padding: EdgeInsets.symmetric(
-                horizontal: lvl == 'all' ? 16 : 14,
-                vertical: 10,
+                horizontal: lvl == 'all' ? 14 : 12,
+                vertical: 8,
               ),
               decoration: BoxDecoration(
                 color: active ? c.headerFrom : Colors.transparent,
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(
                   color: active ? c.headerFrom : c.cardBorder,
-                  width: 1.2,
+                  width: 1,
                 ),
               ),
               alignment: Alignment.center,
@@ -124,7 +124,7 @@ class _LevelRow extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: active ? c.headerText : c.inkSoft,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -136,7 +136,6 @@ class _LevelRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
 class _SortRow extends StatelessWidget {
   final SortMode current;
   final dynamic c;
@@ -162,20 +161,22 @@ class _SortRow extends StatelessWidget {
         itemBuilder: (_) => SortMode.values.map((mode) {
           return PopupMenuItem<SortMode>(
             value: mode,
+            height: 38,
             child: Row(
               children: [
                 if (mode == current)
-                  Icon(Icons.check, size: 16, color: c.gold)
+                  Icon(Icons.check, size: 15, color: c.gold)
                 else
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 15),
                 const SizedBox(width: 8),
-                Text(mode.faLabel, style: TextStyle(color: c.ink)),
+                Text(mode.faLabel,
+                    style: TextStyle(color: c.ink, fontSize: 13)),
               ],
             ),
           );
         }).toList(),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: c.paperDark.withOpacity(0.5),
             borderRadius: BorderRadius.circular(999),
@@ -184,18 +185,18 @@ class _SortRow extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.sort, size: 16, color: c.inkSoft),
-              const SizedBox(width: 6),
+              Icon(Icons.sort, size: 14, color: c.inkSoft),
+              const SizedBox(width: 5),
               Text(
                 'مرتب‌سازی: ${current.faLabel}',
                 style: TextStyle(
                   color: c.ink,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 4),
-              Icon(Icons.keyboard_arrow_down, size: 16, color: c.inkSoft),
+              const SizedBox(width: 3),
+              Icon(Icons.keyboard_arrow_down, size: 14, color: c.inkSoft),
             ],
           ),
         ),
@@ -204,7 +205,6 @@ class _SortRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
 class _SearchField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -221,32 +221,24 @@ class _SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 44,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: c.cardBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: c.ink.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
         textAlign: TextAlign.right,
-        style: TextStyle(color: c.ink, fontSize: 14),
+        style: TextStyle(color: c.ink, fontSize: 13.5),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: c.inkSoft.withOpacity(0.6)),
-          prefixIcon: Icon(Icons.search, color: c.inkSoft, size: 20),
+          hintStyle: TextStyle(color: c.inkSoft.withOpacity(0.6), fontSize: 13.5),
+          prefixIcon: Icon(Icons.search, color: c.inkSoft, size: 19),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 14,
-          ),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
         ),
       ),
     );
