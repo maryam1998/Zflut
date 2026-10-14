@@ -1,11 +1,10 @@
 import 'package:flutter/foundation.dart';
 
-/// یک خط از مکالمه — معادلِ هر آبجکت داخل speakerA/speakerB
 @immutable
 class ConversationLine {
   final String en;
   final String fa;
-  final String level; // A1..C2
+  final String level;
 
   const ConversationLine({
     required this.en,
@@ -22,7 +21,6 @@ class ConversationLine {
   }
 }
 
-/// یک سناریو داخل یک موضوع
 @immutable
 class ConversationScenario {
   final String scenario;
@@ -51,7 +49,6 @@ class ConversationScenario {
   }
 }
 
-/// یک موضوع با چند سناریو
 @immutable
 class ConversationTopic {
   final String topic;
