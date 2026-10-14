@@ -1,14 +1,10 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/supported_languages.dart';
 import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
-import '../../../core/theme/screen_scale.dart';
 
-/// اندازه‌ها بر حسب «پیکسلِ اسکرین‌شات» (context.px) هستند.
 class LanguagePicker extends ConsumerWidget {
   const LanguagePicker({super.key});
 
@@ -25,13 +21,13 @@ class LanguagePicker extends ConsumerWidget {
         ? nativeDefaults
         : [
             ...nativeOrder.where(nativeDefaults.contains),
-            ...nativeDefaults.where((c) => !nativeOrder.contains(c)),
+            ...nativeDefaults.where((cc) => !nativeOrder.contains(cc)),
           ];
     final nativeLanguages = nativeOrderList
         .map((code) => kSupportedLanguages.firstWhere((l) => l.code == code))
         .toList();
 
-    // زبان‌های مقصد — انتخاب‌شده‌ها اول
+    // زبان‌های مقصد
     final targetDisplayOrder = ref.watch(targetDisplayOrderProvider);
     final selected = sel.targets.toList();
     final selectedLangs = selected
@@ -46,26 +42,27 @@ class LanguagePicker extends ConsumerWidget {
             .map((l) => l.code)
             .toList()
         : [
-            ...targetDisplayOrder.where((c) =>
-                !selected.contains(c) &&
-                kSupportedLanguages.any((l) => l.code == c)),
+            ...targetDisplayOrder.where((cc) =>
+                !selected.contains(cc) &&
+                kSupportedLanguages.any((l) => l.code == cc)),
             ...kSupportedLanguages
                 .map((l) => l.code)
-                .where((c) =>
-                    !selected.contains(c) && !targetDisplayOrder.contains(c)),
+                .where((cc) =>
+                    !selected.contains(cc) &&
+                    !targetDisplayOrder.contains(cc)),
           ];
     final unselectedLangs = unselectedCodes
         .map((code) => kSupportedLanguages.firstWhere((l) => l.code == code))
         .toList();
 
-    return Padding(
-      padding: EdgeInsets.only(top: context.px(38), bottom: context.px(40)),
+    return Container(
+      color: c.headerFrom,
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // زبان مادری
           const _SectionLabel(text: 'زبان مادری'),
-          SizedBox(height: context.px(20)),
+          const SizedBox(height: 3),
           _DragRow(
             key: const ValueKey('native-row'),
             languages: nativeLanguages,
@@ -78,20 +75,10 @@ class LanguagePicker extends ConsumerWidget {
             },
           ),
 
-          // خط جداکننده
-          SizedBox(height: context.px(34)),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.px(34)),
-            child: Container(
-              height: context.px(2),
-              color: c.headerText.withOpacity(0.16),
-            ),
-          ),
-          SizedBox(height: context.px(30)),
+          const SizedBox(height: 6),
 
-          // زبان‌های مقصد
           const _SectionLabel(text: 'زبان‌های مقصد'),
-          SizedBox(height: context.px(20)),
+          const SizedBox(height: 3),
           _DragRow(
             key: const ValueKey('target-row'),
             languages: [...selectedLangs, ...unselectedLangs],
@@ -111,14 +98,13 @@ class LanguagePicker extends ConsumerWidget {
             },
           ),
 
-          // ترتیب ترجمه‌ها
           if (sel.targets.length > 1) ...[
-            SizedBox(height: context.px(14)),
+            const SizedBox(height: 8),
             const _SectionLabel(
               text: 'ترتیب نمایش ترجمه‌ها (بکش تا جابجا بشه)',
               small: true,
             ),
-            SizedBox(height: context.px(14)),
+            const SizedBox(height: 4),
             _ReorderableChips(
               targets: sel.targets,
               onReorder: notifier.reorderTargets,
@@ -141,15 +127,15 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.appColors;
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: context.px(34)),
+      padding: const EdgeInsets.symmetric(horizontal: 15),
       child: Align(
         alignment: AlignmentDirectional.centerStart,
         child: Text(
           text,
           style: TextStyle(
-            color: c.headerText.withOpacity(small ? 0.80 : 0.88),
-            fontSize: context.px(small ? 27 : 29),
-            fontWeight: FontWeight.w500,
+            color: c.headerText.withOpacity(small ? 0.55 : 0.75),
+            fontSize: small ? 10 : 11.5,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -175,56 +161,46 @@ class _DragRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    final d = context.px(108); // قطر دایره
-    final gap = context.px(17);
 
-    // padding بیرونی (نه padding خودِ لیست) تا آیتم‌ها دقیقاً در لبه‌ی
-    // ۳۴px بریده شوند، مثل اسکرین‌شات.
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: context.px(34)),
-      child: SizedBox(
-        height: d + context.px(24), // جا برای سایه‌ی درخشان
-        child: ReorderableListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.zero,
-          itemCount: languages.length,
-          onReorder: onReorder,
-          buildDefaultDragHandles: false,
-          proxyDecorator: (child, index, animation) {
-            return AnimatedBuilder(
-              animation: animation,
-              builder: (context, _) {
-                return Transform.scale(
-                  scale: 1.0 + (animation.value * 0.12),
-                  child: Material(
-                    color: Colors.transparent,
-                    elevation: 8,
-                    shape: const CircleBorder(),
-                    child: child,
-                  ),
-                );
-              },
-            );
-          },
-          itemBuilder: (context, i) {
-            final lang = languages[i];
-            final active = selectedCodes.contains(lang.code);
-            return Padding(
-              key: ValueKey('circle-${lang.code}'),
-              padding: EdgeInsetsDirectional.only(end: gap),
-              child: Center(
-                child: _CircleItem(
-                  index: i,
-                  abbr: lang.abbr,
-                  active: active,
-                  size: d,
-                  c: c,
-                  onTap: () => onTap(lang.code),
+    return SizedBox(
+      height: 52,
+      child: ReorderableListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 11),
+        itemCount: languages.length,
+        onReorder: onReorder,
+        buildDefaultDragHandles: false,
+        proxyDecorator: (child, index, animation) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (context, _) {
+              return Transform.scale(
+                scale: 1.0 + (animation.value * 0.12),
+                child: Material(
+                  color: Colors.transparent,
+                  elevation: 8,
+                  shape: const CircleBorder(),
+                  child: child,
                 ),
-              ),
-            );
-          },
-        ),
+              );
+            },
+          );
+        },
+        itemBuilder: (context, i) {
+          final lang = languages[i];
+          final active = selectedCodes.contains(lang.code);
+          return Padding(
+            key: ValueKey('circle-${lang.code}'),
+            padding: const EdgeInsetsDirectional.only(end: 8),
+            child: _CircleItem(
+              index: i,
+              abbr: lang.abbr,
+              active: active,
+              c: c,
+              onTap: () => onTap(lang.code),
+            ),
+          );
+        },
       ),
     );
   }
@@ -234,7 +210,6 @@ class _CircleItem extends StatelessWidget {
   final int index;
   final String abbr;
   final bool active;
-  final double size;
   final dynamic c;
   final VoidCallback onTap;
 
@@ -242,63 +217,45 @@ class _CircleItem extends StatelessWidget {
     required this.index,
     required this.abbr,
     required this.active,
-    required this.size,
     required this.c,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color gold = c.gold as Color;
     return ReorderableDragStartListener(
       index: index,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          width: size,
-          height: size,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: active
-                ? LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color.lerp(gold, Colors.white, 0.22)!,
-                      gold,
-                    ],
-                  )
-                : null,
+            color: active ? c.gold : c.headerText.withOpacity(0.04),
+            border: Border.all(
+              color: active ? c.gold : c.headerText.withOpacity(0.35),
+              width: active ? 2 : 1,
+            ),
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: gold.withOpacity(0.50),
-                      blurRadius: context.px(22),
-                      offset: Offset(0, context.px(6)),
+                      color: c.gold.withOpacity(0.45),
+                      blurRadius: 9,
+                      spreadRadius: 0.5,
                     ),
                   ]
                 : null,
           ),
-          child: CustomPaint(
-            painter: active
-                ? null
-                : _DashedCirclePainter(
-                    color: (c.headerText as Color).withOpacity(0.40),
-                    stroke: context.px(3),
-                    dash: context.px(13),
-                    gap: context.px(8),
-                  ),
-            child: Center(
-              child: Text(
-                abbr,
-                style: TextStyle(
-                  color: active ? c.headerTo : c.headerText,
-                  fontSize: context.px(31),
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.4,
-                ),
-              ),
+          alignment: Alignment.center,
+          child: Text(
+            abbr,
+            style: TextStyle(
+              color: active ? c.headerTo : c.headerText,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
             ),
           ),
         ),
@@ -307,49 +264,6 @@ class _CircleItem extends StatelessWidget {
   }
 }
 
-/// دایره‌ی خط‌چین (برای زبان‌های انتخاب‌نشده).
-class _DashedCirclePainter extends CustomPainter {
-  final Color color;
-  final double stroke;
-  final double dash;
-  final double gap;
-
-  const _DashedCirclePainter({
-    required this.color,
-    required this.stroke,
-    required this.dash,
-    required this.gap,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
-    final r = (math.min(size.width, size.height) - stroke) / 2;
-    final path = Path()
-      ..addOval(Rect.fromCircle(center: size.center(Offset.zero), radius: r));
-    for (final m in path.computeMetrics()) {
-      double d = 0;
-      while (d < m.length) {
-        canvas.drawPath(m.extractPath(d, math.min(d + dash, m.length)), paint);
-        d += dash + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedCirclePainter old) =>
-      old.color != color ||
-      old.stroke != stroke ||
-      old.dash != dash ||
-      old.gap != gap;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// چیپ‌های ترتیب ترجمه
 // ═══════════════════════════════════════════════════════════════════
 class _ReorderableChips extends StatelessWidget {
   final List<String> targets;
@@ -364,39 +278,34 @@ class _ReorderableChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: context.px(34)),
-      child: SizedBox(
-        height: context.px(68) + context.px(12),
-        child: ReorderableListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.zero,
-          itemCount: targets.length,
-          onReorder: onReorder,
-          buildDefaultDragHandles: false,
-          proxyDecorator: (child, index, animation) {
-            return Material(
-              color: Colors.transparent,
-              elevation: 4,
-              borderRadius: BorderRadius.circular(999),
-              child: child,
-            );
-          },
-          itemBuilder: (context, index) {
-            final code = targets[index];
-            return Padding(
-              key: ValueKey('chip-$code'),
-              padding: EdgeInsetsDirectional.only(end: context.px(18)),
-              child: Center(
-                child: _OrderChip(
-                  index: index,
-                  code: code,
-                  onRemove: () => onRemove(code),
-                ),
-              ),
-            );
-          },
-        ),
+    return SizedBox(
+      height: 36,
+      child: ReorderableListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 11),
+        itemCount: targets.length,
+        onReorder: onReorder,
+        buildDefaultDragHandles: false,
+        proxyDecorator: (child, index, animation) {
+          return Material(
+            color: Colors.transparent,
+            elevation: 4,
+            borderRadius: BorderRadius.circular(999),
+            child: child,
+          );
+        },
+        itemBuilder: (context, index) {
+          final code = targets[index];
+          return Padding(
+            key: ValueKey('chip-$code'),
+            padding: const EdgeInsetsDirectional.only(end: 7),
+            child: _OrderChip(
+              index: index,
+              code: code,
+              onRemove: () => onRemove(code),
+            ),
+          );
+        },
       ),
     );
   }
@@ -419,54 +328,42 @@ class _OrderChip extends StatelessWidget {
     return ReorderableDragStartListener(
       index: index,
       child: Container(
-        height: context.px(68),
-        padding: EdgeInsets.symmetric(horizontal: context.px(16)),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(999),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.10),
-              blurRadius: context.px(8),
-              offset: Offset(0, context.px(2)),
-            ),
-          ],
+          border: Border.all(color: c.cardBorder, width: 1),
         ),
-        // RTL: اولین فرزند = راست → [دستگیره][متن][×]
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.drag_indicator,
-              size: context.px(30),
-              color: c.gold,
+            GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c.rose.withOpacity(0.15),
+                ),
+                alignment: Alignment.center,
+                child: Icon(Icons.close, size: 11, color: c.rose),
+              ),
             ),
-            SizedBox(width: context.px(8)),
+            const SizedBox(width: 5),
             Text(
               langFaName(code),
               style: TextStyle(
                 color: c.ink,
-                fontSize: context.px(30),
-                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(width: context.px(14)),
-            GestureDetector(
-              onTap: onRemove,
-              child: Container(
-                width: context.px(38),
-                height: context.px(38),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: c.paperDark.withOpacity(0.9),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.close,
-                  size: context.px(22),
-                  color: c.inkSoft,
-                ),
-              ),
+            const SizedBox(width: 5),
+            Icon(
+              Icons.drag_indicator,
+              size: 14,
+              color: c.inkSoft.withOpacity(0.5),
             ),
           ],
         ),
