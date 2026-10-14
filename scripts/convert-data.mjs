@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 const ROOT = process.cwd();
-const INPUT_DIR = join(ROOT, 'hope-data');
+const INPUT_DIR = join(ROOT, 'hope_data');
 const OUTPUT_DIR = join(ROOT, 'assets', 'data');
 
 if (!existsSync(OUTPUT_DIR)) mkdirSync(OUTPUT_DIR, { recursive: true });
