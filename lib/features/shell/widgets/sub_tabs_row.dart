@@ -43,6 +43,7 @@ class SubTabsRow extends StatelessWidget {
             icon: meta.icon,
             label: _labelFor(L, meta.labelKey),
             active: active,
+            isAi: meta.isAiPowered,
             c: c,
             onTap: () => onTabSelected(key),
           );
@@ -72,6 +73,7 @@ class _SubChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool active;
+  final bool isAi;
   final dynamic c;
   final VoidCallback onTap;
 
@@ -79,6 +81,7 @@ class _SubChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.active,
+    required this.isAi,
     required this.c,
     required this.onTap,
   });
@@ -112,6 +115,7 @@ class _SubChip extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   icon,
@@ -127,6 +131,30 @@ class _SubChip extends StatelessWidget {
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
+                if (isAi) ...[
+                  const SizedBox(width: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1.5,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF8B7CF6), Color(0xFF6366F1)],
+                      ),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: const Text(
+                      'AI',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
