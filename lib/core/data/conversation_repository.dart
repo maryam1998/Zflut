@@ -18,16 +18,15 @@ class ConversationRepository {
   List<ConversationTopic> get all => [..._daily, ..._thematic];
   bool get isLoaded => _loaded;
   String? get error => _error;
+  int get totalTopics => _daily.length + _thematic.length;
 
   Future<void> load() async {
     if (_loaded) return;
     try {
-      final dailyRaw = await rootBundle.loadString(
-        'assets/data/daily_conversations.json',
-      );
-      final thematicRaw = await rootBundle.loadString(
-        'assets/data/thematic_conversations.json',
-      );
+      final dailyRaw = await rootBundle
+          .loadString('assets/data/daily_conversations.json');
+      final thematicRaw = await rootBundle
+          .loadString('assets/data/thematic_conversations.json');
 
       _daily = (jsonDecode(dailyRaw) as List<dynamic>)
           .map((e) => ConversationTopic.fromJson(e as Map<String, dynamic>))
