@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/models/tab_group.dart';
 import '../../core/theme/app_theme_colors.dart';
+import 'widgets/bottom_nav.dart';
 import 'widgets/header_tabs.dart';
 import 'widgets/settings_sheet.dart';
 import 'widgets/sub_tabs_row.dart';
@@ -17,18 +18,16 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  String _activeGroupKey = kTabGroups.first.key;
-
   @override
   Widget build(BuildContext context) {
     final loc = GoRouterState.of(context).matchedLocation;
     final tabKey = loc.replaceFirst('/', '').replaceAll('-', '');
 
+    // تشخیص گروه فعال از مسیر جاری
     final currentGroup = kTabGroups.firstWhere(
       (g) => g.tabs.any((t) => _normalize(t) == tabKey),
       orElse: () => kTabGroups.first,
     );
-    _activeGroupKey = currentGroup.key;
 
     final c = context.appColors;
 
@@ -36,19 +35,20 @@ class _AppShellState extends ConsumerState<AppShell> {
       backgroundColor: c.paper,
       body: Column(
         children: [
+          // ── هدر تک‌ردیفی ──
           HeaderTabs(
-            activeGroupKey: _activeGroupKey,
-            onGroupSelected: (group) {
-              context.go(_routeOf(group.tabs.first));
-            },
             onSettingsTap: () => SettingsSheet.show(context),
           ),
+
+          // ── زیرتب‌ها (فقط اگر گروه > ۱ تب) ──
           if (currentGroup.tabs.length > 1)
             SubTabsRow(
               group: currentGroup,
               activeTabKey: _normalize(tabKey),
               onTabSelected: (tab) => context.go(_routeOf(tab)),
             ),
+
+          // ── محتوا ──
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
@@ -61,6 +61,14 @@ class _AppShellState extends ConsumerState<AppShell> {
                 child: widget.child,
               ),
             ),
+          ),
+
+          // ── Bottom Navigation ──
+          AppBottomNav(
+            activeGroupKey: currentGroup.key,
+            onGroupSelected: (group) {
+              context.go(_routeOf(group.tabs.first));
+            },
           ),
         ],
       ),
