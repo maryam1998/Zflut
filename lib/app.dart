@@ -11,6 +11,10 @@ import 'core/router/app_router.dart';
 import 'core/theme/theme_builder.dart';
 import 'l10n/app_localizations.dart';
 
+// فایل‌های دیگر (login_screen, header_tabs, ...) فقط app.dart را import می‌کنند
+// و نوع AppLocalizations را از همین‌جا می‌گیرند.
+export 'l10n/app_localizations.dart';
+
 class LingoLearnApp extends ConsumerWidget {
   const LingoLearnApp({super.key});
 

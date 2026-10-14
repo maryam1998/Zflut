@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/providers/app_prefs_provider.dart';
+import 'core/storage/local_storage.dart' show sharedPrefsProvider;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
