@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:just_audio/just_audio.dart';
@@ -31,15 +32,13 @@ class SpeechController extends StateNotifier<SpeechState> {
   int? _abChunkA;
   int? _abChunkB;
 
-  // شمارنده‌ی تکرار برای هر چانک — کلید: ایندکس چانک
+  // شمارنده‌ی تکرار برای هر چانک
   final Map<int, int> _chunkRepeatsDone = {};
 
   Future<void> _initLocalTts() async {
     try {
+      await _localTts.setSharedInstance(true);
       await _localTts.awaitSpeakCompletion(true);
-      _localTts.setCompletionHandler(() {});
-      _localTts.setCancelHandler(() {});
-      _localTts.setErrorHandler((_) {});
     } catch (_) {}
   }
 
@@ -56,13 +55,11 @@ class SpeechController extends StateNotifier<SpeechState> {
 
     final newKey = '${TtsConfig.locale[code] ?? 'en-US'}::$text';
 
-    // همان متن، در حال پخش → pause
     if (_currentKey == newKey && state.status == SpeechStatus.playing) {
       await _pause();
       return 'ok';
     }
 
-    // همان متن، paused → resume
     if (_currentKey == newKey && state.status == SpeechStatus.paused) {
       _generation++;
       state = state.copyWith(status: SpeechStatus.playing);
@@ -70,7 +67,6 @@ class SpeechController extends StateNotifier<SpeechState> {
       return 'ok';
     }
 
-    // متن جدید
     _generation++;
     await _stopAll();
 
@@ -154,11 +150,6 @@ class SpeechController extends StateNotifier<SpeechState> {
     } catch (_) {}
   }
 
-  /// چرخه‌ی تکرار:
-  /// 1 کلیک: 0 → 2 (هر جمله ۲ بار)
-  /// 2 کلیک: 2 → 3 (هر جمله ۳ بار)
-  /// 3 کلیک: 3 → -1 (بی‌نهایت)
-  /// 4 کلیک: -1 → 0 (خاموش)
   void cycleRepeat() {
     final order = [0, 2, 3, -1];
     final i = order.indexOf(state.globalRepeat);
@@ -218,7 +209,6 @@ class SpeechController extends StateNotifier<SpeechState> {
   Future<void> _playFrom(int idx) async {
     if (_disposed) return;
     if (idx >= _chunks.length) {
-      // پایان متن
       if (state.globalRepeat == -1) {
         unawaited(_playFrom(0));
         return;
@@ -260,7 +250,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       if (ok && myGen == _generation) return;
     }
 
-    // ۳. Edge TTS / Web Speech
+    // ۳. Web Speech / Edge
     await _playOnline(idx, cleanText, code, myGen);
   }
 
@@ -333,12 +323,34 @@ class SpeechController extends StateNotifier<SpeechState> {
 
       if (myGen != _generation) return false;
 
-      final ok = await _localTts.speak(text);
-      if (ok != 1 || myGen != _generation) return false;
+      // ═══ با Completer منتظر اتمام پخش ═══
+      final done = Completer<void>();
+
+      void complete() {
+        if (!done.isCompleted) done.complete();
+      }
+
+      _localTts.setCompletionHandler(complete);
+      _localTts.setCancelHandler(complete);
+      _localTts.setErrorHandler((_) => complete());
+
+      final result = await _localTts.speak(text);
+
+      if (result != 1) return false;
+      if (myGen != _generation) return false;
+
+      // صبر برای اتمام صدا
+      await done.future.timeout(
+        Duration(seconds: 60 + text.length ~/ 10),
+        onTimeout: () {},
+      );
+
+      if (myGen != _generation) return false;
 
       await _gapThenNext(idx, text, myGen);
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('WebSpeech error: $e');
       return false;
     }
   }
@@ -349,7 +361,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     String code,
     int myGen,
   ) async {
-    // روی وب: اول flutter_tts
+    // روی وب: flutter_tts اول
     if (!NativeTtsBridge.isAvailable) {
       final localOk = await _playWebSpeech(idx, text, code, myGen);
       if (localOk && myGen == _generation) return;
@@ -383,7 +395,8 @@ class SpeechController extends StateNotifier<SpeechState> {
       if (myGen != _generation) return;
 
       await _gapThenNext(idx, text, myGen);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Online TTS error: $e');
       if (myGen != _generation) return;
       state = state.copyWith(
         status: SpeechStatus.idle,
@@ -409,7 +422,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
 
     // ═══ تکرار ═══
-    final target = state.globalRepeat; // 0=خاموش، 2، 3، -1=∞
+    final target = state.globalRepeat; // 0 | 2 | 3 | -1
     if (target != 0) {
       final done = _chunkRepeatsDone[idx] ?? 1;
       final needRepeat = target == -1 ? true : done < target;
@@ -420,7 +433,6 @@ class SpeechController extends StateNotifier<SpeechState> {
       }
     }
 
-    // تکرار تموم شد
     _chunkRepeatsDone.remove(idx);
     unawaited(_playFrom(idx + 1));
   }
