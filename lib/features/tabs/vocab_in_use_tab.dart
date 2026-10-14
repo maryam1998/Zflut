@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
-import '_placeholder_tab.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class VocabInUseTab extends StatelessWidget {
+import '../../core/providers/conversation_provider.dart';
+import '../../core/providers/words_filter_provider.dart';
+import '../words/widgets/word_list_view.dart';
+
+class VocabInUseTab extends ConsumerWidget {
   const VocabInUseTab({super.key});
 
   @override
-  Widget build(BuildContext context) => const PlaceholderTab(
-        icon: Icons.layers_outlined,
-        title: 'لغات کاربردی',
-        subtitle:
-            'لغات در قالب جمله‌های واقعی با تمرین‌های\nچندگزینه‌ای و کاربرد در موقعیت‌های روزمره.',
-        previewChips: ['مبتدی', 'متوسط', 'پیشرفته'],
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final words = ref.watch(filteredDailyWordsProvider);
+    final all = ref.watch(allDailyWordsProvider);
+    return WordListView(
+      words: words,
+      hasAnyData: all.isNotEmpty,
+    );
+  }
 }
