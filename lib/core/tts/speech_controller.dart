@@ -38,8 +38,10 @@ class SpeechController extends StateNotifier<SpeechState> {
   Future<void> _initLocalTts() async {
     try {
       await _localTts.setSharedInstance(true);
-      await _localTts.awaitSpeakCompletion(true);
-    } catch (_) {}
+      await _localTts.awaitSpeakCompletion(true); // ✅ مهم برای تکرار
+    } catch (e) {
+      debugPrint('initLocalTts error: $e');
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -55,11 +57,13 @@ class SpeechController extends StateNotifier<SpeechState> {
 
     final newKey = '${TtsConfig.locale[code] ?? 'en-US'}::$text';
 
+    // همان متن، در حال پخش → pause
     if (_currentKey == newKey && state.status == SpeechStatus.playing) {
       await _pause();
       return 'ok';
     }
 
+    // همان متن، paused → resume
     if (_currentKey == newKey && state.status == SpeechStatus.paused) {
       _generation++;
       state = state.copyWith(status: SpeechStatus.playing);
@@ -67,6 +71,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       return 'ok';
     }
 
+    // متن جدید
     _generation++;
     await _stopAll();
 
@@ -150,10 +155,12 @@ class SpeechController extends StateNotifier<SpeechState> {
     } catch (_) {}
   }
 
+  /// چرخه تکرار: 0 → 2 → 3 → ∞ → 0
   void cycleRepeat() {
     final order = [0, 2, 3, -1];
     final i = order.indexOf(state.globalRepeat);
     final next = order[(i + 1) % order.length];
+    debugPrint('🔁 cycleRepeat: ${state.globalRepeat} → $next');
     state = state.copyWith(globalRepeat: next);
   }
 
@@ -323,27 +330,9 @@ class SpeechController extends StateNotifier<SpeechState> {
 
       if (myGen != _generation) return false;
 
-      // ═══ با Completer منتظر اتمام پخش ═══
-      final done = Completer<void>();
-
-      void complete() {
-        if (!done.isCompleted) done.complete();
-      }
-
-      _localTts.setCompletionHandler(complete);
-      _localTts.setCancelHandler(complete);
-      _localTts.setErrorHandler((_) => complete());
-
-      final result = await _localTts.speak(text);
-
-      if (result != 1) return false;
-      if (myGen != _generation) return false;
-
-      // صبر برای اتمام صدا
-      await done.future.timeout(
-        Duration(seconds: 60 + text.length ~/ 10),
-        onTimeout: () {},
-      );
+      // ✅ با awaitSpeakCompletion که در _initLocalTts فعاله،
+      // این فراخوانی تا پایان پخش صبر می‌کنه
+      await _localTts.speak(text);
 
       if (myGen != _generation) return false;
 
@@ -413,7 +402,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     await Future.delayed(Duration(milliseconds: gap));
     if (myGen != _generation) return;
 
-    // ═══ A-B looping ═══
+    // A-B looping
     if (_abState == 'looping' && _abChunkB != null && idx == _abChunkB) {
       final targetA = _abChunkA ?? 0;
       _chunkRepeatsDone.remove(idx);
@@ -426,6 +415,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     if (target != 0) {
       final done = _chunkRepeatsDone[idx] ?? 1;
       final needRepeat = target == -1 ? true : done < target;
+      debugPrint('🔁 repeat check: idx=$idx, done=$done, target=$target, needRepeat=$needRepeat');
       if (needRepeat) {
         _chunkRepeatsDone[idx] = done + 1;
         unawaited(_playFrom(idx));
