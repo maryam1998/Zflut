@@ -8,11 +8,11 @@ final translationServiceProvider = Provider<TranslationService>((ref) {
   return TranslationService(ref.watch(sharedPrefsProvider));
 });
 
-/// ترجمه‌ی یک متن به یک زبان مقصد.
-/// Riverpod این FutureProvider رو خودکار cache می‌کنه —
-/// درخواست‌های تکراری با هم merge می‌شن.
-final translationProvider = FutureProvider.family<String,
-    ({String text, String to, String from})>((ref, args) async {
+/// ترجمه‌ی یک متن به یک زبان مقصد (معادلِ translateFree وب).
+/// autoDispose: اگر همه‌ی سرویس‌ها شکست خوردند و متن اصلی برگشت، نتیجه‌ی
+/// ناموفق تا آخر نشست نمی‌چسبد؛ دفعه‌ی بعد دوباره تلاش می‌شود (موفق‌ها از کش می‌آیند).
+final translationProvider = FutureProvider.autoDispose.family<String,
+    ({String text, String to, String from, bool verify})>((ref, args) async {
   if (args.text.trim().isEmpty) return '';
   final service = ref.watch(translationServiceProvider);
   final ai = ref.watch(aiSettingsProvider);
@@ -21,5 +21,6 @@ final translationProvider = FutureProvider.family<String,
     targetLang: args.to,
     sourceLang: args.from,
     aiSettings: ai,
+    forceVerify: args.verify,
   );
 });

@@ -127,3 +127,28 @@ String langFaName(String code) {
     default:   return code.toUpperCase();
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// زبان‌هایی که زیر هر لغت/جمله باید ترجمه نشان داده شود
+// — همان منطقِ WordList.jsx وب (effectiveDisplayLangs):
+//   • مقصدها منهای انگلیسی (انگلیسی خودِ سرلغت است)
+//   • زبان مادری (اگر en نباشد و جزو مقصدها نباشد) اولِ لیست می‌آید
+//   • اگر چیزی نماند، حداقل فارسی
+// ═══════════════════════════════════════════════════════════════════
+List<String> effectiveDisplayLangs(LanguageSelection sel) {
+  final targets = <String>[];
+  for (final t in sel.targets) {
+    if (t != 'en' && !targets.contains(t)) targets.add(t);
+  }
+  final nativeExtra =
+      sel.native.isNotEmpty && sel.native != 'en' && !targets.contains(sel.native)
+          ? sel.native
+          : null;
+  if (nativeExtra != null) return [nativeExtra, ...targets];
+  return targets.isNotEmpty ? targets : const ['fa'];
+}
+
+final displayLangsProvider = Provider<List<String>>((ref) {
+  final sel = ref.watch(languageSelectionProvider);
+  return effectiveDisplayLangs(sel);
+});

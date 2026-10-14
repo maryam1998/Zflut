@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/daily_word.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
-import '../../core/providers/translation_provider.dart';
 import '../../core/providers/words_filter_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../shell/widgets/filter_bar.dart';
+import 'translation_row.dart';
 
 class DailyWordsList extends ConsumerWidget {
   const DailyWordsList({super.key});
@@ -17,14 +17,9 @@ class DailyWordsList extends ConsumerWidget {
     final c = context.appColors;
     final words = ref.watch(filteredDailyWordsProvider);
     final all = ref.watch(allDailyWordsProvider);
-    final sel = ref.watch(languageSelectionProvider);
-
-    // زبان‌هایی که برای هر لغت باید ترجمه نشون داده بشه:
-    //   زبان مادری (اگر en نباشه) + همه‌ی زبان‌های مقصد (بدون en خودش)
-    final langsToShow = <String>[
-      if (sel.native != 'en') sel.native,
-      ...sel.targets.where((t) => t != 'en'),
-    ];
+    // زبان‌های ترجمه = همان منطق وب (WordList.jsx):
+    //   [زبان مادری اگر en نبود و جزو مقصدها نبود] + مقصدها (بدون en)؛ خالی → fa
+    final langsToShow = ref.watch(displayLangsProvider);
 
     return CustomScrollView(
       slivers: [
@@ -185,10 +180,18 @@ class _WordCard extends StatelessWidget {
           if (langsToShow.isNotEmpty) ...[
             const SizedBox(height: 8),
             ...langsToShow.map(
-              (code) => _TranslationRow(
-                en: word.en,
-                knownFa: word.fa,
+              (code) => TranslationRow(
+                key: ValueKey('tr-${word.id}-${word.en}-$code'),
+                text: word.en,
                 langCode: code,
+                sourceLang: 'en',
+                // فارسی مستقیم از دیتا (مثل وب)؛ بقیه‌ی زبان‌ها از سرویس ترجمه
+                knownText: code == 'fa' ? word.fa : '',
+                // همان قاعده‌ی وب: slang/idiom و سطح C1/C2 با AI هم بررسی می‌شوند
+                forceVerify: word.pos == 'slang' ||
+                    word.pos == 'idiom' ||
+                    word.level == 'C1' ||
+                    word.level == 'C2',
               ),
             ),
           ],
@@ -229,81 +232,5 @@ class _WordCard extends StatelessWidget {
       'slang': 'اسلنگ',
     };
     return map[pos] ?? pos;
-  }
-}
-
-class _TranslationRow extends ConsumerWidget {
-  final String en;
-  final String knownFa;
-  final String langCode;
-
-  const _TranslationRow({
-    required this.en,
-    required this.knownFa,
-    required this.langCode,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.appColors;
-
-    // فارسی — از دیتای JSON
-    if (langCode == 'fa' && knownFa.isNotEmpty) {
-      return _row(context, c, knownFa);
-    }
-
-    final async = ref.watch(
-      translationProvider((text: en, to: langCode, from: 'en')),
-    );
-
-    return async.when(
-      loading: () => _row(context, c, '…', loading: true),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (text) {
-        if (text.isEmpty) return const SizedBox.shrink();
-        return _row(context, c, text);
-      },
-    );
-  }
-
-  Widget _row(BuildContext context, dynamic c, String text,
-      {bool loading = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-            decoration: BoxDecoration(
-              color: c.paperDark,
-              borderRadius: BorderRadius.circular(5),
-              border: Border.all(color: c.cardBorder, width: 0.6),
-            ),
-            child: Text(
-              langCode.toUpperCase(),
-              style: TextStyle(
-                color: c.gold,
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.4,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: loading ? c.inkSoft : const Color(0xFF0F5C34),
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
