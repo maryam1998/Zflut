@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 //   1. کش محلی (با چکِ looksLikelyMistranslated موقع خواندن)
 //   2. صفِ سراسری (۱۰ کار هم‌زمان) + سقفِ زمانیِ ۱۵ ثانیه از لحظه‌ی «اجرا»
 //   3. ۴ سرویس رایگان به‌صورت موازی (Google → MyMemory → Lingva → Libre)
-//      با circuit breaker (۲ شکست پشت‌سرهم = ۳ دقیقه کنار)
+//      با circuit breaker (۴ شکست پشت‌سرهم = ۴۵ ثانیه کنار)
 //   4. کنترل کیفیت رایگان؛ فقط اگر مشکوک بود (یا forceVerify) → تأیید با AI
 //   5. آخرین چاره: ترجمه با بک‌اند AI (Cloudflare Worker /api/generate)
 // ═══════════════════════════════════════════════════════════════════
@@ -21,11 +21,11 @@ const String kDefaultBackendUrl =
     'https://phrasebook-api.maryam-s-sharifiyan.workers.dev';
 
 const String _kCachePrefix = 'tr3::';
-const int _kProviderFailThreshold = 2;
-const int _kProviderBlockMs = 3 * 60 * 1000;
+const int _kProviderFailThreshold = 4;
+const int _kProviderBlockMs = 45 * 1000;
 const int kGlobalTranslateConcurrency = 10;
 const int _kHardTimeoutMs = 15000;
-const int _kProviderTimeoutMs = 4000;
+const int _kProviderTimeoutMs = 6000;
 const int _kAiTimeoutMs = 10000;
 
 /// نام انگلیسی زبان — برای پرامپت AI (همان englishLangName وب)
@@ -62,6 +62,19 @@ bool looksLikeAIReasoning(String text) {
   return boldCount >= 4 && RegExp(r'(^|\n|\s)\d\.\s').hasMatch(text);
 }
 
+/// خروجیِ مدل‌های «گارد/ایمنی» یا امتناع (مثلاً «User Safety: safe») که به‌جای
+/// ترجمه برمی‌گردند — ترجمه حساب نمی‌شوند.
+final RegExp _guardOutputRe = RegExp(
+  r"^\s*(user\s+|assistant\s+)?safety\s*:|^\s*(safe|unsafe)\s*$|^\s*(i'?m sorry,? (but )?i (can'?t|cannot)|as an ai\b|sorry, i can'?t (help|assist|translate))",
+  caseSensitive: false,
+  multiLine: true,
+);
+
+bool looksLikeGuardOutput(String text) {
+  final t = text.trim();
+  return t.isNotEmpty && _guardOutputRe.hasMatch(t);
+}
+
 /// <think>…</think> و مانندش را برمی‌دارد
 String stripAIReasoning(String text) {
   return text
@@ -83,6 +96,7 @@ bool looksLikelyMistranslated(
   final out = draft.trim();
   if (out.isEmpty) return true;
   if (looksLikeAIReasoning(out)) return true;
+  if (looksLikeGuardOutput(out)) return true;
 
   // خروجی عیناً همان متن مبدأ است
   if (sourceLang.isNotEmpty &&
@@ -636,7 +650,9 @@ class TranslationService {
     var cleaned = clean(await callAI(
         prompt: prompt, maxTokens: 200, retries: 1, settings: settings));
 
-    if (cleaned.isEmpty || looksLikeAIReasoning(cleaned)) {
+    if (cleaned.isEmpty ||
+        looksLikeAIReasoning(cleaned) ||
+        looksLikeGuardOutput(cleaned)) {
       final strict =
           'Output ONLY the $targetLabel translation of the text below, as a single line. '
           'Do not think aloud, do not analyze, do not explain, do not use lists or markdown.\n\n'
@@ -648,6 +664,9 @@ class TranslationService {
     if (cleaned.isEmpty) throw Exception('translate-ai-empty-response');
     if (looksLikeAIReasoning(cleaned)) {
       throw Exception('translate-ai-reasoning-leak');
+    }
+    if (looksLikeGuardOutput(cleaned)) {
+      throw Exception('translate-ai-guard-output');
     }
     return cleaned;
   }
@@ -673,8 +692,12 @@ class TranslationService {
           looksLikeAIReasoning(cleaned)) {
         return draft;
       }
+      if (looksLikeGuardOutput(cleaned)) return draft;
       final fixed = _stripQuotes(cleaned);
-      return fixed.isEmpty ? draft : fixed;
+      if (fixed.isEmpty) return draft;
+      // «اصلاح»ی که چند برابرِ پیش‌نویس است ترجمه نیست
+      if (draft.isNotEmpty && fixed.length > draft.length * 3 + 20) return draft;
+      return fixed;
     } catch (_) {
       return draft;
     }

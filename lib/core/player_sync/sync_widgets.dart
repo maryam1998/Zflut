@@ -415,6 +415,32 @@ Future<bool> syncPlayMainTrack(WidgetRef ref) async {
   return true;
 }
 
+/// دکمه‌ی پخش/توقفِ مرکزیِ پلیر — همیشه کاری می‌کند:
+///  • چیزی پخش/مکث است → پخش/توقف
+///  • بیکار است و آخرین متنِ خوانده‌شده هنوز مالِ همین صفحه است → دوباره از اول
+///  • وگرنه → کلِ متنِ صفحه‌ی فعلی از اول
+/// false = در این صفحه متنی برای خواندن نیست.
+Future<bool> syncPlayPause(WidgetRef ref) async {
+  final st = ref.read(speechControllerProvider);
+  final ctrl = ref.read(speechControllerProvider.notifier);
+
+  if (st.key != null && st.status != SpeechStatus.idle) {
+    await ctrl.togglePlayPause();
+    return true;
+  }
+
+  final key = st.key;
+  if (key != null) {
+    final tracks = ref.read(playerSyncProvider).tracks;
+    final stillHere = tracks.values.any((t) => t.key == key);
+    if (stillHere) {
+      await ctrl.togglePlayPause();
+      return true;
+    }
+  }
+  return syncPlayMainTrack(ref);
+}
+
 /// ردیف‌های ترجمه این را صدا می‌زنند تا متنِ کاملِ ترجمه ساخته شود.
 void syncReportTranslation(
     BuildContext context, WidgetRef ref, String code, String id, String text) {

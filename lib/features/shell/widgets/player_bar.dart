@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/player_sync/player_sync_provider.dart';
 import '../../../core/player_sync/sync_widgets.dart';
 import '../../../core/providers/speech_provider.dart';
 import '../../../core/scroll/global_scroll.dart';
@@ -21,10 +20,6 @@ class PlayerBar extends ConsumerWidget {
     final isPlaying = state.status == SpeechStatus.playing;
     final progress =
         (isActive && state.total > 0) ? (state.chunkIndex + 1) / state.total : 0.0;
-    // متنِ کاملِ تبِ فعلی (مثل onFullTextChange در Hope) — وقتی چیزی پخش
-    // نمی‌شود، دکمه‌ی مرکزی همین را از اول می‌خواند.
-    final hasTrack = ref.watch(playerSyncProvider.select(
-        (s) => (s.tracks['en']?.fullText.isNotEmpty ?? false)));
 
     return Container(
       decoration: BoxDecoration(
@@ -136,42 +131,53 @@ class PlayerBar extends ConsumerWidget {
                             : '${state.globalRepeat}'),
                   ),
 
-                  // A-B
+                  // A-B — همیشه فعال؛ اگر چیزی پخش نمی‌شود اول متنِ صفحه را شروع می‌کند
                   _ABBtn(
-                    isActive: isActive,
                     abState: state.abState,
-                    chunkA: state.abChunkA,
-                    chunkB: state.abChunkB,
                     color: c.gold,
-                    disabledColor: c.cardBorder,
-                    onTap: isActive ? ctrl.markAB : null,
+                    idleColor: c.ink,
+                    onTap: () async {
+                      if (!_isActive(ref)) {
+                        final ok = await _startMain(context, ref);
+                        if (!ok) return;
+                      }
+                      ctrl.markAB();
+                    },
                   ),
 
-                  // قبلی
+                  // قبلی — همیشه فعال
                   _IconBtn(
                     icon: Icons.skip_previous,
-                    color: (isActive && state.hasPrev) ? c.ink : c.cardBorder,
-                    onTap: (isActive && state.hasPrev) ? ctrl.prevChunk : null,
-                  ),
-
-                  // پخش/توقف
-                  _PlayBtn(
-                    isPlaying: isPlaying,
-                    isActive: isActive || hasTrack,
-                    onTap: () {
-                      if (isActive && state.key != null) {
-                        ctrl.togglePlayPause();
-                      } else if (hasTrack) {
-                        syncPlayMainTrack(ref);
+                    color: c.ink,
+                    onTap: () async {
+                      if (_isActive(ref)) {
+                        await ctrl.prevChunk();
+                      } else {
+                        await _startMain(context, ref);
                       }
                     },
                   ),
 
-                  // بعدی
+                  // پخش/توقف — همیشه فعال
+                  _PlayBtn(
+                    isPlaying: isPlaying,
+                    onTap: () async {
+                      final ok = await syncPlayPause(ref);
+                      if (!ok && context.mounted) _toastNoText(context);
+                    },
+                  ),
+
+                  // بعدی — همیشه فعال
                   _IconBtn(
                     icon: Icons.skip_next,
-                    color: (isActive && state.hasNext) ? c.ink : c.cardBorder,
-                    onTap: (isActive && state.hasNext) ? ctrl.nextChunk : null,
+                    color: c.ink,
+                    onTap: () async {
+                      if (_isActive(ref)) {
+                        await ctrl.nextChunk();
+                      } else {
+                        await _startMain(context, ref);
+                      }
+                    },
                   ),
 
                   // سرعت
@@ -192,6 +198,28 @@ class PlayerBar extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  bool _isActive(WidgetRef ref) {
+    final s = ref.read(speechControllerProvider);
+    return s.status != SpeechStatus.idle && s.key != null;
+  }
+
+  Future<bool> _startMain(BuildContext context, WidgetRef ref) async {
+    final ok = await syncPlayMainTrack(ref);
+    if (!ok && context.mounted) _toastNoText(context);
+    return ok;
+  }
+
+  void _toastNoText(BuildContext context) {
+    final m = ScaffoldMessenger.of(context);
+    m.hideCurrentSnackBar();
+    m.showSnackBar(
+      const SnackBar(
+        content: Text('در این صفحه متنی برای خواندن نیست'),
+        duration: Duration(seconds: 1),
       ),
     );
   }
@@ -226,12 +254,15 @@ class PlayerBar extends ConsumerWidget {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  '${state.rate.toStringAsFixed(1)}×',
-                  style: TextStyle(
-                    color: c.gold,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Text(
+                    '${state.rate.toStringAsFixed(1)}×',
+                    style: TextStyle(
+                      color: c.gold,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -264,12 +295,15 @@ class PlayerBar extends ConsumerWidget {
                         width: 1,
                       ),
                     ),
-                    child: Text(
-                      '${r}×',
-                      style: TextStyle(
-                        color: selected ? c.paper : c.ink,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                    child: Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Text(
+                        '$r×',
+                        style: TextStyle(
+                          color: selected ? c.paper : c.ink,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -337,27 +371,20 @@ class _IconBtn extends StatelessWidget {
 
 // ═══════════════════════════════════════════════════════════════════
 class _ABBtn extends StatelessWidget {
-  final bool isActive;
   final String abState;
-  final int? chunkA;
-  final int? chunkB;
   final Color color;
-  final Color disabledColor;
-  final VoidCallback? onTap;
+  final Color idleColor;
+  final VoidCallback onTap;
 
   const _ABBtn({
-    required this.isActive,
     required this.abState,
-    required this.chunkA,
-    required this.chunkB,
     required this.color,
-    required this.disabledColor,
+    required this.idleColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final enabled = isActive;
     final active = abState == 'waitingB' || abState == 'looping';
     final badge = abState == 'waitingB'
         ? 'A'
@@ -374,9 +401,7 @@ class _ABBtn extends StatelessWidget {
             child: Text(
               'A-B',
               style: TextStyle(
-                color: enabled
-                    ? (active ? color : Colors.grey.shade700)
-                    : disabledColor,
+                color: active ? color : idleColor,
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
@@ -412,12 +437,10 @@ class _ABBtn extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 class _PlayBtn extends StatelessWidget {
   final bool isPlaying;
-  final bool isActive;
   final VoidCallback onTap;
 
   const _PlayBtn({
     required this.isPlaying,
-    required this.isActive,
     required this.onTap,
   });
 
@@ -426,7 +449,7 @@ class _PlayBtn extends StatelessWidget {
     final c = context.appColors;
 
     return Material(
-      color: isActive ? c.gold : c.cardBorder,
+      color: c.gold,
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
@@ -464,12 +487,15 @@ class _SpeedBtn extends StatelessWidget {
       borderRadius: BorderRadius.circular(24),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-        child: Text(
-          '${rate.toStringAsFixed(1)}×',
-          style: TextStyle(
-            color: color,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Text(
+            '${rate.toStringAsFixed(1)}×',
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ),

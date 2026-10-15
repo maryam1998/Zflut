@@ -252,7 +252,10 @@ class SpeechController extends StateNotifier<SpeechState> {
     if (code != null && _queueIndex >= 0 && _queueIndex + 1 < _queue.length) {
       final i = _queueIndex + 1;
       await _startText(_queue[i], code, queue: _queue, queueIndex: i);
+      return;
     }
+    // آخرِ متن: از اول ادامه بده (دکمه‌ی «بعدی» همیشه کار می‌کند)
+    await seekToChunk(0);
   }
 
   /// جمله‌ی قبل؛ اگر اولین جمله بود و صف داریم → آخرین جمله‌ی آیتم قبلی
@@ -267,7 +270,10 @@ class SpeechController extends StateNotifier<SpeechState> {
       final i = _queueIndex - 1;
       await _startText(_queue[i], code,
           queue: _queue, queueIndex: i, startAtEnd: true);
+      return;
     }
+    // اولین جمله: همان جمله را از اول بخوان (دکمه‌ی «قبلی» همیشه کار می‌کند)
+    await seekToChunk(0);
   }
 
   Future<void> setRate(double r) async {
@@ -396,6 +402,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       charOffset: _chunks[idx].start,
       status: SpeechStatus.playing,
       total: _chunks.length,
+      clearError: true,
       hasPrev: _hasPrev(idx),
       hasNext: _hasNext(idx),
     );
@@ -670,11 +677,8 @@ class SpeechController extends StateNotifier<SpeechState> {
           );
           return;
         case _WebResult.failed:
-          state = state.copyWith(
-            status: SpeechStatus.idle,
-            error: 'خطا در پخش صدا',
-          );
-          return;
+          // صدای مرورگر شکست خورد → به‌جای بن‌بست، Edge آنلاین را امتحان کن
+          break;
       }
     }
 

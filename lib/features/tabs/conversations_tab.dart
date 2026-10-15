@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/constants/level_colors.dart';
 import '../../core/constants/topic_icons.dart';
 import '../../core/models/conversation.dart';
 import '../../core/player_sync/player_track.dart';
 import '../../core/player_sync/sync_widgets.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
-import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/widgets/sync_item_card.dart';
 
 class ConversationsTab extends ConsumerStatefulWidget {
   const ConversationsTab({super.key});
@@ -703,6 +702,8 @@ class _SpeakerBox extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// هر خطِ مکالمه = همان کارتِ مشترکِ برنامه (SyncItemCard) — دقیقاً مثل لغات
+// ═══════════════════════════════════════════════════════════════════
 class _LineRow extends ConsumerWidget {
   final ConversationLine line;
   final String id;
@@ -713,7 +714,6 @@ class _LineRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.appColors;
     final sel = ref.watch(languageSelectionProvider);
 
     final langsToShow = <String>[
@@ -721,181 +721,16 @@ class _LineRow extends ConsumerWidget {
       ...sel.targets.where((t) => t != 'en'),
     ];
 
-    return SyncAnchor(
-      code: 'en',
+    return SyncItemCard(
+      key: ValueKey('line-$id'),
       id: id,
-      child: Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: c.cardBorder, width: 0.6),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: Row(
-              children: [
-                // ✅ بج سطح رنگی — هم‌رنگ با تب لغات
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: levelBgColor(line.level),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    line.level,
-                    style: TextStyle(
-                      color: levelColor(line.level),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: SyncText(
-                      code: 'en',
-                      id: id,
-                      text: line.en,
-                      style: TextStyle(
-                        color: c.ink,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        height: 1.3,
-                      ),
-                      textDirection: TextDirection.ltr,
-                      textAlign: TextAlign.left,
-                    ),
-                  ),
-                ),
-                SyncSpeakButton(
-                  code: 'en',
-                  id: id,
-                  text: line.en,
-                  color: c.gold,
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-          ...langsToShow.map((code) {
-            final knownText = code == 'fa' ? line.fa : null;
-            return _TranslationLine(
-                id: id, en: line.en, knownText: knownText, langCode: code);
-          }),
-        ],
-      ),
-    ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-class _TranslationLine extends ConsumerWidget {
-  final String id;
-  final String en;
-  final String? knownText;
-  final String langCode;
-
-  const _TranslationLine({
-    required this.id,
-    required this.en,
-    this.knownText,
-    required this.langCode,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.appColors;
-
-    if (knownText != null && knownText!.isNotEmpty) {
-      return _build(context, ref, c, knownText!);
-    }
-
-    final async = ref.watch(
-      translationProvider(
-          (text: en, to: langCode, from: 'en', verify: false)),
-    );
-
-    return async.when(
-      loading: () => _build(context, ref, c, '...', loading: true),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (text) {
-        if (text.isEmpty) return const SizedBox.shrink();
-        return _build(context, ref, c, text);
-      },
-    );
-  }
-
-  Widget _build(BuildContext context, WidgetRef ref, dynamic c, String text,
-      {bool loading = false}) {
-    // ترجمه آماده شد → متنِ کاملِ همین زبان برای «خواندنِ پیوسته‌ی ترجمه‌ها»
-    if (!loading) syncReportTranslation(context, ref, langCode, id, text);
-    return SyncAnchor(
-      code: langCode,
-      id: id,
-      child: Directionality(
-      textDirection: TextDirection.ltr,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 5),
-        child: Row(
-          children: [
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: c.paperDark,
-                borderRadius: BorderRadius.circular(5),
-                border: Border.all(color: c.cardBorder, width: 0.5),
-              ),
-              child: Text(
-                langCode.toUpperCase(),
-                style: TextStyle(
-                  color: c.gold,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: SyncText(
-                  code: langCode,
-                  id: id,
-                  text: text,
-                  style: TextStyle(
-                    color: loading ? c.inkSoft : const Color(0xFF0F5C34),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    height: 1.3,
-                  ),
-                  textDirection: TextDirection.ltr,
-                  textAlign: TextAlign.left,
-                ),
-              ),
-            ),
-            if (!loading)
-              SyncSpeakButton(
-                code: langCode,
-                id: id,
-                text: text,
-                color: c.gold,
-                size: 17,
-                padding: const EdgeInsets.all(3),
-              ),
-          ],
-        ),
-      ),
-    ),
+      en: line.en,
+      level: line.level,
+      langsToShow: langsToShow,
+      knownTranslations: line.fa.isNotEmpty
+          ? <String, String>{'fa': line.fa}
+          : const <String, String>{},
+      compact: true,
     );
   }
 }

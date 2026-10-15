@@ -182,6 +182,7 @@ class _SyncedWordList extends StatelessWidget {
         itemBuilder: (_, i) {
           final w = words[i];
           return WordCard(
+            key: ValueKey('word-${w.id}'),
             id: w.id.toString(),
             en: w.en,
             fa: w.fa,
@@ -190,6 +191,48 @@ class _SyncedWordList extends StatelessWidget {
             langsToShow: langsToShow,
           );
         },
+      ),
+    );
+  }
+}
+
+/// حالت خالی / در حال بارگذاری لیست
+class _EmptyState extends StatelessWidget {
+  final AppThemeColorsExt c;
+  final bool hasData;
+  final String message;
+
+  const _EmptyState({
+    required this.c,
+    required this.hasData,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              hasData ? Icons.search_off : Icons.hourglass_empty,
+              size: 38,
+              color: c.inkSoft.withOpacity(0.5),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              hasData ? message : 'داده‌ای بارگذاری نشد',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: c.inkSoft,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
