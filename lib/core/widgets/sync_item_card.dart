@@ -6,16 +6,16 @@ import '../constants/level_colors.dart';
 import '../constants/supported_languages.dart';
 import '../player_sync/sync_widgets.dart';
 import '../providers/ai_settings_provider.dart';
-import '../providers/language_selection_provider.dart'; // برای خواندن زبان‌ها
+import '../providers/language_selection_provider.dart';
 import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart';
-import '../../features/reader/widgets/selection_popup.dart'; // ✅ ایمپورت کادر پاپ‌آپ
+import '../../features/reader/widgets/selection_popup.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // SyncItemCard — «کارتِ مشترک» برای همه‌ی تب‌ها
 // ═══════════════════════════════════════════════════════════════════
-class SyncItemCard extends StatefulWidget {
+class SyncItemCard extends ConsumerStatefulWidget {   // ✅ تغییر از StatefulWidget
   final String id;
   final String en;
   final String level;
@@ -40,20 +40,27 @@ class SyncItemCard extends StatefulWidget {
   });
 
   @override
-  State<SyncItemCard> createState() => _SyncItemCardState();
+  ConsumerState<SyncItemCard> createState() => _SyncItemCardState();  // ✅ ConsumerState
 }
 
-class _SyncItemCardState extends State<SyncItemCard> {
+class _SyncItemCardState extends ConsumerState<SyncItemCard> {   // ✅ ConsumerState
   bool _isFavorite = false;
   bool _showAiExamples = false;
 
   // ═══════════════════════════════════════════════════════════════════
   // تابع نمایش کادر پاپ‌آپ
   // ═══════════════════════════════════════════════════════════════════
-  void _showPopup(BuildContext context, String word, String sentence, Offset globalPosition) {
+  void _showPopup(
+    BuildContext context,
+    String word,
+    String sentence,
+    Offset globalPosition,
+  ) {
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
-    
+
+    final sel = ref.read(languageSelectionProvider);
+
     entry = OverlayEntry(
       builder: (context) => Stack(
         children: [
@@ -67,37 +74,42 @@ class _SyncItemCardState extends State<SyncItemCard> {
           SelectionPopup(
             word: word,
             sentence: sentence,
-            sourceLang: 'en', // زبان اصلی متن
-            nativeLang: ref.read(languageSelectionProvider).native, // زبان مادری از Provider
-            targetLangs: ref.read(languageSelectionProvider).targets, // زبان‌های مقصد از Provider
+            sourceLang: 'en',
+            nativeLang: sel.native,
+            targetLangs: sel.targets,
             position: globalPosition,
             onDismiss: () => entry.remove(),
           ),
         ],
       ),
     );
-    
+
     overlay.insert(entry);
   }
 
   // ═══════════════════════════════════════════════════════════════════
   // ساخت متن با قابلیت کلیک روی تک‌کلمه‌ها
   // ═══════════════════════════════════════════════════════════════════
-  Widget _buildClickableText(String text, TextStyle style, String langCode, String sentence) {
-    // جدا کردن کلمات با فاصله
+  Widget _buildClickableText(
+    String text,
+    TextStyle style,
+    String langCode,
+    String sentence,
+  ) {
     final words = text.split(RegExp(r'(\s+)'));
     final spans = <TextSpan>[];
 
     for (final word in words) {
       if (word.trim().isEmpty) {
-        spans.add(TextSpan(text: word));
+        spans.add(TextSpan(text: word, style: style));
       } else {
         final recognizer = TapGestureRecognizer()
           ..onTapDown = (details) {
-            // نمایش کادر پاپ‌آپ در موقعیت کلیک
             _showPopup(context, word, sentence, details.globalPosition);
           };
-        spans.add(TextSpan(text: word, recognizer: recognizer, style: style));
+        spans.add(
+          TextSpan(text: word, recognizer: recognizer, style: style),
+        );
       }
     }
 
@@ -147,8 +159,8 @@ class _SyncItemCardState extends State<SyncItemCard> {
                     size: compact ? 10 : 11,
                   ),
                   const SizedBox(width: 8),
-                  
-                  // ✅ استفاده از SelectionArea برای انتخاب محدوده + متن کلیک‌پذیر
+
+                  // ✅ متن اصلی کلیک‌پذیر + انتخاب محدوده
                   Expanded(
                     child: SelectionArea(
                       child: _buildClickableText(
@@ -164,14 +176,19 @@ class _SyncItemCardState extends State<SyncItemCard> {
                       ),
                     ),
                   ),
-                  
+
                   if (pos != null && pos.isNotEmpty) ...[
                     const SizedBox(width: 6),
                     _Badge(text: pos, fg: c.inkSoft, bg: c.paperDark, size: 10),
                   ],
                   if (widget.isPersonal) ...[
                     const SizedBox(width: 6),
-                    const _Badge(text: 'شخصی', fg: Color(0xFFA34960), bg: Color(0x1FA34960), size: 10),
+                    const _Badge(
+                      text: 'شخصی',
+                      fg: Color(0xFFA34960),
+                      bg: Color(0x1FA34960),
+                      size: 10,
+                    ),
                   ],
                   SyncSpeakButton(
                     code: 'en',
@@ -185,7 +202,8 @@ class _SyncItemCardState extends State<SyncItemCard> {
               ),
             ),
 
-            if (widget.langsToShow.isNotEmpty) SizedBox(height: compact ? 2 : 6),
+            if (widget.langsToShow.isNotEmpty)
+              SizedBox(height: compact ? 2 : 6),
 
             // ═══ ردیف‌های ترجمه ═══
             for (final code in widget.langsToShow)
@@ -198,7 +216,8 @@ class _SyncItemCardState extends State<SyncItemCard> {
                 compact: compact,
                 showActions: widget.showActions,
                 isFavorite: _isFavorite,
-                onToggleFavorite: () => setState(() => _isFavorite = !_isFavorite),
+                onToggleFavorite: () =>
+                    setState(() => _isFavorite = !_isFavorite),
               ),
 
             if (widget.showActions) ...[
@@ -206,7 +225,8 @@ class _SyncItemCardState extends State<SyncItemCard> {
               Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: AiExamplesButton(
-                  onTap: () => setState(() => _showAiExamples = !_showAiExamples),
+                  onTap: () =>
+                      setState(() => _showAiExamples = !_showAiExamples),
                   expanded: _showAiExamples,
                 ),
               ),
@@ -260,7 +280,8 @@ class SyncTranslationRow extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SyncTranslationRow> createState() => _SyncTranslationRowState();
+  ConsumerState<SyncTranslationRow> createState() =>
+      _SyncTranslationRowState();
 }
 
 class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
@@ -299,12 +320,19 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // تابع نمایش کادر پاپ‌آپ برای ترجمه
+  // کادر پاپ‌آپ برای ترجمه
   // ═══════════════════════════════════════════════════════════════════
-  void _showPopup(BuildContext context, String word, String sentence, Offset globalPosition) {
+  void _showPopup(
+    BuildContext context,
+    String word,
+    String sentence,
+    Offset globalPosition,
+  ) {
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
-    
+
+    final sel = ref.read(languageSelectionProvider);
+
     entry = OverlayEntry(
       builder: (context) => Stack(
         children: [
@@ -317,33 +345,39 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
           SelectionPopup(
             word: word,
             sentence: sentence,
-            sourceLang: widget.langCode, // زبان مقصد
-            nativeLang: ref.read(languageSelectionProvider).native,
-            targetLangs: ref.read(languageSelectionProvider).targets,
+            sourceLang: widget.langCode,
+            nativeLang: sel.native,
+            targetLangs: sel.targets,
             position: globalPosition,
             onDismiss: () => entry.remove(),
           ),
         ],
       ),
     );
-    
+
     overlay.insert(entry);
   }
 
-  // ساخت متن کلیک‌پذیر برای ترجمه
-  Widget _buildClickableText(String text, TextStyle style, String langCode, String sentence) {
+  Widget _buildClickableText(
+    String text,
+    TextStyle style,
+    String langCode,
+    String sentence,
+  ) {
     final words = text.split(RegExp(r'(\s+)'));
     final spans = <TextSpan>[];
 
     for (final word in words) {
       if (word.trim().isEmpty) {
-        spans.add(TextSpan(text: word));
+        spans.add(TextSpan(text: word, style: style));
       } else {
         final recognizer = TapGestureRecognizer()
           ..onTapDown = (details) {
             _showPopup(context, word, sentence, details.globalPosition);
           };
-        spans.add(TextSpan(text: word, recognizer: recognizer, style: style));
+        spans.add(
+          TextSpan(text: word, recognizer: recognizer, style: style),
+        );
       }
     }
 
@@ -494,7 +528,8 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: c.paperDark,
                   borderRadius: BorderRadius.circular(5),
@@ -511,8 +546,8 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                 ),
               ),
               const SizedBox(width: 10),
-              
-              // ✅ متن ترجمه با قابلیت کلیک و انتخاب محدوده
+
+              // ✅ متن ترجمه کلیک‌پذیر + انتخاب محدوده
               Expanded(
                 child: text != null
                     ? SelectionArea(
@@ -542,7 +577,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                         ),
                       ),
               ),
-              
+
               if (_retryFailed)
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
