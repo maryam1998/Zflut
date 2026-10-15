@@ -12,16 +12,29 @@ import 'tts_config.dart';
 
 enum _WebResult { done, cancelled, noVoice, failed }
 
+/// نتیجه‌ی یک بار خوانش با Web Speech
+enum _Once { ok, silent, noStart, cancelled, failed }
+
 class SpeechController extends StateNotifier<SpeechState> {
   /// [voicePref]: صدای ذخیره‌شده‌ی کاربر برای یک زبان (نام صدا) — اختیاری
   SpeechController({String? Function(String lang)? voicePref})
       : _voicePref = voicePref,
         super(const SpeechState()) {
     _initLocalTts();
+    // فهرست صداها پیش از اولین تپ در پس‌زمینه گرم شود (خوانشِ ترجمه‌ها تأخیر نداشته باشد)
+    unawaited(_warmVoices());
   }
 
   final String? Function(String lang)? _voicePref;
   List<Map<String, String>> _voices = [];
+
+  // صدایی که برای هر زبان واقعاً شنیده شد (اولویتِ اول دفعه‌ی بعد) و صداهایی
+  // که اخیراً بی‌صدا خواندند (چند دقیقه کنار گذاشته می‌شوند).
+  final Map<String, String> _goodVoice = {};
+  final Map<String, DateTime> _deadVoices = {};
+  static const _deadVoiceTtl = Duration(minutes: 3);
+  final DateTime _createdAt = DateTime.now();
+  DateTime _lastStopAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   final FlutterTts _localTts = FlutterTts();
   final AudioPlayer _onlinePlayer = AudioPlayer();
@@ -362,6 +375,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   Future<void> _pause() async {
     _generation++;
     _cancelWaiters();
+    _lastStopAt = DateTime.now();
     try {
       await _localTts.stop();
       await NativeTtsBridge.stop();
@@ -372,6 +386,7 @@ class SpeechController extends StateNotifier<SpeechState> {
 
   Future<void> _stopAll() async {
     _cancelWaiters();
+    _lastStopAt = DateTime.now();
     try {
       await _localTts.stop();
       await NativeTtsBridge.stop();
@@ -504,42 +519,77 @@ class SpeechController extends StateNotifier<SpeechState> {
     );
   }
 
-  /// فهرست صداهای دستگاه/مرورگر (مثل getCachedVoices در Hope). روی وب،
-  /// getVoices() بار اول ممکنه خالی باشه، پس چند بار تلاش می‌کنیم.
-  Future<List<Map<String, String>>> _loadVoices({bool force = false}) async {
-    if (force) _voices = [];
-    if (_voices.isNotEmpty) return _voices;
-    for (var i = 0; i < 8; i++) {
-      try {
-        final raw = await _localTts.getVoices;
-        if (raw is List && raw.isNotEmpty) {
-          _voices = raw
-              .whereType<Map>()
-              .map((m) => {
-                    'name': '${m['name'] ?? ''}',
-                    'locale': '${m['locale'] ?? m['lang'] ?? ''}',
-                  })
-              .where((m) => m['name']!.isNotEmpty && m['locale']!.isNotEmpty)
-              .toList();
-          if (_voices.isNotEmpty) return _voices;
-        }
-      } catch (e) {
-        debugPrint('getVoices error: $e');
+  /// یک‌بار خواندنِ فهرست صداها (بدون هیچ انتظار/تکرار).
+  Future<List<Map<String, String>>> _readVoicesOnce() async {
+    try {
+      final raw = await _localTts.getVoices;
+      if (raw is List && raw.isNotEmpty) {
+        return raw
+            .whereType<Map>()
+            .map((m) => {
+                  'name': '${m['name'] ?? ''}',
+                  'locale': '${m['locale'] ?? m['lang'] ?? ''}',
+                })
+            .where((m) => m['name']!.isNotEmpty && m['locale']!.isNotEmpty)
+            .toList();
       }
-      await Future.delayed(const Duration(milliseconds: 250));
+    } catch (e) {
+      debugPrint('getVoices error: $e');
     }
+    return const [];
+  }
+
+  /// فهرست صداهای دستگاه/مرورگر (مثل getCachedVoices در Hope): از کش
+  /// می‌خواند؛ فقط با force دوباره از موتور می‌پرسد. هرگز منتظر نمی‌ماند —
+  /// پر شدنِ فهرست کارِ [_warmVoices] در پس‌زمینه است.
+  Future<List<Map<String, String>>> _loadVoices({bool force = false}) async {
+    if (!force && _voices.isNotEmpty) return _voices;
+    final list = await _readVoicesOnce();
+    if (list.isNotEmpty) _voices = list;
     return _voices;
+  }
+
+  /// پیش‌گرم‌کردنِ فهرست صداها همان اولِ کار (معادل refreshVoiceCache +
+  /// voiceschanged در Hope). کروم فهرست را دیر و تکه‌تکه کامل می‌کند؛ اگر
+  /// اولین خوانشِ ترجمه منتظرش بماند، چند ثانیه تأخیر/سکوت می‌شود. اینجا
+  /// پیش از اولین تپِ کاربر، در پس‌زمینه پرش می‌کنیم.
+  Future<void> _warmVoices() async {
+    for (var i = 0; i < 12 && !_disposed; i++) {
+      await _loadVoices(force: true);
+      if (_voices.isNotEmpty && i >= 3) break;
+      await Future.delayed(const Duration(milliseconds: 400));
+    }
   }
 
   String _normLocale(String l) => l.toLowerCase().replaceAll('_', '-');
 
-  /// انتخاب بهترین صدا برای زبان — همون ترتیبِ getBestVoice در Hope:
-  /// صدای ذخیره‌شده‌ی کاربر > کیفیت (neural/wavenet/...) > Google > اولین صدای منطبق.
-  /// null = فهرست صداها خالیه (نامعلوم)؛ [_noVoiceMarker] = مطمئنیم صدایی برای این زبان نیست.
-  static const Map<String, String> _noVoiceMarker = {'none': 'true'};
+  static String _voiceKey(Map<String, String> v) =>
+      '${v['name']}|${v['locale']}';
 
-  Future<Map<String, String>?> _pickVoice(String locale, String code) async {
+  bool _isDead(Map<String, String> v) {
+    final t = _deadVoices[_voiceKey(v)];
+    if (t == null) return false;
+    if (DateTime.now().difference(t) > _deadVoiceTtl) {
+      _deadVoices.remove(_voiceKey(v));
+      return false;
+    }
+    return true;
+  }
+
+  /// صداهای مناسب برای زبان، به ترتیبِ اولویت (مثل getBestVoice در Hope):
+  /// صدایی که قبلاً واقعاً شنیده شد > صدای ذخیره‌شده‌ی کاربر > هم‌locale دقیق >
+  /// کیفیت (neural/wavenet/...) > Google > بقیه. صدایی که اخیراً «بی‌صدا»
+  /// خوانده (مثلاً صدای آنلاینِ Google بدون اینترنت) کنار گذاشته می‌شود.
+  /// null = فهرست صداها نامعلوم (هنوز خالی)؛ لیست خالی = مطمئنیم صدایی
+  /// برای این زبان نیست.
+  Future<List<Map<String, String>>?> _voiceCandidates(
+      String locale, String code) async {
     var voices = await _loadVoices();
+    // فقط اگر فهرست هنوز کاملاً خالیه (ثانیه‌های اول) کوتاه صبر می‌کنیم
+    for (var i = 0; i < 3 && voices.isEmpty; i++) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      voices = await _loadVoices(force: true);
+    }
     if (voices.isEmpty) return null;
 
     final prefix = _normLocale(locale).split('-').first;
@@ -551,50 +601,151 @@ class SpeechController extends StateNotifier<SpeechState> {
         }).toList();
 
     var matching = findMatching(voices);
-    // مرورگر/گوشی گاهی فهرستِ صداها را تکه‌تکه و دیر کامل می‌کند (voiceschanged).
-    // قبلاً اولین فهرستِ ناقص برای همیشه کش می‌شد و ترجمه‌ها «صدایی نصب نیست»
-    // می‌گرفتند. اینجا قبل از نتیجه‌گیری چند بار فهرست را تازه می‌کنیم.
-    for (var i = 0; i < 4 && matching.isEmpty; i++) {
-      await Future.delayed(const Duration(milliseconds: 350));
-      voices = await _loadVoices(force: true);
-      matching = findMatching(voices);
-    }
-    if (matching.isEmpty) return _noVoiceMarker;
-
-    // صدای دقیقاً هم‌locale (مثلاً de-DE) جلوتر قرار بگیره
-    matching.sort((a, b) {
-      final ea = _normLocale(a['locale']!) == wanted ? 0 : 1;
-      final eb = _normLocale(b['locale']!) == wanted ? 0 : 1;
-      return ea.compareTo(eb);
-    });
-
-    final saved = _voicePref?.call(code);
-    if (saved != null && saved.isNotEmpty) {
-      for (final v in matching) {
-        if (v['name'] == saved) return v;
+    if (matching.isEmpty) {
+      // فهرست ممکنه هنوز ناقص باشه؛ فقط در ثانیه‌های اولِ برنامه کمی صبر
+      // می‌کنیم، بعدش بی‌درنگ نتیجه می‌گیریم (دیگر تأخیر ندارد).
+      final young = DateTime.now().difference(_createdAt) <
+          const Duration(seconds: 6);
+      for (var i = 0; i < (young ? 2 : 1) && matching.isEmpty; i++) {
+        if (young) await Future.delayed(const Duration(milliseconds: 250));
+        voices = await _loadVoices(force: true);
+        matching = findMatching(voices);
       }
     }
+    matching.removeWhere(_isDead);
+    if (matching.isEmpty) return const [];
 
+    final saved = _voicePref?.call(code);
+    final good = _goodVoice[code];
     const quality = [
       'neural', 'wavenet', 'chirp', 'studio', 'natural', 'premium',
       'enhanced', 'polyglot',
     ];
     final genderRe = RegExp('female|male', caseSensitive: false);
-    for (final kw in quality) {
-      for (final v in matching) {
-        final n = v['name']!.toLowerCase();
-        if (n.contains(kw) && genderRe.hasMatch(v['name']!)) return v;
+
+    int score(Map<String, String> v) {
+      final name = v['name']!;
+      final n = name.toLowerCase();
+      var s = 0;
+      if (good != null && name == good) s -= 10000;
+      if (saved != null && saved.isNotEmpty && name == saved) s -= 9000;
+      if (_normLocale(v['locale']!) == wanted) s -= 5;
+      final qi = quality.indexWhere((k) => n.contains(k));
+      if (qi >= 0) {
+        s -= (genderRe.hasMatch(name) ? 100 : 60) - qi;
+      } else if (n.contains('google')) {
+        s -= 20;
       }
+      return s;
     }
-    for (final kw in quality) {
-      for (final v in matching) {
-        if (v['name']!.toLowerCase().contains(kw)) return v;
+
+    final scored = <MapEntry<int, Map<String, String>>>[
+      for (var i = 0; i < matching.length; i++)
+        MapEntry(score(matching[i]) * 1000 + i, matching[i]),
+    ]..sort((a, b) => a.key.compareTo(b.key));
+    return scored.map((e) => e.value).toList();
+  }
+
+  /// یک بار خواندنِ [text] با صدای [voice] (null = فقط با زبان) و تشخیصِ
+  /// نتیجه: خوانده شد / بی‌صدا تمام شد / اصلاً شروع نشد / لغو / خطا.
+  Future<_Once> _speakWebOnce(
+    String text,
+    String locale,
+    Map<String, String>? voice,
+    int myGen,
+  ) async {
+    final waiter = Completer<bool>();
+    _webWaiter = waiter;
+    var started = false;
+
+    // پایان خوانش را با handler می‌فهمیم (نه awaitSpeakCompletion که روی
+    // وب فعال نمی‌شد و تکرار، خوانش‌ها را پشت سر هم داخل صف مرورگر می‌ریخت).
+    _localTts.setStartHandler(() {
+      started = true;
+    });
+    _localTts.setCompletionHandler(() {
+      if (waiter.isCompleted || !identical(_webWaiter, waiter)) return;
+      waiter.complete(true);
+    });
+    _localTts.setCancelHandler(() {
+      // cancel یعنی خودمان stop زدیم؛ _cancelWaiters کارش را کرده.
+    });
+    _localTts.setErrorHandler((msg) {
+      if (waiter.isCompleted || !identical(_webWaiter, waiter)) return;
+      final m = '$msg'.toLowerCase();
+      if (m.contains('interrupted') || m.contains('cancel')) {
+        return; // قطع‌شدن عمدیِ خودمان، خطا نیست
       }
+      debugPrint('WebSpeech error event: $msg');
+      waiter.complete(false);
+    });
+
+    await _localTts.setLanguage(voice?['locale'] ?? locale);
+    if (voice != null) {
+      await _localTts.setVoice({
+        'name': voice['name']!,
+        'locale': voice['locale']!,
+      });
     }
-    for (final v in matching) {
-      if (v['name']!.toLowerCase().contains('google')) return v;
+    await _localTts.setSpeechRate(_engineRate(state.rate));
+    await _localTts.setVolume(state.muted ? 0.0 : 1.0);
+    await _localTts.setPitch(1.0);
+    if (myGen != _generation) return _Once.cancelled;
+
+    // کروم (به‌خصوص اندروید) بعد از cancel() اگر بلافاصله speak() شود،
+    // گاهی بی‌صدا خوانش را می‌اندازد؛ فقط وقتی تازه stop زده‌ایم مکث می‌کنیم
+    // (بین جمله‌های پشت‌سرهم دیگر هیچ تأخیرِ اضافه‌ای نیست).
+    if (kIsWeb &&
+        DateTime.now().difference(_lastStopAt) <
+            const Duration(milliseconds: 400)) {
+      await Future.delayed(const Duration(milliseconds: 80));
+      if (myGen != _generation) return _Once.cancelled;
     }
-    return matching.first;
+
+    final t0 = DateTime.now();
+    await _localTts.speak(text);
+    if (myGen != _generation) return _Once.cancelled;
+
+    // اگر تا ۳ ثانیه هیچ شروعی گزارش نشد، خوانش بی‌صدا افتاده → شکست
+    // (تا به‌جای سکوتِ طولانی، صدای بعدی/موتور بعدی امتحان شود).
+    final early = await Future.any<bool?>([
+      waiter.future,
+      Future<bool?>.delayed(
+        const Duration(milliseconds: 3000),
+        () => (started || waiter.isCompleted) ? null : false,
+      ),
+    ]);
+    if (myGen != _generation) return _Once.cancelled;
+    if (early == false && !started) {
+      if (identical(_webWaiter, waiter)) _webWaiter = null;
+      try {
+        await _localTts.stop();
+      } catch (_) {}
+      return _Once.noStart;
+    }
+
+    final finished = early ??
+        await waiter.future.timeout(
+          Duration(seconds: 20 + text.length ~/ 5),
+          onTimeout: () => true,
+        );
+    if (myGen != _generation) return _Once.cancelled;
+    if (identical(_webWaiter, waiter)) _webWaiter = null;
+    if (!finished) return _Once.failed;
+
+    // خوانشِ «بی‌صدا»: گاهی موتور (مثلاً صدای آنلاینِ Google وقتی اینترنت
+    // نیست) رویداد پایان را تقریباً فوراً می‌فرستد بی‌آنکه چیزی پخش شود.
+    // فقط برای متن‌های نه‌چندان کوتاه (لغتِ تک‌کلمه‌ای واقعاً می‌تواند خیلی
+    // سریع تمام شود).
+    final elapsedMs = DateTime.now().difference(t0).inMilliseconds;
+    final minMs = (text.length * 15 / state.rate.clamp(0.25, 3.0))
+        .clamp(250, 3000)
+        .round();
+    if (text.length >= 10 && elapsedMs < minMs) {
+      debugPrint('silent utterance detected (${elapsedMs}ms)');
+      return _Once.silent;
+    }
+    return _Once.ok;
   }
 
   Future<_WebResult> _playWebSpeech(
@@ -606,129 +757,42 @@ class SpeechController extends StateNotifier<SpeechState> {
     try {
       final locale = TtsConfig.locale[code] ?? 'en-US';
 
-      // ✅ مثل Hope: صدای مخصوصِ همین زبان را از بین صداهای نصب‌شده‌ی
-      // دستگاه/مرورگر انتخاب می‌کنیم — قبلاً فقط setLanguage زده می‌شد و
-      // روی وب همه‌چیز با صدای انگلیسیِ پیش‌فرض خوانده می‌شد.
-      final voice = await _pickVoice(locale, code);
+      // ✅ مثل Hope: صدای مخصوصِ همین زبان از بین صداهای نصب‌شده‌ی دستگاه.
+      // اگر صدای اولی بی‌صدا یا بی‌شروع بود (مثلاً صدای آنلاین بدون
+      // اینترنت)، همان لحظه صدای بعدیِ همان زبان را امتحان می‌کنیم؛ صدایی که
+      // کار کرد برای دفعه‌های بعد حفظ می‌شود تا ترجمه‌ها بدون تأخیر بخوانند.
+      final candidates = await _voiceCandidates(locale, code);
       if (myGen != _generation) return _WebResult.cancelled;
-      if (identical(voice, _noVoiceMarker)) return _WebResult.noVoice;
+      if (candidates != null && candidates.isEmpty) return _WebResult.noVoice;
 
-      final waiter = Completer<bool>();
-      _webWaiter = waiter;
-      var started = false;
+      // null = فهرست نامعلوم → بدون انتخابِ صدا فقط با زبان می‌خوانیم (مثل Hope)
+      final List<Map<String, String>?> tries =
+          candidates == null ? [null] : candidates.take(3).toList();
 
-      // پایان خوانش را با handler می‌فهمیم (نه awaitSpeakCompletion که روی
-      // وب فعال نمی‌شد و تکرار، خوانش‌ها را پشت سر هم داخل صف مرورگر می‌ریخت).
-      _localTts.setStartHandler(() {
-        started = true;
-      });
-      _localTts.setCompletionHandler(() {
-        if (waiter.isCompleted || !identical(_webWaiter, waiter)) return;
-        waiter.complete(true);
-      });
-      _localTts.setCancelHandler(() {
-        // cancel یعنی خودمان stop زدیم؛ _cancelWaiters کارش را کرده.
-      });
-      _localTts.setErrorHandler((msg) {
-        if (waiter.isCompleted || !identical(_webWaiter, waiter)) return;
-        final m = '$msg'.toLowerCase();
-        if (m.contains('interrupted') || m.contains('cancel')) {
-          return; // قطع‌شدن عمدیِ خودمان، خطا نیست
+      for (var i = 0; i < tries.length; i++) {
+        final voice = tries[i];
+        final r = await _speakWebOnce(text, locale, voice, myGen);
+        if (myGen != _generation || r == _Once.cancelled) {
+          return _WebResult.cancelled;
         }
-        debugPrint('WebSpeech error event: $msg');
-        waiter.complete(false);
-      });
-
-      await _localTts.setLanguage(voice?['locale'] ?? locale);
-      if (voice != null) {
-        await _localTts.setVoice({
-          'name': voice['name']!,
-          'locale': voice['locale']!,
-        });
+        if (r == _Once.ok) {
+          if (voice != null) _goodVoice[code] = voice['name']!;
+          await _gapThenNext(idx, text, myGen);
+          return _WebResult.done;
+        }
+        // «بی‌صدا» همیشه کنار گذاشته می‌شود؛ «شروع‌نشده» فقط اگر صدای دیگری
+        // برای امتحان مانده (تا صدای کُندِ لودشونده اشتباهی حذف نشود).
+        if (voice != null &&
+            (r == _Once.silent ||
+                (r == _Once.noStart && i < tries.length - 1))) {
+          _deadVoices[_voiceKey(voice)] = DateTime.now();
+          if (_goodVoice[code] == voice['name']) _goodVoice.remove(code);
+        }
+        try {
+          await _localTts.stop();
+        } catch (_) {}
       }
-      await _localTts.setSpeechRate(_engineRate(state.rate));
-      await _localTts.setVolume(state.muted ? 0.0 : 1.0);
-      await _localTts.setPitch(1.0);
-
-      if (myGen != _generation) return _WebResult.cancelled;
-
-      // کروم (به‌خصوص اندروید) بعد از cancel() اگر بلافاصله speak() شود،
-      // گاهی بی‌صدا خوانش را می‌اندازد؛ یک مکثِ کوتاه این را برطرف می‌کند.
-      if (kIsWeb) {
-        await Future.delayed(const Duration(milliseconds: 80));
-        if (myGen != _generation) return _WebResult.cancelled;
-      }
-
-      // خوانشِ «بی‌صدا»: گاهی مرورگر/موتور گوشی رویداد پایان را تقریباً
-      // فوراً می‌فرستد بی‌آنکه چیزی پخش شود. اگر مدتِ خوانش از حدِ معقولِ
-      // آن متن کوتاه‌تر بود، همان جمله را (تا ۲ بار) دوباره می‌خوانیم.
-      var finished = true;
-      for (var attempt = 0; attempt < 3; attempt++) {
-        final w = attempt == 0 ? waiter : Completer<bool>();
-        if (attempt > 0) {
-          if (identical(_webWaiter, waiter) || _webWaiter == null) {
-            _webWaiter = w;
-          }
-          started = false;
-          _localTts.setCompletionHandler(() {
-            if (w.isCompleted || !identical(_webWaiter, w)) return;
-            w.complete(true);
-          });
-          try {
-            await _localTts.stop();
-          } catch (_) {}
-          await Future.delayed(const Duration(milliseconds: 200));
-          if (myGen != _generation) return _WebResult.cancelled;
-        }
-
-        final t0 = DateTime.now();
-        await _localTts.speak(text);
-        if (myGen != _generation) return _WebResult.cancelled;
-
-        // اگر تا ۵ ثانیه هیچ شروعی گزارش نشد، خوانش بی‌صدا افتاده → شکست
-        // (تا به‌جای سکوت، موتور بعدی امتحان شود).
-        final early = await Future.any<bool?>([
-          w.future,
-          Future<bool?>.delayed(
-            const Duration(seconds: 5),
-            () => (started || w.isCompleted) ? null : false,
-          ),
-        ]);
-        if (myGen != _generation) return _WebResult.cancelled;
-        if (early == false && !started) {
-          if (identical(_webWaiter, w)) _webWaiter = null;
-          try {
-            await _localTts.stop();
-          } catch (_) {}
-          return _WebResult.failed;
-        }
-
-        finished = early ??
-            await w.future.timeout(
-              Duration(seconds: 20 + text.length ~/ 5),
-              onTimeout: () => true,
-            );
-        if (myGen != _generation) return _WebResult.cancelled;
-        if (!finished) {
-          if (identical(_webWaiter, w)) _webWaiter = null;
-          return _WebResult.failed;
-        }
-
-        final elapsedMs = DateTime.now().difference(t0).inMilliseconds;
-        // فقط برای متن‌های نه‌چندان کوتاه (لغتِ تک‌کلمه‌ای واقعاً می‌تواند خیلی
-        // سریع تمام شود و نباید دوباره خوانده شود).
-        final minMs = (text.length * 15 / state.rate.clamp(0.25, 3.0))
-            .clamp(250, 3000)
-            .round();
-        if (text.length < 10 || elapsedMs >= minMs || attempt == 2) {
-          break; // بی‌صدا نبود (یا تسلیم)
-        }
-        debugPrint('silent utterance detected (${elapsedMs}ms), retry');
-      }
-      _webWaiter = null;
-
-      await _gapThenNext(idx, text, myGen);
-      return _WebResult.done;
+      return _WebResult.failed;
     } catch (e) {
       debugPrint('WebSpeech error: $e');
       return _WebResult.failed;
