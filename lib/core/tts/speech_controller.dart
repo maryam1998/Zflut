@@ -25,22 +25,41 @@ class SpeechController extends StateNotifier<SpeechState> {
   String? _currentCode;
   int _generation = 0;
   bool _disposed = false;
-  Completer<bool>? _nativeDoneCompleter;
+
+  // منتظرهای «پایان خوانش» — هر کدوم مخصوص یک خوانش‌اند و با stop/pause
+  // کنسل می‌شن تا هیچ زنجیره‌ی قدیمی‌ای بعداً ناخواسته چیزی پخش نکنه.
+  Completer<bool>? _nativeWaiter;
+  Completer<bool>? _webWaiter;
+  Completer<bool>? _onlineWaiter;
+  int _utteranceSeq = 0;
+
+  /// ttsDone ای که id نداره و زودتر از این مدت بعد از شروع برسه، مال
+  /// خوانشِ قبلی (متوقف‌شده) حساب می‌شه، نه خوانش فعلی.
+  static const _staleDoneGuard = Duration(milliseconds: 150);
 
   // A-B
   String _abState = 'idle';
   int? _abChunkA;
   int? _abChunkB;
 
-  // شمارنده‌ی تکرار برای هر چانک
+  // شمارنده‌ی «چندبار این جمله تا الان خونده شده» (شامل خوانش اول)
   final Map<int, int> _chunkRepeatsDone = {};
 
   Future<void> _initLocalTts() async {
+    // ⚠️ هر فراخوانی جداگانه try/catch دارد: قبلاً اگر setSharedInstance
+    // (فقط iOS) روی وب خطا می‌داد، بقیه‌ی تنظیمات هم نادیده می‌ماند.
+    if (!kIsWeb) {
+      try {
+        await _localTts.setSharedInstance(true);
+      } catch (e) {
+        debugPrint('setSharedInstance error: $e');
+      }
+    }
     try {
-      await _localTts.setSharedInstance(true);
-      await _localTts.awaitSpeakCompletion(true); // ✅ مهم برای تکرار
+      // پایان خوانش را با completion handler می‌فهمیم، نه با awaitSpeakCompletion.
+      await _localTts.awaitSpeakCompletion(false);
     } catch (e) {
-      debugPrint('initLocalTts error: $e');
+      debugPrint('awaitSpeakCompletion error: $e');
     }
   }
 
@@ -94,11 +113,20 @@ class SpeechController extends StateNotifier<SpeechState> {
       key: newKey,
       total: _chunks.length,
       chunkIndex: startIdx,
+      abState: 'idle',
+      clearAB: true,
       clearError: true,
     );
 
     unawaited(_playFrom(startIdx));
     return 'ok';
+  }
+
+  /// دکمه‌ی پلی/توقف خودِ پلیر — بدون parse کردن key (که با '::' داخل متن خراب می‌شد)
+  Future<void> togglePlayPause() async {
+    final key = _currentKey;
+    if (key == null || _fullText.isEmpty) return;
+    await toggle(_fullText, _currentCode ?? 'en');
   }
 
   Future<void> stop() async {
@@ -113,7 +141,15 @@ class SpeechController extends StateNotifier<SpeechState> {
     _abState = 'idle';
     _abChunkA = null;
     _abChunkB = null;
-    state = const SpeechState();
+    state = state.copyWith(
+      status: SpeechStatus.idle,
+      clearKey: true,
+      chunkIndex: 0,
+      total: 0,
+      abState: 'idle',
+      clearAB: true,
+      clearError: true,
+    );
   }
 
   Future<void> seekToChunk(int idx) async {
@@ -121,7 +157,8 @@ class SpeechController extends StateNotifier<SpeechState> {
     final clamped = idx.clamp(0, _chunks.length - 1);
     _generation++;
     await _stopAll();
-    _chunkRepeatsDone.remove(clamped);
+    // با جابجایی دستی، شمارنده‌ی تکرار از صفر شروع شود
+    _chunkRepeatsDone.clear();
     _chunkIndex = clamped;
     state = state.copyWith(chunkIndex: clamped, status: SpeechStatus.playing);
     unawaited(_playFrom(clamped));
@@ -156,6 +193,8 @@ class SpeechController extends StateNotifier<SpeechState> {
   }
 
   /// چرخه تکرار: 0 → 2 → 3 → ∞ → 0
+  /// (مثل Hope: «N بار کلاً» روی هر جمله؛ ∞ = همین جمله تا وقتی خودت
+  /// «بعدی» را بزنی یا خاموشش کنی)
   void cycleRepeat() {
     final order = [0, 2, 3, -1];
     final i = order.indexOf(state.globalRepeat);
@@ -182,7 +221,16 @@ class SpeechController extends StateNotifier<SpeechState> {
       _abChunkA = null;
       _abChunkB = null;
     }
-    state = state.copyWith();
+    // ✅ قبلاً state.copyWith() خالی بود و دکمه‌ی A-B هیچ‌وقت تغییر نمی‌کرد
+    if (_abState == 'idle') {
+      state = state.copyWith(abState: 'idle', clearAB: true);
+    } else {
+      state = state.copyWith(
+        abState: _abState,
+        abChunkA: _abChunkA,
+        abChunkB: _abChunkB,
+      );
+    }
   }
 
   int getChunkCount() => _chunks.length;
@@ -195,8 +243,19 @@ class SpeechController extends StateNotifier<SpeechState> {
   // داخلی
   // ═══════════════════════════════════════════════════════════════
 
+  /// همه‌ی منتظرهای پایان خوانش را با false آزاد می‌کند.
+  void _cancelWaiters() {
+    for (final c in [_nativeWaiter, _webWaiter, _onlineWaiter]) {
+      if (c != null && !c.isCompleted) c.complete(false);
+    }
+    _nativeWaiter = null;
+    _webWaiter = null;
+    _onlineWaiter = null;
+  }
+
   Future<void> _pause() async {
     _generation++;
+    _cancelWaiters();
     try {
       await _localTts.stop();
       await NativeTtsBridge.stop();
@@ -206,6 +265,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   }
 
   Future<void> _stopAll() async {
+    _cancelWaiters();
     try {
       await _localTts.stop();
       await NativeTtsBridge.stop();
@@ -216,7 +276,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   Future<void> _playFrom(int idx) async {
     if (_disposed) return;
     if (idx >= _chunks.length) {
-      if (state.globalRepeat == -1) {
+      if (state.globalRepeat == -1 && _chunks.isNotEmpty) {
         unawaited(_playFrom(0));
         return;
       }
@@ -242,77 +302,90 @@ class SpeechController extends StateNotifier<SpeechState> {
 
     final code = _currentCode ?? 'en';
 
-    // ۱. Piper نیتیو
     if (NativeTtsBridge.isAvailable) {
+      // ۱. Piper نیتیو
       final ready = await NativeTtsBridge.isModelReady(code);
+      if (myGen != _generation) return;
       if (ready) {
         final ok = await _playNative(idx, cleanText, code, myGen);
-        if (ok && myGen == _generation) return;
+        // ✅ اگر وسط کار pause/stop/seek شد، هرگز سراغ موتور بعدی نرو
+        // (قبلاً بعد از pause، موتور بعدی خوانش قدیمی را ناخواسته پخش می‌کرد)
+        if (myGen != _generation) return;
+        if (ok) return;
       }
-    }
 
-    // ۲. TTS خود گوشی
-    if (NativeTtsBridge.isAvailable) {
-      final ok = await _playSystemTts(idx, cleanText, code, myGen);
-      if (ok && myGen == _generation) return;
+      // ۲. TTS خود گوشی
+      final okSys = await _playSystemTts(idx, cleanText, code, myGen);
+      if (myGen != _generation) return;
+      if (okSys) return;
     }
 
     // ۳. Web Speech / Edge
+    if (myGen != _generation) return;
     await _playOnline(idx, cleanText, code, myGen);
   }
 
-  Future<bool> _playNative(
-    int idx,
-    String text,
-    String code,
-    int myGen,
-  ) async {
+  /// خوانش با موتور نیتیو و انتظار برای رویداد پایان.
+  /// true = خوانده و به مرحله‌ی «مکث + تکرار» رفت؛ false = شکست یا لغو.
+  Future<bool> _speakNativeAndWait({
+    required Future<bool> Function(String id) speakFn,
+    required int idx,
+    required String text,
+    required int myGen,
+  }) async {
     try {
-      _nativeDoneCompleter = Completer<bool>();
-      NativeTtsBridge.onDone(() {
-        if (_nativeDoneCompleter?.isCompleted == false) {
-          _nativeDoneCompleter!.complete(true);
+      final id = 'f${++_utteranceSeq}';
+      final waiter = Completer<bool>();
+      _nativeWaiter = waiter;
+      final startedAt = DateTime.now();
+
+      NativeTtsBridge.onDone((doneId, ok) {
+        if (waiter.isCompleted || !identical(_nativeWaiter, waiter)) return;
+        if (doneId != null && doneId != id) return; // مال خوانش قبلی
+        if (doneId == null &&
+            DateTime.now().difference(startedAt) < _staleDoneGuard) {
+          return; // احتمالاً مال خوانش قبلیِ متوقف‌شده
         }
+        waiter.complete(ok);
       });
-      final ok = await NativeTtsBridge.speak(text, code, state.rate);
-      if (!ok || myGen != _generation) return false;
-      await _nativeDoneCompleter!.future.timeout(
+
+      final started = await speakFn(id);
+      if (myGen != _generation) return false;
+      if (!started) return false;
+
+      final finished = await waiter.future.timeout(
         Duration(seconds: 30 + text.length ~/ 10),
         onTimeout: () => true,
       );
+      if (identical(_nativeWaiter, waiter)) _nativeWaiter = null;
       if (myGen != _generation) return false;
+      if (!finished) return false;
+
       await _gapThenNext(idx, text, myGen);
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('native speak error: $e');
       return false;
     }
   }
 
-  Future<bool> _playSystemTts(
-    int idx,
-    String text,
-    String code,
-    int myGen,
-  ) async {
-    try {
-      _nativeDoneCompleter = Completer<bool>();
-      NativeTtsBridge.onDone(() {
-        if (_nativeDoneCompleter?.isCompleted == false) {
-          _nativeDoneCompleter!.complete(true);
-        }
-      });
-      final ok = await NativeTtsBridge.speakSystem(text, code, state.rate);
-      if (!ok || myGen != _generation) return false;
-      await _nativeDoneCompleter!.future.timeout(
-        Duration(seconds: 30 + text.length ~/ 10),
-        onTimeout: () => true,
-      );
-      if (myGen != _generation) return false;
-      await _gapThenNext(idx, text, myGen);
-      return true;
-    } catch (_) {
-      return false;
-    }
+  Future<bool> _playNative(int idx, String text, String code, int myGen) {
+    return _speakNativeAndWait(
+      speakFn: (id) => NativeTtsBridge.speak(text, code, state.rate, id: id),
+      idx: idx,
+      text: text,
+      myGen: myGen,
+    );
+  }
+
+  Future<bool> _playSystemTts(int idx, String text, String code, int myGen) {
+    return _speakNativeAndWait(
+      speakFn: (id) =>
+          NativeTtsBridge.speakSystem(text, code, state.rate, id: id),
+      idx: idx,
+      text: text,
+      myGen: myGen,
+    );
   }
 
   Future<bool> _playWebSpeech(
@@ -323,6 +396,31 @@ class SpeechController extends StateNotifier<SpeechState> {
   ) async {
     try {
       final locale = TtsConfig.locale[code] ?? 'en-US';
+      final waiter = Completer<bool>();
+      _webWaiter = waiter;
+
+      // ✅ پایان خوانش را با handler می‌فهمیم (نه awaitSpeakCompletion که روی
+      // وب فعال نمی‌شد و باعث می‌شد speak() فوراً برگرده و تکرار، خوانش‌ها را
+      // پشت سر هم داخل صف مرورگر بریزد).
+      _localTts.setCompletionHandler(() {
+        if (waiter.isCompleted || !identical(_webWaiter, waiter)) return;
+        waiter.complete(true);
+      });
+      _localTts.setCancelHandler(() {
+        // cancel یعنی خودمان stop زدیم؛ _cancelWaiters کارش را کرده.
+      });
+      _localTts.setErrorHandler((msg) {
+        if (waiter.isCompleted || !identical(_webWaiter, waiter)) return;
+        final m = '$msg'.toLowerCase();
+        if (m.contains('interrupted') ||
+            m.contains('cancel') ||
+            m.contains('canceled')) {
+          return; // قطع‌شدن عمدیِ خودمان، خطا نیست
+        }
+        debugPrint('WebSpeech error event: $msg');
+        waiter.complete(false);
+      });
+
       await _localTts.setLanguage(locale);
       await _localTts.setSpeechRate(state.rate);
       await _localTts.setVolume(state.muted ? 0.0 : 1.0);
@@ -330,11 +428,17 @@ class SpeechController extends StateNotifier<SpeechState> {
 
       if (myGen != _generation) return false;
 
-      // ✅ با awaitSpeakCompletion که در _initLocalTts فعاله،
-      // این فراخوانی تا پایان پخش صبر می‌کنه
       await _localTts.speak(text);
 
       if (myGen != _generation) return false;
+
+      final finished = await waiter.future.timeout(
+        Duration(seconds: 20 + text.length ~/ 5),
+        onTimeout: () => true,
+      );
+      if (identical(_webWaiter, waiter)) _webWaiter = null;
+      if (myGen != _generation) return false;
+      if (!finished) return false;
 
       await _gapThenNext(idx, text, myGen);
       return true;
@@ -353,7 +457,8 @@ class SpeechController extends StateNotifier<SpeechState> {
     // روی وب: flutter_tts اول
     if (!NativeTtsBridge.isAvailable) {
       final localOk = await _playWebSpeech(idx, text, code, myGen);
-      if (localOk && myGen == _generation) return;
+      if (myGen != _generation) return;
+      if (localOk) return;
     }
 
     // Edge TTS از Worker
@@ -362,6 +467,7 @@ class SpeechController extends StateNotifier<SpeechState> {
         '?voice=${Uri.encodeComponent(voice)}'
         '&text=${Uri.encodeComponent(text)}';
 
+    StreamSubscription<PlayerState>? sub;
     try {
       await _onlinePlayer.stop();
       await _onlinePlayer.setUrl(url);
@@ -370,18 +476,20 @@ class SpeechController extends StateNotifier<SpeechState> {
 
       if (myGen != _generation) return;
 
-      final completer = Completer<void>();
-      StreamSubscription<PlayerState>? sub;
+      final waiter = Completer<bool>();
+      _onlineWaiter = waiter;
       sub = _onlinePlayer.playerStateStream.listen((ps) {
-        if (ps.processingState == ProcessingState.completed) {
-          sub?.cancel();
-          if (!completer.isCompleted) completer.complete();
+        if (ps.processingState == ProcessingState.completed &&
+            !waiter.isCompleted) {
+          waiter.complete(true);
         }
       });
 
-      await _onlinePlayer.play();
-      await completer.future;
+      unawaited(_onlinePlayer.play());
+      final finished = await waiter.future;
+      if (identical(_onlineWaiter, waiter)) _onlineWaiter = null;
       if (myGen != _generation) return;
+      if (!finished) return;
 
       await _gapThenNext(idx, text, myGen);
     } catch (e) {
@@ -391,21 +499,26 @@ class SpeechController extends StateNotifier<SpeechState> {
         status: SpeechStatus.idle,
         error: 'خطا در پخش صدا',
       );
+    } finally {
+      await sub?.cancel();
     }
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // مکث + منطق تکرار
+  // مکث + منطق تکرار (هم‌مفهوم با speechController.js در Hope)
+  //   • تکرار روی «هر جمله» اعمال می‌شود، نه کل متن.
+  //   • تنظیم N یعنی «کلاً N بار» (خوانش اول هم حساب است).
+  //   • ∞ یعنی همین جمله دوباره و دوباره، تا کاربر «بعدی» بزند.
   // ═══════════════════════════════════════════════════════════════
   Future<void> _gapThenNext(int idx, String text, int myGen) async {
     final gap = _gapMs(chunk: text, rate: state.rate);
     await Future.delayed(Duration(milliseconds: gap));
-    if (myGen != _generation) return;
+    if (myGen != _generation || _disposed) return;
 
     // A-B looping
     if (_abState == 'looping' && _abChunkB != null && idx == _abChunkB) {
       final targetA = _abChunkA ?? 0;
-      _chunkRepeatsDone.remove(idx);
+      _chunkRepeatsDone.clear();
       unawaited(_playFrom(targetA));
       return;
     }
@@ -413,9 +526,10 @@ class SpeechController extends StateNotifier<SpeechState> {
     // ═══ تکرار ═══
     final target = state.globalRepeat; // 0 | 2 | 3 | -1
     if (target != 0) {
-      final done = _chunkRepeatsDone[idx] ?? 1;
-      final needRepeat = target == -1 ? true : done < target;
-      debugPrint('🔁 repeat check: idx=$idx, done=$done, target=$target, needRepeat=$needRepeat');
+      final done = _chunkRepeatsDone[idx] ?? 1; // تعداد دفعاتی که تا الان خونده شده
+      final needRepeat = target == -1 || done < target;
+      debugPrint(
+          '🔁 repeat check: idx=$idx, done=$done, target=$target, needRepeat=$needRepeat');
       if (needRepeat) {
         _chunkRepeatsDone[idx] = done + 1;
         unawaited(_playFrom(idx));
@@ -449,6 +563,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   @override
   void dispose() {
     _disposed = true;
+    _cancelWaiters();
     _localTts.stop();
     _onlinePlayer.dispose();
     super.dispose();

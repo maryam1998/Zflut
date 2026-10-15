@@ -140,10 +140,7 @@ class PlayerBar extends ConsumerWidget {
                     isActive: isActive,
                     onTap: () {
                       if (!isActive || state.key == null) return;
-                      final parts = state.key!.split('::');
-                      if (parts.length == 2) {
-                        ctrl.toggle(parts[1], _codeFromLocale(parts[0]));
-                      }
+                      ctrl.togglePlayPause();
                     },
                   ),
 
@@ -174,11 +171,6 @@ class PlayerBar extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  static String _codeFromLocale(String loc) {
-    final p = loc.split('-').first.toLowerCase();
-    return p.isEmpty ? 'en' : p;
   }
 
   void _showSpeedSheet(BuildContext context, WidgetRef ref) {
