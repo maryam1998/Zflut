@@ -1,14 +1,26 @@
 dependencies:
   flutter:
     sdk: flutter
+  
+  # ═══ State Management ═══
   flutter_riverpod: ^2.4.0
+  
+  # ═══ Overlay / Bubble ═══
   flutter_overlay_window: ^0.4.4
+  
+  # ═══ Permissions ═══
   permission_handler: ^11.0.1
-  record: ^5.0.0          # ضبط صدا برای STT
-  just_audio: ^0.9.36     # پخش صدا
-  flutter_tts: ^4.0.2     # TTS پیش‌فرض (System TTS)
-  webview_flutter: ^4.7.0 # برای YouTube
+  
+  # ═══ Audio (STT + TTS + پخش) ═══
+  record: ^5.0.0
+  just_audio: ^0.9.36
+  flutter_tts: ^4.0.2
+  
+  # ═══ YouTube ═══
+  webview_flutter: ^4.7.0
   youtube_player_flutter: ^9.0.0
+  
+  # ═══ فایل‌ها ═══
   path_provider: ^2.1.2
   share_plus: ^7.2.2
   device_info_plus: ^10.0.0
@@ -17,4 +29,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/data/
-    - assets/models/   # فایل‌های Whisper/Sherpa (اختیاری)
+    - assets/models/          # ← مدل‌ها اینجا کپی می‌شوند (اجباری است)
