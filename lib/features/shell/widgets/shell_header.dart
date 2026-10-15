@@ -17,7 +17,9 @@ import 'sub_tabs_row.dart';
 class ShellHeader extends StatelessWidget {
   const ShellHeader({super.key});
 
-  static String _normalize(String key) => key.replaceAll('-', '');
+  // بدون حساسیت به حروف: مسیر '/vocab-in-use' ↔ کلید 'vocabInUse'
+  static String _normalize(String key) =>
+      key.replaceAll('-', '').toLowerCase();
 
   static String routeOf(String tabKey) {
     switch (tabKey) {
@@ -38,13 +40,18 @@ class ShellHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = GoRouterState.of(context).matchedLocation;
-    final tabKey = loc.replaceFirst('/', '').replaceAll('-', '');
+    final tabKey = _normalize(loc.replaceFirst('/', ''));
 
     final currentGroup = kTabGroups.firstWhere(
       (g) => g.tabs.any((t) => _normalize(t) == tabKey),
       orElse: () => kTabGroups.first,
     );
     final hasSubtabs = currentGroup.tabs.length > 1;
+    // کلیدِ واقعیِ تبِ فعال (مثلاً 'vocabInUse') برای هایلایت در زیرتب‌ها
+    final activeTab = currentGroup.tabs.firstWhere(
+      (t) => _normalize(t) == tabKey,
+      orElse: () => currentGroup.tabs.first,
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -63,7 +70,7 @@ class ShellHeader extends StatelessWidget {
         if (hasSubtabs)
           SubTabsRow(
             group: currentGroup,
-            activeTabKey: _normalize(tabKey),
+            activeTabKey: activeTab,
             onTabSelected: (tab) => context.go(routeOf(tab)),
           ),
       ],
