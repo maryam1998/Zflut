@@ -130,8 +130,8 @@ class PlayerBar extends ConsumerWidget {
                   // قبلی
                   _IconBtn(
                     icon: Icons.skip_previous,
-                    color: isActive ? c.ink : c.cardBorder,
-                    onTap: isActive ? ctrl.prevChunk : null,
+                    color: (isActive && state.hasPrev) ? c.ink : c.cardBorder,
+                    onTap: (isActive && state.hasPrev) ? ctrl.prevChunk : null,
                   ),
 
                   // پخش/توقف
@@ -147,8 +147,8 @@ class PlayerBar extends ConsumerWidget {
                   // بعدی
                   _IconBtn(
                     icon: Icons.skip_next,
-                    color: isActive ? c.ink : c.cardBorder,
-                    onTap: isActive ? ctrl.nextChunk : null,
+                    color: (isActive && state.hasNext) ? c.ink : c.cardBorder,
+                    onTap: (isActive && state.hasNext) ? ctrl.nextChunk : null,
                   ),
 
                   // سرعت

@@ -662,7 +662,10 @@ class _SpeakerBox extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          ...lines.map((l) => _LineRow(line: l)),
+          ...List.generate(
+            lines.length,
+            (i) => _LineRow(line: lines[i], queue: lines, queueIndex: i),
+          ),
         ],
       ),
     );
@@ -672,7 +675,13 @@ class _SpeakerBox extends ConsumerWidget {
 // ═══════════════════════════════════════════════════════════════════
 class _LineRow extends ConsumerWidget {
   final ConversationLine line;
-  const _LineRow({required this.line});
+  final List<ConversationLine> queue;
+  final int queueIndex;
+  const _LineRow({
+    required this.line,
+    required this.queue,
+    required this.queueIndex,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -734,7 +743,12 @@ class _LineRow extends ConsumerWidget {
                 InkWell(
                   onTap: () {
                     try {
-                      ctrl.toggle(line.en, 'en');
+                      ctrl.toggle(
+                        line.en,
+                        'en',
+                        queue: queue.map((l) => l.en).toList(),
+                        queueIndex: queueIndex,
+                      );
                     } catch (e) {
                       debugPrint('speak error: $e');
                     }

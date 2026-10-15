@@ -17,6 +17,10 @@ class SpeechState {
   final int? abChunkA;
   final int? abChunkB;
 
+  /// آیا «قبلی/بعدی» کاری برای انجام دارد (جمله‌ی دیگر یا آیتم دیگرِ صف)
+  final bool hasPrev;
+  final bool hasNext;
+
   const SpeechState({
     this.key,
     this.status = SpeechStatus.idle,
@@ -29,6 +33,8 @@ class SpeechState {
     this.abState = 'idle',
     this.abChunkA,
     this.abChunkB,
+    this.hasPrev = false,
+    this.hasNext = false,
   });
 
   SpeechState copyWith({
@@ -46,6 +52,8 @@ class SpeechState {
     int? abChunkA,
     int? abChunkB,
     bool clearAB = false,
+    bool? hasPrev,
+    bool? hasNext,
   }) =>
       SpeechState(
         key: clearKey ? null : (key ?? this.key),
@@ -59,5 +67,7 @@ class SpeechState {
         abState: abState ?? this.abState,
         abChunkA: clearAB ? null : (abChunkA ?? this.abChunkA),
         abChunkB: clearAB ? null : (abChunkB ?? this.abChunkB),
+        hasPrev: hasPrev ?? this.hasPrev,
+        hasNext: hasNext ?? this.hasNext,
       );
 }

@@ -37,6 +37,11 @@ class SpeechController extends StateNotifier<SpeechState> {
   /// خوانشِ قبلی (متوقف‌شده) حساب می‌شه، نه خوانش فعلی.
   static const _staleDoneGuard = Duration(milliseconds: 150);
 
+  // صف: لیست متن‌های هم‌زبان (مثلاً خطوط یک مکالمه) تا «قبلی/بعدی» در لبه‌ی
+  // جمله‌ها به آیتم قبلی/بعدی برود.
+  List<String> _queue = [];
+  int _queueIndex = -1;
+
   // A-B
   String _abState = 'idle';
   int? _abChunkA;
@@ -71,6 +76,8 @@ class SpeechController extends StateNotifier<SpeechState> {
     String text,
     String code, {
     int? startCharOffset,
+    List<String>? queue,
+    int? queueIndex,
   }) async {
     if (text.isEmpty) return 'unsupported';
 
@@ -91,6 +98,25 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
 
     // متن جدید
+    await _startText(
+      text,
+      code,
+      startCharOffset: startCharOffset,
+      queue: queue,
+      queueIndex: queueIndex,
+    );
+    return 'ok';
+  }
+
+  Future<void> _startText(
+    String text,
+    String code, {
+    int? startCharOffset,
+    List<String>? queue,
+    int? queueIndex,
+    bool startAtEnd = false,
+  }) async {
+    final newKey = '${TtsConfig.locale[code] ?? 'en-US'}::$text';
     _generation++;
     await _stopAll();
 
@@ -99,10 +125,13 @@ class SpeechController extends StateNotifier<SpeechState> {
     _chunkRepeatsDone.clear();
     _currentKey = newKey;
     _currentCode = code;
+    _queue = queue ?? const [];
+    _queueIndex = queue == null ? -1 : (queueIndex ?? -1);
 
-    final startIdx = startCharOffset != null && startCharOffset > 0
+    var startIdx = startCharOffset != null && startCharOffset > 0
         ? _chunkIndexForOffset(startCharOffset)
         : 0;
+    if (startAtEnd && _chunks.isNotEmpty) startIdx = _chunks.length - 1;
 
     _chunkIndex = startIdx;
     _abState = 'idle';
@@ -116,17 +145,29 @@ class SpeechController extends StateNotifier<SpeechState> {
       abState: 'idle',
       clearAB: true,
       clearError: true,
+      hasPrev: _hasPrev(startIdx),
+      hasNext: _hasNext(startIdx),
     );
 
     unawaited(_playFrom(startIdx));
-    return 'ok';
   }
+
+  bool _hasPrev(int chunkIdx) => chunkIdx > 0 || _queueIndex > 0;
+
+  bool _hasNext(int chunkIdx) =>
+      chunkIdx + 1 < _chunks.length ||
+      (_queueIndex >= 0 && _queueIndex + 1 < _queue.length);
 
   /// دکمه‌ی پلی/توقف خودِ پلیر — بدون parse کردن key (که با '::' داخل متن خراب می‌شد)
   Future<void> togglePlayPause() async {
     final key = _currentKey;
     if (key == null || _fullText.isEmpty) return;
-    await toggle(_fullText, _currentCode ?? 'en');
+    await toggle(
+      _fullText,
+      _currentCode ?? 'en',
+      queue: _queue.isEmpty ? null : _queue,
+      queueIndex: _queue.isEmpty ? null : _queueIndex,
+    );
   }
 
   Future<void> stop() async {
@@ -141,8 +182,12 @@ class SpeechController extends StateNotifier<SpeechState> {
     _abState = 'idle';
     _abChunkA = null;
     _abChunkB = null;
+    _queue = [];
+    _queueIndex = -1;
     state = state.copyWith(
       status: SpeechStatus.idle,
+      hasPrev: false,
+      hasNext: false,
       clearKey: true,
       chunkIndex: 0,
       total: 0,
@@ -160,18 +205,42 @@ class SpeechController extends StateNotifier<SpeechState> {
     // با جابجایی دستی، شمارنده‌ی تکرار از صفر شروع شود
     _chunkRepeatsDone.clear();
     _chunkIndex = clamped;
-    state = state.copyWith(chunkIndex: clamped, status: SpeechStatus.playing);
+    state = state.copyWith(
+      chunkIndex: clamped,
+      status: SpeechStatus.playing,
+      hasPrev: _hasPrev(clamped),
+      hasNext: _hasNext(clamped),
+    );
     unawaited(_playFrom(clamped));
   }
 
+  /// جمله‌ی بعد؛ اگر آخرین جمله بود و صف داریم → آیتم بعدیِ صف
   Future<void> nextChunk() async {
-    if (_chunkIndex + 1 >= _chunks.length) return;
-    await seekToChunk(_chunkIndex + 1);
+    if (_chunks.isEmpty) return;
+    if (_chunkIndex + 1 < _chunks.length) {
+      await seekToChunk(_chunkIndex + 1);
+      return;
+    }
+    final code = _currentCode;
+    if (code != null && _queueIndex >= 0 && _queueIndex + 1 < _queue.length) {
+      final i = _queueIndex + 1;
+      await _startText(_queue[i], code, queue: _queue, queueIndex: i);
+    }
   }
 
+  /// جمله‌ی قبل؛ اگر اولین جمله بود و صف داریم → آخرین جمله‌ی آیتم قبلی
   Future<void> prevChunk() async {
-    if (_chunkIndex <= 0) return;
-    await seekToChunk(_chunkIndex - 1);
+    if (_chunks.isEmpty) return;
+    if (_chunkIndex > 0) {
+      await seekToChunk(_chunkIndex - 1);
+      return;
+    }
+    final code = _currentCode;
+    if (code != null && _queueIndex > 0) {
+      final i = _queueIndex - 1;
+      await _startText(_queue[i], code,
+          queue: _queue, queueIndex: i, startAtEnd: true);
+    }
   }
 
   Future<void> setRate(double r) async {
@@ -291,6 +360,8 @@ class SpeechController extends StateNotifier<SpeechState> {
       chunkIndex: idx,
       status: SpeechStatus.playing,
       total: _chunks.length,
+      hasPrev: _hasPrev(idx),
+      hasNext: _hasNext(idx),
     );
 
     final chunk = _chunks[idx];
