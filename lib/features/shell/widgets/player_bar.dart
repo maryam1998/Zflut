@@ -145,13 +145,13 @@ class PlayerBar extends ConsumerWidget {
                     },
                   ),
 
-                  // قبلی — همیشه فعال
+                  // بعدی — همیشه فعال
                   _IconBtn(
-                    icon: Icons.skip_previous,
+                    icon: Icons.skip_next,
                     color: c.ink,
                     onTap: () async {
                       if (_isActive(ref)) {
-                        await ctrl.prevChunk();
+                        await ctrl.nextChunk();
                       } else {
                         await _startMain(context, ref);
                       }
@@ -167,13 +167,13 @@ class PlayerBar extends ConsumerWidget {
                     },
                   ),
 
-                  // بعدی — همیشه فعال
+                  // قبلی — همیشه فعال
                   _IconBtn(
-                    icon: Icons.skip_next,
+                    icon: Icons.skip_previous,
                     color: c.ink,
                     onTap: () async {
                       if (_isActive(ref)) {
-                        await ctrl.nextChunk();
+                        await ctrl.prevChunk();
                       } else {
                         await _startMain(context, ref);
                       }

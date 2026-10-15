@@ -409,7 +409,9 @@ class SpeechController extends StateNotifier<SpeechState> {
 
     final chunk = _chunks[idx];
     final cleanText = SentenceSplitter.sanitize(chunk.text);
-    if (cleanText.isEmpty) {
+    // تکه‌ی بدون حرف/عدد (مثلاً فقط «.» یا «؟») صدایی ندارد → بی‌صدا رد شو
+    if (cleanText.isEmpty ||
+        !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(cleanText)) {
       unawaited(_playFrom(idx + 1));
       return;
     }
@@ -657,36 +659,73 @@ class SpeechController extends StateNotifier<SpeechState> {
         if (myGen != _generation) return _WebResult.cancelled;
       }
 
-      await _localTts.speak(text);
+      // خوانشِ «بی‌صدا»: گاهی مرورگر/موتور گوشی رویداد پایان را تقریباً
+      // فوراً می‌فرستد بی‌آنکه چیزی پخش شود. اگر مدتِ خوانش از حدِ معقولِ
+      // آن متن کوتاه‌تر بود، همان جمله را (تا ۲ بار) دوباره می‌خوانیم.
+      var finished = true;
+      for (var attempt = 0; attempt < 3; attempt++) {
+        final w = attempt == 0 ? waiter : Completer<bool>();
+        if (attempt > 0) {
+          if (identical(_webWaiter, waiter) || _webWaiter == null) {
+            _webWaiter = w;
+          }
+          started = false;
+          _localTts.setCompletionHandler(() {
+            if (w.isCompleted || !identical(_webWaiter, w)) return;
+            w.complete(true);
+          });
+          try {
+            await _localTts.stop();
+          } catch (_) {}
+          await Future.delayed(const Duration(milliseconds: 200));
+          if (myGen != _generation) return _WebResult.cancelled;
+        }
 
-      if (myGen != _generation) return _WebResult.cancelled;
+        final t0 = DateTime.now();
+        await _localTts.speak(text);
+        if (myGen != _generation) return _WebResult.cancelled;
 
-      // اگر تا ۵ ثانیه هیچ شروعی گزارش نشد، خوانش بی‌صدا افتاده → شکست
-      // (تا به‌جای سکوت، موتور بعدی امتحان شود).
-      final early = await Future.any<bool?>([
-        waiter.future,
-        Future<bool?>.delayed(
-          const Duration(seconds: 5),
-          () => (started || waiter.isCompleted) ? null : false,
-        ),
-      ]);
-      if (myGen != _generation) return _WebResult.cancelled;
-      if (early == false) {
-        if (identical(_webWaiter, waiter)) _webWaiter = null;
-        try {
-          await _localTts.stop();
-        } catch (_) {}
-        return _WebResult.failed;
+        // اگر تا ۵ ثانیه هیچ شروعی گزارش نشد، خوانش بی‌صدا افتاده → شکست
+        // (تا به‌جای سکوت، موتور بعدی امتحان شود).
+        final early = await Future.any<bool?>([
+          w.future,
+          Future<bool?>.delayed(
+            const Duration(seconds: 5),
+            () => (started || w.isCompleted) ? null : false,
+          ),
+        ]);
+        if (myGen != _generation) return _WebResult.cancelled;
+        if (early == false && !started) {
+          if (identical(_webWaiter, w)) _webWaiter = null;
+          try {
+            await _localTts.stop();
+          } catch (_) {}
+          return _WebResult.failed;
+        }
+
+        finished = early ??
+            await w.future.timeout(
+              Duration(seconds: 20 + text.length ~/ 5),
+              onTimeout: () => true,
+            );
+        if (myGen != _generation) return _WebResult.cancelled;
+        if (!finished) {
+          if (identical(_webWaiter, w)) _webWaiter = null;
+          return _WebResult.failed;
+        }
+
+        final elapsedMs = DateTime.now().difference(t0).inMilliseconds;
+        // فقط برای متن‌های نه‌چندان کوتاه (لغتِ تک‌کلمه‌ای واقعاً می‌تواند خیلی
+        // سریع تمام شود و نباید دوباره خوانده شود).
+        final minMs = (text.length * 15 / state.rate.clamp(0.25, 3.0))
+            .clamp(250, 3000)
+            .round();
+        if (text.length < 10 || elapsedMs >= minMs || attempt == 2) {
+          break; // بی‌صدا نبود (یا تسلیم)
+        }
+        debugPrint('silent utterance detected (${elapsedMs}ms), retry');
       }
-
-      final finished = early ??
-          await waiter.future.timeout(
-            Duration(seconds: 20 + text.length ~/ 5),
-            onTimeout: () => true,
-          );
-      if (identical(_webWaiter, waiter)) _webWaiter = null;
-      if (myGen != _generation) return _WebResult.cancelled;
-      if (!finished) return _WebResult.failed;
+      _webWaiter = null;
 
       await _gapThenNext(idx, text, myGen);
       return _WebResult.done;
