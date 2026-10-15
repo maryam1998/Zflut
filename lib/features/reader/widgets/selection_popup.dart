@@ -7,7 +7,7 @@ import '../../../core/providers/reader_providers.dart';
 import '../../../core/providers/translation_provider.dart';
 import '../../../core/providers/ai_settings_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
-import 'neural_path_dialog.dart'; // فایل دایالوگ سیستم عصبی
+import 'neural_path_dialog.dart';
 
 class SelectionPopup extends ConsumerStatefulWidget {
   final String word;
@@ -71,9 +71,7 @@ class _SelectionPopupState extends ConsumerState<SelectionPopup> {
           if (result != null && result.trim().isNotEmpty) {
             _translations[lang] = result.trim();
           }
-        } catch (_) {
-          // اگر خطا داد، رد شو
-        }
+        } catch (_) {}
       }
 
       if (mounted) {
@@ -100,21 +98,23 @@ class _SelectionPopupState extends ConsumerState<SelectionPopup> {
       (w) => w.word == widget.word && w.langCode == widget.sourceLang,
     );
 
-    // محاسبه‌ی موقعیت کادر
+    // محاسبه‌ی موقعیت کادر برای جلوگیری از بیرون‌زدگی
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     const popupWidth = 280.0;
-    
-    // تخمین ارتفاع بر اساس تعداد زبان‌ها
     double popupHeight = 200.0 + (_translations.length * 40.0);
 
     double left = widget.position.dx - popupWidth / 2;
     if (left < 8) left = 8;
-    if (left + popupWidth > screenWidth - 8) left = screenWidth - popupWidth - 8;
+    if (left + popupWidth > screenWidth - 8) {
+      left = screenWidth - popupWidth - 8;
+    }
 
     double top = widget.position.dy - popupHeight - 12;
     if (top < 8) top = widget.position.dy + 24;
-    if (top + popupHeight > screenHeight - 8) top = screenHeight - popupHeight - 8;
+    if (top + popupHeight > screenHeight - 8) {
+      top = screenHeight - popupHeight - 8;
+    }
 
     return Positioned(
       left: left,
@@ -124,7 +124,7 @@ class _SelectionPopupState extends ConsumerState<SelectionPopup> {
         child: Container(
           width: popupWidth,
           decoration: BoxDecoration(
-            color: c.paper, // ✅ رنگ کرم/بژ حرفه‌ای
+            color: c.paper,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: c.cardBorder, width: 1),
             boxShadow: [
@@ -170,7 +170,7 @@ class _SelectionPopupState extends ConsumerState<SelectionPopup> {
                 ),
               ),
 
-              // ترجمه‌ها
+              // بخش ترجمه‌ها
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: _loading
@@ -239,7 +239,7 @@ class _SelectionPopupState extends ConsumerState<SelectionPopup> {
                           ),
               ),
 
-              // دکمه‌ها
+              // دکمه‌های عملیات
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
@@ -249,7 +249,9 @@ class _SelectionPopupState extends ConsumerState<SelectionPopup> {
                   children: [
                     _PopupButton(
                       icon: isSaved ? Icons.bookmark : Icons.bookmark_border,
-                      label: isSaved ? 'ذخیره شد برای داستان بعدی' : 'ذخیره برای داستان بعدی',
+                      label: isSaved
+                          ? 'ذخیره شد برای داستان بعدی'
+                          : 'ذخیره برای داستان بعدی',
                       isActive: isSaved,
                       c: c,
                       onTap: () {
@@ -271,7 +273,9 @@ class _SelectionPopupState extends ConsumerState<SelectionPopup> {
                       onTap: () {
                         ref.read(grammarNotesProvider.notifier).addNote(
                               GrammarNote(
-                                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                id: DateTime.now()
+                                    .millisecondsSinceEpoch
+                                    .toString(),
                                 word: widget.word,
                                 sentence: widget.sentence,
                                 markdown:
@@ -281,7 +285,9 @@ class _SelectionPopupState extends ConsumerState<SelectionPopup> {
                               ),
                             );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('به گرامر اضافه شد'), duration: Duration(seconds: 1)),
+                          const SnackBar(
+                              content: Text('به گرامر اضافه شد'),
+                              duration: Duration(seconds: 1)),
                         );
                       },
                     ),
@@ -300,7 +306,9 @@ class _SelectionPopupState extends ConsumerState<SelectionPopup> {
                               ),
                             );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('به لایتنر اضافه شد'), duration: Duration(seconds: 1)),
+                          const SnackBar(
+                              content: Text('به لایتنر اضافه شد'),
+                              duration: Duration(seconds: 1)),
                         );
                       },
                     ),
