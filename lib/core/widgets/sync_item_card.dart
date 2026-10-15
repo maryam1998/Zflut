@@ -138,6 +138,15 @@ class _SyncItemCardState extends State<SyncItemCard> {
                     size: 20,
                     padding: const EdgeInsets.all(4),
                   ),
+                  // 🧬 مسیر عصبیِ متنِ اصلی (تکرارهای پلیر خودکار ثبت می‌شود)
+                  NeuralPathButton(
+                    onTap: () => showNeuralPath(
+                      context,
+                      word: widget.en,
+                      langCode: 'en',
+                      baseText: widget.en,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -483,7 +492,17 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                   size: widget.compact ? 17 : 16,
                   padding: const EdgeInsets.all(5),
                 ),
-              if (widget.showActions && text != null) ...[
+              // 🧬 مسیر عصبیِ همین زبان؛ تقویمش با بقیه‌ی زبان‌های همین آیتم مشترک است
+              if (text != null)
+                NeuralPathButton(
+                  onTap: () => showNeuralPath(
+                    context,
+                    word: text,
+                    langCode: widget.langCode,
+                    baseText: widget.en,
+                  ),
+                ),
+              if (widget.showActions && text != null)
                 _IconBtn(
                   icon: widget.isFavorite ? Icons.star : Icons.star_border,
                   color: widget.isFavorite
@@ -492,14 +511,6 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                   onTap: widget.onToggleFavorite,
                   size: 18,
                 ),
-                NeuralPathButton(
-                  onTap: () => showDialog<void>(
-                    context: context,
-                    builder: (_) =>
-                        NeuralPathDialog(word: widget.en, langCode: 'en'),
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -583,28 +594,15 @@ class NeuralPathButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: 'مسیر عصبی',
-      child: InkWell(
+      child: InkResponse(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF8B7CF6).withOpacity(0.18),
-                const Color(0xFF6366F1).withOpacity(0.10),
-              ],
-            ),
-            border: Border.all(
-              color: const Color(0xFF8B7CF6).withOpacity(0.35),
-              width: 0.8,
-            ),
-          ),
-          child: const Icon(
-            Icons.hub_outlined,
-            size: 14,
-            color: Color(0xFF6366F1),
+        radius: 18,
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          // 🧬 مثلِ Hope: ایموجیِ کوچک و کم‌رنگ کنارِ هر بلندگو
+          child: Opacity(
+            opacity: 0.75,
+            child: Text('🧬', style: TextStyle(fontSize: 15, height: 1.1)),
           ),
         ),
       ),

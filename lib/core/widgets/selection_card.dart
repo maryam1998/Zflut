@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart' show RenderBox;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/reader/widgets/neural_path_dialog.dart';
+import '../neural/neural_store.dart';
 import '../constants/app_languages.dart';
 import '../constants/supported_languages.dart';
 import '../models/grammar_note.dart';
@@ -53,6 +54,15 @@ List<String> selectionCardLangs(LanguageSelection sel, String source) {
   if (out.isEmpty) out.add(source == 'fa' ? 'en' : 'fa');
   return out;
 }
+
+// ───────────────────────── رنگ‌های کارت (مثل پاپ‌آپِ Hope) ─────────────────────────
+// سرمه‌ای + قابِ طلایی + دکمه‌های نیمه‌شفاف با ایموجی. مستقل از تمِ اپ است تا
+// کارت همه‌جا یک‌شکل دیده شود (همان ظاهرِ تصویرِ مرجع).
+const Color kCardBg = Color(0xFF26335F);
+const Color kCardBorderGold = Color(0xFFC9A22E);
+const Color kCardBtnBg = Color(0xFF37436D);
+const Color kCardBtnBorder = Color(0xFF687198);
+const Color kCardTextSoft = Color(0xFFD3D7E8);
 
 // ───────────────────────── متن‌های رابط ─────────────────────────
 const Map<String, Map<String, String>> _kStr = {
@@ -355,7 +365,6 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.appColors;
     final ui = ref.watch(localeProvider).languageCode;
     final sel = ref.watch(languageSelectionProvider);
     final lang = widget.langCode;
@@ -367,21 +376,30 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
         (n) => n.langCode == lang && normWord(n.word) == normWord(_text))));
     final leitnerAdded = ref.watch(leitnerProvider.select((l) => l.any(
         (w) => w.langCode == lang && normWord(w.word) == normWord(_text))));
+    // 🧬 اگر برای این متن تکرار/مسیری ثبت شده، دکمه طلایی می‌شود
+    final nBase = neuralBase(_text);
+    ref.watch(neuralPathProvider.select((st) => st.versionOf(nBase)));
+    final neuralHas = (ref
+                .read(neuralPathProvider.notifier)
+                .recordOf(nBase)
+                ?.totalAll() ??
+            0) >
+        0;
 
     return Directionality(
       textDirection: kAppLanguages[ui]?.dir ?? TextDirection.rtl,
       child: Material(
         color: Colors.transparent,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
           decoration: BoxDecoration(
-            color: c.ink,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: c.gold, width: 1.4),
+            color: kCardBg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: kCardBorderGold, width: 1.6),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.35),
-                blurRadius: 16,
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
             ],
@@ -410,10 +428,10 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                                 _text,
                                 textDirection: dirFor(lang),
                                 style: TextStyle(
-                                  color: c.paper,
-                                  fontSize: _whole ? 16 : 22,
+                                  color: Colors.white,
+                                  fontSize: _whole ? 18 : 30,
                                   fontWeight: FontWeight.w800,
-                                  height: 1.25,
+                                  height: 1.2,
                                 ),
                               ),
                             ),
@@ -424,20 +442,24 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                     _SpeakIcon(
                       text: _text,
                       code: lang,
-                      color: c.goldSoft,
-                      size: 24,
+                      color: Colors.white,
+                      size: 28,
                       tooltip: _s(ui, 'speak'),
+                      hintBase: neuralBase(_text),
                     ),
                     if (_canExpand)
                       _CardIconButton(
                         icon: Icons.description_outlined,
-                        color: c.paper,
+                        emoji: '📄',
+                        color: Colors.white,
+                        size: 26,
                         tooltip: _s(ui, 'whole'),
                         onTap: _expand,
                       ),
                     _CardIconButton(
                       icon: Icons.close,
-                      color: c.paper,
+                      color: Colors.white,
+                      size: 28,
                       tooltip: _s(ui, 'close'),
                       onTap: widget.onClose,
                     ),
@@ -459,6 +481,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                           from: lang,
                           to: code,
                           ui: ui,
+                          showBadge: langs.length > 1,
                           onResolved: _onResolved,
                         ),
                     ],
@@ -466,15 +489,11 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                 ),
               ),
 
-              Container(
-                height: 1,
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                color: Colors.white24,
-              ),
+              const SizedBox(height: 14),
 
               // ═══ دکمه‌ها ═══
               _ActionButton(
-                icon: storySaved ? Icons.bookmark : Icons.bookmark_border,
+                emoji: '🔖',
                 label: _s(ui, storySaved ? 'storyDone' : 'story'),
                 active: storySaved,
                 onTap: () => ref.read(savedWordsProvider.notifier).toggleSave(
@@ -487,7 +506,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                     ),
               ),
               _ActionButton(
-                icon: Icons.extension_outlined,
+                emoji: '🧩',
                 label: _s(ui, grammarSaved ? 'grammarDone' : 'grammar'),
                 active: grammarSaved,
                 onTap: () {
@@ -506,7 +525,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                 },
               ),
               _ActionButton(
-                icon: Icons.repeat,
+                emoji: '🔁',
                 label: _s(ui, leitnerAdded ? 'leitnerDone' : 'leitner'),
                 active: leitnerAdded,
                 onTap: () {
@@ -522,13 +541,16 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                 },
               ),
               _ActionButton(
-                icon: Icons.hub_outlined,
+                emoji: '🧬',
                 label: _s(ui, 'neural'),
-                active: false,
-                onTap: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => NeuralPathDialog(word: _text, langCode: lang),
-                ),
+                active: neuralHas,
+                onTap: () {
+                  // کارتِ مسیر عصبی روی صفحه باز می‌شود؛ کارتِ انتخاب بسته شود
+                  // تا روی هم نیفتند.
+                  unawaited(showNeuralPath(context,
+                      word: _text, langCode: lang));
+                  widget.onClose();
+                },
               ),
             ],
           ),
@@ -546,6 +568,7 @@ class _TranslationLine extends ConsumerStatefulWidget {
   final String from;
   final String to;
   final String ui;
+  final bool showBadge;
   final void Function(String lang, String value) onResolved;
 
   const _TranslationLine({
@@ -555,6 +578,7 @@ class _TranslationLine extends ConsumerStatefulWidget {
     required this.to,
     required this.ui,
     required this.onResolved,
+    this.showBadge = true,
   });
 
   @override
@@ -671,7 +695,6 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.appColors;
     final res = _res;
     final rtl = dirFor(widget.to) == TextDirection.rtl;
 
@@ -683,7 +706,8 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
           res,
           textDirection: dirFor(widget.to),
           textAlign: rtl ? TextAlign.right : TextAlign.left,
-          style: TextStyle(color: c.paper, fontSize: 16, height: 1.45),
+          style: const TextStyle(
+              color: kCardTextSoft, fontSize: 24, height: 1.35),
         ),
       );
     } else if (_failed) {
@@ -691,7 +715,7 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
         alignment: Alignment.centerLeft,
         child: Text(
           _s(widget.ui, 'failed'),
-          style: TextStyle(color: c.rose, fontSize: 12),
+          style: const TextStyle(color: Color(0xFFFF9A9A), fontSize: 13),
         ),
       );
     } else {
@@ -700,12 +724,13 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
           SizedBox(
             width: 12,
             height: 12,
-            child: CircularProgressIndicator(strokeWidth: 1.6, color: c.gold),
+            child: const CircularProgressIndicator(
+                strokeWidth: 1.6, color: kCardBorderGold),
           ),
           const SizedBox(width: 8),
           Text(
             _s(widget.ui, 'loading'),
-            style: TextStyle(color: c.paper.withOpacity(0.8), fontSize: 12),
+            style: const TextStyle(color: kCardTextSoft, fontSize: 13),
           ),
         ],
       );
@@ -718,33 +743,36 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white10,
-                  borderRadius: BorderRadius.circular(5),
-                  border: Border.all(color: Colors.white24, width: 0.6),
-                ),
-                child: Text(
-                  _abbr(widget.to),
-                  style: TextStyle(
-                    color: c.gold,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.4,
+            if (widget.showBadge) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 9),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: kCardBtnBg,
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(color: kCardBtnBorder, width: 0.8),
+                  ),
+                  child: Text(
+                    _abbr(widget.to),
+                    style: const TextStyle(
+                      color: kCardBorderGold,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.4,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 10),
+              const SizedBox(width: 10),
+            ],
             Expanded(child: body),
             if (res != null || _failed)
               _CardIconButton(
                 icon: Icons.refresh,
-                color: c.goldSoft,
+                emoji: '🔄',
+                color: Colors.white,
                 size: 18,
                 tooltip: _s(widget.ui, res != null ? 'wrong' : 'retry'),
                 busy: _busy,
@@ -754,9 +782,10 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
               _SpeakIcon(
                 text: res,
                 code: widget.to,
-                color: c.goldSoft,
+                color: Colors.white,
                 size: 22,
                 tooltip: _s(widget.ui, 'speak'),
+                hintBase: neuralBase(widget.text),
               ),
           ],
         ),
@@ -775,12 +804,16 @@ class _SpeakIcon extends ConsumerWidget {
   final double size;
   final String tooltip;
 
+  /// مسیرِ عصبیِ این پخش به کدام «لغتِ پایه» برود (اختیاری)
+  final String? hintBase;
+
   const _SpeakIcon({
     required this.text,
     required this.code,
     required this.color,
     required this.tooltip,
     this.size = 22,
+    this.hintBase,
   });
 
   @override
@@ -792,15 +825,19 @@ class _SpeakIcon extends ConsumerWidget {
       message: tooltip,
       child: InkResponse(
         onTap: () {
+          final hb = hintBase;
+          if (hb != null && hb.isNotEmpty) {
+            ref.read(neuralPathProvider.notifier).hint(key, hb);
+          }
           ref.read(speechControllerProvider.notifier).toggle(text, code);
         },
         radius: size,
         child: Padding(
           padding: const EdgeInsets.all(5),
-          child: Icon(
-            playing ? Icons.pause : Icons.volume_up,
-            size: size,
-            color: color,
+          // 🔊 ایموجی، مثلِ پاپ‌آپِ Hope
+          child: Text(
+            playing ? '⏸️' : '🔊',
+            style: TextStyle(fontSize: size, height: 1.1),
           ),
         ),
       ),
@@ -810,6 +847,9 @@ class _SpeakIcon extends ConsumerWidget {
 
 class _CardIconButton extends StatelessWidget {
   final IconData icon;
+
+  /// اگر داده شود به‌جای آیکون، این ایموجی نشان داده می‌شود
+  final String? emoji;
   final Color color;
   final String tooltip;
   final VoidCallback? onTap;
@@ -821,6 +861,7 @@ class _CardIconButton extends StatelessWidget {
     required this.color,
     required this.tooltip,
     required this.onTap,
+    this.emoji,
     this.size = 22,
     this.busy = false,
   });
@@ -840,21 +881,25 @@ class _CardIconButton extends StatelessWidget {
                   height: size - 4,
                   child: CircularProgressIndicator(strokeWidth: 1.6, color: color),
                 )
-              : Icon(icon, size: size, color: color),
+              : (emoji != null
+                  ? Text(emoji!, style: TextStyle(fontSize: size, height: 1.1))
+                  : Icon(icon, size: size, color: color)),
         ),
       ),
     );
   }
 }
 
+/// دکمه‌ی عملِ کارت: ایموجی + برچسب، راست‌چین (در RTL)، پس‌زمینه‌ی نیمه‌شفافِ
+/// آبی با قابِ روشن — مثلِ پاپ‌آپِ Hope.
 class _ActionButton extends StatelessWidget {
-  final IconData icon;
+  final String emoji;
   final String label;
   final bool active;
   final VoidCallback onTap;
 
   const _ActionButton({
-    required this.icon,
+    required this.emoji,
     required this.label,
     required this.active,
     required this.onTap,
@@ -862,40 +907,44 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.appColors;
-    final fg = active ? c.gold : c.paper;
+    final fg = active ? kCardBorderGold : Colors.white;
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.only(top: 9),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.07),
-            borderRadius: BorderRadius.circular(10),
+            color: kCardBtnBg,
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: active ? c.gold : Colors.white30,
-              width: 1,
+              color: active ? kCardBorderGold : kCardBtnBorder,
+              width: 1.5,
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 18, color: fg),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: fg,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+          // مثلِ تصویرِ مرجع: محتوا چپ‌چین، «برچسب» و بعدش ایموجی در انتها
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              textDirection: TextDirection.ltr,
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Text(emoji, style: const TextStyle(fontSize: 19, height: 1.1)),
+              ],
+            ),
           ),
         ),
       ),

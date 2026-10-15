@@ -49,6 +49,15 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
   final Map<String, Map<String, String>> _pending = {};
   Timer? _debounce;
 
+  /// متنِ اصلی (انگلیسی) آیتمی که این شناسه را دارد — برای اتصالِ پلیر به
+  /// «مسیر عصبی» (همه‌ی زبان‌های یک آیتم یک تقویم دارند).
+  String? itemText(String id) {
+    for (final it in _items) {
+      if (it.id == id) return it.text;
+    }
+    return null;
+  }
+
   /// ثبتِ آیتم‌های اسکوپ. اگر اسکوپِ دیگری فعال بود جایگزین می‌شود.
   void setScope(String scopeId, List<SyncItem> items, TrackMode mode) {
     _debounce?.cancel();

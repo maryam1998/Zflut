@@ -12,13 +12,38 @@ import 'tts_config.dart';
 
 enum _WebResult { done, cancelled, noVoice, failed }
 
+/// هر بار که یک جمله/لغت «کامل خوانده شد» (خوانش اول و هر تکرار) این رویداد
+/// فرستاده می‌شود — پایه‌ی اتصالِ پلیر به «مسیر عصبی» و تقویم.
+class ChunkPlayedEvent {
+  /// کلیدِ پخشِ کل (locale::fullText) — با PlayerTrack.key قابل‌مقایسه است
+  final String? key;
+  final String code;
+
+  /// متنِ همین جمله/لغت
+  final String text;
+
+  /// آفستِ شروعِ این جمله در متنِ کامل
+  final int charOffset;
+  final int chunkIndex;
+  const ChunkPlayedEvent({
+    required this.key,
+    required this.code,
+    required this.text,
+    required this.charOffset,
+    required this.chunkIndex,
+  });
+}
+
 /// نتیجه‌ی یک بار خوانش با Web Speech
 enum _Once { ok, silent, noStart, cancelled, failed }
 
 class SpeechController extends StateNotifier<SpeechState> {
   /// [voicePref]: صدای ذخیره‌شده‌ی کاربر برای یک زبان (نام صدا) — اختیاری
-  SpeechController({String? Function(String lang)? voicePref})
-      : _voicePref = voicePref,
+  SpeechController({
+    String? Function(String lang)? voicePref,
+    void Function(ChunkPlayedEvent e)? onChunkPlayed,
+  })  : _voicePref = voicePref,
+        _onChunkPlayed = onChunkPlayed,
         super(const SpeechState()) {
     _initLocalTts();
     // فهرست صداها پیش از اولین تپ در پس‌زمینه گرم شود (خوانشِ ترجمه‌ها تأخیر نداشته باشد)
@@ -26,6 +51,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   }
 
   final String? Function(String lang)? _voicePref;
+  final void Function(ChunkPlayedEvent e)? _onChunkPlayed;
   List<Map<String, String>> _voices = [];
 
   // صدایی که برای هر زبان واقعاً شنیده شد (اولویتِ اول دفعه‌ی بعد) و صداهایی
@@ -879,6 +905,22 @@ class SpeechController extends StateNotifier<SpeechState> {
   //   • ∞ یعنی همین جمله دوباره و دوباره، تا کاربر «بعدی» بزند.
   // ═══════════════════════════════════════════════════════════════
   Future<void> _gapThenNext(int idx, String text, int myGen) async {
+    // 🧬 این جمله همین الان کامل خوانده شد (خوانش اول یا یکی از تکرارها) →
+    // به «مسیر عصبی» خبر بده. قبل از مکثِ بینِ جمله‌ها، تا اگر کاربر وسطِ
+    // مکث pause کرد، تکرار از دست نرود.
+    if (myGen == _generation && !_disposed && idx < _chunks.length) {
+      try {
+        _onChunkPlayed?.call(ChunkPlayedEvent(
+          key: _currentKey,
+          code: _currentCode ?? 'en',
+          text: _chunks[idx].text,
+          charOffset: _chunks[idx].start,
+          chunkIndex: idx,
+        ));
+      } catch (e) {
+        debugPrint('onChunkPlayed error: $e');
+      }
+    }
     final gap = _gapMs(chunk: text, rate: state.rate);
     await Future.delayed(Duration(milliseconds: gap));
     if (myGen != _generation || _disposed) return;
