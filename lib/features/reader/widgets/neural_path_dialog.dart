@@ -110,17 +110,21 @@ class NeuralPathDialog extends StatelessWidget {
                   // منطق ثبت تکرار
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('امروز ثبت شد!'), duration: Duration(seconds: 1)),
+                    const SnackBar(
+                        content: Text('امروز ثبت شد!'),
+                        duration: Duration(seconds: 1)),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: c.teal,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 child: const Text(
                   '✨ امروز انجام دادم',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -148,7 +152,8 @@ class _StatusCircle extends StatelessWidget {
   final int count;
   final dynamic c;
 
-  const _StatusCircle({required this.label, required this.count, required this.c});
+  const _StatusCircle(
+      {required this.label, required this.count, required this.c});
 
   @override
   Widget build(BuildContext context) {
