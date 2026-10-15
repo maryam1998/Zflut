@@ -89,19 +89,20 @@ class _SubChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // مثل اسکرین‌شات: نوار کرم (paperDark)؛ تبِ غیرفعال تخت و بدون پس‌زمینه،
+    // تبِ فعال یک پیلِ کرمِ روشن‌تر با حاشیهٔ طلایی و آیکونِ طلایی.
     final Color ink = c.ink as Color;
-    final Color fg = active ? c.headerText as Color : ink;
+    final Color soft = c.inkSoft as Color;
+    final Color gold = c.gold as Color;
+    final Color fg = active ? ink : soft;
+    final Color iconColor = active ? gold : soft;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       decoration: BoxDecoration(
-        color: active
-            ? c.headerTo as Color
-            : (c.paper as Color).withOpacity(0.55),
+        color: active ? c.paper as Color : Colors.transparent,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: active
-              ? c.headerTo as Color
-              : (c.cardBorder as Color).withOpacity(0.7),
+          color: active ? gold : Colors.transparent,
           width: context.px(2),
         ),
       ),
@@ -115,7 +116,7 @@ class _SubChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: context.px(38), color: fg),
+                Icon(icon, size: context.px(38), color: iconColor),
                 SizedBox(width: context.px(14)),
                 Text(
                   label,
