@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme_colors.dart';
+import '../shell/widgets/shell_header.dart';
 
 class PlaceholderTab extends StatelessWidget {
   final IconData icon;
@@ -60,10 +61,11 @@ class PlaceholderTab extends StatelessWidget {
           Align(
             alignment: Alignment.topCenter,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  const SizedBox(width: double.infinity, child: ShellHeader()),
+                  const SizedBox(height: 24),
                   // ── تصویرسازی مرکزی ──
                   _Illustration(icon: icon, isAi: isAiPowered, c: c),
                   const SizedBox(height: 28),
@@ -111,6 +113,7 @@ class PlaceholderTab extends StatelessWidget {
 
                   // ── نشان «به‌زودی» ──
                   _ComingSoonBadge(c: c),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

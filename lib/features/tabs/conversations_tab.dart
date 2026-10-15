@@ -9,6 +9,7 @@ import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/widgets/sync_item_card.dart';
+import '../shell/widgets/shell_header.dart';
 
 class ConversationsTab extends ConsumerStatefulWidget {
   const ConversationsTab({super.key});
@@ -32,9 +33,17 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final topics = ref.watch(allTopicsProvider);
 
     if (topics.isEmpty) {
-      return Center(
-        child: Text('داده‌ای بارگذاری نشد',
-            style: TextStyle(color: c.inkSoft, fontSize: 15)),
+      return ListView(
+        children: [
+          const ShellHeader(),
+          Padding(
+            padding: const EdgeInsets.all(40),
+            child: Center(
+              child: Text('داده‌ای بارگذاری نشد',
+                  style: TextStyle(color: c.inkSoft, fontSize: 15)),
+            ),
+          ),
+        ],
       );
     }
 
@@ -62,9 +71,17 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final total = topics.length;
 
     if (total == 0) {
-      return Center(
-        child: Text('چیزی پیدا نشد',
-            style: TextStyle(color: c.inkSoft, fontSize: 14)),
+      return ListView(
+        children: [
+          const ShellHeader(),
+          Padding(
+            padding: const EdgeInsets.all(40),
+            child: Center(
+              child: Text('چیزی پیدا نشد',
+                  style: TextStyle(color: c.inkSoft, fontSize: 14)),
+            ),
+          ),
+        ],
       );
     }
 
@@ -76,8 +93,14 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final readTotal = topics.where((t) => _topicRead.contains(t.topic)).length;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 90),
+      padding: const EdgeInsets.only(bottom: 90),
       children: [
+        const ShellHeader(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
         _RangeCard(
           from: from,
           to: to,
@@ -130,6 +153,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             );
           },
         ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -158,10 +184,16 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
                 SyncItem('b$i', openSc.speakerB[i].en),
             ],
       child: SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 90),
+      padding: const EdgeInsets.only(bottom: 90),
       child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const ShellHeader(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
         InkWell(
           onTap: () => setState(() {
             _activeTopic = null;
@@ -217,6 +249,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             }),
           );
         }),
+            ],
+          ),
+        ),
       ],
     ),
     ),

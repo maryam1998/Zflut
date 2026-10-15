@@ -57,8 +57,7 @@ Widget _errorBuilder(BuildContext _, GoRouterState state) => Scaffold(
       body: Center(child: Text('Route not found: ${state.uri}')),
     );
 
-/// تب‌ها بدون انیمیشنِ صفحه: چون همه‌ی تب‌ها داخل یک NestedScrollView با
-/// یک PrimaryScrollController هستند و نباید هم‌زمان دو صفحه زنده باشند.
+/// تب‌ها بدون انیمیشنِ صفحه (هر تب هدرِ خودش را داخل لیست اسکرول می‌کند).
 GoRoute _tab(String path, Widget Function() build) => GoRoute(
       path: path,
       pageBuilder: (_, state) =>

@@ -8,6 +8,7 @@ import '../../../core/player_sync/sync_widgets.dart';
 import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../shell/widgets/shell_header.dart';
 import 'word_card.dart';
 
 class WordListView extends ConsumerWidget {
@@ -155,6 +156,7 @@ class WordListView extends ConsumerWidget {
       ],
       child: CustomScrollView(
         slivers: [
+          const SliverToBoxAdapter(child: ShellHeader()),
           SliverToBoxAdapter(child: filterHeader),
           if (words.isEmpty)
             SliverFillRemaining(
