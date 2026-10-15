@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/models/tab_group.dart';
-import '../../core/providers/language_selection_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../grammar/widgets/practice_sheet.dart';
 import 'widgets/account_header.dart';
@@ -33,15 +32,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
 
     final c = context.appColors;
-    final sel = ref.watch(languageSelectionProvider);
     final hasSubtabs = currentGroup.tabs.length > 1;
-    final hasChips = sel.targets.length > 1;
-
-    final headerHeight = 56.0 +
-        168.0 +
-        (hasChips ? 66.0 : 0.0) +
-        60.0 +
-        (hasSubtabs ? 48.0 : 0.0);
 
     return Scaffold(
       backgroundColor: c.paper,
@@ -52,44 +43,33 @@ class _AppShellState extends ConsumerState<AppShell> {
             child: NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) {
                 return [
-                  SliverAppBar(
-                    floating: true,
-                    snap: true,
-                    pinned: false,
-                    automaticallyImplyLeading: false,
-                    expandedHeight: headerHeight,
-                    toolbarHeight: headerHeight,
-                    backgroundColor: Colors.transparent,
-                    surfaceTintColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    elevation: 0,
-                    scrolledUnderElevation: 0,
-                    flexibleSpace: FlexibleSpaceBar(
-                      collapseMode: CollapseMode.none,
-                      background: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AccountHeader(
-                            onMenuTap: () => SettingsSheet.show(context),
-                            onAvatarTap: () => SettingsSheet.show(context),
-                            userName: null,
+                  // مثل Hope: هدر، گروه‌ها و زیرتب‌ها بخشی از خودِ محتوا هستند
+                  // و همراه اسکرول بالا می‌روند و کاملاً محو می‌شوند؛ فقط وقتی
+                  // دوباره به بالای صفحه برسی نمایش داده می‌شوند (نه شناور/snap).
+                  SliverToBoxAdapter(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AccountHeader(
+                          onMenuTap: () => SettingsSheet.show(context),
+                          onAvatarTap: () => SettingsSheet.show(context),
+                          userName: null,
+                        ),
+                        const LanguagePicker(),
+                        HeaderTabs(
+                          activeGroupKey: currentGroup.key,
+                          onGroupSelected: (group) {
+                            context.go(_routeOf(group.tabs.first));
+                          },
+                          onSettingsTap: () => SettingsSheet.show(context),
+                        ),
+                        if (hasSubtabs)
+                          SubTabsRow(
+                            group: currentGroup,
+                            activeTabKey: _normalize(tabKey),
+                            onTabSelected: (tab) => context.go(_routeOf(tab)),
                           ),
-                          const LanguagePicker(),
-                          HeaderTabs(
-                            activeGroupKey: currentGroup.key,
-                            onGroupSelected: (group) {
-                              context.go(_routeOf(group.tabs.first));
-                            },
-                            onSettingsTap: () => SettingsSheet.show(context),
-                          ),
-                          if (hasSubtabs)
-                            SubTabsRow(
-                              group: currentGroup,
-                              activeTabKey: _normalize(tabKey),
-                              onTabSelected: (tab) => context.go(_routeOf(tab)),
-                            ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
                 ];

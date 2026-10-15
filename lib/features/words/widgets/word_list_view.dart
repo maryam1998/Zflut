@@ -39,158 +39,154 @@ class WordListView extends ConsumerWidget {
       ...sel.targets.where((t) => t != 'en'),
     ];
 
-    return Column(
-      children: [
-        // فیلتر + جستجو
-        Container(
-          color: c.paper,
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                height: 38,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: 1 + kCefrLevels.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 7),
-                  itemBuilder: (_, i) {
-                    final lvl = i == 0 ? 'all' : kCefrLevels[i - 1];
-                    final active = filter.level == lvl;
-                    final label = lvl == 'all' ? 'همه سطوح' : lvl;
-                    return GestureDetector(
-                      onTap: () => notifier.setLevel(lvl),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: lvl == 'all' ? 16 : 14,
-                          vertical: 9,
-                        ),
-                        decoration: BoxDecoration(
-                          color: active ? c.headerFrom : Colors.white,
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: active ? c.headerFrom : c.cardBorder,
-                            width: 1.1,
+    // مثل Hope: سطح‌ها، مرتب‌سازی و جستجو بخشی از خودِ محتوا هستند و
+    // همراه لیست اسکرول می‌شوند (ثابت روی صفحه نمی‌مانند). برای اینکه فیلدِ
+    // جستجو هنگام خالی‌شدنِ نتایج از بین نرود، یک CustomScrollView ثابت
+    // داریم و فقط اسلیورِ زیرِ فیلترها عوض می‌شود.
+    final filterHeader =
+    Container(
+              color: c.paper,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: 38,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: 1 + kCefrLevels.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 7),
+                      itemBuilder: (_, i) {
+                        final lvl = i == 0 ? 'all' : kCefrLevels[i - 1];
+                        final active = filter.level == lvl;
+                        final label = lvl == 'all' ? 'همه سطوح' : lvl;
+                        return GestureDetector(
+                          onTap: () => notifier.setLevel(lvl),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: lvl == 'all' ? 16 : 14,
+                              vertical: 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: active ? c.headerFrom : Colors.white,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: active ? c.headerFrom : c.cardBorder,
+                                width: 1.1,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                color: active ? c.headerText : c.inkSoft,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            color: active ? c.headerText : c.inkSoft,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: c.paperDark.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: c.cardBorder),
                       ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: c.paperDark.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: c.cardBorder),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.sort, size: 14, color: c.inkSoft),
+                          const SizedBox(width: 6),
+                          Text('مرتب‌سازی: پیش‌فرض',
+                              style: TextStyle(
+                                  color: c.ink,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(width: 3),
+                          Icon(Icons.keyboard_arrow_down,
+                              size: 14, color: c.inkSoft),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.sort, size: 14, color: c.inkSoft),
-                      const SizedBox(width: 6),
-                      Text('مرتب‌سازی: پیش‌فرض',
-                          style: TextStyle(
-                              color: c.ink,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600)),
-                      const SizedBox(width: 3),
-                      Icon(Icons.keyboard_arrow_down,
-                          size: 14, color: c.inkSoft),
-                    ],
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: c.cardBorder, width: 1),
+                    ),
+                    child: TextField(
+                      onChanged: notifier.setQuery,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(color: c.ink, fontSize: 13.5),
+                      decoration: InputDecoration(
+                        hintText: 'جستجوی لغت...',
+                        hintStyle: TextStyle(
+                            color: c.inkSoft.withOpacity(0.55), fontSize: 13.5),
+                        prefixIcon:
+                            Icon(Icons.search, color: c.inkSoft, size: 19),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Container(
-                height: 46,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: c.cardBorder, width: 1),
-                ),
-                child: TextField(
-                  onChanged: notifier.setQuery,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(color: c.ink, fontSize: 13.5),
-                  decoration: InputDecoration(
-                    hintText: 'جستجوی لغت...',
-                    hintStyle: TextStyle(
-                        color: c.inkSoft.withOpacity(0.55), fontSize: 13.5),
-                    prefixIcon:
-                        Icon(Icons.search, color: c.inkSoft, size: 19),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 13),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+            );
 
-        // لیست
-        Expanded(
-          child: words.isEmpty
-              ? _EmptyState(
-                  c: c,
-                  hasData: hasAnyData,
-                  message: emptyMessage,
-                )
-              : _SyncedWordList(words: words, langsToShow: langsToShow),
-        ),
-      ],
-    );
-  }
-}
-
-/// لیستِ لغات + سیستمِ مشترکِ پلیر (هایلایت و اسکرول خودکار).
-/// همه‌ی تب‌های لغت‌محور (لغات، علاقه‌مندی، اسلنگ، Vocabulary in Use)
-/// از همین لیست استفاده می‌کنند، پس همه یکسان رفتار می‌کنند.
-class _SyncedWordList extends StatelessWidget {
-  final List<DailyWord> words;
-  final List<String> langsToShow;
-  const _SyncedWordList({required this.words, required this.langsToShow});
-
-  @override
-  Widget build(BuildContext context) {
     return SyncPlayScope(
       revision: words,
       mode: TrackMode.words,
       itemsBuilder: () => [
         for (final w in words) SyncItem(w.id.toString(), w.en),
       ],
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(12, 4, 12, 90),
-        itemCount: words.length,
-        itemBuilder: (_, i) {
-          final w = words[i];
-          return WordCard(
-            key: ValueKey('word-${w.id}'),
-            id: w.id.toString(),
-            en: w.en,
-            fa: w.fa,
-            level: w.level,
-            pos: w.pos,
-            langsToShow: langsToShow,
-          );
-        },
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: filterHeader),
+          if (words.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _EmptyState(
+                c: c,
+                hasData: hasAnyData,
+                message: emptyMessage,
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 90),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (_, i) {
+                    final w = words[i];
+                    return WordCard(
+                      key: ValueKey('word-${w.id}'),
+                      id: w.id.toString(),
+                      en: w.en,
+                      fa: w.fa,
+                      level: w.level,
+                      pos: w.pos,
+                      langsToShow: langsToShow,
+                    );
+                  },
+                  childCount: words.length,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
