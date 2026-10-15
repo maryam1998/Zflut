@@ -37,6 +37,20 @@ class PlayerBar extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ═══ پیام خطا (مثلاً صدای این زبان نصب نیست) ═══
+            if (state.error != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+                child: Text(
+                  state.error!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: c.rose,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             // ═══ نوار پیشرفت ═══
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),

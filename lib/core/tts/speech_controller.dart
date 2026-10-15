@@ -10,10 +10,18 @@ import 'sentence_splitter.dart';
 import 'speech_state.dart';
 import 'tts_config.dart';
 
+enum _WebResult { done, cancelled, noVoice, failed }
+
 class SpeechController extends StateNotifier<SpeechState> {
-  SpeechController() : super(const SpeechState()) {
+  /// [voicePref]: صدای ذخیره‌شده‌ی کاربر برای یک زبان (نام صدا) — اختیاری
+  SpeechController({String? Function(String lang)? voicePref})
+      : _voicePref = voicePref,
+        super(const SpeechState()) {
     _initLocalTts();
   }
+
+  final String? Function(String lang)? _voicePref;
+  List<Map<String, String>> _voices = [];
 
   final FlutterTts _localTts = FlutterTts();
   final AudioPlayer _onlinePlayer = AudioPlayer();
@@ -459,7 +467,88 @@ class SpeechController extends StateNotifier<SpeechState> {
     );
   }
 
-  Future<bool> _playWebSpeech(
+  /// فهرست صداهای دستگاه/مرورگر (مثل getCachedVoices در Hope). روی وب،
+  /// getVoices() بار اول ممکنه خالی باشه، پس چند بار تلاش می‌کنیم.
+  Future<List<Map<String, String>>> _loadVoices() async {
+    if (_voices.isNotEmpty) return _voices;
+    for (var i = 0; i < 6; i++) {
+      try {
+        final raw = await _localTts.getVoices;
+        if (raw is List && raw.isNotEmpty) {
+          _voices = raw
+              .whereType<Map>()
+              .map((m) => {
+                    'name': '${m['name'] ?? ''}',
+                    'locale': '${m['locale'] ?? m['lang'] ?? ''}',
+                  })
+              .where((m) => m['name']!.isNotEmpty && m['locale']!.isNotEmpty)
+              .toList();
+          if (_voices.isNotEmpty) return _voices;
+        }
+      } catch (e) {
+        debugPrint('getVoices error: $e');
+      }
+      await Future.delayed(const Duration(milliseconds: 250));
+    }
+    return _voices;
+  }
+
+  String _normLocale(String l) => l.toLowerCase().replaceAll('_', '-');
+
+  /// انتخاب بهترین صدا برای زبان — همون ترتیبِ getBestVoice در Hope:
+  /// صدای ذخیره‌شده‌ی کاربر > کیفیت (neural/wavenet/...) > Google > اولین صدای منطبق.
+  /// null = فهرست صداها خالیه (نامعلوم)؛ [_noVoiceMarker] = مطمئنیم صدایی برای این زبان نیست.
+  static const Map<String, String> _noVoiceMarker = {'none': 'true'};
+
+  Future<Map<String, String>?> _pickVoice(String locale, String code) async {
+    final voices = await _loadVoices();
+    if (voices.isEmpty) return null;
+
+    final prefix = _normLocale(locale).split('-').first;
+    final wanted = _normLocale(locale);
+    final matching = voices.where((v) {
+      final l = _normLocale(v['locale']!);
+      return l == prefix || l.startsWith('$prefix-');
+    }).toList();
+    if (matching.isEmpty) return _noVoiceMarker;
+
+    // صدای دقیقاً هم‌locale (مثلاً de-DE) جلوتر قرار بگیره
+    matching.sort((a, b) {
+      final ea = _normLocale(a['locale']!) == wanted ? 0 : 1;
+      final eb = _normLocale(b['locale']!) == wanted ? 0 : 1;
+      return ea.compareTo(eb);
+    });
+
+    final saved = _voicePref?.call(code);
+    if (saved != null && saved.isNotEmpty) {
+      for (final v in matching) {
+        if (v['name'] == saved) return v;
+      }
+    }
+
+    const quality = [
+      'neural', 'wavenet', 'chirp', 'studio', 'natural', 'premium',
+      'enhanced', 'polyglot',
+    ];
+    final genderRe = RegExp('female|male', caseSensitive: false);
+    for (final kw in quality) {
+      for (final v in matching) {
+        final n = v['name']!.toLowerCase();
+        if (n.contains(kw) && genderRe.hasMatch(v['name']!)) return v;
+      }
+    }
+    for (final kw in quality) {
+      for (final v in matching) {
+        if (v['name']!.toLowerCase().contains(kw)) return v;
+      }
+    }
+    for (final v in matching) {
+      if (v['name']!.toLowerCase().contains('google')) return v;
+    }
+    return matching.first;
+  }
+
+  Future<_WebResult> _playWebSpeech(
     int idx,
     String text,
     String code,
@@ -467,12 +556,19 @@ class SpeechController extends StateNotifier<SpeechState> {
   ) async {
     try {
       final locale = TtsConfig.locale[code] ?? 'en-US';
+
+      // ✅ مثل Hope: صدای مخصوصِ همین زبان را از بین صداهای نصب‌شده‌ی
+      // دستگاه/مرورگر انتخاب می‌کنیم — قبلاً فقط setLanguage زده می‌شد و
+      // روی وب همه‌چیز با صدای انگلیسیِ پیش‌فرض خوانده می‌شد.
+      final voice = await _pickVoice(locale, code);
+      if (myGen != _generation) return _WebResult.cancelled;
+      if (identical(voice, _noVoiceMarker)) return _WebResult.noVoice;
+
       final waiter = Completer<bool>();
       _webWaiter = waiter;
 
-      // ✅ پایان خوانش را با handler می‌فهمیم (نه awaitSpeakCompletion که روی
-      // وب فعال نمی‌شد و باعث می‌شد speak() فوراً برگرده و تکرار، خوانش‌ها را
-      // پشت سر هم داخل صف مرورگر بریزد).
+      // پایان خوانش را با handler می‌فهمیم (نه awaitSpeakCompletion که روی
+      // وب فعال نمی‌شد و تکرار، خوانش‌ها را پشت سر هم داخل صف مرورگر می‌ریخت).
       _localTts.setCompletionHandler(() {
         if (waiter.isCompleted || !identical(_webWaiter, waiter)) return;
         waiter.complete(true);
@@ -483,39 +579,43 @@ class SpeechController extends StateNotifier<SpeechState> {
       _localTts.setErrorHandler((msg) {
         if (waiter.isCompleted || !identical(_webWaiter, waiter)) return;
         final m = '$msg'.toLowerCase();
-        if (m.contains('interrupted') ||
-            m.contains('cancel') ||
-            m.contains('canceled')) {
+        if (m.contains('interrupted') || m.contains('cancel')) {
           return; // قطع‌شدن عمدیِ خودمان، خطا نیست
         }
         debugPrint('WebSpeech error event: $msg');
         waiter.complete(false);
       });
 
-      await _localTts.setLanguage(locale);
+      await _localTts.setLanguage(voice?['locale'] ?? locale);
+      if (voice != null) {
+        await _localTts.setVoice({
+          'name': voice['name']!,
+          'locale': voice['locale']!,
+        });
+      }
       await _localTts.setSpeechRate(state.rate);
       await _localTts.setVolume(state.muted ? 0.0 : 1.0);
       await _localTts.setPitch(1.0);
 
-      if (myGen != _generation) return false;
+      if (myGen != _generation) return _WebResult.cancelled;
 
       await _localTts.speak(text);
 
-      if (myGen != _generation) return false;
+      if (myGen != _generation) return _WebResult.cancelled;
 
       final finished = await waiter.future.timeout(
         Duration(seconds: 20 + text.length ~/ 5),
         onTimeout: () => true,
       );
       if (identical(_webWaiter, waiter)) _webWaiter = null;
-      if (myGen != _generation) return false;
-      if (!finished) return false;
+      if (myGen != _generation) return _WebResult.cancelled;
+      if (!finished) return _WebResult.failed;
 
       await _gapThenNext(idx, text, myGen);
-      return true;
+      return _WebResult.done;
     } catch (e) {
       debugPrint('WebSpeech error: $e');
-      return false;
+      return _WebResult.failed;
     }
   }
 
@@ -525,11 +625,29 @@ class SpeechController extends StateNotifier<SpeechState> {
     String code,
     int myGen,
   ) async {
-    // روی وب: flutter_tts اول
-    if (!NativeTtsBridge.isAvailable) {
-      final localOk = await _playWebSpeech(idx, text, code, myGen);
+    // روی وب (مثل Hope): فارسی/عربی همیشه آنلاین (Edge)؛ بقیه‌ی زبان‌ها فقط
+    // با صدای نصب‌شده‌ی همان زبان روی دستگاه/مرورگر، بدون رفتن سراغ آنلاین.
+    if (!NativeTtsBridge.isAvailable && !TtsConfig.onlineOnly.contains(code)) {
+      final r = await _playWebSpeech(idx, text, code, myGen);
       if (myGen != _generation) return;
-      if (localOk) return;
+      switch (r) {
+        case _WebResult.done:
+        case _WebResult.cancelled:
+          return;
+        case _WebResult.noVoice:
+          state = state.copyWith(
+            status: SpeechStatus.idle,
+            error: 'برای این زبان صدایی روی دستگاه نصب نیست؛ '
+                'صدای آن را از تنظیمات دستگاه/مرورگر نصب کنید.',
+          );
+          return;
+        case _WebResult.failed:
+          state = state.copyWith(
+            status: SpeechStatus.idle,
+            error: 'خطا در پخش صدا',
+          );
+          return;
+      }
     }
 
     // Edge TTS از Worker
