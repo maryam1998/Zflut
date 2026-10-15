@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// ⚠️ مسیرها را با ساختار پروژه خودتان چک کنید
 import '../../../core/models/saved_word.dart';
 import '../../../core/models/grammar_note.dart';
 import '../../../core/providers/reader_providers.dart';
+import '../../../core/providers/translation_provider.dart';
+import '../../../core/providers/ai_settings_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
-import '../../../core/translate/translation_service.dart';
 
-class SelectionPopup extends ConsumerWidget {
+class SelectionPopup extends ConsumerStatefulWidget {
   final String word;
   final String sentence;
   final String langCode;
@@ -25,51 +28,172 @@ class SelectionPopup extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SelectionPopup> createState() => _SelectionPopupState();
+}
+
+class _SelectionPopupState extends ConsumerState<SelectionPopup> {
+  String? _meaning;
+  bool _loading = true;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMeaning();
+  }
+
+  Future<void> _loadMeaning() async {
+    try {
+      final service = ref.read(translationServiceProvider);
+
+      // ۱) اول از کش بخوان
+      final cached = service.peekCached(
+        widget.word,
+        widget.langCode,
+        widget.nativeLang,
+      );
+      if (cached != null && cached.trim().isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _meaning = cached;
+            _loading = false;
+          });
+        }
+        return;
+      }
+
+      // ۲) از سرویس ترجمه بگیر
+      final ai = ref.read(aiSettingsProvider);
+      final result = await service.translate(
+        text: widget.word,
+        targetLang: widget.nativeLang,
+        sourceLang: widget.langCode,
+        aiSettings: ai,
+      );
+
+      if (mounted) {
+        setState(() {
+          _meaning = (result == null || result.trim().isEmpty)
+              ? 'معنی پیدا نشد'
+              : result.trim();
+          _loading = false;
+          _failed = (result == null || result.trim().isEmpty);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _meaning = 'خطا در دریافت معنی';
+          _loading = false;
+          _failed = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final c = context.appColors;
     final savedWords = ref.watch(savedWordsProvider);
-    final isSaved = savedWords.any((w) => w.word == word && w.langCode == langCode);
+    final isSaved = savedWords.any(
+      (w) => w.word == widget.word && w.langCode == widget.langCode,
+    );
 
-    // در اینجا می‌توانید از یک Provider برای ترجمه استفاده کنید
-    // فعلاً به صورت موقت معنی را از سرویس ترجمه می‌گیریم
-    final meaning = ref.watch(translationServiceProvider).peekCached(word, langCode, nativeLang) ?? '...';
+    // محاسبه‌ی ابعاد صفحه برای جلوگیری از بیرون‌زدگی کادر
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    const popupWidth = 260.0;
+    const popupHeight = 220.0;
+
+    double left = widget.position.dx - popupWidth / 2;
+    if (left < 8) left = 8;
+    if (left + popupWidth > screenWidth - 8) {
+      left = screenWidth - popupWidth - 8;
+    }
+
+    double top = widget.position.dy - popupHeight - 12;
+    if (top < 8) top = widget.position.dy + 24;
+    if (top + popupHeight > screenHeight - 8) {
+      top = screenHeight - popupHeight - 8;
+    }
 
     return Positioned(
-      left: position.dx,
-      top: position.dy - 180, // فاصله از کلمه
+      left: left,
+      top: top,
       child: Material(
         color: Colors.transparent,
         child: Container(
-          width: 250,
+          width: popupWidth,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: c.ink, // رنگ تیره مشابه عکس
+            color: c.ink,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ردیف اول: کلمه و آیکون پخش صدا
+              // ردیف اول: کلمه + آیکون پخش صدا
               Row(
                 children: [
                   Icon(Icons.volume_up, color: c.gold, size: 18),
                   const SizedBox(width: 6),
-                  Text(
-                    word,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  Expanded(
+                    child: Text(
+                      widget.word,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
+
               // ترجمه
-              Text(
-                meaning,
-                style: TextStyle(color: c.paper.withOpacity(0.9), fontSize: 14),
-              ),
+              if (_loading)
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.6,
+                        color: c.gold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'در حال یافتن معنی...',
+                      style: TextStyle(
+                        color: c.paper.withOpacity(0.85),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  _meaning ?? '...',
+                  style: TextStyle(
+                    color: _failed
+                        ? const Color(0xFFEF9A9A)
+                        : c.paper.withOpacity(0.92),
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+
               const SizedBox(height: 12),
               const Divider(color: Colors.white24, height: 1),
               const SizedBox(height: 8),
@@ -77,17 +201,19 @@ class SelectionPopup extends ConsumerWidget {
               // دکمه ۱: ذخیره برای داستان بعدی
               _PopupButton(
                 icon: isSaved ? Icons.bookmark : Icons.bookmark_border,
-                label: isSaved ? 'ذخیره شد برای داستان بعدی' : 'ذخیره برای داستان بعدی',
+                label: isSaved
+                    ? 'ذخیره شد برای داستان بعدی'
+                    : 'ذخیره برای داستان بعدی',
                 isActive: isSaved,
                 onTap: () {
                   ref.read(savedWordsProvider.notifier).toggleSave(
-                    SavedWord(
-                      word: word,
-                      langCode: langCode,
-                      meaning: meaning,
-                      savedAt: DateTime.now(),
-                    ),
-                  );
+                        SavedWord(
+                          word: widget.word,
+                          langCode: widget.langCode,
+                          meaning: _meaning ?? '',
+                          savedAt: DateTime.now(),
+                        ),
+                      );
                 },
               ),
 
@@ -98,17 +224,21 @@ class SelectionPopup extends ConsumerWidget {
                 isActive: false,
                 onTap: () {
                   ref.read(grammarNotesProvider.notifier).addNote(
-                    GrammarNote(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      word: word,
-                      sentence: sentence,
-                      markdown: '## $word\n\n**معنی:** $meaning\n\n**جمله:** $sentence',
-                      langCode: langCode,
-                      savedAt: DateTime.now(),
-                    ),
-                  );
+                        GrammarNote(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          word: widget.word,
+                          sentence: widget.sentence,
+                          markdown:
+                              '## ${widget.word}\n\n**معنی:** ${_meaning ?? ''}\n\n**جمله:** ${widget.sentence}',
+                          langCode: widget.langCode,
+                          savedAt: DateTime.now(),
+                        ),
+                      );
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('به گرامر اضافه شد'), duration: Duration(seconds: 1)),
+                    const SnackBar(
+                      content: Text('به گرامر اضافه شد'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                 },
               ),
@@ -120,15 +250,18 @@ class SelectionPopup extends ConsumerWidget {
                 isActive: false,
                 onTap: () {
                   ref.read(leitnerProvider.notifier).addToLeitner(
-                    SavedWord(
-                      word: word,
-                      langCode: langCode,
-                      meaning: meaning,
-                      savedAt: DateTime.now(),
-                    ),
-                  );
+                        SavedWord(
+                          word: widget.word,
+                          langCode: widget.langCode,
+                          meaning: _meaning ?? '',
+                          savedAt: DateTime.now(),
+                        ),
+                      );
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('به لایتنر اضافه شد'), duration: Duration(seconds: 1)),
+                    const SnackBar(
+                      content: Text('به لایتنر اضافه شد'),
+                      duration: Duration(seconds: 1),
+                    ),
                   );
                 },
               ),
