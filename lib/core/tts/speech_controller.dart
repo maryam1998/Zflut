@@ -504,9 +504,10 @@ class SpeechController extends StateNotifier<SpeechState> {
 
   /// فهرست صداهای دستگاه/مرورگر (مثل getCachedVoices در Hope). روی وب،
   /// getVoices() بار اول ممکنه خالی باشه، پس چند بار تلاش می‌کنیم.
-  Future<List<Map<String, String>>> _loadVoices() async {
+  Future<List<Map<String, String>>> _loadVoices({bool force = false}) async {
+    if (force) _voices = [];
     if (_voices.isNotEmpty) return _voices;
-    for (var i = 0; i < 6; i++) {
+    for (var i = 0; i < 8; i++) {
       try {
         final raw = await _localTts.getVoices;
         if (raw is List && raw.isNotEmpty) {
@@ -536,15 +537,26 @@ class SpeechController extends StateNotifier<SpeechState> {
   static const Map<String, String> _noVoiceMarker = {'none': 'true'};
 
   Future<Map<String, String>?> _pickVoice(String locale, String code) async {
-    final voices = await _loadVoices();
+    var voices = await _loadVoices();
     if (voices.isEmpty) return null;
 
     final prefix = _normLocale(locale).split('-').first;
     final wanted = _normLocale(locale);
-    final matching = voices.where((v) {
-      final l = _normLocale(v['locale']!);
-      return l == prefix || l.startsWith('$prefix-');
-    }).toList();
+    List<Map<String, String>> findMatching(List<Map<String, String>> all) =>
+        all.where((v) {
+          final l = _normLocale(v['locale']!);
+          return l == prefix || l.startsWith('$prefix-');
+        }).toList();
+
+    var matching = findMatching(voices);
+    // مرورگر/گوشی گاهی فهرستِ صداها را تکه‌تکه و دیر کامل می‌کند (voiceschanged).
+    // قبلاً اولین فهرستِ ناقص برای همیشه کش می‌شد و ترجمه‌ها «صدایی نصب نیست»
+    // می‌گرفتند. اینجا قبل از نتیجه‌گیری چند بار فهرست را تازه می‌کنیم.
+    for (var i = 0; i < 4 && matching.isEmpty; i++) {
+      await Future.delayed(const Duration(milliseconds: 350));
+      voices = await _loadVoices(force: true);
+      matching = findMatching(voices);
+    }
     if (matching.isEmpty) return _noVoiceMarker;
 
     // صدای دقیقاً هم‌locale (مثلاً de-DE) جلوتر قرار بگیره
@@ -601,9 +613,13 @@ class SpeechController extends StateNotifier<SpeechState> {
 
       final waiter = Completer<bool>();
       _webWaiter = waiter;
+      var started = false;
 
       // پایان خوانش را با handler می‌فهمیم (نه awaitSpeakCompletion که روی
       // وب فعال نمی‌شد و تکرار، خوانش‌ها را پشت سر هم داخل صف مرورگر می‌ریخت).
+      _localTts.setStartHandler(() {
+        started = true;
+      });
       _localTts.setCompletionHandler(() {
         if (waiter.isCompleted || !identical(_webWaiter, waiter)) return;
         waiter.complete(true);
@@ -628,20 +644,46 @@ class SpeechController extends StateNotifier<SpeechState> {
           'locale': voice['locale']!,
         });
       }
-      await _localTts.setSpeechRate(state.rate);
+      await _localTts.setSpeechRate(_engineRate(state.rate));
       await _localTts.setVolume(state.muted ? 0.0 : 1.0);
       await _localTts.setPitch(1.0);
 
       if (myGen != _generation) return _WebResult.cancelled;
 
+      // کروم (به‌خصوص اندروید) بعد از cancel() اگر بلافاصله speak() شود،
+      // گاهی بی‌صدا خوانش را می‌اندازد؛ یک مکثِ کوتاه این را برطرف می‌کند.
+      if (kIsWeb) {
+        await Future.delayed(const Duration(milliseconds: 80));
+        if (myGen != _generation) return _WebResult.cancelled;
+      }
+
       await _localTts.speak(text);
 
       if (myGen != _generation) return _WebResult.cancelled;
 
-      final finished = await waiter.future.timeout(
-        Duration(seconds: 20 + text.length ~/ 5),
-        onTimeout: () => true,
-      );
+      // اگر تا ۵ ثانیه هیچ شروعی گزارش نشد، خوانش بی‌صدا افتاده → شکست
+      // (تا به‌جای سکوت، موتور بعدی امتحان شود).
+      final early = await Future.any<bool?>([
+        waiter.future,
+        Future<bool?>.delayed(
+          const Duration(seconds: 5),
+          () => (started || waiter.isCompleted) ? null : false,
+        ),
+      ]);
+      if (myGen != _generation) return _WebResult.cancelled;
+      if (early == false) {
+        if (identical(_webWaiter, waiter)) _webWaiter = null;
+        try {
+          await _localTts.stop();
+        } catch (_) {}
+        return _WebResult.failed;
+      }
+
+      final finished = early ??
+          await waiter.future.timeout(
+            Duration(seconds: 20 + text.length ~/ 5),
+            onTimeout: () => true,
+          );
       if (identical(_webWaiter, waiter)) _webWaiter = null;
       if (myGen != _generation) return _WebResult.cancelled;
       if (!finished) return _WebResult.failed;
@@ -660,26 +702,28 @@ class SpeechController extends StateNotifier<SpeechState> {
     String code,
     int myGen,
   ) async {
-    // روی وب (مثل Hope): فارسی/عربی همیشه آنلاین (Edge)؛ بقیه‌ی زبان‌ها فقط
-    // با صدای نصب‌شده‌ی همان زبان روی دستگاه/مرورگر، بدون رفتن سراغ آنلاین.
-    if (!NativeTtsBridge.isAvailable && !TtsConfig.onlineOnly.contains(code)) {
-      final r = await _playWebSpeech(idx, text, code, myGen);
-      if (myGen != _generation) return;
-      switch (r) {
-        case _WebResult.done:
-        case _WebResult.cancelled:
-          return;
-        case _WebResult.noVoice:
+    // اول TTS خودِ گوشی/مرورگر (مثل Hope) برای همه‌ی زبان‌ها، از جمله ترجمه‌ها.
+    // فارسی/عربی: اگر صدایی روی گوشی هست همان؛ وگرنه (یا اگر شکست خورد)
+    // سرویس آنلاین Edge. بقیه‌ی زبان‌ها: اگر صدای گوشی نبود، پیام می‌دهیم.
+    final r = await _playWebSpeech(idx, text, code, myGen);
+    if (myGen != _generation) return;
+    switch (r) {
+      case _WebResult.done:
+      case _WebResult.cancelled:
+        return;
+      case _WebResult.noVoice:
+        if (!TtsConfig.onlineOnly.contains(code)) {
           state = state.copyWith(
             status: SpeechStatus.idle,
             error: 'برای این زبان صدایی روی دستگاه نصب نیست؛ '
                 'صدای آن را از تنظیمات دستگاه/مرورگر نصب کنید.',
           );
           return;
-        case _WebResult.failed:
-          // صدای مرورگر شکست خورد → به‌جای بن‌بست، Edge آنلاین را امتحان کن
-          break;
-      }
+        }
+        break; // فارسی/عربی → آنلاین
+      case _WebResult.failed:
+        // صدای گوشی شکست خورد → به‌جای بن‌بست، Edge آنلاین را امتحان کن
+        break;
     }
 
     // Edge TTS از Worker
@@ -767,6 +811,15 @@ class SpeechController extends StateNotifier<SpeechState> {
       if (offset >= _chunks[i].start) return i;
     }
     return 0;
+  }
+
+  /// سرعتِ مناسبِ موتورِ TTS گوشی/مرورگر (مثل engineRate در Hope).
+  /// وب: زیر ۱ به بازه‌ی [0.2..1] نگاشت می‌شود. اندروید نیتیو (flutter_tts):
+  /// مقیاس ۰..۱ است و ۰٫۵ سرعتِ عادی.
+  double _engineRate(double r) {
+    if (!kIsWeb) return (r * 0.5).clamp(0.05, 1.0);
+    if (r >= 1) return r;
+    return 0.2 + ((r - 0.25) / 0.75) * 0.8;
   }
 
   int _gapMs({required String chunk, required double rate}) {
