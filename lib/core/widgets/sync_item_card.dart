@@ -9,38 +9,24 @@ import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart';
 
+// ⚠️ این ایمپورت‌ها را با توجه به مسیر پروژه خودتان اصلاح کنید
+import '../../features/reader/widgets/selection_popup.dart'; 
+import '../models/saved_word.dart';
+import '../models/grammar_note.dart';
+import '../providers/reader_providers.dart';
+
 // ═══════════════════════════════════════════════════════════════════
 // SyncItemCard — «کارتِ مشترک» برای همه‌ی تب‌ها
-//
-// لغات / اسلنگ / علاقه‌مندی‌ها / Vocabulary in Use / خطوط مکالمه / ...
-// همه فقط همین یک کارت را می‌سازند، پس این‌ها در همه‌ی تب‌ها دقیقاً یکسان‌اند:
-//   • ظاهر (بج سطح، متن، دکمه‌ی 🔊، ردیف‌های ترجمه)
-//   • هایلایتِ خودکار (SyncText) و اسکرولِ خودکار (SyncAnchor)
-//   • خوانشِ پیوسته‌ی متن و ترجمه‌ها (SyncSpeakButton + گزارش به پلیر)
-//   • منطقِ ترجمه و کنترل کیفیت (SyncTranslationRow)
-//
-// تفاوتِ «لغت» و «خطِ مکالمه» فقط با پارامترهاست: [compact] و [showActions].
 // ═══════════════════════════════════════════════════════════════════
 class SyncItemCard extends StatefulWidget {
-  /// شناسه‌ی آیتم در متنِ کاملِ پلیر (باید با SyncItem.id یکی باشد)
   final String id;
-
-  /// متنِ اصلی (انگلیسی)
   final String en;
   final String level;
-
-  /// برچسب نوعِ کلمه (مثلاً «اسم») — خالی/null = نمایش نده
   final String? pos;
   final bool isPersonal;
   final List<String> langsToShow;
-
-  /// ترجمه‌های آماده (مثلاً {'fa': '...'}) — برای این‌ها شبکه صدا زده نمی‌شود
   final Map<String, String> knownTranslations;
-
-  /// true = کارتِ کوچک (خطِ مکالمه)
   final bool compact;
-
-  /// true = ستاره / مسیر عصبی / مثال AI (لغات)
   final bool showActions;
 
   const SyncItemCard({
@@ -63,6 +49,39 @@ class SyncItemCard extends StatefulWidget {
 class _SyncItemCardState extends State<SyncItemCard> {
   bool _isFavorite = false;
   bool _showAiExamples = false;
+
+  // ═══════════════════════════════════════════════════════════════════
+  // تابع کمکی برای نمایش کادر پاپ‌آپ (Overlay)
+  // ═══════════════════════════════════════════════════════════════════
+  void _showPopup(BuildContext context, String word, String sentence, Offset globalPosition) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    
+    entry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          // برای بستن کادر با کلیک بیرون از آن
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => entry.remove(),
+              behavior: HitTestBehavior.translucent,
+            ),
+          ),
+          SelectionPopup(
+            word: word,
+            sentence: sentence,
+            langCode: 'en', // زبان اصلی متن
+            nativeLang: 'fa', // زبان مادری (قابل تغییر)
+            position: globalPosition,
+            onDismiss: () => entry.remove(),
+          ),
+        ],
+      ),
+    );
+    
+    // درج کادر در Overlay
+    overlay.insert(entry);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,24 +126,32 @@ class _SyncItemCardState extends State<SyncItemCard> {
                     size: compact ? 10 : 11,
                   ),
                   const SizedBox(width: 8),
+                  
+                  // ═══ اضافه کردن GestureDetector برای کلیک روی متن اصلی ═══
                   Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: SyncText(
-                        code: 'en',
-                        id: widget.id,
-                        text: widget.en,
-                        style: TextStyle(
-                          color: c.ink,
-                          fontSize: compact ? 15 : 19,
-                          fontWeight: FontWeight.w700,
-                          height: 1.25,
+                    child: GestureDetector(
+                      onTapDown: (details) {
+                        _showPopup(context, widget.en, widget.en, details.globalPosition);
+                      },
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: SyncText(
+                          code: 'en',
+                          id: widget.id,
+                          text: widget.en,
+                          style: TextStyle(
+                            color: c.ink,
+                            fontSize: compact ? 15 : 19,
+                            fontWeight: FontWeight.w700,
+                            height: 1.25,
+                          ),
+                          textDirection: TextDirection.ltr,
+                          textAlign: TextAlign.left,
                         ),
-                        textDirection: TextDirection.ltr,
-                        textAlign: TextAlign.left,
                       ),
                     ),
                   ),
+                  
                   if (pos != null && pos.isNotEmpty) ...[
                     const SizedBox(width: 6),
                     _Badge(
@@ -157,7 +184,7 @@ class _SyncItemCardState extends State<SyncItemCard> {
 
             if (widget.langsToShow.isNotEmpty) SizedBox(height: compact ? 2 : 6),
 
-            // ═══ ردیف‌های ترجمه — یک پیاده‌سازی برای همه‌ی تب‌ها ═══
+            // ═══ ردیف‌های ترجمه ═══
             for (final code in widget.langsToShow)
               SyncTranslationRow(
                 key: ValueKey('${widget.id}::$code'),
@@ -207,14 +234,7 @@ class _SyncItemCardState extends State<SyncItemCard> {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SyncTranslationRow — تنها ردیفِ ترجمه‌ی برنامه
-//
-//  • ترجمه‌ی آماده ([knownText]) → همان، بدون شبکه
-//  • وگرنه کش → وگرنه زنجیره‌ی ترجمه (با ۲ بار تلاش)
-//  • نتیجه‌ی «همان متن انگلیسی» یا خروجیِ خراب («User Safety: safe» و …)
-//    هرگز به‌عنوان ترجمه نشان داده/خوانده نمی‌شود؛ به‌جایش «ترجمه نشد» +
-//    دکمه‌ی تلاش دوباره.
-//  • فقط ترجمه‌ی سالم به پلیر گزارش می‌شود (برای خوانش/هایلایتِ ترجمه‌ها)
+// SyncTranslationRow — ردیفِ ترجمه‌ی برنامه
 // ═══════════════════════════════════════════════════════════════════
 class SyncTranslationRow extends ConsumerStatefulWidget {
   final String itemId;
@@ -277,6 +297,37 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
     super.dispose();
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // تابع کمکی برای نمایش کادر پاپ‌آپ در ردیف ترجمه
+  // ═══════════════════════════════════════════════════════════════════
+  void _showPopup(BuildContext context, String word, String sentence, Offset globalPosition) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    
+    entry = OverlayEntry(
+      builder: (context) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => entry.remove(),
+              behavior: HitTestBehavior.translucent,
+            ),
+          ),
+          SelectionPopup(
+            word: word,
+            sentence: sentence,
+            langCode: widget.langCode, // زبان مقصد
+            nativeLang: 'fa', // زبان مادری
+            position: globalPosition,
+            onDismiss: () => entry.remove(),
+          ),
+        ],
+      ),
+    );
+    
+    overlay.insert(entry);
+  }
+
   bool _usable(String t) {
     final s = t.trim();
     if (s.isEmpty) return false;
@@ -299,7 +350,6 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       return;
     }
 
-    // ردیف‌هایی که با اسکرولِ سریع فقط لحظه‌ای دیده می‌شوند درخواست نمی‌سازند
     Future.delayed(const Duration(milliseconds: 200), () {
       if (!mounted || gen != _gen) return;
       _fetch(gen, 0);
@@ -406,7 +456,6 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
     final loading = text == null && !_failed;
     final rtl = dirFor(widget.langCode) == TextDirection.rtl;
 
-    // ترجمه‌ی سالم آماده شد → به پلیر خبر بده (متنِ کاملِ همین زبان ساخته شود)
     if (text != null) {
       syncReportTranslation(context, ref, widget.langCode, widget.itemId, text);
     }
@@ -441,24 +490,31 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                 ),
               ),
               const SizedBox(width: 10),
+              
+              // ═══ اضافه کردن GestureDetector برای کلیک روی متن ترجمه ═══
               Expanded(
                 child: text != null
-                    ? Align(
-                        alignment: rtl
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: SyncText(
-                          code: widget.langCode,
-                          id: widget.itemId,
-                          text: text,
-                          style: TextStyle(
-                            color: const Color(0xFF0F5C34),
-                            fontSize: widget.compact ? 13 : 14,
-                            fontWeight: FontWeight.w600,
-                            height: 1.3,
+                    ? GestureDetector(
+                        onTapDown: (details) {
+                          _showPopup(context, text, widget.en, details.globalPosition);
+                        },
+                        child: Align(
+                          alignment: rtl
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: SyncText(
+                            code: widget.langCode,
+                            id: widget.itemId,
+                            text: text,
+                            style: TextStyle(
+                              color: const Color(0xFF0F5C34),
+                              fontSize: widget.compact ? 13 : 14,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                            ),
+                            textDirection: dirFor(widget.langCode),
+                            textAlign: rtl ? TextAlign.right : TextAlign.left,
                           ),
-                          textDirection: dirFor(widget.langCode),
-                          textAlign: rtl ? TextAlign.right : TextAlign.left,
                         ),
                       )
                     : Text(
@@ -470,6 +526,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                         ),
                       ),
               ),
+              
               if (_retryFailed)
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
@@ -522,7 +579,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// اجزای کوچکِ مشترک
+// اجزای کوچکِ مشترک (بدون تغییر)
 // ═══════════════════════════════════════════════════════════════════
 class _Badge extends StatelessWidget {
   final String text;
@@ -562,8 +619,6 @@ class _IconBtn extends StatelessWidget {
   final Color color;
   final VoidCallback? onTap;
   final double size;
-
-  /// اگر null نباشد به‌جای آیکون نمایش داده می‌شود (مثلاً چرخنده)
   final Widget? child;
 
   const _IconBtn({
