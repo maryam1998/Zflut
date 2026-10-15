@@ -31,6 +31,10 @@ class SpeechController extends StateNotifier<SpeechState> {
   int _chunkIndex = 0;
   String? _currentKey;
   String? _currentCode;
+
+  /// پخشِ «کل متن» با loop (مثل options.loop در Hope) و مرزهای آیتم‌ها
+  bool _loop = false;
+  List<int>? _boundaries;
   int _generation = 0;
   bool _disposed = false;
 
@@ -86,6 +90,8 @@ class SpeechController extends StateNotifier<SpeechState> {
     int? startCharOffset,
     List<String>? queue,
     int? queueIndex,
+    bool loop = false,
+    List<int>? sentenceBoundaries,
   }) async {
     if (text.isEmpty) return 'unsupported';
 
@@ -112,6 +118,8 @@ class SpeechController extends StateNotifier<SpeechState> {
       startCharOffset: startCharOffset,
       queue: queue,
       queueIndex: queueIndex,
+      loop: loop,
+      sentenceBoundaries: sentenceBoundaries,
     );
     return 'ok';
   }
@@ -123,13 +131,17 @@ class SpeechController extends StateNotifier<SpeechState> {
     List<String>? queue,
     int? queueIndex,
     bool startAtEnd = false,
+    bool loop = false,
+    List<int>? sentenceBoundaries,
   }) async {
     final newKey = '${TtsConfig.locale[code] ?? 'en-US'}::$text';
     _generation++;
     await _stopAll();
 
     _fullText = text;
-    _chunks = SentenceSplitter.split(text);
+    _loop = loop;
+    _boundaries = sentenceBoundaries;
+    _chunks = SentenceSplitter.split(text, boundaries: sentenceBoundaries);
     _chunkRepeatsDone.clear();
     _currentKey = newKey;
     _currentCode = code;
@@ -150,6 +162,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       key: newKey,
       total: _chunks.length,
       chunkIndex: startIdx,
+      charOffset: _chunks.isEmpty ? 0 : _chunks[startIdx].start,
       abState: 'idle',
       clearAB: true,
       clearError: true,
@@ -175,6 +188,8 @@ class SpeechController extends StateNotifier<SpeechState> {
       _currentCode ?? 'en',
       queue: _queue.isEmpty ? null : _queue,
       queueIndex: _queue.isEmpty ? null : _queueIndex,
+      loop: _loop,
+      sentenceBoundaries: _boundaries,
     );
   }
 
@@ -187,6 +202,8 @@ class SpeechController extends StateNotifier<SpeechState> {
     _chunkRepeatsDone.clear();
     _currentKey = null;
     _currentCode = null;
+    _loop = false;
+    _boundaries = null;
     _abState = 'idle';
     _abChunkA = null;
     _abChunkB = null;
@@ -198,6 +215,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       hasNext: false,
       clearKey: true,
       chunkIndex: 0,
+      charOffset: 0,
       total: 0,
       abState: 'idle',
       clearAB: true,
@@ -215,6 +233,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     _chunkIndex = clamped;
     state = state.copyWith(
       chunkIndex: clamped,
+      charOffset: _chunks[clamped].start,
       status: SpeechStatus.playing,
       hasPrev: _hasPrev(clamped),
       hasNext: _hasNext(clamped),
@@ -310,6 +329,10 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
   }
 
+  /// ایندکسِ جمله‌ای که این آفستِ کاراکتری داخلِ آن است
+  /// (معادل chunkIndexForOffset در Hope).
+  int chunkIndexForOffset(int offset) => _chunkIndexForOffset(offset);
+
   int getChunkCount() => _chunks.length;
   String getChunkText(int idx) =>
       (idx >= 0 && idx < _chunks.length) ? _chunks[idx].text : '';
@@ -353,12 +376,16 @@ class SpeechController extends StateNotifier<SpeechState> {
   Future<void> _playFrom(int idx) async {
     if (_disposed) return;
     if (idx >= _chunks.length) {
-      if (state.globalRepeat == -1 && _chunks.isNotEmpty) {
+      // رسیدن به آخرِ متن: با loop (پخشِ کلِ لیست/مکالمه، مثل Hope) یا تکرارِ ∞
+      // از اول ادامه می‌دهد.
+      if ((state.globalRepeat == -1 || _loop) && _chunks.isNotEmpty) {
+        _chunkRepeatsDone.clear();
         unawaited(_playFrom(0));
         return;
       }
       _chunkIndex = 0;
-      state = state.copyWith(status: SpeechStatus.idle, chunkIndex: 0);
+      state = state.copyWith(
+          status: SpeechStatus.idle, chunkIndex: 0, charOffset: 0);
       return;
     }
 
@@ -366,6 +393,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     _chunkIndex = idx;
     state = state.copyWith(
       chunkIndex: idx,
+      charOffset: _chunks[idx].start,
       status: SpeechStatus.playing,
       total: _chunks.length,
       hasPrev: _hasPrev(idx),

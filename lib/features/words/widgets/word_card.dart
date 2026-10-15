@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/player_sync/sync_widgets.dart';
 import '../../../core/providers/translation_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 
@@ -42,7 +43,11 @@ class _WordCardState extends State<WordCard> {
     final c = context.appColors;
     final levelColor = _levelColor(widget.level);
 
-    return Container(
+    // SyncAnchor: اسکرولِ خودکارِ پلیر دقیقاً وسطِ همین کارت می‌ایستد
+    return SyncAnchor(
+      code: 'en',
+      id: widget.id,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -67,8 +72,10 @@ class _WordCardState extends State<WordCard> {
               child: Row(
                 children: [
                   Flexible(
-                    child: Text(
-                      widget.en,
+                    child: SyncText(
+                      code: 'en',
+                      id: widget.id,
+                      text: widget.en,
                       style: TextStyle(
                         color: c.ink,
                         fontSize: 20,
@@ -139,11 +146,14 @@ class _WordCardState extends State<WordCard> {
                     ),
                   ],
                   const Spacer(),
-                  _IconBtn(
-                    icon: Icons.volume_up_outlined,
+                  SyncSpeakButton(
+                    code: 'en',
+                    id: widget.id,
+                    text: widget.en,
                     color: c.gold,
-                    onTap: () {},
                     size: 20,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   ),
                 ],
               ),
@@ -154,6 +164,7 @@ class _WordCardState extends State<WordCard> {
             // ═══ ردیف‌های ترجمه ═══
             ...widget.langsToShow.map(
               (code) => TranslationRow(
+                itemId: widget.id,
                 en: widget.en,
                 knownText: code == 'fa' ? widget.fa : widget.knownTranslations[code],
                 langCode: code,
@@ -207,6 +218,7 @@ class _WordCardState extends State<WordCard> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -240,6 +252,8 @@ class _WordCardState extends State<WordCard> {
 // TranslationRow — مشترک
 // ═══════════════════════════════════════════════════════════════════
 class TranslationRow extends ConsumerWidget {
+  /// شناسه‌ی آیتم (لغت/خط) در متنِ کاملِ پلیر — برای هایلایت/اسکرول/پرش
+  final String? itemId;
   final String en;
   final String? knownText;
   final String langCode;
@@ -248,6 +262,7 @@ class TranslationRow extends ConsumerWidget {
 
   const TranslationRow({
     super.key,
+    this.itemId,
     required this.en,
     this.knownText,
     required this.langCode,
@@ -261,7 +276,7 @@ class TranslationRow extends ConsumerWidget {
 
     // اگه ترجمه‌ی آماده داریم (فارسی)
     if (knownText != null && knownText!.isNotEmpty) {
-      return _buildRow(context, c, knownText!);
+      return _buildRow(context, ref, c, knownText!);
     }
 
     final async = ref.watch(
@@ -270,18 +285,30 @@ class TranslationRow extends ConsumerWidget {
     );
 
     return async.when(
-      loading: () => _buildRow(context, c, 'در حال ترجمه...', loading: true),
-      error: (_, __) => _buildRow(context, c, '—', loading: true),
+      loading: () =>
+          _buildRow(context, ref, c, 'در حال ترجمه...', loading: true),
+      error: (_, __) => _buildRow(context, ref, c, '—', loading: true),
       data: (text) {
-        if (text.isEmpty) return _buildRow(context, c, '—', loading: true);
-        return _buildRow(context, c, text);
+        if (text.isEmpty) {
+          return _buildRow(context, ref, c, '—', loading: true);
+        }
+        return _buildRow(context, ref, c, text);
       },
     );
   }
 
-  Widget _buildRow(BuildContext context, dynamic c, String text,
+  Widget _buildRow(BuildContext context, WidgetRef ref, dynamic c, String text,
       {bool loading = false}) {
-    return Directionality(
+    final sid = itemId ?? '';
+    // ترجمه آماده شد → به سیستمِ مشترکِ پلیر خبر بده تا «خواندنِ پیوسته‌ی
+    // ترجمه‌ها» (متنِ کاملِ همین زبان) ساخته شود — مثل onResolveTranslation.
+    if (!loading && itemId != null) {
+      syncReportTranslation(context, ref, langCode, sid, text);
+    }
+    return SyncAnchor(
+      code: langCode,
+      id: sid,
+      child: Directionality(
       textDirection: TextDirection.ltr,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -306,8 +333,10 @@ class TranslationRow extends ConsumerWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                text,
+              child: SyncText(
+                code: langCode,
+                id: sid,
+                text: text,
                 style: TextStyle(
                   color: loading ? c.inkSoft : const Color(0xFF0F5C34),
                   fontSize: 14,
@@ -324,11 +353,13 @@ class TranslationRow extends ConsumerWidget {
               onTap: () {},
               size: 16,
             ),
-            _IconBtn(
-              icon: Icons.volume_up_outlined,
+            SyncSpeakButton(
+              code: langCode,
+              id: sid,
+              text: text,
               color: c.gold,
-              onTap: () {},
               size: 16,
+              padding: const EdgeInsets.all(6),
             ),
             _IconBtn(
               icon: isFavorite ? Icons.star : Icons.star_border,
@@ -342,6 +373,7 @@ class TranslationRow extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

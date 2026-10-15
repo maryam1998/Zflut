@@ -4,9 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/level_colors.dart';
 import '../../core/constants/topic_icons.dart';
 import '../../core/models/conversation.dart';
+import '../../core/player_sync/player_track.dart';
+import '../../core/player_sync/sync_widgets.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
-import '../../core/providers/speech_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 
@@ -138,8 +139,29 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final c = context.appColors;
     final visual = visualForTopic(topic.topic);
 
-    return ListView(
+    // سناریوی بازشده = «متنِ کاملِ» پلیر (اول «می‌شنوی»، بعد «می‌گی» — همان
+    // ترتیبِ Hope). همین یک ویجتِ مشترک هایلایت/اسکرول/پرش را برای همه‌ی
+    // تب‌ها یکسان انجام می‌دهد.
+    final openIdx = _openScenario;
+    final openSc = (openIdx != null && openIdx < topic.scenarios.length)
+        ? topic.scenarios[openIdx]
+        : null;
+
+    return SyncPlayScope(
+      revision: openSc ?? topic,
+      mode: TrackMode.lines,
+      itemsBuilder: () => openSc == null
+          ? const <SyncItem>[]
+          : [
+              for (var i = 0; i < openSc.speakerA.length; i++)
+                SyncItem('a$i', openSc.speakerA[i].en),
+              for (var i = 0; i < openSc.speakerB.length; i++)
+                SyncItem('b$i', openSc.speakerB[i].en),
+            ],
+      child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 90),
+      child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         InkWell(
           onTap: () => setState(() {
@@ -197,6 +219,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           );
         }),
       ],
+    ),
+    ),
     );
   }
 }
@@ -609,11 +633,13 @@ class _ScenarioCard extends StatelessWidget {
             if (scenario.speakerA.isNotEmpty)
               _SpeakerBox(
                   title: 'می‌شنوی',
+                  idPrefix: 'a',
                   color: c.teal,
                   lines: scenario.speakerA),
             if (scenario.speakerB.isNotEmpty)
               _SpeakerBox(
                   title: 'می‌گی',
+                  idPrefix: 'b',
                   color: c.gold,
                   lines: scenario.speakerB),
             const SizedBox(height: 10),
@@ -627,11 +653,15 @@ class _ScenarioCard extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 class _SpeakerBox extends ConsumerWidget {
   final String title;
+
+  /// 'a' (می‌شنوی) یا 'b' (می‌گی) — شناسه‌ی هر خط = '$idPrefix$index'
+  final String idPrefix;
   final Color color;
   final List<ConversationLine> lines;
 
   const _SpeakerBox({
     required this.title,
+    required this.idPrefix,
     required this.color,
     required this.lines,
   });
@@ -664,7 +694,7 @@ class _SpeakerBox extends ConsumerWidget {
           const SizedBox(height: 8),
           ...List.generate(
             lines.length,
-            (i) => _LineRow(line: lines[i], queue: lines, queueIndex: i),
+            (i) => _LineRow(line: lines[i], id: '$idPrefix$i'),
           ),
         ],
       ),
@@ -675,18 +705,15 @@ class _SpeakerBox extends ConsumerWidget {
 // ═══════════════════════════════════════════════════════════════════
 class _LineRow extends ConsumerWidget {
   final ConversationLine line;
-  final List<ConversationLine> queue;
-  final int queueIndex;
+  final String id;
   const _LineRow({
     required this.line,
-    required this.queue,
-    required this.queueIndex,
+    required this.id,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
-    final ctrl = ref.read(speechControllerProvider.notifier);
     final sel = ref.watch(languageSelectionProvider);
 
     final langsToShow = <String>[
@@ -694,7 +721,10 @@ class _LineRow extends ConsumerWidget {
       ...sel.targets.where((t) => t != 'en'),
     ];
 
-    return Container(
+    return SyncAnchor(
+      code: 'en',
+      id: id,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
       decoration: BoxDecoration(
@@ -728,40 +758,29 @@ class _LineRow extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    line.en,
-                    style: TextStyle(
-                      color: c.ink,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      height: 1.3,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SyncText(
+                      code: 'en',
+                      id: id,
+                      text: line.en,
+                      style: TextStyle(
+                        color: c.ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        height: 1.3,
+                      ),
+                      textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.left,
                     ),
-                    textDirection: TextDirection.ltr,
-                    textAlign: TextAlign.left,
                   ),
                 ),
-                InkWell(
-                  onTap: () {
-                    try {
-                      ctrl.toggle(
-                        line.en,
-                        'en',
-                        queue: queue.map((l) => l.en).toList(),
-                        queueIndex: queueIndex,
-                      );
-                    } catch (e) {
-                      debugPrint('speak error: $e');
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.volume_up_outlined,
-                      size: 20,
-                      color: c.gold,
-                    ),
-                  ),
+                SyncSpeakButton(
+                  code: 'en',
+                  id: id,
+                  text: line.en,
+                  color: c.gold,
+                  size: 20,
                 ),
               ],
             ),
@@ -769,21 +788,24 @@ class _LineRow extends ConsumerWidget {
           ...langsToShow.map((code) {
             final knownText = code == 'fa' ? line.fa : null;
             return _TranslationLine(
-                en: line.en, knownText: knownText, langCode: code);
+                id: id, en: line.en, knownText: knownText, langCode: code);
           }),
         ],
       ),
+    ),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
 class _TranslationLine extends ConsumerWidget {
+  final String id;
   final String en;
   final String? knownText;
   final String langCode;
 
   const _TranslationLine({
+    required this.id,
     required this.en,
     this.knownText,
     required this.langCode,
@@ -792,10 +814,9 @@ class _TranslationLine extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
-    final ctrl = ref.read(speechControllerProvider.notifier);
 
     if (knownText != null && knownText!.isNotEmpty) {
-      return _build(c, ctrl, knownText!);
+      return _build(context, ref, c, knownText!);
     }
 
     final async = ref.watch(
@@ -804,18 +825,23 @@ class _TranslationLine extends ConsumerWidget {
     );
 
     return async.when(
-      loading: () => _build(c, ctrl, '...', loading: true),
+      loading: () => _build(context, ref, c, '...', loading: true),
       error: (_, __) => const SizedBox.shrink(),
       data: (text) {
         if (text.isEmpty) return const SizedBox.shrink();
-        return _build(c, ctrl, text);
+        return _build(context, ref, c, text);
       },
     );
   }
 
-  Widget _build(dynamic c, dynamic ctrl, String text,
+  Widget _build(BuildContext context, WidgetRef ref, dynamic c, String text,
       {bool loading = false}) {
-    return Directionality(
+    // ترجمه آماده شد → متنِ کاملِ همین زبان برای «خواندنِ پیوسته‌ی ترجمه‌ها»
+    if (!loading) syncReportTranslation(context, ref, langCode, id, text);
+    return SyncAnchor(
+      code: langCode,
+      id: id,
+      child: Directionality(
       textDirection: TextDirection.ltr,
       child: Padding(
         padding: const EdgeInsets.only(top: 5),
@@ -840,40 +866,36 @@ class _TranslationLine extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: loading ? c.inkSoft : const Color(0xFF0F5C34),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: SyncText(
+                  code: langCode,
+                  id: id,
+                  text: text,
+                  style: TextStyle(
+                    color: loading ? c.inkSoft : const Color(0xFF0F5C34),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
                 ),
-                textDirection: TextDirection.ltr,
-                textAlign: TextAlign.left,
               ),
             ),
             if (!loading)
-              InkWell(
-                onTap: () {
-                  try {
-                    ctrl.toggle(text, langCode);
-                  } catch (e) {
-                    debugPrint('speak error: $e');
-                  }
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Padding(
-                  padding: const EdgeInsets.all(3),
-                  child: Icon(
-                    Icons.volume_up_outlined,
-                    size: 17,
-                    color: c.gold,
-                  ),
-                ),
+              SyncSpeakButton(
+                code: langCode,
+                id: id,
+                text: text,
+                color: c.gold,
+                size: 17,
+                padding: const EdgeInsets.all(3),
               ),
           ],
         ),
       ),
+    ),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/player_sync/player_sync_provider.dart';
+import '../../../core/player_sync/sync_widgets.dart';
 import '../../../core/providers/speech_provider.dart';
 import '../../../core/scroll/global_scroll.dart';
 import '../../../core/theme/app_theme_colors.dart';
@@ -19,6 +21,10 @@ class PlayerBar extends ConsumerWidget {
     final isPlaying = state.status == SpeechStatus.playing;
     final progress =
         (isActive && state.total > 0) ? (state.chunkIndex + 1) / state.total : 0.0;
+    // متنِ کاملِ تبِ فعلی (مثل onFullTextChange در Hope) — وقتی چیزی پخش
+    // نمی‌شود، دکمه‌ی مرکزی همین را از اول می‌خواند.
+    final hasTrack = ref.watch(playerSyncProvider.select(
+        (s) => (s.tracks['en']?.fullText.isNotEmpty ?? false)));
 
     return Container(
       decoration: BoxDecoration(
@@ -151,10 +157,13 @@ class PlayerBar extends ConsumerWidget {
                   // پخش/توقف
                   _PlayBtn(
                     isPlaying: isPlaying,
-                    isActive: isActive,
+                    isActive: isActive || hasTrack,
                     onTap: () {
-                      if (!isActive || state.key == null) return;
-                      ctrl.togglePlayPause();
+                      if (isActive && state.key != null) {
+                        ctrl.togglePlayPause();
+                      } else if (hasTrack) {
+                        syncPlayMainTrack(ref);
+                      }
                     },
                   ),
 

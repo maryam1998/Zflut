@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/cefr_levels.dart';
 import '../../../core/models/daily_word.dart';
+import '../../../core/player_sync/player_track.dart';
+import '../../../core/player_sync/sync_widgets.dart';
 import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
@@ -151,74 +153,43 @@ class WordListView extends ConsumerWidget {
                   hasData: hasAnyData,
                   message: emptyMessage,
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 90),
-                  itemCount: words.length,
-                  itemBuilder: (_, i) {
-                    final w = words[i];
-                    return WordCard(
-                      id: w.id.toString(),
-                      en: w.en,
-                      fa: w.fa,
-                      level: w.level,
-                      pos: w.pos,
-                      langsToShow: langsToShow,
-                    );
-                  },
-                ),
+              : _SyncedWordList(words: words, langsToShow: langsToShow),
         ),
       ],
     );
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final dynamic c;
-  final bool hasData;
-  final String message;
-  const _EmptyState({
-    required this.c,
-    required this.hasData,
-    required this.message,
-  });
+/// لیستِ لغات + سیستمِ مشترکِ پلیر (هایلایت و اسکرول خودکار).
+/// همه‌ی تب‌های لغت‌محور (لغات، علاقه‌مندی، اسلنگ، Vocabulary in Use)
+/// از همین لیست استفاده می‌کنند، پس همه یکسان رفتار می‌کنند.
+class _SyncedWordList extends StatelessWidget {
+  final List<DailyWord> words;
+  final List<String> langsToShow;
+  const _SyncedWordList({required this.words, required this.langsToShow});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: c.gold.withOpacity(0.10),
-                border:
-                    Border.all(color: c.gold.withOpacity(0.3), width: 1.5),
-              ),
-              child: Icon(Icons.search_off, size: 32, color: c.gold),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              hasData ? message : 'داده‌ای بارگذاری نشد',
-              style: TextStyle(
-                color: c.ink,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              hasData
-                  ? 'فیلتر سطح یا جستجو را تغییر بده.'
-                  : 'به‌زودی داده‌ها اضافه می‌شوند.',
-              style: TextStyle(color: c.inkSoft, fontSize: 13),
-            ),
-          ],
-        ),
+    return SyncPlayScope(
+      revision: words,
+      mode: TrackMode.words,
+      itemsBuilder: () => [
+        for (final w in words) SyncItem(w.id.toString(), w.en),
+      ],
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 90),
+        itemCount: words.length,
+        itemBuilder: (_, i) {
+          final w = words[i];
+          return WordCard(
+            id: w.id.toString(),
+            en: w.en,
+            fa: w.fa,
+            level: w.level,
+            pos: w.pos,
+            langsToShow: langsToShow,
+          );
+        },
       ),
     );
   }

@@ -4,6 +4,11 @@ class SpeechState {
   final String? key;
   final SpeechStatus status;
   final int chunkIndex;
+
+  /// آفستِ کاراکتریِ شروعِ جمله‌ی در حال پخش داخل متنِ کامل
+  /// (معادل speechController.getCharOffset() در Hope) — پایه‌ی هایلایت و
+  /// اسکرول خودکار.
+  final int charOffset;
   final int total;
   final double rate;
 
@@ -25,6 +30,7 @@ class SpeechState {
     this.key,
     this.status = SpeechStatus.idle,
     this.chunkIndex = 0,
+    this.charOffset = 0,
     this.total = 0,
     this.rate = 1.0,
     this.globalRepeat = 0,
@@ -42,6 +48,7 @@ class SpeechState {
     bool clearKey = false,
     SpeechStatus? status,
     int? chunkIndex,
+    int? charOffset,
     int? total,
     double? rate,
     int? globalRepeat,
@@ -59,6 +66,7 @@ class SpeechState {
         key: clearKey ? null : (key ?? this.key),
         status: status ?? this.status,
         chunkIndex: chunkIndex ?? this.chunkIndex,
+        charOffset: charOffset ?? this.charOffset,
         total: total ?? this.total,
         rate: rate ?? this.rate,
         globalRepeat: globalRepeat ?? this.globalRepeat,
