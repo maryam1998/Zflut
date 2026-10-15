@@ -9,11 +9,8 @@ import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart';
 
-// ⚠️ این ایمپورت‌ها را با توجه به مسیر پروژه خودتان اصلاح کنید
-import '../../features/reader/widgets/selection_popup.dart'; 
-import '../models/saved_word.dart';
-import '../models/grammar_note.dart';
-import '../providers/reader_providers.dart';
+import '../../features/reader/widgets/neural_path_dialog.dart';
+import 'selection_card.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // SyncItemCard — «کارتِ مشترک» برای همه‌ی تب‌ها
@@ -49,39 +46,6 @@ class SyncItemCard extends StatefulWidget {
 class _SyncItemCardState extends State<SyncItemCard> {
   bool _isFavorite = false;
   bool _showAiExamples = false;
-
-  // ═══════════════════════════════════════════════════════════════════
-  // تابع کمکی برای نمایش کادر پاپ‌آپ (Overlay)
-  // ═══════════════════════════════════════════════════════════════════
-  void _showPopup(BuildContext context, String word, String sentence, Offset globalPosition) {
-    final overlay = Overlay.of(context);
-    late OverlayEntry entry;
-    
-    entry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          // برای بستن کادر با کلیک بیرون از آن
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () => entry.remove(),
-              behavior: HitTestBehavior.translucent,
-            ),
-          ),
-          SelectionPopup(
-            word: word,
-            sentence: sentence,
-            langCode: 'en', // زبان اصلی متن
-            nativeLang: 'fa', // زبان مادری (قابل تغییر)
-            position: globalPosition,
-            onDismiss: () => entry.remove(),
-          ),
-        ],
-      ),
-    );
-    
-    // درج کادر در Overlay
-    overlay.insert(entry);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,31 +91,27 @@ class _SyncItemCardState extends State<SyncItemCard> {
                   ),
                   const SizedBox(width: 8),
                   
-                  // ═══ اضافه کردن GestureDetector برای کلیک روی متن اصلی ═══
+                  // ═══ متن اصلی: لمسِ لغت / انتخابِ محدوده → کارتِ مشترک ═══
                   Expanded(
-                    child: GestureDetector(
-                      onTapDown: (details) {
-                        _showPopup(context, widget.en, widget.en, details.globalPosition);
-                      },
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: SyncText(
-                          code: 'en',
-                          id: widget.id,
-                          text: widget.en,
-                          style: TextStyle(
-                            color: c.ink,
-                            fontSize: compact ? 15 : 19,
-                            fontWeight: FontWeight.w700,
-                            height: 1.25,
-                          ),
-                          textDirection: TextDirection.ltr,
-                          textAlign: TextAlign.left,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: SelectableSyncText(
+                        code: 'en',
+                        id: widget.id,
+                        text: widget.en,
+                        sentence: widget.en,
+                        style: TextStyle(
+                          color: c.ink,
+                          fontSize: compact ? 15 : 19,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
                         ),
+                        textDirection: TextDirection.ltr,
+                        textAlign: TextAlign.left,
                       ),
                     ),
                   ),
-                  
+
                   if (pos != null && pos.isNotEmpty) ...[
                     const SizedBox(width: 6),
                     _Badge(
@@ -295,37 +255,6 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
   void dispose() {
     _gen++;
     super.dispose();
-  }
-
-  // ═══════════════════════════════════════════════════════════════════
-  // تابع کمکی برای نمایش کادر پاپ‌آپ در ردیف ترجمه
-  // ═══════════════════════════════════════════════════════════════════
-  void _showPopup(BuildContext context, String word, String sentence, Offset globalPosition) {
-    final overlay = Overlay.of(context);
-    late OverlayEntry entry;
-    
-    entry = OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () => entry.remove(),
-              behavior: HitTestBehavior.translucent,
-            ),
-          ),
-          SelectionPopup(
-            word: word,
-            sentence: sentence,
-            langCode: widget.langCode, // زبان مقصد
-            nativeLang: 'fa', // زبان مادری
-            position: globalPosition,
-            onDismiss: () => entry.remove(),
-          ),
-        ],
-      ),
-    );
-    
-    overlay.insert(entry);
   }
 
   bool _usable(String t) {
@@ -491,30 +420,25 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
               ),
               const SizedBox(width: 10),
               
-              // ═══ اضافه کردن GestureDetector برای کلیک روی متن ترجمه ═══
+              // ═══ متن ترجمه: لمسِ لغت / انتخابِ محدوده → کارتِ مشترک ═══
               Expanded(
                 child: text != null
-                    ? GestureDetector(
-                        onTapDown: (details) {
-                          _showPopup(context, text, widget.en, details.globalPosition);
-                        },
-                        child: Align(
-                          alignment: rtl
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: SyncText(
-                            code: widget.langCode,
-                            id: widget.itemId,
-                            text: text,
-                            style: TextStyle(
-                              color: const Color(0xFF0F5C34),
-                              fontSize: widget.compact ? 13 : 14,
-                              fontWeight: FontWeight.w600,
-                              height: 1.3,
-                            ),
-                            textDirection: dirFor(widget.langCode),
-                            textAlign: rtl ? TextAlign.right : TextAlign.left,
+                    ? Align(
+                        alignment:
+                            rtl ? Alignment.centerRight : Alignment.centerLeft,
+                        child: SelectableSyncText(
+                          code: widget.langCode,
+                          id: widget.itemId,
+                          text: text,
+                          sentence: text,
+                          style: TextStyle(
+                            color: const Color(0xFF0F5C34),
+                            fontSize: widget.compact ? 13 : 14,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
                           ),
+                          textDirection: dirFor(widget.langCode),
+                          textAlign: rtl ? TextAlign.right : TextAlign.left,
                         ),
                       )
                     : Text(
@@ -568,7 +492,13 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                   onTap: widget.onToggleFavorite,
                   size: 18,
                 ),
-                NeuralPathButton(onTap: () {}),
+                NeuralPathButton(
+                  onTap: () => showDialog<void>(
+                    context: context,
+                    builder: (_) =>
+                        NeuralPathDialog(word: widget.en, langCode: 'en'),
+                  ),
+                ),
               ],
             ],
           ),

@@ -1,44 +1,140 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/saved_word.dart';
-import '../models/grammar_note.dart';
+import 'dart:async';
 
-// وضعیت ذخیره‌سازی لغات (برای دکمه Save for next story)
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../models/grammar_note.dart';
+import '../models/saved_word.dart';
+import '../storage/local_storage.dart';
+
+// ═══════════════════════════════════════════════════════════════════
+// ذخیره‌ی ماندگار برای سه دکمه‌ی «کارت مشترکِ انتخاب» (SelectionCard):
+//   • ذخیره برای داستان بعدی   → savedWordsProvider
+//   • افزودن به یادگیری گرامر  → grammarNotesProvider
+//   • افزودن به جعبه‌ی لایتنر   → leitnerProvider
+// قبلاً هر سه فقط در حافظه بودند و با بستن برنامه پاک می‌شدند.
+// ═══════════════════════════════════════════════════════════════════
+
+const String _kSavedKey = 'zflut-saved-story-words-v1';
+const String _kGrammarKey = 'zflut-grammar-notes-v1';
+const String _kLeitnerKey = 'zflut-leitner-words-v1';
+
+/// نرمال‌سازی برای مقایسه‌ی لغت‌ها (بدون حساسیت به حروف بزرگ/فاصله‌ی کناره‌ها).
+String normWord(String s) => s.trim().toLowerCase();
+
+List<Map<String, dynamic>> _readItems(LocalStorage s, String key) {
+  final raw = s.readJson(key)['items'];
+  if (raw is! List) return const [];
+  return [
+    for (final e in raw)
+      if (e is Map) Map<String, dynamic>.from(e),
+  ];
+}
+
+List<SavedWord> _readWords(LocalStorage s, String key) {
+  final out = <SavedWord>[];
+  for (final m in _readItems(s, key)) {
+    try {
+      out.add(SavedWord.fromJson(m));
+    } catch (_) {
+      // ردیف خراب را نادیده بگیر
+    }
+  }
+  return out;
+}
+
+// ───────────────────────── ذخیره برای داستان بعدی ─────────────────────────
 class SavedWordsNotifier extends StateNotifier<List<SavedWord>> {
-  SavedWordsNotifier() : super([]);
+  final LocalStorage _storage;
+
+  SavedWordsNotifier(this._storage) : super(_readWords(_storage, _kSavedKey));
+
+  void _set(List<SavedWord> next) {
+    state = next;
+    unawaited(_storage.writeJson(
+        _kSavedKey, {'items': next.map((e) => e.toJson()).toList()}));
+  }
+
+  bool _same(SavedWord w, String word, String langCode) =>
+      w.langCode == langCode && normWord(w.word) == normWord(word);
 
   void toggleSave(SavedWord word) {
-    final exists = state.any((w) => w.word == word.word && w.langCode == word.langCode);
+    final exists = state.any((w) => _same(w, word.word, word.langCode));
     if (exists) {
-      state = state.where((w) => !(w.word == word.word && w.langCode == word.langCode)).toList();
+      _set(state.where((w) => !_same(w, word.word, word.langCode)).toList());
     } else {
-      state = [...state, word];
+      _set([...state, word]);
     }
   }
 
-  bool isSaved(String word, String langCode) {
-    return state.any((w) => w.word == word && w.langCode == langCode);
-  }
+  bool isSaved(String word, String langCode) =>
+      state.any((w) => _same(w, word, langCode));
 }
-final savedWordsProvider = StateNotifierProvider<SavedWordsNotifier, List<SavedWord>>((ref) => SavedWordsNotifier());
 
-// وضعیت یادداشت‌های گرامر
+final savedWordsProvider =
+    StateNotifierProvider<SavedWordsNotifier, List<SavedWord>>(
+  (ref) => SavedWordsNotifier(ref.read(localStorageProvider)),
+);
+
+// ───────────────────────── یادداشت‌های گرامر ─────────────────────────
 class GrammarNotesNotifier extends StateNotifier<List<GrammarNote>> {
-  GrammarNotesNotifier() : super([]);
+  final LocalStorage _storage;
 
-  void addNote(GrammarNote note) {
-    state = [note, ...state];
+  GrammarNotesNotifier(this._storage) : super(_read(_storage));
+
+  static List<GrammarNote> _read(LocalStorage s) {
+    final out = <GrammarNote>[];
+    for (final m in _readItems(s, _kGrammarKey)) {
+      try {
+        out.add(GrammarNote.fromJson(m));
+      } catch (_) {}
+    }
+    return out;
   }
-}
-final grammarNotesProvider = StateNotifierProvider<GrammarNotesNotifier, List<GrammarNote>>((ref) => GrammarNotesNotifier());
 
-// وضعیت جعبه لایتنر (به صورت ساده شده)
+  void _set(List<GrammarNote> next) {
+    state = next;
+    unawaited(_storage.writeJson(
+        _kGrammarKey, {'items': next.map((e) => e.toJson()).toList()}));
+  }
+
+  bool hasNote(String word, String langCode) => state.any(
+      (n) => n.langCode == langCode && normWord(n.word) == normWord(word));
+
+  /// اگر همین لغت/عبارت قبلاً ذخیره شده باشد چیزی اضافه نمی‌شود.
+  void addNote(GrammarNote note) {
+    if (hasNote(note.word, note.langCode)) return;
+    _set([note, ...state]);
+  }
+
+  void removeNote(String id) => _set(state.where((n) => n.id != id).toList());
+}
+
+final grammarNotesProvider =
+    StateNotifierProvider<GrammarNotesNotifier, List<GrammarNote>>(
+  (ref) => GrammarNotesNotifier(ref.read(localStorageProvider)),
+);
+
+// ───────────────────────── جعبه‌ی لایتنر (ساده) ─────────────────────────
 class LeitnerNotifier extends StateNotifier<List<SavedWord>> {
-  LeitnerNotifier() : super([]);
+  final LocalStorage _storage;
+
+  LeitnerNotifier(this._storage) : super(_readWords(_storage, _kLeitnerKey));
+
+  void _set(List<SavedWord> next) {
+    state = next;
+    unawaited(_storage.writeJson(
+        _kLeitnerKey, {'items': next.map((e) => e.toJson()).toList()}));
+  }
+
+  bool contains(String word, String langCode) => state.any(
+      (w) => w.langCode == langCode && normWord(w.word) == normWord(word));
 
   void addToLeitner(SavedWord word) {
-    if (!state.any((w) => w.word == word.word)) {
-      state = [...state, word];
-    }
+    if (contains(word.word, word.langCode)) return;
+    _set([...state, word]);
   }
 }
-final leitnerProvider = StateNotifierProvider<LeitnerNotifier, List<SavedWord>>((ref) => LeitnerNotifier());
+
+final leitnerProvider = StateNotifierProvider<LeitnerNotifier, List<SavedWord>>(
+  (ref) => LeitnerNotifier(ref.read(localStorageProvider)),
+);

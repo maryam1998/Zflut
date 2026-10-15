@@ -1,0 +1,1115 @@
+import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderBox;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../features/reader/widgets/neural_path_dialog.dart';
+import '../constants/app_languages.dart';
+import '../constants/supported_languages.dart';
+import '../models/grammar_note.dart';
+import '../models/language_selection.dart';
+import '../models/saved_word.dart';
+import '../player_sync/player_sync_provider.dart';
+import '../player_sync/sync_widgets.dart' show syncHighlightColor, kReadMarkerColor;
+import '../providers/ai_settings_provider.dart';
+import '../providers/app_prefs_provider.dart';
+import '../providers/language_selection_provider.dart';
+import '../providers/locale_provider.dart';
+import '../providers/reader_providers.dart';
+import '../providers/speech_provider.dart';
+import '../providers/translation_provider.dart';
+import '../theme/app_theme_colors.dart';
+import '../translate/translation_service.dart';
+import '../tts/speech_state.dart';
+import '../tts/tts_config.dart';
+
+// ═══════════════════════════════════════════════════════════════════
+// SelectionCard — «کارت مشترکِ انتخاب» (معادل GlobalAddToStorySelection
+// وب و کادر لغتِ حباب LinLearn).
+//
+// همه‌جای برنامه (لغات، علاقه‌مندی‌ها، اسلنگ، مکالمات، داستان، ...) فقط از
+// همین دو چیز استفاده می‌کنند، پس رفتار همه‌جا یکسان است:
+//   1) SelectableSyncText  → متنی که با لمسِ لغت یا انتخابِ محدوده، کارت را باز می‌کند
+//   2) showSelectionCard() → کارت را باز می‌کند (از هر جای دیگر هم قابل‌صدا زدن است)
+//
+// کارت: متنِ انتخاب‌شده + 🔊 + 📄 (کلِ جمله) + ✕، سپس ترجمه به «همه‌ی زبان‌های
+// انتخابیِ کاربر» (هرکدام با 🔊 و دکمه‌ی ترجمه‌ی دوباره)، سپس چهار دکمه:
+// ذخیره برای داستان بعدی | افزودن به گرامر | افزودن به لایتنر | مسیر عصبی.
+// ═══════════════════════════════════════════════════════════════════
+
+/// زبان‌هایی که کارت باید ترجمه‌شان را نشان بدهد — همان منطقِ effectiveDisplayLangs
+/// (مقصدها به ترتیبِ انتخاب، زبان مادری اگر جزو مقصدها نیست اول) با این تفاوت
+/// که زبانِ خودِ متنِ انتخاب‌شده (source) همیشه حذف می‌شود.
+List<String> selectionCardLangs(LanguageSelection sel, String source) {
+  final out = <String>[];
+  for (final t in sel.targets) {
+    if (t != source && !out.contains(t)) out.add(t);
+  }
+  if (sel.native.isNotEmpty && sel.native != source && !out.contains(sel.native)) {
+    out.insert(0, sel.native);
+  }
+  if (out.isEmpty) out.add(source == 'fa' ? 'en' : 'fa');
+  return out;
+}
+
+// ───────────────────────── متن‌های رابط ─────────────────────────
+const Map<String, Map<String, String>> _kStr = {
+  'fa': {
+    'story': 'ذخیره برای داستان بعدی',
+    'storyDone': 'ذخیره شد برای داستان بعدی',
+    'grammar': 'افزودن به یادگیری گرامر',
+    'grammarDone': 'ذخیره شد در گرامر',
+    'leitner': 'افزودن به جعبه‌ی لایتنر',
+    'leitnerDone': 'به جعبه‌ی لایتنر اضافه شد',
+    'neural': 'مسیر عصبی',
+    'loading': 'در حال ترجمه...',
+    'failed': 'ترجمه پیدا نشد',
+    'retry': 'تلاش دوباره',
+    'wrong': 'ترجمه اشتباهه؟ دوباره امتحان کن',
+    'close': 'بستن',
+    'whole': 'ترجمه‌ی کل جمله',
+    'speak': 'خواندن',
+    'sentence': 'جمله',
+    'translation': 'ترجمه',
+  },
+  'en': {
+    'story': 'Save for next story',
+    'storyDone': 'Saved for next story',
+    'grammar': 'Add to grammar learning',
+    'grammarDone': 'Saved to grammar',
+    'leitner': 'Add to Leitner box',
+    'leitnerDone': 'Added to Leitner box',
+    'neural': 'Neural path',
+    'loading': 'Translating…',
+    'failed': 'No translation found',
+    'retry': 'Retry',
+    'wrong': 'Wrong translation? Try again',
+    'close': 'Close',
+    'whole': 'Translate the whole sentence',
+    'speak': 'Listen',
+    'sentence': 'Sentence',
+    'translation': 'Translation',
+  },
+  'ar': {
+    'story': 'حفظ للقصة التالية',
+    'storyDone': 'تم الحفظ للقصة التالية',
+    'grammar': 'إضافة إلى تعلّم القواعد',
+    'grammarDone': 'تم الحفظ في القواعد',
+    'leitner': 'إضافة إلى صندوق لايتنر',
+    'leitnerDone': 'أُضيفت إلى صندوق لايتنر',
+    'neural': 'المسار العصبي',
+    'loading': 'جارٍ الترجمة…',
+    'failed': 'لم يتم العثور على ترجمة',
+    'retry': 'إعادة المحاولة',
+    'wrong': 'الترجمة خاطئة؟ جرّب مرة أخرى',
+    'close': 'إغلاق',
+    'whole': 'ترجمة الجملة كاملة',
+    'speak': 'استماع',
+    'sentence': 'الجملة',
+    'translation': 'الترجمة',
+  },
+  'de': {
+    'story': 'Für nächste Geschichte speichern',
+    'storyDone': 'Für nächste Geschichte gespeichert',
+    'grammar': 'Zum Grammatiklernen hinzufügen',
+    'grammarDone': 'In Grammatik gespeichert',
+    'leitner': 'Zur Leitner-Box hinzufügen',
+    'leitnerDone': 'Zur Leitner-Box hinzugefügt',
+    'neural': 'Neuronaler Pfad',
+    'loading': 'Wird übersetzt…',
+    'failed': 'Keine Übersetzung gefunden',
+    'retry': 'Erneut versuchen',
+    'wrong': 'Falsche Übersetzung? Nochmal versuchen',
+    'close': 'Schließen',
+    'whole': 'Ganzen Satz übersetzen',
+    'speak': 'Anhören',
+    'sentence': 'Satz',
+    'translation': 'Übersetzung',
+  },
+  'es': {
+    'story': 'Guardar para la próxima historia',
+    'storyDone': 'Guardado para la próxima historia',
+    'grammar': 'Añadir al aprendizaje de gramática',
+    'grammarDone': 'Guardado en gramática',
+    'leitner': 'Añadir a la caja Leitner',
+    'leitnerDone': 'Añadido a la caja Leitner',
+    'neural': 'Ruta neuronal',
+    'loading': 'Traduciendo…',
+    'failed': 'No se encontró traducción',
+    'retry': 'Reintentar',
+    'wrong': '¿Traducción incorrecta? Inténtalo de nuevo',
+    'close': 'Cerrar',
+    'whole': 'Traducir la frase completa',
+    'speak': 'Escuchar',
+    'sentence': 'Frase',
+    'translation': 'Traducción',
+  },
+  'fr': {
+    'story': 'Enregistrer pour la prochaine histoire',
+    'storyDone': 'Enregistré pour la prochaine histoire',
+    'grammar': 'Ajouter à l’apprentissage de la grammaire',
+    'grammarDone': 'Enregistré dans la grammaire',
+    'leitner': 'Ajouter à la boîte de Leitner',
+    'leitnerDone': 'Ajouté à la boîte de Leitner',
+    'neural': 'Chemin neuronal',
+    'loading': 'Traduction en cours…',
+    'failed': 'Aucune traduction trouvée',
+    'retry': 'Réessayer',
+    'wrong': 'Mauvaise traduction ? Réessayer',
+    'close': 'Fermer',
+    'whole': 'Traduire toute la phrase',
+    'speak': 'Écouter',
+    'sentence': 'Phrase',
+    'translation': 'Traduction',
+  },
+};
+
+String _s(String ui, String key) => _kStr[ui]?[key] ?? _kStr['en']![key]!;
+
+String _abbr(String code) {
+  for (final l in kSupportedLanguages) {
+    if (l.code == code) return l.abbr;
+  }
+  return code.toUpperCase();
+}
+
+bool _isLatinLang(String code) =>
+    !const {'fa', 'ar', 'ru', 'hi', 'zh', 'ja', 'ko'}.contains(code);
+
+// ═══════════════════════════════════════════════════════════════════
+// باز کردن کارت (Overlay) — فقط یک کارت در هر لحظه
+// ═══════════════════════════════════════════════════════════════════
+VoidCallback? _closeActiveCard;
+
+/// کارتِ مشترک را کنار [anchor] (مستطیلِ سراسریِ متنِ انتخاب‌شده) باز می‌کند.
+/// Future وقتی تمام می‌شود که کارت بسته شود.
+Future<void> showSelectionCard(
+  BuildContext context, {
+  required String text,
+  required String langCode,
+  String? sentence,
+  Rect? anchor,
+}) {
+  final picked = text.trim();
+  if (picked.isEmpty) return Future<void>.value();
+  _closeActiveCard?.call();
+
+  final overlay = Overlay.of(context, rootOverlay: true);
+  final done = Completer<void>();
+  var removed = false;
+  late final OverlayEntry entry;
+
+  void close() {
+    if (removed) return;
+    removed = true;
+    entry.remove();
+    if (_closeActiveCard == close) _closeActiveCard = null;
+    if (!done.isCompleted) done.complete();
+  }
+
+  entry = OverlayEntry(builder: (ctx) {
+    final mq = MediaQuery.of(ctx);
+    final fallback = Rect.fromCenter(
+      center: Offset(mq.size.width / 2, mq.size.height / 2),
+      width: 2,
+      height: 2,
+    );
+    return Stack(
+      children: [
+        // لمسِ بیرون از کارت → بستن
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: close,
+          ),
+        ),
+        Positioned.fill(
+          child: CustomSingleChildLayout(
+            delegate: _CardLayoutDelegate(
+              anchor: anchor ?? fallback,
+              safe: mq.padding,
+              keyboard: mq.viewInsets.bottom,
+            ),
+            child: SelectionCard(
+              text: picked,
+              sentence: (sentence ?? picked),
+              langCode: langCode,
+              onClose: close,
+            ),
+          ),
+        ),
+      ],
+    );
+  });
+
+  _closeActiveCard = close;
+  overlay.insert(entry);
+  return done.future;
+}
+
+/// کارت را بالای متنِ انتخاب‌شده می‌گذارد؛ اگر جا نبود پایینش؛ همیشه داخل صفحه.
+class _CardLayoutDelegate extends SingleChildLayoutDelegate {
+  final Rect anchor;
+  final EdgeInsets safe;
+  final double keyboard;
+
+  _CardLayoutDelegate({
+    required this.anchor,
+    required this.safe,
+    required this.keyboard,
+  });
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final w = math.min(360.0, constraints.maxWidth - 24);
+    final h = constraints.maxHeight - safe.top - safe.bottom - keyboard - 32;
+    return BoxConstraints(
+      minWidth: w,
+      maxWidth: w,
+      maxHeight: math.max(180.0, h),
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final left = (anchor.center.dx - childSize.width / 2)
+        .clamp(12.0, math.max(12.0, size.width - childSize.width - 12.0))
+        .toDouble();
+    final topLimit = safe.top + 8;
+    final bottomLimit = size.height - safe.bottom - keyboard - 8;
+    var top = anchor.top - childSize.height - 10;
+    if (top < topLimit) top = anchor.bottom + 10;
+    if (top + childSize.height > bottomLimit) {
+      top = math.max(topLimit, bottomLimit - childSize.height);
+    }
+    return Offset(left, top);
+  }
+
+  @override
+  bool shouldRelayout(covariant _CardLayoutDelegate old) =>
+      old.anchor != anchor || old.safe != safe || old.keyboard != keyboard;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SelectionCard — خودِ کارت
+// ═══════════════════════════════════════════════════════════════════
+class SelectionCard extends ConsumerStatefulWidget {
+  /// متنِ انتخاب‌شده (لغت یا محدوده)
+  final String text;
+
+  /// متنِ کاملی که انتخاب از داخلش آمده (برای دکمه‌ی 📄 و یادداشتِ گرامر)
+  final String sentence;
+
+  /// زبانِ متنِ انتخاب‌شده
+  final String langCode;
+  final VoidCallback onClose;
+
+  const SelectionCard({
+    super.key,
+    required this.text,
+    required this.sentence,
+    required this.langCode,
+    required this.onClose,
+  });
+
+  @override
+  ConsumerState<SelectionCard> createState() => _SelectionCardState();
+}
+
+class _SelectionCardState extends ConsumerState<SelectionCard> {
+  late String _text = widget.text.trim();
+  bool _whole = false;
+  final Map<String, String> _results = {};
+
+  bool get _canExpand =>
+      !_whole &&
+      widget.sentence.trim().isNotEmpty &&
+      widget.sentence.trim() != widget.text.trim();
+
+  void _expand() {
+    setState(() {
+      _text = widget.sentence.trim();
+      _whole = true;
+      _results.clear();
+    });
+  }
+
+  void _onResolved(String lang, String value) => _results[lang] = value;
+
+  String _meaning(LanguageSelection sel) =>
+      _results[sel.native] ??
+      (_results.values.isEmpty ? '' : _results.values.first);
+
+  String _grammarMarkdown(String ui) {
+    final sentence = _whole ? _text : widget.sentence.trim();
+    final b = StringBuffer('## 🧩 $_text\n\n**${_s(ui, 'sentence')}:** '
+        '${sentence.isEmpty ? _text : sentence}');
+    if (_results.isNotEmpty) {
+      b.write('\n\n**${_s(ui, 'translation')}:**');
+      _results.forEach((k, v) => b.write('\n- ${k.toUpperCase()}: $v'));
+    }
+    return b.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final ui = ref.watch(localeProvider).languageCode;
+    final sel = ref.watch(languageSelectionProvider);
+    final lang = widget.langCode;
+    final langs = selectionCardLangs(sel, lang);
+
+    final storySaved = ref.watch(savedWordsProvider.select((l) => l.any(
+        (w) => w.langCode == lang && normWord(w.word) == normWord(_text))));
+    final grammarSaved = ref.watch(grammarNotesProvider.select((l) => l.any(
+        (n) => n.langCode == lang && normWord(n.word) == normWord(_text))));
+    final leitnerAdded = ref.watch(leitnerProvider.select((l) => l.any(
+        (w) => w.langCode == lang && normWord(w.word) == normWord(_text))));
+
+    return Directionality(
+      textDirection: kAppLanguages[ui]?.dir ?? TextDirection.rtl,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+          decoration: BoxDecoration(
+            color: c.ink,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: c.gold, width: 1.4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ═══ هدر: متنِ اصلی + 🔊 + 📄 + ✕ ═══
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 110),
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Align(
+                              alignment: dirFor(lang) == TextDirection.rtl
+                                  ? Alignment.centerRight
+                                  : Alignment.centerLeft,
+                              child: Text(
+                                _text,
+                                textDirection: dirFor(lang),
+                                style: TextStyle(
+                                  color: c.paper,
+                                  fontSize: _whole ? 16 : 22,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.25,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    _SpeakIcon(
+                      text: _text,
+                      code: lang,
+                      color: c.goldSoft,
+                      size: 24,
+                      tooltip: _s(ui, 'speak'),
+                    ),
+                    if (_canExpand)
+                      _CardIconButton(
+                        icon: Icons.description_outlined,
+                        color: c.paper,
+                        tooltip: _s(ui, 'whole'),
+                        onTap: _expand,
+                      ),
+                    _CardIconButton(
+                      icon: Icons.close,
+                      color: c.paper,
+                      tooltip: _s(ui, 'close'),
+                      onTap: widget.onClose,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+
+              // ═══ ترجمه به همه‌ی زبان‌های انتخابیِ کاربر ═══
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final code in langs)
+                        _TranslationLine(
+                          key: ValueKey('$lang::$code::$_text'),
+                          text: _text,
+                          from: lang,
+                          to: code,
+                          ui: ui,
+                          onResolved: _onResolved,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              Container(
+                height: 1,
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                color: Colors.white24,
+              ),
+
+              // ═══ دکمه‌ها ═══
+              _ActionButton(
+                icon: storySaved ? Icons.bookmark : Icons.bookmark_border,
+                label: _s(ui, storySaved ? 'storyDone' : 'story'),
+                active: storySaved,
+                onTap: () => ref.read(savedWordsProvider.notifier).toggleSave(
+                      SavedWord(
+                        word: _text,
+                        langCode: lang,
+                        meaning: _meaning(sel),
+                        savedAt: DateTime.now(),
+                      ),
+                    ),
+              ),
+              _ActionButton(
+                icon: Icons.extension_outlined,
+                label: _s(ui, grammarSaved ? 'grammarDone' : 'grammar'),
+                active: grammarSaved,
+                onTap: () {
+                  if (grammarSaved) return;
+                  final sentence = _whole ? _text : widget.sentence.trim();
+                  ref.read(grammarNotesProvider.notifier).addNote(
+                        GrammarNote(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          word: _text,
+                          sentence: sentence.isEmpty ? _text : sentence,
+                          markdown: _grammarMarkdown(ui),
+                          langCode: lang,
+                          savedAt: DateTime.now(),
+                        ),
+                      );
+                },
+              ),
+              _ActionButton(
+                icon: Icons.repeat,
+                label: _s(ui, leitnerAdded ? 'leitnerDone' : 'leitner'),
+                active: leitnerAdded,
+                onTap: () {
+                  if (leitnerAdded) return;
+                  ref.read(leitnerProvider.notifier).addToLeitner(
+                        SavedWord(
+                          word: _text,
+                          langCode: lang,
+                          meaning: _meaning(sel),
+                          savedAt: DateTime.now(),
+                        ),
+                      );
+                },
+              ),
+              _ActionButton(
+                icon: Icons.hub_outlined,
+                label: _s(ui, 'neural'),
+                active: false,
+                onTap: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => NeuralPathDialog(word: _text, langCode: lang),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// یک ردیفِ ترجمه: [EN] متنِ ترجمه … [🔄] [🔊]
+// ═══════════════════════════════════════════════════════════════════
+class _TranslationLine extends ConsumerStatefulWidget {
+  final String text;
+  final String from;
+  final String to;
+  final String ui;
+  final void Function(String lang, String value) onResolved;
+
+  const _TranslationLine({
+    super.key,
+    required this.text,
+    required this.from,
+    required this.to,
+    required this.ui,
+    required this.onResolved,
+  });
+
+  @override
+  ConsumerState<_TranslationLine> createState() => _TranslationLineState();
+}
+
+class _TranslationLineState extends ConsumerState<_TranslationLine> {
+  String? _res;
+  bool _busy = true;
+  bool _failed = false;
+  int _gen = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final service = ref.read(translationServiceProvider);
+    final hit = service.peekCached(widget.text, widget.from, widget.to);
+    if (hit != null && _ok(hit)) {
+      _res = hit.trim();
+      _busy = false;
+      widget.onResolved(widget.to, _res!);
+    } else {
+      unawaited(_fetch());
+    }
+  }
+
+  @override
+  void dispose() {
+    _gen++;
+    super.dispose();
+  }
+
+  bool _ok(String r) {
+    final out = r.trim();
+    if (out.isEmpty) return false;
+    final src = widget.text.trim();
+    // نام‌ها/هم‌ریشه‌ها (مثل Edgar → Edgar) در زبان‌های لاتین
+    if (out.toLowerCase() == src.toLowerCase()) {
+      return out != src &&
+          !src.contains(RegExp(r'\s')) &&
+          _isLatinLang(widget.from) &&
+          _isLatinLang(widget.to);
+    }
+    return !looksLikelyMistranslated(src, out, widget.to,
+        sourceLang: widget.from);
+  }
+
+  void _accept(String v) {
+    if (!mounted) return;
+    setState(() {
+      _res = v.trim();
+      _busy = false;
+      _failed = false;
+    });
+    widget.onResolved(widget.to, _res!);
+  }
+
+  Future<void> _fetch({bool retry = false}) async {
+    final gen = ++_gen;
+    final service = ref.read(translationServiceProvider);
+    final ai = ref.read(aiSettingsProvider);
+    final text = widget.text;
+    final from = widget.from;
+    final to = widget.to;
+
+    if (retry) {
+      setState(() {
+        _busy = true;
+        _failed = false;
+      });
+    }
+
+    String? r;
+    try {
+      r = retry
+          ? await service.retranslate(
+              text: text, targetLang: to, sourceLang: from, aiSettings: ai)
+          : await service.translate(
+              text: text, targetLang: to, sourceLang: from, aiSettings: ai);
+    } catch (_) {
+      r = null;
+    }
+    if (!mounted || gen != _gen) return;
+    if (r != null && _ok(r)) {
+      _accept(r);
+      return;
+    }
+
+    // یک بار دیگر، این‌بار با بازبینیِ AI
+    if (!retry) {
+      try {
+        r = await service.translate(
+          text: text,
+          targetLang: to,
+          sourceLang: from,
+          aiSettings: ai,
+          forceVerify: true,
+        );
+      } catch (_) {
+        r = null;
+      }
+      if (!mounted || gen != _gen) return;
+      if (r != null && _ok(r)) {
+        _accept(r);
+        return;
+      }
+    }
+
+    setState(() {
+      _busy = false;
+      _failed = _res == null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final res = _res;
+    final rtl = dirFor(widget.to) == TextDirection.rtl;
+
+    Widget body;
+    if (res != null) {
+      body = Align(
+        alignment: rtl ? Alignment.centerRight : Alignment.centerLeft,
+        child: Text(
+          res,
+          textDirection: dirFor(widget.to),
+          textAlign: rtl ? TextAlign.right : TextAlign.left,
+          style: TextStyle(color: c.paper, fontSize: 16, height: 1.45),
+        ),
+      );
+    } else if (_failed) {
+      body = Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          _s(widget.ui, 'failed'),
+          style: TextStyle(color: c.rose, fontSize: 12),
+        ),
+      );
+    } else {
+      body = Row(
+        children: [
+          SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(strokeWidth: 1.6, color: c.gold),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _s(widget.ui, 'loading'),
+            style: TextStyle(color: c.paper.withOpacity(0.8), fontSize: 12),
+          ),
+        ],
+      );
+    }
+
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(color: Colors.white24, width: 0.6),
+                ),
+                child: Text(
+                  _abbr(widget.to),
+                  style: TextStyle(
+                    color: c.gold,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: body),
+            if (res != null || _failed)
+              _CardIconButton(
+                icon: Icons.refresh,
+                color: c.goldSoft,
+                size: 18,
+                tooltip: _s(widget.ui, res != null ? 'wrong' : 'retry'),
+                busy: _busy,
+                onTap: _busy ? null : () => _fetch(retry: true),
+              ),
+            if (res != null)
+              _SpeakIcon(
+                text: res,
+                code: widget.to,
+                color: c.goldSoft,
+                size: 22,
+                tooltip: _s(widget.ui, 'speak'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// اجزای کوچک
+// ═══════════════════════════════════════════════════════════════════
+class _SpeakIcon extends ConsumerWidget {
+  final String text;
+  final String code;
+  final Color color;
+  final double size;
+  final String tooltip;
+
+  const _SpeakIcon({
+    required this.text,
+    required this.code,
+    required this.color,
+    required this.tooltip,
+    this.size = 22,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final key = '${TtsConfig.locale[code] ?? 'en-US'}::$text';
+    final playing = ref.watch(speechControllerProvider
+        .select((s) => s.key == key && s.status == SpeechStatus.playing));
+    return Tooltip(
+      message: tooltip,
+      child: InkResponse(
+        onTap: () {
+          ref.read(speechControllerProvider.notifier).toggle(text, code);
+        },
+        radius: size,
+        child: Padding(
+          padding: const EdgeInsets.all(5),
+          child: Icon(
+            playing ? Icons.pause : Icons.volume_up,
+            size: size,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CardIconButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback? onTap;
+  final double size;
+  final bool busy;
+
+  const _CardIconButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.onTap,
+    this.size = 22,
+    this.busy = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkResponse(
+        onTap: onTap,
+        radius: size,
+        child: Padding(
+          padding: const EdgeInsets.all(5),
+          child: busy
+              ? SizedBox(
+                  width: size - 4,
+                  height: size - 4,
+                  child: CircularProgressIndicator(strokeWidth: 1.6, color: color),
+                )
+              : Icon(icon, size: size, color: color),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final fg = active ? c.gold : c.paper;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.07),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: active ? c.gold : Colors.white30,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: fg),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SelectableSyncText — جایگزینِ SyncText برای متن‌هایی که باید با لمسِ لغت
+// یا انتخابِ محدوده، کارتِ مشترک را باز کنند.
+//   • لمسِ یک لغت            → کارت برای همان لغت (لغت هایلایت می‌شود)
+//   • لمسِ طولانی/دابل‌تپ/درگ → کارت برای محدوده‌ی انتخاب‌شده
+// هایلایتِ پخشِ همگام (SyncText) دقیقاً مثل قبل کار می‌کند.
+// ═══════════════════════════════════════════════════════════════════
+final RegExp _wordChar =
+    RegExp(r"[\p{L}\p{M}\p{N}'’\-\u200c]", unicode: true);
+final RegExp _edgeChar = RegExp(r"['’\-\u200c]");
+
+TextRange? _wordRangeAt(String text, int offset, String code) {
+  if (text.isEmpty) return null;
+  var i = offset.clamp(0, text.length - 1).toInt();
+  if (!_wordChar.hasMatch(text[i])) {
+    if (i > 0 && _wordChar.hasMatch(text[i - 1])) {
+      i -= 1;
+    } else {
+      return null;
+    }
+  }
+  if (code == 'zh' || code == 'ja') {
+    return TextRange(start: i, end: i + 1);
+  }
+  var s = i;
+  var e = i + 1;
+  while (s > 0 && _wordChar.hasMatch(text[s - 1])) {
+    s--;
+  }
+  while (e < text.length && _wordChar.hasMatch(text[e])) {
+    e++;
+  }
+  while (s < e && _edgeChar.hasMatch(text[s])) {
+    s++;
+  }
+  while (e > s && _edgeChar.hasMatch(text[e - 1])) {
+    e--;
+  }
+  return s < e ? TextRange(start: s, end: e) : null;
+}
+
+class SelectableSyncText extends ConsumerStatefulWidget {
+  final String code;
+  final String id;
+  final String text;
+
+  /// متنِ کامل برای دکمه‌ی 📄 (پیش‌فرض: همین [text])
+  final String? sentence;
+  final TextStyle style;
+  final TextDirection? textDirection;
+  final TextAlign? textAlign;
+  final Duration duration;
+
+  const SelectableSyncText({
+    super.key,
+    required this.code,
+    required this.id,
+    required this.text,
+    required this.style,
+    this.sentence,
+    this.textDirection,
+    this.textAlign,
+    this.duration = const Duration(milliseconds: 350),
+  });
+
+  @override
+  ConsumerState<SelectableSyncText> createState() => _SelectableSyncTextState();
+}
+
+class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
+  int _gen = 0; // با تغییرش انتخابِ باقی‌مانده پاک می‌شود
+  TextRange? _hl; // لغتِ لمس‌شده (هایلایتِ طلایی تا بسته شدن کارت)
+  Timer? _debounce;
+  bool _open = false;
+  Offset? _ptr;
+  DateTime? _ptrAt;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSelectionChanged(TextSelection sel, SelectionChangedCause? cause) {
+    if (_open || !sel.isValid) return;
+    _debounce?.cancel();
+    final len = widget.text.length;
+    if (sel.isCollapsed) {
+      if (cause != SelectionChangedCause.tap) return;
+      final r = _wordRangeAt(widget.text, sel.baseOffset, widget.code);
+      if (r == null) return;
+      // کمی صبر: اگر این لمس نیمه‌ی اولِ یک دابل‌تپ باشد، انتخابِ محدوده جایش را می‌گیرد
+      _debounce = Timer(const Duration(milliseconds: 220), () {
+        if (!mounted || _open) return;
+        _openCard(r, highlight: true);
+      });
+      return;
+    }
+    final start = sel.start.clamp(0, len).toInt();
+    final end = sel.end.clamp(0, len).toInt();
+    if (end <= start) return;
+    final quick = cause == SelectionChangedCause.longPress ||
+        cause == SelectionChangedCause.doubleTap;
+    // کمی صبر می‌کنیم تا کاربر بتواند دسته‌های انتخاب را جابه‌جا کند
+    _debounce = Timer(Duration(milliseconds: quick ? 400 : 700), () {
+      if (!mounted || _open) return;
+      _openCard(TextRange(start: start, end: end), highlight: false);
+    });
+  }
+
+  Rect _anchor() {
+    var widgetRect = Rect.zero;
+    final box = context.findRenderObject();
+    if (box is RenderBox && box.hasSize) {
+      widgetRect = box.localToGlobal(Offset.zero) & box.size;
+    }
+    final p = _ptr;
+    final at = _ptrAt;
+    if (p != null &&
+        at != null &&
+        DateTime.now().difference(at) < const Duration(seconds: 6) &&
+        widgetRect.inflate(60).contains(p)) {
+      return Rect.fromCenter(center: p, width: 24, height: 24);
+    }
+    return widgetRect;
+  }
+
+  void _openCard(TextRange r, {required bool highlight}) {
+    if (r.end > widget.text.length || r.end <= r.start) return;
+    final picked = widget.text.substring(r.start, r.end).trim();
+    if (picked.isEmpty) return;
+    final anchor = _anchor();
+    setState(() {
+      _open = true;
+      _hl = highlight ? r : null;
+    });
+    showSelectionCard(
+      context,
+      text: picked,
+      langCode: widget.code,
+      sentence: widget.sentence ?? widget.text,
+      anchor: anchor,
+    ).whenComplete(() {
+      if (!mounted) return;
+      setState(() {
+        _open = false;
+        _hl = null;
+        _gen++; // انتخابِ بومی را پاک کن
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final active = ref.watch(activeSyncProvider.select(
+        (a) => a != null && a.code == widget.code && a.id == widget.id));
+    final pref = ref.watch(appPrefsProvider.select((p) => p.highlightColor));
+    final hl = syncHighlightColor(pref);
+
+    final Color target = (hl != null && active)
+        ? hl
+        : (hl ?? kReadMarkerColor).withOpacity(0);
+
+    final text = widget.text;
+
+    return TweenAnimationBuilder<Color?>(
+      tween: ColorTween(end: target),
+      duration: widget.duration,
+      builder: (_, bg, __) {
+        final base = widget.style.copyWith(backgroundColor: bg);
+        final r = _hl;
+        final span = (r == null || r.end > text.length)
+            ? TextSpan(text: text, style: base)
+            : TextSpan(
+                style: base,
+                children: [
+                  TextSpan(text: text.substring(0, r.start)),
+                  TextSpan(
+                    text: text.substring(r.start, r.end),
+                    style: TextStyle(backgroundColor: c.gold.withOpacity(0.35)),
+                  ),
+                  TextSpan(text: text.substring(r.end)),
+                ],
+              );
+        return Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (e) {
+            _ptr = e.position;
+            _ptrAt = DateTime.now();
+          },
+          onPointerUp: (e) {
+            _ptr = e.position;
+            _ptrAt = DateTime.now();
+          },
+          child: SelectableText.rich(
+            span,
+            key: ValueKey('sel-$_gen'),
+            textDirection: widget.textDirection,
+            textAlign: widget.textAlign ?? TextAlign.start,
+            // منوی پیش‌فرضِ سیستم (Copy / Select all) نشان داده نشود؛
+            // به‌جایش کارتِ مشترکِ خودمان باز می‌شود.
+            contextMenuBuilder: (_, __) => const SizedBox.shrink(),
+            onSelectionChanged: _onSelectionChanged,
+          ),
+        );
+      },
+    );
+  }
+}
