@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app.dart';
 import '../constants/cefr_levels.dart';
 import '../constants/level_colors.dart';
 import '../theme/app_theme_colors.dart';
@@ -17,6 +18,9 @@ class LevelChips extends StatelessWidget {
   final bool wrap;
   final double height;
 
+  /// متن چیپ «همه» (پیش‌فرض: «همه سطوح»).
+  final String? allLabel;
+
   const LevelChips({
     super.key,
     required this.selected,
@@ -24,6 +28,7 @@ class LevelChips extends StatelessWidget {
     this.includeAll = true,
     this.wrap = false,
     this.height = 38,
+    this.allLabel,
   });
 
   @override
@@ -32,6 +37,7 @@ class LevelChips extends StatelessWidget {
     Widget chip(String lvl) => LevelChip(
           level: lvl,
           active: lvl == selected,
+          allLabel: allLabel,
           onTap: () => onSelect(lvl),
         );
 
@@ -58,12 +64,14 @@ class LevelChip extends StatelessWidget {
   final String level; // 'all' یا A1..C2
   final bool active;
   final VoidCallback onTap;
+  final String? allLabel;
 
   const LevelChip({
     super.key,
     required this.level,
     required this.active,
     required this.onTap,
+    this.allLabel,
   });
 
   @override
@@ -89,7 +97,7 @@ class LevelChip extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: Text(
-          isAll ? 'همه سطوح' : level,
+          isAll ? (allLabel ?? context.l10n.levels_all) : level,
           style: TextStyle(
             color: text,
             fontSize: 12.5,

@@ -130,7 +130,8 @@ class _ReviewCardState extends State<ReviewCard>
             _pill(c, 'جعبه ${faDigits(it.box)}', c.gold),
             const SizedBox(width: 8),
             if (widget.level != null)
-              _pill(c, widget.level!, levelColor(widget.level!)),
+              _pill(c, widget.level!, levelColor(widget.level!),
+                  textColor: levelColor(widget.level!)),
             const Spacer(),
             Text(
               it.reviewCount == 0 ? 'جدید' : '${faDigits(it.reviewCount)} بار مرور',
@@ -243,7 +244,8 @@ class _ReviewCardState extends State<ReviewCard>
     );
   }
 
-  Widget _pill(AppThemeColorsExt c, String text, Color color) {
+  Widget _pill(AppThemeColorsExt c, String text, Color color,
+      {Color? textColor}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
@@ -253,7 +255,7 @@ class _ReviewCardState extends State<ReviewCard>
       child: Text(
         text,
         style: TextStyle(
-          color: c.ink,
+          color: textColor ?? c.ink,
           fontSize: 11.5,
           fontWeight: FontWeight.w700,
         ),

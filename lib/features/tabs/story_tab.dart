@@ -5,8 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/constants/cefr_levels.dart';
-import '../../core/constants/level_colors.dart';
+import '../../core/widgets/level_chips.dart';
 import '../../core/constants/supported_languages.dart';
 import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/conversation_provider.dart';
@@ -1247,22 +1246,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               style: TextStyle(color: c.inkSoft, fontSize: 12),
             ),
           label('سطح داستان', top: 4),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final lv in kCefrLevels)
-                HopeChoiceChip(
-                  label: lv,
-                  active: _level == lv,
-                  activeBorder: levelColor(lv),
-                  activeFill: levelColor(lv),
-                  activeText: Colors.white,
-                  inactiveBorder: levelColor(lv),
-                  inactiveFill: levelBgColor(lv),
-                  onTap: () => setState(() => _level = lv),
-                ),
-            ],
+          LevelChips(
+            selected: _level,
+            includeAll: false,
+            wrap: true,
+            onSelect: (lv) => setState(() => _level = lv),
           ),
           label('نوع محتوا'),
           Wrap(
@@ -1988,30 +1976,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           ),
         ),
       // سطح‌ها همیشه نشان داده می‌شوند (مثل LevelFilterRow در Hope)
-      SizedBox(
-        height: 34,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: 1 + kCefrLevels.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (_, i) {
-            final lv = i == 0 ? 'all' : kCefrLevels[i - 1];
-            return Center(
-              child: HopeChoiceChip(
-                label: lv == 'all' ? 'همه سطوح' : lv,
-                active: _libLevel == lv,
-                activeBorder: lv == 'all' ? c.teal : levelColor(lv),
-                activeFill: lv == 'all' ? c.teal : levelColor(lv),
-                activeText: Colors.white,
-                inactiveBorder: lv == 'all' ? null : levelColor(lv),
-                inactiveFill: lv == 'all' ? null : levelBgColor(lv),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                onTap: () => setState(() => _libLevel = lv),
-              ),
-            );
-          },
-        ),
+      LevelChips(
+        selected: _libLevel,
+        onSelect: (lv) => setState(() => _libLevel = lv),
       ),
       if (stories.isEmpty)
         const HopeEmptyText('هنوز داستانی ذخیره نکردی.')

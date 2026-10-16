@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app.dart';
 import '../../../core/constants/supported_languages.dart';
 import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
@@ -61,7 +62,7 @@ class LanguagePicker extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _SectionLabel(text: 'زبان مادری'),
+          _SectionLabel(text: context.l10n.phrasebook_native_language),
           const SizedBox(height: 3),
           _DragRow(
             key: const ValueKey('native-row'),
@@ -77,7 +78,7 @@ class LanguagePicker extends ConsumerWidget {
 
           const SizedBox(height: 6),
 
-          const _SectionLabel(text: 'زبان‌های مقصد'),
+          _SectionLabel(text: context.l10n.phrasebook_target_languages),
           const SizedBox(height: 3),
           _DragRow(
             key: const ValueKey('target-row'),
@@ -100,8 +101,8 @@ class LanguagePicker extends ConsumerWidget {
 
           if (sel.targets.length > 1) ...[
             const SizedBox(height: 8),
-            const _SectionLabel(
-              text: 'ترتیب نمایش ترجمه‌ها (بکش تا جابجا بشه)',
+            _SectionLabel(
+              text: context.l10n.phrasebook_translation_order,
               small: true,
             ),
             const SizedBox(height: 4),

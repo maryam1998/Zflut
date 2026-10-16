@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../app.dart';
 import '../../../core/constants/app_languages.dart';
-import '../../../core/constants/cefr_levels.dart';
-import '../../../core/constants/level_colors.dart';
 import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/widgets/level_chips.dart';
 import '../../tabs/_hope_panel.dart';
 import '../providers/review_provider.dart';
 
@@ -87,7 +87,7 @@ class ReviewSubFilters extends StatelessWidget {
       );
     }
 
-    Widget row(String title, List<Widget> chips) {
+    Widget row(String title, List<Widget> chips, {Widget? custom}) {
       return Row(
         children: [
           SizedBox(
@@ -102,10 +102,11 @@ class ReviewSubFilters extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(children: chips),
-            ),
+            child: custom ??
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: chips),
+                ),
           ),
         ],
       );
@@ -115,12 +116,17 @@ class ReviewSubFilters extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Column(
         children: [
-          row('سطح', [
-            chip('همه', filter.level == null, () => onLevel(null)),
-            for (final l in kCefrLevels)
-              chip(l, filter.level == l, () => onLevel(l),
-                  color: levelColor(l)),
-          ]),
+          // کارت مشترک سطح‌ها — همان LevelChips بقیه‌ی تب‌ها (رنگی)
+          row(
+            'سطح',
+            const [],
+            custom: LevelChips(
+              selected: filter.level ?? 'all',
+              allLabel: context.l10n.review_filter_all,
+              height: 34,
+              onSelect: (l) => onLevel(l == 'all' ? null : l),
+            ),
+          ),
           const SizedBox(height: 8),
           row('زبان', [
             chip('همه', filter.lang == null, () => onLang(null)),

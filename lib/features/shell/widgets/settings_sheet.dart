@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app.dart';
 import '../../../core/bridge/linlearn_bridge.dart';
 import '../../../core/constants/app_font_sizes.dart';
 import '../../../core/constants/app_fonts.dart';
@@ -26,7 +27,7 @@ class SettingsSheet extends ConsumerWidget {
     return showGeneralDialog<void>(
       context: context,
       barrierDismissible: true,
-      barrierLabel: 'بستن',
+      barrierLabel: context.l10n.import_close,
       barrierColor: Colors.black26,
       transitionDuration: const Duration(milliseconds: 150),
       pageBuilder: (ctx, _, __) {
@@ -161,7 +162,7 @@ class _AccountSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(label: 'حساب کاربری'),
+        _SectionTitle(label: context.l10n.settings_account),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
@@ -237,7 +238,7 @@ class _AccountSection extends ConsumerWidget {
                     },
                     icon: Icon(Icons.logout, size: 16, color: c.rose),
                     label: Text(
-                      'خروج از حساب',
+                      context.l10n.settings_logout,
                       style: TextStyle(color: c.rose, fontSize: 13),
                     ),
                     style: OutlinedButton.styleFrom(
@@ -274,7 +275,7 @@ class _LanguageSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(icon: Icons.language, label: 'زبان نرم‌افزار'),
+        _SectionTitle(icon: Icons.language, label: context.l10n.settings_language_title),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -321,7 +322,7 @@ class _ThemeSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(icon: Icons.palette_outlined, label: 'رنگ و تم'),
+        _SectionTitle(icon: Icons.palette_outlined, label: context.l10n.settings_theme_title),
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -414,7 +415,7 @@ class _FontSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(icon: Icons.text_format, label: 'نوع فونت'),
+        _SectionTitle(icon: Icons.text_format, label: context.l10n.settings_font_title),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -447,7 +448,7 @@ class _FontSizeSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(icon: Icons.format_size, label: 'اندازه‌ی فونت'),
+        _SectionTitle(icon: Icons.format_size, label: context.l10n.settings_font_size_title),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -660,9 +661,9 @@ class _CalendarSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(
+        _SectionTitle(
           icon: Icons.calendar_month_outlined,
-          label: 'تقویم تاریخ‌ها',
+          label: context.l10n.settings_calendar_title,
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -1266,8 +1267,8 @@ class _VoiceEngineSectionState extends ConsumerState<_VoiceEngineSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionTitle(
-              icon: Icons.volume_up_outlined, label: 'صدای خوانش'),
+          _SectionTitle(
+              icon: Icons.volume_up_outlined, label: context.l10n.settings_voice_engine_title),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -1375,8 +1376,8 @@ class _AudioSyncSectionState extends ConsumerState<_AudioSyncSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SectionTitle(
-              icon: Icons.sync_alt, label: 'همگام‌سازی متن و صوت'),
+          _SectionTitle(
+              icon: Icons.sync_alt, label: context.l10n.settings_sync_title),
           const SizedBox(height: 8),
           Text(
             'فقط یک بار دانلود می‌شود (اگر شروع نشد فیلترشکن را روشن کن). بعدش '
@@ -1416,7 +1417,7 @@ class _OfflineWordsButton extends StatelessWidget {
         onPressed: () => OfflineWordsDialog.show(context),
         icon: Icon(Icons.menu_book_outlined, size: 18, color: c.ink),
         label: Text(
-          'دانلود آفلاین لغات',
+          context.l10n.settings_offline_download,
           style: TextStyle(
               color: c.ink, fontSize: 13, fontWeight: FontWeight.w700),
         ),
