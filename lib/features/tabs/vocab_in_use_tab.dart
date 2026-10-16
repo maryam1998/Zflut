@@ -14,6 +14,7 @@ class VocabInUseTab extends ConsumerWidget {
     return WordListView(
       words: words,
       hasAnyData: all.isNotEmpty,
+      loading: ref.watch(vocabInUseWordsProvider).isLoading,
     );
   }
 }

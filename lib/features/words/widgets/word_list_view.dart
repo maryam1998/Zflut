@@ -21,11 +21,15 @@ class WordListView extends ConsumerWidget {
   /// پیام حالت خالی
   final String emptyMessage;
 
+  /// هنوز در حال بارگذاری است؟ (به‌جای «بارگذاری نشد» چرخنده نشان بده)
+  final bool loading;
+
   const WordListView({
     super.key,
     required this.words,
     required this.hasAnyData,
     this.emptyMessage = 'چیزی پیدا نشد',
+    this.loading = false,
   });
 
   @override
@@ -164,6 +168,7 @@ class WordListView extends ConsumerWidget {
               child: _EmptyState(
                 c: c,
                 hasData: hasAnyData,
+                loading: loading && !hasAnyData,
                 message: emptyMessage,
               ),
             )
@@ -198,16 +203,27 @@ class WordListView extends ConsumerWidget {
 class _EmptyState extends StatelessWidget {
   final AppThemeColorsExt c;
   final bool hasData;
+  final bool loading;
   final String message;
 
   const _EmptyState({
     required this.c,
     required this.hasData,
     required this.message,
+    this.loading = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return Center(
+        child: SizedBox(
+          width: 26,
+          height: 26,
+          child: CircularProgressIndicator(strokeWidth: 2.4, color: c.gold),
+        ),
+      );
+    }
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),

@@ -273,7 +273,7 @@ class _CardLayoutDelegate extends SingleChildLayoutDelegate {
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
-    final w = math.min(360.0, constraints.maxWidth - 24);
+    final w = math.min(300.0, constraints.maxWidth - 24);
     final h = constraints.maxHeight - safe.top - safe.bottom - keyboard - 32;
     return BoxConstraints(
       minWidth: w,
@@ -348,6 +348,13 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
 
   void _onResolved(String lang, String value) => _results[lang] = value;
 
+  /// کارتِ مسیر عصبی را باز می‌کند و کارتِ انتخاب را می‌بندد تا روی هم نیفتند.
+  void _openNeural(String word, String code, String? base) {
+    unawaited(showNeuralPath(context,
+        word: word, langCode: code, baseText: base));
+    widget.onClose();
+  }
+
   String _meaning(LanguageSelection sel) =>
       _results[sel.native] ??
       (_results.values.isEmpty ? '' : _results.values.first);
@@ -376,26 +383,16 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
         (n) => n.langCode == lang && normWord(n.word) == normWord(_text))));
     final leitnerAdded = ref.watch(leitnerProvider.select((l) => l.any(
         (w) => w.langCode == lang && normWord(w.word) == normWord(_text))));
-    // 🧬 اگر برای این متن تکرار/مسیری ثبت شده، دکمه طلایی می‌شود
-    final nBase = neuralBase(_text);
-    ref.watch(neuralPathProvider.select((st) => st.versionOf(nBase)));
-    final neuralHas = (ref
-                .read(neuralPathProvider.notifier)
-                .recordOf(nBase)
-                ?.totalAll() ??
-            0) >
-        0;
-
     return Directionality(
       textDirection: kAppLanguages[ui]?.dir ?? TextDirection.rtl,
       child: Material(
         color: Colors.transparent,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
           decoration: BoxDecoration(
             color: kCardBg,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: kCardBorderGold, width: 1.6),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: kCardBorderGold, width: 1.4),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.4),
@@ -416,7 +413,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                   children: [
                     Expanded(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 110),
+                        constraints: const BoxConstraints(maxHeight: 84),
                         child: SingleChildScrollView(
                           child: Padding(
                             padding: const EdgeInsets.only(top: 6),
@@ -429,7 +426,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                                 textDirection: dirFor(lang),
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: _whole ? 18 : 30,
+                                  fontSize: _whole ? 15 : 21,
                                   fontWeight: FontWeight.w800,
                                   height: 1.2,
                                 ),
@@ -439,11 +436,19 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                         ),
                       ),
                     ),
+                    _CardIconButton(
+                      icon: Icons.hub_outlined,
+                      emoji: '🧬',
+                      color: Colors.white,
+                      size: 20,
+                      tooltip: _s(ui, 'neural'),
+                      onTap: () => _openNeural(_text, lang, null),
+                    ),
                     _SpeakIcon(
                       text: _text,
                       code: lang,
                       color: Colors.white,
-                      size: 28,
+                      size: 20,
                       tooltip: _s(ui, 'speak'),
                       hintBase: neuralBase(_text),
                     ),
@@ -452,14 +457,14 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                         icon: Icons.description_outlined,
                         emoji: '📄',
                         color: Colors.white,
-                        size: 26,
+                        size: 19,
                         tooltip: _s(ui, 'whole'),
                         onTap: _expand,
                       ),
                     _CardIconButton(
                       icon: Icons.close,
                       color: Colors.white,
-                      size: 28,
+                      size: 21,
                       tooltip: _s(ui, 'close'),
                       onTap: widget.onClose,
                     ),
@@ -482,6 +487,8 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                           to: code,
                           ui: ui,
                           showBadge: langs.length > 1,
+                          onNeural: (word, code) =>
+                              _openNeural(word, code, _text),
                           onResolved: _onResolved,
                         ),
                     ],
@@ -489,7 +496,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                 ),
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
 
               // ═══ دکمه‌ها ═══
               _ActionButton(
@@ -540,18 +547,6 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                       );
                 },
               ),
-              _ActionButton(
-                emoji: '🧬',
-                label: _s(ui, 'neural'),
-                active: neuralHas,
-                onTap: () {
-                  // کارتِ مسیر عصبی روی صفحه باز می‌شود؛ کارتِ انتخاب بسته شود
-                  // تا روی هم نیفتند.
-                  unawaited(showNeuralPath(context,
-                      word: _text, langCode: lang));
-                  widget.onClose();
-                },
-              ),
             ],
           ),
         ),
@@ -569,6 +564,7 @@ class _TranslationLine extends ConsumerStatefulWidget {
   final String to;
   final String ui;
   final bool showBadge;
+  final void Function(String word, String code) onNeural;
   final void Function(String lang, String value) onResolved;
 
   const _TranslationLine({
@@ -578,6 +574,7 @@ class _TranslationLine extends ConsumerStatefulWidget {
     required this.to,
     required this.ui,
     required this.onResolved,
+    required this.onNeural,
     this.showBadge = true,
   });
 
@@ -707,7 +704,7 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
           textDirection: dirFor(widget.to),
           textAlign: rtl ? TextAlign.right : TextAlign.left,
           style: const TextStyle(
-              color: kCardTextSoft, fontSize: 24, height: 1.35),
+              color: kCardTextSoft, fontSize: 17, height: 1.3),
         ),
       );
     } else if (_failed) {
@@ -730,7 +727,7 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
           const SizedBox(width: 8),
           Text(
             _s(widget.ui, 'loading'),
-            style: const TextStyle(color: kCardTextSoft, fontSize: 13),
+            style: const TextStyle(color: kCardTextSoft, fontSize: 12),
           ),
         ],
       );
@@ -745,10 +742,10 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
           children: [
             if (widget.showBadge) ...[
               Padding(
-                padding: const EdgeInsets.only(top: 9),
+                padding: const EdgeInsets.only(top: 5),
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                   decoration: BoxDecoration(
                     color: kCardBtnBg,
                     borderRadius: BorderRadius.circular(5),
@@ -758,7 +755,7 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
                     _abbr(widget.to),
                     style: const TextStyle(
                       color: kCardBorderGold,
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.4,
                     ),
@@ -768,24 +765,33 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
               const SizedBox(width: 10),
             ],
             Expanded(child: body),
-            if (res != null || _failed)
+            // ترتیب: 🧬 ← 🔊 ← رفرش (رفرشِ ساده، مثلِ صفحه‌های اصلی)
+            if (res != null)
               _CardIconButton(
-                icon: Icons.refresh,
-                emoji: '🔄',
+                icon: Icons.hub_outlined,
+                emoji: '🧬',
                 color: Colors.white,
-                size: 18,
-                tooltip: _s(widget.ui, res != null ? 'wrong' : 'retry'),
-                busy: _busy,
-                onTap: _busy ? null : () => _fetch(retry: true),
+                size: 16,
+                tooltip: _s(widget.ui, 'neural'),
+                onTap: () => widget.onNeural(res, widget.to),
               ),
             if (res != null)
               _SpeakIcon(
                 text: res,
                 code: widget.to,
                 color: Colors.white,
-                size: 22,
+                size: 17,
                 tooltip: _s(widget.ui, 'speak'),
                 hintBase: neuralBase(widget.text),
+              ),
+            if (res != null || _failed)
+              _CardIconButton(
+                icon: Icons.refresh,
+                color: Colors.white70,
+                size: 17,
+                tooltip: _s(widget.ui, res != null ? 'wrong' : 'retry'),
+                busy: _busy,
+                onTap: _busy ? null : () => _fetch(retry: true),
               ),
           ],
         ),
@@ -909,19 +915,19 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final fg = active ? kCardBorderGold : Colors.white;
     return Padding(
-      padding: const EdgeInsets.only(top: 9),
+      padding: const EdgeInsets.only(top: 6),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(11),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
             color: kCardBtnBg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(11),
             border: Border.all(
               color: active ? kCardBorderGold : kCardBtnBorder,
-              width: 1.5,
+              width: 1.2,
             ),
           ),
           // مثلِ تصویرِ مرجع: محتوا چپ‌چین، «برچسب» و بعدش ایموجی در انتها
@@ -936,13 +942,13 @@ class _ActionButton extends StatelessWidget {
                     label,
                     style: TextStyle(
                       color: fg,
-                      fontSize: 16,
+                      fontSize: 13,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(emoji, style: const TextStyle(fontSize: 19, height: 1.1)),
+                const SizedBox(width: 6),
+                Text(emoji, style: const TextStyle(fontSize: 15, height: 1.1)),
               ],
             ),
           ),

@@ -15,6 +15,7 @@ class WordsTab extends ConsumerWidget {
     return WordListView(
       words: words,
       hasAnyData: all.isNotEmpty,
+      loading: ref.watch(dailyWordsLoaderProvider).isLoading,
     );
   }
 }

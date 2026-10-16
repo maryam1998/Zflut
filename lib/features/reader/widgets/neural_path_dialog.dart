@@ -9,6 +9,8 @@ import '../../../core/neural/neural_dates.dart';
 import '../../../core/neural/neural_store.dart';
 import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/providers/locale_provider.dart';
+import '../../../core/providers/speech_provider.dart';
+import '../../../core/tts/tts_config.dart';
 import '../../../core/theme/app_theme_colors.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -51,21 +53,21 @@ const Map<String, Map<String, String>> _kN = {
     'sentenceLabel': 'جمله',
     'learn': 'یادگیری',
     'stable': 'تثبیت',
-    'built': 'رشته‌های ساخته‌شده',
+    'built': 'مرورهای ثبت‌شده',
     'repsLast': '{n} تکرار · آخرین تمرین: {rel}',
     'today': 'امروز',
     'yesterday': 'دیروز',
-    'st0': 'هنوز مسیرِ عصبی‌ای برای این {label} شکل نگرفته — همین امروز انجامش بده.',
-    'st1': 'اولین رشته‌های عصبیِ این {label} شکل گرفتن، ادامه بده.',
-    'st2': 'رشته‌های این {label} دارن کنار هم جمع و ضخیم می‌شن.',
-    'st3': 'این {label} یه مسیرِ عصبیِ محکم و جاافتاده شده — اگه حس می‌کنی واقعاً عادت شده، می‌تونی قفلش کنی.',
-    'stHabit': 'این {label} کاملاً جاافتاده — یک رشته‌ی عصبیِ واقعی 🎉',
-    'doToday': '✨ امروز انجام دادم',
-    'missed': 'یک روز گذشت، انجام ندادم',
-    'lock': '✅ همینه، رفت تو حافظه‌ی دائمیم',
+    'st0': 'هنوز شروع نکردی.',
+    'st1': 'اولین قدم رو برداشتی! ادامه بده.',
+    'st2': 'داری کم‌کم این {label} رو یاد می‌گیری.',
+    'st3': 'این {label} رو {n} بار مرور کردی. اگه رفت توی حافظه‌ی بلندمدتت، می‌تونی یادگرفتنش رو تأیید کنی.',
+    'stHabit': 'این {label} رو یاد گرفتی 🎉',
+    'doToday': '✨ امروز مرور کردم',
+    'missed': 'دیروز وقت نکردم',
+    'lock': '✅ این {label} رو یاد گرفتم',
     'unlock': '↩️ هنوز کافی نیست، ادامه بده',
-    'showCal': 'نمایشِ تقویمِ این مسیر',
-    'hideCal': 'بستنِ تقویم',
+    'showCal': 'نمایش تقویم این مسیر',
+    'hideCal': 'بستن تقویم',
         'dayOf': 'روز {a} / {b}',
     'month': 'ماه {ord}',
     'to': 'تا',
@@ -89,18 +91,18 @@ const Map<String, Map<String, String>> _kN = {
     'sentenceLabel': 'sentence',
     'learn': 'Learning',
     'stable': 'Settled',
-    'built': 'Strands built',
+    'built': 'Recorded reviews',
     'repsLast': '{n} repeats · last practice: {rel}',
     'today': 'today',
     'yesterday': 'yesterday',
-    'st0': 'No neural path has formed for this {label} yet — start today.',
-    'st1': 'The first strands of this {label} have formed — keep going.',
-    'st2': 'The strands of this {label} are bundling and thickening.',
-    'st3': 'This {label} is now a strong neural path — lock it in if it feels like a habit.',
-    'stHabit': 'This {label} is fully settled — a real neural path 🎉',
-    'doToday': '✨ I did it today',
-    'missed': 'A day passed, I did not practice',
-    'lock': '✅ That’s it, it’s in my permanent memory',
+    'st0': 'You haven’t started yet.',
+    'st1': 'You took the first step! Keep going.',
+    'st2': 'You’re gradually learning this {label}.',
+    'st3': 'You reviewed this {label} {n} times. If it’s in your long-term memory, you can confirm you’ve learned it.',
+    'stHabit': 'You’ve learned this {label} 🎉',
+    'doToday': '✨ I reviewed it today',
+    'missed': 'I didn’t have time yesterday',
+    'lock': '✅ I’ve learned this {label}',
     'unlock': '↩️ Not enough yet, keep going',
     'showCal': 'Show this path’s calendar',
     'hideCal': 'Hide calendar',
@@ -171,6 +173,12 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
   late final String _base = neuralBase(widget.baseText ?? widget.word);
   String get _lang => widget.langCode;
 
+  void _speak() {
+    final key = '${TtsConfig.locale[_lang] ?? 'en-US'}::${widget.word}';
+    ref.read(neuralPathProvider.notifier).hint(key, _base);
+    ref.read(speechControllerProvider.notifier).toggle(widget.word, _lang);
+  }
+
   String _label(String ui) => _t(
       ui,
       RegExp(r'\s').hasMatch(widget.word.trim())
@@ -209,17 +217,18 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
     final nodeStrong = habit || fibers >= kNeuralFiberCap;
     final label = _label(ui);
 
+    final args = {'label': label, 'n': _num(ui, fibers)};
     String status;
     if (habit) {
-      status = _t(ui, 'stHabit', {'label': label});
+      status = _t(ui, 'stHabit', args);
     } else if (fibers <= 0) {
-      status = _t(ui, 'st0', {'label': label});
-    } else if (!nodeMid) {
-      status = _t(ui, 'st1', {'label': label});
-    } else if (!nodeStrong) {
-      status = _t(ui, 'st2', {'label': label});
+      status = _t(ui, 'st0', args);
+    } else if (fibers < 4) {
+      status = _t(ui, 'st1', args);
+    } else if (fibers < 10) {
+      status = _t(ui, 'st2', args);
     } else {
-      status = _t(ui, 'st3', {'label': label});
+      status = _t(ui, 'st3', args);
     }
 
     const circle = 34.0;
@@ -235,7 +244,7 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: 340,
+                maxWidth: 292,
                 maxHeight: MediaQuery.of(context).size.height * 0.86,
               ),
               child: Material(
@@ -249,7 +258,7 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                     border: Border.all(color: c.cardBorder),
                   ),
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -261,9 +270,9 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                           child: Column(
                             children: [
                               Container(
-                                width: 38,
+                                width: 34,
                                 height: 4,
-                                margin: const EdgeInsets.only(bottom: 10),
+                                margin: const EdgeInsets.only(bottom: 6),
                                 decoration: BoxDecoration(
                                   color: c.cardBorder,
                                   borderRadius: BorderRadius.circular(2),
@@ -271,18 +280,23 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                               ),
                               Row(
                                 children: [
-                                  const Text('🧬', style: TextStyle(fontSize: 18)),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      _t(ui, 'title', {'label': label}),
-                                      style: TextStyle(
-                                        color: c.ink,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                  const Padding(
+                                    padding: EdgeInsets.all(4),
+                                    child: Text('🧬',
+                                        style:
+                                            TextStyle(fontSize: 18, height: 1.1)),
+                                  ),
+                                  InkResponse(
+                                    onTap: _speak,
+                                    radius: 18,
+                                    child: const Padding(
+                                      padding: EdgeInsets.all(4),
+                                      child: Text('🔊',
+                                          style: TextStyle(
+                                              fontSize: 18, height: 1.1)),
                                     ),
                                   ),
+                                  const Spacer(),
                                   _LangChip(code: _lang, c: c),
                                   const SizedBox(width: 4),
                                   InkResponse(
@@ -291,7 +305,7 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                                     child: Padding(
                                       padding: const EdgeInsets.all(4),
                                       child: Icon(Icons.close,
-                                          size: 20, color: c.inkSoft),
+                                          size: 19, color: c.inkSoft),
                                     ),
                                   ),
                                 ],
@@ -319,8 +333,10 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                         const SizedBox(height: 10),
 
                         // ═══ دو نورون + رشته‌ها ═══
-                        SizedBox(
-                          height: 62,
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: SizedBox(
+                          height: 54,
                           child: Stack(
                             children: [
                               Positioned.fill(
@@ -355,8 +371,11 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                             ],
                           ),
                         ),
+                        ),
                         const SizedBox(height: 3),
-                        Row(
+                        Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             SizedBox(
@@ -379,9 +398,10 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        ),
+                        const SizedBox(height: 8),
 
-                        // ═══ رشته‌های ساخته‌شده ═══
+                        // ═══ مرورهای ثبت‌شده ═══
                         Container(
                           padding: const EdgeInsets.symmetric(
                               vertical: 10, horizontal: 8),
@@ -398,7 +418,7 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                               Text(_num(ui, fibers),
                                   style: TextStyle(
                                       color: c.ink,
-                                      fontSize: 20,
+                                      fontSize: 18,
                                       fontWeight: FontWeight.w800)),
                               if (total > 0) ...[
                                 const SizedBox(height: 4),
@@ -414,7 +434,7 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
                         Text(
                           status,
                           textAlign: TextAlign.center,
@@ -443,7 +463,7 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                         if (fibers > 0 || habit) ...[
                           const SizedBox(height: 7),
                           _PathButton(
-                            label: _t(ui, habit ? 'unlock' : 'lock'),
+                            label: habit ? _t(ui, 'unlock') : _t(ui, 'lock', {'label': label}),
                             fill: habit ? c.paperDark : null,
                             border: habit
                                 ? c.cardBorder
@@ -555,7 +575,7 @@ class _PathButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11),
+        padding: const EdgeInsets.symmetric(vertical: 9),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: fill,
@@ -565,7 +585,7 @@ class _PathButton extends StatelessWidget {
         child: Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(color: fg, fontSize: 13, fontWeight: FontWeight.w700),
+          style: TextStyle(color: fg, fontSize: 12.5, fontWeight: FontWeight.w700),
         ),
       ),
     );

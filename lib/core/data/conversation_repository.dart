@@ -20,7 +20,12 @@ class ConversationRepository {
   String? get error => _error;
   int get totalTopics => _daily.length + _thematic.length;
 
-  Future<void> load() async {
+  Future<void>? _inflight;
+
+  /// فقط یک‌بار اجرا می‌شود؛ فراخوانی‌های هم‌زمان همان Future را می‌گیرند.
+  Future<void> load() => _inflight ??= _doLoad();
+
+  Future<void> _doLoad() async {
     if (_loaded) return;
     try {
       final dailyRaw = await rootBundle
@@ -40,6 +45,7 @@ class ConversationRepository {
     } catch (e) {
       _error = e.toString();
       _loaded = false;
+      _inflight = null; // بار بعد دوباره تلاش شود
     }
   }
 }

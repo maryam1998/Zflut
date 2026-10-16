@@ -21,7 +21,12 @@ class DataRepository {
 
   /// بارگذاری از `assets/data/words.json`.
   /// فقط یک‌بار انجام می‌شود؛ فراخوانی‌های بعدی no-op هستند.
-  Future<void> load() async {
+  Future<void>? _inflight;
+
+  /// فقط یک‌بار اجرا می‌شود؛ فراخوانی‌های هم‌زمان همان Future را می‌گیرند.
+  Future<void> load() => _inflight ??= _doLoad();
+
+  Future<void> _doLoad() async {
     if (_loaded) return;
     try {
       final raw = await rootBundle.loadString('assets/data/words.json');
@@ -34,6 +39,7 @@ class DataRepository {
     } catch (e) {
       _error = e.toString();
       _loaded = false;
+      _inflight = null; // بار بعد دوباره تلاش شود
     }
   }
 

@@ -33,14 +33,22 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final topics = ref.watch(allTopicsProvider);
 
     if (topics.isEmpty) {
+      final loading = ref.watch(conversationLoaderProvider).isLoading;
       return ListView(
         children: [
           const ShellHeader(),
           Padding(
             padding: const EdgeInsets.all(40),
             child: Center(
-              child: Text('داده‌ای بارگذاری نشد',
-                  style: TextStyle(color: c.inkSoft, fontSize: 15)),
+              child: loading
+                  ? SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.4, color: c.gold),
+                    )
+                  : Text('داده‌ای بارگذاری نشد',
+                      style: TextStyle(color: c.inkSoft, fontSize: 15)),
             ),
           ),
         ],

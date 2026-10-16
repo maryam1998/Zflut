@@ -13,7 +13,12 @@ class DailyWordsRepository {
   bool _loaded = false;
   List<DailyWord> get words => _words;
 
-  Future<void> load() async {
+  Future<void>? _inflight;
+
+  /// فقط یک‌بار اجرا می‌شود؛ فراخوانی‌های هم‌زمان همان Future را می‌گیرند.
+  Future<void> load() => _inflight ??= _doLoad();
+
+  Future<void> _doLoad() async {
     if (_loaded) return;
     try {
       final raw = await rootBundle.loadString('assets/data/daily_words.json');
