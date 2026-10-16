@@ -19,6 +19,9 @@ class SavedStory {
   final List<String> words;
   final DateTime createdAt;
 
+  /// ترجمه‌ی هر پاراگراف به زبان‌های انتخابی: کد زبان → لیست ترجمه‌ی پاراگراف‌ها
+  final Map<String, List<String>> translations;
+
   const SavedStory({
     required this.id,
     required this.title,
@@ -28,7 +31,20 @@ class SavedStory {
     required this.contentType,
     required this.words,
     required this.createdAt,
+    this.translations = const {},
   });
+
+  SavedStory copyWith({Map<String, List<String>>? translations}) => SavedStory(
+        id: id,
+        title: title,
+        text: text,
+        langCode: langCode,
+        level: level,
+        contentType: contentType,
+        words: words,
+        createdAt: createdAt,
+        translations: translations ?? this.translations,
+      );
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -39,6 +55,7 @@ class SavedStory {
         'contentType': contentType,
         'words': words,
         'createdAt': createdAt.toIso8601String(),
+        'translations': translations,
       };
 
   factory SavedStory.fromJson(Map<String, dynamic> j) => SavedStory(
@@ -53,6 +70,13 @@ class SavedStory {
         ],
         createdAt:
             DateTime.tryParse((j['createdAt'] ?? '').toString()) ?? DateTime.now(),
+        translations: {
+          if (j['translations'] is Map)
+            for (final e in (j['translations'] as Map).entries)
+              e.key.toString(): [
+                for (final v in (e.value as List? ?? const [])) v.toString(),
+              ],
+        },
       );
 }
 
@@ -83,6 +107,9 @@ class StoryLibraryNotifier extends StateNotifier<List<SavedStory>> {
 
   /// جدیدترین اول.
   void add(SavedStory s) => _set([s, ...state]);
+
+  void update(SavedStory s) =>
+      _set([for (final e in state) e.id == s.id ? s : e]);
 
   void remove(String id) => _set(state.where((s) => s.id != id).toList());
 }

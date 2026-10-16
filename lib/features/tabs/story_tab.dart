@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,12 +14,14 @@ import '../../core/providers/reader_providers.dart';
 import '../../core/providers/story_library_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/translate/translation_service.dart'
+    show runWithConcurrencyLimit;
 import '_hope_panel.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // تب «داستان‌ساز» — هم‌شکل StoryBuilder.jsx در Hope
 // عنوان، سوئیچ دوقسمتی (ساخت داستان / کتابخانه‌ی من)، کارت تنظیمات
-// (زبان و سطح، نوع محتوا، طول)، کارت انتخاب لغت، دکمه‌ی «بساز داستان».
+// (زبان و سطح، نوع محتوا، طول)، کارت انتخاب لغت، دکمه‌ی «داستان بساز».
 // ═══════════════════════════════════════════════════════════════════
 
 class _Opt {
@@ -76,6 +79,7 @@ String _enName(String code) {
 }
 
 String _contentLabel(String key) {
+  if (key == 'reading') return 'خوانش';
   for (final c in _kContentTypes) {
     if (c.key == key) return c.label;
   }
@@ -86,6 +90,126 @@ String _stripThink(String t) => t
     .replaceAll(RegExp(r'<think>[\s\S]*?</think>', caseSensitive: false), '')
     .replaceAll(RegExp(r'<think>[\s\S]*$', caseSensitive: false), '')
     .trim();
+
+
+// ───────────── کمکی‌های وارد کردنِ متن برای خوانش (پورتِ ساده‌ی Hope) ─────────────
+const int _kSentencesPerParagraph = 5;
+const int _kMaxImportSentences = 2000;
+const int _kMaxWordsPerSentence = 40;
+
+List<String> _splitSentences(String text) {
+  final t = text.trim();
+  if (t.isEmpty) return const [];
+  final protectedT =
+      t.replaceAllMapped(RegExp(r'(\d)\.(?=\d)'), (m) => '${m[1]}\u0001');
+  final raw = RegExp(r'[^.!?؟。！]+[.!?؟。！]*')
+      .allMatches(protectedT)
+      .map((m) => m.group(0)!.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+  final parts = (raw.isEmpty ? [protectedT] : raw)
+      .map((e) => e.replaceAll('\u0001', '.'))
+      .toList();
+  final out = <String>[];
+  for (final part in parts) {
+    final words = part.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.length <= _kMaxWordsPerSentence) {
+      out.add(part);
+      continue;
+    }
+    for (var i = 0; i < words.length; i += _kMaxWordsPerSentence) {
+      final end = i + _kMaxWordsPerSentence > words.length
+          ? words.length
+          : i + _kMaxWordsPerSentence;
+      out.add(words.sublist(i, end).join(' '));
+    }
+  }
+  return out;
+}
+
+/// تشخیصِ سادته‌ی زبانِ متن از روی خطِ نوشتاری.
+String _detectLang(String text, String fallback) {
+  var arabic = 0, cyr = 0, deva = 0, kana = 0, hangul = 0, cjk = 0, latin = 0;
+  var persian = 0;
+  for (final r in text.runes) {
+    if (r >= 0x0600 && r <= 0x06FF) {
+      arabic++;
+      if (r == 0x067E || r == 0x0686 || r == 0x0698 || r == 0x06AF ||
+          r == 0x06A9 || r == 0x06CC) {
+        persian++;
+      }
+    } else if (r >= 0x0400 && r <= 0x04FF) {
+      cyr++;
+    } else if (r >= 0x0900 && r <= 0x097F) {
+      deva++;
+    } else if (r >= 0x3040 && r <= 0x30FF) {
+      kana++;
+    } else if (r >= 0xAC00 && r <= 0xD7AF) {
+      hangul++;
+    } else if (r >= 0x4E00 && r <= 0x9FFF) {
+      cjk++;
+    } else if ((r >= 0x41 && r <= 0x5A) || (r >= 0x61 && r <= 0x7A) ||
+        (r >= 0xC0 && r <= 0x24F)) {
+      latin++;
+    }
+  }
+  final max = [arabic, cyr, deva, kana, hangul, cjk, latin]
+      .reduce((a, b) => a > b ? a : b);
+  if (max == 0) return fallback;
+  if (max == arabic) return persian > 0 ? 'fa' : 'ar';
+  if (max == cyr) return 'ru';
+  if (max == deva) return 'hi';
+  if (max == kana) return 'ja';
+  if (max == hangul) return 'ko';
+  if (max == cjk) return kana > 0 ? 'ja' : 'zh';
+  const latinLangs = ['en', 'es', 'de', 'fr', 'it', 'tr'];
+  return latinLangs.contains(fallback) ? fallback : 'en';
+}
+
+String _decodeEntities(String s) => s
+    .replaceAll('&nbsp;', ' ')
+    .replaceAll('&amp;', '&')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&apos;', "'")
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAllMapped(RegExp(r'&#(\d+);'), (m) {
+      final n = int.tryParse(m[1]!);
+      return n == null ? '' : String.fromCharCode(n);
+    });
+
+/// متنِ اصلیِ یک صفحه‌ی وب (بدونِ منو/فوتر/اسکریپت).
+String _extractMainBodyText(String html) {
+  var h = html;
+  for (final tag in [
+    'script', 'style', 'noscript', 'nav', 'header', 'footer', 'aside',
+    'form', 'svg', 'iframe'
+  ]) {
+    h = h.replaceAll(
+        RegExp('<$tag[\\s\\S]*?</$tag>', caseSensitive: false), ' ');
+  }
+  h = h.replaceAll(RegExp(r'<!--[\s\S]*?-->'), ' ');
+  final article =
+      RegExp(r'<article[\s\S]*?</article>', caseSensitive: false).firstMatch(h);
+  if (article != null) h = article.group(0)!;
+  final blocks = RegExp(r'<(p|h1|h2|h3|li)[^>]*>([\s\S]*?)</\1>',
+          caseSensitive: false)
+      .allMatches(h)
+      .map((m) => _decodeEntities(m.group(2)!.replaceAll(RegExp(r'<[^>]+>'), ' '))
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim())
+      .where((e) => e.length > 1)
+      .toList();
+  if (blocks.isNotEmpty) {
+    return blocks
+        .map((b) => RegExp(r'[.!?؟。！:]$').hasMatch(b) ? b : '$b.')
+        .join(' ');
+  }
+  return _decodeEntities(h.replaceAll(RegExp(r'<[^>]+>'), ' '))
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
 
 class _Match {
   final String word;
@@ -119,6 +243,19 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   String _error = '';
   SavedStory? _result;
 
+  // زبان‌های ترجمه‌ی همزمانِ داستان
+  final Set<String> _transLangs = {};
+  bool _transTouched = false;
+  bool _storyTranslating = false;
+
+  // وارد کردنِ لینک / متن برای خوانش
+  bool _showLink = false;
+  bool _showPaste = false;
+  bool _linkBusy = false;
+  String _importError = '';
+  final _linkCtrl = TextEditingController();
+  final _pasteCtrl = TextEditingController();
+
   String _libLevel = 'all';
   final _libSearch = TextEditingController();
   String? _openStoryId;
@@ -139,6 +276,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     _custom.dispose();
     _query.dispose();
     _libSearch.dispose();
+    _linkCtrl.dispose();
+    _pasteCtrl.dispose();
     super.dispose();
   }
 
@@ -267,15 +406,183 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         words: List<String>.from(_words),
         createdAt: DateTime.now(),
       );
-      ref.read(storyLibraryProvider.notifier).add(story);
       if (!mounted) return;
-      setState(() => _result = story);
+      _finishStory(story);
     } catch (_) {
       if (!mounted) return;
       setState(() => _error =
           'ساخت داستان انجام نشد. اینترنتت رو چک کن و دوباره امتحان کن.');
     } finally {
       if (mounted) setState(() => _generating = false);
+    }
+  }
+
+
+  // ───────────── ذخیره + ترجمه‌ی همزمانِ داستان ─────────────
+  Set<String> _effectiveTransLangs() {
+    if (_transTouched) return _transLangs;
+    final native = ref.read(languageSelectionProvider).native;
+    return {native};
+  }
+
+  void _finishStory(SavedStory story) {
+    ref.read(storyLibraryProvider.notifier).add(story);
+    setState(() => _result = story);
+    unawaited(_translateStory(story));
+  }
+
+  Future<void> _translateStory(SavedStory story) async {
+    final langs =
+        _effectiveTransLangs().where((l) => l != story.langCode).toList();
+    if (langs.isEmpty) return;
+    final paras = story.text
+        .split(RegExp(r'\n\s*\n'))
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (paras.isEmpty) return;
+    if (mounted) setState(() => _storyTranslating = true);
+    final result = <String, List<String>>{};
+    try {
+      final svc = ref.read(translationServiceProvider);
+      final ai = ref.read(aiSettingsProvider);
+      for (final code in langs) {
+        final out = await runWithConcurrencyLimit<String, String>(
+          paras,
+          3,
+          (p, _) async {
+            try {
+              return (await svc.translate(
+                text: p,
+                targetLang: code,
+                sourceLang: story.langCode,
+                aiSettings: ai,
+              ))
+                  .trim();
+            } catch (_) {
+              return '';
+            }
+          },
+        );
+        result[code] = out;
+      }
+      final updated = story.copyWith(translations: result);
+      ref.read(storyLibraryProvider.notifier).update(updated);
+      if (mounted && _result?.id == story.id) {
+        setState(() => _result = updated);
+      }
+    } finally {
+      if (mounted) setState(() => _storyTranslating = false);
+    }
+  }
+
+  // ───────────── وارد کردنِ متن برای خوانش ─────────────
+  void _importForReading(String raw) {
+    var sentences = _splitSentences(raw);
+    if (sentences.isEmpty) {
+      setState(() => _importError = 'متنی برای خوندن پیدا نشد');
+      return;
+    }
+    var note = '';
+    if (sentences.length > _kMaxImportSentences) {
+      sentences = sentences.sublist(0, _kMaxImportSentences);
+      note = 'توجه: چون متن زیاد بود، فقط بخشی از اون آماده‌ی خوانش شد';
+    }
+    final lang = _detectLang(raw, _storyLang);
+    final paras = <String>[];
+    for (var i = 0; i < sentences.length; i += _kSentencesPerParagraph) {
+      final end = i + _kSentencesPerParagraph > sentences.length
+          ? sentences.length
+          : i + _kSentencesPerParagraph;
+      paras.add(sentences.sublist(i, end).join(' '));
+    }
+    final title =
+        sentences.first.split(RegExp(r'\s+')).take(6).join(' ');
+    final story = SavedStory(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      title: title,
+      text: paras.join('\n\n'),
+      langCode: lang,
+      level: _level,
+      contentType: 'reading',
+      words: const [],
+      createdAt: DateTime.now(),
+    );
+    setState(() {
+      _importError = note;
+      _error = '';
+    });
+    _finishStory(story);
+  }
+
+  void _importPasted() {
+    final raw = _pasteCtrl.text.trim();
+    if (raw.isEmpty) return;
+    setState(() => _importError = '');
+    _importForReading(raw);
+    _pasteCtrl.clear();
+    setState(() => _showPaste = false);
+  }
+
+  Future<void> _importLink() async {
+    var raw = _linkCtrl.text.trim();
+    if (raw.isEmpty || _linkBusy) return;
+    if (!RegExp(r'^https?://', caseSensitive: false).hasMatch(raw)) {
+      raw = 'https://$raw';
+    }
+    final uri = Uri.tryParse(raw);
+    if (uri == null || uri.host.isEmpty || !uri.host.contains('.')) {
+      setState(() =>
+          _importError = 'این لینک معتبر نیست — لطفاً آدرسِ کامل صفحه رو وارد کن');
+      return;
+    }
+    if (RegExp(r'(^|\.)(youtube\.com|youtu\.be)$').hasMatch(uri.host)) {
+      setState(() => _importError =
+          'لینکِ یوتیوب پشتیبانی نمی‌شه — متنِ ویدیوها استخراج نمی‌شه.');
+      return;
+    }
+    setState(() {
+      _linkBusy = true;
+      _importError = '';
+    });
+    try {
+      final dio = Dio(BaseOptions(
+        responseType: ResponseType.plain,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 25),
+      ));
+      var html = '';
+      try {
+        final r = await dio.get<String>(uri.toString());
+        html = r.data ?? '';
+      } catch (_) {
+        // احتمالاً CORS — می‌ریم سراغ پراکسیِ بک‌اند
+      }
+      if (html.isEmpty) {
+        final base = ref.read(aiSettingsProvider).baseUrl;
+        final r = await dio.get<String>(
+            '$base/api/fetch-url?url=${Uri.encodeComponent(uri.toString())}');
+        html = r.data ?? '';
+      }
+      final body = _extractMainBodyText(html);
+      if (body.isEmpty) {
+        if (mounted) {
+          setState(() => _importError =
+              'متنی از این صفحه استخراج نشد — شاید محتوای سایت با جاوااسکریپت ساخته می‌شه');
+        }
+        return;
+      }
+      if (!mounted) return;
+      _importForReading(body);
+      _linkCtrl.clear();
+      setState(() => _showLink = false);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _importError =
+            'این لینک قابلِ خوندن نبود — یا سایت اجازه‌ی دسترسی نمی‌ده، یا آدرس اشتباهه. از کپی/پیستِ متن استفاده کن.');
+      }
+    } finally {
+      if (mounted) setState(() => _linkBusy = false);
     }
   }
 
@@ -348,10 +655,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         else ...[
           _settingsCard(c, lang, options),
           _wordsCard(c, lang),
+          _translationLangsCard(c),
           _generateButton(c, lang),
           if (_error.isNotEmpty)
             Text(_error, style: TextStyle(color: c.rose, fontSize: 13)),
           if (_result != null) _resultCard(c, _result!),
+          ..._importSection(c),
         ],
       ],
     );
@@ -690,6 +999,207 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     );
   }
 
+
+  // ───────────── کارتِ زبان‌های ترجمه‌ی همزمان ─────────────
+  Widget _translationLangsCard(AppThemeColorsExt c) {
+    final selected = _effectiveTransLangs();
+    void setAll(Set<String> v) => setState(() {
+          _transTouched = true;
+          _transLangs
+            ..clear()
+            ..addAll(v);
+        });
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: c.paperDark.withOpacity(0.35),
+        border: Border.all(color: c.cardBorder),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'داستان همزمان به چه زبان‌هایی ترجمه بشه؟ (می‌تونی چند تا انتخاب کنی)',
+            style: TextStyle(color: c.inkSoft, fontSize: 12.5, height: 1.7),
+          ),
+          Row(
+            children: [
+              HopeTextAction(
+                label: 'انتخاب همه',
+                color: c.teal,
+                onTap: () =>
+                    setAll({for (final l in kSupportedLanguages) l.code}),
+              ),
+              const SizedBox(width: 14),
+              HopeTextAction(
+                label: 'پاک کردن همه',
+                color: c.rose,
+                onTap: () => setAll({}),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final l in kSupportedLanguages)
+                HopeChoiceChip(
+                  label: l.faLabel,
+                  active: selected.contains(l.code),
+                  activeBorder: c.gold,
+                  activeFill: c.goldSoft,
+                  activeText: c.ink,
+                  fontSize: 13,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  onTap: () {
+                    final next = {...selected};
+                    if (!next.remove(l.code)) next.add(l.code);
+                    setAll(next);
+                  },
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────── وارد کردنِ لینک / متن برای خوانش ─────────────
+  Widget _importButton(AppThemeColorsExt c,
+      {required String emoji, required String label, required VoidCallback onTap}) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: c.cardBorder),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 15)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(
+                    color: c.teal, fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _primaryBtn(AppThemeColorsExt c, String label, VoidCallback? onTap,
+      {bool busy = false}) {
+    return Opacity(
+      opacity: onTap == null ? 0.5 : 1,
+      child: Material(
+        color: c.teal,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (busy) ...[
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Text(label,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _importSection(AppThemeColorsExt c) {
+    return [
+      _importButton(
+        c,
+        emoji: '🔗',
+        label: _showLink ? 'بستنِ لینک' : 'یا لینکِ یه صفحه رو وارد کن',
+        onTap: () => setState(() => _showLink = !_showLink),
+      ),
+      if (_showLink)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _linkCtrl,
+              textDirection: TextDirection.ltr,
+              keyboardType: TextInputType.url,
+              style: TextStyle(color: c.ink, fontSize: 13),
+              decoration: _fieldDeco(c, 'https://example.com/article'),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'متنِ اصلیِ صفحه خونده می‌شه و آماده‌ی خوانش و ترجمه می‌شه.',
+              style: TextStyle(color: c.inkSoft, fontSize: 10.5),
+            ),
+            const SizedBox(height: 6),
+            _primaryBtn(
+              c,
+              _linkBusy ? 'در حال گرفتنِ متن...' : 'بگیر و آماده‌ی خوانش کن',
+              _linkCtrl.text.trim().isEmpty || _linkBusy ? null : _importLink,
+              busy: _linkBusy,
+            ),
+          ],
+        ),
+      _importButton(
+        c,
+        emoji: '📋',
+        label: _showPaste ? 'بستنِ کادرِ متن' : 'یا یه متن/داستان رو اینجا پیست کن',
+        onTap: () => setState(() => _showPaste = !_showPaste),
+      ),
+      if (_showPaste)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _pasteCtrl,
+              minLines: 5,
+              maxLines: 10,
+              textDirection: TextDirection.ltr,
+              style: TextStyle(color: c.ink, fontSize: 13, height: 1.6),
+              decoration: _fieldDeco(c, 'متنت رو اینجا پیست کن...'),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 6),
+            _primaryBtn(
+              c,
+              '📖 آماده‌ی خوانش کن',
+              _pasteCtrl.text.trim().isEmpty ? null : _importPasted,
+            ),
+          ],
+        ),
+      if (_importError.isNotEmpty)
+        Text(_importError, style: TextStyle(color: c.rose, fontSize: 12)),
+    ];
+  }
+
   Widget _generateButton(AppThemeColorsExt c, String lang) {
     final disabled = _words.isEmpty || _generating;
     return Opacity(
@@ -716,7 +1226,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                   const Icon(Icons.auto_awesome, size: 18, color: Colors.white),
                 const SizedBox(width: 8),
                 Text(
-                  _generating ? 'در حال ساخت داستان...' : 'بساز داستان',
+                  _generating ? 'در حال ساخت داستان...' : 'داستان بساز',
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -744,7 +1254,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
-          _storyBody(c, s.text),
+          _storyBody(c, s.text, s.translations),
+          if (_storyTranslating)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text('در حال ترجمه‌ی داستان...',
+                  style: TextStyle(color: c.inkSoft, fontSize: 12)),
+            ),
           const SizedBox(height: 8),
           Text('در «کتابخانه‌ی من» ذخیره شد.',
               style: TextStyle(color: c.teal, fontSize: 12)),
@@ -753,18 +1269,43 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     );
   }
 
-  Widget _storyBody(AppThemeColorsExt c, String text) {
-    final paras = text.split(RegExp(r'\n\s*\n')).where((p) => p.trim().isNotEmpty);
+  Widget _storyBody(AppThemeColorsExt c, String text,
+      [Map<String, List<String>> translations = const {}]) {
+    final paras = text
+        .split(RegExp(r'\n\s*\n'))
+        .where((p) => p.trim().isNotEmpty)
+        .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final p in paras)
+        for (var i = 0; i < paras.length; i++)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: Text(
-              p.trim(),
-              textDirection: autoDir(p),
-              style: TextStyle(color: c.ink, fontSize: 14, height: 1.9),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  paras[i].trim(),
+                  textDirection: autoDir(paras[i]),
+                  style: TextStyle(color: c.ink, fontSize: 14, height: 1.9),
+                ),
+                for (final e in translations.entries)
+                  if (i < e.value.length && e.value[i].trim().isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 6),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: c.goldSoft,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        e.value[i].trim(),
+                        textDirection: dirFor(e.key),
+                        style: TextStyle(
+                            color: c.ink, fontSize: 13, height: 1.8),
+                      ),
+                    ),
+              ],
             ),
           ),
       ],
@@ -921,7 +1462,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: c.cardBorder)),
               ),
-              child: _storyBody(c, s.text),
+              child: _storyBody(c, s.text, s.translations),
             ),
         ],
       ),
