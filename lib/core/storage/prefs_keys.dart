@@ -6,6 +6,7 @@ class PrefsKeys {
   static const String targetTextPrefs = 'phrasebook-target-text-prefs-v1';
   static const String voicePrefs = 'phrasebook-voice-prefs-v1';
   static const String languageSelection = 'phrasebook-language-selection-v1';
+  static const String wordFavorites = 'phrasebook-word-favorites-v1';
 
   // رویدادها (فقط در نسخه‌ی وب) — در Dart با Riverpod provider تغییرات propagate می‌شوند.
   static const String appPrefsChangedEvent = 'phrasebook:appPrefsChanged';

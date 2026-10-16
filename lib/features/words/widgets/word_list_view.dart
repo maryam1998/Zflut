@@ -24,12 +24,16 @@ class WordListView extends ConsumerWidget {
   /// هنوز در حال بارگذاری است؟ (به‌جای «بارگذاری نشد» چرخنده نشان بده)
   final bool loading;
 
+  /// عنوانِ بالای لیست (مثل «لغات» در تبِ علاقه‌مندی‌های Hope)
+  final String? heading;
+
   const WordListView({
     super.key,
     required this.words,
     required this.hasAnyData,
     this.emptyMessage = 'چیزی پیدا نشد',
     this.loading = false,
+    this.heading,
   });
 
   @override
@@ -126,6 +130,23 @@ class WordListView extends ConsumerWidget {
         slivers: [
           const SliverToBoxAdapter(child: ShellHeader()),
           SliverToBoxAdapter(child: filterHeader),
+          if (heading != null && words.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    heading!,
+                    style: TextStyle(
+                      color: c.gold,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           if (words.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,

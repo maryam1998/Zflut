@@ -5,6 +5,7 @@ import '../constants/level_colors.dart';
 import '../constants/supported_languages.dart';
 import '../player_sync/sync_widgets.dart';
 import '../providers/ai_settings_provider.dart';
+import '../providers/favorites_provider.dart';
 import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart';
@@ -15,7 +16,7 @@ import 'selection_card.dart';
 // ═══════════════════════════════════════════════════════════════════
 // SyncItemCard — «کارتِ مشترک» برای همه‌ی تب‌ها
 // ═══════════════════════════════════════════════════════════════════
-class SyncItemCard extends StatefulWidget {
+class SyncItemCard extends ConsumerStatefulWidget {
   final String id;
   final String en;
   final String level;
@@ -40,11 +41,10 @@ class SyncItemCard extends StatefulWidget {
   });
 
   @override
-  State<SyncItemCard> createState() => _SyncItemCardState();
+  ConsumerState<SyncItemCard> createState() => _SyncItemCardState();
 }
 
-class _SyncItemCardState extends State<SyncItemCard> {
-  bool _isFavorite = false;
+class _SyncItemCardState extends ConsumerState<SyncItemCard> {
   bool _showAiExamples = false;
 
   @override
@@ -52,6 +52,8 @@ class _SyncItemCardState extends State<SyncItemCard> {
     final c = context.appColors;
     final compact = widget.compact;
     final pos = widget.pos;
+    final isFavorite = widget.showActions &&
+        ref.watch(wordFavoritesProvider.select((s) => s.contains(widget.id)));
 
     return SyncAnchor(
       code: 'en',
@@ -163,15 +165,16 @@ class _SyncItemCardState extends State<SyncItemCard> {
                 knownText: widget.knownTranslations[code] ?? '',
                 compact: compact,
                 showActions: widget.showActions,
-                isFavorite: _isFavorite,
+                isFavorite: isFavorite,
                 onToggleFavorite: () =>
-                    setState(() => _isFavorite = !_isFavorite),
+                    ref.read(wordFavoritesProvider.notifier).toggle(widget.id),
               ),
 
             if (widget.showActions) ...[
               const SizedBox(height: 6),
               Align(
-                alignment: AlignmentDirectional.centerEnd,
+                // سمتِ راست، مستقل از جهتِ برنامه (RTL ⇒ «end» می‌شد چپ)
+                alignment: Alignment.centerRight,
                 child: AiExamplesButton(
                   onTap: () =>
                       setState(() => _showAiExamples = !_showAiExamples),
