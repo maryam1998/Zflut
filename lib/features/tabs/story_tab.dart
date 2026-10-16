@@ -778,8 +778,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
 
   // ───────────── PDF / عکس ─────────────
-  static const int _kPdfMaxBytes = 100 * 1024 * 1024;
-  static const int _kImgMaxBytes = 25 * 1024 * 1024;
 
   String _ioError(Object e, String fallback) => e is UnsupportedError
       ? 'این قابلیت فعلاً فقط روی نسخه‌ی وب کار می‌کنه (اندروید/ویندوز بعداً اضافه می‌شه).'
@@ -799,11 +797,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     }
     if (files.isEmpty) return;
     final f = files.first;
-    if (f.size > _kPdfMaxBytes) {
-      setState(() => _importError =
-          'حجمِ فایل بیشتر از ${_kPdfMaxBytes ~/ (1024 * 1024)} مگابایتِ مجازه');
-      return;
-    }
     setState(() {
       _pdfReadBusy = true;
       _importError = '';
@@ -862,12 +855,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       return;
     }
     if (files.isEmpty) return;
-    final big = files.where((f) => f.size > _kImgMaxBytes).toList();
-    if (big.isNotEmpty) {
-      setState(() => _importError =
-          '«${big.first.name}» بیشتر از سقفِ ${_kImgMaxBytes ~/ (1024 * 1024)} مگابایتِ هر عکسه');
-      return;
-    }
     setState(() {
       _imgReadBusy = true;
       _importError = '';
@@ -921,11 +908,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     }
     if (files.isEmpty) return;
     final f = files.first;
-    if (f.size > _kPdfMaxBytes) {
-      setState(() => _importError =
-          'حجمِ فایل بیشتر از ${_kPdfMaxBytes ~/ (1024 * 1024)} مگابایتِ مجازه');
-      return;
-    }
     setState(() {
       _pdfViewBusy = true;
       _importError = '';
