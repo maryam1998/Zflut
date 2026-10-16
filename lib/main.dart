@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'core/config/app_config.dart';
 import 'core/storage/local_storage.dart' show sharedPrefsProvider;
+import 'core/storage/translation_cache_db.dart';
 
 // مقادیر واقعی از --dart-define (در GitHub Actions از Secrets) می‌آیند.
 const String _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -73,6 +74,10 @@ Future<void> main() async {
     }
 
     final prefs = await SharedPreferences.getInstance();
+
+    // کشِ دائمیِ ترجمه‌ها (IndexedDB / فایل) — در پس‌زمینه باز و پر می‌شود؛
+    // تا آماده شود کش فقط در حافظه کار می‌کند و اپ منتظر نمی‌ماند.
+    unawaited(TranslationCacheDb.instance.init(prefs));
 
     runApp(
       ProviderScope(

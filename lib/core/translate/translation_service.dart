@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../storage/translation_cache_db.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // Translation Service — پورتِ دقیقِ translateService.js + callAI.js وب‌اپ
@@ -20,7 +20,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 const String kDefaultBackendUrl =
     'https://phrasebook-api.maryam-s-sharifiyan.workers.dev';
 
-const String _kCachePrefix = 'tr3::';
 const int _kProviderFailThreshold = 4;
 const int _kProviderBlockMs = 45 * 1000;
 const int kGlobalTranslateConcurrency = 10;
@@ -231,7 +230,7 @@ class _AiBackendError implements Exception {
 // Main service
 // ═══════════════════════════════════════════════════════════════════
 class TranslationService {
-  TranslationService(this._prefs)
+  TranslationService()
       : _dio = Dio(BaseOptions(
           connectTimeout: const Duration(milliseconds: _kProviderTimeoutMs),
           receiveTimeout: const Duration(milliseconds: _kProviderTimeoutMs),
@@ -241,60 +240,38 @@ class TranslationService {
           validateStatus: (_) => true,
         ));
 
-  final SharedPreferences _prefs;
   final Dio _dio;
   final Dio _aiDio;
 
-  // ─── کش (حافظه + دیسک) — کلید دقیقاً مثل وب: source::target::text ───
-  final Map<String, String> _mem = {};
+  // ─── کش دائمی (حافظه + دیتابیس: IndexedDB روی وب / فایل روی موبایل) ───
+  // کلید دقیقاً مثل وب: source::target::text — نگاه کن به TranslationCacheDb
+  final TranslationCacheDb _db = TranslationCacheDb.instance;
 
   String _cacheKey(String text, String from, String to) =>
       '${from.isEmpty ? 'auto' : from}::$to::$text';
 
-  Future<String?> _cacheGet(String text, String from, String to) async {
-    final key = _cacheKey(text, from, to);
-    final memHit = _mem[key];
-    if (memHit != null) return memHit;
-    try {
-      final disk = _prefs.getString('$_kCachePrefix$key');
-      if (disk != null && disk.isNotEmpty) {
-        _mem[key] = disk;
-        return disk;
-      }
-    } catch (_) {}
-    return null;
+  Future<String?> _cacheGet(String text, String from, String to) {
+    final v = _db.get(_cacheKey(text, from, to));
+    return v.then((s) => (s != null && s.isNotEmpty) ? s : null);
   }
 
   /// خواندنِ سریع و همگام از کش (برای اسکرولِ روان: بدون await و بدون فلیکر).
   /// فقط اگر مقدارِ کش‌شده از کنترل کیفیت رد شود برمی‌گرداند؛ وگرنه null.
   String? peekCached(String text, String from, String to) {
     if (text.trim().isEmpty || to.isEmpty) return null;
-    final key = _cacheKey(text, from, to);
-    var v = _mem[key];
-    if (v == null) {
-      try {
-        final disk = _prefs.getString('$_kCachePrefix$key');
-        if (disk != null && disk.isNotEmpty) {
-          _mem[key] = disk;
-          v = disk;
-        }
-      } catch (_) {}
-    }
-    if (v == null) return null;
+    final v = _db.peek(_cacheKey(text, from, to));
+    if (v == null || v.isEmpty) return null;
     return looksLikelyMistranslated(text, v, to, sourceLang: from) ? null : v;
   }
 
-  /// ذخیره در کش (حافظه همیشه؛ دیسک best-effort مثل وب)
+  /// ذخیره در کشِ دائمی
   Future<void> cachePut(
-      String text, String from, String to, String value) async {
-    final key = _cacheKey(text, from, to);
-    _mem[key] = value;
-    try {
-      await _prefs.setString('$_kCachePrefix$key', value);
-    } catch (_) {
-      // سهمیه‌ی storage (مثلاً وب) پر بود — بی‌خیال، مشکلی نیست
-    }
+      String text, String from, String to, String value) {
+    return _db.put(_cacheKey(text, from, to), value);
   }
+
+  /// تعدادِ ترجمه‌های ذخیره‌شده روی دستگاه
+  int get cachedCount => _db.count;
 
   // ═══════════════════════════════════════════════════════════════
   // API اصلی — معادلِ translateFree وب

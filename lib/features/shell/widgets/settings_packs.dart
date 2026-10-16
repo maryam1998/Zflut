@@ -14,7 +14,6 @@ import '../../../core/data/data_repository.dart';
 import '../../../core/models/filter_state.dart';
 import '../../../core/providers/ai_settings_provider.dart';
 import '../../../core/providers/translation_provider.dart';
-import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/translate/translation_service.dart'
     show looksLikelyMistranslated;
@@ -271,19 +270,13 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
   String _current = '';
   int _cached = 0;
 
-  static const String _cachePrefix = 'tr3::';
-
   @override
   void initState() {
     super.initState();
     _load();
   }
 
-  int _countCached() => ref
-      .read(sharedPrefsProvider)
-      .getKeys()
-      .where((k) => k.startsWith(_cachePrefix))
-      .length;
+  int _countCached() => ref.read(translationServiceProvider).cachedCount;
 
   Future<void> _load() async {
     await DataRepository.instance.load();

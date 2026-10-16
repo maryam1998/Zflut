@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../storage/local_storage.dart';
 import '../translate/translation_service.dart';
 import 'ai_settings_provider.dart';
 
 final translationServiceProvider = Provider<TranslationService>((ref) {
-  return TranslationService(ref.watch(sharedPrefsProvider));
+  return TranslationService();
 });
 
 /// ترجمه‌ی یک متن به یک زبان مقصد (معادلِ translateFree وب).

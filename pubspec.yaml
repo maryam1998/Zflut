@@ -20,6 +20,10 @@ dependencies:
   supabase_flutter: ^2.5.0
   shared_preferences: ^2.2.3
   dio: ^5.4.0
+  # کشِ دائمیِ ترجمه‌ها: وب = IndexedDB، موبایل = فایل (معادلِ translationCacheDb.js در Hope)
+  sembast: ^3.7.0
+  sembast_web: ^2.4.0
+  path_provider: ^2.1.0
   intl: ^0.19.0
 
   # ═══ Audio (TTS + پخش) ═══
