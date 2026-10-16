@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,8 @@ import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/translate/translation_service.dart'
     show runWithConcurrencyLimit;
+import '../../core/web/reading_io_stub.dart'
+    if (dart.library.html) '../../core/web/reading_io_web.dart';
 import '_hope_panel.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -253,6 +256,20 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   bool _showPaste = false;
   bool _linkBusy = false;
   String _importError = '';
+  bool _pdfReadBusy = false;
+  bool _imgReadBusy = false;
+  String _importProgress = '';
+
+  // نمایشگرِ PDF با عکسِ اصلی + ترجمه
+  bool _pdfViewBusy = false;
+  PdfDocHandle? _pdfDoc;
+  String _pdfTitle = '';
+  int _pdfIndex = 0;
+  bool _pdfPageBusy = false;
+  bool _pdfShowOrig = false;
+  final Map<int, Uint8List> _pdfImages = {};
+  final Map<int, String> _pdfTexts = {};
+  final Map<int, String> _pdfTrans = {};
   final _linkCtrl = TextEditingController();
   final _pasteCtrl = TextEditingController();
 
@@ -278,6 +295,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     _libSearch.dispose();
     _linkCtrl.dispose();
     _pasteCtrl.dispose();
+    _pdfDoc?.dispose();
     super.dispose();
   }
 
@@ -488,7 +506,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       sentences = sentences.sublist(0, _kMaxImportSentences);
       note = 'توجه: چون متن زیاد بود، فقط بخشی از اون آماده‌ی خوانش شد';
     }
-    final lang = _detectLang(raw, _storyLang);
+    final lang = _detectLang(
+        raw, _activeLang(ref.read(languageSelectionProvider).targets));
     final paras = <String>[];
     for (var i = 0; i < sentences.length; i += _kSentencesPerParagraph) {
       final end = i + _kSentencesPerParagraph > sentences.length
@@ -522,6 +541,245 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     _importForReading(raw);
     _pasteCtrl.clear();
     setState(() => _showPaste = false);
+  }
+
+
+  // ───────────── PDF / عکس ─────────────
+  static const int _kPdfMaxBytes = 25 * 1024 * 1024;
+  static const int _kImgMaxBytes = 12 * 1024 * 1024;
+
+  String _readingLang() =>
+      _activeLang(ref.read(languageSelectionProvider).targets);
+
+  Future<void> _importPdfForReading() async {
+    if (_pdfReadBusy) return;
+    List<PickedFile> files;
+    try {
+      files = await pickFiles(accept: 'application/pdf');
+    } catch (_) {
+      return;
+    }
+    if (files.isEmpty) return;
+    final f = files.first;
+    if (f.size > _kPdfMaxBytes) {
+      setState(() => _importError =
+          'حجمِ فایل بیشتر از ${_kPdfMaxBytes ~/ (1024 * 1024)} مگابایتِ مجازه');
+      return;
+    }
+    setState(() {
+      _pdfReadBusy = true;
+      _importError = '';
+      _importProgress = '';
+    });
+    PdfDocHandle? doc;
+    try {
+      doc = await PdfDocHandle.open(f.bytes);
+      final sentences = <String>[];
+      var truncated = false;
+      for (var i = 0; i < doc.pageCount; i++) {
+        final t = await doc.pageText(i);
+        sentences.addAll(_splitSentences(t));
+        if (mounted) {
+          setState(() => _importProgress = 'صفحه‌ی ${i + 1} از ${doc!.pageCount}...');
+        }
+        if (sentences.length > _kMaxImportSentences) {
+          truncated = true;
+          break;
+        }
+      }
+      if (!mounted) return;
+      if (sentences.isEmpty) {
+        setState(() => _importError =
+            'متنی از این PDF استخراج نشد — شاید این فایل اسکن/عکسه، نه متنِ واقعی');
+        return;
+      }
+      _importForReading(sentences.join(' '));
+      if (truncated) {
+        setState(() => _importError =
+            'توجه: چون فایل بزرگ بود، فقط بخشی از متنش خونده و آماده‌ی خوانش شد');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _importError =
+            'خوندنِ این PDF مشکل داشت — فایل ممکنه خراب یا رمزگذاری‌شده باشه، یا اینترنت قطع باشه');
+      }
+    } finally {
+      doc?.dispose();
+      if (mounted) {
+        setState(() {
+          _pdfReadBusy = false;
+          _importProgress = '';
+        });
+      }
+    }
+  }
+
+  Future<void> _importImagesForReading() async {
+    if (_imgReadBusy) return;
+    List<PickedFile> files;
+    try {
+      files = await pickFiles(accept: 'image/*', multiple: true);
+    } catch (_) {
+      return;
+    }
+    if (files.isEmpty) return;
+    final big = files.where((f) => f.size > _kImgMaxBytes).toList();
+    if (big.isNotEmpty) {
+      setState(() => _importError =
+          '«${big.first.name}» بیشتر از سقفِ ${_kImgMaxBytes ~/ (1024 * 1024)} مگابایتِ هر عکسه');
+      return;
+    }
+    setState(() {
+      _imgReadBusy = true;
+      _importError = '';
+    });
+    final lang = _readingLang();
+    final texts = <String>[];
+    try {
+      for (var i = 0; i < files.length; i++) {
+        if (mounted) {
+          setState(() => _importProgress =
+              'عکسِ ${i + 1} از ${files.length} (بار اول ممکنه کمی طول بکشه)...');
+        }
+        final raw = await ocrImage(files[i].bytes, lang);
+        final cleaned = raw
+            .replaceAll(RegExp(r'-[ \t]*\n[ \t]*'), '')
+            .replaceAll(RegExp(r'\s*\n\s*'), ' ')
+            .replaceAll(RegExp(r'[ \t]{2,}'), ' ')
+            .trim();
+        if (cleaned.isNotEmpty) texts.add(cleaned);
+      }
+      if (!mounted) return;
+      if (texts.isEmpty) {
+        setState(() => _importError = 'متنی تو این عکس‌ها تشخیص داده نشد');
+        return;
+      }
+      _importForReading(texts.join(' '));
+    } catch (_) {
+      if (mounted) {
+        setState(() => _importError =
+            'خوندنِ متن از این عکس‌ها مشکل داشت — اینترنتت رو چک کن و دوباره امتحان کن');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _imgReadBusy = false;
+          _importProgress = '';
+        });
+      }
+    }
+  }
+
+  // ───── PDF با عکسِ اصلی + ترجمه‌ی همین‌جا ─────
+  Future<void> _openPdfView() async {
+    if (_pdfViewBusy) return;
+    List<PickedFile> files;
+    try {
+      files = await pickFiles(accept: 'application/pdf');
+    } catch (_) {
+      return;
+    }
+    if (files.isEmpty) return;
+    final f = files.first;
+    if (f.size > _kPdfMaxBytes) {
+      setState(() => _importError =
+          'حجمِ فایل بیشتر از ${_kPdfMaxBytes ~/ (1024 * 1024)} مگابایتِ مجازه');
+      return;
+    }
+    setState(() {
+      _pdfViewBusy = true;
+      _importError = '';
+    });
+    try {
+      final doc = await PdfDocHandle.open(f.bytes);
+      if (!mounted) {
+        doc.dispose();
+        return;
+      }
+      _closePdfView(notify: false);
+      setState(() {
+        _pdfDoc = doc;
+        _pdfTitle = f.name;
+        _pdfIndex = 0;
+        _pdfShowOrig = false;
+      });
+      unawaited(_loadPdfPage(0));
+    } catch (_) {
+      if (mounted) {
+        setState(() => _importError =
+            'این PDF باز نشد — فایل ممکنه خراب یا رمزگذاری‌شده باشه، یا اینترنت قطع باشه');
+      }
+    } finally {
+      if (mounted) setState(() => _pdfViewBusy = false);
+    }
+  }
+
+  void _closePdfView({bool notify = true}) {
+    _pdfDoc?.dispose();
+    _pdfDoc = null;
+    _pdfImages.clear();
+    _pdfTexts.clear();
+    _pdfTrans.clear();
+    _pdfIndex = 0;
+    if (notify && mounted) setState(() {});
+  }
+
+  Future<void> _loadPdfPage(int i) async {
+    final doc = _pdfDoc;
+    if (doc == null || i < 0 || i >= doc.pageCount) return;
+    setState(() {
+      _pdfIndex = i;
+      _pdfPageBusy = true;
+    });
+    try {
+      if (!_pdfImages.containsKey(i)) {
+        _pdfImages[i] = await doc.renderPage(i);
+        if (mounted && _pdfDoc == doc && _pdfIndex == i) setState(() {});
+      }
+      if (!_pdfTexts.containsKey(i)) {
+        _pdfTexts[i] = await doc.pageText(i);
+      }
+      if (!_pdfTrans.containsKey(i)) {
+        final text = _pdfTexts[i] ?? '';
+        if (text.trim().isEmpty) {
+          _pdfTrans[i] = '(این صفحه متنِ قابل‌خواندن نداره — احتمالاً فقط عکسه)';
+        } else {
+          final sentences = _splitSentences(text);
+          final chunks = <String>[];
+          for (var k = 0; k < sentences.length; k += _kSentencesPerParagraph) {
+            final end = k + _kSentencesPerParagraph > sentences.length
+                ? sentences.length
+                : k + _kSentencesPerParagraph;
+            chunks.add(sentences.sublist(k, end).join(' '));
+          }
+          final svc = ref.read(translationServiceProvider);
+          final ai = ref.read(aiSettingsProvider);
+          final native = ref.read(languageSelectionProvider).native;
+          final out = await runWithConcurrencyLimit<String, String>(
+            chunks,
+            3,
+            (ch, _) async {
+              try {
+                return (await svc.translate(
+                  text: ch,
+                  targetLang: native,
+                  sourceLang: 'auto',
+                  aiSettings: ai,
+                ))
+                    .trim();
+              } catch (_) {
+                return '';
+              }
+            },
+          );
+          _pdfTrans[i] = out.where((e) => e.isNotEmpty).join('\n\n');
+        }
+      }
+    } catch (_) {
+      _pdfTrans[i] ??= 'نمایش یا ترجمه‌ی این صفحه انجام نشد.';
+    } finally {
+      if (mounted && _pdfDoc == doc) setState(() => _pdfPageBusy = false);
+    }
   }
 
   Future<void> _importLink() async {
@@ -1134,8 +1392,151 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     );
   }
 
+
+  Widget _pdfViewer(AppThemeColorsExt c) {
+    final doc = _pdfDoc!;
+    final i = _pdfIndex;
+    final img = _pdfImages[i];
+    final trans = _pdfTrans[i];
+    final orig = _pdfTexts[i] ?? '';
+    final lang = _readingLang();
+    return HopeCard(
+      padding: const EdgeInsets.all(10),
+      radius: 14,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '$_pdfTitle — صفحه‌ی ${i + 1} از ${doc.pageCount}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(
+                      color: c.ink, fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              ),
+              HopeTextAction(
+                  label: 'بستن', color: c.rose, onTap: _closePdfView),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 120),
+              decoration:
+                  BoxDecoration(border: Border.all(color: c.cardBorder)),
+              child: img == null
+                  ? const Padding(
+                      padding: EdgeInsets.all(30),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : InteractiveViewer(
+                      minScale: 1,
+                      maxScale: 4,
+                      child: Image.memory(img, fit: BoxFit.fitWidth),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: c.goldSoft,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: trans == null
+                ? Row(
+                    children: [
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 8),
+                      Text('در حال ترجمه‌ی این صفحه...',
+                          style: TextStyle(color: c.inkSoft, fontSize: 12)),
+                    ],
+                  )
+                : Text(
+                    trans,
+                    textDirection: autoDir(trans),
+                    style: TextStyle(color: c.ink, fontSize: 13.5, height: 1.9),
+                  ),
+          ),
+          if (orig.isNotEmpty) ...[
+            HopeTextAction(
+              label: _pdfShowOrig ? 'پنهان کردنِ متنِ اصلی' : 'نمایشِ متنِ اصلی',
+              color: c.teal,
+              onTap: () => setState(() => _pdfShowOrig = !_pdfShowOrig),
+            ),
+            if (_pdfShowOrig)
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: c.paper,
+                  border: Border.all(color: c.cardBorder),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  orig,
+                  textDirection: dirFor(lang),
+                  style: TextStyle(color: c.ink, fontSize: 13, height: 2),
+                ),
+              ),
+          ],
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              HopeTextAction(
+                label: '◀ صفحه‌ی قبل',
+                color: c.teal,
+                onTap: i == 0 || _pdfPageBusy ? null : () => _loadPdfPage(i - 1),
+              ),
+              HopeTextAction(
+                label: 'صفحه‌ی بعد ▶',
+                color: c.teal,
+                onTap: i >= doc.pageCount - 1 || _pdfPageBusy
+                    ? null
+                    : () => _loadPdfPage(i + 1),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   List<Widget> _importSection(AppThemeColorsExt c) {
+    final busyAny = _pdfReadBusy || _imgReadBusy || _pdfViewBusy;
+    String lbl(bool busy, String idle) =>
+        busy ? (_importProgress.isEmpty ? 'در حال پردازش...' : _importProgress) : idle;
     return [
+      _importButton(
+        c,
+        emoji: '📖',
+        label: lbl(_pdfReadBusy, 'به‌جاش یه PDF برای خوانش وارد کن'),
+        onTap: busyAny ? () {} : _importPdfForReading,
+      ),
+      _importButton(
+        c,
+        emoji: '🖼️',
+        label: lbl(_imgReadBusy, 'وارد کردنِ عکس برای ترجمه و خوانش'),
+        onTap: busyAny ? () {} : _importImagesForReading,
+      ),
+      _importButton(
+        c,
+        emoji: '📑',
+        label: _pdfViewBusy
+            ? 'در حال باز کردنِ PDF...'
+            : 'PDF رو با عکسِ اصلی + ترجمه همینجا نشون بده',
+        onTap: busyAny ? () {} : _openPdfView,
+      ),
+      if (_pdfDoc != null) _pdfViewer(c),
       _importButton(
         c,
         emoji: '🔗',
