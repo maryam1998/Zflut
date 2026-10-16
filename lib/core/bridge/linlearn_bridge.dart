@@ -26,6 +26,24 @@ class LinLearnBridge {
   static Future<void> stopBubble() async =>
       _channel.invokeMethod('stopBubble');
 
+  /// رنگ کادر حباب (#RRGGBB) و حالت نمایش ('both' | 'translation' | 'original').
+  /// اگر سمت نیتیو هنوز این متد را پیاده نکرده باشد، بی‌صدا نادیده گرفته می‌شود.
+  static Future<void> setBubbleOptions({
+    String? panelColor,
+    String? displayMode,
+  }) async {
+    try {
+      await _channel.invokeMethod('setBubbleOptions', {
+        if (panelColor != null) 'panelColor': panelColor,
+        if (displayMode != null) 'displayMode': displayMode,
+      });
+    } on MissingPluginException {
+      // نیتیو هنوز پیاده نشده
+    } on PlatformException {
+      // نادیده
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════
   // Live Translator (ترجمه‌ی زنده‌ی صدا)
   // ═══════════════════════════════════════════════════════════
