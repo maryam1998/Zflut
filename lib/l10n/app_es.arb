@@ -614,5 +614,16 @@
   "words_personal_badge": "Personal",
   "words_range_label": "Palabras",
   "words_remove_from_dictionary": "Quitar de Mi diccionario",
-  "words_remove_from_dictionary_hint": "Quitar de Mi diccionario (se queda en Palabras guardadas)"
+  "words_remove_from_dictionary_hint": "Quitar de Mi diccionario (se queda en Palabras guardadas)",
+  "lingovaBubbleRead": "¡Venga, sigue leyendo! 📖",
+  "lingovaBubbleKeepGoing": "¡Sigue con ello!",
+  "lingovaBubbleStillThere": "¿Sigues ahí? 👀",
+  "lingovaBubbleHeyYou": "¡Eh, te hablo a ti, lee!",
+  "lingovaBubbleGreatStart": "¡Guau, qué energía! 🔥",
+  "lingovaBubbleGoodProgress": "¡Vas muy bien! ✨",
+  "lingovaBubbleExcellent": "¡Bravo! ¡Hoy lo has hecho genial! 🎉",
+  "lingovaBubbleStreak": "¡{days} días seguidos! ¡Sigue así! 🔥",
+  "lingovaBubbleNewStory": "¡Qué historia tan buena! 📖",
+  "lingovaBubbleReviewDone": "¡Repaso terminado! ¡Bravo! ✅",
+  "lingovaBubbleMastered": "¡Has aprendido esta palabra! 🎓"
 }

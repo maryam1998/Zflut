@@ -614,5 +614,16 @@
   "words_personal_badge": "Perso",
   "words_range_label": "Mots",
   "words_remove_from_dictionary": "Retirer de Mon dictionnaire",
-  "words_remove_from_dictionary_hint": "Retirer de Mon dictionnaire (reste dans les mots enregistrés)"
+  "words_remove_from_dictionary_hint": "Retirer de Mon dictionnaire (reste dans les mots enregistrés)",
+  "lingovaBubbleRead": "Allez, continue de lire ! 📖",
+  "lingovaBubbleKeepGoing": "Continue comme ça !",
+  "lingovaBubbleStillThere": "Tu es encore là ? 👀",
+  "lingovaBubbleHeyYou": "Hé, c'est à toi que je parle — lis !",
+  "lingovaBubbleGreatStart": "Waouh, quelle énergie ! 🔥",
+  "lingovaBubbleGoodProgress": "Tu avances bien ! ✨",
+  "lingovaBubbleExcellent": "Bravo ! Tu as été super aujourd’hui ! 🎉",
+  "lingovaBubbleStreak": "{days} jours d’affilée ! Continue ! 🔥",
+  "lingovaBubbleNewStory": "Quelle belle histoire ! 📖",
+  "lingovaBubbleReviewDone": "Révision terminée ! Bravo ! ✅",
+  "lingovaBubbleMastered": "Tu as appris ce mot ! 🎓"
 }

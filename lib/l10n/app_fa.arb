@@ -614,5 +614,16 @@
   "words_personal_badge": "شخصی",
   "words_range_label": "کلمات",
   "words_remove_from_dictionary": "حذف از دیکشنری من",
-  "words_remove_from_dictionary_hint": "حذف از دیکشنری من (در لغات ذخیره‌شده می‌مونه)"
+  "words_remove_from_dictionary_hint": "حذف از دیکشنری من (در لغات ذخیره‌شده می‌مونه)",
+  "lingovaBubbleRead": "بخون دیگه! 📖",
+  "lingovaBubbleKeepGoing": "ادامه‌شو بخون!",
+  "lingovaBubbleStillThere": "هنوز اونجایی؟ 👀",
+  "lingovaBubbleHeyYou": "با توام‌ها، بخون!",
+  "lingovaBubbleGreatStart": "واو! چقدر پرانرژی! 🔥",
+  "lingovaBubbleGoodProgress": "داری خوب پیش می‌ری! ✨",
+  "lingovaBubbleExcellent": "آفرین! امروز عالی بودی! 🎉",
+  "lingovaBubbleStreak": "{days} روز پشت‌سرهم! ادامه بده! 🔥",
+  "lingovaBubbleNewStory": "چه داستان جالبی! 📖",
+  "lingovaBubbleReviewDone": "مرورت تموم شد! آفرین! ✅",
+  "lingovaBubbleMastered": "این لغت رو یاد گرفتی! 🎓"
 }

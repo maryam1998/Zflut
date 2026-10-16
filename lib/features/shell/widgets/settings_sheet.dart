@@ -9,6 +9,7 @@ import '../../../core/constants/app_fonts.dart';
 import '../../../core/constants/app_languages.dart';
 import '../../../core/constants/app_themes.dart';
 import '../../../core/constants/supported_languages.dart';
+import '../../../core/mascot/mascot_pin_provider.dart';
 import '../../../core/models/text_prefs.dart';
 import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/providers/linlearn_provider.dart';
@@ -85,6 +86,8 @@ class SettingsSheet extends ConsumerWidget {
             _CalendarSection(),
             SizedBox(height: 22),
             _HighlightSection(),
+            SizedBox(height: 22),
+            _MascotSection(),
             SizedBox(height: 22),
             _VoiceEngineSection(),
             _OfflineTtsSection(),
@@ -676,6 +679,66 @@ class _CalendarSection extends ConsumerWidget {
                     onTap: () => notifier.setCalendarSystem(e.key),
                   ))
               .toList(),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Mascot — آدمکِ متحرک (معادل settings_mascot_* در Hope؛ فقط آدمک کلاسیک)
+// ═══════════════════════════════════════════════════════════════════
+class _MascotSection extends ConsumerWidget {
+  const _MascotSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(appPrefsProvider.select((p) => p.mascotEnabled));
+    final notifier = ref.read(appPrefsProvider.notifier);
+    final c = context.appColors;
+    final L = context.l10n;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(
+          icon: Icons.directions_walk,
+          label: L.settings_mascot_walking_title,
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _ChoiceChip(
+              label: L.settings_mascot_visible_show,
+              selected: enabled,
+              onTap: () => notifier.setMascotEnabled(true),
+            ),
+            _ChoiceChip(
+              label: L.settings_mascot_visible_fade,
+              selected: !enabled,
+              onTap: () => notifier.setMascotEnabled(false),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: c.ink,
+            side: BorderSide(color: c.cardBorder),
+          ),
+          onPressed: () {
+            ref.read(mascotPinProvider.notifier).reset();
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+              SnackBar(content: Text(L.settings_mascot_reset_done)),
+            );
+          },
+          icon: const Icon(Icons.restart_alt, size: 16),
+          label: Text(
+            L.settings_mascot_reset_button,
+            style: const TextStyle(fontSize: 12.5),
+          ),
         ),
       ],
     );

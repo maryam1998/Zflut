@@ -614,5 +614,16 @@
   "words_personal_badge": "مخصّص",
   "words_range_label": "الكلمات",
   "words_remove_from_dictionary": "إزالة من قاموسي",
-  "words_remove_from_dictionary_hint": "إزالة من قاموسي (تبقى في الكلمات المحفوظة)"
+  "words_remove_from_dictionary_hint": "إزالة من قاموسي (تبقى في الكلمات المحفوظة)",
+  "lingovaBubbleRead": "هيا، تابع القراءة! 📖",
+  "lingovaBubbleKeepGoing": "واصل القراءة!",
+  "lingovaBubbleStillThere": "هل ما زلت هنا؟ 👀",
+  "lingovaBubbleHeyYou": "أنا أكلمك، اقرأ!",
+  "lingovaBubbleGreatStart": "واو! ما أنشطك! 🔥",
+  "lingovaBubbleGoodProgress": "أنت تتقدم جيدًا! ✨",
+  "lingovaBubbleExcellent": "أحسنت! كنت رائعًا اليوم! 🎉",
+  "lingovaBubbleStreak": "{days} أيام متتالية! واصل! 🔥",
+  "lingovaBubbleNewStory": "يا لها من قصة جميلة! 📖",
+  "lingovaBubbleReviewDone": "انتهت المراجعة! أحسنت! ✅",
+  "lingovaBubbleMastered": "لقد تعلمت هذه الكلمة! 🎓"
 }

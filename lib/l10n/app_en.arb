@@ -1013,5 +1013,23 @@
   "words_personal_badge": "Custom",
   "words_range_label": "Words",
   "words_remove_from_dictionary": "Remove from My dictionary",
-  "words_remove_from_dictionary_hint": "Remove from My dictionary (stays in Saved words)"
+  "words_remove_from_dictionary_hint": "Remove from My dictionary (stays in Saved words)",
+  "lingovaBubbleRead": "Come on, keep reading! 📖",
+  "lingovaBubbleKeepGoing": "Keep going with it!",
+  "lingovaBubbleStillThere": "Still there? 👀",
+  "lingovaBubbleHeyYou": "Hey, I'm talking to you — read!",
+  "lingovaBubbleGreatStart": "Wow, so energetic! 🔥",
+  "lingovaBubbleGoodProgress": "You're doing great! ✨",
+  "lingovaBubbleExcellent": "Well done! You were awesome today! 🎉",
+  "lingovaBubbleStreak": "{days} days in a row! Keep it up! 🔥",
+  "@lingovaBubbleStreak": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "lingovaBubbleNewStory": "What a cool story! 📖",
+  "lingovaBubbleReviewDone": "Review finished! Well done! ✅",
+  "lingovaBubbleMastered": "You've learned this word! 🎓"
 }
