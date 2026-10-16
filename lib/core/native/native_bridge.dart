@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/services.dart';
 
 /// رویدادی که از جاوا می‌رسه (مثلاً ttsSpeakDone، modelDownloadProgress، wordQueued، authCallback).
@@ -23,7 +21,7 @@ class NativeBridge {
   static const _method = MethodChannel('com.linglearn.app/bubble');
   static const _events = EventChannel('com.linglearn.app/bubble_events');
 
-  bool get isSupported => !kIsWeb && Platform.isAndroid;
+  bool get isSupported => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   Stream<NativeEvent>? _stream;
 
