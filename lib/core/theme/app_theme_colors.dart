@@ -1,70 +1,40 @@
-// 📁 مسیر: lib/core/theme/app_theme_colors.dart
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../constants/app_appearance.dart';
-import '../providers/app_prefs_provider.dart';
+import '../constants/app_themes.dart';
 
-/// رنگ‌های تم فعلی — از appPrefs خوانده می‌شوند
-class AppThemeColorsExt {
-  final Color paper;
-  final Color paperDark;
-  final Color ink;
-  final Color inkSoft;
-  final Color gold;
-  final Color goldSoft;
-  final Color teal;
-  final Color rose;
-  final Color cardBorder;
-  final Color headerFrom;
-  final Color headerTo;
-  final Color headerText;
+/// ThemeExtension تا هر جای ویجت‌ها بتوانیم به رنگ‌های اختصاصی تم
+/// (paper/paperDark/ink/gold/...) دسترسی داشته باشیم — معادل CSS variables.
+@immutable
+class AppThemeColorsExt extends ThemeExtension<AppThemeColorsExt> {
+  final AppThemeColors colors;
+  const AppThemeColorsExt(this.colors);
 
-  const AppThemeColorsExt({
-    required this.paper,
-    required this.paperDark,
-    required this.ink,
-    required this.inkSoft,
-    required this.gold,
-    required this.goldSoft,
-    required this.teal,
-    required this.rose,
-    required this.cardBorder,
-    required this.headerFrom,
-    required this.headerTo,
-    required this.headerText,
-  });
+  @override
+  AppThemeColorsExt copyWith({AppThemeColors? colors}) =>
+      AppThemeColorsExt(colors ?? this.colors);
 
-  factory AppThemeColorsExt.fromDef(AppThemeDef def) => AppThemeColorsExt(
-        paper: def.paper,
-        paperDark: def.paperDark,
-        ink: def.ink,
-        inkSoft: def.inkSoft,
-        gold: def.gold,
-        goldSoft: def.goldSoft,
-        teal: def.teal,
-        rose: def.rose,
-        cardBorder: def.cardBorder,
-        headerFrom: def.headerFrom,
-        headerTo: def.headerTo,
-        headerText: def.headerText,
-      );
-}
-
-/// Extension تا بتوانیم `c = context.appColors` بنویسیم
-extension AppThemeColorsX on BuildContext {
-  AppThemeColorsExt get appColors {
-    final container = ProviderScope.containerOf(this, listen: false);
-    final prefs = container.read(appPrefsProvider);
-    final themeDef = kAppThemes[prefs.theme] ?? kAppThemes['vintage']!;
-    return AppThemeColorsExt.fromDef(themeDef);
+  @override
+  AppThemeColorsExt lerp(ThemeExtension<AppThemeColorsExt>? other, double t) {
+    if (other is! AppThemeColorsExt) return this;
+    // رنگ‌ها گسسته‌اند؛ در زمان ت بین دو تم، انتخاب نزدیک‌ترین کافی است.
+    return t < 0.5 ? this : other;
   }
+
+  Color get paper => colors.paper;
+  Color get paperDark => colors.paperDark;
+  Color get ink => colors.ink;
+  Color get inkSoft => colors.inkSoft;
+  Color get gold => colors.gold;
+  Color get goldSoft => colors.goldSoft;
+  Color get teal => colors.teal;
+  Color get rose => colors.rose;
+  Color get cardBorder => colors.cardBorder;
+  Color get headerFrom => colors.headerFrom;
+  Color get headerTo => colors.headerTo;
+  Color get headerText => colors.headerText;
 }
 
-/// Provider برای ConsumerWidget
-final appThemeColorsProvider = Provider<AppThemeColorsExt>((ref) {
-  final prefs = ref.watch(appPrefsProvider);
-  final themeDef = kAppThemes[prefs.theme] ?? kAppThemes['vintage']!;
-  return AppThemeColorsExt.fromDef(themeDef);
-});
+extension AppThemeX on BuildContext {
+  AppThemeColorsExt get appColors =>
+      Theme.of(this).extension<AppThemeColorsExt>()!;
+}
