@@ -68,6 +68,15 @@ class SavedWordsNotifier extends StateNotifier<List<SavedWord>> {
 
   bool isSaved(String word, String langCode) =>
       state.any((w) => _same(w, word, langCode));
+
+  /// حذفِ چندتایی (برای «پاک کردن همه» / «حذف انتخاب‌شده‌ها» در تب لغات ذخیره‌شده).
+  void removeWords(Iterable<SavedWord> words) {
+    final list = words.toList();
+    if (list.isEmpty) return;
+    _set(state
+        .where((w) => !list.any((x) => _same(w, x.word, x.langCode)))
+        .toList());
+  }
 }
 
 final savedWordsProvider =
@@ -101,8 +110,11 @@ class GrammarNotesNotifier extends StateNotifier<List<GrammarNote>> {
       (n) => n.langCode == langCode && normWord(n.word) == normWord(word));
 
   /// اگر همین لغت/عبارت قبلاً ذخیره شده باشد چیزی اضافه نمی‌شود.
+  /// (یادداشت‌های بدون لغت — مثل تصحیحات «تمرین مکالمه» — همیشه اضافه می‌شوند.)
   void addNote(GrammarNote note) {
-    if (hasNote(note.word, note.langCode)) return;
+    if (note.word.trim().isNotEmpty && hasNote(note.word, note.langCode)) {
+      return;
+    }
     _set([note, ...state]);
   }
 
