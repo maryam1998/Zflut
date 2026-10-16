@@ -71,8 +71,9 @@ class LevelChip extends StatelessWidget {
     final c = context.appColors;
     final isAll = level == 'all';
     final Color base = isAll ? c.headerFrom : levelColor(level);
-    final Color fill = active ? base : Colors.white;
-    final Color border = active ? base : (isAll ? c.cardBorder : base.withOpacity(0.55));
+    final Color fill =
+        active ? base : (isAll ? Colors.white : levelBgColor(level));
+    final Color border = active ? base : (isAll ? c.cardBorder : base);
     final Color text =
         active ? (isAll ? c.headerText : Colors.white) : (isAll ? c.inkSoft : base);
 

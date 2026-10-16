@@ -130,6 +130,8 @@ class HopeChoiceChip extends StatelessWidget {
   final Color activeBorder;
   final Color activeFill;
   final Color activeText;
+  final Color? inactiveFill;
+  final Color? inactiveBorder;
   final EdgeInsetsGeometry padding;
   final double fontSize;
   final VoidCallback onTap;
@@ -142,6 +144,8 @@ class HopeChoiceChip extends StatelessWidget {
     required this.activeFill,
     required this.activeText,
     required this.onTap,
+    this.inactiveFill,
+    this.inactiveBorder,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
     this.fontSize = 12,
   });
@@ -154,10 +158,10 @@ class HopeChoiceChip extends StatelessWidget {
       child: Container(
         padding: padding,
         decoration: BoxDecoration(
-          color: active ? activeFill : Colors.white,
+          color: active ? activeFill : (inactiveFill ?? Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: active ? activeBorder : c.cardBorder,
+            color: active ? activeBorder : (inactiveBorder ?? c.cardBorder),
             width: 1,
           ),
         ),
