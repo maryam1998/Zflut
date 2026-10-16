@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/cefr_levels.dart';
 import '../../../core/models/filter_state.dart';
 import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/widgets/level_chips.dart';
 
 class FilterBar extends ConsumerStatefulWidget {
   final String searchHint;
@@ -52,9 +52,8 @@ class _FilterBarState extends ConsumerState<FilterBar> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (widget.showLevels) ...[
-            _LevelRow(
+            LevelChips(
               selected: filter.level,
-              c: c,
               onSelect: notifier.setLevel,
             ),
             const SizedBox(height: 10),
@@ -74,64 +73,6 @@ class _FilterBarState extends ConsumerState<FilterBar> {
             onChanged: notifier.setQuery,
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-class _LevelRow extends StatelessWidget {
-  final String selected;
-  final dynamic c;
-  final ValueChanged<String> onSelect;
-
-  const _LevelRow({
-    required this.selected,
-    required this.c,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final levels = ['all', ...kCefrLevels];
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: levels.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 7),
-        itemBuilder: (_, i) {
-          final lvl = levels[i];
-          final active = lvl == selected;
-          final label = lvl == 'all' ? 'همه سطوح' : lvl;
-          return GestureDetector(
-            onTap: () => onSelect(lvl),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding: EdgeInsets.symmetric(
-                horizontal: lvl == 'all' ? 15 : 13,
-                vertical: 9,
-              ),
-              decoration: BoxDecoration(
-                color: active ? c.headerFrom : Colors.transparent,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: active ? c.headerFrom : c.cardBorder,
-                  width: 1.1,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: active ? c.headerText : c.inkSoft,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }

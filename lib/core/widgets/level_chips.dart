@@ -1,0 +1,101 @@
+import 'package:flutter/material.dart';
+
+import '../constants/cefr_levels.dart';
+import '../constants/level_colors.dart';
+import '../theme/app_theme_colors.dart';
+
+/// ردیف مشترک انتخاب سطح (همه سطوح، A1 … C2) — در تمام تب‌ها یکسان.
+/// رنگ هر سطح از [levelColor] می‌آید (همان رنگ نشان سطح روی کارت‌ها).
+///
+/// - [includeAll] : نمایش چیپ «همه سطوح» (مقدار 'all').
+/// - [wrap]       : true → چیپ‌ها به‌صورت Wrap (مثل تنظیمات داستان‌ساز)،
+///                  false → ردیف افقی اسکرول‌شونده.
+class LevelChips extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onSelect;
+  final bool includeAll;
+  final bool wrap;
+  final double height;
+
+  const LevelChips({
+    super.key,
+    required this.selected,
+    required this.onSelect,
+    this.includeAll = true,
+    this.wrap = false,
+    this.height = 38,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final levels = <String>[if (includeAll) 'all', ...kCefrLevels];
+    Widget chip(String lvl) => LevelChip(
+          level: lvl,
+          active: lvl == selected,
+          onTap: () => onSelect(lvl),
+        );
+
+    if (wrap) {
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [for (final l in levels) chip(l)],
+      );
+    }
+    return SizedBox(
+      height: height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: levels.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 7),
+        itemBuilder: (_, i) => Center(child: chip(levels[i])),
+      ),
+    );
+  }
+}
+
+class LevelChip extends StatelessWidget {
+  final String level; // 'all' یا A1..C2
+  final bool active;
+  final VoidCallback onTap;
+
+  const LevelChip({
+    super.key,
+    required this.level,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final isAll = level == 'all';
+    final Color base = isAll ? c.headerFrom : levelColor(level);
+    final Color fill = active ? base : Colors.white;
+    final Color border = active ? base : (isAll ? c.cardBorder : base.withOpacity(0.55));
+    final Color text =
+        active ? (isAll ? c.headerText : Colors.white) : (isAll ? c.inkSoft : base);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: EdgeInsets.symmetric(horizontal: isAll ? 16 : 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: fill,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: border, width: 1.1),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          isAll ? 'همه سطوح' : level,
+          style: TextStyle(
+            color: text,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}

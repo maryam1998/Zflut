@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/cefr_levels.dart';
+import '../../../core/widgets/level_chips.dart';
 import '../../../core/models/daily_word.dart';
 import '../../../core/player_sync/player_track.dart';
 import '../../../core/player_sync/sync_widgets.dart';
@@ -55,45 +55,9 @@ class WordListView extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(
-                    height: 38,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: 1 + kCefrLevels.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 7),
-                      itemBuilder: (_, i) {
-                        final lvl = i == 0 ? 'all' : kCefrLevels[i - 1];
-                        final active = filter.level == lvl;
-                        final label = lvl == 'all' ? 'همه سطوح' : lvl;
-                        return GestureDetector(
-                          onTap: () => notifier.setLevel(lvl),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: lvl == 'all' ? 16 : 14,
-                              vertical: 9,
-                            ),
-                            decoration: BoxDecoration(
-                              color: active ? c.headerFrom : Colors.white,
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                color: active ? c.headerFrom : c.cardBorder,
-                                width: 1.1,
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              label,
-                              style: TextStyle(
-                                color: active ? c.headerText : c.inkSoft,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                  LevelChips(
+                    selected: filter.level,
+                    onSelect: notifier.setLevel,
                   ),
                   const SizedBox(height: 8),
                   Align(
