@@ -45,6 +45,65 @@ class LinLearnBridge {
   }
 
   // ═══════════════════════════════════════════════════════════
+  // بسته‌های آفلاین (TTS / تشخیص گفتار / آهنگ / همگام‌سازی صدا)
+  // kind: 'tts' | 'speech' | 'song' | 'sync'   —   id: کد زبان یا نام مدل
+  // اگر سمت نیتیو پیاده نشده باشد، همه null/false برمی‌گردانند.
+  // وضعیت: {downloaded, downloading, bytes, total, partialBytes, approxMb, enabled}
+  // ═══════════════════════════════════════════════════════════
+  static Future<Map<String, dynamic>?> packStatus(String kind, String id) async {
+    try {
+      final r = await _channel
+          .invokeMethod<Map>('packStatus', {'kind': kind, 'id': id});
+      return r == null ? null : Map<String, dynamic>.from(r);
+    } on MissingPluginException {
+      return null;
+    } on PlatformException {
+      return null;
+    }
+  }
+
+  static Future<bool> _packCall(String method, Map<String, dynamic> args) async {
+    try {
+      await _channel.invokeMethod(method, args);
+      return true;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
+  static Future<bool> packDownload(String kind, String id) =>
+      _packCall('packDownload', {'kind': kind, 'id': id});
+
+  static Future<bool> packCancel(String kind, String id) =>
+      _packCall('packCancel', {'kind': kind, 'id': id});
+
+  static Future<bool> packDelete(String kind, String id) =>
+      _packCall('packDelete', {'kind': kind, 'id': id});
+
+  static Future<bool> packSetEnabled(String kind, String id, bool enabled) =>
+      _packCall('packSetEnabled', {'kind': kind, 'id': id, 'enabled': enabled});
+
+  // ═══════════════════════════════════════════════════════════
+  // زیرنویس زنده‌ی یوتیوب (نیازمند «دسترسی به اعلان‌ها»)
+  // ═══════════════════════════════════════════════════════════
+  static Future<bool> ytCheckAccess() async {
+    try {
+      return await _channel.invokeMethod<bool>('ytCheckAccess') ?? false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
+  static Future<bool> ytRequestAccess() => _packCall('ytRequestAccess', {});
+
+  static Future<bool> ytSetEnabled(bool enabled) =>
+      _packCall('ytSetEnabled', {'enabled': enabled});
+
+  // ═══════════════════════════════════════════════════════════
   // Live Translator (ترجمه‌ی زنده‌ی صدا)
   // ═══════════════════════════════════════════════════════════
   static Future<void> startLiveTranslator({

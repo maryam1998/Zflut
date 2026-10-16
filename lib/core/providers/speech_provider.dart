@@ -4,6 +4,7 @@ import '../neural/neural_store.dart';
 import '../player_sync/player_sync_provider.dart';
 import '../tts/speech_controller.dart';
 import '../tts/speech_state.dart';
+import '../storage/local_storage.dart';
 import 'voice_prefs_provider.dart';
 
 final speechControllerProvider =
@@ -11,6 +12,8 @@ final speechControllerProvider =
   return SpeechController(
     // صدای انتخاب‌شده‌ی کاربر برای هر زبان (در صورت وجود)
     voicePref: (lang) => ref.read(voicePrefsProvider)[lang],
+    preferPhoneVoice: () =>
+        ref.read(sharedPrefsProvider).getString('voiceEnginePref') == 'phone',
     // 🧬 هر بار که یک لغت/جمله با پلیر کامل خوانده شد → یک تکرار در «مسیر عصبی»
     onChunkPlayed: (e) => _recordNeuralFromPlayback(ref, e),
   );

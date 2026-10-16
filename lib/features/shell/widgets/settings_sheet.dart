@@ -7,24 +7,46 @@ import '../../../core/constants/app_font_sizes.dart';
 import '../../../core/constants/app_fonts.dart';
 import '../../../core/constants/app_languages.dart';
 import '../../../core/constants/app_themes.dart';
+import '../../../core/constants/supported_languages.dart';
 import '../../../core/models/text_prefs.dart';
-import '../../../core/providers/ai_settings_provider.dart';
 import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/providers/linlearn_provider.dart';
 import '../../../core/providers/text_prefs_provider.dart';
 import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../../core/theme/app_theme_colors.dart';
 import '../../auth/providers/auth_provider.dart';
+import 'settings_packs.dart';
 
 class SettingsSheet extends ConsumerWidget {
   const SettingsSheet({super.key});
 
+  /// مثل Hope: یک پنل بازشونده‌ی کوچک زیر دکمه‌ی منو (نه تمام‌صفحه).
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet(
+    final topInset = MediaQuery.of(context).padding.top + 60;
+    return showGeneralDialog<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const SettingsSheet(),
+      barrierDismissible: true,
+      barrierLabel: 'بستن',
+      barrierColor: Colors.black26,
+      transitionDuration: const Duration(milliseconds: 150),
+      pageBuilder: (ctx, _, __) {
+        final size = MediaQuery.of(ctx).size;
+        return Align(
+          alignment: AlignmentDirectional.topStart,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(12, topInset, 12, 12),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 340,
+                maxHeight: size.height * 0.7,
+              ),
+              child: const SettingsSheet(),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (_, anim, __, child) =>
+          FadeTransition(opacity: anim, child: child),
     );
   }
 
@@ -32,67 +54,47 @@ class SettingsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: c.paper,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: 0.9,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          builder: (_, controller) => ListView(
-            controller: controller,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-            children: const [
-              _DragHandle(),
-              SizedBox(height: 8),
-              _AccountSection(),
-              SizedBox(height: 24),
-              _LanguageSection(),
-              SizedBox(height: 24),
-              _ThemeSection(),
-              SizedBox(height: 24),
-              _FontSection(),
-              SizedBox(height: 24),
-              _FontSizeSection(),
-              SizedBox(height: 24),
-              _TargetTextSection(),
-              SizedBox(height: 24),
-              _CalendarSection(),
-              SizedBox(height: 24),
-              _HighlightSection(),
-              SizedBox(height: 24),
-              _FloatingBubbleSection(),
-              SizedBox(height: 24),
-              _BackendUrlSection(),
-              SizedBox(height: 24),
-              _FooterVersion(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-class _DragHandle extends StatelessWidget {
-  const _DragHandle();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    return Center(
+    return Material(
+      color: c.paper,
+      elevation: 14,
+      shadowColor: Colors.black54,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
       child: Container(
-        width: 40,
-        height: 4,
         decoration: BoxDecoration(
-          color: c.inkSoft.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: c.cardBorder),
+        ),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(16),
+          children: const [
+            _AccountSection(),
+            SizedBox(height: 22),
+            _LanguageSection(),
+            SizedBox(height: 22),
+            _ThemeSection(),
+            SizedBox(height: 22),
+            _FontSection(),
+            SizedBox(height: 22),
+            _FontSizeSection(),
+            SizedBox(height: 22),
+            _TargetTextSection(),
+            SizedBox(height: 22),
+            _CalendarSection(),
+            SizedBox(height: 22),
+            _HighlightSection(),
+            SizedBox(height: 22),
+            _VoiceEngineSection(),
+            _OfflineTtsSection(),
+            _AudioSyncSection(),
+            SizedBox(height: 22),
+            _FloatingBubbleSection(),
+            SizedBox(height: 16),
+            _OfflineWordsButton(),
+            SizedBox(height: 22),
+            _FooterVersion(),
+          ],
         ),
       ),
     );
@@ -813,6 +815,7 @@ class _FloatingBubbleSectionState
   late String _disp;
   late String _color;
   bool _busy = false;
+  int _packEpoch = 0;
 
   bool get _isAndroid =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -903,12 +906,61 @@ class _FloatingBubbleSectionState
         await notifier.stop();
       } else {
         if (!await _ensureOverlay()) return;
+        // ترجمه‌ی زنده فقط آفلاین کار می‌کند: بسته‌ی زبانِ صدا باید روی گوشی باشد.
+        final pack = await LinLearnBridge.packStatus('speech', _src);
+        if (pack != null && pack['downloaded'] != true) {
+          final yes = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('بسته‌ی آفلاین تشخیص گفتار'),
+              content: Text(
+                  'برای ترجمه‌ی زنده به بسته‌ی آفلاین «${_srcLangs[_src]}» نیاز است '
+                  '(فقط یک‌بار دانلود می‌شود و بعدش بدون اینترنت کار می‌کند). دانلود شود؟'),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('نه')),
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('دانلود')),
+              ],
+            ),
+          );
+          if (yes == true) {
+            await LinLearnBridge.packDownload('speech', _src);
+            _toast('دانلود شروع شد؛ وقتی تمام شد دوباره «شروع ترجمه‌ی زنده» را بزن.');
+            if (mounted) setState(() => _packEpoch++);
+          }
+          return;
+        }
         await _pushOptions();
         await notifier.start(
           sourceLang: _src,
           targetLang: ref.read(appPrefsProvider).uiLang,
         );
       }
+    } catch (e) {
+      _toast('خطا: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _startYoutube() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      if (!await _ensureOverlay()) return;
+      if (!await LinLearnBridge.ytCheckAccess()) {
+        await LinLearnBridge.ytRequestAccess();
+        _toast('«دسترسی به اعلان‌ها» را برای برنامه روشن کن و دوباره امتحان کن.');
+        return;
+      }
+      await _pushOptions();
+      if (!ref.read(bubbleProvider).running) {
+        await ref.read(bubbleProvider.notifier).start(mode: 'translator');
+      }
+      await LinLearnBridge.ytSetEnabled(true);
     } catch (e) {
       _toast('خطا: $e');
     } finally {
@@ -1028,6 +1080,21 @@ class _FloatingBubbleSectionState
                           _save(_kSrcKey, v);
                         },
                       ),
+                      PackTile(
+                        key: ValueKey('speech-$_src-$_packEpoch'),
+                        kind: 'speech',
+                        id: _src,
+                        title: 'بسته‌ی آفلاین تشخیص گفتار — ${_srcLangs[_src]}',
+                        hint: 'ترجمه‌ی زنده فقط با این بسته و بدون اینترنت کار می‌کند.',
+                      ),
+                      const PackTile(
+                        kind: 'song',
+                        id: 'base',
+                        title: '🎵 حالت آهنگ (آفلاین)',
+                        hint: 'بسته‌ای مخصوص تشخیص آهنگ و صدای زیر موسیقی. تا وقتی روشن باشد، همه‌ی ترجمه‌ی زنده با همین بسته انجام می‌شود؛ برای حرف زدن و فیلم خاموشش کن.',
+                        approxMb: 150,
+                        toggleTitle: 'برای آهنگ و موسیقی استفاده کن',
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'نمایش در حباب',
@@ -1055,6 +1122,19 @@ class _FloatingBubbleSectionState
                             : 'شروع ترجمه‌ی زنده‌ی صدا',
                         busy: _busy,
                         onTap: _toggleLive,
+                      ),
+                      const SizedBox(height: 8),
+                      _BubbleButton(
+                        icon: Icons.play_circle_outline,
+                        label: 'زیرنویس زنده‌ی یوتیوب',
+                        busy: _busy,
+                        onTap: _startYoutube,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'برای تشخیص ویدیوی در حال پخش در اپ یوتیوب، اندروید «دسترسی به اعلان‌ها» را می‌خواهد؛ '
+                        'فقط برای همین کار استفاده می‌شود.',
+                        style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.6),
                       ),
                     ],
                   ],
@@ -1148,119 +1228,205 @@ class _DropBox extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Backend URL — آدرس Cloudflare Worker
+// Voice engine / Offline TTS / Audio sync / Offline words — معادل Hope
 // ═══════════════════════════════════════════════════════════════════
-class _BackendUrlSection extends ConsumerStatefulWidget {
-  const _BackendUrlSection();
+bool get _isAndroidApp =>
+    !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+class _VoiceEngineSection extends ConsumerStatefulWidget {
+  const _VoiceEngineSection();
 
   @override
-  ConsumerState<_BackendUrlSection> createState() => _BackendUrlSectionState();
+  ConsumerState<_VoiceEngineSection> createState() =>
+      _VoiceEngineSectionState();
 }
 
-class _BackendUrlSectionState extends ConsumerState<_BackendUrlSection> {
-  late final TextEditingController _ctrl;
-  bool _saved = false;
-
-  // URL پیش‌فرض — همون Worker خودت
-  static const String _defaultUrl =
-      'https://phrasebook-api.maryam-s-sharifiyan.workers.dev';
+class _VoiceEngineSectionState extends ConsumerState<_VoiceEngineSection> {
+  static const String _key = 'voiceEnginePref';
+  late String _pref;
 
   @override
   void initState() {
     super.initState();
-    final current = ref.read(aiSettingsProvider).backendUrl;
-    _ctrl = TextEditingController(
-      text: current.isEmpty ? _defaultUrl : current,
-    );
+    _pref =
+        ref.read(sharedPrefsProvider).getString(_key) == 'phone' ? 'phone' : 'model';
   }
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    await ref.read(aiSettingsProvider.notifier).setBackendUrl(_ctrl.text);
-    if (mounted) {
-      setState(() => _saved = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ آدرس ذخیره شد'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      // بعد از ۲ ثانیه، تیک رو برداشت
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) setState(() => _saved = false);
-      });
-    }
+  void _set(String v) {
+    setState(() => _pref = v);
+    ref.read(sharedPrefsProvider).setString(_key, v);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_isAndroidApp) return const SizedBox.shrink();
     final c = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(
+              icon: Icons.volume_up_outlined, label: 'صدای خوانش'),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _ChoiceChip(
+                label: 'صدای اصلی برنامه',
+                selected: _pref == 'model',
+                onTap: () => _set('model'),
+              ),
+              _ChoiceChip(
+                label: 'صدای خود گوشی',
+                selected: _pref == 'phone',
+                onTap: () => _set('phone'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'صدای اصلی از بسته‌ی آفلاین زبان استفاده می‌کند (اگر دانلود شده باشد)؛ '
+            'در غیر این‌صورت و در حالت «صدای خود گوشی» TTS خودِ گوشی خوانده می‌شود.',
+            style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.6),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionTitle(
-          icon: Icons.cloud_outlined,
-          label: 'آدرس سرور هوش مصنوعی (Cloudflare Worker)',
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'برای ترجمه‌ی دقیق‌تر و ساخت داستان با AI، آدرس Worker خودت را این‌جا وارد کن.',
-          style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.6),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _ctrl,
-          textAlign: TextAlign.left,
-          keyboardType: TextInputType.url,
-          textDirection: TextDirection.ltr,
-          style: TextStyle(color: c.ink, fontSize: 12.5),
-          decoration: InputDecoration(
-            hintText: 'https://...',
-            hintStyle: TextStyle(color: c.inkSoft.withOpacity(0.5)),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: c.cardBorder),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: c.cardBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: c.gold, width: 1.5),
-            ),
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
+class _OfflineTtsSection extends StatefulWidget {
+  const _OfflineTtsSection();
+
+  @override
+  State<_OfflineTtsSection> createState() => _OfflineTtsSectionState();
+}
+
+class _OfflineTtsSectionState extends State<_OfflineTtsSection> {
+  String _lang = 'fa';
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isAndroidApp) return const SizedBox.shrink();
+    final c = context.appColors;
+    final items = {for (final l in kSupportedLanguages) l.code: l.faLabel};
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(
+              icon: Icons.record_voice_over_outlined,
+              label: 'صدای آفلاین باکیفیت'),
+          const SizedBox(height: 8),
+          Text(
+            'تا وقتی بسته‌ی یک زبان دانلود نشده، همان صدای قبلی خوانده می‌شود '
+            '(TTS گوشی؛ برای فارسی/عربی سرویس آنلاین). بعد از دانلود، همان زبان '
+            'خودکار از بسته‌ی آفلاین می‌خواند.',
+            style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7),
           ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: _saved ? const Color(0xFF2E9E7B) : c.gold,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-            onPressed: _save,
-            icon: Icon(
-              _saved ? Icons.check : Icons.save_outlined,
-              size: 18,
-            ),
-            label: Text(_saved ? 'ذخیره شد' : 'ذخیره'),
+          const SizedBox(height: 10),
+          _DropBox(
+            value: _lang,
+            items: items,
+            onChanged: (v) => setState(() => _lang = v),
           ),
+          PackTile(
+            kind: 'tts',
+            id: _lang,
+            title: 'بسته‌ی صدا — ${items[_lang]}',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AudioSyncSection extends ConsumerStatefulWidget {
+  const _AudioSyncSection();
+
+  @override
+  ConsumerState<_AudioSyncSection> createState() => _AudioSyncSectionState();
+}
+
+class _AudioSyncSectionState extends ConsumerState<_AudioSyncSection> {
+  static const String _key = 'syncModelSize';
+  static const Map<String, String> _sizes = {
+    'fast': 'سریع (دقت کمتر)',
+    'balanced': 'متعادل (پیشنهادی)',
+  };
+  late String _size;
+
+  @override
+  void initState() {
+    super.initState();
+    final v = ref.read(sharedPrefsProvider).getString(_key);
+    _size = _sizes.containsKey(v) ? v! : 'balanced';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isAndroidApp) return const SizedBox.shrink();
+    final c = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(
+              icon: Icons.sync_alt, label: 'همگام‌سازی متن و صوت'),
+          const SizedBox(height: 8),
+          Text(
+            'فقط یک بار دانلود می‌شود (اگر شروع نشد فیلترشکن را روشن کن). بعدش '
+            'همگام‌سازیِ صوتِ هر داستان روی خودِ گوشی و بدون اینترنت انجام می‌شود.',
+            style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7),
+          ),
+          const SizedBox(height: 10),
+          _DropBox(
+            value: _size,
+            items: _sizes,
+            onChanged: (v) {
+              setState(() => _size = v);
+              ref.read(sharedPrefsProvider).setString(_key, v);
+            },
+          ),
+          PackTile(
+            kind: 'sync',
+            id: _size,
+            title: 'بسته‌ی همگام‌سازی',
+            approxMb: _size == 'fast' ? 45 : 85,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OfflineWordsButton extends StatelessWidget {
+  const _OfflineWordsButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => OfflineWordsDialog.show(context),
+        icon: Icon(Icons.menu_book_outlined, size: 18, color: c.ink),
+        label: Text(
+          'دانلود آفلاین لغات',
+          style: TextStyle(
+              color: c.ink, fontSize: 13, fontWeight: FontWeight.w700),
         ),
-      ],
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: c.cardBorder),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
     );
   }
 }

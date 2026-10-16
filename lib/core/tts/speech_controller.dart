@@ -42,8 +42,10 @@ class SpeechController extends StateNotifier<SpeechState> {
   SpeechController({
     String? Function(String lang)? voicePref,
     void Function(ChunkPlayedEvent e)? onChunkPlayed,
+    bool Function()? preferPhoneVoice,
   })  : _voicePref = voicePref,
         _onChunkPlayed = onChunkPlayed,
+        _preferPhoneVoice = preferPhoneVoice,
         super(const SpeechState()) {
     _initLocalTts();
     // فهرست صداها پیش از اولین تپ در پس‌زمینه گرم شود (خوانشِ ترجمه‌ها تأخیر نداشته باشد)
@@ -52,6 +54,8 @@ class SpeechController extends StateNotifier<SpeechState> {
 
   final String? Function(String lang)? _voicePref;
   final void Function(ChunkPlayedEvent e)? _onChunkPlayed;
+  /// تنظیمات ← «صدای خوانش»: true = همیشه TTS خودِ گوشی (نه بسته‌ی Piper)
+  final bool Function()? _preferPhoneVoice;
   List<Map<String, String>> _voices = [];
 
   // صدایی که برای هر زبان واقعاً شنیده شد (اولویتِ اول دفعه‌ی بعد) و صداهایی
@@ -461,7 +465,9 @@ class SpeechController extends StateNotifier<SpeechState> {
 
     if (NativeTtsBridge.isAvailable) {
       // ۱. Piper نیتیو
-      final ready = await NativeTtsBridge.isModelReady(code);
+      final ready = (_preferPhoneVoice?.call() ?? false)
+          ? false
+          : await NativeTtsBridge.isModelReady(code);
       if (myGen != _generation) return;
       if (ready) {
         final ok = await _playNative(idx, cleanText, code, myGen);
