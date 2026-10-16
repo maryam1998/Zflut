@@ -14,9 +14,14 @@ Future<List<PickedFile>> pickFiles({
 }) async =>
     throw UnsupportedError('web only');
 
-/// OCR یک عکس (tesseract.js)
-Future<String> ocrImage(Uint8List bytes, String langCode) async =>
-    throw UnsupportedError('web only');
+/// نشستِ OCR (فعلاً فقط وب؛ برای اندروید/ویندوز بعداً پیاده می‌شود)
+class OcrSession {
+  static Future<OcrSession> open(String langCode) async =>
+      throw UnsupportedError('web only');
+  Future<String> recognize(Uint8List bytes) async =>
+      throw UnsupportedError('web only');
+  Future<void> close() async {}
+}
 
 /// سندِ PDF (pdf.js)
 class PdfDocHandle {

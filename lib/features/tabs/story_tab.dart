@@ -137,8 +137,7 @@ String _detectLang(String text, String fallback) {
   for (final r in text.runes) {
     if (r >= 0x0600 && r <= 0x06FF) {
       arabic++;
-      if (r == 0x067E || r == 0x0686 || r == 0x0698 || r == 0x06AF ||
-          r == 0x06A9 || r == 0x06CC) {
+      if (r == 0x067E || r == 0x0686 || r == 0x0698 || r == 0x06AF) {
         persian++;
       }
     } else if (r >= 0x0400 && r <= 0x04FF) {
@@ -165,8 +164,56 @@ String _detectLang(String text, String fallback) {
   if (max == kana) return 'ja';
   if (max == hangul) return 'ko';
   if (max == cjk) return kana > 0 ? 'ja' : 'zh';
+  // زبان‌های لاتین: شمارشِ کلماتِ خیلی پرتکرار (مثلِ Hope)
+  const stop = <String, List<String>>{
+    'de': ['der','die','das','und','ist','nicht','mit','für','ein','eine','sie','auf','was','wie','wenn','aber','auch','sich','dass','ich'],
+    'es': ['el','la','los','las','de','que','y','en','no','es','un','una','para','por','con','su','del','al','se','lo'],
+    'fr': ['le','la','les','et','est','une','des','dans','pour','que','qui','ne','pas','ce','vous','je','nous','avec','au','un'],
+    'it': ['il','la','di','che','è','un','una','per','non','con','gli','le','sono','questo','questa','del','alla','si','mi','ma'],
+    'tr': ['ve','bir','bu','için','ile','de','da','çok','ama','ne','gibi','daha','var','yok','ben','sen','biz','onun','şey','değil'],
+    'en': ['the','and','is','to','of','in','that','it','was','for','on','with','he','she','you','this','but','not','are','as'],
+  };
+  final words = RegExp(r'[a-zàâäçèéêëîïôöùûüÿñßışğî]+')
+      .allMatches(text.toLowerCase())
+      .map((m) => m.group(0)!)
+      .toSet();
+  var bestCode = fallback;
+  var bestScore = 0;
+  stop.forEach((code, list) {
+    final sc = list.where(words.contains).length;
+    if (sc > bestScore) {
+      bestScore = sc;
+      bestCode = code;
+    }
+  });
+  if (bestScore > 0) return bestCode;
   const latinLangs = ['en', 'es', 'de', 'fr', 'it', 'tr'];
   return latinLangs.contains(fallback) ? fallback : 'en';
+}
+
+/// حدسِ سطحِ CEFR از روی خودِ متن (همان فرمولِ detectTextCEFRLevel در Hope).
+String _detectCefr(String text) {
+  final t = text.trim();
+  if (t.isEmpty) return 'A2';
+  final sentences = _splitSentences(t);
+  final words = t.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  if (words.isEmpty || sentences.isEmpty) return 'A2';
+  final clean = words
+      .map((w) => w.replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), ''))
+      .where((w) => w.isNotEmpty)
+      .toList();
+  if (clean.isEmpty) return 'A2';
+  final avgSentence = words.length / sentences.length;
+  final avgWord = clean.fold<int>(0, (a, w) => a + w.length) / clean.length;
+  final longRatio = clean.where((w) => w.length >= 7).length / clean.length;
+  final uniqueRatio = clean.map((w) => w.toLowerCase()).toSet().length / clean.length;
+  final score = avgSentence + avgWord * 3.0 + longRatio * 40 + uniqueRatio * 15;
+  if (score < 14) return 'A1';
+  if (score < 19) return 'A2';
+  if (score < 24) return 'B1';
+  if (score < 29) return 'B2';
+  if (score < 34) return 'C1';
+  return 'C2';
 }
 
 String _decodeEntities(String s) => s
@@ -193,9 +240,15 @@ String _extractMainBodyText(String html) {
         RegExp('<$tag[\\s\\S]*?</$tag>', caseSensitive: false), ' ');
   }
   h = h.replaceAll(RegExp(r'<!--[\s\S]*?-->'), ' ');
-  final article =
-      RegExp(r'<article[\s\S]*?</article>', caseSensitive: false).firstMatch(h);
-  if (article != null) h = article.group(0)!;
+  for (final tag in ['article', 'main']) {
+    final m = RegExp('<$tag[\\s\\S]*?</$tag>', caseSensitive: false)
+        .firstMatch(h);
+    if (m != null &&
+        m.group(0)!.replaceAll(RegExp(r'<[^>]+>'), ' ').trim().length > 200) {
+      h = m.group(0)!;
+      break;
+    }
+  }
   final blocks = RegExp(r'<(p|h1|h2|h3|li)[^>]*>([\s\S]*?)</\1>',
           caseSensitive: false)
       .allMatches(h)
@@ -256,6 +309,14 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   bool _showPaste = false;
   bool _linkBusy = false;
   String _importError = '';
+  // متنِ واردشده برای خوانش (مثلِ Hope: ذخیره‌ی خودکار نداره، تدریجی ترجمه می‌شه)
+  static const int _kParaPage = 15;
+  SavedStory? _reading;
+  int _visibleParas = _kParaPage;
+  final Map<String, List<String>> _readTrans = {};
+  bool _readTranslating = false;
+  bool _readSaved = false;
+
   bool _pdfReadBusy = false;
   bool _imgReadBusy = false;
   String _importProgress = '';
@@ -445,7 +506,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
   void _finishStory(SavedStory story) {
     ref.read(storyLibraryProvider.notifier).add(story);
-    setState(() => _result = story);
+    setState(() {
+      _result = story;
+      _reading = null;
+      _readTrans.clear();
+    });
     unawaited(_translateStory(story));
   }
 
@@ -495,7 +560,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   // ───────────── وارد کردنِ متن برای خوانش ─────────────
-  void _importForReading(String raw) {
+  List<String> _paras(SavedStory s) => s.text
+      .split(RegExp(r'\n\s*\n'))
+      .map((p) => p.trim())
+      .where((p) => p.isNotEmpty)
+      .toList();
+
+  void _importForReading(String raw, {bool progressive = false}) {
     var sentences = _splitSentences(raw);
     if (sentences.isEmpty) {
       setState(() => _importError = 'متنی برای خوندن پیدا نشد');
@@ -515,23 +586,185 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           : i + _kSentencesPerParagraph;
       paras.add(sentences.sublist(i, end).join(' '));
     }
-    final title =
-        sentences.first.split(RegExp(r'\s+')).take(6).join(' ');
     final story = SavedStory(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
-      title: title,
+      title: sentences.first.split(RegExp(r'\s+')).take(6).join(' '),
       text: paras.join('\n\n'),
       langCode: lang,
-      level: _level,
+      level: _detectCefr(raw),
       contentType: 'reading',
       words: const [],
       createdAt: DateTime.now(),
     );
+    // در حالتِ تدریجی (OCRِ چند عکس) ترجمه‌های پاراگراف‌های بدونِ تغییر حفظ می‌شن
+    var keep = 0;
+    if (progressive && _reading != null) {
+      final old = _paras(_reading!);
+      while (keep < old.length && keep < paras.length && old[keep] == paras[keep]) {
+        keep++;
+      }
+    }
     setState(() {
       _importError = note;
       _error = '';
+      _storyLang = lang;
+      _langTouched = true;
+      _level = story.level;
+      _result = null;
+      _reading = story;
+      _readSaved = false;
+      if (progressive) {
+        for (final l in _readTrans.values) {
+          if (l.length > keep) l.removeRange(keep, l.length);
+        }
+      } else {
+        _readTrans.clear();
+        _visibleParas = _kParaPage;
+      }
     });
-    _finishStory(story);
+    unawaited(_translateReading());
+  }
+
+  bool _readingNeedsMore(SavedStory s, List<String> langs, int upto) {
+    for (final code in langs) {
+      if ((_readTrans[code]?.length ?? 0) < upto) return true;
+    }
+    return false;
+  }
+
+  /// ترجمه‌ی تدریجی — فقط پاراگراف‌های نمایان‌شده (مثلِ PARAGRAPH_PAGE_SIZE در Hope)
+  Future<void> _translateReading() async {
+    final s = _reading;
+    if (s == null || _readTranslating) return;
+    final paras = _paras(s);
+    final langs =
+        _effectiveTransLangs().where((l) => l != s.langCode).toList();
+    final upto = _visibleParas > paras.length ? paras.length : _visibleParas;
+    if (langs.isEmpty || !_readingNeedsMore(s, langs, upto)) return;
+    setState(() => _readTranslating = true);
+    try {
+      final svc = ref.read(translationServiceProvider);
+      final ai = ref.read(aiSettingsProvider);
+      for (final code in langs) {
+        final list = _readTrans.putIfAbsent(code, () => <String>[]);
+        final start = list.length;
+        if (start >= upto) continue;
+        final out = await runWithConcurrencyLimit<String, String>(
+          paras.sublist(start, upto),
+          3,
+          (p, _) async {
+            try {
+              return (await svc.translate(
+                text: p,
+                targetLang: code,
+                sourceLang: s.langCode,
+                aiSettings: ai,
+              ))
+                  .trim();
+            } catch (_) {
+              return '';
+            }
+          },
+        );
+        if (!mounted || _reading?.id != s.id) return;
+        // اگر در این فاصله لیست تغییر کرده (OCR تدریجی)، نتیجه کنار گذاشته می‌شه
+        if (list.length == start) setState(() => list.addAll(out));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _readTranslating = false);
+        final cur = _reading;
+        if (cur != null) {
+          final ps = _paras(cur);
+          final ls =
+              _effectiveTransLangs().where((l) => l != cur.langCode).toList();
+          final up = _visibleParas > ps.length ? ps.length : _visibleParas;
+          if (_readingNeedsMore(cur, ls, up)) unawaited(_translateReading());
+        }
+      }
+    }
+  }
+
+  void _readingShowMore() {
+    setState(() => _visibleParas += _kParaPage);
+    unawaited(_translateReading());
+  }
+
+  void _readingSave() {
+    final s = _reading;
+    if (s == null) return;
+    final langs = _effectiveTransLangs();
+    ref.read(storyLibraryProvider.notifier).add(s.copyWith(translations: {
+          for (final e in _readTrans.entries)
+            if (langs.contains(e.key)) e.key: List<String>.from(e.value),
+        }));
+    setState(() => _readSaved = true);
+  }
+
+  void _readingClose() => setState(() {
+        _reading = null;
+        _readTrans.clear();
+        _readSaved = false;
+      });
+
+  Widget _readingCard(AppThemeColorsExt c) {
+    final s = _reading!;
+    final paras = _paras(s);
+    final shown = _visibleParas > paras.length ? paras.length : _visibleParas;
+    final langs = _effectiveTransLangs();
+    final trans = <String, List<String>>{
+      for (final e in _readTrans.entries)
+        if (langs.contains(e.key) && e.key != s.langCode) e.key: e.value,
+    };
+    return HopeCard(
+      borderColor: c.teal,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            s.title,
+            textDirection: autoDir(s.title),
+            style: TextStyle(
+                color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
+          ),
+          Text(
+            '${langFaName(s.langCode)} · ${s.level} · خوانش',
+            style: TextStyle(color: c.inkSoft, fontSize: 11),
+          ),
+          const SizedBox(height: 8),
+          _storyBody(c, paras.take(shown).join('\n\n'), trans),
+          if (_readTranslating)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text('در حال ترجمه...',
+                  style: TextStyle(color: c.inkSoft, fontSize: 12)),
+            ),
+          if (shown < paras.length)
+            Center(
+              child: HopeTextAction(
+                label: 'نمایش بیشتر ($shown از ${paras.length} پاراگراف)',
+                color: c.teal,
+                onTap: _readingShowMore,
+              ),
+            ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _readSaved
+                  ? Text('در «کتابخانه‌ی من» ذخیره شد.',
+                      style: TextStyle(color: c.teal, fontSize: 12))
+                  : HopeTextAction(
+                      label: 'ذخیره در کتابخانه‌ی من',
+                      color: c.gold,
+                      onTap: _readingSave,
+                    ),
+              HopeTextAction(label: 'بستن', color: c.rose, onTap: _readingClose),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   void _importPasted() {
@@ -545,8 +778,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
 
   // ───────────── PDF / عکس ─────────────
-  static const int _kPdfMaxBytes = 25 * 1024 * 1024;
-  static const int _kImgMaxBytes = 12 * 1024 * 1024;
+  static const int _kPdfMaxBytes = 100 * 1024 * 1024;
+  static const int _kImgMaxBytes = 25 * 1024 * 1024;
+
+  String _ioError(Object e, String fallback) => e is UnsupportedError
+      ? 'این قابلیت فعلاً فقط روی نسخه‌ی وب کار می‌کنه (اندروید/ویندوز بعداً اضافه می‌شه).'
+      : fallback;
 
   String _readingLang() =>
       _activeLang(ref.read(languageSelectionProvider).targets);
@@ -556,7 +793,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     List<PickedFile> files;
     try {
       files = await pickFiles(accept: 'application/pdf');
-    } catch (_) {
+    } catch (e) {
+      setState(() => _importError = _ioError(e, 'انتخابِ فایل انجام نشد'));
       return;
     }
     if (files.isEmpty) return;
@@ -598,10 +836,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         setState(() => _importError =
             'توجه: چون فایل بزرگ بود، فقط بخشی از متنش خونده و آماده‌ی خوانش شد');
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _importError =
-            'خوندنِ این PDF مشکل داشت — فایل ممکنه خراب یا رمزگذاری‌شده باشه، یا اینترنت قطع باشه');
+        setState(() => _importError = _ioError(e,
+            'خوندنِ این PDF مشکل داشت — فایل ممکنه خراب یا رمزگذاری‌شده باشه، یا اینترنت قطع باشه'));
       }
     } finally {
       doc?.dispose();
@@ -619,7 +857,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     List<PickedFile> files;
     try {
       files = await pickFiles(accept: 'image/*', multiple: true);
-    } catch (_) {
+    } catch (e) {
+      setState(() => _importError = _ioError(e, 'انتخابِ فایل انجام نشد'));
       return;
     }
     if (files.isEmpty) return;
@@ -635,32 +874,32 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     });
     final lang = _readingLang();
     final texts = <String>[];
+    OcrSession? ocr;
     try {
+      ocr = await OcrSession.open(lang);
       for (var i = 0; i < files.length; i++) {
         if (mounted) {
           setState(() => _importProgress =
               'عکسِ ${i + 1} از ${files.length} (بار اول ممکنه کمی طول بکشه)...');
         }
-        final raw = await ocrImage(files[i].bytes, lang);
-        final cleaned = raw
-            .replaceAll(RegExp(r'-[ \t]*\n[ \t]*'), '')
-            .replaceAll(RegExp(r'\s*\n\s*'), ' ')
-            .replaceAll(RegExp(r'[ \t]{2,}'), ' ')
-            .trim();
-        if (cleaned.isNotEmpty) texts.add(cleaned);
+        final text = await ocr.recognize(files[i].bytes);
+        if (text.isNotEmpty && mounted) {
+          texts.add(text);
+          // هر عکس همین‌که آماده شد نشون داده می‌شه (مثلِ Hope)
+          _importForReading(texts.join(' '), progressive: texts.length > 1);
+        }
       }
       if (!mounted) return;
       if (texts.isEmpty) {
         setState(() => _importError = 'متنی تو این عکس‌ها تشخیص داده نشد');
-        return;
       }
-      _importForReading(texts.join(' '));
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _importError =
-            'خوندنِ متن از این عکس‌ها مشکل داشت — اینترنتت رو چک کن و دوباره امتحان کن');
+        setState(() => _importError = _ioError(e,
+            'خوندنِ متن از این عکس‌ها مشکل داشت — اینترنتت رو چک کن و دوباره امتحان کن'));
       }
     } finally {
+      await ocr?.close();
       if (mounted) {
         setState(() {
           _imgReadBusy = false;
@@ -676,7 +915,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     List<PickedFile> files;
     try {
       files = await pickFiles(accept: 'application/pdf');
-    } catch (_) {
+    } catch (e) {
+      setState(() => _importError = _ioError(e, 'انتخابِ فایل انجام نشد'));
       return;
     }
     if (files.isEmpty) return;
@@ -919,6 +1159,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             Text(_error, style: TextStyle(color: c.rose, fontSize: 13)),
           if (_result != null) _resultCard(c, _result!),
           ..._importSection(c),
+          if (_reading != null) _readingCard(c),
         ],
       ],
     );
@@ -1261,12 +1502,15 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   // ───────────── کارتِ زبان‌های ترجمه‌ی همزمان ─────────────
   Widget _translationLangsCard(AppThemeColorsExt c) {
     final selected = _effectiveTransLangs();
-    void setAll(Set<String> v) => setState(() {
-          _transTouched = true;
-          _transLangs
-            ..clear()
-            ..addAll(v);
-        });
+    void setAll(Set<String> v) {
+      setState(() {
+        _transTouched = true;
+        _transLangs
+          ..clear()
+          ..addAll(v);
+      });
+      if (_reading != null) unawaited(_translateReading());
+    }
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(

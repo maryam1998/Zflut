@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:js_util' as jsu;
 import 'dart:typed_data';
+import 'dart:math' as math;
 
 class PickedFile {
   final String name;
@@ -89,19 +90,105 @@ const Map<String, String> _tessLang = {
   'ko': 'kor',
 };
 
-Future<String> ocrImage(Uint8List bytes, String langCode) async {
-  await _loadScript(_tesseractUrl, 'Tesseract');
-  final tess = jsu.getProperty(html.window, 'Tesseract');
-  final blob = html.Blob([bytes]);
-  final url = html.Url.createObjectUrlFromBlob(blob);
-  try {
-    final promise = jsu.callMethod(
-        tess, 'recognize', [url, _tessLang[langCode] ?? 'eng']);
-    final res = await jsu.promiseToFuture(promise);
+/// حداقلِ اطمینانِ هر کلمه و حداقلِ نسبتِ حروف (مثلِ Hope) تا آشغال‌های
+/// تزئینیِ عکس وارد متن نشن.
+const int _minWordConfidence = 62;
+const double _minLetterRatio = 0.5;
+
+bool _wordLooksLikeText(String w) {
+  if (w.isEmpty) return false;
+  final letters = RegExp(r'\p{L}', unicode: true).allMatches(w).length;
+  return letters / w.length >= _minLetterRatio;
+}
+
+/// یک نشستِ OCR (یک worker که برای چند عکس استفاده می‌شه) — مثلِ Hope:
+/// PSM = SINGLE_COLUMN، پیش‌پردازشِ عکس، فیلترِ اطمینان.
+class OcrSession {
+  final dynamic _worker;
+  OcrSession._(this._worker);
+
+  static Future<OcrSession> open(String langCode) async {
+    await _loadScript(_tesseractUrl, 'Tesseract');
+    final tess = jsu.getProperty(html.window, 'Tesseract');
+    final worker = await jsu.promiseToFuture(
+        jsu.callMethod(tess, 'createWorker', [_tessLang[langCode] ?? 'eng']));
+    try {
+      final psm = jsu.getProperty(jsu.getProperty(tess, 'PSM'), 'SINGLE_COLUMN');
+      final params = jsu.newObject();
+      jsu.setProperty(params, 'tessedit_pageseg_mode', psm);
+      await jsu.promiseToFuture(
+          jsu.callMethod(worker, 'setParameters', [params]));
+    } catch (_) {}
+    return OcrSession._(worker);
+  }
+
+  /// خاکستری + کشیدنِ کنتراست + بزرگ‌کردن تا ۱۶۰۰ پیکسل (مثلِ preprocessImageForOcr).
+  Future<dynamic> _preprocess(Uint8List bytes) async {
+    final blob = html.Blob([bytes]);
+    final bitmap = await jsu.promiseToFuture(
+        jsu.callMethod(html.window, 'createImageBitmap', [blob]));
+    final bw = (jsu.getProperty(bitmap, 'width') as num).toInt();
+    final bh = (jsu.getProperty(bitmap, 'height') as num).toInt();
+    const minLong = 1600;
+    final longSide = math.max(bw, bh);
+    final scale = longSide < minLong ? minLong / longSide : 1.0;
+    final w = math.max(1, (bw * scale).round());
+    final h = math.max(1, (bh * scale).round());
+    final canvas = html.CanvasElement(width: w, height: h);
+    final ctx = canvas.context2D;
+    ctx.imageSmoothingQuality = 'high';
+    jsu.callMethod(ctx, 'drawImage', [bitmap, 0, 0, w, h]);
+    final img = ctx.getImageData(0, 0, w, h);
+    final px = img.data;
+    final lum = Float32List(w * h);
+    var minL = 255.0, maxL = 0.0;
+    for (var i = 0, p = 0; i < px.length; i += 4, p++) {
+      final g = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+      lum[p] = g;
+      if (g < minL) minL = g;
+      if (g > maxL) maxL = g;
+    }
+    final range = math.max(maxL - minL, 1.0);
+    for (var i = 0, p = 0; i < px.length; i += 4, p++) {
+      final v = (((lum[p] - minL) / range) * 255).clamp(0, 255).toInt();
+      px[i] = v;
+      px[i + 1] = v;
+      px[i + 2] = v;
+    }
+    ctx.putImageData(img, 0, 0);
+    return canvas;
+  }
+
+  Future<String> recognize(Uint8List bytes) async {
+    dynamic source;
+    try {
+      source = await _preprocess(bytes);
+    } catch (_) {
+      source = html.Blob([bytes]);
+    }
+    final res = await jsu
+        .promiseToFuture(jsu.callMethod(_worker, 'recognize', [source]));
     final data = jsu.getProperty(res, 'data');
-    return (jsu.getProperty(data, 'text') ?? '').toString();
-  } finally {
-    html.Url.revokeObjectUrl(url);
+    final words = jsu.getProperty(data, 'words');
+    if (words is List && words.isNotEmpty) {
+      final out = <String>[];
+      for (final w in words) {
+        final conf = jsu.getProperty(w, 'confidence');
+        final text = (jsu.getProperty(w, 'text') ?? '').toString();
+        if ((conf is num ? conf : 100) >= _minWordConfidence &&
+            _wordLooksLikeText(text)) {
+          out.add(text);
+        }
+      }
+      return out.join(' ').trim();
+    }
+    return (jsu.getProperty(data, 'text') ?? '').toString().trim();
+  }
+
+  Future<void> close() async {
+    try {
+      await jsu.promiseToFuture(jsu.callMethod(_worker, 'terminate', []));
+    } catch (_) {}
   }
 }
 
@@ -135,15 +222,9 @@ class PdfDocHandle {
     final sb = StringBuffer();
     for (final it in items) {
       sb.write((jsu.getProperty(it, 'str') ?? '').toString());
-      final eol = jsu.getProperty(it, 'hasEOL') == true;
-      sb.write(eol ? '\n' : ' ');
+      if (jsu.getProperty(it, 'hasEOL') == true) sb.write(' ');
     }
-    return sb
-        .toString()
-        .replaceAll(RegExp(r'-[ \t]*\n[ \t]*'), '')
-        .replaceAll(RegExp(r'\s*\n\s*'), ' ')
-        .replaceAll(RegExp(r'[ \t]{2,}'), ' ')
-        .trim();
+    return sb.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
   Future<Uint8List> renderPage(int pageIndex, {double scale = 1.6}) async {
