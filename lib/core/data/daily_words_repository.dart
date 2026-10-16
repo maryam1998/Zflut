@@ -1,8 +1,5 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart' show rootBundle;
-
 import '../models/daily_word.dart';
+import 'word_asset_loader.dart';
 
 class DailyWordsRepository {
   DailyWordsRepository._();
