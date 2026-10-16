@@ -10,7 +10,7 @@ import '../../features/shell/app_shell.dart';
 import '../../features/tabs/conversations_tab.dart';
 import '../../features/tabs/favorites_tab.dart';
 import '../../features/tabs/grammar_tab.dart';
-import '../../features/tabs/review_tab.dart';
+import '../../features/review/review_tab.dart';
 import '../../features/tabs/saved_tab.dart';
 import '../../features/tabs/slang_tab.dart';
 import '../../features/tabs/speaking_tab.dart';
