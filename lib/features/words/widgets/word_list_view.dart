@@ -6,6 +6,7 @@ import '../../../core/models/daily_word.dart';
 import '../../../core/player_sync/player_track.dart';
 import '../../../core/player_sync/sync_widgets.dart';
 import '../../../core/providers/language_selection_provider.dart';
+import '../../../core/providers/my_dictionary_provider.dart';
 import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../shell/widgets/shell_header.dart';
@@ -124,7 +125,7 @@ class WordListView extends ConsumerWidget {
       revision: words,
       mode: TrackMode.words,
       itemsBuilder: () => [
-        for (final w in words) SyncItem(w.id.toString(), w.en),
+        for (final w in words) SyncItem(w.sid, w.en),
       ],
       child: CustomScrollView(
         slivers: [
@@ -165,13 +166,20 @@ class WordListView extends ConsumerWidget {
                   (_, i) {
                     final w = words[i];
                     return WordCard(
-                      key: ValueKey('word-${w.id}'),
-                      id: w.id.toString(),
+                      key: ValueKey('word-${w.sid}'),
+                      id: w.sid,
                       en: w.en,
                       fa: w.fa,
                       level: w.level,
                       pos: w.pos,
                       langsToShow: langsToShow,
+                      isPersonal: w.isPersonal,
+                      knownTranslations: w.translations,
+                      onRemove: w.isPersonal
+                          ? () => ref
+                              .read(wordsTabHiddenProvider.notifier)
+                              .hide(w.en)
+                          : null,
                     );
                   },
                   childCount: words.length,

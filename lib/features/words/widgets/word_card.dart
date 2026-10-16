@@ -21,6 +21,9 @@ class WordCard extends StatelessWidget {
   final bool isPersonal;
   final Map<String, String> knownTranslations;
 
+  /// ✕ برای لغات شخصی (فقط از تبِ دیکشنری من پنهان می‌کند).
+  final VoidCallback? onRemove;
+
   const WordCard({
     super.key,
     required this.id,
@@ -31,6 +34,7 @@ class WordCard extends StatelessWidget {
     required this.langsToShow,
     this.isPersonal = false,
     this.knownTranslations = const <String, String>{},
+    this.onRemove,
   });
 
   @override
@@ -48,6 +52,7 @@ class WordCard extends StatelessWidget {
       knownTranslations: known,
       compact: false,
       showActions: true,
+      onRemove: onRemove,
     );
   }
 

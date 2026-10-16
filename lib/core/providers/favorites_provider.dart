@@ -4,6 +4,7 @@ import '../models/daily_word.dart';
 import '../storage/local_storage.dart';
 import '../storage/prefs_keys.dart';
 import 'conversation_provider.dart';
+import 'my_dictionary_provider.dart';
 import 'word_sources_provider.dart';
 import 'words_filter_provider.dart';
 
@@ -42,6 +43,7 @@ final favoritedWordsProvider = Provider<List<DailyWord>>((ref) {
   if (favs.isEmpty) return const <DailyWord>[];
 
   final sources = <List<DailyWord>>[
+    ref.watch(myDictionaryWordsProvider),
     ref.watch(allDailyWordsProvider),
     ref.watch(slangWordsProvider).valueOrNull ?? const <DailyWord>[],
     ref.watch(vocabInUseWordsProvider).valueOrNull ?? const <DailyWord>[],
@@ -53,12 +55,13 @@ final favoritedWordsProvider = Provider<List<DailyWord>>((ref) {
   final out = <DailyWord>[];
   for (final list in sources) {
     for (final w in list) {
-      final id = w.id.toString();
+      final id = w.sid;
       if (!favs.contains(id) || !seen.add(id)) continue;
       if (filter.level != 'all' && w.level != filter.level) continue;
       if (q.isNotEmpty &&
           !w.en.toLowerCase().contains(q) &&
-          !w.fa.contains(q)) {
+          !w.fa.contains(q) &&
+          !w.translations.values.any((t) => t.toLowerCase().contains(q))) {
         continue;
       }
       out.add(w);

@@ -27,6 +27,10 @@ class SyncItemCard extends ConsumerStatefulWidget {
   final bool compact;
   final bool showActions;
 
+  /// اگر null نباشد، دکمه‌ی ✕ گوشه‌ی پایین‌راستِ کارت نشان داده می‌شود
+  /// (برای لغات شخصیِ «دیکشنری من» — فقط از همان تب پنهان می‌کند).
+  final VoidCallback? onRemove;
+
   const SyncItemCard({
     super.key,
     required this.id,
@@ -38,6 +42,7 @@ class SyncItemCard extends ConsumerStatefulWidget {
     this.knownTranslations = const <String, String>{},
     this.compact = false,
     this.showActions = false,
+    this.onRemove,
   });
 
   @override
@@ -55,14 +60,20 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
     final isFavorite = widget.showActions &&
         ref.watch(wordFavoritesProvider.select((s) => s.contains(widget.id)));
 
+    final removable = widget.onRemove != null;
+
     return SyncAnchor(
       code: 'en',
       id: widget.id,
-      child: Container(
-        margin: EdgeInsets.only(bottom: compact ? 6 : 10),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: compact ? 6 : 10),
+        child: Stack(
+          children: [
+      Container(
         padding: compact
             ? const EdgeInsets.fromLTRB(10, 8, 10, 8)
-            : const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            // کارتِ شخصی جای ✕ی پایین‌راست را دارد (مثل Hope: paddingBottom 30)
+            : EdgeInsets.fromLTRB(14, 12, 14, removable ? 30 : 10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(compact ? 10 : 14),
@@ -85,13 +96,15 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
               textDirection: TextDirection.ltr,
               child: Row(
                 children: [
-                  _Badge(
-                    text: widget.level,
-                    fg: levelColor(widget.level),
-                    bg: levelBgColor(widget.level),
-                    size: compact ? 10 : 11,
-                  ),
-                  const SizedBox(width: 8),
+                  if (widget.level.isNotEmpty) ...[
+                    _Badge(
+                      text: widget.level,
+                      fg: levelColor(widget.level),
+                      bg: levelBgColor(widget.level),
+                      size: compact ? 10 : 11,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   
                   // ═══ متن اصلی: لمسِ لغت / انتخابِ محدوده → کارتِ مشترک ═══
                   Expanded(
@@ -173,12 +186,17 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
             if (widget.showActions) ...[
               const SizedBox(height: 6),
               Align(
-                // سمتِ راست، مستقل از جهتِ برنامه (RTL ⇒ «end» می‌شد چپ)
+                // مثل Hope: دکمه با لبه‌ی راستِ ستونِ 🔊/🧬 هم‌راستا می‌شود،
+                // نه چسبیده به لبه‌ی کارت — جای ستونِ ⭐ (و ✕) سمتِ راست خالی
+                // می‌ماند. (سمتِ راستِ فیزیکی، مستقل از جهتِ برنامه)
                 alignment: Alignment.centerRight,
-                child: AiExamplesButton(
-                  onTap: () =>
-                      setState(() => _showAiExamples = !_showAiExamples),
-                  expanded: _showAiExamples,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 34),
+                  child: AiExamplesButton(
+                    onTap: () =>
+                        setState(() => _showAiExamples = !_showAiExamples),
+                    expanded: _showAiExamples,
+                  ),
                 ),
               ),
               if (_showAiExamples) ...[
@@ -198,6 +216,34 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                 ),
               ],
             ],
+          ],
+        ),
+      ),
+            // ✕ فقط برای لغات/عبارات شخصی: از تبِ «دیکشنری من» پنهان می‌شود،
+            // ولی از «لغات ذخیره‌شده» پاک نمی‌شود.
+            if (removable)
+              Positioned(
+                right: 8,
+                bottom: 6,
+                child: Tooltip(
+                  message: 'حذف از دیکشنری من (در لغات ذخیره‌شده می‌مونه)',
+                  child: InkWell(
+                    onTap: widget.onRemove,
+                    customBorder: const CircleBorder(),
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(color: c.cardBorder),
+                      ),
+                      child: Icon(Icons.close, size: 12, color: c.inkSoft),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
