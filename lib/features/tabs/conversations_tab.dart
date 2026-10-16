@@ -7,7 +7,9 @@ import '../../core/player_sync/player_track.dart';
 import '../../core/player_sync/sync_widgets.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
+import '../../core/providers/read_ids_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/widgets/range_card.dart';
 import '../../core/widgets/sync_item_card.dart';
 import '../shell/widgets/shell_header.dart';
 
@@ -24,8 +26,6 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   String _query = '';
   int _rangeFrom = 1;
   int _rangeTo = 60;
-  final Set<String> _topicRead = {};
-  final Set<String> _scenarioRead = {};
 
   @override
   Widget build(BuildContext context) {
@@ -93,12 +93,14 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       );
     }
 
-    final from = _rangeFrom.clamp(1, total);
-    final to = _rangeTo.clamp(from, total);
+    final from = _rangeFrom.clamp(1, total).toInt();
+    final to = _rangeTo.clamp(from, total).toInt();
     final visible = topics.sublist(from - 1, to);
-    final readInRange =
-        visible.where((t) => _topicRead.contains(t.topic)).length;
-    final readTotal = topics.where((t) => _topicRead.contains(t.topic)).length;
+    // «خوانده‌شده‌ها» روی دستگاه ذخیره می‌شوند (مثل Hope)
+    final topicRead = ref.watch(readIdsProvider('conv-topics'));
+    final topicReadN = ref.read(readIdsProvider('conv-topics').notifier);
+    final readInRange = visible.where((t) => topicRead.contains(t.topic)).length;
+    final readTotal = topics.where((t) => topicRead.contains(t.topic)).length;
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 90),
@@ -109,24 +111,23 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-        _RangeCard(
+        RangeCard(
+          label: 'موضوع‌ها',
+          max: total,
           from: from,
           to: to,
-          total: total,
+          totalInRange: visible.length,
           readInRange: readInRange,
           readTotal: readTotal,
-          onFromChanged: (v) => setState(() => _rangeFrom = v),
+          onFromChanged: (v) => setState(() {
+            _rangeFrom = v;
+            if (_rangeTo < v) _rangeTo = v;
+          }),
           onToChanged: (v) => setState(() => _rangeTo = v),
-          onMarkAllRead: () => setState(() {
-            for (final t in visible) {
-              _topicRead.add(t.topic);
-            }
-          }),
-          onClearRange: () => setState(() {
-            for (final t in visible) {
-              _topicRead.remove(t.topic);
-            }
-          }),
+          onMarkRead: () =>
+              topicReadN.setMany(visible.map((t) => t.topic), true),
+          onClear: () =>
+              topicReadN.setMany(visible.map((t) => t.topic), false),
         ),
         const SizedBox(height: 14),
         GridView.builder(
@@ -146,18 +147,12 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
               topic: topic,
               visual: visual,
               badgeColor: kTopicBadgeColors[i % kTopicBadgeColors.length],
-              isRead: _topicRead.contains(topic.topic),
+              isRead: topicRead.contains(topic.topic),
               onTap: () => setState(() {
                 _activeTopic = topic.topic;
                 _openScenario = 0;
               }),
-              onToggleRead: () => setState(() {
-                if (_topicRead.contains(topic.topic)) {
-                  _topicRead.remove(topic.topic);
-                } else {
-                  _topicRead.add(topic.topic);
-                }
-              }),
+              onToggleRead: () => topicReadN.toggle(topic.topic),
             );
           },
         ),
@@ -171,6 +166,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   Widget _buildTopicView(BuildContext context, ConversationTopic topic) {
     final c = context.appColors;
     final visual = visualForTopic(topic.topic);
+    final scenarioRead = ref.watch(readIdsProvider('conv-scenarios'));
+    final scenarioReadN = ref.read(readIdsProvider('conv-scenarios').notifier);
 
     // سناریوی بازشده = «متنِ کاملِ» پلیر (اول «می‌شنوی»، بعد «می‌گی» — همان
     // ترتیبِ Hope). همین یک ویجتِ مشترک هایلایت/اسکرول/پرش را برای همه‌ی
@@ -240,21 +237,15 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         ...List.generate(topic.scenarios.length, (i) {
           final sc = topic.scenarios[i];
           final isOpen = _openScenario == i;
-          final isRead = _scenarioRead.contains('${topic.topic}::$i');
+          final readKey = '${topic.topic}::$i';
+          final isRead = scenarioRead.contains(readKey);
           return _ScenarioCard(
             scenario: sc,
             isOpen: isOpen,
             isRead: isRead,
             onToggle: () =>
                 setState(() => _openScenario = isOpen ? null : i),
-            onToggleRead: () => setState(() {
-              final key = '${topic.topic}::$i';
-              if (isRead) {
-                _scenarioRead.remove(key);
-              } else {
-                _scenarioRead.add(key);
-              }
-            }),
+            onToggleRead: () => scenarioReadN.toggle(readKey),
           );
         }),
             ],
@@ -263,205 +254,6 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       ],
     ),
     ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// کارت بازه
-// ═══════════════════════════════════════════════════════════════════
-class _RangeCard extends StatefulWidget {
-  final int from, to, total, readInRange, readTotal;
-  final ValueChanged<int> onFromChanged, onToChanged;
-  final VoidCallback onMarkAllRead, onClearRange;
-
-  const _RangeCard({
-    required this.from,
-    required this.to,
-    required this.total,
-    required this.readInRange,
-    required this.readTotal,
-    required this.onFromChanged,
-    required this.onToChanged,
-    required this.onMarkAllRead,
-    required this.onClearRange,
-  });
-
-  @override
-  State<_RangeCard> createState() => _RangeCardState();
-}
-
-class _RangeCardState extends State<_RangeCard> {
-  late TextEditingController _fromCtrl, _toCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _fromCtrl = TextEditingController(text: '${widget.from}');
-    _toCtrl = TextEditingController(text: '${widget.to}');
-  }
-
-  @override
-  void dispose() {
-    _fromCtrl.dispose();
-    _toCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    final pct =
-        widget.total > 0 ? (widget.readTotal / widget.total) * 100 : 0.0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: c.cardBorder),
-        boxShadow: [
-          BoxShadow(
-            color: c.ink.withOpacity(0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              _NumField(
-                controller: _fromCtrl,
-                onChanged: (v) {
-                  final n = int.tryParse(v);
-                  if (n != null && n >= 1 && n <= widget.total) {
-                    widget.onFromChanged(n);
-                  }
-                },
-              ),
-              const SizedBox(width: 8),
-              Text('تا',
-                  style: TextStyle(
-                      color: c.teal,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700)),
-              const SizedBox(width: 8),
-              _NumField(
-                controller: _toCtrl,
-                onChanged: (v) {
-                  final n = int.tryParse(v);
-                  if (n != null && n >= 1 && n <= widget.total) {
-                    widget.onToChanged(n);
-                  }
-                },
-              ),
-              const Spacer(),
-              Text('از مجموع ${widget.total}',
-                  style: TextStyle(
-                      color: c.inkSoft,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              value: pct / 100,
-              minHeight: 8,
-              backgroundColor: c.paperDark,
-              valueColor: AlwaysStoppedAnimation(c.teal),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'خوانده‌شده: ${widget.readTotal} از ${widget.total} • ${widget.readInRange} از ${widget.to - widget.from + 1} در این بازه',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                color: Color(0xFF2E7D6C),
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: widget.onMarkAllRead,
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEAF4F1),
-                    side: const BorderSide(color: Color(0xFFCFE6DF)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: Text('علامت‌گذاری همه به خوانده‌شده',
-                      style: TextStyle(
-                          color: c.teal,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: widget.onClearRange,
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: c.paper,
-                    side: BorderSide(color: c.cardBorder),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: Text('پاک کردن علامت این بازه',
-                      style: TextStyle(
-                          color: c.teal,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NumField extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  const _NumField({required this.controller, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    return SizedBox(
-      width: 52,
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-            color: c.teal, fontSize: 13, fontWeight: FontWeight.w700),
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(6),
-            borderSide: BorderSide(color: c.cardBorder),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(6),
-            borderSide: BorderSide(color: c.cardBorder),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(6),
-            borderSide: BorderSide(color: c.gold, width: 1.5),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,12 +9,21 @@ import '../../../core/player_sync/player_track.dart';
 import '../../../core/player_sync/sync_widgets.dart';
 import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/providers/my_dictionary_provider.dart';
+import '../../../core/providers/read_ids_provider.dart';
 import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/widgets/range_card.dart';
 import '../../shell/widgets/shell_header.dart';
 import 'word_card.dart';
 
-class WordListView extends ConsumerWidget {
+/// تعدادِ لغتی که در هر «بخش» رندر می‌شود (مثل WORDS_PAGE_SIZE در Hope).
+/// با رسیدنِ اسکرول به ته، بخشِ بعدی خودکار اضافه می‌شود.
+const int kWordsPageSize = 60;
+
+class WordListView extends ConsumerStatefulWidget {
+  /// شناسه‌ی لیست برای ذخیره‌ی «خوانده‌شده‌ها» ('words' / 'slang' / …)
+  final String listId;
+
   /// لیست لغات (خالیه = حالت خالی)
   final List<DailyWord> words;
 
@@ -30,6 +41,7 @@ class WordListView extends ConsumerWidget {
 
   const WordListView({
     super.key,
+    required this.listId,
     required this.words,
     required this.hasAnyData,
     this.emptyMessage = 'چیزی پیدا نشد',
@@ -38,11 +50,73 @@ class WordListView extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WordListView> createState() => _WordListViewState();
+}
+
+class _WordListViewState extends ConsumerState<WordListView> {
+  // بازه‌ی دستیِ کاربر (null = خودکار)
+  int? _from;
+  int? _to;
+
+  // مرزِ بالاییِ «خودکار» — با اسکرول به ته، kWordsPageSize تا زیاد می‌شود.
+  int _autoTo = kWordsPageSize;
+
+  String _sigLevel = 'all';
+  String _sigQuery = '';
+
+  // برای ثابت‌ماندنِ revision پلیر (identical) تا هر build دوباره ثبت نشود
+  List<DailyWord> _visible = const <DailyWord>[];
+  List<DailyWord>? _visibleSrc;
+  int _visibleFrom = -1;
+  int _visibleTo = -1;
+
+  void _resetRange() {
+    _from = null;
+    _to = null;
+    _autoTo = kWordsPageSize;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final words = widget.words;
     final c = context.appColors;
     final sel = ref.watch(languageSelectionProvider);
     final filter = ref.watch(wordsFilterProvider);
     final notifier = ref.read(wordsFilterProvider.notifier);
+    final readIds = ref.watch(readIdsProvider(widget.listId));
+    final readNotifier = ref.read(readIdsProvider(widget.listId).notifier);
+
+    // با عوض‌شدنِ سطح/جستجو، بازه به ابتدای لیست برمی‌گردد (مثل Hope)
+    if (filter.level != _sigLevel || filter.query != _sigQuery) {
+      _sigLevel = filter.level;
+      _sigQuery = filter.query;
+      _resetRange();
+    }
+
+    final total = words.length;
+    final defaultTo = total == 0 ? 0 : math.min(total, _autoTo);
+    final from = total == 0
+        ? 1
+        : (_from ?? 1).clamp(1, total).toInt();
+    final to = total == 0
+        ? 0
+        : (_to ?? defaultTo).clamp(from, total).toInt();
+
+    if (!identical(_visibleSrc, words) ||
+        _visibleFrom != from ||
+        _visibleTo != to) {
+      _visible = total == 0
+          ? const <DailyWord>[]
+          : words.sublist(from - 1, to);
+      _visibleSrc = words;
+      _visibleFrom = from;
+      _visibleTo = to;
+    }
+    final visible = _visible;
+    final readInRange =
+        visible.where((w) => readIds.contains(w.sid)).length;
+    final readTotal = words.where((w) => readIds.contains(w.sid)).length;
+    final hasMore = _to == null && to < total;
 
     final langsToShow = <String>[
       if (sel.native != 'en') sel.native,
@@ -122,23 +196,25 @@ class WordListView extends ConsumerWidget {
             );
 
     return SyncPlayScope(
-      revision: words,
+      // فقط بازه‌ی نمایش‌داده‌شده خوانده/ردیابی می‌شود (مثل Hope)
+      revision: visible,
       mode: TrackMode.words,
       itemsBuilder: () => [
-        for (final w in words) SyncItem(w.sid, w.en),
+        for (final w in visible) SyncItem(w.sid, w.en),
       ],
       child: CustomScrollView(
+        cacheExtent: 600,
         slivers: [
           const SliverToBoxAdapter(child: ShellHeader()),
           SliverToBoxAdapter(child: filterHeader),
-          if (heading != null && words.isNotEmpty)
+          if (widget.heading != null && words.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
                 child: Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: Text(
-                    heading!,
+                    widget.heading!,
                     style: TextStyle(
                       color: c.gold,
                       fontWeight: FontWeight.w700,
@@ -148,14 +224,35 @@ class WordListView extends ConsumerWidget {
                 ),
               ),
             ),
+          if (words.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: RangeCard(
+                  label: widget.listId == 'favorites' ? 'لغات' : 'دیکشنری',
+                  max: total,
+                  from: from,
+                  to: to,
+                  readInRange: readInRange,
+                  totalInRange: visible.length,
+                  readTotal: readTotal,
+                  onFromChanged: (v) => setState(() => _from = v),
+                  onToChanged: (v) => setState(() => _to = v),
+                  onMarkRead: () => readNotifier.setMany(
+                      visible.map((w) => w.sid), true),
+                  onClear: () => readNotifier.setMany(
+                      visible.map((w) => w.sid), false),
+                ),
+              ),
+            ),
           if (words.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
               child: _EmptyState(
                 c: c,
-                hasData: hasAnyData,
-                loading: loading && !hasAnyData,
-                message: emptyMessage,
+                hasData: widget.hasAnyData,
+                loading: widget.loading && !widget.hasAnyData,
+                message: widget.emptyMessage,
               ),
             )
           else
@@ -164,7 +261,21 @@ class WordListView extends ConsumerWidget {
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (_, i) {
-                    final w = words[i];
+                    if (i >= visible.length) {
+                      // سنتینلِ اسکرولِ بی‌نهایت: با ورود به دید، بخشِ بعدی
+                      return _LoadMoreSentinel(
+                        key: ValueKey('more-$to'),
+                        onVisible: () {
+                          if (!mounted) return;
+                          setState(() {
+                            _autoTo = math.min(
+                                math.max(_autoTo, to) + kWordsPageSize,
+                                total);
+                          });
+                        },
+                      );
+                    }
+                    final w = visible[i];
                     return WordCard(
                       key: ValueKey('word-${w.sid}'),
                       id: w.sid,
@@ -175,6 +286,8 @@ class WordListView extends ConsumerWidget {
                       langsToShow: langsToShow,
                       isPersonal: w.isPersonal,
                       knownTranslations: w.translations,
+                      isRead: readIds.contains(w.sid),
+                      onToggleRead: () => readNotifier.toggle(w.sid),
                       onRemove: w.isPersonal
                           ? () => ref
                               .read(wordsTabHiddenProvider.notifier)
@@ -182,7 +295,7 @@ class WordListView extends ConsumerWidget {
                           : null,
                     );
                   },
-                  childCount: words.length,
+                  childCount: visible.length + (hasMore ? 1 : 0),
                 ),
               ),
             ),
@@ -190,6 +303,38 @@ class WordListView extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// نشانگرِ انتهای لیست: وقتی ساخته شد (یعنی کاربر به ته رسید) یک‌بار
+/// onVisible را صدا می‌زند تا بخشِ بعدیِ لغات اضافه شود.
+class _LoadMoreSentinel extends StatefulWidget {
+  final VoidCallback onVisible;
+  const _LoadMoreSentinel({super.key, required this.onVisible});
+
+  @override
+  State<_LoadMoreSentinel> createState() => _LoadMoreSentinelState();
+}
+
+class _LoadMoreSentinelState extends State<_LoadMoreSentinel> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onVisible();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(
+        height: 48,
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
 }
 
 /// حالت خالی / در حال بارگذاری لیست

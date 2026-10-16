@@ -16,6 +16,7 @@ class FavoritesTab extends ConsumerWidget {
     final words = ref.watch(favoritedWordsProvider);
 
     return WordListView(
+      listId: 'favorites',
       words: words,
       // اگر چیزی علاقه‌مند نشده، پیامِ Hope را نشان بده (نه «داده‌ای بارگذاری نشد»)
       hasAnyData: true,

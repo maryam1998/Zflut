@@ -24,10 +24,7 @@ class DailyWordsRepository {
   Future<void> _doLoad() async {
     if (_loaded) return;
     try {
-      final raw = await rootBundle.loadString('assets/data/daily_words.json');
-      _words = (jsonDecode(raw) as List<dynamic>)
-          .map((e) => DailyWord.fromJson(e as Map<String, dynamic>))
-          .toList();
+      _words = await loadWordsAsset('assets/data/daily_words.json');
       _loaded = true;
       _error = null;
     } catch (e) {

@@ -16,6 +16,7 @@ class WordsTab extends ConsumerWidget {
     final all = ref.watch(allDailyWordsProvider);
     final personal = ref.watch(myDictionaryWordsProvider);
     return WordListView(
+      listId: 'words',
       words: words,
       hasAnyData: all.isNotEmpty || personal.isNotEmpty,
       loading: ref.watch(dailyWordsLoaderProvider).isLoading,

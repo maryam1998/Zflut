@@ -12,6 +12,7 @@ class VocabInUseTab extends ConsumerWidget {
     final all = ref.watch(vocabInUseWordsProvider).valueOrNull ?? const [];
     final words = ref.watch(filteredVocabInUseWordsProvider);
     return WordListView(
+      listId: 'vocab-in-use',
       words: words,
       hasAnyData: all.isNotEmpty,
       loading: ref.watch(vocabInUseWordsProvider).isLoading,

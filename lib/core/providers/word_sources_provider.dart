@@ -1,8 +1,6 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/word_asset_loader.dart';
 import '../models/daily_word.dart';
 import '../models/filter_state.dart';
 import 'words_filter_provider.dart';
@@ -10,13 +8,7 @@ import 'words_filter_provider.dart';
 /// منبع‌های داده‌ی جدا برای تب‌های «اسلنگ» و «Vocabulary in Use»
 /// (قبلاً هر دو لیست «لغات روزمره» را نشان می‌دادند).
 /// فایل‌ها با scripts/convert-data.mjs از hope_data/*.js ساخته می‌شوند.
-Future<List<DailyWord>> _loadWords(String asset) async {
-  final raw = await rootBundle.loadString(asset);
-  final list = jsonDecode(raw) as List<dynamic>;
-  return list
-      .map((e) => DailyWord.fromJson(e as Map<String, dynamic>))
-      .toList(growable: false);
-}
+Future<List<DailyWord>> _loadWords(String asset) => loadWordsAsset(asset);
 
 final slangWordsProvider = FutureProvider<List<DailyWord>>(
     (ref) => _loadWords('assets/data/slang_words.json'));

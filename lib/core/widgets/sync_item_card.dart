@@ -31,6 +31,10 @@ class SyncItemCard extends ConsumerStatefulWidget {
   /// (برای لغات شخصیِ «دیکشنری من» — فقط از همان تب پنهان می‌کند).
   final VoidCallback? onRemove;
 
+  /// وضعیتِ «خوانده‌شده» (فقط وقتی onToggleRead داده شود دکمه‌اش دیده می‌شود).
+  final bool isRead;
+  final VoidCallback? onToggleRead;
+
   const SyncItemCard({
     super.key,
     required this.id,
@@ -43,6 +47,8 @@ class SyncItemCard extends ConsumerStatefulWidget {
     this.compact = false,
     this.showActions = false,
     this.onRemove,
+    this.isRead = false,
+    this.onToggleRead,
   });
 
   @override
@@ -75,9 +81,11 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
             // کارتِ شخصی جای ✕ی پایین‌راست را دارد (مثل Hope: paddingBottom 30)
             : EdgeInsets.fromLTRB(14, 12, 14, removable ? 30 : 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: widget.isRead ? const Color(0xFFF8F2DE) : Colors.white,
           borderRadius: BorderRadius.circular(compact ? 10 : 14),
-          border: Border.all(color: c.cardBorder, width: compact ? 0.6 : 1),
+          border: Border.all(
+              color: widget.isRead ? const Color(0xFFE3D2A2) : c.cardBorder,
+              width: compact ? 0.6 : 1),
           boxShadow: compact
               ? null
               : [
@@ -185,18 +193,25 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
 
             if (widget.showActions) ...[
               const SizedBox(height: 6),
-              Align(
-                // مثل Hope: دکمه با لبه‌ی راستِ ستونِ 🔊/🧬 هم‌راستا می‌شود،
-                // نه چسبیده به لبه‌ی کارت — جای ستونِ ⭐ (و ✕) سمتِ راست خالی
-                // می‌ماند. (سمتِ راستِ فیزیکی، مستقل از جهتِ برنامه)
-                alignment: Alignment.centerRight,
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 34),
-                  child: AiExamplesButton(
-                    onTap: () =>
-                        setState(() => _showAiExamples = !_showAiExamples),
-                    expanded: _showAiExamples,
-                  ),
+              // سمتِ فیزیکیِ چپ: دکمه‌ی خوانده‌شده؛ سمتِ راست: مثال‌های AI
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  children: [
+                    if (widget.onToggleRead != null)
+                      _ReadToggle(
+                          isRead: widget.isRead, onTap: widget.onToggleRead!),
+                    const Spacer(),
+                    // مثل Hope: دکمه با لبه‌ی راستِ ستونِ 🔊/🧬 هم‌راستا می‌شود
+                    Padding(
+                      padding: const EdgeInsets.only(right: 34),
+                      child: AiExamplesButton(
+                        onTap: () =>
+                            setState(() => _showAiExamples = !_showAiExamples),
+                        expanded: _showAiExamples,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (_showAiExamples) ...[
@@ -245,6 +260,43 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReadToggle extends StatelessWidget {
+  final bool isRead;
+  final VoidCallback onTap;
+  const _ReadToggle({required this.isRead, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'علامت‌زدن به‌عنوان خوانده‌شده',
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isRead ? const Color(0xFF3F9B72) : Colors.transparent,
+              border: Border.all(
+                color:
+                    isRead ? const Color(0xFF276E4F) : const Color(0xFFC8BE95),
+                width: 1.6,
+              ),
+            ),
+            child: isRead
+                ? const Icon(Icons.check, size: 13, color: Colors.white)
+                : null,
+          ),
         ),
       ),
     );

@@ -12,6 +12,7 @@ class SlangTab extends ConsumerWidget {
     final all = ref.watch(slangWordsProvider).valueOrNull ?? const [];
     final words = ref.watch(filteredSlangWordsProvider);
     return WordListView(
+      listId: 'slang',
       words: words,
       hasAnyData: all.isNotEmpty,
       loading: ref.watch(slangWordsProvider).isLoading,
