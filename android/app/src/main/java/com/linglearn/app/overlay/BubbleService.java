@@ -2579,7 +2579,6 @@ public class BubbleService extends Service {
             if (gen != speedGen) return;
             float got = YtMedia.currentSpeed(this);
             if (got > 0f && Math.abs(got - want) > 0.03f) {
-                if (YtMedia.YT_PKG.equals(YtMedia.playerPackage(this))) { speedViaAccessibility(want); return; }
                 if (tvSpeedVal != null) tvSpeedVal.setText(fmtSpeed(got));
                 speedWanted = got;
                 showNotice(msg("این برنامه اجازه‌ی تغییر سرعت از بیرون رو نمی‌ده.",
@@ -2587,34 +2586,6 @@ public class BubbleService extends Service {
                 main.postDelayed(() -> { if (gen == speedGen) clearStatus(); }, 3500);
             }
         }, 800);
-    }
-
-    /** یوتیوب سرعت رو از MediaSession قبول نکرد → از منوی خودِ یوتیوب (سرویسِ دسترسی‌پذیری). */
-    private void speedViaAccessibility(final float want) {
-        if (!SpeedAccessibilityService.isAvailable(this)) {
-            showNotice(msg("تغییرِ سرعتِ یوتیوب در این نسخه فعال نیست.",
-                    "YouTube speed control isn't available in this version."));
-            return;
-        }
-        if (!SpeedAccessibilityService.isEnabled(this)) {
-            showNotice(msg("برای تغییرِ سرعتِ یوتیوب، سرویسِ «دسترسی‌پذیری» این برنامه رو روشن کن.",
-                    "To change YouTube speed, turn on this app's Accessibility service."));
-            SpeedAccessibilityService.openSettings(this);
-            return;
-        }
-        showNotice(msg("در حال تنظیمِ سرعتِ یوتیوب…", "Setting YouTube speed…"));
-        boolean sent = SpeedAccessibilityService.request(want, (ok, applied) -> {
-            if (ok) {
-                speedWanted = applied;
-                if (tvSpeedVal != null) tvSpeedVal.setText(fmtSpeed(applied));
-                clearStatus();
-            } else {
-                showNotice(msg("نشد؛ ویدیوی یوتیوب باید روی صفحه باز باشه.",
-                        "Failed; the YouTube video must be on screen."));
-            }
-        });
-        if (!sent) showNotice(msg("سرویسِ دسترسی‌پذیری هنوز وصل نشده؛ یک بار خاموش/روشنش کن.",
-                "Accessibility service isn't connected yet; toggle it off/on once."));
     }
 
     private int panelMaxH() { return Math.max(dp(60), (int) (screenH() * panelHFrac)); }

@@ -213,26 +213,6 @@ final class NativeI18n {
             "Diese App erlaubt keine Geschwindigkeitsänderung von außen.",
             "Cette application n’autorise pas la modification de la vitesse depuis l’extérieur.",
             "لا يسمح هذا التطبيق بتغيير السرعة من الخارج.");
-        put("To change YouTube speed, turn on this app's Accessibility service.",
-            "Para cambiar la velocidad de YouTube, activa el servicio de accesibilidad de esta app.",
-            "Um die YouTube-Geschwindigkeit zu ändern, aktiviere den Bedienungshilfen-Dienst dieser App.",
-            "Pour modifier la vitesse de YouTube, activez le service d’accessibilité de cette application.",
-            "لتغيير سرعة يوتيوب، فعّل خدمة إمكانية الوصول الخاصة بهذا التطبيق.");
-        put("Setting YouTube speed…",
-            "Ajustando la velocidad de YouTube…",
-            "YouTube-Geschwindigkeit wird eingestellt …",
-            "Réglage de la vitesse de YouTube…",
-            "جارٍ ضبط سرعة يوتيوب…");
-        put("Failed; the YouTube video must be on screen.",
-            "Falló; el vídeo de YouTube debe estar en pantalla.",
-            "Fehlgeschlagen; das YouTube-Video muss auf dem Bildschirm sein.",
-            "Échec ; la vidéo YouTube doit être affichée à l’écran.",
-            "فشلت العملية؛ يجب أن يكون فيديو يوتيوب ظاهرًا على الشاشة.");
-        put("Accessibility service isn't connected yet; toggle it off/on once.",
-            "El servicio de accesibilidad aún no está conectado; desactívalo y actívalo una vez.",
-            "Der Bedienungshilfen-Dienst ist noch nicht verbunden; schalte ihn einmal aus und wieder ein.",
-            "Le service d’accessibilité n’est pas encore connecté ; désactivez-le puis réactivez-le une fois.",
-            "خدمة إمكانية الوصول غير متصلة بعد؛ أوقفها ثم شغّلها مرة واحدة.");
         put("Font",
             "Fuente",
             "Schrift",
