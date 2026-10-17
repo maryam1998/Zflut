@@ -138,6 +138,18 @@ class LinLearnBridge {
     await _ok(() => _n.magnifierStop());
   }
 
+  /// آیا حباب/ذره‌بین الان واقعاً در حال اجراست؟ (برای هماهنگ‌سازی وضعیت بعد از باز شدن اپ)
+  static Future<bool> isBubbleRunning() async {
+    if (!_n.isSupported) return false;
+    try {
+      final a = await _n.isRunning();
+      final b = await _n.magnifierIsRunning();
+      return a['running'] == true || b['running'] == true;
+    } on PlatformException {
+      return false;
+    }
+  }
+
   /// رنگ کادر حباب (#RRGGBB) و حالت نمایش ('both' | 'translation' | 'original').
   static Future<void> setBubbleOptions({
     String? panelColor,

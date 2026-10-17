@@ -40,6 +40,14 @@ class BubbleNotifier extends StateNotifier<BubbleState> {
     await LinLearnBridge.stopBubble();
     state = const BubbleState();
   }
+
+  /// بعد از باز شدن/برگشت به اپ: وضعیتِ واقعیِ حباب را از اندروید بخوان.
+  Future<void> syncFromNative() async {
+    final running = await LinLearnBridge.isBubbleRunning();
+    if (running != state.running) {
+      state = running ? BubbleState(running: true, mode: state.mode) : const BubbleState();
+    }
+  }
 }
 
 final bubbleProvider =

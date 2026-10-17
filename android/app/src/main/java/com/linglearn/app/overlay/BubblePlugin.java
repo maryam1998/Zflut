@@ -55,16 +55,8 @@ public class BubblePlugin extends Plugin {
 
     /** اگه intent مالِ آدرسِ بازگشتِ ورود بود، به JS (رویداد authCallback) می‌فرسته. */
     private void dispatchAuthIntent(Intent intent) {
-        if (intent == null) return;
-        Uri data = intent.getData();
-        if (data == null) return;
-        if (!AUTH_SCHEME.equals(data.getScheme()) || !AUTH_HOST.equals(data.getHost())) return;
-        JSObject ret = new JSObject();
-        ret.put("url", data.toString());
-        // retainUntilConsumed=true: اگه JS هنوز listener نذاشته، رویداد نگه داشته می‌شه
-        notifyListeners("authCallback", ret, true);
-        // جلوگیری از پردازشِ دوباره‌ی همین intent
-        intent.setData(null);
+        // در نسخه‌ی فلاتر، supabase_flutter خودش لینک بازگشتِ ورود را می‌گیرد؛
+        // اینجا نه رویداد می‌فرستیم و نه intent را پاک می‌کنیم (وگرنه ورود با گوگل خراب می‌شد).
     }
 
     private static volatile BubblePlugin inst;

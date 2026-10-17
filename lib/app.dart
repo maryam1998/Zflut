@@ -7,6 +7,7 @@ import 'core/constants/app_font_sizes.dart';
 import 'core/constants/app_fonts.dart';
 import 'core/constants/app_themes.dart';
 import 'core/providers/app_prefs_provider.dart';
+import 'core/providers/native_sync_provider.dart';
 import 'core/providers/preload.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/theme_builder.dart';
@@ -23,6 +24,8 @@ class LingoLearnApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // 📦 داده‌ی همه‌ی تب‌ها از همین اول بارگذاری شود (نه با باز شدنِ تب)
     startDataPreload(ProviderScope.containerOf(context, listen: false));
+    // 🔗 هماهنگی با بخش اندروید (لغات حباب، زیرنویس‌های ذخیره‌شده، وضعیت حباب)
+    ref.watch(nativeSyncProvider);
     final prefs = ref.watch(appPrefsProvider);
     final router = ref.watch(appRouterProvider);
     final themePreset = kAppThemes[prefs.theme]!;
