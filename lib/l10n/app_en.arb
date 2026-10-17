@@ -1031,5 +1031,19 @@
   },
   "lingovaBubbleNewStory": "What a cool story! 📖",
   "lingovaBubbleReviewDone": "Review finished! Well done! ✅",
-  "lingovaBubbleMastered": "You've learned this word! 🎓"
+  "lingovaBubbleMastered": "You've learned this word! 🎓",
+  "auth_continue_as_guest": "Continue as guest",
+  "auth_guest_note": "Guest data stays on this device only. Sign in any time to back it up.",
+  "auth_sync_note": "When signed in, your words, settings and downloaded models stay linked to your account.",
+  "auth_forgot_password": "Forgot password?",
+  "auth_enter_email_first": "Enter your email first.",
+  "auth_reset_sent": "A password reset link was sent to your email.",
+  "auth_password_too_short": "Password must be at least 6 characters.",
+  "auth_guest_name": "Guest",
+  "settings_sign_in_to_sync": "Sign in to sync your data",
+  "sync_restore_title": "Restore your downloads?",
+  "sync_restore_body": "These packs were downloaded with your account on another device:",
+  "sync_restore_download": "Download",
+  "sync_restore_later": "Later",
+  "sync_restore_started": "Downloads started — follow progress in Settings."
 }

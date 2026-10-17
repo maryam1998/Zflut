@@ -625,5 +625,19 @@
   "lingovaBubbleStreak": "{days} روز پشت‌سرهم! ادامه بده! 🔥",
   "lingovaBubbleNewStory": "چه داستان جالبی! 📖",
   "lingovaBubbleReviewDone": "مرورت تموم شد! آفرین! ✅",
-  "lingovaBubbleMastered": "این لغت رو یاد گرفتی! 🎓"
+  "lingovaBubbleMastered": "این لغت رو یاد گرفتی! 🎓",
+  "auth_continue_as_guest": "ادامه به‌عنوان مهمان",
+  "auth_guest_note": "اطلاعات مهمان فقط روی همین دستگاه می‌ماند. هر زمان خواستید وارد شوید تا پشتیبان‌گیری شود.",
+  "auth_sync_note": "با ورود، لغات، تنظیمات و مدل‌های دانلودشده‌ی شما به حسابتان وصل می‌ماند.",
+  "auth_forgot_password": "رمز عبور را فراموش کرده‌اید؟",
+  "auth_enter_email_first": "ابتدا ایمیلتان را وارد کنید.",
+  "auth_reset_sent": "لینک بازیابی رمز عبور به ایمیلتان ارسال شد.",
+  "auth_password_too_short": "رمز عبور باید حداقل ۶ کاراکتر باشد.",
+  "auth_guest_name": "مهمان",
+  "settings_sign_in_to_sync": "برای همگام‌سازی داده‌ها وارد شوید",
+  "sync_restore_title": "مدل‌های قبلی بازیابی شوند؟",
+  "sync_restore_body": "این بسته‌ها قبلاً با حساب شما روی دستگاه دیگری دانلود شده بودند:",
+  "sync_restore_download": "دانلود",
+  "sync_restore_later": "بعداً",
+  "sync_restore_started": "دانلود شروع شد — پیشرفت را در تنظیمات ببینید."
 }

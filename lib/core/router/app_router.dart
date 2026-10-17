@@ -35,14 +35,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   // GoRouter فقط یک‌بار ساخته می‌شود؛ تغییر سشن از طریق refreshListenable
   // redirect را دوباره اجرا می‌کند.
   final refresh = ValueNotifier<int>(0);
-  ref.listen(authStateProvider, (_, __) => refresh.value++);
+  ref.listen(authStateProvider, (_, next) {
+    // با ورودِ واقعی، حالت مهمان تمام می‌شود (تا بعد از خروج مستقیم وارد اپ نشود).
+    final session = next.valueOrNull?.session;
+    if (session != null && ref.read(guestModeProvider)) {
+      ref.read(guestModeProvider.notifier).leave();
+    }
+    refresh.value++;
+  });
+  ref.listen(guestModeProvider, (_, __) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
     initialLocation: '/story',
     refreshListenable: refresh,
     redirect: (context, state) {
-      final loggedIn = ref.read(authRepositoryProvider).currentSession != null;
+      final loggedIn = ref.read(authRepositoryProvider).currentSession != null ||
+          ref.read(guestModeProvider);
       final goingToLogin = state.matchedLocation == '/login';
       if (!loggedIn) return goingToLogin ? null : '/login';
       if (goingToLogin) return '/story';

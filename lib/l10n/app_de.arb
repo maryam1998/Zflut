@@ -625,5 +625,19 @@
   "lingovaBubbleStreak": "{days} Tage in Folge! Weiter so! 🔥",
   "lingovaBubbleNewStory": "Was für eine tolle Geschichte! 📖",
   "lingovaBubbleReviewDone": "Wiederholung geschafft! Bravo! ✅",
-  "lingovaBubbleMastered": "Dieses Wort hast du gelernt! 🎓"
+  "lingovaBubbleMastered": "Dieses Wort hast du gelernt! 🎓",
+  "auth_continue_as_guest": "Als Gast fortfahren",
+  "auth_guest_note": "Gastdaten bleiben nur auf diesem Gerät. Melde dich jederzeit an, um sie zu sichern.",
+  "auth_sync_note": "Nach der Anmeldung bleiben deine Wörter, Einstellungen und heruntergeladenen Modelle mit deinem Konto verknüpft.",
+  "auth_forgot_password": "Passwort vergessen?",
+  "auth_enter_email_first": "Gib zuerst deine E-Mail-Adresse ein.",
+  "auth_reset_sent": "Ein Link zum Zurücksetzen des Passworts wurde an deine E-Mail gesendet.",
+  "auth_password_too_short": "Das Passwort muss mindestens 6 Zeichen lang sein.",
+  "auth_guest_name": "Gast",
+  "settings_sign_in_to_sync": "Anmelden, um Daten zu synchronisieren",
+  "sync_restore_title": "Downloads wiederherstellen?",
+  "sync_restore_body": "Diese Pakete wurden mit deinem Konto auf einem anderen Gerät heruntergeladen:",
+  "sync_restore_download": "Herunterladen",
+  "sync_restore_later": "Später",
+  "sync_restore_started": "Download gestartet — Fortschritt siehst du in den Einstellungen."
 }

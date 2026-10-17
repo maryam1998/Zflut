@@ -625,5 +625,19 @@
   "lingovaBubbleStreak": "{days} أيام متتالية! واصل! 🔥",
   "lingovaBubbleNewStory": "يا لها من قصة جميلة! 📖",
   "lingovaBubbleReviewDone": "انتهت المراجعة! أحسنت! ✅",
-  "lingovaBubbleMastered": "لقد تعلمت هذه الكلمة! 🎓"
+  "lingovaBubbleMastered": "لقد تعلمت هذه الكلمة! 🎓",
+  "auth_continue_as_guest": "المتابعة كضيف",
+  "auth_guest_note": "بيانات الضيف تبقى على هذا الجهاز فقط. سجّل الدخول في أي وقت لنسخها احتياطيًا.",
+  "auth_sync_note": "عند تسجيل الدخول، تبقى كلماتك وإعداداتك والنماذج التي نزّلتها مرتبطة بحسابك.",
+  "auth_forgot_password": "نسيت كلمة المرور؟",
+  "auth_enter_email_first": "أدخل بريدك الإلكتروني أولًا.",
+  "auth_reset_sent": "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك.",
+  "auth_password_too_short": "يجب ألا تقل كلمة المرور عن 6 أحرف.",
+  "auth_guest_name": "ضيف",
+  "settings_sign_in_to_sync": "سجّل الدخول لمزامنة بياناتك",
+  "sync_restore_title": "استعادة تنزيلاتك؟",
+  "sync_restore_body": "تم تنزيل هذه الحزم بحسابك على جهاز آخر:",
+  "sync_restore_download": "تنزيل",
+  "sync_restore_later": "لاحقًا",
+  "sync_restore_started": "بدأ التنزيل — تابع التقدّم من الإعدادات."
 }

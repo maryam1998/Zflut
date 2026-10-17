@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'core/config/app_config.dart';
 import 'core/storage/local_storage.dart' show sharedPrefsProvider;
+import 'core/sync/app_restarter.dart';
 import 'core/storage/translation_cache_db.dart';
 
 // مقادیر واقعی از --dart-define (در GitHub Actions از Secrets) می‌آیند.
@@ -79,13 +80,16 @@ Future<void> main() async {
     // تا آماده شود کش فقط در حافظه کار می‌کند و اپ منتظر نمی‌ماند.
     unawaited(TranslationCacheDb.instance.init(prefs));
 
+    // AppRestarter: بعد از بازیابیِ داده‌ی ابری درخت providerها دوباره ساخته می‌شود.
     runApp(
-      ProviderScope(
-        overrides: [
-          // SharedPreferences را از قبل می‌سازیم تا خواندن prefs سنکرون باشد.
-          sharedPrefsProvider.overrideWithValue(prefs),
-        ],
-        child: const LingoLearnApp(),
+      AppRestarter(
+        builder: () => ProviderScope(
+          overrides: [
+            // SharedPreferences را از قبل می‌سازیم تا خواندن prefs سنکرون باشد.
+            sharedPrefsProvider.overrideWithValue(prefs),
+          ],
+          child: const LingoLearnApp(),
+        ),
       ),
     );
   }, (error, stack) {

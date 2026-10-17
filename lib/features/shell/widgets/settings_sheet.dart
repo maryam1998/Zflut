@@ -17,6 +17,7 @@ import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/providers/linlearn_provider.dart';
 import '../../../core/providers/text_prefs_provider.dart';
 import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
+import '../../../core/sync/cloud_sync.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../auth/providers/auth_provider.dart';
 import 'settings_packs.dart';
@@ -224,7 +225,8 @@ class _AccountSection extends ConsumerWidget {
     final c = context.appColors;
     final L = context.l10n;
 
-    String displayName = L.settings_guest_user;
+    final isGuest = ref.watch(guestModeProvider);
+    String displayName = isGuest ? L.auth_guest_name : L.settings_guest_user;
     String displayEmail = '';
     bool isSignedIn = false;
 
@@ -294,11 +296,38 @@ class _AccountSection extends ConsumerWidget {
             ),
           ],
         ),
+        if (!isSignedIn && isGuest) ...[
+          const SizedBox(height: 14),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () async {
+              // حالت مهمان تمام می‌شود ← روتر به صفحه‌ی ورود می‌رود
+              await ref.read(guestModeProvider.notifier).leave();
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.cloud_sync_outlined, size: 14, color: c.teal),
+                const SizedBox(width: 8),
+                Text(L.settings_sign_in_to_sync,
+                    style: TextStyle(color: c.teal, fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
         if (isSignedIn) ...[
           const SizedBox(height: 14),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () async {
+              try {
+                // آخرین تغییرات قبل از خروج در حساب ذخیره شود
+                await ref
+                    .read(cloudSyncProvider)
+                    .push()
+                    .timeout(const Duration(seconds: 8));
+              } catch (_) {}
               try {
                 await ref.read(authRepositoryProvider).signOut();
               } catch (_) {}

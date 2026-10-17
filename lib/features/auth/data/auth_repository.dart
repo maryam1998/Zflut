@@ -31,6 +31,10 @@ class AuthRepository {
 
   Future<void> signOut() => _client.auth.signOut();
 
+  /// ارسال لینک بازیابی رمز عبور به ایمیل.
+  Future<void> resetPassword(String email) =>
+      _client.auth.resetPasswordForEmail(email);
+
   /// ورود گوگل — در وب به همین صفحه (بدون hash/query) برمی‌گردد؛
   /// در اندروید با deep-link com.linglearn.app://login-callback.
   Future<bool> signInWithGoogle() async {

@@ -282,18 +282,27 @@ class LinLearnBridge {
     }
   }
 
-  static Future<bool> packDelete(String kind, String id) {
-    if (!_n.isSupported) return Future.value(false);
+  /// هوکِ همگام‌سازی ابری: وقتی کاربر خودش یک بسته را حذف می‌کند صدا زده می‌شود.
+  static void Function(String kind, String id)? onPackDeleted;
+
+  static Future<bool> packDelete(String kind, String id) async {
+    if (!_n.isSupported) return false;
+    final bool ok;
     switch (kind) {
       case 'tts':
-        return _ok(() => _n.deleteTtsModel(lang: id));
+        ok = await _ok(() => _n.deleteTtsModel(lang: id));
+        break;
       case 'speech':
-        return _ok(() => _n.deleteModel(lang: id));
+        ok = await _ok(() => _n.deleteModel(lang: id));
+        break;
       case 'song':
-        return _ok(() => _n.deleteWhisperModel(model: id));
+        ok = await _ok(() => _n.deleteWhisperModel(model: id));
+        break;
       default:
-        return Future.value(false);
+        return false;
     }
+    if (ok) onPackDeleted?.call(kind, id);
+    return ok;
   }
 
   static Future<bool> packSetEnabled(String kind, String id, bool enabled) {

@@ -10,6 +10,7 @@ import 'core/providers/app_prefs_provider.dart';
 import 'core/providers/native_sync_provider.dart';
 import 'core/providers/preload.dart';
 import 'core/router/app_router.dart';
+import 'core/sync/cloud_sync.dart';
 import 'core/theme/theme_builder.dart';
 import 'l10n/app_localizations.dart';
 
@@ -26,6 +27,8 @@ class LingoLearnApp extends ConsumerWidget {
     startDataPreload(ProviderScope.containerOf(context, listen: false));
     // 🔗 هماهنگی با بخش اندروید (لغات حباب، زیرنویس‌های ذخیره‌شده، وضعیت حباب)
     ref.watch(nativeSyncProvider);
+    // ☁️ همگام‌سازی داده‌ها و فهرست مدل‌های دانلودشده با حساب کاربر (فقط وقتی وارد شده)
+    ref.watch(cloudSyncProvider);
     final prefs = ref.watch(appPrefsProvider);
     final router = ref.watch(appRouterProvider);
     final themePreset = kAppThemes[prefs.theme]!;
