@@ -230,6 +230,12 @@ final class YtSubtitles {
         return true;
     }
 
+    /** مکث/ادامه‌ی ویدیوی یوتیوب. 1 = پخش شد، 0 = مکث شد، -1 = پلیر در دسترس نیست. */
+    int togglePlayPause() {
+        if (!active) return -1;
+        return tracker.togglePlayPause();
+    }
+
     /** کلِ ویدیو را از ثانیه‌ی صفر و بدونِ هیچ حلقه‌ی جمله‌ای پخش می‌کند. false = پلیر در دسترس نیست. */
     boolean restartVideo() {
         if (!active || fullText) return false;

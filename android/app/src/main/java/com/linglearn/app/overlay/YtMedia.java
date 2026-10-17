@@ -297,6 +297,24 @@ public class YtMedia extends NotificationListenerService {
             try { c.getTransportControls().play(); } catch (Throwable ignored) {}
         }
 
+        /**
+         * مکث/ادامه‌ی پخش از همان controller (فقط یوتیوب، چون tracker فقط به sessionِ یوتیوب وصله).
+         * 1 = الان در حال پخش شد، 0 = مکث شد، -1 = پلیر در دسترس نیست.
+         */
+        public int togglePlayPause() {
+            MediaController c = ctrl;
+            if (c == null) return -1;
+            try {
+                PlaybackState ps = c.getPlaybackState();
+                boolean playing = ps != null && ps.getState() == PlaybackState.STATE_PLAYING;
+                if (playing) { c.getTransportControls().pause(); return 0; }
+                c.getTransportControls().play();
+                return 1;
+            } catch (Throwable e) {
+                return -1;
+            }
+        }
+
         /** seek از همان controller. */
         public boolean seekTo(long ms) {
             MediaController c = ctrl;

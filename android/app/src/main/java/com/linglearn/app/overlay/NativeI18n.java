@@ -158,6 +158,16 @@ final class NativeI18n {
             "Video von vorn gestartet",
             "Vidéo relancée depuis le début",
             "أُعيد تشغيل الفيديو من البداية");
+        put("Playing",
+            "Reproduciendo",
+            "Wiedergabe",
+            "Lecture",
+            "جارٍ التشغيل");
+        put("Paused",
+            "En pausa",
+            "Pausiert",
+            "En pause",
+            "متوقف مؤقتًا");
         put("🔖 Saved for next story",
             "🔖 Guardado para la próxima historia",
             "🔖 Für nächste Geschichte gespeichert",

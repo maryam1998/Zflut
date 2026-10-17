@@ -312,6 +312,7 @@ public class BubbleService extends Service {
     private YtSubtitles yt;               // 📺 حالت یوتیوب (null = خاموش)
     private TextView tvYt;                // دکمه‌ی ▶ در هدرِ پنل
     private TextView tvYtRestart;         // دکمه‌ی ⏮ : کلِ ویدیوی یوتیوب از اول
+    private TextView tvYtPause;           // دکمه‌ی ⏯ : مکث/ادامه‌ی ویدیوی یوتیوب
     private TextView tvYtAll;             // دکمه‌ی 🔂 : (حالتِ «متنِ کامل») خواندنِ کلِ متن از اول و تکرارِ آن
     private boolean ytFullMode = false;   // 📄 زیرنویسِ کامل بدونِ دسترسیِ اعلان و بدونِ پررنگ‌شدن
     private volatile boolean fullLoop = false;
@@ -1362,6 +1363,10 @@ public class BubbleService extends Service {
         tvYtRestart.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtRestart.setVisibility(View.GONE);
         header.addView(tvYtRestart);
+        tvYtPause = headerButton("\u23EF", v -> toggleYoutubePause());   // ⏯ فقط در حالتِ یوتیوب دیده می‌شود
+        tvYtPause.setPadding(dp(8), dp(6), dp(8), dp(6));
+        tvYtPause.setVisibility(View.GONE);
+        header.addView(tvYtPause);
         tvYtAll = headerButton("\uD83D\uDD02", v -> toggleFullText());   // 🔂 فقط در حالتِ «متنِ کامل»
         tvYtAll.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtAll.setVisibility(View.GONE);
@@ -1914,6 +1919,16 @@ public class BubbleService extends Service {
             showNotice(msg("ویدیو از اول پخش شد", "Video restarted from the beginning"));
         else
             showNotice(msg("پلیر یوتیوب در دسترس نیست", "YouTube player not available"));
+    }
+
+    /** ⏯ مکث/ادامه‌ی ویدیوی یوتیوب (از طریق MediaSession همان اپ یوتیوب). */
+    private void toggleYoutubePause() {
+        if (yt == null || !yt.isActive()) return;
+        stopPanelSpeech();                                   // صدای برنامه با صدای یوتیوب قاطی نشود
+        int r = yt.togglePlayPause();
+        if (r == 1) showNotice(msg("ادامه‌ی پخش", "Playing"));
+        else if (r == 0) showNotice(msg("مکث", "Paused"));
+        else showNotice(msg("پلیر یوتیوب در دسترس نیست", "YouTube player not available"));
     }
 
     private void stopPanelSpeech() {
@@ -3952,6 +3967,7 @@ public class BubbleService extends Service {
         tvYt.setTextColor(on ? COLOR_GOLD : Color.WHITE);
         tvYt.setAlpha(on ? 1f : 0.6f);
         if (tvYtRestart != null) tvYtRestart.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
+        if (tvYtPause != null) tvYtPause.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
         if (tvYtAll != null) {
             tvYtAll.setVisibility(on && ytFullMode ? View.VISIBLE : View.GONE);
             tvYtAll.setText(fullLoop ? "\u23F9" : "\uD83D\uDD02");
