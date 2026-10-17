@@ -6,6 +6,7 @@ import '../../../core/providers/speech_provider.dart';
 import '../../../core/scroll/global_scroll.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/tts/speech_state.dart';
+import 'my_voice_recorder.dart';
 
 class PlayerBar extends ConsumerWidget {
   const PlayerBar({super.key});
@@ -96,19 +97,8 @@ class PlayerBar extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // ضبط صدا
-                  _IconBtn(
-                    icon: Icons.mic_none_outlined,
-                    color: c.rose,
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('ضبط صدا به‌زودی'),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                  ),
+                  // ضبط صدا (تمرینِ shadowing)
+                  const MyVoiceRecorder(),
 
                   // بی‌صدا
                   _IconBtn(

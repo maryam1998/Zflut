@@ -20,6 +20,7 @@ import java.util.List;
  * بار دوم که همان ویدیو پخش شود، نه شبکه‌ی زیرنویس لازم است نه ترجمه: همه‌چیز فوری از دیسک می‌آید.
  *  - زیرنویس: {videoId}_{lang}.caps.json  (۷ روز اعتبار)
  *  - ترجمه:   {videoId}_{lang}_{tone}.tr.json  (به‌همراهِ «امضای جمله‌ها»؛ اگر زیرنویس عوض شده باشد نادیده گرفته می‌شود)
+ * 🔧 برای خاموش کردنِ کش (مثلاً به دلایلِ حقوقی) فقط CACHE_ENABLED را false کنید؛ در آن حالت کشِ قدیمی هم پاک می‌شود.
  * همه‌ی متدها امنِ thread هستند (فایل‌ها اتمیک نوشته می‌شوند) و هیچ‌وقت exception بیرون نمی‌دهند.
  */
 final class YtDiskCache {
@@ -27,6 +28,8 @@ final class YtDiskCache {
     private static final String DIR = "yt_cache";
     private static final long CAPS_TTL_MS = 7L * 24 * 3600 * 1000;
     private static final int MAX_FILES = 80;
+    /** کلیدِ اصلی: false = هیچ‌چیز روی دیسک ذخیره نمی‌شود و کشِ قبلی پاک می‌شود. */
+    private static final boolean CACHE_ENABLED = true;
 
     private YtDiskCache() {}
 
@@ -34,6 +37,13 @@ final class YtDiskCache {
         File d = new File(c.getApplicationContext().getFilesDir(), DIR);
         if (!d.exists()) d.mkdirs();
         return d;
+    }
+
+    private static void purge(Context c) {
+        try {
+            File[] fs = new File(c.getApplicationContext().getFilesDir(), DIR).listFiles();
+            if (fs != null) for (File f : fs) f.delete();
+        } catch (Throwable ignored) {}
     }
 
     private static String safe(String s) {
@@ -63,16 +73,8 @@ final class YtDiskCache {
 
     // ───────── زیرنویس ─────────
 
-    /** 🔒 کپی‌رایت: زیرنویس و ترجمه دیگر روی دیسک ذخیره نمی‌شوند؛ کشِ قدیمی هم پاک می‌شود. */
-    private static void purge(Context c) {
-        try {
-            File[] fs = new File(c.getApplicationContext().getFilesDir(), DIR).listFiles();
-            if (fs != null) for (File f : fs) f.delete();
-        } catch (Throwable ignored) {}
-    }
-
     static YtCaptionFetcher.Out loadCaps(Context c, String videoId, String lang) {
-        if (true) { purge(c); return null; }
+        if (!CACHE_ENABLED) { purge(c); return null; }
         try {
             File f = new File(dir(c), safe(videoId) + "_" + safe(lang) + ".caps.json");
             if (!f.exists() || System.currentTimeMillis() - f.lastModified() > CAPS_TTL_MS) return null;
@@ -92,7 +94,7 @@ final class YtDiskCache {
     }
 
     static void saveCaps(Context c, String videoId, String lang, YtCaptionFetcher.Out out) {
-        if (true) return;
+        if (!CACHE_ENABLED) return;
         try {
             JSONArray a = new JSONArray();
             for (YtSubtitles.Cue q : out.cues) a.put(new JSONArray().put(q.startMs).put(q.endMs).put(q.text));
@@ -117,7 +119,7 @@ final class YtDiskCache {
     }
 
     static String[] loadTr(Context c, String videoId, String lang, String tone, String sig) {
-        if (true) return null;
+        if (!CACHE_ENABLED) return null;
         try {
             File f = new File(dir(c), safe(videoId) + "_" + safe(lang) + "_" + safe(tone) + ".tr.json");
             if (!f.exists()) return null;
@@ -137,7 +139,7 @@ final class YtDiskCache {
     }
 
     static void saveTr(Context c, String videoId, String lang, String tone, String sig, String[] tr) {
-        if (true) return;
+        if (!CACHE_ENABLED) return;
         try {
             JSONArray a = new JSONArray();
             for (String s : tr) a.put(s == null ? "" : s);

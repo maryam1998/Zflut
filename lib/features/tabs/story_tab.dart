@@ -21,6 +21,11 @@ import '../../core/translate/translation_service.dart'
     show runWithConcurrencyLimit;
 import '../../core/web/reading_io_stub.dart'
     if (dart.library.html) '../../core/web/reading_io_web.dart';
+import 'package:flutter/gestures.dart';
+import '../../core/audio/story_audio_controller.dart';
+import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
+import '../story/srt_translator_tool.dart';
+import '../story/story_audio_bar.dart';
 import '_hope_panel.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -336,6 +341,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   final _linkCtrl = TextEditingController();
   final _pasteCtrl = TextEditingController();
 
+  // صوتِ آپلودیِ هر داستان (کلید = id داستان) + همگام‌سازیِ هایلایت با متن
+  final Map<String, StoryAudioController> _audioCtrls = {};
+  final Map<String, List<TapGestureRecognizer>> _tapRecs = {};
+  final Map<String, int> _lastScrolled = {};
+  final Map<String, List<GlobalKey>> _paraKeys = {};
+
   String _libLevel = 'all';
   final _libSearch = TextEditingController();
   String? _openStoryId;
@@ -359,6 +370,14 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     _linkCtrl.dispose();
     _pasteCtrl.dispose();
     _pdfDoc?.dispose();
+    for (final l in _tapRecs.values) {
+      for (final r in l) {
+        r.dispose();
+      }
+    }
+    for (final a in _audioCtrls.values) {
+      a.dispose();
+    }
     super.dispose();
   }
 
@@ -734,7 +753,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             style: TextStyle(color: c.inkSoft, fontSize: 11),
           ),
           const SizedBox(height: 8),
-          _storyBody(c, paras.take(shown).join('\n\n'), trans),
+          _audioBar(s),
+          _storyBody(c, paras.take(shown).join('\n\n'), trans, s.id),
           if (_readTranslating)
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
@@ -781,9 +801,42 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
   // ───────────── PDF / عکس ─────────────
 
-  String _ioError(Object e, String fallback) => e is UnsupportedError
-      ? 'این قابلیت فعلاً فقط روی نسخه‌ی وب کار می‌کنه (اندروید/ویندوز بعداً اضافه می‌شه).'
-      : fallback;
+  String _ioError(Object e, String fallback) {
+    if (e is UnsupportedError) {
+      final m = e.message ?? '';
+      if (m.startsWith('ocr-script')) {
+        return 'خوندنِ متن از عکس برای این زبان روی گوشی پشتیبانی نمی‌شه '
+            '(OCRِ گوشی فقط لاتین، چینی، ژاپنی، کره‌ای و دوناگری رو می‌خونه). '
+            'متن رو کپی/پیست کن یا PDFِ متنی وارد کن.';
+      }
+      return 'این قابلیت روی این دستگاه پشتیبانی نمی‌شه.';
+    }
+    return fallback;
+  }
+
+  // ───────────── صوتِ آپلودی ─────────────
+  List<String> _sentencesOf(String text) => [
+        for (final p in text.split(RegExp(r'\n\s*\n')))
+          if (p.trim().isNotEmpty) ..._splitSentences(p.trim()),
+      ];
+
+  StoryAudioController _ctrlFor(SavedStory s) {
+    final sents = _sentencesOf(s.text);
+    final ex = _audioCtrls[s.id];
+    if (ex != null) {
+      ex.updateSentences(sents);
+      return ex;
+    }
+    final c = StoryAudioController(
+      storyKey: s.id,
+      sentences: sents,
+      prefs: ref.read(sharedPrefsProvider),
+    );
+    _audioCtrls[s.id] = c;
+    return c;
+  }
+
+  Widget _audioBar(SavedStory s) => StoryAudioBar(ctrl: _ctrlFor(s));
 
   String _readingLang() =>
       _activeLang(ref.read(languageSelectionProvider).targets);
@@ -1815,6 +1868,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         ),
       if (_importError.isNotEmpty)
         Text(_importError, style: TextStyle(color: c.rose, fontSize: 12)),
+      const SrtTranslatorTool(),
     ];
   }
 
@@ -1872,7 +1926,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
-          _storyBody(c, s.text, s.translations),
+          _audioBar(s),
+          _storyBody(c, s.text, s.translations, s.id),
           if (_storyTranslating)
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
@@ -1888,34 +1943,122 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   Widget _storyBody(AppThemeColorsExt c, String text,
-      [Map<String, List<String>> translations = const {}]) {
+      [Map<String, List<String>> translations = const {}, String? storyKey]) {
+    final tp = ref.watch(textPrefsProvider);
+    final ctrl = storyKey == null ? null : _audioCtrls[storyKey];
+    if (ctrl == null) {
+      return _storyBodyInner(c, tp, text, translations, null, storyKey);
+    }
+    // وقتی صدا وصل است، با هر تغییرِ خطِ فعال بدنه دوباره ساخته می‌شود (هایلایت + اسکرول)
+    return ListenableBuilder(
+      listenable: ctrl,
+      builder: (context, _) => _storyBodyInner(
+          c, tp, text, translations, ctrl.hasAudio ? ctrl : null, storyKey),
+    );
+  }
+
+  Widget _storyBodyInner(AppThemeColorsExt c, TargetTextPrefs tp, String text,
+      Map<String, List<String>> translations,
+      StoryAudioController? audio, String? storyKey) {
     final paras = text
         .split(RegExp(r'\n\s*\n'))
         .where((p) => p.trim().isNotEmpty)
         .toList();
-    // ✅ تنظیماتِ «اندازه و بولدِ متن» (قبلاً هیچ‌جا به متنِ داستان وصل نبود)
-    final tp = ref.watch(textPrefsProvider);
+    // ✅ تنظیماتِ «اندازه و بولدِ متن»
     final boldText = tp.bold == TargetBoldMode.both || tp.bold == TargetBoldMode.text;
     final boldTr = tp.bold == TargetBoldMode.both || tp.bold == TargetBoldMode.translation;
+
+    // ریسه‌های قبلیِ تپِ همین بدنه دور ریخته می‌شن (با هر ساختِ دوباره تازه ساخته می‌شن)
+    final recKey = storyKey ?? '_';
+    final recs = _tapRecs.putIfAbsent(recKey, () => <TapGestureRecognizer>[]);
+    for (final r in recs) {
+      r.dispose();
+    }
+    recs.clear();
+
+    final keys = storyKey == null
+        ? null
+        : (_paraKeys[storyKey] = List.generate(paras.length, (_) => GlobalKey()));
+
+    // پاراگرافِ شاملِ جمله‌ی فعال (برای اسکرولِ خودکار)
+    int activeParaIdx = -1;
+    var sentCounter = 0;
+    final paraSents = <List<String>>[];
+    for (var i = 0; i < paras.length; i++) {
+      final ss = audio == null ? const <String>[] : _splitSentences(paras[i].trim());
+      paraSents.add(ss);
+      if (audio != null &&
+          activeParaIdx < 0 &&
+          audio.activeIndex < sentCounter + ss.length) {
+        activeParaIdx = i;
+      }
+      sentCounter += ss.length;
+    }
+    if (audio != null && storyKey != null && activeParaIdx >= 0 &&
+        keys != null &&
+        _lastScrolled[storyKey] != audio.activeIndex) {
+      final was = _lastScrolled[storyKey];
+      _lastScrolled[storyKey] = audio.activeIndex;
+      // فقط وقتی واقعاً در حالِ پخش/ناوبری هستیم (نه اولین ساخت)
+      if (was != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final ctx = keys[activeParaIdx].currentContext;
+          if (ctx != null && ctx.mounted) {
+            Scrollable.ensureVisible(ctx,
+                alignment: 0.25,
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOut);
+          }
+        });
+      }
+    }
+
+    Widget paraText(int i) {
+      final baseStyle = TextStyle(
+        color: c.ink,
+        fontSize: 14 * tp.scaleFactor,
+        height: 1.9,
+        fontWeight: boldText ? FontWeight.w700 : FontWeight.w400,
+      );
+      if (audio == null) {
+        return Text(paras[i].trim(),
+            textDirection: autoDir(paras[i]), style: baseStyle);
+      }
+      var before = 0;
+      for (var k = 0; k < i; k++) {
+        before += paraSents[k].length;
+      }
+      final spans = <InlineSpan>[];
+      for (var k = 0; k < paraSents[i].length; k++) {
+        final gi = before + k;
+        final rec = TapGestureRecognizer()..onTap = () => audio.setActiveLine(gi);
+        recs.add(rec);
+        final on = gi == audio.activeIndex;
+        spans.add(TextSpan(
+          text: '${paraSents[i][k]}${k == paraSents[i].length - 1 ? '' : ' '}',
+          recognizer: rec,
+          style: on
+              ? TextStyle(
+                  backgroundColor: c.gold.withOpacity(0.28),
+                  fontWeight: FontWeight.w700)
+              : null,
+        ));
+      }
+      return Text.rich(TextSpan(children: spans, style: baseStyle),
+          textDirection: autoDir(paras[i]));
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < paras.length; i++)
           Padding(
+            key: keys?[i],
             padding: const EdgeInsets.only(bottom: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  paras[i].trim(),
-                  textDirection: autoDir(paras[i]),
-                  style: TextStyle(
-                    color: c.ink,
-                    fontSize: 14 * tp.scaleFactor,
-                    height: 1.9,
-                    fontWeight: boldText ? FontWeight.w700 : FontWeight.w400,
-                  ),
-                ),
+                paraText(i),
                 for (final e in translations.entries)
                   if (i < e.value.length && e.value[i].trim().isNotEmpty)
                     Container(
@@ -2103,7 +2246,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: c.cardBorder)),
               ),
-              child: _storyBody(c, s.text, s.translations),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _audioBar(s),
+                  _storyBody(c, s.text, s.translations, s.id),
+                ],
+              ),
             ),
         ],
       ),
