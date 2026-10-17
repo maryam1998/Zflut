@@ -95,7 +95,6 @@ class LevelChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: border, width: 1.1),
         ),
-        alignment: Alignment.center,
         child: Text(
           isAll ? (allLabel ?? context.l10n.levels_all) : level,
           style: TextStyle(
