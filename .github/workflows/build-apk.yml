@@ -104,7 +104,10 @@ jobs:
       - name: Show errors only
         if: failure()
         run: |
-          grep -nE "error:|e: |What went wrong|FAILED|Execution failed|cannot find symbol|Could not" -A3 build-*.log | head -120
+          echo "=== خطاهای Dart (فایل:خط) ==="
+          grep -hE "\.dart:[0-9]+:[0-9]+: *(Error|error)|^Error:|Target kernel_snapshot|Target aot_|Dart compiler|Unresolved|cannot find symbol|e: file" -A3 build-*.log | head -80 || true
+          echo "=== خطاهای Gradle ==="
+          grep -hE "What went wrong|Execution failed|Could not|FAILED" -A3 build-*.log | head -60 || true
 
       - uses: actions/upload-artifact@v4
         with:
