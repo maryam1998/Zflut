@@ -999,10 +999,37 @@ class _FloatingBubbleSectionState
     if (RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(hex)) _setColor(hex.toUpperCase());
   }
 
+  /// یک‌بار توضیح ← صفحه‌ی تنظیمات ← با برگشت، خودکار ادامه می‌دهد (بدونِ «دوباره امتحان کن»).
   Future<bool> _ensureOverlay() async {
     if (await LinLearnBridge.canDrawOverlays()) return true;
+    if (!mounted) return false;
+    final ml = MaterialLocalizations.of(context);
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('نمایش روی سایر برنامه‌ها'),
+        content: const Text(
+            'برای نشان‌دادنِ حباب و زیرنویس روی ویدیو، این اجازه لازم است (فقط یک‌بار).\n\n'
+            'در صفحه‌ی بعد گزینه را روشن کن و برگرد؛ خودکار ادامه می‌دهد.\n\n'
+            'اگر پیامِ «restricted permission» آمد (نصب از بیرونِ استور): '
+            'تنظیمات ← برنامه‌ها ← LingoLearn ← منوی ⋮ ← «Allow restricted settings» '
+            'و دوباره امتحان کن.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(ml.cancelButtonLabel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(ml.continueButtonLabel)),
+        ],
+      ),
+    );
+    if (go != true) return false;
     await LinLearnBridge.requestOverlayPermission();
-    _toast('اجازه‌ی «نمایش روی سایر برنامه‌ها» را بدهید و دوباره امتحان کنید.');
+    for (var i = 0; i < 90 && mounted; i++) {
+      await Future.delayed(const Duration(milliseconds: 700));
+      if (await LinLearnBridge.canDrawOverlays()) return true;
+    }
     return false;
   }
 
@@ -1079,11 +1106,8 @@ class _FloatingBubbleSectionState
     setState(() => _busy = true);
     try {
       if (!await _ensureOverlay()) return;
-      if (!await LinLearnBridge.ytCheckAccess()) {
-        await LinLearnBridge.ytRequestAccess();
-        _toast('«دسترسی به اعلان‌ها» را برای برنامه روشن کن و دوباره امتحان کن.');
-        return;
-      }
+      // «دسترسی به اعلان‌ها» دیگر اجباری نیست: بدونش ▶ کلِ زیرنویس را از لینکِ کلیپ‌بورد می‌آورد؛
+      // همگام‌سازی با پخش با نگه‌داشتنِ ▶ در حباب (انتخابِ «همگام‌سازی») فعال می‌شود.
       await _pushOptions();
       if (!ref.read(bubbleProvider).running) {
         await ref.read(bubbleProvider.notifier).start(mode: 'translator');
