@@ -6,6 +6,10 @@ plugins {
 
 // شماره‌ی نسخه از VERSION_CODE (ورک‌فلو: شماره‌ی اجرا)؛ اگه نبود، از pubspec
 val envVersionCode: Int? = System.getenv("VERSION_CODE")?.toIntOrNull()
+// ✅ versionCode همیشه صعودی (دقیقه از 1970) تا آپدیت روی نسخه‌ی نصب‌شده هیچ‌وقت به‌خاطر «versionCode پایین‌تر» رد نشود.
+//    (قبلاً فقط شماره‌ی اجرای ورک‌فلو بود؛ اگر ریپو/ورک‌فلو عوض می‌شد شماره کوچک‌تر می‌شد و نصبِ آپدیت شکست می‌خورد.)
+val timeVersionCode: Int = (System.currentTimeMillis() / 60000L).toInt()
+val appVersionCode: Int = maxOf(envVersionCode ?: 0, timeVersionCode)
 
 android {
     namespace = "com.linglearn.app"
@@ -20,8 +24,8 @@ android {
         applicationId = "com.linglearn.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = envVersionCode ?: flutter.versionCode
-        versionName = if (envVersionCode != null) "1.0.$envVersionCode" else flutter.versionName
+        versionCode = appVersionCode
+        versionName = "1.0.$appVersionCode"
 
         // معماری‌ها: دستیِ abiFilters نداریم؛ از روشِ استانداردِ Flutter استفاده می‌شه:
         //   flutter build ... --target-platform android-arm64   (ورک‌فلو: build-apk.yml)
@@ -48,6 +52,11 @@ android {
 
     buildTypes {
         release {
+            // ✅ در CI اگر کلید نبود، بیلد شکست بخورد؛ نه اینکه با کلیدِ debugِ تصادفی امضا شود
+            //    (کلیدِ debug در هر اجرا فرق می‌کند و باعث می‌شد «آپدیت» نصب نشود و مجبور شوی حذف کنی).
+            if (!keystoreFile.exists() && System.getenv("CI") != null) {
+                throw GradleException("release-key.jks پیدا نشد؛ KEYSTORE_BASE64 را در Secrets بررسی کن.")
+            }
             signingConfig = if (keystoreFile.exists()) signingConfigs.getByName("release")
                             else signingConfigs.getByName("debug")
             // R8: حذفِ کدِ بلااستفاده + حذفِ منابعِ بلااستفاده

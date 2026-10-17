@@ -15,7 +15,15 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
@@ -224,6 +232,18 @@ public class ShareReceiverActivity extends Activity {
         if (title.isEmpty()) title = app;
         if (titleOverride != null && !titleOverride.trim().isEmpty()) title = titleOverride.trim();
 
+        // 📺 لینکِ ویدیوی یوتیوب: لینک بلافاصله ذخیره می‌شود، بعد عنوان + زیرنویسِ کامل در پس‌زمینه گرفته می‌شود
+        //    (بدونِ نیاز به حبابِ روشن، دسترسیِ اعلان یا کلیپ‌بورد).
+        String ytId = (host.endsWith("youtube.com") || host.equals("youtu.be") || host.endsWith("youtube-nocookie.com"))
+                ? YtMedia.idFromText(url) : null;
+        if (ytId != null && (replaceKey == null || replaceKey.isEmpty())) {
+            String shared = (titleOverride != null && !titleOverride.trim().isEmpty()) ? titleOverride.trim()
+                    : (title.equals(app) ? "" : title);
+            boolean saved = YtSaved.add(this, buildYtItem(ytId, shared, "YouTube", "en", null));
+            if (saved) startYoutubeFetch(ytId, shared);
+            return saved;
+        }
+
         long now = System.currentTimeMillis();
         SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
         fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -249,6 +269,130 @@ public class ShareReceiverActivity extends Activity {
                 .put("lines", new JSONArray())
                 .put("source", src);
         return YtSaved.add(this, item);
+    }
+
+    // ───────────────────────── 📺 یوتیوب: عنوان + زیرنویس در پس‌زمینه ─────────────────────────
+
+    private static final String WORKER_BASE = "https://phrasebook-api.maryam-s-sharifiyan.workers.dev";
+    private static final OkHttpClient HTTP = new OkHttpClient.Builder()
+            .connectTimeout(8, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .callTimeout(20, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
+            .build();
+    private static final ExecutorService YT_EX = Executors.newSingleThreadExecutor();
+
+    private static JSONObject buildYtItem(String id, String title, String channel, String lang, JSONArray lines) throws Exception {
+        long now = System.currentTimeMillis();
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+        fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+        String url = "https://youtu.be/" + id;
+        String t = (title == null || title.trim().isEmpty()) ? "YouTube" : title.trim();
+        JSONObject src = new JSONObject()
+                .put("app", "YouTube").put("pkg", "").put("title", t).put("artist", channel == null ? "" : channel)
+                .put("url", url).put("inApp", false).put("timed", false);
+        return new JSONObject()
+                .put("key", id)
+                .put("videoId", id)
+                .put("live", false)
+                .put("title", t)
+                .put("channel", channel == null ? "" : channel)
+                .put("url", url)
+                .put("lang", lang == null || lang.isEmpty() ? "en" : lang)
+                .put("targets", new JSONArray())
+                .put("rev", now)
+                .put("savedAt", fmt.format(new Date(now)))
+                .put("lines", lines == null ? new JSONArray() : lines)
+                .put("source", src);
+    }
+
+    private void startYoutubeFetch(final String id, final String sharedTitle) {
+        final Context app = getApplicationContext();
+        final Handler ui = new Handler(Looper.getMainLooper());
+        YT_EX.execute(new Runnable() {
+            @Override public void run() {
+                String title = sharedTitle == null ? "" : sharedTitle;
+                String channel = "YouTube";
+                // عنوان و کانال از oEmbed (بدونِ کلید)
+                try {
+                    Request rq = new Request.Builder()
+                            .url("https://www.youtube.com/oembed?format=json&url=" + java.net.URLEncoder.encode("https://youtu.be/" + id, "UTF-8"))
+                            .build();
+                    try (Response r = HTTP.newCall(rq).execute()) {
+                        if (r.isSuccessful() && r.body() != null) {
+                            JSONObject o = new JSONObject(r.body().string());
+                            String t = o.optString("title", "").trim();
+                            if (!t.isEmpty()) title = t;
+                            String a = o.optString("author_name", "").trim();
+                            if (!a.isEmpty()) channel = a;
+                        }
+                    }
+                } catch (Throwable ignored) {}
+
+                YtCaptionFetcher.Out out = null;
+                String err = null;
+                try {
+                    out = YtDiskCache.loadCaps(app, id, "auto");
+                    if (out == null) {
+                        out = YtCaptionFetcher.fetch(HTTP, WORKER_BASE, id, "auto");
+                        YtDiskCache.saveCaps(app, id, "auto", out);
+                    }
+                } catch (YtCaptionFetcher.Fail f) {
+                    err = f.noCaptions ? "این ویدیو زیرنویس ندارد" : f.getMessage();
+                } catch (Throwable t) {
+                    err = t.getMessage() == null ? "error" : t.getMessage();
+                }
+
+                JSONArray lines = new JSONArray();
+                String lang = "en";
+                if (out != null && out.cues != null) {
+                    for (String ln : toSentences(out.cues)) lines.put(ln);
+                    if (out.lang != null && !out.lang.isEmpty()) lang = out.lang.split("[-_]")[0].toLowerCase(Locale.ROOT);
+                }
+                final boolean ok = lines.length() > 0;
+                final int n = lines.length();
+                final String ferr = err;
+                try {
+                    YtSaved.add(app, buildYtItem(id, title, channel, lang, lines));
+                } catch (Throwable ignored) {}
+                ui.post(new Runnable() {
+                    @Override public void run() {
+                        Toast.makeText(app, ok ? "زیرنویس ذخیره شد ✓ (" + n + " جمله) — در «داستان‌های ذخیره‌شده»"
+                                : "لینک ذخیره شد، ولی زیرنویس نیامد" + (ferr == null ? "" : ": " + ferr),
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        });
+    }
+
+    /** تکه‌های زیرنویس ← جمله‌های کامل (برای زیرنویسِ خودکار که نقطه ندارد، هر ~۲۲ کلمه یک جمله). */
+    private static List<String> toSentences(List<YtSubtitles.Cue> cues) {
+        StringBuilder sb = new StringBuilder();
+        for (YtSubtitles.Cue c : cues) {
+            if (c == null || c.text == null) continue;
+            String t = c.text.replace('\n', ' ').replaceAll("\\s+", " ").trim();
+            if (t.isEmpty() || t.matches("^\\[[^\\]]*\\]$")) continue;     // [Music] و مشابه
+            if (sb.length() > 0) sb.append(' ');
+            sb.append(t);
+        }
+        List<String> out = new ArrayList<>();
+        for (String part : sb.toString().split("(?<=[.!?…؟。¿])\\s+")) {
+            String p = part.trim();
+            if (p.isEmpty()) continue;
+            String[] w = p.split("\\s+");
+            if (w.length <= 32) { out.add(p); continue; }
+            StringBuilder cur = new StringBuilder();
+            int cnt = 0;
+            for (String x : w) {
+                if (cur.length() > 0) cur.append(' ');
+                cur.append(x);
+                if (++cnt >= 22) { out.add(cur.toString()); cur.setLength(0); cnt = 0; }
+            }
+            if (cur.length() > 0) out.add(cur.toString());
+        }
+        return out;
     }
 
     private static String appName(String h) {

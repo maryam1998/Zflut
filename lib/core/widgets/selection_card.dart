@@ -1129,7 +1129,9 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
                   TextSpan(text: text.substring(0, r.start)),
                   TextSpan(
                     text: text.substring(r.start, r.end),
-                    style: TextStyle(backgroundColor: c.gold.withOpacity(0.35)),
+                    // رنگِ هایلایتِ تنظیمات؛ اگر «بدون هایلایت» باشد، لغتِ لمس‌شده رنگی نمی‌شود
+                    style: TextStyle(
+                        backgroundColor: hl == null ? null : hl.withOpacity(0.75)),
                   ),
                   TextSpan(text: text.substring(r.end)),
                 ],

@@ -34,11 +34,17 @@ class SavedStory {
     this.translations = const {},
   });
 
-  SavedStory copyWith({Map<String, List<String>>? translations}) => SavedStory(
+  SavedStory copyWith({
+    Map<String, List<String>>? translations,
+    String? title,
+    String? text,
+    String? langCode,
+  }) =>
+      SavedStory(
         id: id,
-        title: title,
-        text: text,
-        langCode: langCode,
+        title: title ?? this.title,
+        text: text ?? this.text,
+        langCode: langCode ?? this.langCode,
         level: level,
         contentType: contentType,
         words: words,

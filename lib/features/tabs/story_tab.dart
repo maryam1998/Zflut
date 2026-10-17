@@ -11,7 +11,9 @@ import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
+import '../../core/models/text_prefs.dart';
 import '../../core/providers/story_library_provider.dart';
+import '../../core/providers/text_prefs_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/translate/translation_service.dart'
@@ -1890,6 +1892,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         .split(RegExp(r'\n\s*\n'))
         .where((p) => p.trim().isNotEmpty)
         .toList();
+    // ✅ تنظیماتِ «اندازه و بولدِ متن» (قبلاً هیچ‌جا به متنِ داستان وصل نبود)
+    final tp = ref.watch(textPrefsProvider);
+    final boldText = tp.bold == TargetBoldMode.both || tp.bold == TargetBoldMode.text;
+    final boldTr = tp.bold == TargetBoldMode.both || tp.bold == TargetBoldMode.translation;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1902,7 +1908,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 Text(
                   paras[i].trim(),
                   textDirection: autoDir(paras[i]),
-                  style: TextStyle(color: c.ink, fontSize: 14, height: 1.9),
+                  style: TextStyle(
+                    color: c.ink,
+                    fontSize: 14 * tp.scaleFactor,
+                    height: 1.9,
+                    fontWeight: boldText ? FontWeight.w700 : FontWeight.w400,
+                  ),
                 ),
                 for (final e in translations.entries)
                   if (i < e.value.length && e.value[i].trim().isNotEmpty)
@@ -1917,7 +1928,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                         e.value[i].trim(),
                         textDirection: dirFor(e.key),
                         style: TextStyle(
-                            color: c.ink, fontSize: 13, height: 1.8),
+                          color: c.ink,
+                          fontSize: 13 * tp.scaleFactor,
+                          height: 1.8,
+                          fontWeight: boldTr ? FontWeight.w600 : FontWeight.w400,
+                        ),
                       ),
                     ),
               ],

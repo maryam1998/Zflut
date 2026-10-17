@@ -164,21 +164,64 @@ class NativeSync with WidgetsBindingObserver {
       acked.add(<String, dynamic>{'key': key, 'rev': it['rev'] ?? 0});
 
       final id = 'yt:$key';
-      final exists = _ref.read(storyLibraryProvider).any((s) => s.id == id);
-      if (exists) continue;
-
       final live = it['live'] == true;
       final url = (it['url'] ?? '').toString();
       final channel = (it['channel'] ?? '').toString();
-      final source = (it['source'] ?? '').toString();
       var title = (it['title'] ?? '').toString().trim();
       if (title.isEmpty) title = live ? 'ترجمه‌ی زنده' : (url.isEmpty ? 'یوتیوب' : url);
+
+      // منبع یک Map است (نه رشته) — قبلاً Map.toString() مستقیم در متن چاپ می‌شد.
+      final srcRaw = it['source'];
+      var sourceLine = '';
+      if (srcRaw is Map) {
+        sourceLine = <String>[
+          (srcRaw['app'] ?? '').toString(),
+          (srcRaw['artist'] ?? '').toString(),
+        ].where((x) => x.trim().isNotEmpty && x.trim() != channel.trim()).join(' · ');
+      } else if (srcRaw != null) {
+        sourceLine = srcRaw.toString();
+      }
+
+      // جمله‌های زیرنویس (اگر گرفته شده): هر ۳ جمله یک پاراگراف
+      final sentences = <String>[];
+      final rawLines = it['lines'];
+      if (rawLines is List) {
+        for (final l in rawLines) {
+          final t = (l is Map ? (l['src'] ?? l['text'] ?? '') : l).toString().trim();
+          if (t.isNotEmpty) sentences.add(t);
+        }
+      }
+      final paras = <String>[];
+      for (var i = 0; i < sentences.length; i += 3) {
+        paras.add(sentences.skip(i).take(3).join(' '));
+      }
+      final header = <String>[url, channel, sourceLine]
+          .where((x) => x.isNotEmpty)
+          .join('\n');
+      final body = <String>[if (header.isNotEmpty) header, ...paras].join('\n\n');
+      final lang = (it['lang'] ?? 'en').toString();
+
+      final existing = _ref
+          .read(storyLibraryProvider)
+          .where((x) => x.id == id)
+          .toList();
+      if (existing.isNotEmpty) {
+        // قبلاً فقط لینک ذخیره شده بود و حالا زیرنویس رسیده → همان ردیف کامل شود
+        if (paras.isNotEmpty && existing.first.text.length < body.length) {
+          lib.update(existing.first.copyWith(
+            title: title,
+            text: body,
+            langCode: lang,
+          ));
+        }
+        continue;
+      }
 
       lib.add(SavedStory(
         id: id,
         title: title,
-        text: <String>[url, channel, source].where((s) => s.isNotEmpty).join('\n'),
-        langCode: (it['lang'] ?? 'en').toString(),
+        text: body,
+        langCode: lang,
         level: 'B1',
         contentType: 'youtube',
         words: const <String>[],

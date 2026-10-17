@@ -5,7 +5,9 @@ import '../constants/level_colors.dart';
 import '../constants/supported_languages.dart';
 import '../player_sync/sync_widgets.dart';
 import '../providers/ai_settings_provider.dart';
+import '../models/text_prefs.dart';
 import '../providers/favorites_provider.dart';
+import '../providers/text_prefs_provider.dart';
 import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart';
@@ -61,6 +63,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
+    final tp = ref.watch(textPrefsProvider);
     final compact = widget.compact;
     final pos = widget.pos;
     final isFavorite = widget.showActions &&
@@ -125,8 +128,11 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                         sentence: widget.en,
                         style: TextStyle(
                           color: c.ink,
-                          fontSize: compact ? 15 : 19,
-                          fontWeight: FontWeight.w700,
+                          fontSize: (compact ? 15 : 19) * tp.scaleFactor,
+                          fontWeight: (tp.bold == TargetBoldMode.both ||
+                                  tp.bold == TargetBoldMode.text)
+                              ? FontWeight.w700
+                              : FontWeight.w400,
                           height: 1.25,
                         ),
                         textDirection: TextDirection.ltr,
@@ -491,6 +497,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
+    final tp = ref.watch(textPrefsProvider);
     final text = _text;
     final loading = text == null && !_failed;
     final rtl = dirFor(widget.langCode) == TextDirection.rtl;
@@ -543,8 +550,11 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                           sentence: text,
                           style: TextStyle(
                             color: const Color(0xFF0F5C34),
-                            fontSize: widget.compact ? 13 : 14,
-                            fontWeight: FontWeight.w600,
+                            fontSize: (widget.compact ? 13 : 14) * tp.scaleFactor,
+                            fontWeight: (tp.bold == TargetBoldMode.both ||
+                                    tp.bold == TargetBoldMode.translation)
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                             height: 1.3,
                           ),
                           textDirection: dirFor(widget.langCode),
