@@ -1,32 +1,52 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
-/// پل به TTS نیتیو اندروید (Piper/Sherpa) از طریق MethodChannel.
-/// روی وب این کانال کار نمی‌کنه — همیشه false برمی‌گردونه.
+import '../native/native_bridge.dart';
+
+/// پل به TTS نیتیو اندروید (Piper/Sherpa + TTS خودِ گوشی).
 ///
-/// مثل نسخه‌ی Hope (nativeTtsFast.js)، هر خوانش یک `id` یکتا داره تا
-/// رویداد «تمام شد»ِ یک خوانشِ قدیمی (مثلاً بعد از stop/pause) به‌اشتباه
-/// خوانشِ جدید رو تمام‌شده حساب نکنه.
+/// ⚠️ باگِ قبلی: این کلاس روی کانالِ `lingolearn/tts` صدا می‌زد، ولی سمتِ
+/// اندروید هیچ‌وقت چنین کانالی ثبت نشده بود (فقط `com.linglearn.app/bubble`
+/// وجود دارد). نتیجه: همه‌ی صدا زدن‌ها بی‌صدا شکست می‌خوردند و TTS گوشی
+/// هیچ صدایی نداشت. حالا همه‌چیز از همان [NativeBridge] می‌گذرد:
+///   • speak / speakSystem / stopSpeaking  ← متدهای BubblePlugin
+///   • پایانِ خوانش ← رویداد `ttsSpeakDone` با { id, ok }
+///
+/// مثل Hope (nativeTtsFast.js) هر خوانش یک `id` یکتا دارد تا رویدادِ «تمام شد»
+/// یک خوانشِ قدیمی (بعد از stop/pause) خوانشِ جدید را تمام‌شده حساب نکند.
 class NativeTtsBridge {
-  static const _channel = MethodChannel('lingolearn/tts');
+  NativeTtsBridge._();
 
-  static bool get isAvailable {
-    if (kIsWeb) return false;
-    return true;
+  static final NativeBridge _b = NativeBridge.instance;
+
+  static bool get isAvailable => !kIsWeb && _b.isSupported;
+
+  static void Function(String? id, bool ok)? _doneHandler;
+  static StreamSubscription<Map<String, dynamic>>? _sub;
+
+  static void _ensureListening() {
+    _sub ??= _b.on('ttsSpeakDone').listen((d) {
+      final h = _doneHandler;
+      if (h == null) return;
+      final rawId = d['id']?.toString();
+      h((rawId == null || rawId.isEmpty) ? null : rawId, d['ok'] != false);
+    }, onError: (Object e) => debugPrint('ttsSpeakDone stream error: $e'));
   }
 
-  /// چک کن بسته‌ی این زبان نصب شده یا نه
+  /// آیا بسته‌ی آفلاینِ (Piper) این زبان نصب شده؟
   static Future<bool> isModelReady(String lang) async {
     if (!isAvailable) return false;
     try {
-      final ok = await _channel.invokeMethod<bool>('checkModel', {'lang': lang});
-      return ok ?? false;
-    } catch (_) {
+      final r = await _b.checkTtsStatus(lang: lang);
+      return r['downloaded'] == true;
+    } catch (e) {
+      debugPrint('checkTtsStatus error: $e');
       return false;
     }
   }
 
-  /// TTS نیتیو (Piper)
+  /// TTS نیتیو (Piper) — true یعنی خوانش شروع شد (پایانش با [onDone] می‌رسد).
   static Future<bool> speak(
     String text,
     String lang,
@@ -34,20 +54,17 @@ class NativeTtsBridge {
     String? id,
   }) async {
     if (!isAvailable) return false;
+    _ensureListening();
     try {
-      await _channel.invokeMethod('speak', {
-        'text': text,
-        'lang': lang,
-        'speed': rate,
-        if (id != null) 'id': id,
-      });
+      await _b.speak(text: text, lang: lang, speed: rate, id: id);
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('native speak error: $e');
       return false;
     }
   }
 
-  /// TTS خود گوشی (Android System TTS)
+  /// TTS خودِ گوشی (android.speech.tts).
   static Future<bool> speakSystem(
     String text,
     String lang,
@@ -55,15 +72,12 @@ class NativeTtsBridge {
     String? id,
   }) async {
     if (!isAvailable) return false;
+    _ensureListening();
     try {
-      await _channel.invokeMethod('speakSystem', {
-        'text': text,
-        'lang': lang,
-        'speed': rate,
-        if (id != null) 'id': id,
-      });
+      await _b.speakSystem(text: text, lang: lang, speed: rate, id: id);
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('speakSystem error: $e');
       return false;
     }
   }
@@ -72,26 +86,15 @@ class NativeTtsBridge {
   static Future<void> stop() async {
     if (!isAvailable) return;
     try {
-      await _channel.invokeMethod('stop');
+      await _b.stopSpeaking();
     } catch (_) {}
   }
 
-  /// منتظر پایان صحبت. handler پارامترهای (id, ok) می‌گیره؛
-  /// اگر سمت نیتیو id نفرسته، id == null و ok == true میاد.
+  /// منتظر پایانِ خوانش. handler پارامترهای (id, ok) می‌گیرد؛
+  /// اگر سمتِ نیتیو id نفرستد، id == null می‌آید.
   static void onDone(void Function(String? id, bool ok) handler) {
     if (!isAvailable) return;
-    _channel.setMethodCallHandler((call) async {
-      if (call.method == 'ttsDone') {
-        String? id;
-        var ok = true;
-        final args = call.arguments;
-        if (args is Map) {
-          id = args['id']?.toString();
-          ok = args['ok'] != false;
-        }
-        handler(id, ok);
-      }
-      return null;
-    });
+    _doneHandler = handler;
+    _ensureListening();
   }
 }

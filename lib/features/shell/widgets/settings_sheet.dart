@@ -25,7 +25,8 @@ class SettingsSheet extends ConsumerWidget {
   const SettingsSheet({super.key});
 
   /// مثل Hope: یک پنل بازشونده‌ی کوچک زیر دکمه‌ی منو (نه تمام‌صفحه).
-  /// اندازه و جای پنل از روی اسکرین‌شات‌های Hope: چپِ صفحه، حدود ۶۵٪ عرض و ۷۰٪ ارتفاع.
+  /// ابعاد عیناً CSS پنل Hope است: width 280، maxHeight 70vh، padding 16،
+  /// radius 16، سایه‌ی 0 12 30 rgba(0,0,0,.25)، فاصله‌ی ۱۶ از لبه‌ی چپ.
   static Future<void> show(BuildContext context) {
     return showGeneralDialog<void>(
       context: context,
@@ -35,12 +36,11 @@ class SettingsSheet extends ConsumerWidget {
       transitionDuration: const Duration(milliseconds: 150),
       pageBuilder: (ctx, _, __) {
         final size = MediaQuery.of(ctx).size;
-        final width =
-            (size.width * 0.648).clamp(240.0, size.width - 16).toDouble();
+        final width = 280.0.clamp(240.0, size.width - 16).toDouble();
         return Stack(
           children: [
             Positioned(
-              left: size.width * 0.037,
+              left: 16,
               top: size.height * 0.156,
               width: width,
               child: ConstrainedBox(
@@ -61,44 +61,49 @@ class SettingsSheet extends ConsumerWidget {
     final c = context.appColors;
 
     return Material(
-      color: c.paper,
-      elevation: 14,
-      shadowColor: Colors.black54,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
+      color: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
+          color: c.paper,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: c.cardBorder),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x40000000),
+              blurRadius: 30,
+              offset: Offset(0, 12),
+            ),
+          ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: ListView(
           shrinkWrap: true,
           padding: const EdgeInsets.all(16),
           children: const [
             _AccountSection(),
-            SizedBox(height: 22),
+            SizedBox(height: 16),
             _LanguageSection(),
-            SizedBox(height: 22),
+            SizedBox(height: 16),
             _ThemeSection(),
-            SizedBox(height: 22),
+            SizedBox(height: 16),
             _FontSection(),
-            SizedBox(height: 22),
+            SizedBox(height: 16),
             _FontSizeSection(),
-            SizedBox(height: 22),
+            SizedBox(height: 16),
             _TargetTextSection(),
-            SizedBox(height: 22),
+            SizedBox(height: 16),
             _CalendarSection(),
-            SizedBox(height: 22),
+            SizedBox(height: 16),
             _HighlightSection(),
-            SizedBox(height: 22),
+            SizedBox(height: 16),
             _MascotSection(),
-            SizedBox(height: 22),
+            SizedBox(height: 16),
             _VoiceEngineSection(),
             _OfflineTtsSection(),
             _AudioSyncSection(),
-            SizedBox(height: 22),
+            SizedBox(height: 10),
             _FloatingBubbleSection(),
-            SizedBox(height: 16),
+            SizedBox(height: 14),
             _OfflineWordsButton(),
           ],
         ),
@@ -108,6 +113,13 @@ class SettingsSheet extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// مقیاس‌های Hope (SettingsMenu.jsx) — همه‌ی اندازه‌ها عیناً همان‌هاست:
+//   عنوان ۱۲/w700/inkSoft + فاصله‌ی ۸ — فاصله‌ی بین بخش‌ها ۱۶
+//   چیپ: padding 5×12، شعاع ۲۰، فونت ۱۲ — سواچ: ۳۴ (هایلایت ۳۰)، شعاع ۸
+// ═══════════════════════════════════════════════════════════════════
+const double _kGapAfterTitle = 8;
+const double _kGapSection = 16;
+
 class _SectionTitle extends StatelessWidget {
   final IconData? icon;
   final String? emoji;
@@ -121,15 +133,15 @@ class _SectionTitle extends StatelessWidget {
     return Row(
       children: [
         if (icon != null) ...[
-          Icon(icon, size: 18, color: c.inkSoft),
-          const SizedBox(width: 8),
+          Icon(icon, size: 14, color: c.inkSoft),
+          const SizedBox(width: 6),
         ],
         Flexible(
           child: Text(
             emoji != null ? '$emoji $label' : label,
             style: TextStyle(
-              color: c.ink,
-              fontSize: 14,
+              color: c.inkSoft,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -139,8 +151,70 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+/// سواچ مربعیِ Hope (swatchButtonStyle): شعاع ۸، حلقه‌ی سفید+طلایی وقتی انتخاب است.
+class _Swatch extends StatelessWidget {
+  final Color color;
+  final bool selected;
+  final double size;
+  final VoidCallback onTap;
+  final Widget? child;
+  final String? tooltip;
+
+  const _Swatch({
+    required this.color,
+    required this.selected,
+    required this.onTap,
+    this.size = 34,
+    this.child,
+    this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final box = GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        margin: selected ? const EdgeInsets.all(2) : EdgeInsets.zero,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? c.gold : Colors.black.withOpacity(0.16),
+            width: 1,
+          ),
+          boxShadow: selected
+              ? [
+                  const BoxShadow(color: Colors.white, spreadRadius: 2),
+                  BoxShadow(color: c.gold, spreadRadius: 4),
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1)),
+                ]
+              : [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.12),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1)),
+                ],
+        ),
+        child: child,
+      ),
+    );
+    final w = (tooltip == null || tooltip!.isEmpty)
+        ? box
+        : Tooltip(message: tooltip!, child: box);
+    // جا برای حلقه‌ی بیرونی (۴px) تا با سواچ‌های کناری نخورد
+    return Padding(padding: const EdgeInsets.all(2), child: w);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════
-// Account
+// Account — مثل Hope: آواتار ۳۰، نام ۱۳، ایمیل ۱۱، «خروج» متنیِ قرمز
 // ═══════════════════════════════════════════════════════════════════
 class _AccountSection extends ConsumerWidget {
   const _AccountSection();
@@ -148,9 +222,10 @@ class _AccountSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
+    final L = context.l10n;
 
-    String displayName = 'مهمان';
-    String displayEmail = 'حساب متصل نیست';
+    String displayName = L.settings_guest_user;
+    String displayEmail = '';
     bool isSignedIn = false;
 
     try {
@@ -158,118 +233,95 @@ class _AccountSection extends ConsumerWidget {
       final user = repo.currentSession?.user;
       if (user != null) {
         isSignedIn = true;
-        displayEmail = user.email ?? '—';
+        displayEmail = user.email ?? '';
         final meta = user.userMetadata;
-        displayName = (meta?['name'] as String?) ??
+        displayName = ((meta?['name'] ?? meta?['full_name']) as String?) ??
             (displayEmail.contains('@')
                 ? displayEmail.split('@').first
-                : displayEmail);
+                : (displayEmail.isEmpty ? displayName : displayEmail));
       }
     } catch (_) {}
+
+    final initial = displayName.trim().isNotEmpty
+        ? displayName.trim().characters.first.toUpperCase()
+        : '?';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(label: context.l10n.settings_account),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: c.paperDark.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: c.cardBorder),
-          ),
-          child: Column(
-            children: [
-              Row(
+        _SectionTitle(label: L.settings_account),
+        const SizedBox(height: _kGapAfterTitle),
+        Row(
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: c.gold, shape: BoxShape.circle),
+              child: Text(
+                initial,
+                style: TextStyle(
+                  color: c.paper,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [c.teal, c.headerFrom],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      displayName.isNotEmpty
-                          ? displayName[0].toUpperCase()
-                          : '؟',
-                      style: TextStyle(
-                        color: c.headerText,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  Text(
+                    displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: c.ink,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          displayName,
-                          style: TextStyle(
-                            color: c.ink,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          displayEmail,
-                          style: TextStyle(
-                            color: c.inkSoft,
-                            fontSize: 12,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  if (displayEmail.isNotEmpty)
+                    Text(
+                      displayEmail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: c.inkSoft, fontSize: 11),
                     ),
-                  ),
                 ],
               ),
-              const SizedBox(height: 14),
-              if (isSignedIn)
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      try {
-                        await ref.read(authRepositoryProvider).signOut();
-                      } catch (_) {}
-                      if (context.mounted) Navigator.pop(context);
-                    },
-                    icon: Icon(Icons.logout, size: 16, color: c.rose),
-                    label: Text(
-                      context.l10n.settings_logout,
-                      style: TextStyle(color: c.rose, fontSize: 13),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: c.rose.withOpacity(0.4)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                )
-              else
-                Text(
-                  'برای ذخیره‌ی پیشرفت، وارد حساب شوید.',
-                  style: TextStyle(color: c.inkSoft, fontSize: 12),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
+        if (isSignedIn) ...[
+          const SizedBox(height: 14),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () async {
+              try {
+                await ref.read(authRepositoryProvider).signOut();
+              } catch (_) {}
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.logout, size: 14, color: c.rose),
+                const SizedBox(width: 8),
+                Text(L.settings_logout,
+                    style: TextStyle(color: c.rose, fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Language
+// Language — منوی کشویی: فونت ۱۳، padding 8×10، شعاع ۱۲
 // ═══════════════════════════════════════════════════════════════════
 class _LanguageSection extends ConsumerWidget {
   const _LanguageSection();
@@ -283,10 +335,11 @@ class _LanguageSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(icon: Icons.language, label: context.l10n.settings_language_title),
-        const SizedBox(height: 12),
+        _SectionTitle(
+            icon: Icons.language, label: context.l10n.settings_language_title),
+        const SizedBox(height: _kGapAfterTitle),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -296,9 +349,10 @@ class _LanguageSection extends ConsumerWidget {
             child: DropdownButton<String>(
               value: prefs.uiLang,
               isExpanded: true,
-              icon: Icon(Icons.keyboard_arrow_down, color: c.inkSoft),
+              isDense: true,
+              icon: Icon(Icons.keyboard_arrow_down, size: 18, color: c.inkSoft),
               dropdownColor: Colors.white,
-              style: TextStyle(color: c.ink, fontSize: 15),
+              style: TextStyle(color: c.ink, fontSize: 13),
               items: kAppLanguages.values
                   .map((l) => DropdownMenuItem(
                         value: l.code,
@@ -317,7 +371,7 @@ class _LanguageSection extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Theme
+// Theme — سواچ‌های ۳۴×۳۴ با رنگِ swatch (نه گرادیانِ هدر)، فاصله‌ی ۸
 // ═══════════════════════════════════════════════════════════════════
 class _ThemeSection extends ConsumerWidget {
   const _ThemeSection();
@@ -330,81 +384,22 @@ class _ThemeSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(icon: Icons.palette_outlined, label: context.l10n.settings_theme_title),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            const cols = 6;
-            const spacing = 10.0;
-            final size =
-                (constraints.maxWidth - spacing * (cols - 1)) / cols;
-            return Wrap(
-              spacing: spacing,
-              runSpacing: spacing,
-              children: kAppThemes.values.map((t) {
-                final selected = t.key == prefs.theme;
-                return _ThemeSwatch(
-                  preset: t,
-                  selected: selected,
-                  size: size,
-                  onTap: () => notifier.setTheme(t.key),
-                );
-              }).toList(),
-            );
-          },
+        _SectionTitle(
+            icon: Icons.palette_outlined,
+            label: context.l10n.settings_theme_title),
+        const SizedBox(height: _kGapAfterTitle),
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          children: kAppThemes.values
+              .map((t) => _Swatch(
+                    color: t.swatch,
+                    selected: t.key == prefs.theme,
+                    onTap: () => notifier.setTheme(t.key),
+                  ))
+              .toList(),
         ),
       ],
-    );
-  }
-}
-
-class _ThemeSwatch extends StatelessWidget {
-  final AppThemePreset preset;
-  final bool selected;
-  final double size;
-  final VoidCallback onTap;
-
-  const _ThemeSwatch({
-    required this.preset,
-    required this.selected,
-    required this.size,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [preset.colors.headerFrom, preset.colors.headerTo],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? c.gold : Colors.black.withOpacity(0.06),
-            width: selected ? 2.5 : 1,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: c.gold.withOpacity(0.35),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
-        ),
-        child: selected
-            ? const Icon(Icons.check, color: Colors.white, size: 22)
-            : null,
-      ),
     );
   }
 }
@@ -423,16 +418,16 @@ class _FontSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(icon: Icons.text_format, label: context.l10n.settings_font_title),
-        const SizedBox(height: 12),
+        _SectionTitle(
+            icon: Icons.text_fields, label: context.l10n.settings_font_title),
+        const SizedBox(height: _kGapAfterTitle),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: kAppFonts.values.map((f) {
-            final selected = f.key == prefs.font;
             return _ChoiceChip(
-              label: f.label['fa'] ?? f.key,
-              selected: selected,
+              label: f.label[prefs.uiLang] ?? f.label['en'] ?? f.label['fa'] ?? f.key,
+              selected: f.key == prefs.font,
               onTap: () => notifier.setFont(f.key),
             );
           }).toList(),
@@ -456,16 +451,15 @@ class _FontSizeSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(icon: Icons.format_size, label: context.l10n.settings_font_size_title),
-        const SizedBox(height: 12),
+        _SectionTitle(label: context.l10n.settings_font_size_title),
+        const SizedBox(height: _kGapAfterTitle),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: kAppFontSizes.values.map((s) {
-            final selected = s.key == prefs.fontSize;
             return _ChoiceChip(
-              label: s.label['fa'] ?? s.key,
-              selected: selected,
+              label: s.label[prefs.uiLang] ?? s.label['en'] ?? s.label['fa'] ?? s.key,
+              selected: s.key == prefs.fontSize,
               onTap: () => notifier.setFontSize(s.key),
             );
           }).toList(),
@@ -476,6 +470,8 @@ class _FontSizeSection extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// چیپ انتخاب — Hope: padding 5×12، شعاع ۲۰، فونت ۱۲، انتخاب‌شده = goldSoft
+// ═══════════════════════════════════════════════════════════════════
 class _ChoiceChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -483,45 +479,38 @@ class _ChoiceChip extends StatelessWidget {
 
   /// داخل Expanded: متن وسط‌چین و در صورت طولانی بودن با «…» کوتاه می‌شود.
   final bool expand;
+  final double hPad;
+  final FontWeight? weight;
 
   const _ChoiceChip({
     required this.label,
     required this.selected,
     required this.onTap,
     this.expand = false,
+    this.hPad = 12,
+    this.weight,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    return Material(
-      color: selected ? c.gold.withOpacity(0.55) : Colors.white,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onTap,
-        child: Container(
-          alignment: expand ? Alignment.center : null,
-          padding: EdgeInsets.symmetric(
-              horizontal: expand ? 8 : 16, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected ? c.gold : c.cardBorder,
-              width: 1.2,
-            ),
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            softWrap: false,
-            style: TextStyle(
-              fontSize: 13,
-              color: c.ink,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            ),
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        alignment: expand ? Alignment.center : null,
+        padding: EdgeInsets.symmetric(horizontal: expand ? 4 : hPad, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected ? c.goldSoft : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? c.gold : c.cardBorder),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
+          style: TextStyle(fontSize: 12, color: c.ink, fontWeight: weight),
         ),
       ),
     );
@@ -529,7 +518,7 @@ class _ChoiceChip extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Target Text
+// Target Text — مقیاس ۷۰..۱۶۰ (گام ۵، دکمه‌ها ±۱۰) و حالت بولد
 // ═══════════════════════════════════════════════════════════════════
 class _TargetTextSection extends ConsumerWidget {
   const _TargetTextSection();
@@ -539,24 +528,40 @@ class _TargetTextSection extends ConsumerWidget {
     final textPrefs = ref.watch(textPrefsProvider);
     final notifier = ref.read(textPrefsProvider.notifier);
     final c = context.appColors;
+    final L = context.l10n;
+    final scale = textPrefs.scale.clamp(70, 160).toInt();
+
+    Widget stepBtn(String t, String tip, VoidCallback onTap) => Tooltip(
+          message: tip,
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: c.cardBorder),
+              ),
+              child: Text(t,
+                  style: TextStyle(
+                      color: c.ink, fontSize: 14, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle(
-          icon: Icons.format_size,
-          label: 'اندازه‌ی فونت زبان‌های مقصد',
-        ),
-        const SizedBox(height: 12),
+        _SectionTitle(
+            icon: Icons.text_fields, label: L.settings_target_font_size),
+        const SizedBox(height: _kGapAfterTitle),
         Row(
           children: [
-            IconButton(
-              onPressed: () {
-                final next = (textPrefs.scale - 5).clamp(50, 250);
-                notifier.setScale(next);
-              },
-              icon: Icon(Icons.remove_circle_outline, color: c.inkSoft),
-            ),
+            stepBtn('−', L.settings_decrease,
+                () => notifier.setScale((scale - 10).clamp(70, 160))),
+            const SizedBox(width: 12),
             Expanded(
               child: SliderTheme(
                 data: SliderTheme.of(context).copyWith(
@@ -565,67 +570,61 @@ class _TargetTextSection extends ConsumerWidget {
                   thumbColor: c.gold,
                   overlayColor: c.gold.withOpacity(0.15),
                   trackHeight: 4,
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
                 ),
                 child: Slider(
-                  value: textPrefs.scale.toDouble(),
-                  min: 50,
-                  max: 250,
-                  divisions: 40,
-                  onChanged: (v) => notifier.setScale(v.toInt()),
+                  value: scale.toDouble(),
+                  min: 70,
+                  max: 160,
+                  divisions: 18,
+                  onChanged: (v) => notifier.setScale(v.round()),
                 ),
               ),
             ),
-            IconButton(
-              onPressed: () {
-                final next = (textPrefs.scale + 5).clamp(50, 250);
-                notifier.setScale(next);
-              },
-              icon: Icon(Icons.add_circle_outline, color: c.inkSoft),
-            ),
+            const SizedBox(width: 12),
+            stepBtn('+', L.settings_increase,
+                () => notifier.setScale((scale + 10).clamp(70, 160))),
+            const SizedBox(width: 12),
             SizedBox(
-              width: 52,
+              width: 36,
               child: Text(
-                '${textPrefs.scale}%',
+                '$scale%',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: c.ink,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(color: c.inkSoft, fontSize: 12),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        const _SectionTitle(label: 'بولد شدن متن زبان مقصد'),
-        const SizedBox(height: 12),
+        const SizedBox(height: _kGapSection),
+        _SectionTitle(label: L.settings_bold_target_title),
+        const SizedBox(height: _kGapAfterTitle),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
             _BoldChip(
-              label: 'هر دو',
-              value: TargetBoldMode.both,
+              label: L.settings_bold_none,
+              value: TargetBoldMode.none,
               current: textPrefs.bold,
-              onTap: () => notifier.setBold(TargetBoldMode.both),
+              onTap: () => notifier.setBold(TargetBoldMode.none),
             ),
             _BoldChip(
-              label: 'فقط متن',
+              label: L.settings_bold_original,
               value: TargetBoldMode.text,
               current: textPrefs.bold,
               onTap: () => notifier.setBold(TargetBoldMode.text),
             ),
             _BoldChip(
-              label: 'فقط ترجمه',
+              label: L.settings_bold_translation,
               value: TargetBoldMode.translation,
               current: textPrefs.bold,
               onTap: () => notifier.setBold(TargetBoldMode.translation),
             ),
             _BoldChip(
-              label: 'هیچ‌کدام',
-              value: TargetBoldMode.none,
+              label: L.settings_bold_both,
+              value: TargetBoldMode.both,
               current: textPrefs.bold,
-              onTap: () => notifier.setBold(TargetBoldMode.none),
+              onTap: () => notifier.setBold(TargetBoldMode.both),
             ),
           ],
         ),
@@ -653,42 +652,41 @@ class _BoldChip extends StatelessWidget {
       label: label,
       selected: value == current,
       onTap: onTap,
+      weight: value == TargetBoldMode.none ? FontWeight.w400 : FontWeight.w700,
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Calendar — تقویم تاریخ‌ها (معادل settings_calendar_title در Hope)
+// Calendar — padding 5×14
 // ═══════════════════════════════════════════════════════════════════
 class _CalendarSection extends ConsumerWidget {
   const _CalendarSection();
-
-  static const Map<CalendarSystem, String> _labels = {
-    CalendarSystem.gregorian: 'میلادی',
-    CalendarSystem.jalali: 'شمسی',
-    CalendarSystem.both: 'هر دو',
-  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final current =
         ref.watch(appPrefsProvider.select((p) => p.calendarSystem));
     final notifier = ref.read(appPrefsProvider.notifier);
+    final L = context.l10n;
+    final labels = <CalendarSystem, String>{
+      CalendarSystem.gregorian: L.settings_calendar_gregorian,
+      CalendarSystem.jalali: L.settings_calendar_jalali,
+      CalendarSystem.both: L.settings_calendar_both,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(
-          icon: Icons.calendar_month_outlined,
-          label: context.l10n.settings_calendar_title,
-        ),
-        const SizedBox(height: 12),
+        _SectionTitle(emoji: '📅', label: L.settings_calendar_title),
+        const SizedBox(height: _kGapAfterTitle),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _labels.entries
+          children: labels.entries
               .map((e) => _ChoiceChip(
                     label: e.value,
+                    hPad: 14,
                     selected: e.key == current,
                     onTap: () => notifier.setCalendarSystem(e.key),
                   ))
@@ -700,7 +698,8 @@ class _CalendarSection extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Mascot — آدمکِ متحرک (معادل settings_mascot_* در Hope؛ فقط آدمک کلاسیک)
+// Mascot — «نمایش / محو» (padding 6×14، w700) + دکمه‌ی ریست
+// (در Hope انتخابِ کاراکتر/لباس/پس‌زمینه/ترتیب تب‌ها با فلگ خاموش است)
 // ═══════════════════════════════════════════════════════════════════
 class _MascotSection extends ConsumerWidget {
   const _MascotSection();
@@ -715,42 +714,50 @@ class _MascotSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(
-          label: L.settings_mascot_walking_title,
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        _SectionTitle(label: L.settings_mascot_walking_title),
+        const SizedBox(height: _kGapAfterTitle),
+        Row(
           children: [
             _ChoiceChip(
               label: L.settings_mascot_visible_show,
               selected: enabled,
+              hPad: 14,
+              weight: FontWeight.w700,
               onTap: () => notifier.setMascotEnabled(true),
             ),
+            const SizedBox(width: 8),
             _ChoiceChip(
               label: L.settings_mascot_visible_fade,
               selected: !enabled,
+              hPad: 14,
+              weight: FontWeight.w700,
               onTap: () => notifier.setMascotEnabled(false),
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: c.ink,
-            side: BorderSide(color: c.cardBorder),
-          ),
-          onPressed: () {
-            ref.read(mascotPinProvider.notifier).reset();
-            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-              SnackBar(content: Text(L.settings_mascot_reset_done)),
-            );
-          },
-          icon: const Icon(Icons.restart_alt, size: 16),
-          label: Text(
-            L.settings_mascot_reset_button,
-            style: const TextStyle(fontSize: 12.5),
+        const SizedBox(height: 12),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: GestureDetector(
+            onTap: () {
+              ref.read(mascotPinProvider.notifier).reset();
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                SnackBar(content: Text(L.settings_mascot_reset_done)),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: c.cardBorder),
+              ),
+              child: Text(
+                '↺ ${L.settings_mascot_reset_button}',
+                style: TextStyle(
+                    color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w700),
+              ),
+            ),
           ),
         ),
       ],
@@ -759,7 +766,7 @@ class _MascotSection extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Highlight color — رنگ هایلایت موقع خواندن خودکار
+// Highlight color — سواچ‌های ۳۰×۳۰ (همان پالت Hope)
 // ═══════════════════════════════════════════════════════════════════
 const List<String> _kHighlightPalette = [
   '#F7E98E', '#FBD9AE', '#F7C48C', '#F1968E',
@@ -782,57 +789,27 @@ class _HighlightSection extends ConsumerWidget {
         ref.watch(appPrefsProvider.select((p) => p.highlightColor));
     final notifier = ref.read(appPrefsProvider.notifier);
 
-    Widget swatch({
-      required Color color,
-      required bool selected,
-      required VoidCallback onTap,
-      Widget? child,
-      String? tooltip,
-    }) {
-      return Tooltip(
-        message: tooltip ?? '',
-        child: GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: selected ? c.gold : c.cardBorder,
-                width: selected ? 2.5 : 1,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: child,
-          ),
-        ),
-      );
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(
-          label: context.l10n.settings_highlight_color_title,
-        ),
-        const SizedBox(height: 12),
+        _SectionTitle(label: context.l10n.settings_highlight_color_title),
+        const SizedBox(height: _kGapAfterTitle),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 4,
+          runSpacing: 4,
           children: [
-            swatch(
+            _Swatch(
               color: Colors.white,
+              size: 30,
               selected: current == 'none',
               tooltip: context.l10n.settings_highlight_none,
               onTap: () => notifier.setHighlightColor('none'),
               child: Icon(Icons.close, size: 14, color: c.inkSoft),
             ),
             for (final hex in _kHighlightPalette)
-              swatch(
+              _Swatch(
                 color: _hexToColor(hex),
+                size: 30,
                 selected: current.toUpperCase() == hex,
                 tooltip: hex,
                 onTap: () => notifier.setHighlightColor(hex),
@@ -1099,114 +1076,196 @@ class _FloatingBubbleSectionState
     final showMagnifier = _kind != 'live';
     final showLive = _kind != 'magnifier';
     final note = TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7);
-    final head =
-        TextStyle(color: c.ink, fontSize: 14, fontWeight: FontWeight.w700);
+    final small = TextStyle(
+        color: c.inkSoft, fontSize: 12, fontWeight: FontWeight.w700);
 
+    // کادر: border 1، شعاع ۱۶، padding 12/12/12/4، پس‌زمینه‌ی سفیدِ ۴۵٪
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.45),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: c.cardBorder),
       ),
       child: !_isAndroid
-          ? Text(
-              'حباب شناور فقط در نسخه‌ی اندروید کار می‌کند.',
-              style: TextStyle(color: c.inkSoft, fontSize: 12.5),
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                L.settings_android_only,
+                style: TextStyle(color: c.inkSoft, fontSize: 12.5),
+              ),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('🫧 ${L.settings_floating_title}',
-                    style: head.copyWith(fontSize: 15)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    for (var i = 0; i < _kinds.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 8),
-                      Expanded(
-                        child: _ChoiceChip(
-                          label: _kindLabel(L, _kinds[i]),
-                          selected: _kind == _kinds[i],
-                          expand: true,
-                          onTap: () {
-                            setState(() => _kind = _kinds[i]);
-                            _save(_kKindKey, _kinds[i]);
-                          },
-                        ),
-                      ),
-                    ],
-                  ],
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    '🫧 ${L.settings_floating_title}',
+                    style: TextStyle(
+                        color: c.ink,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800),
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Text('🎨 ${L.settings_bubble_color_title}',
-                    style: head.copyWith(fontSize: 12.5)),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 7,
-                  runSpacing: 8,
-                  children: [
-                    for (final hex in _colors)
-                      GestureDetector(
-                        onTap: () => _setColor(hex),
-                        child: Container(
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            color: _hexToColor(hex),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: _color == hex ? c.gold : c.cardBorder,
-                              width: _color == hex ? 2.5 : 1,
+                // سه دکمه‌ی نوع: grid ۳ ستون، gap 6، padding 7×4
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < _kinds.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 6),
+                        Expanded(
+                          child: _KindChip(
+                            label: _kindLabel(L, _kinds[i]),
+                            selected: _kind == _kinds[i],
+                            onTap: () {
+                              setState(() => _kind = _kinds[i]);
+                              _save(_kKindKey, _kinds[i]);
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                // رنگ کادر حباب
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text('🎨 ${L.settings_bubble_color_title}',
+                      style: small),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      for (final hex in _colors)
+                        GestureDetector(
+                          onTap: () => _setColor(hex),
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: _hexToColor(hex),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: _color == hex ? c.gold : c.cardBorder,
+                                width: 2,
+                              ),
+                              boxShadow: _color == hex
+                                  ? [
+                                      BoxShadow(
+                                          color: c.goldSoft, spreadRadius: 2),
+                                    ]
+                                  : null,
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: _pickCustomColor,
-                      child: Container(
-                        width: 40,
-                        height: 30,
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: c.cardBorder),
+                      GestureDetector(
+                        onTap: _pickCustomColor,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 34,
+                              height: 30,
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: c.cardBorder),
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: _hexToColor(_color),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(L.settings_bubble_color_custom,
+                                style: TextStyle(
+                                    color: c.inkSoft, fontSize: 11.5)),
+                          ],
                         ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: _hexToColor(_color),
-                            borderRadius: BorderRadius.circular(4),
+                      ),
+                      if (_color.toUpperCase() != _defaultColor)
+                        GestureDetector(
+                          onTap: () => _setColor(_defaultColor),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: c.cardBorder),
+                            ),
+                            child: Text(
+                              L.settings_bubble_color_reset,
+                              style: TextStyle(
+                                  color: c.ink,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(L.settings_bubble_color_custom, style: note),
-                  ],
-                ),
-                if (showMagnifier) ...[
-                  const SizedBox(height: 18),
-                  Text('🔍 ${L.settings_magnifier_title}', style: head),
-                  const SizedBox(height: 10),
-                  _BubbleButton(
-                    label:
-                        '🔍 ${bubbleRunning ? L.settings_magnifier_stop : L.settings_magnifier_start}',
-                    busy: _busy,
-                    onTap: _toggleBubble,
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(L.settings_magnifier_description, style: note),
-                ],
+                ),
+                // دکمه‌های شروع — درست زیر رنگ (مثل Hope)، نه ته کادر
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (showMagnifier) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Text(
+                            '🔍 ${L.settings_magnifier_title}',
+                            style: TextStyle(
+                                color: c.ink,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        _BubbleButton(
+                          emoji: '🔍',
+                          label: bubbleRunning
+                              ? L.settings_magnifier_stop
+                              : L.settings_magnifier_start,
+                          busy: _busy,
+                          onTap: _toggleBubble,
+                        ),
+                      ],
+                      if (showLive) ...[
+                        _BubbleButton(
+                          emoji: '🎙',
+                          label: liveRunning
+                              ? L.settings_stop
+                              : L.settings_live_audio_start,
+                          busy: _busy,
+                          onTap: _toggleLive,
+                        ),
+                        _BubbleButton(
+                          emoji: '▶️',
+                          label: L.settings_youtube_start,
+                          busy: _busy,
+                          onTap: _startYoutube,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 if (showLive) ...[
-                  const SizedBox(height: 18),
-                  Text('🎙️ ${L.settings_live_audio_title}', style: head),
-                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 8),
+                    child: Text('🎙 ${L.settings_live_audio_title}',
+                        style: small),
+                  ),
                   _LabeledDrop(
                     label: L.settings_audio_language,
                     value: _src,
@@ -1224,11 +1283,11 @@ class _FloatingBubbleSectionState
                     bare: true,
                     approxMb: 70,
                   ),
-                  const SizedBox(height: 16),
                   const _SongModeSection(),
-                  const SizedBox(height: 12),
-                  Text(L.settings_live_audio_description, style: note),
-                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(L.settings_live_audio_description, style: note),
+                  ),
                   _LabeledDrop(
                     label: L.settings_display_mode_label,
                     value: _disp,
@@ -1239,24 +1298,48 @@ class _FloatingBubbleSectionState
                       _pushOptions();
                     },
                   ),
-                  const SizedBox(height: 12),
-                  _BubbleButton(
-                    label:
-                        '🎙️ ${liveRunning ? L.settings_stop : L.settings_live_audio_start}',
-                    busy: _busy,
-                    onTap: _toggleLive,
-                  ),
-                  const SizedBox(height: 8),
-                  _BubbleButton(
-                    label: '▶️ ${L.settings_youtube_start}',
-                    busy: _busy,
-                    onTap: _startYoutube,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(L.settings_youtube_description, style: note),
                 ],
               ],
             ),
+    );
+  }
+}
+
+/// دکمه‌ی نوع حباب (ذره‌بین / ترجمه / هر دو): padding 7×4، شعاع ۲۰، فونت ۱۲/w700.
+class _KindChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _KindChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? c.goldSoft : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? c.gold : c.cardBorder),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              color: c.ink, fontSize: 12, fontWeight: FontWeight.w700),
+        ),
+      ),
     );
   }
 }
@@ -1490,6 +1573,7 @@ class _SongModeSectionState extends ConsumerState<_SongModeSection> {
 
 class _BubbleButton extends StatelessWidget {
   final String label;
+  final String? emoji;
   final bool busy;
   final VoidCallback onTap;
 
@@ -1497,30 +1581,45 @@ class _BubbleButton extends StatelessWidget {
     required this.label,
     required this.busy,
     required this.onTap,
+    this.emoji,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: busy ? null : onTap,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: c.gold.withOpacity(0.55),
-          side: BorderSide(color: c.gold),
-          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: c.ink,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: busy ? null : onTap,
+        child: Opacity(
+          opacity: busy ? 0.6 : 1,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: c.goldSoft,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: c.gold),
+            ),
+            child: Row(
+              children: [
+                if (emoji != null) ...[
+                  Text(emoji!, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: c.ink,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1538,24 +1637,21 @@ class _PlainButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.white.withOpacity(0.35),
-          side: BorderSide(color: c.cardBorder),
-          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.cardBorder),
         ),
         child: Text(
           label,
-          textAlign: TextAlign.center,
           style: TextStyle(
             color: c.ink,
-            fontSize: 13,
+            fontSize: 12.5,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -1564,6 +1660,7 @@ class _PlainButton extends StatelessWidget {
   }
 }
 
+/// منوی کشویی کوچک Hope: فونت ۱۲٫۵، padding 6×8، شعاع ۱۰.
 class _DropBox extends StatelessWidget {
   final String value;
   final Map<String, String> items;
@@ -1579,20 +1676,20 @@ class _DropBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.appColors;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: c.cardBorder),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: value,
+          value: items.containsKey(value) ? value : null,
           isExpanded: true,
           isDense: true,
-          icon: Icon(Icons.keyboard_arrow_down, color: c.inkSoft),
+          icon: Icon(Icons.keyboard_arrow_down, size: 18, color: c.inkSoft),
           dropdownColor: Colors.white,
-          style: TextStyle(color: c.ink, fontSize: 13),
+          style: TextStyle(color: c.ink, fontSize: 12.5),
           items: items.entries
               .map((e) => DropdownMenuItem(
                     value: e.key,
@@ -1608,7 +1705,7 @@ class _DropBox extends StatelessWidget {
   }
 }
 
-/// «برچسب + لیست کشویی» در یک ردیف (زبان صدا، کیفیت، نمایش).
+/// «برچسب + لیست کشویی» در یک ردیف (زبان صدا، کیفیت، نمایش) — برچسب ۱۲/w700/inkSoft.
 class _LabeledDrop extends StatelessWidget {
   final String label;
   final String value;
@@ -1625,19 +1722,19 @@ class _LabeledDrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    return Row(
-      children: [
-        Text(label,
-            style: TextStyle(
-                color: c.ink, fontSize: 13, fontWeight: FontWeight.w700)),
-        const SizedBox(width: 10),
-        Expanded(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 44),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Text(label,
+              style: TextStyle(
+                  color: c.inkSoft, fontSize: 12, fontWeight: FontWeight.w700)),
+          const SizedBox(width: 8),
+          Expanded(
             child: _DropBox(value: value, items: items, onChanged: onChanged),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1679,26 +1776,24 @@ class _VoiceEngineSectionState extends ConsumerState<_VoiceEngineSection> {
   Widget _option(BuildContext context, String label, bool selected,
       VoidCallback onTap) {
     final c = context.appColors;
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
-        height: 62,
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? c.gold : Colors.white.withOpacity(0.4),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: selected ? c.gold : c.cardBorder),
+          color: selected ? c.gold : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.cardBorder),
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
           style: TextStyle(
             color: c.ink,
-            fontSize: 13,
+            fontSize: 12.5,
             fontWeight: FontWeight.w700,
-            height: 1.4,
           ),
         ),
       ),
@@ -1711,29 +1806,29 @@ class _VoiceEngineSectionState extends ConsumerState<_VoiceEngineSection> {
     final c = context.appColors;
     final L = context.l10n;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 22),
+      padding: const EdgeInsets.only(top: 8, bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(emoji: '🔊', label: L.settings_voice_engine_title),
-          const SizedBox(height: 12),
+          _SectionTitle(emoji: '🔈', label: L.settings_voice_engine_title),
+          const SizedBox(height: 6),
           Row(
             children: [
               Expanded(
                 child: _option(context, L.settings_voice_engine_app,
                     _pref == 'model', () => _set('model')),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: _option(context, L.settings_voice_engine_phone,
                     _pref == 'phone', () => _set('phone')),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             L.settings_voice_engine_hint,
-            style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7),
+            style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.6),
           ),
         ],
       ),
@@ -1893,12 +1988,12 @@ class _AudioSyncSectionState extends ConsumerState<_AudioSyncSection> {
     };
     final mb = _size == 'fast' ? 45 : 85;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 22),
+      padding: const EdgeInsets.only(top: 6, bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionTitle(emoji: '🎧', label: L.settings_sync_title),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           _LabeledDrop(
             label: L.settings_quality,
             value: _size,
@@ -1916,10 +2011,10 @@ class _AudioSyncSectionState extends ConsumerState<_AudioSyncSection> {
             approxMb: mb,
             downloadLabel: (m) => L.settings_sync_download('$m'),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             L.settings_sync_description,
-            style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7),
+            style: TextStyle(color: c.inkSoft, fontSize: 12, height: 1.7),
           ),
         ],
       ),
@@ -1933,21 +2028,28 @@ class _OfflineWordsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () => OfflineWordsDialog.show(context),
-        icon: Icon(Icons.menu_book_outlined, size: 18, color: c.ink),
-        label: Text(
-          context.l10n.settings_offline_download,
-          style: TextStyle(
-              color: c.ink, fontSize: 13, fontWeight: FontWeight.w700),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => OfflineWordsDialog.show(context),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.cardBorder),
         ),
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: c.cardBorder),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Row(
+          children: [
+            Icon(Icons.menu_book_outlined, size: 14, color: c.ink),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                context.l10n.settings_offline_download,
+                style: TextStyle(
+                    color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
         ),
       ),
     );

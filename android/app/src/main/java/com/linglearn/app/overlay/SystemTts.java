@@ -66,6 +66,9 @@ final class SystemTts {
 
     /** منتظر آماده‌شدنِ موتور می‌مونه (حداکثر چند ثانیه). باید روی نخِ پس‌زمینه صدا زده بشه. */
     private boolean awaitReady() {
+        // اگر دفعه‌ی قبل راه‌اندازیِ موتور شکست خورد (مثلاً سرویسِ TTS هنوز بالا
+        // نیامده بود)، برای همیشه قفل نماند؛ این بار دوباره امتحان کن.
+        if (initFailed) release();
         ensureInit();
         long end = System.currentTimeMillis() + 6000;
         synchronized (lock) {
