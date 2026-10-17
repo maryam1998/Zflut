@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_languages.dart';
 import '../../../core/constants/level_colors.dart';
@@ -67,7 +68,17 @@ class ReviewDashboard extends ConsumerWidget {
           // ── ۲. نمودار هفتگی ──
           _SectionCard(
             title: 'پیشرفت هفتگی',
-            child: WeeklyChart(stats: stats),
+            child: WeeklyChart(
+              stats: stats,
+              // دعوت‌به‌شروع: اگر مروری موعد دارد → شروع؛ اگر جعبه خالی است → رفتن به لغات
+              onEmptyAction: due.isNotEmpty
+                  ? () => _startSession(context, ref, due)
+                  : (all.isEmpty ? () => context.go('/words') : null),
+              emptyActionLabel: due.isNotEmpty ? 'شروع مرور' : 'رفتن به لغات',
+              emptyText: all.isNotEmpty && due.isEmpty
+                  ? 'امروز چیزی برای مرور نیست.\nفردا دوباره سر بزن 🌱'
+                  : 'هنوز این هفته مروری نکرده‌ای!\nبیا با هم شروع کنیم 🌱',
+            ),
           ),
 
           // ── ۳. آمار امروز ──
@@ -231,8 +242,14 @@ class _TodayCard extends StatelessWidget {
             width: double.infinity,
             height: 52,
             child: Material(
-              color: has ? c.gold : c.headerText.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(16),
+              color: has ? c.gold : Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                // غیرفعال: حاشیه‌ی طلایی (کنتراستِ خوب روی زمینه‌ی تیره)
+                side: has
+                    ? BorderSide.none
+                    : BorderSide(color: c.gold.withOpacity(0.85), width: 1.5),
+              ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: has ? onStart : null,
@@ -242,13 +259,12 @@ class _TodayCard extends StatelessWidget {
                     children: [
                       Icon(Icons.play_arrow_rounded,
                           size: 26,
-                          color: has ? Colors.white : c.headerText.withOpacity(0.6)),
+                          color: has ? Colors.white : c.gold),
                       const SizedBox(width: 6),
                       Text(
                         'شروع مرور',
                         style: TextStyle(
-                          color:
-                              has ? Colors.white : c.headerText.withOpacity(0.6),
+                          color: has ? Colors.white : c.gold,
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
                         ),
