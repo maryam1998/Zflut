@@ -74,24 +74,11 @@ jobs:
           --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} 
           2>&1 | tee build-store-aab.log
 
-      - name: Build FULL APK
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          VERSION_CODE: ${{ github.run_number }}
-        run: > 
-          flutter build apk --release --flavor full --target-platform android-arm64 
-          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} 
-          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} 
-          2>&1 | tee build-full-apk.log
-
       - name: Verify 64-bit only (arm64-v8a)
         run: |
           set -e
           for f in build/app/outputs/flutter-apk/app-store-release.apk \
-                   build/app/outputs/bundle/storeRelease/app-store-release.aab \
-                   build/app/outputs/flutter-apk/app-full-release.apk; do
+                   build/app/outputs/bundle/storeRelease/app-store-release.aab; do
             [ -f "$f" ] || continue
             echo "=== $f ($(du -h "$f" | cut -f1))"
             if unzip -l "$f" | grep -E "(^|/)lib/(armeabi-v7a|x86|x86_64)/"; then
@@ -118,8 +105,3 @@ jobs:
         with:
           name: STORE-aab-for-google-play
           path: build/app/outputs/bundle/storeRelease/app-store-release.aab
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: FULL-apk-all-features
-          path: build/app/outputs/flutter-apk/app-full-release.apk
