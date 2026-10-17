@@ -1015,11 +1015,9 @@ class _FloatingBubbleSectionState
     setState(() => _busy = true);
     try {
       if (!await _ensureOverlay()) return;
-      if (!await LinLearnBridge.ytCheckAccess()) {
-        await LinLearnBridge.ytRequestAccess();
-        _toast('«دسترسی به اعلان‌ها» را برای برنامه روشن کن و دوباره امتحان کن.');
-        return;
-      }
+      // ⚠️ عمداً اینجا مستقیم صفحه‌ی «دسترسی به اعلان‌ها» باز نمی‌شود.
+      // اگر دسترسی نباشد، خودِ حباب (کد native) یک پنجره‌ی توضیح نشان می‌دهد و کاربر
+      // انتخاب می‌کند: «همگام با پخش» (نیازمند دسترسی اعلان‌ها) یا «فقط متن کامل» (بدون هیچ مجوزی).
       await _pushOptions();
       if (!ref.read(bubbleProvider).running) {
         await ref.read(bubbleProvider.notifier).start(mode: 'translator');
