@@ -45,7 +45,11 @@ jobs:
         run: flutter pub get
 
       - name: Generate localizations
-        run: flutter gen-l10n
+        run: |
+          sed -i '/synthetic-package/d' l10n.yaml
+          sed -i 's/^flutter:$/flutter:\n  generate: true/' pubspec.yaml
+          flutter pub get
+          flutter gen-l10n
 
       - name: Check Supabase secrets
         env:
