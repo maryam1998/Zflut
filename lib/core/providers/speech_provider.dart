@@ -12,8 +12,9 @@ final speechControllerProvider =
   return SpeechController(
     // صدای انتخاب‌شده‌ی کاربر برای هر زبان (در صورت وجود)
     voicePref: (lang) => ref.read(voicePrefsProvider)[lang],
+    // پیش‌فرض = صدای خودِ گوشی؛ فقط اگر کاربر خودش «صدای اپ» را انتخاب کرده باشد.
     preferPhoneVoice: () =>
-        ref.read(sharedPrefsProvider).getString('voiceEnginePref') == 'phone',
+        ref.read(sharedPrefsProvider).getString('voiceEnginePref') != 'model',
     // 🧬 هر بار که یک لغت/جمله با پلیر کامل خوانده شد → یک تکرار در «مسیر عصبی»
     onChunkPlayed: (e) => _recordNeuralFromPlayback(ref, e),
   );

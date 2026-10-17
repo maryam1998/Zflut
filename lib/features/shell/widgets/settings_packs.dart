@@ -8,12 +8,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app.dart';
 import '../../../core/bridge/linlearn_bridge.dart';
 import '../../../core/constants/supported_languages.dart';
 import '../../../core/data/data_repository.dart';
 import '../../../core/models/filter_state.dart';
 import '../../../core/providers/ai_settings_provider.dart';
 import '../../../core/providers/translation_provider.dart';
+import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/translate/translation_service.dart'
     show looksLikelyMistranslated;
@@ -32,6 +34,16 @@ class PackTile extends StatefulWidget {
   /// فقط برای حالت آهنگ: کلید روشن/خاموش بعد از دانلود
   final String? toggleTitle;
 
+  /// بدون کادر و عنوان: فقط دکمه/وضعیت (مثل Hope که زیر لیست‌ها فقط دکمه دارد)
+  final bool bare;
+
+  /// دکمه‌ی دانلود به‌صورت پر (سبزِ تیره، متن روشن)
+  final bool filled;
+
+  /// متن دلخواه دکمه‌ی دانلود / ادامه (وگرنه متن پیش‌فرض l10n)
+  final String Function(int mb)? downloadLabel;
+  final String Function(String have, int mb)? resumeLabel;
+
   const PackTile({
     super.key,
     required this.kind,
@@ -40,6 +52,10 @@ class PackTile extends StatefulWidget {
     this.hint,
     this.approxMb = 0,
     this.toggleTitle,
+    this.bare = false,
+    this.filled = false,
+    this.downloadLabel,
+    this.resumeLabel,
   });
 
   @override
@@ -140,22 +156,44 @@ class _PackTileState extends State<PackTile> {
     final c = context.appColors;
     final note = TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7);
 
-    Widget btn(String label, VoidCallback? onTap, {Color? color}) => SizedBox(
+    Widget btn(String label, VoidCallback? onTap,
+            {Color? color, bool filled = false}) =>
+        SizedBox(
           width: double.infinity,
-          child: OutlinedButton(
-            onPressed: onTap,
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: color ?? c.cardBorder),
-              padding: const EdgeInsets.symmetric(vertical: 11),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text(label,
-                style: TextStyle(
-                    color: color ?? c.ink,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700)),
-          ),
+          child: filled
+              ? ElevatedButton(
+                  onPressed: onTap,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: c.headerFrom,
+                    foregroundColor: c.headerText,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 13, horizontal: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontSize: 12.5, fontWeight: FontWeight.w700)),
+                )
+              : OutlinedButton(
+                  onPressed: onTap,
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.35),
+                    side: BorderSide(color: color ?? c.cardBorder),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 13, horizontal: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: color ?? c.ink,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700)),
+                ),
         );
 
     Widget body;
@@ -212,10 +250,22 @@ class _PackTileState extends State<PackTile> {
     } else {
       final have = (_st!['partialBytes'] as num?) ?? 0;
       final mb = ((_st!['approxMb'] as num?) ?? widget.approxMb).round();
+      final L = context.l10n;
       final label = have > 0
-          ? 'ادامه دانلود (${_mb(have)} از ~$mb مگابایت دانلود شده)'
-          : 'دانلود بسته‌ی آفلاین${mb > 0 ? ' (~$mb مگابایت، فقط یک بار)' : ''}';
-      body = btn('📥 $label', _download);
+          ? (widget.resumeLabel?.call(_mb(have), mb) ??
+              L.settings_pack_resume(_mb(have), '$mb'))
+          : (mb > 0
+              ? (widget.downloadLabel?.call(mb) ??
+                  L.settings_pack_download('$mb'))
+              : L.settings_download);
+      body = btn('📥 $label', _download, filled: widget.filled);
+    }
+
+    if (widget.bare) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: body,
+      );
     }
 
     return Container(
@@ -238,6 +288,159 @@ class _PackTileState extends State<PackTile> {
           ],
           const SizedBox(height: 8),
           body,
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// یک ردیف از «صدای آفلاینِ باکیفیت» — [نام زبان]  ........  [📥 دانلود]
+// دانلود فقط وقتی شروع می‌شود که کاربر خودش دکمه را بزند.
+// ═══════════════════════════════════════════════════════════════════
+class TtsPackRow extends StatefulWidget {
+  final String code;
+  final String label;
+
+  /// زبان‌هایی که بسته‌ی آفلاین ندارند و فقط با صدای خودِ گوشی خوانده می‌شوند
+  final bool phoneOnly;
+
+  const TtsPackRow({
+    super.key,
+    required this.code,
+    required this.label,
+    this.phoneOnly = false,
+  });
+
+  @override
+  State<TtsPackRow> createState() => _TtsPackRowState();
+}
+
+class _TtsPackRowState extends State<TtsPackRow> {
+  Map<String, dynamic>? _st;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.phoneOnly) _refresh();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  bool get _downloading => _st?['downloading'] == true;
+  bool get _downloaded => _st?['downloaded'] == true;
+
+  Future<void> _refresh() async {
+    final st = await LinLearnBridge.packStatus('tts', widget.code);
+    if (!mounted) return;
+    setState(() => _st = st);
+    _timer?.cancel();
+    if (_downloading) {
+      _timer = Timer(const Duration(seconds: 1), _refresh);
+    }
+  }
+
+  Future<void> _download() async {
+    final ok = await LinLearnBridge.packDownload('tts', widget.code);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.settings_sync_download_failed)),
+      );
+    }
+    await _refresh();
+  }
+
+  Future<void> _cancel() async {
+    await LinLearnBridge.packCancel('tts', widget.code);
+    await _refresh();
+  }
+
+  Future<void> _delete() async {
+    final ml = MaterialLocalizations.of(context);
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(context.l10n.settings_tts_delete_confirm),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(ml.cancelButtonLabel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(ml.deleteButtonTooltip)),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    await LinLearnBridge.packDelete('tts', widget.code);
+    await _refresh();
+  }
+
+  Widget _pill(BuildContext context, String text, VoidCallback? onTap) {
+    final c = context.appColors;
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: c.cardBorder),
+        ),
+        child: Text(text,
+            style: TextStyle(
+                color: c.ink, fontSize: 12, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final L = context.l10n;
+
+    Widget trailing;
+    if (widget.phoneOnly) {
+      trailing = Text(L.settings_tts_phone_only,
+          style: TextStyle(color: c.inkSoft, fontSize: 11.5));
+    } else if (_downloading) {
+      final bytes = (_st?['bytes'] as num?) ?? 0;
+      final total = (_st?['total'] as num?) ?? 0;
+      final pct = total > 0 ? (bytes / total * 100).clamp(0, 100).round() : null;
+      trailing = _pill(
+        context,
+        '⏹ ${pct != null ? '$pct٪' : L.settings_stop}',
+        _cancel,
+      );
+    } else if (_downloaded) {
+      trailing = _pill(context, '✅ ${L.settings_tts_offline}', _delete);
+    } else {
+      trailing = _pill(context, '📥 ${L.settings_download}', _download);
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(widget.label,
+                style: TextStyle(
+                    color: c.ink, fontSize: 13, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(width: 8),
+          trailing,
         ],
       ),
     );
@@ -270,13 +473,19 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
   String _current = '';
   int _cached = 0;
 
+  static const String _cachePrefix = 'tr3::';
+
   @override
   void initState() {
     super.initState();
     _load();
   }
 
-  int _countCached() => ref.read(translationServiceProvider).cachedCount;
+  int _countCached() => ref
+      .read(sharedPrefsProvider)
+      .getKeys()
+      .where((k) => k.startsWith(_cachePrefix))
+      .length;
 
   Future<void> _load() async {
     await DataRepository.instance.load();
