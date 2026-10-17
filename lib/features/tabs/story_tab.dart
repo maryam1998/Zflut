@@ -12,6 +12,7 @@ import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
 import '../../core/models/text_prefs.dart';
+import '../../core/native/native_bridge.dart';
 import '../../core/providers/story_library_provider.dart';
 import '../../core/providers/text_prefs_provider.dart';
 import '../../core/providers/translation_provider.dart';
@@ -2013,8 +2014,33 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     ];
   }
 
+  /// لینکِ ذخیره‌شده (اینستاگرام/یوتیوب/…) — خط اولِ متنِ داستان‌های لینکی.
+  String? _linkOf(SavedStory s) {
+    if (s.contentType != 'youtube') return null;
+    for (final line in s.text.split('\n')) {
+      final t = line.trim();
+      if (RegExp(r'^https?://', caseSensitive: false).hasMatch(t)) return t;
+    }
+    return null;
+  }
+
+  /// نامِ برنامه‌ی مبدأ (خط دومِ متن: Instagram / YouTube / …).
+  String _sourceOf(SavedStory s) {
+    final ls = s.text.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    return ls.length > 1 && !RegExp(r'^https?://', caseSensitive: false).hasMatch(ls[1])
+        ? ls[1]
+        : _contentLabel(s.contentType);
+  }
+
+  Future<void> _openLink(String url) async {
+    try {
+      await NativeBridge.instance.openExternal(url: url);
+    } catch (_) {}
+  }
+
   Widget _storyCard(AppThemeColorsExt c, SavedStory s) {
-    final open = _openStoryId == s.id;
+    final link = _linkOf(s);
+    final open = link == null && _openStoryId == s.id;
     final d = s.createdAt;
     String two(int n) => n.toString().padLeft(2, '0');
     final date = '${d.year}/${two(d.month)}/${two(d.day)}';
@@ -2025,7 +2051,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           InkWell(
-            onTap: () => setState(() => _openStoryId = open ? null : s.id),
+            onTap: link != null
+                ? () => _openLink(link)
+                : () => setState(() => _openStoryId = open ? null : s.id),
             child: Row(
               children: [
                 Expanded(
@@ -2042,8 +2070,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                         ),
                       ),
                       Text(
-                        '${langFaName(s.langCode)} · ${s.level} · '
-                        '${_contentLabel(s.contentType)} · $date',
+                        link != null
+                            ? '${_sourceOf(s)} · $date'
+                            : '${langFaName(s.langCode)} · ${s.level} · '
+                                '${_contentLabel(s.contentType)} · $date',
                         style: TextStyle(color: c.inkSoft, fontSize: 11),
                       ),
                     ],
@@ -2057,7 +2087,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                   ),
                 ),
                 Icon(
-                  open ? Icons.keyboard_arrow_down : Icons.chevron_left,
+                  link != null
+                      ? Icons.open_in_new
+                      : (open ? Icons.keyboard_arrow_down : Icons.chevron_left),
                   size: 20,
                   color: c.inkSoft,
                 ),
