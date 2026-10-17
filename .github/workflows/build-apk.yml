@@ -85,7 +85,7 @@ jobs:
               echo "::error::non-arm64 native libs found in $f"; exit 1
             fi
             echo "--- biggest entries"
-            unzip -l "$f" | sort -rn | head -12
+            unzip -l "$f" | sort -rn | head -12 || true
           done
 
       - name: Show errors only
