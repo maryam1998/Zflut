@@ -9,6 +9,7 @@ import '../../../core/constants/app_languages.dart';
 import '../../../core/mascot/mascot_pin_provider.dart';
 import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/providers/app_prefs_provider.dart';
+import '../../../core/providers/linlearn_provider.dart';
 import '../../../core/providers/reader_providers.dart';
 import '../../../core/providers/speech_provider.dart';
 import '../../../core/providers/story_library_provider.dart';
@@ -52,7 +53,8 @@ class LingovaMascotLayer extends ConsumerStatefulWidget {
   ConsumerState<LingovaMascotLayer> createState() => _LingovaMascotLayerState();
 }
 
-class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer> {
+class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
+    with WidgetsBindingObserver {
   final math.Random _rnd = math.Random();
   Timer? _timer;
 
@@ -91,12 +93,33 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer> {
     _playing =
         ref.read(speechControllerProvider).status == SpeechStatus.playing;
     _timer = Timer.periodic(const Duration(milliseconds: 45), _tick);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
+  }
+
+  // برگشت به اپ (مثلاً بعد از تماشای ویدیو با حباب/زیرنویس) = «تعامل»؛ بلافاصله هشدار نده
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      MascotActivity.mark();
+      _idleBubble = null;
+      if (_mode == _Mode.alert) _mode = _Mode.walk;
+    }
+  }
+
+  /// کاربر دارد از حباب/ترجمه‌ی زنده/زیرنویس (بیرون از اپ) استفاده می‌کند؛ بیکار حساب نمی‌شود.
+  bool _externalActive() {
+    try {
+      return ref.read(bubbleProvider).running || ref.read(liveTranslatorProvider);
+    } catch (_) {
+      return false;
+    }
   }
 
   // ───────────────────────── منطق حرکت (stepLeg) ─────────────────────────
@@ -130,7 +153,7 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer> {
   }
 
   void _step(int now, bool pinned) {
-    if (_playing) MascotActivity.mark();
+    if (_playing || _externalActive()) MascotActivity.mark();
     final last = MascotActivity.last;
     final isIdle = now - last > _kIdleMs;
     final edge1 = _edge1(pinned);
