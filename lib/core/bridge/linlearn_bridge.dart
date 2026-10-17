@@ -9,7 +9,6 @@ import 'dart:async';
 import 'package:flutter/services.dart'
     show MissingPluginException, PlatformException;
 
-import '../config/build_flavor.dart';
 import '../native/native_bridge.dart';
 
 class LinLearnBridge {
@@ -316,7 +315,7 @@ class LinLearnBridge {
   // زیرنویس زنده‌ی یوتیوب (نیازمند «دسترسی به اعلان‌ها»)
   // ═══════════════════════════════════════════════════════════
   static Future<bool> ytCheckAccess() async {
-    if (!_n.isSupported || kStoreBuild) return false;
+    if (!_n.isSupported) return false;
     try {
       final r = await _n.ytCheckAccess();
       return r['granted'] == true;
@@ -326,12 +325,12 @@ class LinLearnBridge {
   }
 
   static Future<bool> ytRequestAccess() {
-    if (!_n.isSupported || kStoreBuild) return Future.value(false);
+    if (!_n.isSupported) return Future.value(false);
     return _ok(() => _n.ytRequestAccess());
   }
 
   static Future<bool> ytSetEnabled(bool enabled) {
-    if (!_n.isSupported || kStoreBuild) return Future.value(false);
+    if (!_n.isSupported) return Future.value(false);
     return _ok(() => _n.ytSetEnabled(enabled: enabled));
   }
 

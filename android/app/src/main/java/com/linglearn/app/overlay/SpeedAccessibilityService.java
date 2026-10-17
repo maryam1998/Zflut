@@ -56,6 +56,16 @@ public class SpeedAccessibilityService extends AccessibilityService {
 
     // ───────── API ─────────
 
+    /** آیا این سرویس در این نسخه‌ی برنامه (Manifest) اصلاً وجود دارد؟ (نسخه‌ی store ندارد) */
+    public static boolean isAvailable(Context ctx) {
+        try {
+            ctx.getPackageManager().getServiceInfo(new ComponentName(ctx, SpeedAccessibilityService.class), 0);
+            return true;
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
     public static boolean isEnabled(Context ctx) {
         if (inst != null) return true;
         try {

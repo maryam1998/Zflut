@@ -2591,6 +2591,11 @@ public class BubbleService extends Service {
 
     /** یوتیوب سرعت رو از MediaSession قبول نکرد → از منوی خودِ یوتیوب (سرویسِ دسترسی‌پذیری). */
     private void speedViaAccessibility(final float want) {
+        if (!SpeedAccessibilityService.isAvailable(this)) {
+            showNotice(msg("تغییرِ سرعتِ یوتیوب در این نسخه فعال نیست.",
+                    "YouTube speed control isn't available in this version."));
+            return;
+        }
         if (!SpeedAccessibilityService.isEnabled(this)) {
             showNotice(msg("برای تغییرِ سرعتِ یوتیوب، سرویسِ «دسترسی‌پذیری» این برنامه رو روشن کن.",
                     "To change YouTube speed, turn on this app's Accessibility service."));
