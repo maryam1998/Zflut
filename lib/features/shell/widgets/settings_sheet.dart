@@ -1317,6 +1317,17 @@ class _FloatingBubbleSectionState
                           busy: _busy,
                           onTap: _startYoutube,
                         ),
+                        // «نمایش: متن اصلی + ترجمه‌ها» درست زیرِ دکمه‌ی زیرنویس یوتیوب
+                        _LabeledDrop(
+                          label: L.settings_display_mode_label,
+                          value: _disp,
+                          items: _displayMap(L),
+                          onChanged: (v) {
+                            setState(() => _disp = v);
+                            _save(_kDispKey, v);
+                            _pushOptions();
+                          },
+                        ),
                       ],
                     ],
                   ),
@@ -1348,16 +1359,6 @@ class _FloatingBubbleSectionState
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(L.settings_live_audio_description, style: note),
-                  ),
-                  _LabeledDrop(
-                    label: L.settings_display_mode_label,
-                    value: _disp,
-                    items: _displayMap(L),
-                    onChanged: (v) {
-                      setState(() => _disp = v);
-                      _save(_kDispKey, v);
-                      _pushOptions();
-                    },
                   ),
                 ],
               ],

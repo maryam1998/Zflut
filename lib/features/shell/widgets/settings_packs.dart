@@ -532,6 +532,12 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
         if (_cancel || !mounted) return;
         final (word, lang) = jobs[cursor++];
         _current = word;
+        // لغت‌ها خودشان انگلیسی‌اند؛ برای «انگلیسی» ترجمه‌ای لازم نیست (آماده است).
+        if (lang == 'en') {
+          _done++;
+          if (mounted && _done % 5 == 0) setState(() {});
+          continue;
+        }
         try {
           final r = await service.translate(
             text: word,
@@ -567,7 +573,7 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
     final c = context.appColors;
     final note = TextStyle(color: c.inkSoft, fontSize: 12, height: 1.8);
     final pct = _total == 0 ? 0 : ((_done / _total) * 100).round();
-    final langs = kSupportedLanguages.where((l) => l.code != 'en').toList();
+    final langs = kSupportedLanguages.toList(); // انگلیسی هم هست
 
     return Dialog(
       backgroundColor: c.paper,
