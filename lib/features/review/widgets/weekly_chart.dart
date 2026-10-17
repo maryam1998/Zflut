@@ -8,7 +8,19 @@ import '../models/review_stats.dart';
 /// قدیمی‌ترین روز سمت راست، امروز سمت چپ (جهت RTL).
 class WeeklyChart extends StatelessWidget {
   final ReviewStats stats;
-  const WeeklyChart({super.key, required this.stats});
+
+  /// وقتی این هفته هیچ مروری نشده: دکمه‌ی دعوت‌به‌شروع (null = بدونِ دکمه).
+  final VoidCallback? onEmptyAction;
+  final String emptyActionLabel;
+  final String emptyText;
+
+  const WeeklyChart({
+    super.key,
+    required this.stats,
+    this.onEmptyAction,
+    this.emptyActionLabel = 'شروع مرور',
+    this.emptyText = 'هنوز این هفته مروری نکرده‌ای!\nبیا با هم شروع کنیم 🌱',
+  });
 
   // DateTime.weekday: ۱=دوشنبه … ۷=یکشنبه
   static const Map<int, String> _dayLabels = {
@@ -27,6 +39,58 @@ class WeeklyChart extends StatelessWidget {
     final now = DateTime.now();
     final dates = stats.lastDates(now, n: 7);
     final values = [for (final d in dates) stats.dayStat(d).total];
+
+    // ── حالتِ خالی: به‌جای کادرِ سفیدِ خالی، پیام + دکمه ──
+    if (values.every((v) => v == 0)) {
+      return Directionality(
+        textDirection: TextDirection.rtl,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: c.goldSoft,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.trending_up_rounded, size: 30, color: c.gold),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                emptyText,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: c.inkSoft, fontSize: 13, height: 1.7),
+              ),
+              if (onEmptyAction != null) ...[
+                const SizedBox(height: 12),
+                Material(
+                  color: c.gold,
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: onEmptyAction,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 22, vertical: 10),
+                      child: Text(
+                        emptyActionLabel,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -111,7 +175,8 @@ class _BarsPainter extends CustomPainter {
       // RTL: i=0 (قدیمی‌ترین) سمت راست
       final cx = size.width - (i + 0.5) * slot;
       final isToday = i == n - 1;
-      final h = v == 0 ? 3.0 : (v / maxV) * chartH;
+      // حداقل ارتفاعِ ستون (حتی با ۱ مرور) تا حسِ پیشرفت دیده شود
+      final h = v == 0 ? 3.0 : ((v / maxV) * chartH).clamp(12.0, chartH);
       final rect = RRect.fromRectAndCorners(
         Rect.fromLTWH(cx - barW / 2, size.height - h, barW, h),
         topLeft: const Radius.circular(6),
