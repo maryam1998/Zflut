@@ -6,6 +6,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash   # یعنی bash -eo pipefail؛ تا خطای flutter build زیر | tee گم نشود
     steps:
       - uses: actions/checkout@v4
 
