@@ -56,7 +56,6 @@ jobs:
           VERSION_CODE: ${{ github.run_number }}
         run: >
           flutter build apk --release --flavor store
-          --dart-define=STORE_BUILD=true
           --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           2>&1 | tee build-store-apk.log
@@ -69,7 +68,6 @@ jobs:
           VERSION_CODE: ${{ github.run_number }}
         run: >
           flutter build appbundle --release --flavor store
-          --dart-define=STORE_BUILD=true
           --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           2>&1 | tee build-store-aab.log
