@@ -38,6 +38,8 @@ public class ShareReceiverActivity extends Activity {
 
     /** از ▶ حباب (وقتی «دسترسی به اعلان‌ها» نیست): توضیحِ شفاف + انتخابِ «همگام با پخش» یا «فقط متنِ کامل». */
     static final String EXTRA_YT_CHOOSE = "com.linglearn.app.YT_CHOOSE";
+    /** از ▶ حباب (بدونِ دسترسیِ اعلان): بدونِ پرسش، لینکِ یوتیوبِ کلیپ‌بورد خوانده و کلِ زیرنویس یک‌جا آورده می‌شود. */
+    static final String EXTRA_YT_FULL_CLIP = "com.linglearn.app.YT_FULL_CLIP";
     static final String EXTRA_FA = "com.linglearn.app.FA";
     /** زبانِ رابطِ اپ: fa / en / es / de / fr / ar (جایگزینِ EXTRA_FAِ دوحالته). */
     static final String EXTRA_LANG = "com.linglearn.app.LANG";
@@ -64,6 +66,13 @@ public class ShareReceiverActivity extends Activity {
             Intent in = getIntent();
             showAsrPackDialog(intentLang(in), in.getStringExtra(EXTRA_PACK_KIND),
                     in.getStringExtra(EXTRA_PACK_ID), in.getStringExtra(EXTRA_PACK_NAME), in.getIntExtra(EXTRA_PACK_MB, 0));
+            return;
+        }
+        if (getIntent() != null && getIntent().getBooleanExtra(EXTRA_YT_FULL_CLIP, false)) {
+            uiLang = intentLang(getIntent());
+            ytFullClip = true; fromClip = true; clipDone = false;
+            // کلیپ‌بورد فقط وقتی خوانده می‌شود که پنجره فوکوس داشته باشد
+            new Handler(Looper.getMainLooper()).postDelayed(this::finishFromClip, 900);
             return;
         }
         if (getIntent() != null && getIntent().getBooleanExtra(EXTRA_YT_CHOOSE, false)) {
