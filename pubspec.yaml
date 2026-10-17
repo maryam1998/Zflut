@@ -41,6 +41,10 @@ dependencies:
 
   cupertino_icons: ^1.0.6
 
+# record_linux 0.7.x با record_platform_interface 1.6 سازگار نیست و بیلد اندروید را می‌شکند
+dependency_overrides:
+  record_linux: '>=1.3.0 <2.0.0'
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
