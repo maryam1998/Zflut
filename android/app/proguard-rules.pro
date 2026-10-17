@@ -19,3 +19,10 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# ML Kit OCR: پلاگین google_mlkit_text_recognition به گزینه‌های چینی/ژاپنی/کره‌ای هم ارجاع می‌دهد،
+# ولی ما فقط لاتین و هندی را در gradle داریم → R8 نباید بخاطر نبودنشان بیلد را بشکند.
+-dontwarn com.google.mlkit.vision.text.chinese.**
+-dontwarn com.google.mlkit.vision.text.japanese.**
+-dontwarn com.google.mlkit.vision.text.korean.**
+-dontwarn com.google.mlkit.vision.text.devanagari.**
