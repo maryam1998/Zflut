@@ -23,10 +23,8 @@ android {
         versionCode = envVersionCode ?: flutter.versionCode
         versionName = if (envVersionCode != null) "1.0.$envVersionCode" else flutter.versionName
 
-        // فقط معماری‌های رایج → حجم APK کمتر
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
-        }
+        // معماری‌ها: دستیِ abiFilters نداریم؛ از روشِ استانداردِ Flutter استفاده می‌شه:
+        //   flutter build ... --target-platform android-arm64   (ورک‌فلو: build-apk.yml)
     }
 
     // فقط یک نسخه: store (گوگل‌پلی / کافه‌بازار / مایکت)
@@ -52,12 +50,28 @@ android {
         release {
             signingConfig = if (keystoreFile.exists()) signingConfigs.getByName("release")
                             else signingConfigs.getByName("debug")
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // R8: حذفِ کدِ بلااستفاده + حذفِ منابعِ بلااستفاده
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
     packaging {
+        // فقط وقتی با فلگِ استانداردِ Flutter «--target-platform android-arm64» بیلد می‌شه:
+        // .so های ۳۲بیتی/x86 که کتابخانه‌های دیگر (Sherpa AAR، ML Kit) با خودشون میارن هم حذف می‌شن.
+        // (بیلدِ دیباگ/امولاتور بدونِ این فلگ دست‌نخورده می‌مونه.)
+        val targetPlatform = (project.findProperty("target-platform") as String?) ?: ""
+        if (targetPlatform == "android-arm64") {
+            jniLibs {
+                excludes += listOf(
+                    "lib/armeabi-v7a/**", "lib/x86/**", "lib/x86_64/**"
+                )
+            }
+        }
         resources {
             excludes += listOf(
                 "META-INF/DEPENDENCIES", "META-INF/LICENSE", "META-INF/LICENSE.txt",
