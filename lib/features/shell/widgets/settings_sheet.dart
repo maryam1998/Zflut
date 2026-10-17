@@ -19,6 +19,7 @@ import '../../../core/providers/text_prefs_provider.dart';
 import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../../core/sync/cloud_sync.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/widgets/color_palette_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
 import 'settings_packs.dart';
 
@@ -843,6 +844,33 @@ class _HighlightSection extends ConsumerWidget {
                 tooltip: hex,
                 onTap: () => notifier.setHighlightColor(hex),
               ),
+            // رنگِ دلخواهِ قبلی (اگر از پالت پیشرفته انتخاب شده)
+            if (current != 'none' &&
+                RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(current) &&
+                !_kHighlightPalette.contains(current.toUpperCase()))
+              _Swatch(
+                color: _hexToColor(current),
+                size: 30,
+                selected: true,
+                tooltip: current,
+                onTap: () {},
+              ),
+            // 🎨 پالتِ پیشرفته
+            _Swatch(
+              color: Colors.white,
+              size: 30,
+              selected: false,
+              tooltip: context.l10n.settings_bubble_color_custom,
+              onTap: () async {
+                final v = await showColorPaletteDialog(
+                  context,
+                  initial: current == 'none' ? '#F7E98E' : current,
+                  title: context.l10n.settings_highlight_color_title,
+                );
+                if (v != null) notifier.setHighlightColor(v);
+              },
+              child: const Icon(Icons.palette_outlined, size: 16),
+            ),
           ],
         ),
       ],
@@ -971,32 +999,12 @@ class _FloatingBubbleSectionState
   }
 
   Future<void> _pickCustomColor() async {
-    final ctl = TextEditingController(text: _color);
-    final ml = MaterialLocalizations.of(context);
-    final v = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.settings_bubble_color_custom),
-        content: TextField(
-          controller: ctl,
-          autofocus: true,
-          textDirection: TextDirection.ltr,
-          decoration: const InputDecoration(hintText: '#RRGGBB'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(ml.cancelButtonLabel)),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, ctl.text.trim()),
-              child: Text(ml.okButtonLabel)),
-        ],
-      ),
+    final v = await showColorPaletteDialog(
+      context,
+      initial: _color,
+      title: context.l10n.settings_bubble_color_title,
     );
-    ctl.dispose();
-    if (v == null) return;
-    final hex = v.startsWith('#') ? v : '#$v';
-    if (RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(hex)) _setColor(hex.toUpperCase());
+    if (v != null) _setColor(v);
   }
 
   /// یک‌بار توضیح ← صفحه‌ی تنظیمات ← با برگشت، خودکار ادامه می‌دهد (بدونِ «دوباره امتحان کن»).
