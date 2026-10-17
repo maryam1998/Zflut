@@ -198,21 +198,6 @@ final class NativeI18n {
             "Speichern fehlgeschlagen",
             "Échec de l’enregistrement",
             "فشل الحفظ");
-        put("Turn on Notification access for this app to change playback speed.",
-            "Activa el «Acceso a notificaciones» para esta app para cambiar la velocidad de reproducción.",
-            "Aktiviere den „Benachrichtigungszugriff“ für diese App, um die Wiedergabegeschwindigkeit zu ändern.",
-            "Activez l’« Accès aux notifications » pour cette application afin de modifier la vitesse de lecture.",
-            "فعّل «الوصول إلى الإشعارات» لهذا التطبيق لتغيير سرعة التشغيل.");
-        put("No playing video or audio found.",
-            "No se encontró ningún vídeo ni audio en reproducción.",
-            "Es wurde kein laufendes Video oder Audio gefunden.",
-            "Aucune vidéo ni aucun audio en lecture n’a été trouvé.",
-            "لم يتم العثور على فيديو أو صوت قيد التشغيل.");
-        put("This app doesn't allow changing speed from outside.",
-            "Esta app no permite cambiar la velocidad desde fuera.",
-            "Diese App erlaubt keine Geschwindigkeitsänderung von außen.",
-            "Cette application n’autorise pas la modification de la vitesse depuis l’extérieur.",
-            "لا يسمح هذا التطبيق بتغيير السرعة من الخارج.");
         put("Font",
             "Fuente",
             "Schrift",
