@@ -42,22 +42,21 @@ jobs:
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" \
-            | tr -d '\r\n' \
-            | sed 's/-----[A-Z ]*-----//g' \
-            | base64 -d > android/app/release-key.jks
+          | tr -d '\r\n' \
+          | sed 's/-----[A-Z ]*-----//g' \
+          | base64 -d > android/app/release-key.jks
           ls -lh android/app/release-key.jks
 
-      # â”€â”€â”€â”€â”€ Ù†Ø³Ø®Ù‡â€ŒÛŒ ÙØ±ÙˆØ´Ú¯Ø§Ù‡ÛŒ (Ú¯ÙˆÚ¯Ù„â€ŒÙ¾Ù„ÛŒ / Ú©Ø§ÙÙ‡â€ŒØ¨Ø§Ø²Ø§Ø± / Ù…Ø§ÛŒÚ©Øª) â”€â”€â”€â”€â”€
       - name: Build STORE APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           VERSION_CODE: ${{ github.run_number }}
-        run: >
-          flutter build apk --release --flavor store
-          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+        run: > 
+          flutter build apk --release --flavor store 
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} 
+          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} 
           2>&1 | tee build-store-apk.log
 
       - name: Build STORE AAB (Google Play)
@@ -66,23 +65,22 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           VERSION_CODE: ${{ github.run_number }}
-        run: >
-          flutter build appbundle --release --flavor store
-          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+        run: > 
+          flutter build appbundle --release --flavor store 
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} 
+          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} 
           2>&1 | tee build-store-aab.log
 
-      # â”€â”€â”€â”€â”€ Ù†Ø³Ø®Ù‡â€ŒÛŒ Ú©Ø§Ù…Ù„ (Ù‡Ù…Ù‡â€ŒÛŒ Ù‚Ø§Ø¨Ù„ÛŒØªâ€ŒÙ‡Ø§) â”€â”€â”€â”€â”€
       - name: Build FULL APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           VERSION_CODE: ${{ github.run_number }}
-        run: >
-          flutter build apk --release --flavor full
-          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+        run: > 
+          flutter build apk --release --flavor full 
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} 
+          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} 
           2>&1 | tee build-full-apk.log
 
       - name: Show errors only
