@@ -29,6 +29,15 @@ android {
         }
     }
 
+    // دو نسخه:
+    //  • store = برای گوگل‌پلی / کافه‌بازار / مایکت (بدون Accessibility و دسترسی به اعلان‌ها)
+    //  • full  = همه‌ی قابلیت‌ها (نسخه‌ی کامل)؛ ممکنه Play Protect هشدار بده
+    flavorDimensions += "dist"
+    productFlavors {
+        create("store") { dimension = "dist" }
+        create("full") { dimension = "dist" }
+    }
+
     // امضا با کلید اختصاصی؛ اگه فایل کلید نبود (بیلد لوکال) با debug امضا می‌شه
     val keystoreFile = file("release-key.jks")
     signingConfigs {
