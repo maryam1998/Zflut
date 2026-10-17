@@ -4122,8 +4122,9 @@ public class BubbleService extends Service {
         if (yt != null && yt.isActive()) return;
         userHidden = false;
         if (!YtMedia.hasAccess(this)) {
-            // بدونِ دسترسیِ اعلان: مثلِ Native، بدونِ پاپ‌آپ و مجوزِ اضافه، کلِ زیرنویس یک‌جا از لینکِ کلیپ‌بورد
-            if (openSettingsIfNeeded) startYoutubeFullFromClip();
+            showNotice(msg("برای زیرنویسِ همگام، «دسترسی به اعلان‌ها» لازم است؛ یا «فقط متنِ کامل» را انتخاب کن",
+                    "Synced subtitles need “Notification access”; or choose “Full text only”"));
+            if (openSettingsIfNeeded) askYoutubeAccessChoice();
             return;
         }
         if (recording) stopRecording();     // دو منبعِ هم‌زمان روی یک پنل نباشه
@@ -4131,7 +4132,8 @@ public class BubbleService extends Service {
         engine.setOffsetMs(getSharedPreferences(PREFS, MODE_PRIVATE).getLong("ytOffsetMs", 0L));
         if (!engine.start()) {
             engine.stop();
-            if (openSettingsIfNeeded) startYoutubeFullFromClip();
+            showNotice(msg("دسترسی به اعلان‌ها هنوز فعال نیست", "Notification access is not enabled yet"));
+            if (openSettingsIfNeeded) askYoutubeAccessChoice();
             return;
         }
         yt = engine;
@@ -4139,20 +4141,6 @@ public class BubbleService extends Service {
         ytEntries.clear();
         refreshHeader();
         updateYtButton();
-    }
-
-    /** ▶ بدونِ دسترسیِ اعلان: لینکِ یوتیوبِ کلیپ‌بورد ← کلِ زیرنویس یک‌جا (بدونِ هیچ مجوزِ ویژه). */
-    private void startYoutubeFullFromClip() {
-        showNotice(msg("در حال خواندنِ لینکِ ویدیو از کلیپ‌بورد…", "Reading the video link from the clipboard…"));
-        try {
-            startActivity(new Intent(this, ShareReceiverActivity.class)
-                    .putExtra(ShareReceiverActivity.EXTRA_YT_FULL_CLIP, true)
-                    .putExtra(ShareReceiverActivity.EXTRA_FA, isFa())
-                    .putExtra(ShareReceiverActivity.EXTRA_LANG, NativeI18n.lang(this))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION));
-        } catch (Throwable t) {
-            askYoutubeAccessChoice();
-        }
     }
 
     /** ▶ بدونِ دسترسیِ اعلان / نگه‌داشتنِ ▶: توضیحِ شفاف و انتخابِ «همگام با پخش» یا «فقط متنِ کامل». */

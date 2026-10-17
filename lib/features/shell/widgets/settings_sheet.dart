@@ -15,6 +15,7 @@ import '../../../core/mascot/mascot_pin_provider.dart';
 import '../../../core/models/text_prefs.dart';
 import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/providers/linlearn_provider.dart';
+import '../../../core/providers/native_sync_provider.dart';
 import '../../../core/providers/text_prefs_provider.dart';
 import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../../core/sync/cloud_sync.dart';
@@ -1050,6 +1051,7 @@ class _FloatingBubbleSectionState
         await notifier.stop();
       } else {
         if (!await _ensureOverlay()) return;
+        await ref.read(nativeSyncProvider).pushLangs();
         await _pushOptions();
         await notifier.start(mode: _kind == 'live' ? 'translator' : _kind);
       }
@@ -1070,32 +1072,12 @@ class _FloatingBubbleSectionState
       } else {
         if (!await _ensureOverlay()) return;
         // ترجمه‌ی زنده فقط آفلاین کار می‌کند: بسته‌ی زبانِ صدا باید روی گوشی باشد.
-        final pack = await LinLearnBridge.packStatus('speech', _src);
-        if (pack != null && pack['downloaded'] != true) {
-          final yes = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('بسته‌ی آفلاین تشخیص گفتار'),
-              content: Text(
-                  'برای ترجمه‌ی زنده به بسته‌ی آفلاین «${_srcLangs[_src]}» نیاز است '
-                  '(فقط یک‌بار دانلود می‌شود و بعدش بدون اینترنت کار می‌کند). دانلود شود؟'),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('نه')),
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('دانلود')),
-              ],
-            ),
-          );
-          if (yes == true) {
-            await LinLearnBridge.packDownload('speech', _src);
-            _toast('دانلود شروع شد؛ وقتی تمام شد دوباره «شروع ترجمه‌ی زنده» را بزن.');
-            if (mounted) setState(() => _packEpoch++);
-          }
+        if (!await _ensureSpeechPack(
+            afterDownload:
+                'دانلود شروع شد؛ وقتی تمام شد دوباره «شروع ترجمه‌ی زنده» را بزن.')) {
           return;
         }
+        await ref.read(nativeSyncProvider).pushLangs();
         await _pushOptions();
         await notifier.start(
           sourceLang: _src,
@@ -1109,17 +1091,88 @@ class _FloatingBubbleSectionState
     }
   }
 
+  /// مثل ensureOfflineSpeechModel در Hope: اگر بسته‌ی آفلاینِ «زبان صدا» دانلود نشده، یک‌بار می‌پرسد و
+  /// دانلود را شروع می‌کند. true = می‌شود ادامه داد، false = اول باید بسته دانلود شود.
+  Future<bool> _ensureSpeechPack({required String afterDownload}) async {
+    final pack = await LinLearnBridge.packStatus('speech', _src);
+    if (pack == null || pack['downloaded'] == true) return true;
+    if (!mounted) return false;
+    if (pack['downloading'] == true) {
+      _toast('بسته‌ی آفلاین در حال دانلود است؛ کمی صبر کن.');
+      return false;
+    }
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('بسته‌ی آفلاین تشخیص گفتار'),
+        content: Text(
+            'برای زبان «${_srcLangs[_src]}» به بسته‌ی آفلاین نیاز است '
+            '(فقط یک‌بار دانلود می‌شود و بعدش بدون اینترنت کار می‌کند). دانلود شود؟'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('نه')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('دانلود')),
+        ],
+      ),
+    );
+    if (yes == true) {
+      await LinLearnBridge.packDownload('speech', _src);
+      _toast(afterDownload);
+      if (mounted) setState(() => _packEpoch++);
+    }
+    return false;
+  }
+
+  /// زیرنویس زنده‌ی یوتیوب برای تشخیصِ ویدیوی در حال پخش و زمانِ پخش، «دسترسی به اعلان‌ها» می‌خواهد
+  /// (دقیقاً مثل Hope: ytCheckAccess ← ytRequestAccess + پیام). با برگشت از تنظیمات خودکار ادامه می‌دهد.
+  Future<bool> _ensureNotificationAccess() async {
+    if (await LinLearnBridge.ytCheckAccess()) return true;
+    if (!mounted) return false;
+    final ml = MaterialLocalizations.of(context);
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('دسترسی به اعلان‌ها'),
+        content: Text(context.l10n.settings_notification_access_needed),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(ml.cancelButtonLabel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(ml.continueButtonLabel)),
+        ],
+      ),
+    );
+    if (go != true) return false;
+    await LinLearnBridge.ytRequestAccess();
+    for (var i = 0; i < 90 && mounted; i++) {
+      await Future.delayed(const Duration(milliseconds: 700));
+      if (await LinLearnBridge.ytCheckAccess()) return true;
+    }
+    return false;
+  }
+
+  /// ▶ زیرنویس زنده‌ی یوتیوب — ترتیبِ Hope: مجوزِ نمایش روی برنامه‌ها ← دسترسی به اعلان‌ها ←
+  /// بسته‌ی آفلاین (بدون مسدود کردن) ← حباب (با زبانِ صدا و همه‌ی زبان‌های مقصد) ← حالت نمایش ← ytSetEnabled.
   Future<void> _startYoutube() async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
       if (!await _ensureOverlay()) return;
-      // «دسترسی به اعلان‌ها» دیگر اجباری نیست: بدونش ▶ کلِ زیرنویس را از لینکِ کلیپ‌بورد می‌آورد؛
-      // همگام‌سازی با پخش با نگه‌داشتنِ ▶ در حباب (انتخابِ «همگام‌سازی») فعال می‌شود.
+      if (!await _ensureNotificationAccess()) return;
+      // نتیجه نادیده گرفته می‌شود (مثل Hope): زیرنویسِ یوتیوب خودش بسته نمی‌خواهد، فقط ترجمه‌ی زنده می‌خواهد.
+      await _ensureSpeechPack(
+          afterDownload: 'دانلود بسته‌ی آفلاین شروع شد؛ زیرنویس یوتیوب بدون آن هم کار می‌کند.');
+      await ref.read(nativeSyncProvider).pushLangs();
       await _pushOptions();
       if (!ref.read(bubbleProvider).running) {
         await ref.read(bubbleProvider.notifier).start(mode: 'translator');
       }
+      await _pushOptions();
       await LinLearnBridge.ytSetEnabled(true);
     } catch (e) {
       _toast('خطا: $e');
@@ -1345,6 +1398,9 @@ class _FloatingBubbleSectionState
                     onChanged: (v) {
                       setState(() => _src = v);
                       _save(_kSrcKey, v);
+                      // مثل Hope: به حبابِ در حال اجرا هم خبر بده (setLanguages)
+                      Future<void>.microtask(
+                          () => ref.read(nativeSyncProvider).pushLangs());
                     },
                   ),
                   PackTile(

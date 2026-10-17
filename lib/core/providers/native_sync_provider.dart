@@ -15,12 +15,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../bridge/linlearn_bridge.dart';
 import '../models/grammar_note.dart';
+import '../models/language_selection.dart';
 import '../models/saved_word.dart';
 import '../native/native_bridge.dart';
 import 'app_prefs_provider.dart';
 import 'language_selection_provider.dart';
 import 'linlearn_provider.dart';
 import 'reader_providers.dart';
+import '../storage/local_storage.dart' show sharedPrefsProvider;
 import 'story_library_provider.dart';
 
 class NativeSync with WidgetsBindingObserver {
@@ -34,6 +36,12 @@ class NativeSync with WidgetsBindingObserver {
     _sub = NativeBridge.instance
         .on('wordQueued')
         .listen((_) => importAll(), onError: (Object _) {});
+    // مثل Hope (useEffect در SettingsMenu): هر بار زبان‌های مقصد یا زبان رابط عوض شد،
+    // به حبابِ در حال اجرا هم خبر بده — وگرنه زیرنویسِ یوتیوب به زبان‌های قبلی ترجمه می‌شد.
+    _ref.listen<LanguageSelection>(languageSelectionProvider, (_, __) => pushLangs());
+    _ref.listen(appPrefsProvider, (p, n) {
+      if (p?.uiLang != n.uiLang) pushLangs();
+    });
     // بعد از اولین فریم (تا پروایدرها آماده باشند)
     Future<void>.delayed(const Duration(milliseconds: 600), importAll);
   }
@@ -54,7 +62,7 @@ class NativeSync with WidgetsBindingObserver {
     if (_busy) return;
     _busy = true;
     try {
-      _pushLangs();
+      await pushLangs();
       await _ref.read(bubbleProvider.notifier).syncFromNative();
       await _importWordQueue();
       await _importYtSaved();
@@ -65,16 +73,33 @@ class NativeSync with WidgetsBindingObserver {
     }
   }
 
-  void _pushLangs() {
-    final prefs = _ref.read(appPrefsProvider);
-    final sel = _ref.read(languageSelectionProvider);
-    LinLearnBridge.configure(
-      uiLang: prefs.uiLang,
-      sourceLang: sel.primaryTarget,
-      targetLangs: <String>[sel.native],
-    );
-    NativeBridge.instance.setUiLang(lang: prefs.uiLang).catchError(
-        (Object _) => <String, dynamic>{});
+  /// زبان صدا = «زبان صدا»ی تنظیمات (پیش‌فرض en)، مقصدها = *همه‌ی* زبان‌های مقصدِ انتخابی
+  /// (اگر هیچ‌کدام نبود، زبان رابط) — دقیقاً مثل liveSrcLang / liveTargets در Hope.
+  Future<void> pushLangs() async {
+    try {
+      final prefs = _ref.read(appPrefsProvider);
+      final sel = _ref.read(languageSelectionProvider);
+      var src = 'en';
+      try {
+        final s = _ref.read(sharedPrefsProvider).getString('phrasebook-live-src-lang');
+        if (s != null && s.isNotEmpty) src = s;
+      } catch (_) {}
+      final targets = sel.targets.isNotEmpty
+          ? List<String>.from(sel.targets)
+          : <String>[prefs.uiLang];
+      LinLearnBridge.configure(
+        uiLang: prefs.uiLang,
+        sourceLang: src,
+        targetLangs: targets,
+      );
+      if (!NativeBridge.instance.isSupported) return;
+      NativeBridge.instance.setUiLang(lang: prefs.uiLang).catchError(
+          (Object _) => <String, dynamic>{});
+      await NativeBridge.instance
+          .setLanguages(
+              targetLang: prefs.uiLang, sourceLang: src, targetLangs: targets)
+          .catchError((Object _) => <String, dynamic>{});
+    } catch (_) {}
   }
 
   // ───────────── صفِ لغت‌های حباب ─────────────
