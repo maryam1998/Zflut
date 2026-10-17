@@ -78,7 +78,7 @@ const List<TabMeta> kTabMetaList = [
   TabMeta(
     key: 'review',
     labelKey: 'tab_review',
-    icon: Icons.repeat,
+    icon: Icons.task_alt_rounded,
     route: '/review',
   ),
 ];
