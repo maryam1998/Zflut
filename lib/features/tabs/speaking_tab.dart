@@ -22,6 +22,7 @@ import '_hope_panel.dart';
 // ═══════════════════════════════════════════════════════════════════
 
 const String _kChatKey = 'zflut-speaking-chat-v1';
+const String _kLangKey = 'zflut-speaking-lang-v1';
 const Color _kMistake = Color(0xFFC81E1E);
 const Color _kCorrection = Color(0xFF166534);
 
@@ -237,12 +238,28 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
   void initState() {
     super.initState();
     final sel = ref.read(languageSelectionProvider);
-    _chatLang = sel.targets.isNotEmpty ? sel.targets.first : 'en';
+    final options = sel.targets.isNotEmpty ? sel.targets : const ['en'];
+    // زبانِ تمرینِ انتخاب‌شده‌ی قبلی حفظ می‌شود (با جابجایی بین تب‌ها ریست نشود)
+    final saved =
+        (ref.read(localStorageProvider).readJson(_kLangKey)['lang'] ?? '')
+            .toString();
+    _chatLang = options.contains(saved) ? saved : options.first;
     _messages = _load();
-    if (_messages.isEmpty) {
+    // اگر فقط پیامِ خوش‌آمد هست، با زبانِ فعلی بازسازی شود
+    if (_messages.isEmpty ||
+        (_messages.length == 1 && _messages.first.role == 'ai')) {
       _messages = [_welcome(_chatLang)];
       _persist();
     }
+  }
+
+  void _setChatLang(String v) {
+    setState(() {
+      _chatLang = v;
+      if (_messages.length <= 1) _messages = [_welcome(v)];
+    });
+    unawaited(ref.read(localStorageProvider).writeJson(_kLangKey, {'lang': v}));
+    _persist();
   }
 
   @override
@@ -548,7 +565,7 @@ Now respond to: "$sentence"
                       ),
                   ],
                   onChanged: (v) {
-                    if (v != null) setState(() => _chatLang = v);
+                    if (v != null) _setChatLang(v);
                   },
                 ),
               ),

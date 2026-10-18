@@ -9,7 +9,8 @@ import '../../core/models/saved_word.dart';
 import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/translation_provider.dart';
-import '../../core/translate/translation_service.dart' show englishLangName;
+import '../../core/translate/translation_service.dart'
+    show englishLangName, looksLikeGuardOutput;
 import '../../core/providers/reader_providers.dart';
 import '../../core/ai/ai_gateway.dart';
 import '../../core/theme/app_theme_colors.dart';
@@ -321,25 +322,34 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         .join(', ');
     final otherLangs = others.isEmpty ? 'None' : others;
 
+    // توکن‌ها: هر پیام کوتاه می‌شود، پاسخ‌های خراب (گارد/خالی) اصلاً نمی‌روند،
+    // و فقط یادداشتِ اصلی + ۲ نوبتِ آخر فرستاده می‌شود.
+    String clip(String t, int n) {
+      final x = t.replaceAll(RegExp(r'\s+'), ' ').trim();
+      return x.length > n ? '${x.substring(0, n)}…' : x;
+    }
+
+    final okThread = note.thread
+        .where((t) => t.answer.trim().isNotEmpty && !looksLikeGuardOutput(t.answer))
+        .toList();
+    final lastTurns =
+        okThread.length > 2 ? okThread.sublist(okThread.length - 2) : okThread;
     final history = <String>[
-      'Learner: ${note.sentence.isNotEmpty ? note.sentence : note.word}',
-      'Teacher: ${note.markdown}',
-      for (final t in note.thread) ...[
-        'Learner: ${t.question}',
-        'Teacher: ${t.answer}',
+      'Note: ${clip(note.sentence.isNotEmpty ? note.sentence : note.word, 200)}',
+      'Explanation: ${clip(note.markdown, 500)}',
+      for (final t in lastTurns) ...[
+        'Learner: ${clip(t.question, 200)}',
+        'Teacher: ${clip(t.answer, 400)}',
       ],
     ];
-    final recent =
-        history.length > 8 ? history.sublist(history.length - 8) : history;
 
-    return "You are a friendly, knowledgeable AI chat assistant inside a language-learning app — talk with the learner the same natural way any general-purpose AI chat assistant would. You're great at $langLabel practice.\n\n"
-        "Learner's native language: $label. Language they're currently practicing: $langLabel. Other languages they study: $otherLangs.\n\n"
-        "Recent conversation (a saved grammar note and the follow-up questions about it):\n${recent.join('\n')}\n\n"
-        "Learner just wrote: \"$question\"\n\n"
-        "How to respond:\n"
-        "- This is a follow-up question about the saved grammar note above. Answer it directly and conversationally, in $label. Do not redo the whole structured breakdown.\n"
-        "- Every example sentence in your reply MUST be in $langLabel (unless the learner explicitly asks about another language), with a $label translation.\n"
-        "- Write in $label. Keep the reply clear, well-organized, and not too long.";
+    return "You are a friendly $langLabel tutor in a language-learning app. "
+        "Learner's native language: $label. Practicing: $langLabel. Also studies: $otherLangs.\n\n"
+        "Context:\n${history.join('\n')}\n\n"
+        "Learner asks: \"${clip(question, 400)}\"\n\n"
+        "Answer this follow-up directly in $label, without redoing the full breakdown. "
+        "Example sentences must be in $langLabel, each with a short $label translation. "
+        "Be concise (under ~150 words), plain text.";
   }
 
   Future<void> _ask([String? retryQuestion]) async {
@@ -361,9 +371,9 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         svc: svc,
         settings: ai,
         prompt: _prompt(question),
-        maxTokens: 1200,
+        maxTokens: 600,
         retries: 1,
-        timeoutMs: 60000,
+        timeoutMs: 45000,
       );
       // یادداشت قبلاً ذخیره شده؛ پاسخ مستقیم به همان اضافه می‌شود
       notifier.appendThread(
