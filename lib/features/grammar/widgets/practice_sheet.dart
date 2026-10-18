@@ -271,7 +271,9 @@ class _GrammarPracticeContentState
           targets: sel.targets,
           history: history,
         ),
-        maxTokens: 1200,
+        maxTokens: 700,
+        retries: 1,
+        timeoutMs: 45000,
         settings: ai,
       );
       final text = _stripThink(raw);

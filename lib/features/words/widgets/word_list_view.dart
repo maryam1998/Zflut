@@ -55,6 +55,9 @@ class WordListView extends ConsumerStatefulWidget {
   /// عنوانِ بالای لیست (مثل «لغات» در تبِ علاقه‌مندی‌های Hope)
   final String? heading;
 
+  /// ویجتِ اضافه (مثلاً مثال‌های ⭐‌دار) درست زیرِ فیلتر/عنوان
+  final Widget? afterHeading;
+
   const WordListView({
     super.key,
     required this.listId,
@@ -63,6 +66,7 @@ class WordListView extends ConsumerStatefulWidget {
     this.emptyMessage,
     this.loading = false,
     this.heading,
+    this.afterHeading,
   });
 
   @override
@@ -305,6 +309,8 @@ class _WordListViewState extends ConsumerState<WordListView> {
         slivers: [
           const SliverToBoxAdapter(child: ShellHeader()),
           SliverToBoxAdapter(child: filterHeader),
+          if (widget.afterHeading != null)
+            SliverToBoxAdapter(child: widget.afterHeading!),
           if (widget.heading != null && words.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(

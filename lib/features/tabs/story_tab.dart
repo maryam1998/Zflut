@@ -23,7 +23,7 @@ import '../../core/providers/text_prefs_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/translate/translation_service.dart'
-    show runWithConcurrencyLimit;
+    show runWithConcurrencyLimit, kLastAiError;
 import '../../core/web/reading_io_stub.dart'
     if (dart.library.html) '../../core/web/reading_io_web.dart';
 import 'package:flutter/gestures.dart';
@@ -80,11 +80,11 @@ class _Len {
 
 const List<_Len> _kLengths = [
   _Len('short', 'کوتاه', '1-2', 'short, roughly 4-6 sentences per paragraph',
-      1100),
+      800),
   _Len('medium', 'متوسط', '2-3', 'medium length, roughly 5-8 sentences per paragraph',
-      1900),
+      1400),
   _Len('long', 'بلند', '4-6', 'long, roughly 6-10 sentences per paragraph',
-      3200),
+      2400),
 ];
 
 String _enName(String code) {
@@ -498,7 +498,14 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     try {
       final raw = await ref.read(translationServiceProvider).callAI(
             prompt: prompt,
-            maxTokens: ln.tokens,
+            // زبان‌های غیرلاتین (فارسی/عربی/چینی/…) توکنِ بیشتری لازم دارند
+            maxTokens: ((const {'fa', 'ar', 'ru', 'hi', 'zh', 'ja', 'ko'}
+                            .contains(lang))
+                        ? ln.tokens * 1.6
+                        : ln.tokens.toDouble())
+                    .round()
+                    .clamp(300, 4096)
+                    .toInt(),
             retries: 1,
             settings: ref.read(aiSettingsProvider),
             timeoutMs: 90000,
@@ -536,7 +543,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _error =
-          'ساخت داستان انجام نشد. اینترنتت رو چک کن و دوباره امتحان کن.');
+          'ساخت داستان انجام نشد. اینترنتت رو چک کن و دوباره امتحان کن.'
+          '${kLastAiError.isEmpty ? '' : '\n($kLastAiError)'}');
     } finally {
       if (mounted) setState(() => _generating = false);
     }

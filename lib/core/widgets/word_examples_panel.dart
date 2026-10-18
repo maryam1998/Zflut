@@ -5,7 +5,10 @@ import '../ai/word_examples.dart';
 import '../constants/supported_languages.dart';
 import '../providers/ai_settings_provider.dart';
 import '../providers/translation_provider.dart';
+import '../providers/example_favorites_provider.dart';
 import '../providers/speech_provider.dart';
+import '../../features/reader/widgets/neural_path_dialog.dart';
+import 'sync_item_card.dart' show NeuralPathButton;
 import '../theme/app_theme_colors.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -186,6 +189,86 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
   }
 }
 
+/// ردیفِ دکمه‌ها — از راست به چپ: 🔊 ← 🧬 ← رفرش ← ⭐ (مثل ردیف‌های ترجمه)
+class _ExActions extends ConsumerWidget {
+  final String text;
+  final String lang;
+  final String word;
+  final String baseText;
+  final bool refreshing;
+  final VoidCallback? onRefresh;
+
+  const _ExActions({
+    required this.text,
+    required this.lang,
+    required this.word,
+    required this.baseText,
+    required this.refreshing,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.appColors;
+    final fav = ref.watch(
+        exampleFavoritesProvider.select((l) => l.any((f) => f.key == '$lang::${text.trim()}')));
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkResponse(
+            onTap: () => ref
+                .read(exampleFavoritesProvider.notifier)
+                .toggle(text, lang, word),
+            radius: 16,
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(fav ? Icons.star : Icons.star_border,
+                  size: 18,
+                  color: fav
+                      ? const Color(0xFFF5C518)
+                      : c.inkSoft.withOpacity(0.4)),
+            ),
+          ),
+          InkResponse(
+            onTap: refreshing ? null : onRefresh,
+            radius: 16,
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: refreshing
+                  ? SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 1.6, color: c.inkSoft))
+                  : Icon(Icons.refresh,
+                      size: 16, color: c.inkSoft.withOpacity(0.7)),
+            ),
+          ),
+          NeuralPathButton(
+            onTap: () => showNeuralPath(
+              context,
+              word: text,
+              langCode: lang,
+              baseText: baseText,
+            ),
+          ),
+          InkResponse(
+            onTap: () =>
+                ref.read(speechControllerProvider.notifier).toggle(text, lang),
+            radius: 16,
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(Icons.volume_up_outlined, size: 18, color: c.gold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ExampleRow extends ConsumerWidget {
   final String word;
   final String langCode;
@@ -207,7 +290,6 @@ class _ExampleRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
-
     return Container(
       margin: const EdgeInsets.only(top: 6),
       padding: const EdgeInsets.all(8),
@@ -222,42 +304,28 @@ class _ExampleRow extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Text(
-                    example.text,
-                    style: TextStyle(
-                        color: c.ink,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        height: 1.45),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      example.text,
+                      style: TextStyle(
+                          color: c.ink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          height: 1.45),
+                    ),
                   ),
                 ),
-                InkResponse(
-                  onTap: () => ref
-                      .read(speechControllerProvider.notifier)
-                      .toggle(example.text, langCode),
-                  radius: 18,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Text('🔊',
-                        style: const TextStyle(fontSize: 18, height: 1.1)),
-                  ),
-                ),
-                InkResponse(
-                  onTap: refreshing ? null : onRefresh,
-                  radius: 16,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: refreshing
-                        ? SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 1.6, color: c.teal))
-                        : Icon(Icons.refresh,
-                            size: 15, color: c.teal.withOpacity(0.8)),
-                  ),
+                _ExActions(
+                  text: example.text,
+                  lang: langCode,
+                  word: word,
+                  baseText: example.text,
+                  refreshing: refreshing,
+                  onRefresh: onRefresh,
                 ),
               ],
             ),
@@ -298,6 +366,7 @@ class _ExampleTranslation extends ConsumerStatefulWidget {
 class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
   String _text = '';
   bool _failed = false;
+  bool _refreshing = false;
 
   @override
   void initState() {
@@ -306,7 +375,27 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
     if (_text.isEmpty) _load();
   }
 
-  bool _refreshing = false;
+  Future<void> _load() async {
+    try {
+      final t = await ref.read(translationServiceProvider).translate(
+            text: widget.example.text,
+            targetLang: widget.target,
+            sourceLang: widget.langCode,
+            aiSettings: ref.read(aiSettingsProvider),
+            forceVerify: true,
+          );
+      if (!mounted) return;
+      if (t.trim().isEmpty || t.trim() == widget.example.text.trim()) {
+        setState(() => _failed = true);
+        return;
+      }
+      setState(() => _text = t.trim());
+      await ref.read(wordExamplesStoreProvider).setTranslation(
+          widget.word, widget.langCode, widget.example.id, widget.target, t);
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    }
+  }
 
   /// رفرش: ترجمه‌ی دوباره بدون کش، اول با AI.
   Future<void> _refresh() async {
@@ -338,28 +427,6 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
     }
   }
 
-  Future<void> _load() async {
-    try {
-      final t = await ref.read(translationServiceProvider).translate(
-            text: widget.example.text,
-            targetLang: widget.target,
-            sourceLang: widget.langCode,
-            aiSettings: ref.read(aiSettingsProvider),
-            forceVerify: true,
-          );
-      if (!mounted) return;
-      if (t.trim().isEmpty || t.trim() == widget.example.text.trim()) {
-        setState(() => _failed = true);
-        return;
-      }
-      setState(() => _text = t.trim());
-      await ref.read(wordExamplesStoreProvider).setTranslation(
-          widget.word, widget.langCode, widget.example.id, widget.target, t);
-    } catch (_) {
-      if (mounted) setState(() => _failed = true);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
@@ -377,7 +444,7 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 2),
+            margin: const EdgeInsets.only(top: 6),
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             decoration: BoxDecoration(
               border: Border.all(color: c.goldSoft),
@@ -389,33 +456,30 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _text.isEmpty
-                ? Text(_failed ? '—' : 'در حال ترجمه...',
-                    style: TextStyle(color: c.inkSoft, fontSize: 11))
-                : Directionality(
-                    textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
-                    child: Text(_text,
-                        style: TextStyle(
-                            color: c.teal,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            height: 1.45)),
-                  ),
-          ),
-          InkResponse(
-            onTap: _refreshing ? null : _refresh,
-            radius: 14,
             child: Padding(
-              padding: const EdgeInsets.all(3),
-              child: _refreshing
-                  ? SizedBox(
-                      width: 11,
-                      height: 11,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 1.5, color: c.teal))
-                  : Icon(Icons.refresh,
-                      size: 14, color: c.teal.withOpacity(0.8)),
+              padding: const EdgeInsets.only(top: 5),
+              child: _text.isEmpty
+                  ? Text(_failed ? '—' : 'در حال ترجمه...',
+                      style: TextStyle(color: c.inkSoft, fontSize: 11))
+                  : Directionality(
+                      textDirection:
+                          rtl ? TextDirection.rtl : TextDirection.ltr,
+                      child: Text(_text,
+                          style: TextStyle(
+                              color: c.teal,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              height: 1.45)),
+                    ),
             ),
+          ),
+          _ExActions(
+            text: _text,
+            lang: widget.target,
+            word: widget.word,
+            baseText: widget.example.text,
+            refreshing: _refreshing,
+            onRefresh: _refresh,
           ),
         ],
       ),

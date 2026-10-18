@@ -227,6 +227,9 @@ class AiSettings {
   }
 }
 
+/// آخرین دلیلِ فنیِ خطای AI (برای نمایش زیرِ پیامِ خطا و عیب‌یابی).
+String kLastAiError = '';
+
 class _AiBackendError implements Exception {
   final String message;
   _AiBackendError(this.message);
@@ -588,6 +591,7 @@ class TranslationService {
             await Future.delayed(Duration(milliseconds: waitMs));
             continue;
           }
+          kLastAiError = 'HTTP $status — ${detail.length > 220 ? detail.substring(0, 220) : detail}';
           throw _AiBackendError(
               (status >= 500 || isRateLimited) ? _aiNetMsg : detail);
         }
@@ -601,6 +605,9 @@ class TranslationService {
             await Future.delayed(Duration(milliseconds: 700 * (attempt + 1)));
             continue;
           }
+          kLastAiError = rawText.isEmpty
+              ? 'پاسخ خالی از Worker'
+              : 'خروجی گارد/ایمنی از Worker (Worker قدیمی؟)';
           throw _AiBackendError(_aiNetMsg);
         }
         return text;
@@ -611,6 +618,8 @@ class TranslationService {
           await Future.delayed(Duration(milliseconds: 700 * (attempt + 1)));
           continue;
         }
+        final es = e.toString();
+        kLastAiError = es.length > 220 ? es.substring(0, 220) : es;
         throw _AiBackendError(_aiNetMsg);
       }
     }
@@ -634,8 +643,10 @@ class TranslationService {
 
     String clean(String r) => _stripQuotes(stripAIReasoning(r));
 
+    // سقفِ توکن متناسب با طولِ متن (قبلاً همیشه ۲۰۰)
+    final tr = (text.length ~/ 2 + 96).clamp(128, 400).toInt();
     var cleaned = clean(await callAI(
-        prompt: prompt, maxTokens: 200, retries: 1, settings: settings));
+        prompt: prompt, maxTokens: tr, retries: 1, settings: settings));
 
     if (cleaned.isEmpty ||
         looksLikeAIReasoning(cleaned) ||
@@ -645,7 +656,7 @@ class TranslationService {
           'Do not think aloud, do not analyze, do not explain, do not use lists or markdown.\n\n'
           'Text: $text\n\n$targetLabel translation:';
       cleaned = clean(await callAI(
-          prompt: strict, maxTokens: 200, retries: 1, settings: settings));
+          prompt: strict, maxTokens: tr, retries: 0, settings: settings));
     }
 
     if (cleaned.isEmpty) throw Exception('translate-ai-empty-response');
