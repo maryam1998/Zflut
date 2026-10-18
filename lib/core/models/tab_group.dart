@@ -29,7 +29,7 @@ const List<TabGroup> kTabGroups = [
     key: 'words',
     labelKey: 'group_words',
     icon: Icons.menu_book_outlined,
-    tabs: ['words', 'vocabInUse', 'slang', 'favorites'],
+    tabs: ['words', 'vocabInUse', 'slang'],
   ),
   TabGroup(
     key: 'story',
@@ -42,7 +42,7 @@ const List<TabGroup> kTabGroups = [
     key: 'practice',
     labelKey: 'group_practice',
     icon: Icons.task_alt_rounded,
-    tabs: ['review'],
+    tabs: ['favorites', 'review'],
   ),
 ];
 
