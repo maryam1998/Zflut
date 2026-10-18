@@ -114,8 +114,6 @@ class SubTabsRow extends StatelessWidget {
       case 'tab_grammar':       return L.tab_grammar;
       case 'tab_speaking':      return L.tab_speaking;
       case 'tab_words':         return L.tab_words;
-      case 'tab_vocab_in_use':  return L.tab_vocab_in_use;
-      case 'tab_slang':         return L.tab_slang;
       case 'tab_favorites':     return L.tab_favorites;
       case 'tab_review':        return L.tab_review;
       default:                  return key;

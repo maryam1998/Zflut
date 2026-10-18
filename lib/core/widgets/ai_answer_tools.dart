@@ -1,3 +1,4 @@
+import '../../app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -236,10 +237,10 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
             child: Padding(
               padding: const EdgeInsets.only(top: 4),
               child: loading
-                  ? Text('در حال ترجمه...',
+                  ? Text(context.l10n.grammar_translating,
                       style: TextStyle(color: c.inkSoft, fontSize: 13))
                   : failed || text == null
-                      ? Text('ترجمه نشد — دوباره بزن',
+                      ? Text(context.l10n.reader_not_translated_retry,
                           style: TextStyle(color: c.rose, fontSize: 13))
                       : Directionality(
                           textDirection:

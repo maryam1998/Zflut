@@ -1426,5 +1426,25 @@
       }
     }
   },
-  "wd_ok": "OK"
+  "wd_ok": "OK",
+  "word_examples_btn_close": "Close examples",
+  "word_examples_failed": "Couldn't create an example — try again.",
+  "word_examples_generating": "Creating example...",
+  "translation_no_better": "No better answer found",
+  "speaking_refresh": "Refresh",
+  "grammar_editing_question": "Editing question — later answers will be replaced",
+  "pos_noun": "Noun",
+  "pos_verb": "Verb",
+  "pos_adjective": "Adjective",
+  "pos_adverb": "Adverb",
+  "pos_preposition": "Preposition",
+  "pos_pronoun": "Pronoun",
+  "pos_conjunction": "Conjunction",
+  "pos_article": "Article",
+  "pos_interjection": "Interjection",
+  "pos_numeral": "Numeral",
+  "pos_auxiliary": "Auxiliary verb",
+  "pos_determiner": "Determiner",
+  "pos_exclamation": "Exclamation",
+  "pos_idiom": "Idiom"
 }

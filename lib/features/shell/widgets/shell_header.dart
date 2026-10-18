@@ -30,8 +30,6 @@ class ShellHeader extends StatelessWidget {
       case 'grammar':       return '/grammar';
       case 'speaking':      return '/speaking';
       case 'words':         return '/words';
-      case 'vocabInUse':    return '/vocab-in-use';
-      case 'slang':         return '/slang';
       case 'favorites':     return '/favorites';
       case 'review':        return '/review';
       default:              return '/story';

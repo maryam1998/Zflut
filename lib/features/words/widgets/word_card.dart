@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../app.dart';
 import '../../../core/widgets/sync_item_card.dart';
 
 // اجزای قدیمی از همین مسیر هم در دسترس می‌مانند
@@ -51,7 +52,7 @@ class WordCard extends StatelessWidget {
       id: id,
       en: en,
       level: level,
-      pos: _posFa(pos),
+      pos: _posLabel(context, pos),
       isPersonal: isPersonal,
       langsToShow: langsToShow,
       knownTranslations: known,
@@ -63,16 +64,31 @@ class WordCard extends StatelessWidget {
     );
   }
 
-  static String _posFa(String pos) {
-    const map = {
-      'noun': 'اسم', 'verb': 'فعل', 'adjective': 'صفت', 'adverb': 'قید',
-      'preposition': 'حرف اضافه', 'pronoun': 'ضمیر',
-      'conjunction': 'حرف ربط', 'article': 'حرف تعریف',
-      'interjection': 'شبه‌جمله', 'numeral': 'عدد',
-      'auxiliary': 'فعل کمکی', 'other': 'سایر',
-      'determiner': 'حرف تعیین‌کننده', 'exclamation': 'صوت',
-      'idiom': 'اصطلاح', 'slang': 'اسلنگ',
-    };
-    return map[pos] ?? pos;
+  /// برچسبِ نوعِ کلمه به زبانِ رابطِ برنامه. «other» و «slang» اصلاً نمایش
+  /// داده نمی‌شوند.
+  static String _posLabel(BuildContext context, String pos) {
+    final L = context.l10n;
+    switch (pos) {
+      case 'noun': return L.pos_noun;
+      case 'verb': return L.pos_verb;
+      case 'adjective': return L.pos_adjective;
+      case 'adverb': return L.pos_adverb;
+      case 'preposition': return L.pos_preposition;
+      case 'pronoun': return L.pos_pronoun;
+      case 'conjunction': return L.pos_conjunction;
+      case 'article': return L.pos_article;
+      case 'interjection': return L.pos_interjection;
+      case 'numeral': return L.pos_numeral;
+      case 'auxiliary': return L.pos_auxiliary;
+      case 'determiner': return L.pos_determiner;
+      case 'exclamation': return L.pos_exclamation;
+      case 'idiom': return L.pos_idiom;
+      case 'other':
+      case 'slang':
+      case '':
+        return '';
+      default:
+        return pos;
+    }
   }
 }

@@ -11,10 +11,8 @@ import '../../features/tabs/conversations_tab.dart';
 import '../../features/tabs/favorites_tab.dart';
 import '../../features/tabs/grammar_tab.dart';
 import '../../features/review/review_tab.dart';
-import '../../features/tabs/slang_tab.dart';
 import '../../features/tabs/speaking_tab.dart';
 import '../../features/tabs/story_tab.dart';
-import '../../features/tabs/vocab_in_use_tab.dart';
 import '../../features/tabs/words_tab.dart';
 
 /// روتر — معادلِ تصمیم App.jsx بین LoginScreen و PhrasebookMain.
@@ -83,8 +81,6 @@ final List<RouteBase> _routes = [
       _tab('/grammar', () => const GrammarTab()),
       _tab('/speaking', () => const SpeakingTab()),
       _tab('/words', () => const WordsTab()),
-      _tab('/vocab-in-use', () => const VocabInUseTab()),
-      _tab('/slang', () => const SlangTab()),
       _tab('/favorites', () => const FavoritesTab()),
       _tab('/review', () => const ReviewTab()),
     ],

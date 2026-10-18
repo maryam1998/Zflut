@@ -138,8 +138,6 @@ class TabOrder {
       'grammar',
       'speaking',
       'words',
-      'vocabInUse',
-      'slang',
       'favorites',
       'review',
     ],

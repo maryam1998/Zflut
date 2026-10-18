@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/daily_word.dart';
 import '../models/filter_state.dart';
 import '../storage/local_storage.dart';
+import '../translate/translation_service.dart' show textMatchesScript;
 import 'conversation_provider.dart';
 import 'language_selection_provider.dart';
 import 'reader_providers.dart';
@@ -136,7 +137,9 @@ final myDictionaryWordsProvider = Provider<List<DailyWord>>((ref) {
       pos: '',
       en: e.word,
       fa: '',
-      translations: (meaning.isNotEmpty && native != 'en')
+      translations: (meaning.isNotEmpty &&
+              native != 'en' &&
+              textMatchesScript(meaning, native))
           ? {native: meaning}
           : const <String, String>{},
     ));

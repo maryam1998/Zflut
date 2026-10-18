@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app.dart';
 import '../constants/level_colors.dart';
 import '../constants/supported_languages.dart';
 import '../player_sync/sync_widgets.dart';
@@ -178,8 +179,8 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                   ],
                   if (widget.isPersonal) ...[
                     const SizedBox(width: 6),
-                    const _Badge(
-                      text: 'شخصی',
+                    _Badge(
+                      text: context.l10n.words_personal_badge,
                       fg: Color(0xFFA34960),
                       bg: Color(0x1FA34960),
                       size: 10,
@@ -272,7 +273,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                 right: 8,
                 bottom: 6,
                 child: Tooltip(
-                  message: 'حذف از دیکشنری من (در لغات ذخیره‌شده می‌مونه)',
+                  message: context.l10n.words_remove_from_dictionary_hint,
                   child: InkWell(
                     onTap: widget.onRemove,
                     customBorder: const CircleBorder(),
@@ -305,7 +306,7 @@ class _ReadToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'علامت‌زدن به‌عنوان خوانده‌شده',
+      message: context.l10n.grammar_mark_as_read,
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
@@ -441,6 +442,12 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
     super.dispose();
   }
 
+  /// معنیِ از‌پیش‌معلوم فقط وقتی معتبر است که به رسم‌الخطِ همین زبان باشد
+  /// (مثلاً معنیِ اسپانیاییِ یک لغتِ شخصی نباید در ردیفِ FA بنشیند).
+  bool get _hasKnown =>
+      widget.knownText.isNotEmpty &&
+      textMatchesScript(widget.knownText, widget.langCode);
+
   bool _usable(String t) {
     final s = t.trim();
     if (s.isEmpty) return false;
@@ -451,7 +458,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
   void _resolve() {
     final gen = ++_gen;
 
-    if (widget.knownText.isNotEmpty) {
+    if (_hasKnown) {
       _text = widget.knownText;
       return;
     }
@@ -522,22 +529,15 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
 
     String? result;
     try {
-      result = await service.translateViaAI(en, code, 'en', ai);
+      result = await service.retranslate(
+        text: en,
+        targetLang: code,
+        sourceLang: 'en',
+        aiSettings: ai,
+        previous: _text,
+      );
     } catch (_) {
       result = null;
-    }
-    if (result == null || !_usable(result)) {
-      try {
-        result = await service.translate(
-          text: en,
-          targetLang: code,
-          sourceLang: 'en',
-          aiSettings: ai,
-          forceVerify: true,
-        );
-      } catch (_) {
-        result = null;
-      }
     }
     if (!mounted || gen != _gen) return;
 
@@ -574,7 +574,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       syncReportTranslation(context, ref, widget.langCode, widget.itemId, text);
     }
 
-    final canRetry = widget.knownText.isEmpty && !loading;
+    final canRetry = !_hasKnown && !loading;
 
     return SyncAnchor(
       code: widget.langCode,
@@ -630,7 +630,9 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                         ),
                       )
                     : Text(
-                        _failed ? 'ترجمه نشد — دوباره بزن' : 'در حال ترجمه...',
+                        _failed
+                            ? context.l10n.reader_not_translated_retry
+                            : context.l10n.grammar_translating,
                         style: TextStyle(
                           color: _failed ? c.rose : c.inkSoft,
                           fontSize: 12,
@@ -643,7 +645,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
                   child: Text(
-                    'جواب بهتری نیامد',
+                    context.l10n.translation_no_better,
                     style: TextStyle(color: c.rose, fontSize: 10),
                   ),
                 ),
@@ -819,7 +821,9 @@ class AiExamplesButton extends StatelessWidget {
             Icon(Icons.auto_awesome, size: 13, color: c.gold),
             const SizedBox(width: 5),
             Text(
-              expanded ? 'بستن مثال‌ها' : 'مثال (با هوش مصنوعی)',
+              expanded
+                  ? context.l10n.word_examples_btn_close
+                  : context.l10n.word_examples_btn_generate,
               style: TextStyle(
                 color: c.gold,
                 fontSize: 11.5,

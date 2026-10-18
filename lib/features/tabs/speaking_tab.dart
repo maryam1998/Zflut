@@ -225,6 +225,8 @@ class SpeakingTab extends ConsumerStatefulWidget {
 class _SpeakingTabState extends ConsumerState<SpeakingTab> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  final _editCtrl = TextEditingController();
+  int? _editIdx; // اندیسِ پیامِ کاربری که درجا در حال ویرایش است
 
   List<_Msg> _messages = [];
   bool _loading = false;
@@ -266,6 +268,7 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
   @override
   void dispose() {
     _input.dispose();
+    _editCtrl.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -449,6 +452,7 @@ Now respond to: "$sentence"
   Future<void> _ask(String text, List<_Msg> history) async {
     final lang = _activeLang();
     setState(() {
+      _editIdx = null;
       _error = '';
       _corrections = [];
       _correctionsSaved = false;
@@ -490,26 +494,41 @@ Now respond to: "$sentence"
     await _ask(text, _messages);
   }
 
-  bool get _fa => Localizations.localeOf(context).languageCode == 'fa';
-  String _t(String fa, String en) => _fa ? fa : en;
-
-  /// ویرایشِ پیامِ کاربر: متن به کادرِ ورودی برمی‌گردد و از همین پیام به بعد
-  /// (پیام‌های بعدیِ گفتگو) حذف می‌شود؛ کاربر ویرایش می‌کند و دوباره می‌فرستد.
+  /// ویرایشِ درجا (مثل چت‌های AI): پیام در همان حباب به یک کادرِ ویرایش تبدیل
+  /// می‌شود؛ چیزی حذف نمی‌شود تا کاربر «ذخیره و ارسالِ مجدد» بزند. آن‌وقت
+  /// پیام‌های بعد از آن جایگزینِ جوابِ جدیدِ AI می‌شوند. «انصراف» همه‌چیز را
+  /// دست‌نخورده برمی‌گرداند.
   void _editMessage(int idx) {
     if (_loading || idx < 0 || idx >= _messages.length) return;
     final m = _messages[idx];
     if (m.role != 'user') return;
     setState(() {
-      _messages = _messages.sublist(0, idx);
-      _corrections = [];
-      _correctionsSaved = false;
-      _error = '';
+      _editIdx = idx;
+      _editCtrl.text = m.text;
+      _editCtrl.selection = TextSelection.collapsed(offset: m.text.length);
+    });
+  }
+
+  void _cancelEdit() {
+    if (_editIdx == null) return;
+    setState(() => _editIdx = null);
+  }
+
+  Future<void> _saveEdit() async {
+    final idx = _editIdx;
+    final text = _editCtrl.text.trim();
+    if (idx == null || text.isEmpty || _loading) return;
+    if (idx < 0 || idx >= _messages.length) {
+      setState(() => _editIdx = null);
+      return;
+    }
+    final history = _messages.sublist(0, idx);
+    setState(() {
+      _editIdx = null;
       _failedText = null;
       _failedHistory = null;
-      _input.text = m.text;
-      _input.selection = TextSelection.collapsed(offset: m.text.length);
     });
-    _persist();
+    await _ask(text, history);
   }
 
   /// رفرشِ آخرین پاسخِ AI: همان پیامِ کاربر دوباره فرستاده می‌شود.
@@ -531,6 +550,7 @@ Now respond to: "$sentence"
   void _clearChat() {
     setState(() {
       _messages = [_welcome(_activeLang())];
+      _editIdx = null;
       _corrections = [];
       _correctionsSaved = false;
       _error = '';
@@ -804,7 +824,71 @@ Now respond to: "$sentence"
     final dir = autoDir(m.text);
 
     Widget content;
-    if (isUser) {
+    final editing = isUser && _editIdx == idx;
+    if (editing) {
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _editCtrl,
+            autofocus: true,
+            minLines: 1,
+            maxLines: 6,
+            textDirection: dir,
+            onChanged: (_) => setState(() {}),
+            style: TextStyle(color: c.ink, fontSize: 13, height: 1.7),
+            decoration: InputDecoration(
+              isDense: true,
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: c.teal),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: c.teal),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: c.teal, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            alignment: WrapAlignment.end,
+            children: [
+              OutlinedButton(
+                onPressed: _cancelEdit,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: c.inkSoft,
+                  side: BorderSide(color: c.cardBorder),
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: Text(context.l10n.speaking_cancel,
+                    style: const TextStyle(fontSize: 12)),
+              ),
+              FilledButton(
+                onPressed:
+                    _editCtrl.text.trim().isEmpty ? null : _saveEdit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: c.teal,
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: Text(context.l10n.speaking_save_resend,
+                    style: const TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+        ],
+      );
+    } else if (isUser) {
       content = Text(
         m.text,
         textDirection: dir,
@@ -863,10 +947,11 @@ Now respond to: "$sentence"
           ? AlignmentDirectional.centerStart
           : AlignmentDirectional.centerEnd,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxW),
+        constraints: BoxConstraints(maxWidth: editing ? maxW / 0.88 : maxW),
         child: Column(
-          crossAxisAlignment:
-              isUser ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+          crossAxisAlignment: editing
+              ? CrossAxisAlignment.stretch
+              : (isUser ? CrossAxisAlignment.start : CrossAxisAlignment.end),
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -877,10 +962,10 @@ Now respond to: "$sentence"
               ),
               child: content,
             ),
-            if (isUser && !_loading)
+            if (isUser && !_loading && !editing)
               HopeTextAction(
                 icon: Icons.edit_outlined,
-                label: _t('ویرایش', 'Edit'),
+                label: context.l10n.speaking_edit,
                 color: c.teal,
                 fontSize: 11,
                 onTap: () => _editMessage(idx),
@@ -892,7 +977,7 @@ Now respond to: "$sentence"
                 _messages[idx - 1].role == 'user')
               HopeTextAction(
                 icon: Icons.refresh,
-                label: _t('رفرش', 'Refresh'),
+                label: context.l10n.speaking_refresh,
                 color: c.teal,
                 fontSize: 11,
                 onTap: () => _refreshReply(idx),

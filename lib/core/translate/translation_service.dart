@@ -47,6 +47,15 @@ final Map<String, RegExp> _scriptRegex = {
   'ko': RegExp(r'[\uAC00-\uD7AF]'),
 };
 
+/// آیا متن به رسم‌الخطِ زبانِ [lang] است؟ (برای زبان‌های لاتین همیشه true —
+/// تشخیصِ اسپانیایی از انگلیسی ممکن نیست). مثلاً معنیِ اسپانیاییِ یک لغتِ
+/// شخصی نباید به‌عنوان ترجمه‌ی فارسی نشان داده شود.
+bool textMatchesScript(String text, String lang) {
+  final re = _scriptRegex[lang];
+  if (re == null) return true;
+  return re.hasMatch(text);
+}
+
 /// AI به‌جای ترجمه «فکر کردنش» را برگردانده؟
 final RegExp aiReasoningRe = RegExp(
   r"(thinking process|here'?s a thinking|analy[sz]e the (request|text|input)|\*\*\s*analy[sz]e|\bconstraint\s*:|the user wants me to|let me (read|think|analy[sz]e|re-?read)|<\/?think(ing)?>|^\s*okay,? (so|let'?s|the user))",
@@ -116,6 +125,13 @@ bool looksLikelyMistranslated(
   // رسم‌الخط زبان مقصد در خروجی نیست
   final re = _scriptRegex[targetLang];
   if (re != null && src.length > 1 && !re.hasMatch(out)) return true;
+
+  // منبع یک «کلمه‌ی تکی» است ولی خروجی یک جمله‌ی بلند (مثلاً MyMemory برای
+  // «put» یک جمله‌ی بی‌ربط برمی‌گرداند) → مشکوک
+  if (src.isNotEmpty && !RegExp(r'\s').hasMatch(src)) {
+    final outWords = out.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    if (outWords > 4) return true;
+  }
 
   // نسبت طولِ غیرعادی
   final ratio = out.length / (src.isEmpty ? 1 : src.length);
@@ -330,30 +346,71 @@ class TranslationService {
     });
   }
 
-  /// ترجمه‌ی دوباره (بدون کش، اول AI) — معادلِ retranslateDailyLine وب
+  /// ترجمه‌ی دوباره (رفرش): بدون کش → دوباره سراغ مترجم‌های رایگان؛ اگر نتیجه
+  /// مشکوک بود (یا عیناً همان ترجمه‌ی قبلی بود) یک AI به‌عنوان ناظر بررسی/اصلاح
+  /// می‌کند؛ اگر باز هم نشد، آخرین چاره ترجمه‌ی مستقیم با AI. سقفِ زمانیِ کل
+  /// ۲۵ ثانیه است تا دکمه هیچ‌وقت گیر نکند.
   Future<String> retranslate({
     required String text,
     required String targetLang,
     String sourceLang = 'en',
     AiSettings? aiSettings,
+    String? previous,
   }) async {
     if (text.trim().isEmpty) return text;
-    String translated;
+    final ai = aiSettings;
+    final prev = previous?.trim();
+
+    bool bad(String r) =>
+        r.trim().isEmpty ||
+        looksLikelyMistranslated(text, r, targetLang, sourceLang: sourceLang);
+    bool same(String r) =>
+        prev != null && prev.isNotEmpty && r.trim() == prev;
+
+    Future<String> run() async {
+      // ۱. مترجم‌های رایگان (بدون کش)
+      final providers = <_Provider>[
+        _Provider('google', _viaGoogle),
+        _Provider('mymemory', _viaMyMemory),
+        _Provider('lingva', _viaLingva),
+        _Provider('libre', _viaLibre),
+      ];
+      var result = '';
+      try {
+        final winner =
+            await _raceProviders(providers, text, targetLang, sourceLang);
+        result = winner?.result ?? '';
+      } catch (_) {}
+
+      // ۲. ناظر AI: فقط اگر مشکوک بود یا همان ترجمه‌ی قبلی تکرار شد
+      if (ai != null && result.trim().isNotEmpty &&
+          (bad(result) || same(result))) {
+        result = await _verifyWithAI(text, targetLang, result, ai);
+      }
+      if (result.trim().isNotEmpty && !bad(result) && !same(result)) {
+        await cachePut(text, sourceLang, targetLang, result);
+        return result;
+      }
+
+      // ۳. آخرین چاره: ترجمه‌ی مستقیم با AI
+      if (ai != null) {
+        try {
+          final r = await translateViaAI(text, targetLang, sourceLang, ai);
+          if (!bad(r)) {
+            await cachePut(text, sourceLang, targetLang, r);
+            return r;
+          }
+        } catch (_) {}
+      }
+      // اگر ترجمه‌ی سالمی هست (حتی تکراری) همان را بده؛ وگرنه متن اصلی
+      return (result.trim().isNotEmpty && !bad(result)) ? result : text;
+    }
+
     try {
-      translated = await translateViaAI(text, targetLang, sourceLang, aiSettings);
+      return await run().timeout(const Duration(seconds: 25));
     } catch (_) {
-      translated = await translateNetwork(
-        text: text,
-        targetLang: targetLang,
-        sourceLang: sourceLang,
-        aiSettings: aiSettings,
-        forceVerify: true,
-      );
+      return text;
     }
-    if (translated.trim().isNotEmpty) {
-      await cachePut(text, sourceLang, targetLang, translated);
-    }
-    return translated;
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -412,6 +469,9 @@ class TranslationService {
     return text; // هیچ سرویسی جواب نداد → متن اصلی (تا برنامه نیفتد)
   }
 
+  /// مسابقه‌ی مترجم‌ها: اولین نتیجه‌ی «سالم» برنده است. اگر نتیجه‌ای از کنترل
+  /// کیفیت رد شد (مثلاً جوابِ بی‌ربطِ MyMemory برای یک کلمه) فعلاً نگه داشته
+  /// می‌شود و منتظرِ بقیه می‌مانیم؛ فقط اگر هیچ‌کدام سالم نبود همان اولی برمی‌گردد.
   Future<_Winner?> _raceProviders(
     List<_Provider> providers,
     String text,
@@ -423,6 +483,7 @@ class TranslationService {
     final completer = Completer<_Winner?>();
     var remaining = providers.length;
     var settled = false;
+    _Winner? fallback;
 
     for (final p in providers) {
       Future<String?> f;
@@ -433,9 +494,15 @@ class TranslationService {
       }
       f.then((result) {
         if (result != null && result.trim().isNotEmpty) {
-          if (!settled) {
-            settled = true;
-            completer.complete(_Winner(result, p));
+          final good = !looksLikelyMistranslated(text, result, targetLang,
+              sourceLang: sourceLang);
+          if (good) {
+            if (!settled) {
+              settled = true;
+              completer.complete(_Winner(result, p));
+            }
+          } else {
+            fallback ??= _Winner(result, p);
           }
         } else {
           _reportProviderOutcome(p.name, false);
@@ -445,7 +512,8 @@ class TranslationService {
       }).whenComplete(() {
         remaining--;
         if (remaining == 0 && !settled && !completer.isCompleted) {
-          completer.complete(null);
+          settled = true;
+          completer.complete(fallback);
         }
       });
     }

@@ -1,3 +1,4 @@
+import '../../app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -87,7 +88,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
       setState(() => _examples = list);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _err = 'مثال ساخته نشد — دوباره امتحان کن.');
+      setState(() => _err = context.l10n.word_examples_failed);
     } finally {
       if (mounted) setState(() => _generating = false);
     }
@@ -117,7 +118,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
       setState(() => _examples = list);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _err = 'مثال ساخته نشد — دوباره امتحان کن.');
+      setState(() => _err = context.l10n.word_examples_failed);
     } finally {
       if (mounted) setState(() => _refreshingId = null);
     }
@@ -168,10 +169,10 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
                         const SizedBox(width: 4),
                         Text(
                           _generating
-                              ? 'در حال ساخت مثال...'
+                              ? context.l10n.word_examples_generating
                               : (_examples.isEmpty
-                                  ? 'یه مثال بساز'
-                                  : 'یه مثال دیگه'),
+                                  ? context.l10n.word_examples_btn_generate
+                                  : context.l10n.word_examples_btn_another),
                           style: TextStyle(
                               color: c.gold,
                               fontSize: 11,
@@ -471,7 +472,7 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
     }
   }
 
-  /// رفرش: ترجمه‌ی دوباره بدون کش، اول با AI.
+  /// رفرش: ترجمه‌ی دوباره بدون کش (مترجم‌های رایگان + ناظر AI).
   Future<void> _refresh() async {
     if (_refreshing) return;
     setState(() {
@@ -484,6 +485,7 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
             targetLang: widget.target,
             sourceLang: widget.langCode,
             aiSettings: ref.read(aiSettingsProvider),
+            previous: _text,
           );
       if (!mounted) return;
       final v = t.trim();
@@ -535,7 +537,7 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
             child: Padding(
               padding: const EdgeInsets.only(top: 5),
               child: _text.isEmpty
-                  ? Text(_failed ? '—' : 'در حال ترجمه...',
+                  ? Text(_failed ? '—' : context.l10n.grammar_translating,
                       style: TextStyle(color: c.inkSoft, fontSize: 11))
                   : Directionality(
                       textDirection:

@@ -295,8 +295,6 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
   int? _failedIndex;
   int? _editIndex; // اگر null نباشد، ارسال = ویرایشِ همان پرسش
 
-  bool get _fa => Localizations.localeOf(context).languageCode == 'fa';
-  String _t(String fa, String en) => _fa ? fa : en;
 
   void _startEdit(int i, String question) {
     if (_loading) return;
@@ -552,7 +550,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                                 ),
                                 _MiniAction(
                                   icon: Icons.edit_outlined,
-                                  label: _t('ویرایش', 'Edit'),
+                                  label: context.l10n.grammar_edit,
                                   color: c.teal,
                                   onTap: _loading
                                       ? null
@@ -598,7 +596,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                                 children: [
                                   _MiniAction(
                                     icon: Icons.refresh,
-                                    label: _t('رفرش', 'Refresh'),
+                                    label: context.l10n.speaking_refresh,
                                     color: c.teal,
                                     onTap: _loading
                                         ? null
@@ -621,8 +619,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              _t('در حال ویرایش پرسش — پاسخ‌های بعدی جایگزین می‌شوند',
-                                  'Editing question — later answers will be replaced'),
+                              context.l10n.grammar_editing_question,
                               style: TextStyle(color: c.inkSoft, fontSize: 11),
                             ),
                           ),
