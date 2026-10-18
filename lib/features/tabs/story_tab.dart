@@ -1199,26 +1199,26 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
             decoration: BoxDecoration(
-              color: active ? c.paper : Colors.transparent,
+              color: active ? c.gold : Colors.transparent,
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
                 color: active ? c.gold : Colors.transparent,
-                width: 2,
+                width: 1,
               ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 15, color: active ? c.gold : c.inkSoft),
+                Icon(icon, size: 15, color: active ? c.headerTo : c.inkSoft),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
                     label,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: active ? c.ink : c.inkSoft,
+                      color: active ? c.headerTo : c.inkSoft,
                       fontSize: 13,
-                      fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                      fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                     ),
                   ),
                 ),

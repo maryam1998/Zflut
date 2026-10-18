@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../../app.dart';
@@ -28,8 +26,7 @@ class SubTabsRow extends StatelessWidget {
     return Container(
       color: c.paperDark,
       height: context.px(140),
-      // همه‌ی زیرتب‌ها همیشه کاملاً در صفحه دیده می‌شوند (بدون اسکرول افقی):
-      // هر تب سهمِ مساوی می‌گیرد و اگر جا کم بود، محتوایش کوچک می‌شود.
+      // فونتِ زیرتب‌ها ثابت و هم‌اندازه‌ی تب‌های بالاست؛ اگر جا کم بود اسکرولِ افقی.
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: context.px(20),
@@ -38,73 +35,76 @@ class SubTabsRow extends StatelessWidget {
         child: LayoutBuilder(builder: (ctx, box) {
           final gap = context.px(10);
           final n = group.tabs.length;
-          final chipW = (box.maxWidth - gap * (n - 1)) / n;
-          // پهنای قابل‌استفاده‌ی داخل هر چیپ (منهای پدینگ و حاشیه)
-          final inner = chipW - context.px(14) * 2 - context.px(2) * 2;
           final base = DefaultTextStyle.of(ctx).style;
 
-          // طبیعی‌ترین پهنای محتوای هر تب؛ یک مقیاسِ مشترک برای همه‌ی تب‌ها
-          // انتخاب می‌شود تا اندازه‌ی آیکون/متن در همه یکسان بماند.
-          var scale = 1.0;
+          // فونت/آیکون دقیقاً هم‌اندازه‌ی تب‌های بالا (Practice/Story/Words/Talk):
+          // متن ۱۳، آیکون ۱۶. اگر مجموعِ پهنای طبیعیِ تب‌ها از صفحه بیشتر شد،
+          // ردیف به‌جای کوچک شدنِ فونت، افقی اسکرول می‌شود.
+          final naturalW = <double>[];
           for (final key in group.tabs) {
             final meta = kTabMeta[key]!;
             final tp = TextPainter(
               text: TextSpan(
                 text: _labelFor(L, meta.labelKey),
                 style: base.copyWith(
-                  fontSize: context.px(31),
-                  fontWeight: FontWeight.w700,
+                  fontSize: _kFont,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               textDirection: Directionality.of(ctx),
               maxLines: 1,
             )..layout();
-            var w = context.px(38) + context.px(14) + tp.width;
-            if (meta.isAiPowered) {
-              final ai = TextPainter(
-                text: TextSpan(
-                  text: 'AI',
-                  style: base.copyWith(
-                    fontSize: context.px(18),
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-                textDirection: TextDirection.ltr,
-                maxLines: 1,
-              )..layout();
-              w += context.px(10) + ai.width + context.px(10) * 2;
-            }
-            if (w > inner) scale = math.min(scale, inner / w);
+            var w = _kIcon + 6 + tp.width + _kPadH * 2 + 4;
+            if (meta.isAiPowered) w += 6 + 24;
+            naturalW.add(w);
           }
-          if (scale < 1) scale *= 0.97; // کمی فاصله‌ی اطمینان
+          final total =
+              naturalW.fold<double>(0, (a, b) => a + b) + gap * (n - 1);
+          final fits = total <= box.maxWidth;
 
-          return Row(
-            children: [
-              for (var i = 0; i < n; i++) ...[
-                if (i > 0) SizedBox(width: gap),
-                Expanded(
-                  child: Builder(builder: (_) {
-                    final key = group.tabs[i];
-                    final meta = kTabMeta[key]!;
-                    return _SubChip(
-                      icon: meta.icon,
-                      label: _labelFor(L, meta.labelKey),
-                      active: key == activeTabKey,
-                      isAi: meta.isAiPowered,
-                      scale: scale,
-                      c: c,
-                      onTap: () => onTabSelected(key),
-                    );
-                  }),
-                ),
+          Widget chipAt(int i) {
+            final key = group.tabs[i];
+            final meta = kTabMeta[key]!;
+            return _SubChip(
+              icon: meta.icon,
+              label: _labelFor(L, meta.labelKey),
+              active: key == activeTabKey,
+              isAi: meta.isAiPowered,
+              c: c,
+              onTap: () => onTabSelected(key),
+            );
+          }
+
+          if (fits) {
+            return Row(
+              children: [
+                for (var i = 0; i < n; i++) ...[
+                  if (i > 0) SizedBox(width: gap),
+                  Expanded(child: chipAt(i)),
+                ],
               ],
-            ],
+            );
+          }
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (var i = 0; i < n; i++) ...[
+                  if (i > 0) SizedBox(width: gap),
+                  SizedBox(width: naturalW[i], child: chipAt(i)),
+                ],
+              ],
+            ),
           );
         }),
       ),
     );
   }
+
+  // هم‌اندازه با header_tabs.dart
+  static const double _kFont = 13;
+  static const double _kIcon = 16;
+  static const double _kPadH = 8;
 
   static String _labelFor(AppLocalizations L, String key) {
     switch (key) {
@@ -128,7 +128,6 @@ class _SubChip extends StatelessWidget {
   final String label;
   final bool active;
   final bool isAi;
-  final double scale;
   final dynamic c;
   final VoidCallback onTap;
 
@@ -137,7 +136,6 @@ class _SubChip extends StatelessWidget {
     required this.label,
     required this.active,
     required this.isAi,
-    required this.scale,
     required this.c,
     required this.onTap,
   });
@@ -167,50 +165,50 @@ class _SubChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           onTap: onTap,
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.px(14)),
+            padding: const EdgeInsets.symmetric(
+                horizontal: SubTabsRow._kPadH, vertical: 8),
             child: Center(
-             child: FittedBox(
-              fit: BoxFit.scaleDown,
               child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: context.px(38) * scale, color: iconColor),
-                SizedBox(width: context.px(14) * scale),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: context.px(31) * scale,
-                    color: fg,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w600,
-                  ),
-                ),
-                if (isAi) ...[
-                  SizedBox(width: context.px(10) * scale),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: context.px(10) * scale,
-                      vertical: context.px(3) * scale,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF8B7CF6), Color(0xFF6366F1)],
-                      ),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: SubTabsRow._kIcon, color: iconColor),
+                  const SizedBox(width: 6),
+                  Flexible(
                     child: Text(
-                      'AI',
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: context.px(18) * scale,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.4,
+                        fontSize: SubTabsRow._kFont,
+                        color: fg,
+                        fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                       ),
                     ),
                   ),
+                  if (isAi) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8B7CF6), Color(0xFF6366F1)],
+                        ),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: const Text(
+                        'AI',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
               ),
-             ),
             ),
           ),
         ),
