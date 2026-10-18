@@ -24,6 +24,10 @@ class WordExamplesPanel extends ConsumerStatefulWidget {
   final String nativeCode;
   final List<String> targetLangs;
 
+  /// ستونِ کناریِ کارت (عرض + ⭐/○): کنارِ اولین جعبه‌ی مثال قرار می‌گیرد
+  final double gutter;
+  final Widget? sideActions;
+
   const WordExamplesPanel({
     super.key,
     required this.word,
@@ -31,6 +35,8 @@ class WordExamplesPanel extends ConsumerStatefulWidget {
     required this.meaningNative,
     required this.nativeCode,
     required this.targetLangs,
+    this.gutter = 0,
+    this.sideActions,
   });
 
   @override
@@ -124,64 +130,109 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
     final targets =
         widget.targetLangs.where((l) => l != widget.langCode).toList();
 
+    final g = widget.gutter;
+    final side = widget.sideActions;
+
+    Widget sideBox(bool show) => g > 0
+        ? SizedBox(
+            width: g,
+            child: show && side != null
+                ? Align(alignment: Alignment.centerLeft, child: side)
+                : null,
+          )
+        : const SizedBox.shrink();
+
+    // ⭐/○ : کنارِ اولین جعبه‌ی مثال؛ اگر هنوز مثالی نیست کنارِ دکمه
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: InkWell(
-              onTap: _generating ? null : _generate,
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Spacer(),
+                InkWell(
+                  onTap: _generating ? null : _generate,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: c.goldSoft),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_generating)
-                      SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 1.6, color: c.gold),
-                      )
-                    else
-                      Icon(Icons.auto_awesome, size: 12, color: c.gold),
-                    const SizedBox(width: 4),
-                    Text(
-                      _generating
-                          ? 'در حال ساخت مثال...'
-                          : (_examples.isEmpty ? 'یه مثال بساز' : 'یه مثال دیگه'),
-                      style: TextStyle(
-                          color: c.gold,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: c.goldSoft),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_generating)
+                          SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 1.6, color: c.gold),
+                          )
+                        else
+                          Icon(Icons.auto_awesome, size: 12, color: c.gold),
+                        const SizedBox(width: 4),
+                        Text(
+                          _generating
+                              ? 'در حال ساخت مثال...'
+                              : (_examples.isEmpty
+                                  ? 'یه مثال بساز'
+                                  : 'یه مثال دیگه'),
+                          style: TextStyle(
+                              color: c.gold,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+                sideBox(_examples.isEmpty),
+              ],
             ),
           ),
           if (_err.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: EdgeInsets.only(top: 4, right: g),
               child: Text(_err, style: TextStyle(color: c.rose, fontSize: 11)),
             ),
-          for (final ex in _examples)
-            _ExampleRow(
-              key: ValueKey(ex.id + ex.text),
-              word: widget.word,
-              langCode: widget.langCode,
-              example: ex,
-              targets: targets,
-              refreshing: _refreshingId == ex.id,
-              onRefresh: () => _refresh(ex.id),
+          for (var i = 0; i < _examples.length; i++)
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _ExampleRow(
+                      key: ValueKey(_examples[i].id + _examples[i].text),
+                      word: widget.word,
+                      langCode: widget.langCode,
+                      example: _examples[i],
+                      targets: targets,
+                      refreshing: _refreshingId == _examples[i].id,
+                      onRefresh: () => _refresh(_examples[i].id),
+                    ),
+                  ),
+                  if (g > 0)
+                    SizedBox(
+                      width: g,
+                      child: i == 0 && side != null
+                          ? Align(
+                              alignment: Alignment.topLeft,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 10),
+                                child: side,
+                              ),
+                            )
+                          : null,
+                    ),
+                ],
+              ),
             ),
         ],
       ),

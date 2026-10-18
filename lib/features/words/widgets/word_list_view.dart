@@ -188,10 +188,11 @@ class _WordListViewState extends ConsumerState<WordListView> {
     final readTotal = words.where((w) => readIds.contains(w.sid)).length;
     final hasMore = _to == null && to < total;
 
+    // مبدأ و مقصدِ یکسان (مثلاً هر دو عربی) → هر زبان فقط یک‌بار
     final langsToShow = <String>[
       if (sel.native != 'en') sel.native,
       ...sel.targets.where((t) => t != 'en'),
-    ];
+    ].toSet().toList();
 
     // مثل Hope: سطح‌ها، مرتب‌سازی و جستجو بخشی از خودِ محتوا هستند و
     // همراه لیست اسکرول می‌شوند (ثابت روی صفحه نمی‌مانند). برای اینکه فیلدِ

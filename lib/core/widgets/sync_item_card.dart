@@ -17,6 +17,10 @@ import 'selection_card.dart';
 import 'word_examples_panel.dart';
 import '../providers/language_selection_provider.dart';
 
+/// عرضِ ستونِ کناریِ ⭐ و ○ (خوانده‌شده) در کارت‌های دارای «مثال (با هوش مصنوعی)».
+/// همه‌ی ردیف‌های کارت لبه‌ی راستشان را با این ستون هم‌تراز می‌کنند.
+const double kCardSideGutter = 48;
+
 // ═══════════════════════════════════════════════════════════════════
 // SyncItemCard — «کارتِ مشترک» برای همه‌ی تب‌ها
 // ═══════════════════════════════════════════════════════════════════
@@ -72,6 +76,25 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
         ref.watch(wordFavoritesProvider.select((s) => s.contains(widget.id)));
 
     final removable = widget.onRemove != null;
+
+    // اگر زبانِ مبدأ و مقصد یکی باشد (مثلاً هر دو عربی) هر زبان فقط یک‌بار نشان داده می‌شود
+    final langs = <String>[];
+    for (final l in widget.langsToShow) {
+      if (!langs.contains(l)) langs.add(l);
+    }
+
+    final gutter = widget.showActions ? kCardSideGutter : 0.0;
+    // ⭐ + ○ : بدونِ مثال کنارِ اولین ردیفِ ترجمه؛ با مثال، کنارِ جعبه‌ی مثال
+    final Widget? side = widget.showActions
+        ? _SideActions(
+            isFavorite: isFavorite,
+            onToggleFavorite: () =>
+                ref.read(wordFavoritesProvider.notifier).toggle(widget.id),
+            isRead: widget.isRead,
+            onToggleRead: widget.onToggleRead,
+          )
+        : null;
+    final sideInHeader = side != null && langs.isEmpty && !_showAiExamples;
 
     return SyncAnchor(
       code: 'en',
@@ -179,6 +202,14 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                     size: 20,
                     padding: const EdgeInsets.all(4),
                   ),
+                  if (gutter > 0)
+                    SizedBox(
+                      width: gutter,
+                      child: sideInHeader
+                          ? Align(
+                              alignment: Alignment.centerLeft, child: side)
+                          : null,
+                    ),
                 ],
               ),
             ),
@@ -186,34 +217,28 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
             // فاصله‌ی بین زبان‌ها را خودِ هر ردیفِ ترجمه با tp.langGap می‌دهد
 
             // ═══ ردیف‌های ترجمه ═══
-            for (final code in widget.langsToShow)
+            for (var li = 0; li < langs.length; li++)
               SyncTranslationRow(
-                key: ValueKey('${widget.id}::$code'),
+                key: ValueKey('${widget.id}::${langs[li]}'),
                 itemId: widget.id,
                 en: widget.en,
-                langCode: code,
-                knownText: widget.knownTranslations[code] ?? '',
+                langCode: langs[li],
+                knownText: widget.knownTranslations[langs[li]] ?? '',
                 compact: compact,
-                showActions: widget.showActions,
-                isFavorite: isFavorite,
-                onToggleFavorite: () =>
-                    ref.read(wordFavoritesProvider.notifier).toggle(widget.id),
+                gutter: gutter,
+                sideActions: (li == 0 && !_showAiExamples) ? side : null,
               ),
 
             if (widget.showActions) ...[
               const SizedBox(height: 6),
-              // سمتِ فیزیکیِ چپ: دکمه‌ی خوانده‌شده؛ سمتِ راست: مثال‌های AI
+              // دکمه‌ی «مثال (با هوش مصنوعی)» با لبه‌ی راستِ ستونِ 🔊/🧬 هم‌راستا است
               Directionality(
                 textDirection: TextDirection.ltr,
                 child: Row(
                   children: [
-                    if (widget.onToggleRead != null)
-                      _ReadToggle(
-                          isRead: widget.isRead, onTap: widget.onToggleRead!),
                     const Spacer(),
-                    // مثل Hope: دکمه با لبه‌ی راستِ ستونِ 🔊/🧬 هم‌راستا می‌شود
                     Padding(
-                      padding: const EdgeInsets.only(right: 34),
+                      padding: EdgeInsets.only(right: gutter),
                       child: AiExamplesButton(
                         onTap: () =>
                             setState(() => _showAiExamples = !_showAiExamples),
@@ -225,22 +250,16 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
               ),
               if (_showAiExamples) ...[
                 const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: c.paperDark.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: c.cardBorder),
-                  ),
-                  child: WordExamplesPanel(
-                    word: widget.en,
-                    langCode: 'en',
-                    nativeCode: ref.read(languageSelectionProvider).native,
-                    meaningNative: widget.knownTranslations[
-                            ref.read(languageSelectionProvider).native] ??
-                        '',
-                    targetLangs: widget.langsToShow,
-                  ),
+                WordExamplesPanel(
+                  word: widget.en,
+                  langCode: 'en',
+                  nativeCode: ref.read(languageSelectionProvider).native,
+                  meaningNative: widget.knownTranslations[
+                          ref.read(languageSelectionProvider).native] ??
+                      '',
+                  targetLangs: langs,
+                  gutter: gutter,
+                  sideActions: side,
                 ),
               ],
             ],
@@ -291,26 +310,67 @@ class _ReadToggle extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Container(
-            width: 22,
-            height: 22,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isRead ? const Color(0xFF3F9B72) : Colors.transparent,
-              border: Border.all(
-                color:
-                    isRead ? const Color(0xFF276E4F) : const Color(0xFFC8BE95),
-                width: 1.6,
+        child: Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isRead ? const Color(0xFF3F9B72) : Colors.transparent,
+            border: Border.all(
+              color: isRead ? const Color(0xFF276E4F) : const Color(0xFFC8BE95),
+              width: 1.6,
+            ),
+          ),
+          child: isRead
+              ? const Icon(Icons.check, size: 13, color: Colors.white)
+              : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// ستونِ کناریِ کارت: ⭐ (علاقه‌مندی) + ○ (خوانده‌شد)
+class _SideActions extends StatelessWidget {
+  final bool isFavorite;
+  final VoidCallback onToggleFavorite;
+  final bool isRead;
+  final VoidCallback? onToggleRead;
+  const _SideActions({
+    required this.isFavorite,
+    required this.onToggleFavorite,
+    required this.isRead,
+    required this.onToggleRead,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkResponse(
+            onTap: onToggleFavorite,
+            radius: 16,
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Icon(
+                isFavorite ? Icons.star : Icons.star_border,
+                size: 20,
+                color: isFavorite
+                    ? const Color(0xFFF5C518)
+                    : c.inkSoft.withOpacity(0.4),
               ),
             ),
-            child: isRead
-                ? const Icon(Icons.check, size: 13, color: Colors.white)
-                : null,
           ),
-        ),
+          if (onToggleRead != null) ...[
+            const SizedBox(width: 2),
+            _ReadToggle(isRead: isRead, onTap: onToggleRead!),
+          ],
+        ],
       ),
     );
   }
@@ -325,9 +385,12 @@ class SyncTranslationRow extends ConsumerStatefulWidget {
   final String langCode;
   final String knownText;
   final bool compact;
-  final bool showActions;
-  final bool isFavorite;
-  final VoidCallback? onToggleFavorite;
+
+  /// عرضِ ستونِ کناری که انتهای ردیف رزرو می‌شود (۰ = بدون ستون)
+  final double gutter;
+
+  /// ⭐ + ○ ؛ فقط در اولین ردیف و وقتی مثال باز نیست داده می‌شود
+  final Widget? sideActions;
 
   const SyncTranslationRow({
     super.key,
@@ -336,9 +399,8 @@ class SyncTranslationRow extends ConsumerStatefulWidget {
     required this.langCode,
     this.knownText = '',
     this.compact = false,
-    this.showActions = false,
-    this.isFavorite = false,
-    this.onToggleFavorite,
+    this.gutter = 0,
+    this.sideActions,
   });
 
   @override
@@ -586,16 +648,6 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                     style: TextStyle(color: c.rose, fontSize: 10),
                   ),
                 ),
-              // از راست به چپ: 🔊 ← 🧬 ← رفرش (⭐ سمتِ چپِ همه)
-              if (widget.showActions && text != null)
-                _IconBtn(
-                  icon: widget.isFavorite ? Icons.star : Icons.star_border,
-                  color: widget.isFavorite
-                      ? const Color(0xFFF5C518)
-                      : c.inkSoft.withOpacity(0.4),
-                  onTap: widget.onToggleFavorite,
-                  size: 18,
-                ),
               if (canRetry)
                 _IconBtn(
                   onTap: _retrying ? null : _retry,
@@ -629,6 +681,15 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                   color: c.gold,
                   size: widget.compact ? 17 : 16,
                   padding: const EdgeInsets.all(5),
+                ),
+              if (widget.gutter > 0)
+                SizedBox(
+                  width: widget.gutter,
+                  child: widget.sideActions == null
+                      ? null
+                      : Align(
+                          alignment: Alignment.centerLeft,
+                          child: widget.sideActions),
                 ),
             ],
           ),

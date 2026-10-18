@@ -583,10 +583,11 @@ class _LineRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sel = ref.watch(languageSelectionProvider);
 
+    // مبدأ و مقصدِ یکسان (مثلاً هر دو عربی) → هر زبان فقط یک‌بار
     final langsToShow = <String>[
       if (sel.native != 'en') sel.native,
       ...sel.targets.where((t) => t != 'en'),
-    ];
+    ].toSet().toList();
 
     return SyncItemCard(
       key: ValueKey('line-$id'),
