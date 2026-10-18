@@ -14,6 +14,7 @@ import '../../core/translate/translation_service.dart'
 import '../../core/providers/reader_providers.dart';
 import '../../core/ai/ai_gateway.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/widgets/ai_answer_tools.dart';
 import '_hope_panel.dart';
 
 /// تب «گرامر» — هم‌شکل GrammarPanel در Hope.
@@ -570,6 +571,8 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                             ),
                             child: MiniMarkdown(text: note.thread[ti].answer),
                           ),
+                          // 🔊 + ترجمه به زبان‌های مقصدِ کاربر (جواب به زبانِ مادری است)
+                          AiAnswerTools(text: note.thread[ti].answer),
                           // جوابِ AI: فقط «رفرش» (آخرین جواب)، بدون «ویرایش»
                           if (ti == note.thread.length - 1)
                             Padding(

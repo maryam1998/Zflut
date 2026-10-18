@@ -603,6 +603,8 @@
   "story_level_label": "Niveau der Geschichte",
   "story_mode_create": "Geschichte erstellen",
   "story_mode_library": "Meine Bibliothek",
+  "story_mode_saved_library": "Gespeichert",
+  "story_mode_saved_words": "Für die nächste Geschichte gespeichert",
   "story_remove": "Entfernen",
   "story_translate_langs_question": "In welche Sprachen soll die Geschichte gleichzeitig übersetzt werden? (Du kannst mehrere wählen – zum Umsortieren gedrückt halten und ziehen)",
   "story_try_again": "Erneut versuchen",

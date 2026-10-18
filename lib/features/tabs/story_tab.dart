@@ -1228,15 +1228,16 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   Widget _modeSwitch(AppThemeColorsExt c, int count) {
-    // سه حالت: ساخت داستان | لغات ذخیره‌شده | کتابخانه
+    // سه حالت: ساخت داستان | ذخیره‌شده‌ها (کتابخانه) | ذخیره برای داستان بعدی
     Widget seg(int mode, String label, IconData icon) {
-      final cur = _showSaved ? 1 : (_showLibrary ? 2 : 0);
+      // 0 = ساخت داستان، 1 = ذخیره‌شده‌ها (کتابخانه)، 2 = ذخیره برای داستان بعدی
+      final cur = _showLibrary ? 1 : (_showSaved ? 2 : 0);
       final active = cur == mode;
       return Expanded(
         child: GestureDetector(
           onTap: () => setState(() {
-            _showSaved = mode == 1;
-            _showLibrary = mode == 2;
+            _showLibrary = mode == 1;
+            _showSaved = mode == 2;
           }),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 5),
@@ -1256,10 +1257,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 Flexible(
                   child: Text(
                     label,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: active ? c.headerTo : c.inkSoft,
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                     ),
                   ),
@@ -1281,8 +1284,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       child: Row(
         children: [
           seg(0, context.l10n.story_mode_create, Icons.auto_fix_high),
-          seg(1, context.l10n.tab_saved, Icons.bookmark_outline),
-          seg(2, '${context.l10n.story_mode_library} ($count)', Icons.local_library_outlined),
+          seg(1, '${context.l10n.story_mode_saved_library} ($count)', Icons.local_library_outlined),
+          seg(2, context.l10n.story_mode_saved_words, Icons.bookmark_outline),
         ],
       ),
     );

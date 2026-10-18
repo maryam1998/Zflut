@@ -995,6 +995,8 @@
   "story_level_label": "Story level",
   "story_mode_create": "Create story",
   "story_mode_library": "My library",
+  "story_mode_saved_library": "Saved",
+  "story_mode_saved_words": "Saved for next story",
   "story_remove": "Remove",
   "story_translate_langs_question": "Translate the story into which languages at once? (You can pick several — hold and drag to reorder)",
   "story_try_again": "Try again",

@@ -5,6 +5,7 @@ import '../../../core/providers/ai_settings_provider.dart';
 import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/providers/translation_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/widgets/ai_answer_tools.dart';
 import '../../../core/translate/translation_service.dart';
 import '../../tabs/_hope_panel.dart' show MiniMarkdown, autoDir;
 
@@ -464,6 +465,26 @@ class _GrammarPracticeContentState
   }
 
   Widget _bubble(AppThemeColorsExt c, _ChatMsg m) {
+    return Align(
+      alignment: m.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _bubbleBox(c, m),
+          // 🔊 + ترجمه به زبان‌های مقصدِ کاربر
+          if (!m.isUser && m.text.trim().isNotEmpty)
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.92),
+              child: AiAnswerTools(text: m.text),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bubbleBox(AppThemeColorsExt c, _ChatMsg m) {
     return Align(
       alignment: m.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(

@@ -13,6 +13,7 @@ import '../../core/providers/reader_providers.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/widgets/ai_answer_tools.dart';
 import '_hope_panel.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -856,6 +857,9 @@ Now respond to: "$sentence"
               ),
               child: content,
             ),
+            // 🔊 + ترجمه به زبان‌های مقصدِ کاربر (جوابِ مربی به زبانِ تمرین است)
+            if (!isUser && m.text.trim().isNotEmpty)
+              AiAnswerTools(text: m.text, sourceLang: _activeLang()),
             if (isUser && !_loading)
               HopeTextAction(
                 icon: Icons.edit_outlined,

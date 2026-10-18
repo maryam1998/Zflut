@@ -603,6 +603,8 @@
   "story_level_label": "سطح داستان",
   "story_mode_create": "ساخت داستان",
   "story_mode_library": "کتابخانه‌ی من",
+  "story_mode_saved_library": "ذخیره‌شده‌ها",
+  "story_mode_saved_words": "ذخیره برای داستان بعدی",
   "story_remove": "حذف",
   "story_translate_langs_question": "داستان همزمان به چه زبان‌هایی ترجمه بشه؟ (می‌تونی چند تا انتخاب کنی — برای جابه‌جاییِ ترتیب، نگه‌دار و بکش)",
   "story_try_again": "تلاش دوباره",

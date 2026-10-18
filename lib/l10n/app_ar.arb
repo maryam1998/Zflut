@@ -603,6 +603,8 @@
   "story_level_label": "مستوى القصة",
   "story_mode_create": "إنشاء قصة",
   "story_mode_library": "مكتبتي",
+  "story_mode_saved_library": "المحفوظات",
+  "story_mode_saved_words": "محفوظ للقصة القادمة",
   "story_remove": "إزالة",
   "story_translate_langs_question": "إلى أي لغات تُترجم القصة في الوقت نفسه؟ (يمكنك اختيار عدة لغات — اضغط مطولًا واسحب لإعادة الترتيب)",
   "story_try_again": "حاول مرة أخرى",
