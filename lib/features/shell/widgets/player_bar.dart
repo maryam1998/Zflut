@@ -242,29 +242,6 @@ class PlayerBar extends ConsumerWidget {
       ),
     );
   }
-
-  /// پرشِ چندثانیه‌ای (تخمینی، بر اساسِ طولِ کاراکتریِ متن — مثل Hope).
-  void _seekStep(WidgetRef ref, int dir) {
-    final st = ref.read(speechControllerProvider);
-    if (st.status == SpeechStatus.idle || st.key == null || st.total == 0) {
-      return;
-    }
-    final ctrl = ref.read(speechControllerProvider.notifier);
-    final meta = ctrl.chunksMeta;
-    final fullLen = ctrl.fullTextLength;
-    if (meta.isEmpty || fullLen == 0) return;
-    final msPerChar = _kMsPerChar / math.max(st.rate, 0.25);
-    final secs = ref.read(seekAmountProvider);
-    final deltaChars = (secs * 1000 / msPerChar) * dir;
-    final curChar =
-        st.chunkIndex < meta.length ? meta[st.chunkIndex].start : 0;
-    final target = (curChar + deltaChars).clamp(0, fullLen).toDouble();
-    var idx = 0;
-    for (var i = 0; i < meta.length; i++) {
-      if (target >= meta[i].start) idx = i;
-    }
-    ctrl.seekToChunk(idx);
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -418,6 +395,29 @@ class _PlayBtn extends StatelessWidget {
   }
 }
 
+/// پرشِ چندثانیه‌ای (تخمینی، بر اساسِ طولِ کاراکتریِ متن — مثل Hope).
+void _seekStep(WidgetRef ref, int dir) {
+  final st = ref.read(speechControllerProvider);
+  if (st.status == SpeechStatus.idle || st.key == null || st.total == 0) {
+    return;
+  }
+  final ctrl = ref.read(speechControllerProvider.notifier);
+  final meta = ctrl.chunksMeta;
+  final fullLen = ctrl.fullTextLength;
+  if (meta.isEmpty || fullLen == 0) return;
+  final msPerChar = _kMsPerChar / math.max(st.rate, 0.25);
+  final secs = ref.read(seekAmountProvider);
+  final deltaChars = (secs * 1000 / msPerChar) * dir;
+  final curChar =
+      st.chunkIndex < meta.length ? meta[st.chunkIndex].start : 0;
+  final target = (curChar + deltaChars).clamp(0, fullLen).toDouble();
+  var idx = 0;
+  for (var i = 0; i < meta.length; i++) {
+    if (target >= meta[i].start) idx = i;
+  }
+  ctrl.seekToChunk(idx);
+}
+
 // ═══════════════════════════════════════════════════════════════════
 /// دکمه‌ی کوچکِ گرد (−/+) مثل Hope.
 class _MiniBtn extends StatelessWidget {
@@ -516,36 +516,79 @@ class _SpeedControl extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-/// انتخابِ «مقدارِ پرشِ ثانیه‌ای» (لمسِ طولانیِ قبلی/بعدی) — مثل SeekAmountControl.
+/// دکمه‌های پرشِ N ثانیه‌ای عقب/جلو (مثل اپ‌های پادکست): فلشِ چرخشی + عدد.
+/// تپ = پرش؛ لمسِ طولانی = تغییرِ N (۵ → ۱۰ → ۱۵ → … → ۶۰ → ۵).
 class _SeekAmountControl extends ConsumerWidget {
   const _SeekAmountControl();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.appColors;
     final amount = ref.watch(seekAmountProvider);
     final n = ref.read(seekAmountProvider.notifier);
-    final idx = kSeekAmountSteps.indexOf(amount);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.access_time, size: 16, color: c.inkSoft),
-        const SizedBox(width: 4),
-        _MiniBtn(label: '−', enabled: idx > 0, onTap: () => n.step(-1)),
-        SizedBox(
-          width: 34,
-          child: Text(
-            '${amount}s',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: c.inkSoft, fontSize: 11),
-          ),
+        _SkipBtn(
+          icon: Icons.replay,
+          amount: amount,
+          onTap: () => _seekStep(ref, -1),
+          onLongPress: n.cycle,
         ),
-        _MiniBtn(
-          label: '+',
-          enabled: idx < kSeekAmountSteps.length - 1,
-          onTap: () => n.step(1),
+        _SkipBtn(
+          icon: Icons.refresh,
+          amount: amount,
+          onTap: () => _seekStep(ref, 1),
+          onLongPress: n.cycle,
         ),
       ],
+    );
+  }
+}
+
+class _SkipBtn extends StatelessWidget {
+  final IconData icon;
+  final int amount;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  const _SkipBtn({
+    required this.icon,
+    required this.amount,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return InkWell(
+      customBorder: const CircleBorder(),
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: SizedBox(
+          width: 30,
+          height: 30,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(icon, size: 30, color: c.gold),
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Text(
+                  '$amount',
+                  style: TextStyle(
+                    fontSize: 9,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    color: c.ink,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

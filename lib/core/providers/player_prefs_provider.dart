@@ -39,6 +39,13 @@ class SeekAmountNotifier extends StateNotifier<int> {
     return kSeekAmountSteps.contains(v) ? v : 10;
   }
 
+  /// مقدارِ بعدی؛ بعد از آخرین مقدار به اولی برمی‌گردد.
+  void cycle() {
+    final i = kSeekAmountSteps.indexOf(state);
+    state = kSeekAmountSteps[(i + 1) % kSeekAmountSteps.length];
+    _p.setInt(_kSeekKey, state);
+  }
+
   void step(int delta) {
     final i = kSeekAmountSteps.indexOf(state);
     final ni = (i + delta).clamp(0, kSeekAmountSteps.length - 1);
