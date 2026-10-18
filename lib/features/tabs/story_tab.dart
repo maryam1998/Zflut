@@ -26,6 +26,7 @@ import '../../core/audio/story_audio_controller.dart';
 import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../story/srt_translator_tool.dart';
 import '../story/story_audio_bar.dart';
+import '../story/story_reader_panel.dart';
 import '_hope_panel.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -323,6 +324,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   final Map<String, List<String>> _readTrans = {};
   bool _readTranslating = false;
   bool _readSaved = false;
+  String _readNotes = '';
 
   bool _pdfReadBusy = false;
   bool _imgReadBusy = false;
@@ -715,7 +717,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final s = _reading;
     if (s == null) return;
     final langs = _effectiveTransLangs();
-    ref.read(storyLibraryProvider.notifier).add(s.copyWith(translations: {
+    ref.read(storyLibraryProvider.notifier).add(s.copyWith(
+        notes: _readNotes,
+        translations: {
           for (final e in _readTrans.entries)
             if (langs.contains(e.key)) e.key: List<String>.from(e.value),
         }));
@@ -726,66 +730,70 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         _reading = null;
         _readTrans.clear();
         _readSaved = false;
+        _readNotes = '';
       });
 
   Widget _readingCard(AppThemeColorsExt c) {
     final s = _reading!;
     final paras = _paras(s);
     final shown = _visibleParas > paras.length ? paras.length : _visibleParas;
-    final langs = _effectiveTransLangs();
+    final langs =
+        _effectiveTransLangs().where((l) => l != s.langCode).toList();
     final trans = <String, List<String>>{
       for (final e in _readTrans.entries)
-        if (langs.contains(e.key) && e.key != s.langCode) e.key: e.value,
+        if (langs.contains(e.key)) e.key: e.value,
     };
-    return HopeCard(
-      borderColor: c.teal,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            s.title,
-            textDirection: autoDir(s.title),
-            style: TextStyle(
-                color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
+    final bar = _audioBar(s);
+    final ctrl = _audioCtrls[s.id];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        StoryReaderPanel(
+          key: ValueKey('rd-${s.id}'),
+          storyId: s.id,
+          title: s.title,
+          text: paras.take(shown).join('\n\n'),
+          fullText: s.text,
+          langCode: s.langCode,
+          targetLangs: langs,
+          paraTranslations: trans,
+          splitSentences: _splitSentences,
+          audio: ctrl,
+          audioBar: bar,
+          saved: _readSaved,
+          onSave: _readSaved ? null : _readingSave,
+          onTextEdited: (t) => _importForReading(t),
+          notes: _readNotes,
+          onNotesChanged: (v) {
+            _readNotes = v;
+            if (_readSaved) _libNotes(s.id, v);
+          },
+          onParagraphRetranslated: (lang, idx, t) {
+            final list = _readTrans[lang];
+            if (list != null && idx < list.length) {
+              setState(() => list[idx] = t);
+            }
+          },
+        ),
+        if (_readTranslating)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text('در حال ترجمه...',
+                style: TextStyle(color: c.inkSoft, fontSize: 12)),
           ),
-          Text(
-            '${langFaName(s.langCode)} · ${s.level} · خوانش',
-            style: TextStyle(color: c.inkSoft, fontSize: 11),
-          ),
-          const SizedBox(height: 8),
-          _audioBar(s),
-          _storyBody(c, paras.take(shown).join('\n\n'), trans, s.id),
-          if (_readTranslating)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text('در حال ترجمه...',
-                  style: TextStyle(color: c.inkSoft, fontSize: 12)),
+        if (shown < paras.length)
+          Center(
+            child: HopeTextAction(
+              label: 'نمایش بیشتر ($shown از ${paras.length} پاراگراف)',
+              color: c.teal,
+              onTap: _readingShowMore,
             ),
-          if (shown < paras.length)
-            Center(
-              child: HopeTextAction(
-                label: 'نمایش بیشتر ($shown از ${paras.length} پاراگراف)',
-                color: c.teal,
-                onTap: _readingShowMore,
-              ),
-            ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _readSaved
-                  ? Text('در «کتابخانه‌ی من» ذخیره شد.',
-                      style: TextStyle(color: c.teal, fontSize: 12))
-                  : HopeTextAction(
-                      label: 'ذخیره در کتابخانه‌ی من',
-                      color: c.gold,
-                      onTap: _readingSave,
-                    ),
-              HopeTextAction(label: 'بستن', color: c.rose, onTap: _readingClose),
-            ],
           ),
-        ],
-      ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: HopeTextAction(label: 'بستن', color: c.rose, onTap: _readingClose),
+        ),
+      ],
     );
   }
 
@@ -952,6 +960,20 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   // ───── PDF با عکسِ اصلی + ترجمه‌ی همین‌جا ─────
+  /// متنِ خامِ یک صفحه را به پاراگراف‌های چندجمله‌ای می‌شکند (مثلِ وارد کردنِ متن)
+  String _chunkParas(String raw) {
+    final sentences = _splitSentences(raw);
+    if (sentences.isEmpty) return raw.trim();
+    final chunks = <String>[];
+    for (var k = 0; k < sentences.length; k += _kSentencesPerParagraph) {
+      final end = k + _kSentencesPerParagraph > sentences.length
+          ? sentences.length
+          : k + _kSentencesPerParagraph;
+      chunks.add(sentences.sublist(k, end).join(' '));
+    }
+    return chunks.join('\n\n');
+  }
+
   Future<void> _openPdfView() async {
     if (_pdfViewBusy) return;
     List<PickedFile> files;
@@ -1016,44 +1038,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       if (!_pdfTexts.containsKey(i)) {
         _pdfTexts[i] = await doc.pageText(i);
       }
-      if (!_pdfTrans.containsKey(i)) {
-        final text = _pdfTexts[i] ?? '';
-        if (text.trim().isEmpty) {
-          _pdfTrans[i] = '(این صفحه متنِ قابل‌خواندن نداره — احتمالاً فقط عکسه)';
-        } else {
-          final sentences = _splitSentences(text);
-          final chunks = <String>[];
-          for (var k = 0; k < sentences.length; k += _kSentencesPerParagraph) {
-            final end = k + _kSentencesPerParagraph > sentences.length
-                ? sentences.length
-                : k + _kSentencesPerParagraph;
-            chunks.add(sentences.sublist(k, end).join(' '));
-          }
-          final svc = ref.read(translationServiceProvider);
-          final ai = ref.read(aiSettingsProvider);
-          final native = ref.read(languageSelectionProvider).native;
-          final out = await runWithConcurrencyLimit<String, String>(
-            chunks,
-            3,
-            (ch, _) async {
-              try {
-                return (await svc.translate(
-                  text: ch,
-                  targetLang: native,
-                  sourceLang: 'auto',
-                  aiSettings: ai,
-                ))
-                    .trim();
-              } catch (_) {
-                return '';
-              }
-            },
-          );
-          _pdfTrans[i] = out.where((e) => e.isNotEmpty).join('\n\n');
-        }
-      }
     } catch (_) {
-      _pdfTrans[i] ??= 'نمایش یا ترجمه‌ی این صفحه انجام نشد.';
+      _pdfTexts[i] ??= '';
     } finally {
       if (mounted && _pdfDoc == doc) setState(() => _pdfPageBusy = false);
     }
@@ -1667,7 +1653,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final doc = _pdfDoc!;
     final i = _pdfIndex;
     final img = _pdfImages[i];
-    final trans = _pdfTrans[i];
     final orig = _pdfTexts[i] ?? '';
     final lang = _readingLang();
     return HopeCard(
@@ -1712,52 +1697,49 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             ),
           ),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: c.goldSoft,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: trans == null
-                ? Row(
-                    children: [
-                      const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      const SizedBox(width: 8),
-                      Text('در حال ترجمه‌ی این صفحه...',
-                          style: TextStyle(color: c.inkSoft, fontSize: 12)),
-                    ],
-                  )
-                : Text(
-                    trans,
-                    textDirection: autoDir(trans),
-                    style: TextStyle(color: c.ink, fontSize: 13.5, height: 1.9),
+          if (!_pdfTexts.containsKey(i))
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-          ),
-          if (orig.isNotEmpty) ...[
-            HopeTextAction(
-              label: _pdfShowOrig ? 'پنهان کردنِ متنِ اصلی' : 'نمایشِ متنِ اصلی',
-              color: c.teal,
-              onTap: () => setState(() => _pdfShowOrig = !_pdfShowOrig),
-            ),
-            if (_pdfShowOrig)
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: c.paper,
-                  border: Border.all(color: c.cardBorder),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  orig,
-                  textDirection: dirFor(lang),
-                  style: TextStyle(color: c.ink, fontSize: 13, height: 2),
-                ),
+                  const SizedBox(width: 8),
+                  Text('در حال خواندنِ متنِ این صفحه...',
+                      style: TextStyle(color: c.inkSoft, fontSize: 12)),
+                ],
               ),
-          ],
+            )
+          else if (orig.trim().isEmpty)
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: c.goldSoft,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'این صفحه متنِ قابل‌خواندن نداره — احتمالاً فقط عکسه.',
+                style: TextStyle(color: c.inkSoft, fontSize: 12),
+              ),
+            )
+          else
+            Builder(builder: (_) {
+              final pageLang = _detectLang(orig, lang);
+              return StoryReaderPanel(
+                key: ValueKey('pdf-${_pdfTitle.hashCode}-$i'),
+                storyId: 'pdf${_pdfTitle.hashCode}-$i',
+                title: 'متنِ صفحه‌ی ${i + 1}',
+                text: _chunkParas(orig),
+                langCode: pageLang,
+                targetLangs: _effectiveTransLangs()
+                    .where((l) => l != pageLang)
+                    .toList(),
+                splitSentences: _splitSentences,
+              );
+            }),
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1914,31 +1896,92 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   Widget _resultCard(AppThemeColorsExt c, SavedStory s) {
-    return HopeCard(
-      borderColor: c.gold,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            s.title,
-            textDirection: autoDir(s.title),
-            style: TextStyle(
-                color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _libPanel(c, s),
+        if (_storyTranslating)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text('در حال ترجمه‌ی داستان...',
+                style: TextStyle(color: c.inkSoft, fontSize: 12)),
           ),
-          const SizedBox(height: 8),
-          _audioBar(s),
-          _storyBody(c, s.text, s.translations, s.id),
-          if (_storyTranslating)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text('در حال ترجمه‌ی داستان...',
-                  style: TextStyle(color: c.inkSoft, fontSize: 12)),
-            ),
-          const SizedBox(height: 8),
-          Text('در «کتابخانه‌ی من» ذخیره شد.',
-              style: TextStyle(color: c.teal, fontSize: 12)),
-        ],
-      ),
+      ],
+    );
+  }
+
+  // ───────────── پنلِ داستانِ ذخیره‌شده (کتابخانه / نتیجه‌ی ساخت) ─────────────
+  SavedStory? _libGet(String id) {
+    for (final e in ref.read(storyLibraryProvider)) {
+      if (e.id == id) return e;
+    }
+    return null;
+  }
+
+  void _libPut(SavedStory updated) {
+    ref.read(storyLibraryProvider.notifier).update(updated);
+    if (mounted && _result?.id == updated.id) {
+      setState(() => _result = updated);
+    }
+  }
+
+  void _libNotes(String id, String v) {
+    final cur = _libGet(id);
+    if (cur == null || cur.notes == v) return;
+    _libPut(cur.copyWith(notes: v));
+  }
+
+  void _libEdit(String id, String t) {
+    final cur = _libGet(id);
+    if (cur == null) return;
+    _libPut(cur.copyWith(
+      text: t,
+      langCode: _detectLang(t, cur.langCode),
+      translations: const {},
+    ));
+  }
+
+  void _libParaTr(String id, String lang, int idx, String t) {
+    final cur = _libGet(id);
+    if (cur == null) return;
+    final map = <String, List<String>>{
+      for (final e in cur.translations.entries)
+        e.key: List<String>.from(e.value),
+    };
+    final list = map.putIfAbsent(lang, () => <String>[]);
+    while (list.length <= idx) {
+      list.add('');
+    }
+    list[idx] = t;
+    _libPut(cur.copyWith(translations: map));
+  }
+
+  Widget _libPanel(AppThemeColorsExt c, SavedStory s) {
+    final langs = (s.translations.isNotEmpty
+            ? s.translations.keys.toList()
+            : _effectiveTransLangs().toList())
+        .where((l) => l != s.langCode)
+        .toList();
+    final bar = _audioBar(s);
+    final ctrl = _audioCtrls[s.id];
+    return StoryReaderPanel(
+      key: ValueKey('lib-${s.id}'),
+      storyId: s.id,
+      title: s.title,
+      text: s.text,
+      langCode: s.langCode,
+      targetLangs: langs,
+      paraTranslations: s.translations,
+      splitSentences: _splitSentences,
+      audio: ctrl,
+      audioBar: bar,
+      saved: true,
+      onSave: () {},
+      onTextEdited: (t) => _libEdit(s.id, t),
+      notes: s.notes,
+      onNotesChanged: (v) => _libNotes(s.id, v),
+      onParagraphRetranslated: (lang, idx, t) =>
+          _libParaTr(s.id, lang, idx, t),
     );
   }
 
@@ -2249,8 +2292,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _audioBar(s),
-                  _storyBody(c, s.text, s.translations, s.id),
+                  _libPanel(c, s),
                 ],
               ),
             ),

@@ -22,6 +22,9 @@ class SavedStory {
   /// ترجمه‌ی هر پاراگراف به زبان‌های انتخابی: کد زبان → لیست ترجمه‌ی پاراگراف‌ها
   final Map<String, List<String>> translations;
 
+  /// یادداشت‌های کاربر درباره‌ی این داستان
+  final String notes;
+
   const SavedStory({
     required this.id,
     required this.title,
@@ -32,6 +35,7 @@ class SavedStory {
     required this.words,
     required this.createdAt,
     this.translations = const {},
+    this.notes = '',
   });
 
   SavedStory copyWith({
@@ -39,6 +43,7 @@ class SavedStory {
     String? title,
     String? text,
     String? langCode,
+    String? notes,
   }) =>
       SavedStory(
         id: id,
@@ -50,6 +55,7 @@ class SavedStory {
         words: words,
         createdAt: createdAt,
         translations: translations ?? this.translations,
+        notes: notes ?? this.notes,
       );
 
   Map<String, dynamic> toJson() => {
@@ -62,6 +68,7 @@ class SavedStory {
         'words': words,
         'createdAt': createdAt.toIso8601String(),
         'translations': translations,
+        'notes': notes,
       };
 
   factory SavedStory.fromJson(Map<String, dynamic> j) => SavedStory(
@@ -76,6 +83,7 @@ class SavedStory {
         ],
         createdAt:
             DateTime.tryParse((j['createdAt'] ?? '').toString()) ?? DateTime.now(),
+        notes: (j['notes'] ?? '').toString(),
         translations: {
           if (j['translations'] is Map)
             for (final e in (j['translations'] as Map).entries)
