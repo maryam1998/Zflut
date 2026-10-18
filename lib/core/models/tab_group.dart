@@ -23,7 +23,7 @@ const List<TabGroup> kTabGroups = [
     key: 'talk',
     labelKey: 'group_talk',
     icon: Icons.chat_bubble_outline,
-    tabs: ['conversations', 'speaking', 'grammar'],
+    tabs: ['conversations'],
   ),
   TabGroup(
     key: 'words',
@@ -35,7 +35,7 @@ const List<TabGroup> kTabGroups = [
     key: 'story',
     labelKey: 'group_story',
     icon: Icons.auto_stories,
-    tabs: ['story', 'saved'],
+    tabs: ['story', 'saved', 'grammar', 'speaking'],
     isAiPowered: true,
   ),
   TabGroup(
