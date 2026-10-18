@@ -75,7 +75,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
       code: 'en',
       id: widget.id,
       child: Padding(
-        padding: EdgeInsets.only(bottom: compact ? 6 : 10),
+        padding: EdgeInsets.only(bottom: tp.sentenceGap.toDouble()),
         child: Stack(
           children: [
       Container(
@@ -181,7 +181,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
               ),
             ),
 
-            if (widget.langsToShow.isNotEmpty) SizedBox(height: compact ? 2 : 6),
+            // فاصله‌ی بین زبان‌ها را خودِ هر ردیفِ ترجمه با tp.langGap می‌دهد
 
             // ═══ ردیف‌های ترجمه ═══
             for (final code in widget.langsToShow)
@@ -515,7 +515,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       child: Directionality(
         textDirection: TextDirection.ltr,
         child: Padding(
-          padding: EdgeInsets.only(top: widget.compact ? 4 : 3),
+          padding: EdgeInsets.only(top: tp.langGap.toDouble()),
           child: Row(
             children: [
               Container(

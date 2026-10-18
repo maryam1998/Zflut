@@ -18,10 +18,22 @@ class TextPrefsNotifier extends StateNotifier<TargetTextPrefs> {
   }
 
   Future<void> setScale(int scale) =>
-      _persist(TargetTextPrefs(scale: scale.clamp(50, 250), bold: state.bold));
+      _persist(state.copyWith(scale: scale.clamp(50, 250)));
 
   Future<void> setBold(TargetBoldMode mode) =>
-      _persist(TargetTextPrefs(scale: state.scale, bold: mode));
+      _persist(state.copyWith(bold: mode));
+
+  Future<void> setSentenceGap(int v) => _persist(state.copyWith(
+      sentenceGap: v.clamp(
+          TargetTextPrefs.minSentenceGap, TargetTextPrefs.maxSentenceGap)));
+
+  Future<void> setLangGap(int v) => _persist(state.copyWith(
+      langGap:
+          v.clamp(TargetTextPrefs.minLangGap, TargetTextPrefs.maxLangGap)));
+
+  Future<void> resetGaps() => _persist(state.copyWith(
+      sentenceGap: TargetTextPrefs.defaultSentenceGap,
+      langGap: TargetTextPrefs.defaultLangGap));
 }
 
 final textPrefsProvider =

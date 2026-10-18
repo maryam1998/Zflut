@@ -664,6 +664,95 @@ class _TargetTextSection extends ConsumerWidget {
             ),
           ],
         ),
+        const SizedBox(height: _kGapSection),
+        Row(
+          children: [
+            Expanded(
+              child: _SectionTitle(
+                  icon: Icons.format_line_spacing,
+                  label: L.settings_spacing_title),
+            ),
+            TextButton(
+              onPressed: notifier.resetGaps,
+              style: TextButton.styleFrom(
+                foregroundColor: c.gold,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: Text(L.settings_spacing_reset),
+            ),
+          ],
+        ),
+        const SizedBox(height: _kGapAfterTitle),
+        _GapSlider(
+          label: L.settings_spacing_sentences,
+          value: textPrefs.sentenceGap,
+          min: TargetTextPrefs.minSentenceGap,
+          max: TargetTextPrefs.maxSentenceGap,
+          onChanged: notifier.setSentenceGap,
+        ),
+        const SizedBox(height: 4),
+        _GapSlider(
+          label: L.settings_spacing_languages,
+          value: textPrefs.langGap,
+          min: TargetTextPrefs.minLangGap,
+          max: TargetTextPrefs.maxLangGap,
+          onChanged: notifier.setLangGap,
+        ),
+      ],
+    );
+  }
+}
+
+/// اسلایدرِ فاصله (۱ واحد = ۱ پیکسل منطقی) با برچسب و مقدار
+class _GapSlider extends StatelessWidget {
+  final String label;
+  final int value;
+  final int min;
+  final int max;
+  final ValueChanged<int> onChanged;
+
+  const _GapSlider({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(label,
+                  style: TextStyle(
+                      color: c.ink, fontSize: 13, fontWeight: FontWeight.w600)),
+            ),
+            Text('$value',
+                style: TextStyle(color: c.inkSoft, fontSize: 12)),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: c.gold,
+            inactiveTrackColor: c.cardBorder,
+            thumbColor: c.gold,
+            overlayColor: c.gold.withOpacity(0.15),
+            trackHeight: 4,
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+          ),
+          child: Slider(
+            value: value.clamp(min, max).toDouble(),
+            min: min.toDouble(),
+            max: max.toDouble(),
+            divisions: max - min,
+            onChanged: (v) => onChanged(v.round()),
+          ),
+        ),
       ],
     );
   }

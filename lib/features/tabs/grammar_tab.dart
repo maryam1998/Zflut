@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../app.dart';
 import '../../core/constants/supported_languages.dart' show langDisplayName;
 import '../../core/models/grammar_note.dart';
 import '../../core/models/saved_word.dart';
+import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
+import '../../core/providers/translation_provider.dart';
+import '../../core/translate/translation_service.dart' show englishLangName;
 import '../../core/providers/reader_providers.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '_hope_panel.dart';
@@ -25,9 +29,28 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
   final Set<String> _selected = {};
 
   static String _two(int n) => n.toString().padLeft(2, '0');
-  static String _dayLabel(DateTime d) =>
+  // کلیدِ گروه‌بندی/مرتب‌سازی (مستقل از زبان)
+  static String _dayKey(DateTime d) =>
       '${d.year}/${_two(d.month)}/${_two(d.day)}';
-  static String _timeLabel(DateTime d) => '${_two(d.hour)}:${_two(d.minute)}';
+
+  // برچسب‌های نمایشی بر اساس زبانِ رابط کاربری (مثل Hope: «Sun, 18 Oct 2026» و «07:52 AM»)
+  String _dayLabel(DateTime d) {
+    final loc = Localizations.localeOf(context).toString();
+    try {
+      return DateFormat.yMMMEd(loc).format(d);
+    } catch (_) {
+      return _dayKey(d);
+    }
+  }
+
+  String _timeLabel(DateTime d) {
+    final loc = Localizations.localeOf(context).toString();
+    try {
+      return DateFormat.jm(loc).format(d);
+    } catch (_) {
+      return '${_two(d.hour)}:${_two(d.minute)}';
+    }
+  }
 
   void _exitSelect() => setState(() {
         _selectMode = false;
@@ -70,7 +93,7 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
     // گروه‌بندی بر اساس روز (جدیدترین اول)
     final groups = <String, List<GrammarNote>>{};
     for (final n in notes) {
-      groups.putIfAbsent(_dayLabel(n.savedAt), () => []).add(n);
+      groups.putIfAbsent(_dayKey(n.savedAt), () => []).add(n);
     }
     final labels = groups.keys.toList()..sort((a, b) => b.compareTo(a));
 
@@ -182,7 +205,7 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
                         ),
                       ),
                     Text(
-                      label,
+                      _dayLabel(groups[label]!.first.savedAt),
                       style: TextStyle(
                         color: c.inkSoft,
                         fontSize: 11,
@@ -234,7 +257,7 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
   }
 }
 
-class _NoteCard extends StatelessWidget {
+class _NoteCard extends ConsumerStatefulWidget {
   final GrammarNote note;
   final String timeLabel;
   final bool open;
@@ -258,11 +281,116 @@ class _NoteCard extends StatelessWidget {
   });
 
   @override
+  ConsumerState<_NoteCard> createState() => _NoteCardState();
+}
+
+class _NoteCardState extends ConsumerState<_NoteCard> {
+  final _ctrl = TextEditingController();
+  bool _loading = false;
+  String _error = '';
+  String _failedQ = ''; // آخرین پرسشی که جوابش نیامد (برای «تلاش دوباره»)
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  static String _stripThink(String t) => t
+      .replaceAll(
+          RegExp(r'<think(ing)?>[\s\S]*?</think(ing)?>', caseSensitive: false),
+          '')
+      .replaceAll(RegExp(r'<think(ing)?>[\s\S]*$', caseSensitive: false), '')
+      .trim();
+
+  static final RegExp _reasoningRe = RegExp(
+      r"(thinking process|here'?s a thinking|analy[sz]e the (request|text|input)|\bconstraint\s*:|the user wants me to|let me (read|think|analy[sz]e|re-?read)|^\s*okay,? (so|let'?s|the user))",
+      caseSensitive: false,
+      multiLine: true);
+
+  /// پورتِ askGrammarTeacher در Hope — با تاریخچه‌ی خودِ یادداشت
+  String _prompt(String question) {
+    final note = widget.note;
+    final sel = ref.read(languageSelectionProvider);
+    final label = englishLangName(sel.native);
+    final langLabel = englishLangName(note.langCode);
+    final others = sel.targets
+        .where((c) => c != note.langCode && c != sel.native)
+        .map(englishLangName)
+        .join(', ');
+    final otherLangs = others.isEmpty ? 'None' : others;
+
+    final history = <String>[
+      'Learner: ${note.sentence.isNotEmpty ? note.sentence : note.word}',
+      'Teacher: ${note.markdown}',
+      for (final t in note.thread) ...[
+        'Learner: ${t.question}',
+        'Teacher: ${t.answer}',
+      ],
+    ];
+    final recent =
+        history.length > 8 ? history.sublist(history.length - 8) : history;
+
+    return "You are a friendly, knowledgeable AI chat assistant inside a language-learning app — talk with the learner the same natural way any general-purpose AI chat assistant would. You're great at $langLabel practice.\n\n"
+        "Learner's native language: $label. Language they're currently practicing: $langLabel. Other languages they study: $otherLangs.\n\n"
+        "Recent conversation (a saved grammar note and the follow-up questions about it):\n${recent.join('\n')}\n\n"
+        "Learner just wrote: \"$question\"\n\n"
+        "How to respond:\n"
+        "- This is a follow-up question about the saved grammar note above. Answer it directly and conversationally, in $label. Do not redo the whole structured breakdown.\n"
+        "- Every example sentence in your reply MUST be in $langLabel (unless the learner explicitly asks about another language), with a $label translation.\n"
+        "- Write in $label. Keep the reply clear, well-organized, and not too long.";
+  }
+
+  Future<void> _ask([String? retryQuestion]) async {
+    final question = (retryQuestion ?? _ctrl.text).trim();
+    if (question.isEmpty || _loading) return;
+    if (retryQuestion == null) _ctrl.clear();
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    final noteId = widget.note.id;
+    final notifier = ref.read(grammarNotesProvider.notifier);
+    try {
+      final svc = ref.read(translationServiceProvider);
+      final ai = ref.read(aiSettingsProvider);
+      final raw = await svc.callAI(
+        prompt: _prompt(question),
+        maxTokens: 1200,
+        settings: ai,
+      );
+      final text = _stripThink(raw);
+      if (text.isEmpty || _reasoningRe.hasMatch(text)) {
+        throw Exception('empty');
+      }
+      // یادداشت قبلاً ذخیره شده؛ پاسخ مستقیم به همان اضافه می‌شود
+      notifier.appendThread(
+          noteId, GrammarThreadItem(question: question, answer: text));
+      if (!mounted) return;
+      setState(() => _failedQ = '');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _failedQ = question;
+        _error = context.l10n.speaking_ai_no_response;
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.appColors;
+    final note = widget.note;
+    final open = widget.open;
+    final selectMode = widget.selectMode;
+    final selected = widget.selected;
     final title = note.word.trim().isEmpty
         ? context.l10n.grammar_conversation_correction
         : note.word;
+    final canAsk = _ctrl.text.trim().isNotEmpty && !_loading;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -274,7 +402,7 @@ class _NoteCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           InkWell(
-            onTap: onTap,
+            onTap: widget.onTap,
             child: Row(
               children: [
                 if (selectMode)
@@ -300,7 +428,7 @@ class _NoteCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${langDisplayName(context, note.langCode)} · $timeLabel',
+                        '${langDisplayName(context, note.langCode)} · ${widget.timeLabel}',
                         style: TextStyle(color: c.inkSoft, fontSize: 11),
                       ),
                     ],
@@ -309,18 +437,20 @@ class _NoteCard extends StatelessWidget {
                 if (!selectMode) ...[
                   if (note.word.trim().isNotEmpty)
                     GestureDetector(
-                      onTap: onToggleSaved,
+                      onTap: widget.onToggleSaved,
                       child: Padding(
                         padding: const EdgeInsets.all(4),
                         child: Icon(
-                          wordSaved ? Icons.bookmark : Icons.bookmark_border,
+                          widget.wordSaved
+                              ? Icons.bookmark
+                              : Icons.bookmark_border,
                           size: 18,
-                          color: wordSaved ? c.gold : c.inkSoft,
+                          color: widget.wordSaved ? c.gold : c.inkSoft,
                         ),
                       ),
                     ),
                   GestureDetector(
-                    onTap: onDelete,
+                    onTap: widget.onDelete,
                     child: Padding(
                       padding: const EdgeInsets.all(4),
                       child: Icon(Icons.close, size: 18, color: c.inkSoft),
@@ -342,7 +472,164 @@ class _NoteCard extends StatelessWidget {
               decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: c.cardBorder)),
               ),
-              child: MiniMarkdown(text: note.markdown),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  MiniMarkdown(text: note.markdown),
+
+                  // ═══ پرسش‌وپاسخ‌های ذخیره‌شده‌ی همین یادداشت ═══
+                  for (final t in note.thread)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              t.question,
+                              textDirection: autoDir(t.question),
+                              style: TextStyle(
+                                color: c.inkSoft,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: c.goldSoft,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: MiniMarkdown(text: t.answer),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // ═══ کادرِ پرسش از همین یادداشت ═══
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    padding: const EdgeInsets.only(top: 10),
+                    decoration: BoxDecoration(
+                      border: Border(top: BorderSide(color: c.cardBorder)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _ctrl,
+                            minLines: 1,
+                            maxLines: 5,
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            onChanged: (_) => setState(() {}),
+                            style: TextStyle(color: c.ink, fontSize: 12.5),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText:
+                                  context.l10n.grammar_note_ask_placeholder,
+                              hintStyle:
+                                  TextStyle(color: c.inkSoft, fontSize: 12),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 9),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: c.cardBorder),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: c.gold),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Opacity(
+                          opacity: canAsk || _loading ? 1 : 0.6,
+                          child: Material(
+                            color: c.gold,
+                            borderRadius: BorderRadius.circular(8),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: canAsk ? () => _ask() : null,
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                    minWidth: 48, minHeight: 36),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                                alignment: Alignment.center,
+                                child: _loading
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 1.8,
+                                            color: Colors.white),
+                                      )
+                                    : Text(
+                                        context.l10n.grammar_ask,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_error.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _error,
+                              style: TextStyle(color: c.rose, fontSize: 11),
+                            ),
+                          ),
+                          if (_failedQ.isNotEmpty)
+                            InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: _loading ? null : () => _ask(_failedQ),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: c.teal,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.replay,
+                                        size: 12, color: Colors.white),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      context.l10n.grammar_try_again,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
         ],
       ),
