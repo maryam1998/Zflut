@@ -11,6 +11,7 @@ import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/translate/translation_service.dart' show englishLangName;
 import '../../core/providers/reader_providers.dart';
+import '../../core/ai/ai_gateway.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '_hope_panel.dart';
 
@@ -354,15 +355,16 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
     try {
       final svc = ref.read(translationServiceProvider);
       final ai = ref.read(aiSettingsProvider);
-      final raw = await svc.callAI(
+      // جوابِ گرامر بلند است؛ timeoutِ پیش‌فرضِ ۱۰ ثانیه کافی نبود. aiGenerate هم
+      // خروجیِ گارد/فکرکردن را رد می‌کند و یک بار با دستورِ سخت‌گیرانه دوباره می‌پرسد.
+      final text = await aiGenerate(
+        svc: svc,
+        settings: ai,
         prompt: _prompt(question),
         maxTokens: 1200,
-        settings: ai,
+        retries: 1,
+        timeoutMs: 60000,
       );
-      final text = _stripThink(raw);
-      if (text.isEmpty || _reasoningRe.hasMatch(text)) {
-        throw Exception('empty');
-      }
       // یادداشت قبلاً ذخیره شده؛ پاسخ مستقیم به همان اضافه می‌شود
       notifier.appendThread(
           noteId, GrammarThreadItem(question: question, answer: text));

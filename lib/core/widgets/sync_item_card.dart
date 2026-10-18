@@ -14,6 +14,8 @@ import '../translate/translation_service.dart';
 
 import '../../features/reader/widgets/neural_path_dialog.dart';
 import 'selection_card.dart';
+import 'word_examples_panel.dart';
+import '../providers/language_selection_provider.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // SyncItemCard — «کارتِ مشترک» برای همه‌ی تب‌ها
@@ -230,10 +232,14 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: c.cardBorder),
                   ),
-                  child: Text(
-                    'در حال ساخت مثال...',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: c.inkSoft, fontSize: 12),
+                  child: WordExamplesPanel(
+                    word: widget.en,
+                    langCode: 'en',
+                    nativeCode: ref.read(languageSelectionProvider).native,
+                    meaningNative: widget.knownTranslations[
+                            ref.read(languageSelectionProvider).native] ??
+                        '',
+                    targetLangs: widget.langsToShow,
                   ),
                 ),
               ],
