@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app.dart';
 import '../../core/constants/topic_icons.dart';
 import '../../core/models/conversation.dart';
 import '../../core/player_sync/player_track.dart';
@@ -47,7 +48,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2.4, color: c.gold),
                     )
-                  : Text('داده‌ای بارگذاری نشد',
+                  : Text(context.l10n.dialogs_no_results,
                       style: TextStyle(color: c.inkSoft, fontSize: 15)),
             ),
           ),
@@ -85,7 +86,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           Padding(
             padding: const EdgeInsets.all(40),
             child: Center(
-              child: Text('چیزی پیدا نشد',
+              child: Text(context.l10n.dialogs_no_results,
                   style: TextStyle(color: c.inkSoft, fontSize: 14)),
             ),
           ),
@@ -112,7 +113,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
         RangeCard(
-          label: 'موضوع‌ها',
+          label: context.l10n.dialogs_topics_label,
           max: total,
           from: from,
           to: to,
@@ -210,7 +211,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
               children: [
                 Icon(Icons.arrow_back, size: 18, color: c.teal),
                 const SizedBox(width: 6),
-                Text('بازگشت به موضوعات',
+                Text(context.l10n.dialogs_back_to_topics,
                     style: TextStyle(
                         color: c.teal,
                         fontSize: 13,
@@ -466,13 +467,13 @@ class _ScenarioCard extends StatelessWidget {
             const Divider(height: 1),
             if (scenario.speakerA.isNotEmpty)
               _SpeakerBox(
-                  title: 'می‌شنوی',
+                  title: context.l10n.dialogs_you_hear,
                   idPrefix: 'a',
                   color: c.teal,
                   lines: scenario.speakerA),
             if (scenario.speakerB.isNotEmpty)
               _SpeakerBox(
-                  title: 'می‌گی',
+                  title: context.l10n.dialogs_you_say,
                   idPrefix: 'b',
                   color: c.gold,
                   lines: scenario.speakerB),

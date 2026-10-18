@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../app.dart';
 import '../theme/app_theme_colors.dart';
 
 /// کارتِ بازه‌ی «از # تا #» + نوار پیشرفتِ خوانده‌شده + دکمه‌های
@@ -41,12 +42,12 @@ class RangeCard extends StatefulWidget {
   State<RangeCard> createState() => _RangeCardState();
 }
 
-String _faNum(num n) {
+String _faNum(num n, {bool persian = true}) {
   final s = n.toInt().toString();
   final sb = StringBuffer();
   for (var i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 == 0) sb.write('٬');
-    sb.write(String.fromCharCode(s.codeUnitAt(i) - 48 + 0x06F0));
+    if (i > 0 && (s.length - i) % 3 == 0) sb.write(persian ? '٬' : ',');
+    sb.write(persian ? String.fromCharCode(s.codeUnitAt(i) - 48 + 0x06F0) : s[i]);
   }
   return sb.toString();
 }
@@ -118,6 +119,10 @@ class _RangeCardState extends State<RangeCard> {
   Widget build(BuildContext context) {
     final c = context.appColors;
     final w = widget;
+    final L = context.l10n;
+    // رقم‌های فارسی فقط وقتی زبان رابط فارسی است
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    String num_(num n) => _faNum(n, persian: fa);
     final pct = w.totalInRange > 0 ? w.readInRange / w.totalInRange : 0.0;
 
     Widget stepBtn(IconData icon, bool enabled, VoidCallback onTap) {
@@ -224,14 +229,14 @@ class _RangeCardState extends State<RangeCard> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  small('از'),
+                  small(L.range_from),
                   stepBtn(Icons.remove, w.from > w.min,
                       () => w.onFromChanged(w.from - 1)),
                   numField(_fromCtrl, _fromFocus, _commitFrom),
                   stepBtn(Icons.add, w.from < w.to,
                       () => w.onFromChanged(w.from + 1)),
                   const SizedBox(width: 4),
-                  small('تا'),
+                  small(L.range_to),
                   stepBtn(Icons.remove, w.to > w.from,
                       () => w.onToChanged(w.to - 1)),
                   numField(_toCtrl, _toFocus, _commitTo),
@@ -240,7 +245,7 @@ class _RangeCardState extends State<RangeCard> {
                 ],
               ),
               const SizedBox(height: 8),
-              Text('${w.from} تا ${w.to} از مجموع ${_faNum(w.max)}',
+              Text(L.range_summary(num_(w.from), num_(w.to), num_(w.max)),
                   style: TextStyle(color: c.inkSoft, fontSize: 11)),
               const SizedBox(height: 12),
               ClipRRect(
@@ -262,7 +267,8 @@ class _RangeCardState extends State<RangeCard> {
               ),
               const SizedBox(height: 6),
               Text(
-                'خوانده‌شده: ${_faNum(w.readInRange)} از ${_faNum(w.totalInRange)} در این بازه · ${_faNum(w.readTotal)} از ${_faNum(w.max)} کل',
+                L.range_read_progress(num_(w.readInRange), num_(w.totalInRange),
+                    num_(w.readTotal), num_(w.max)),
                 style: TextStyle(
                     color: c.teal, fontSize: 11, fontWeight: FontWeight.w700),
               ),
@@ -274,9 +280,9 @@ class _RangeCardState extends State<RangeCard> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            actionBtn('علامت‌گذاری همه به خوانده‌شده', w.onMarkRead,
+            actionBtn(L.dialogs_mark_range_read, w.onMarkRead,
                 const Color(0xFFEAF4F1), const Color(0xFFCFE6DF)),
-            actionBtn('پاک‌کردن علامت این بازه', w.onClear, c.paper,
+            actionBtn(L.dialogs_clear_range, w.onClear, c.paper,
                 c.cardBorder),
           ],
         ),

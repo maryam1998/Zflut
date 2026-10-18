@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/supported_languages.dart';
+import '../../../app.dart';
 import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 
@@ -21,16 +21,31 @@ class AccountHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
     final sel = ref.watch(languageSelectionProvider);
+    final L = context.l10n;
+    // نامِ زبان‌ها به زبانِ رابط (کلیدهای lang_name_* در arb)
     String labelOf(String code) {
-      for (final l in kSupportedLanguages) {
-        if (l.code == code) return l.faLabel;
+      switch (code) {
+        case 'ar': return L.lang_name_ar;
+        case 'de': return L.lang_name_de;
+        case 'en': return L.lang_name_en;
+        case 'es': return L.lang_name_es;
+        case 'fa': return L.lang_name_fa;
+        case 'fr': return L.lang_name_fr;
+        case 'hi': return L.lang_name_hi;
+        case 'it': return L.lang_name_it;
+        case 'ja': return L.lang_name_ja;
+        case 'ko': return L.lang_name_ko;
+        case 'ru': return L.lang_name_ru;
+        case 'tr': return L.lang_name_tr;
+        case 'zh': return L.lang_name_zh;
       }
       return code.toUpperCase();
     }
 
-    // «از فارسی به آلمانی، انگلیسی» — همیشه فارسی و راست‌به‌چپ (مثل Hope)
-    final fromTo =
-        'از ${labelOf(sel.native)} به ${sel.targets.map(labelOf).join('، ')}';
+    final uiCode = Localizations.localeOf(context).languageCode;
+    final rtlUi = uiCode == 'fa' || uiCode == 'ar';
+    final fromTo = L.phrasebook_header_from_to(
+        labelOf(sel.native), sel.targets.map(labelOf).join(rtlUi ? '، ' : ', '));
 
     return Container(
       decoration: BoxDecoration(
@@ -66,8 +81,8 @@ class AccountHeader extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Text(
                     fromTo,
-                    textDirection: TextDirection.rtl,
-                    textAlign: TextAlign.start,
+                    textDirection: rtlUi ? TextDirection.rtl : TextDirection.ltr,
+                    textAlign: TextAlign.right,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
