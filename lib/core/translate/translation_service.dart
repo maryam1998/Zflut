@@ -74,6 +74,14 @@ bool looksLikeGuardOutput(String text) {
   return t.isNotEmpty && _guardOutputRe.hasMatch(t);
 }
 
+/// برچسبِ مدل‌های گارد («User Safety: unsafe» / «Safety Categories: …») — جواب نیست.
+/// اگر Workerِ قدیمی این خروجی را فیلتر نکند، اینجا جلوی نمایشش گرفته می‌شود.
+final RegExp _aiGuardRe = RegExp(
+  r'^\s*((user|assistant)\s+)?safety(\s+categories)?\s*:|^\s*(safe|unsafe)\s*$',
+  caseSensitive: false,
+  multiLine: true,
+);
+
 /// <think>…</think> و مانندش را برمی‌دارد
 String stripAIReasoning(String text) {
   return text
@@ -585,7 +593,9 @@ class TranslationService {
         }
 
         final data = _json(res.data);
-        final text = (data is Map ? data['text']?.toString() : null) ?? '';
+        final rawText = (data is Map ? data['text']?.toString() : null) ?? '';
+        // خروجیِ گارد/ایمنی جواب نیست → مثل پاسخِ خالی، دوباره امتحان / خطا
+        final text = _aiGuardRe.hasMatch(rawText) ? '' : rawText;
         if (text.isEmpty) {
           if (attempt < retries) {
             await Future.delayed(Duration(milliseconds: 700 * (attempt + 1)));

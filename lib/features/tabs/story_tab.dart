@@ -4,7 +4,9 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+// intl هم یک کلاسِ TextDirection (با LTR/RTL) دارد که با TextDirection فلاتر تداخل می‌کند
+// و باعث خطای «Member not found: 'ltr'» در بیلدِ وب می‌شد.
+import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../app.dart';
 import '../../l10n/app_localizations.dart';
