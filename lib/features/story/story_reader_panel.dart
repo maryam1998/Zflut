@@ -588,14 +588,18 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
               Text('نمایش ترجمه:',
                   style: TextStyle(color: c.inkSoft, fontSize: 13)),
               const SizedBox(height: 6),
-              Wrap(
+              // از راست به چپ: جمله به جمله ← پاراگراف به پاراگراف ← هیچ
+              // (جهتِ فیزیکی ثابت، مستقل از زبانِ برنامه)
+              Directionality(
+                textDirection: TextDirection.rtl,
+                child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
                   for (final m in const [
-                    [0, 'هیچ'],
-                    [1, 'پاراگراف به پاراگراف'],
                     [2, 'جمله به جمله'],
+                    [1, 'پاراگراف به پاراگراف'],
+                    [0, 'هیچ'],
                   ])
                     HopeChoiceChip(
                       label: m[1] as String,
@@ -606,6 +610,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                       onTap: () => _setMode(m[0] as int),
                     ),
                 ],
+              ),
               ),
               if (widget.audioBar != null) ...[
                 const SizedBox(height: 12),
@@ -850,8 +855,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                 id: id,
                 text: src,
                 color: c.gold,
-                size: 18,
-                padding: const EdgeInsets.all(5),
+                size: 20,
+                padding: const EdgeInsets.all(4),
               ),
             ],
           ),
@@ -875,10 +880,24 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
         tp.bold == TargetBoldMode.both || tp.bold == TargetBoldMode.translation;
 
     final tag = Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Text('[$lang]',
+      padding: const EdgeInsets.only(top: 3),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: c.paperDark,
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(color: c.cardBorder, width: 0.6),
+        ),
+        child: Text(
+          lang.toUpperCase(),
           style: TextStyle(
-              color: c.gold, fontSize: 11, fontWeight: FontWeight.w700)),
+            color: c.gold,
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ),
     );
 
     // Builder: contextِ زیرِ SyncPlayScope لازم است (گزارشِ ترجمه به پلیر)
@@ -899,7 +918,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 tag,
-                const SizedBox(width: 6),
+                const SizedBox(width: 10),
                 Expanded(
                   child: t != null
                       ? Align(
@@ -940,20 +959,23 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
             ),
           ),
           // از راست به چپ: 🔊 ← 🧬 ← رفرش
-          InkWell(
-            onTap: busy ? null : () => _retry(lang, src, paraIdx: paraIdx),
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.all(5),
-              child: busy
-                  ? SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 1.6, color: c.inkSoft),
-                    )
-                  : Icon(Icons.refresh,
-                      size: 17, color: c.inkSoft.withOpacity(0.75)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: InkWell(
+              onTap: busy ? null : () => _retry(lang, src, paraIdx: paraIdx),
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: busy
+                    ? SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 1.6, color: c.inkSoft),
+                      )
+                    : Icon(Icons.refresh,
+                        size: 16, color: c.inkSoft.withOpacity(0.7)),
+              ),
             ),
           ),
           if (t != null)
@@ -971,7 +993,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
               id: id,
               text: t,
               color: c.gold,
-              size: 17,
+              size: 16,
               padding: const EdgeInsets.all(5),
             ),
         ],
