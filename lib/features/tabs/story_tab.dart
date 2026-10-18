@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../app.dart';
 import '../../l10n/app_localizations.dart';
@@ -370,6 +371,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
   String _libLevel = 'all';
   final _libSearch = TextEditingController();
+  bool _libFavOnly = false;
   String? _openStoryId;
 
   @override
@@ -2162,6 +2164,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       AppThemeColorsExt c, List<SavedStory> stories) {
     final q = _libSearch.text.trim().toLowerCase();
     final shown = stories.where((s) {
+      if (_libFavOnly && stories.length > 1 && !s.favorite) return false;
       if (_libLevel != 'all' && s.level != _libLevel) return false;
       if (q.isEmpty) return true;
       return s.title.toLowerCase().contains(q) ||
@@ -2171,39 +2174,68 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
     return [
       if (stories.length > 1)
-        Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: c.cardBorder),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.search, size: 15, color: c.inkSoft),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _libSearch,
-                  onChanged: (_) => setState(() {}),
-                  style: TextStyle(color: c.ink, fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: context.l10n.library_search_placeholder,
-                    hintStyle: TextStyle(
-                        color: c.inkSoft.withOpacity(0.6), fontSize: 13),
-                    border: InputBorder.none,
-                    isDense: true,
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: c.cardBorder),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search, size: 15, color: c.inkSoft),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _libSearch,
+                      onChanged: (_) => setState(() {}),
+                      style: TextStyle(color: c.ink, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: context.l10n.library_search_placeholder,
+                        hintStyle: TextStyle(
+                            color: c.inkSoft.withOpacity(0.6), fontSize: 13),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  if (_libSearch.text.isNotEmpty)
+                    GestureDetector(
+                      onTap: () => setState(_libSearch.clear),
+                      child: Icon(Icons.close, size: 15, color: c.inkSoft),
+                    ),
+                ],
+              ),
+            ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message: context.l10n.library_favorite_aria,
+              child: InkWell(
+                onTap: () => setState(() => _libFavOnly = !_libFavOnly),
+                customBorder: const CircleBorder(),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _libFavOnly ? const Color(0x33F5C518) : Colors.white,
+                    border: Border.all(
+                        color: _libFavOnly ? const Color(0xFFF5C518) : c.cardBorder),
+                  ),
+                  child: Icon(
+                    _libFavOnly ? Icons.star : Icons.star_border,
+                    size: 20,
+                    color: _libFavOnly ? const Color(0xFFF5C518) : c.inkSoft,
                   ),
                 ),
               ),
-              if (_libSearch.text.isNotEmpty)
-                GestureDetector(
-                  onTap: () => setState(_libSearch.clear),
-                  child: Icon(Icons.close, size: 15, color: c.inkSoft),
-                ),
-            ],
-          ),
+            ),
+          ],
         ),
       // سطح‌ها همیشه نشان داده می‌شوند (مثل LevelFilterRow در Hope)
       LevelChips(
@@ -2238,12 +2270,48 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     return null;
   }
 
-  /// نامِ برنامه‌ی مبدأ (خط دومِ متن: Instagram / YouTube / …).
+  /// نامِ برنامه‌ی مبدأ — اول از روی دامنه‌ی لینک (یوتیوب → «YouTube»، نه نامِ کانال)،
+  /// وگرنه خط دومِ متن.
+  static String? _appFromUrl(String url) {
+    var h = (Uri.tryParse(url)?.host ?? '').toLowerCase();
+    h = h.replaceFirst(RegExp(r'^(www|m|vm|vt|mobile)\.'), '');
+    if (h.isEmpty) return null;
+    bool ends(String d) => h == d || h.endsWith('.$d');
+    if (ends('instagram.com')) return 'Instagram';
+    if (ends('tiktok.com')) return 'TikTok';
+    if (ends('youtube.com') || h == 'youtu.be') return 'YouTube';
+    if (h == 't.me' || ends('telegram.me') || ends('telegram.org')) return 'Telegram';
+    if (ends('facebook.com') || h == 'fb.watch' || h == 'fb.me') return 'Facebook';
+    if (h == 'x.com' || ends('twitter.com')) return 'X';
+    if (ends('snapchat.com')) return 'Snapchat';
+    if (ends('reddit.com') || h == 'redd.it') return 'Reddit';
+    if (ends('vimeo.com')) return 'Vimeo';
+    if (ends('twitch.tv')) return 'Twitch';
+    if (ends('linkedin.com')) return 'LinkedIn';
+    if (ends('pinterest.com') || h == 'pin.it') return 'Pinterest';
+    if (ends('spotify.com')) return 'Spotify';
+    return h;
+  }
+
   String _sourceOf(SavedStory s) {
+    final link = _linkOf(s);
+    final byUrl = link == null ? null : _appFromUrl(link);
+    if (byUrl != null) return byUrl;
     final ls = s.text.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     return ls.length > 1 && !RegExp(r'^https?://', caseSensitive: false).hasMatch(ls[1])
         ? ls[1]
         : _contentLabel(context.l10n, s.contentType);
+  }
+
+  /// تاریخ و ساعتِ ذخیره، بر اساس زبانِ رابط
+  String _savedAtLabel(DateTime d) {
+    final loc = Localizations.localeOf(context).toString();
+    try {
+      return DateFormat.yMMMd(loc).add_Hm().format(d);
+    } catch (_) {
+      String two(int n) => n.toString().padLeft(2, '0');
+      return '${d.year}/${two(d.month)}/${two(d.day)} ${two(d.hour)}:${two(d.minute)}';
+    }
   }
 
   Future<void> _openLink(String url) async {
@@ -2255,15 +2323,28 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   Widget _storyCard(AppThemeColorsExt c, SavedStory s) {
     final link = _linkOf(s);
     final open = link == null && _openStoryId == s.id;
-    final d = s.createdAt;
-    String two(int n) => n.toString().padLeft(2, '0');
-    final date = '${d.year}/${two(d.month)}/${two(d.day)}';
+    final dateTime = _savedAtLabel(s.createdAt);
     return HopeCard(
       padding: const EdgeInsets.all(12),
       radius: 14,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // 📅 تاریخ و ساعتِ ذخیره (مثل Hope)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                Icon(Icons.event, size: 12, color: c.inkSoft),
+                const SizedBox(width: 4),
+                Text(
+                  dateTime,
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(color: c.inkSoft, fontSize: 10.5),
+                ),
+              ],
+            ),
+          ),
           InkWell(
             onTap: link != null
                 ? () => _openLink(link)
@@ -2285,12 +2366,31 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                       ),
                       Text(
                         link != null
-                            ? '${_sourceOf(s)} · $date'
+                            ? '${_sourceOf(s)} · ${langDisplayName(context, s.langCode)}'
                             : '${langDisplayName(context, s.langCode)} · ${s.level} · '
-                                '${_contentLabel(context.l10n, s.contentType)} · $date',
-                        style: TextStyle(color: c.inkSoft, fontSize: 11),
+                                '${_contentLabel(context.l10n, s.contentType)}',
+                        style: TextStyle(
+                          color: link != null ? c.gold : c.inkSoft,
+                          fontSize: 11,
+                          fontWeight:
+                              link != null ? FontWeight.w700 : FontWeight.w400,
+                        ),
                       ),
                     ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () =>
+                      ref.read(storyLibraryProvider.notifier).toggleFavorite(s.id),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      s.favorite ? Icons.star : Icons.star_border,
+                      size: 20,
+                      color: s.favorite
+                          ? const Color(0xFFF5C518)
+                          : c.inkSoft.withOpacity(0.6),
+                    ),
                   ),
                 ),
                 GestureDetector(

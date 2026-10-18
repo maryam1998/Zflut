@@ -87,7 +87,9 @@ public class BubblePlugin extends Plugin {
         dispatchAuthIntent(intent);
     }
 
-    // openExternal({ url }) — باز کردنِ آدرس توی مرورگرِ سیستم (برای ورود با گوگل)
+    // openExternal({ url }) — باز کردنِ آدرس. اگر لینک مالِ یک برنامه‌ی شناخته‌شده باشد
+    // (یوتیوب، اینستاگرام، تیک‌تاک، …) و آن برنامه نصب باشد، مستقیم همان برنامه (و همان
+    // ویدیو) باز می‌شود؛ وگرنه مرورگرِ سیستم.
     @PluginMethod
     public void openExternal(PluginCall call) {
         String url = call.getString("url");
@@ -96,13 +98,58 @@ public class BubblePlugin extends Plugin {
             return;
         }
         try {
-            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            Uri uri = Uri.parse(url);
+            for (String pkg : packagesForHost(uri.getHost())) {
+                try {
+                    Intent a = new Intent(Intent.ACTION_VIEW, uri);
+                    a.setPackage(pkg);
+                    a.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    getContext().startActivity(a);
+                    call.resolve();
+                    return;
+                } catch (android.content.ActivityNotFoundException ignored) {
+                    // این برنامه نصب نیست / لینک را نمی‌گیرد → بعدی یا مرورگر
+                }
+            }
+            Intent i = new Intent(Intent.ACTION_VIEW, uri);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getContext().startActivity(i);
             call.resolve();
         } catch (Exception e) {
             call.reject("cannot open browser: " + e.getMessage());
         }
+    }
+
+    private static String[] packagesForHost(String host) {
+        if (host == null) return new String[0];
+        String h = host.toLowerCase(java.util.Locale.ROOT).replaceFirst("^(www|m|vm|vt|mobile)\\.", "");
+        if (h.endsWith("youtube.com") || h.equals("youtu.be"))
+            return new String[] {"com.google.android.youtube"};
+        if (h.endsWith("instagram.com"))
+            return new String[] {"com.instagram.android"};
+        if (h.endsWith("tiktok.com"))
+            return new String[] {"com.zhiliaoapp.musically", "com.ss.android.ugc.trill"};
+        if (h.equals("t.me") || h.endsWith("telegram.me"))
+            return new String[] {"org.telegram.messenger", "org.thunderdog.challegram"};
+        if (h.endsWith("facebook.com") || h.equals("fb.watch") || h.equals("fb.me"))
+            return new String[] {"com.facebook.katana"};
+        if (h.equals("x.com") || h.endsWith("twitter.com"))
+            return new String[] {"com.twitter.android"};
+        if (h.endsWith("snapchat.com"))
+            return new String[] {"com.snapchat.android"};
+        if (h.endsWith("reddit.com") || h.equals("redd.it"))
+            return new String[] {"com.reddit.frontpage"};
+        if (h.endsWith("vimeo.com"))
+            return new String[] {"com.vimeo.android.videoapp"};
+        if (h.endsWith("twitch.tv"))
+            return new String[] {"tv.twitch.android.app"};
+        if (h.endsWith("linkedin.com"))
+            return new String[] {"com.linkedin.android"};
+        if (h.endsWith("pinterest.com") || h.equals("pin.it"))
+            return new String[] {"com.pinterest"};
+        if (h.endsWith("spotify.com"))
+            return new String[] {"com.spotify.music"};
+        return new String[0];
     }
 
     // openApp({ pkg }) — باز کردنِ برنامه‌ی منبعِ صدا (مثلاً پلیری که فایل در آن پخش می‌شد)

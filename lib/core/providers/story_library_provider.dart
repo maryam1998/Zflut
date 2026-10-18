@@ -25,6 +25,9 @@ class SavedStory {
   /// یادداشت‌های کاربر درباره‌ی این داستان
   final String notes;
 
+  /// علاقه‌مندی (ستاره)
+  final bool favorite;
+
   const SavedStory({
     required this.id,
     required this.title,
@@ -36,6 +39,7 @@ class SavedStory {
     required this.createdAt,
     this.translations = const {},
     this.notes = '',
+    this.favorite = false,
   });
 
   SavedStory copyWith({
@@ -44,6 +48,7 @@ class SavedStory {
     String? text,
     String? langCode,
     String? notes,
+    bool? favorite,
   }) =>
       SavedStory(
         id: id,
@@ -56,6 +61,7 @@ class SavedStory {
         createdAt: createdAt,
         translations: translations ?? this.translations,
         notes: notes ?? this.notes,
+        favorite: favorite ?? this.favorite,
       );
 
   Map<String, dynamic> toJson() => {
@@ -69,6 +75,7 @@ class SavedStory {
         'createdAt': createdAt.toIso8601String(),
         'translations': translations,
         'notes': notes,
+        'favorite': favorite,
       };
 
   factory SavedStory.fromJson(Map<String, dynamic> j) => SavedStory(
@@ -84,6 +91,7 @@ class SavedStory {
         createdAt:
             DateTime.tryParse((j['createdAt'] ?? '').toString()) ?? DateTime.now(),
         notes: (j['notes'] ?? '').toString(),
+        favorite: j['favorite'] == true,
         translations: {
           if (j['translations'] is Map)
             for (final e in (j['translations'] as Map).entries)
@@ -124,6 +132,11 @@ class StoryLibraryNotifier extends StateNotifier<List<SavedStory>> {
 
   void update(SavedStory s) =>
       _set([for (final e in state) e.id == s.id ? s : e]);
+
+  void toggleFavorite(String id) => _set([
+        for (final e in state)
+          e.id == id ? e.copyWith(favorite: !e.favorite) : e,
+      ]);
 
   void remove(String id) => _set(state.where((s) => s.id != id).toList());
 }
