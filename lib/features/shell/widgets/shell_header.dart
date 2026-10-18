@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/models/tab_group.dart';
+import '../../tabs/_hope_panel.dart' show uiContentDirection;
 import 'account_header.dart';
 import 'header_tabs.dart';
 import 'language_picker.dart';
@@ -53,10 +54,10 @@ class ShellHeader extends StatelessWidget {
       orElse: () => currentGroup.tabs.first,
     );
 
-    // هدرِ شل همیشه راست‌چین می‌ماند (آواتار راست، منو چپ) — حتی وقتی
-    // محتوای تب برای زبانِ رابطِ انگلیسی/اروپایی چپ‌به‌راست است.
+    // جهتِ هدر/تب‌ها/زیرتب‌ها طبقِ زبانِ رابط: فارسی و عربی راست‌به‌چپ،
+    // بقیه‌ی زبان‌ها چپ‌به‌راست.
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: uiContentDirection(context),
       child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [

@@ -58,7 +58,7 @@ class AccountHeader extends ConsumerWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
+          padding: const EdgeInsetsDirectional.fromSTEB(4, 8, 16, 8),
           child: Row(
             children: [
               // ═══ منوی همبرگری (تنظیمات) — بالا سمت راست ═══
@@ -82,7 +82,7 @@ class AccountHeader extends ConsumerWidget {
                   child: Text(
                     fromTo,
                     textDirection: rtlUi ? TextDirection.rtl : TextDirection.ltr,
-                    textAlign: TextAlign.right,
+                    textAlign: TextAlign.start,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
