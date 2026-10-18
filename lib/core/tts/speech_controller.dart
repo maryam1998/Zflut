@@ -388,6 +388,11 @@ class SpeechController extends StateNotifier<SpeechState> {
   String get fullText => _fullText;
   int get currentChunk => _chunkIndex;
 
+  /// مرزِ جمله‌های متنِ در حال پخش + طولِ کلِ متن — برای نوارِ پیشرفتِ پلیر
+  /// و پرشِ چندثانیه‌ای (معادل getChunksMeta / getFullTextLength در Hope).
+  List<TextChunk> get chunksMeta => _chunks;
+  int get fullTextLength => _fullText.length;
+
   // ═══════════════════════════════════════════════════════════════
   // داخلی
   // ═══════════════════════════════════════════════════════════════

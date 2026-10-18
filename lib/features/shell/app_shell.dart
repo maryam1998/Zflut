@@ -12,6 +12,11 @@ import '../grammar/widgets/practice_sheet.dart';
 import 'widgets/lingova_mascot.dart';
 import 'widgets/player_bar.dart';
 
+/// 🔕 پنل «تمرین جمله‌سازی و گرامر» فعلاً مخفی است. کدش (PracticeSheet در
+/// features/grammar/widgets/practice_sheet.dart) دست‌نخورده مانده؛ برای
+/// برگرداندن فقط این مقدار را `true` کن.
+const bool kShowPracticeSheet = false;
+
 /// پوستهٔ اپ. مثل Hope هدر/تب‌ها اینجا ثابت نیستند؛ هر تب آن‌ها را
 /// (ShellHeader) به‌عنوان اولین آیتمِ لیستِ خودش نشان می‌دهد تا با اسکرول
 /// بالا برود. فقط پنل تمرین و پلیر پایینِ صفحه ثابت می‌مانند.
@@ -52,8 +57,8 @@ class AppShell extends ConsumerWidget {
                   const SizedBox(height: 40),
                   Expanded(child: child),
 
-                  // ═══ پنل تمرین گرامر — همیشه visible، بالای پلیر ═══
-                  const PracticeSheet(),
+                  // ═══ پنل تمرین گرامر — فعلاً مخفی (kShowPracticeSheet) ═══
+                  if (kShowPracticeSheet) const PracticeSheet(),
 
                   // ═══ پلیر پایین صفحه ═══
                   const PlayerBar(),
