@@ -419,6 +419,7 @@ class _GrammarPracticeContentState
                 ),
                 padding: const EdgeInsets.all(6),
                 child: Row(
+                  textDirection: TextDirection.rtl, // دکمه‌ی ارسال سمتِ راست
                   children: [
                     Material(
                       color: _loading ? c.inkSoft : c.teal,
@@ -503,7 +504,16 @@ class _GrammarPracticeContentState
                 textDirection: autoDir(m.text),
                 style: TextStyle(color: c.ink, fontSize: 13, height: 1.6),
               )
-            : MiniMarkdown(text: m.text),
+            // 🧬 🔊 داخلِ کادر، بالا سمتِ راست
+            : Row(
+                textDirection: TextDirection.ltr,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: MiniMarkdown(text: m.text)),
+                  AiBubbleActions(text: m.text),
+                ],
+              ),
       ),
     );
   }

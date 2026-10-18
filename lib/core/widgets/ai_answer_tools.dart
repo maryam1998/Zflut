@@ -141,90 +141,68 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 4, right: 5),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+            padding: const EdgeInsets.only(top: 4),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Expanded(
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      for (final l in langs)
-                        _Pill(
-                          active: _open.contains(l),
-                          onTap: () => _toggleLang(l),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.translate,
-                                  size: 12,
-                                  color: _open.contains(l)
-                                      ? Colors.white
-                                      : c.gold),
-                              const SizedBox(width: 4),
-                              Text(
-                                _info(l)?.abbr ?? l.toUpperCase(),
-                                style: TextStyle(
-                                  color: _open.contains(l)
-                                      ? Colors.white
-                                      : c.gold,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
+                for (final l in langs)
+                  _Pill(
+                    active: _open.contains(l),
+                    onTap: () => _toggleLang(l),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.translate,
+                            size: 12,
+                            color: _open.contains(l) ? Colors.white : c.gold),
+                        const SizedBox(width: 4),
+                        Text(
+                          _info(l)?.abbr ?? l.toUpperCase(),
+                          style: TextStyle(
+                            color: _open.contains(l) ? Colors.white : c.gold,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                // از راست: 🔊 ← 🧬
-                NeuralPathButton(
-                  onTap: () => showNeuralPath(
-                    context,
-                    word: _plain(widget.text),
-                    langCode: source,
-                    baseText: _plain(widget.text),
-                  ),
-                ),
-                InkResponse(
-                  onTap: () => _speak(widget.text, source),
-                  radius: 16,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(Icons.volume_up_outlined,
-                        size: 18, color: c.gold),
-                  ),
-                ),
               ],
             ),
           ),
-          for (final l in _open) _resultBox(c, l),
+          // ترجمه‌ها دقیقاً مثلِ ردیف‌های ترجمه‌ی کارتِ لغت
+          if (_open.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.fromLTRB(12, 2, 8, 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: c.cardBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [for (final l in _open) _resultRow(c, l)],
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _resultBox(AppThemeColorsExt c, String lang) {
+  /// [زبان] متنِ ترجمه … 🔁 🧬 🔊 — همان چیدمانِ SyncTranslationRow
+  Widget _resultRow(AppThemeColorsExt c, String lang) {
     final text = _results[lang];
     final loading = _loading.contains(lang);
     final failed = _failed.contains(lang);
     final rtl = dirFor(lang) == TextDirection.rtl;
-    return Container(
-      margin: const EdgeInsets.only(top: 6),
-      padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: c.cardBorder),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 2),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: c.paperDark,
@@ -232,41 +210,57 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
               border: Border.all(color: c.cardBorder, width: 0.6),
             ),
             child: Text(
-              _info(lang)?.abbr ?? lang.toUpperCase(),
+              lang.toUpperCase(),
               style: TextStyle(
-                  color: c.gold, fontSize: 9, fontWeight: FontWeight.w900),
+                  color: c.gold,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.4),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: loading
                 ? Text('در حال ترجمه...',
-                    style: TextStyle(color: c.inkSoft, fontSize: 12))
+                    style: TextStyle(
+                        color: c.inkSoft,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600))
                 : failed || text == null
                     ? Text('ترجمه نشد — دوباره بزن',
-                        style: TextStyle(color: c.rose, fontSize: 12))
-                    : Directionality(
-                        textDirection:
-                            rtl ? TextDirection.rtl : TextDirection.ltr,
-                        child: SelectableText(
-                          text,
-                          style: TextStyle(
-                              color: const Color(0xFF0F5C34),
-                              fontSize: 13,
-                              height: 1.6),
+                        style: TextStyle(
+                            color: c.rose,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600))
+                    : Align(
+                        alignment:
+                            rtl ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Directionality(
+                          textDirection:
+                              rtl ? TextDirection.rtl : TextDirection.ltr,
+                          child: SelectableText(
+                            text,
+                            textAlign: rtl ? TextAlign.right : TextAlign.left,
+                            style: const TextStyle(
+                                color: Color(0xFF0F5C34),
+                                fontSize: 14,
+                                height: 1.3),
+                          ),
                         ),
                       ),
           ),
-          if (text != null && !loading) ...[
+          if (!loading && (text != null || failed))
             InkResponse(
               onTap: () => _translate(lang, force: true),
               radius: 16,
               child: Padding(
                 padding: const EdgeInsets.all(4),
                 child: Icon(Icons.refresh,
-                    size: 16, color: c.inkSoft.withOpacity(0.7)),
+                    size: 16,
+                    color: failed ? c.rose : c.inkSoft.withOpacity(0.7)),
               ),
             ),
+          if (text != null && !loading) ...[
             NeuralPathButton(
               onTap: () => showNeuralPath(
                 context,
@@ -279,19 +273,47 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
               onTap: () => _speak(text, lang),
               radius: 16,
               child: Padding(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(5),
                 child: Icon(Icons.volume_up_outlined, size: 18, color: c.gold),
               ),
             ),
-          ] else if (failed && !loading)
-            InkResponse(
-              onTap: () => _translate(lang, force: true),
-              radius: 16,
-              child: Padding(
-                padding: const EdgeInsets.all(4),
-                child: Icon(Icons.refresh, size: 16, color: c.rose),
-              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 🧬 و 🔊 که داخلِ کادرِ جوابِ AI، بالا سمتِ راست می‌نشینند (🔊 در لبه‌ی راست).
+class AiBubbleActions extends ConsumerWidget {
+  final String text;
+  final String? sourceLang;
+  const AiBubbleActions({super.key, required this.text, this.sourceLang});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.appColors;
+    final lang = sourceLang ?? ref.read(languageSelectionProvider).native;
+    final plain = _AiAnswerToolsState._plain(text);
+    if (plain.isEmpty) return const SizedBox.shrink();
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          NeuralPathButton(
+            onTap: () => showNeuralPath(context,
+                word: plain, langCode: lang, baseText: plain),
+          ),
+          InkResponse(
+            onTap: () =>
+                ref.read(speechControllerProvider.notifier).toggle(plain, lang),
+            radius: 16,
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(Icons.volume_up_outlined, size: 18, color: c.gold),
             ),
+          ),
         ],
       ),
     );

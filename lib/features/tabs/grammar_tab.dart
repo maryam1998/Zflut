@@ -569,9 +569,19 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                               color: c.goldSoft,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: MiniMarkdown(text: note.thread[ti].answer),
+                            // 🧬 🔊 داخلِ کادر، بالا سمتِ راست
+                            child: Row(
+                              textDirection: TextDirection.ltr,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                    child: MiniMarkdown(
+                                        text: note.thread[ti].answer)),
+                                AiBubbleActions(text: note.thread[ti].answer),
+                              ],
+                            ),
                           ),
-                          // 🔊 + ترجمه به زبان‌های مقصدِ کاربر (جواب به زبانِ مادری است)
+                          // ترجمه به زبان‌های مبدأ و مقصدِ کاربر (جواب به زبانِ مادری است)
                           AiAnswerTools(text: note.thread[ti].answer),
                           // جوابِ AI: فقط «رفرش» (آخرین جواب)، بدون «ویرایش»
                           if (ti == note.thread.length - 1)

@@ -803,7 +803,7 @@ Now respond to: "$sentence"
     final isUser = m.role == 'user';
     final dir = autoDir(m.text);
 
-    final Widget content;
+    Widget content;
     if (isUser) {
       content = Text(
         m.text,
@@ -838,6 +838,19 @@ Now respond to: "$sentence"
       );
     }
 
+    // 🧬 🔊 داخلِ کادرِ جوابِ AI، بالا سمتِ راست
+    if (!isUser && m.text.trim().isNotEmpty) {
+      content = Row(
+        textDirection: TextDirection.ltr,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(child: content),
+          AiBubbleActions(text: m.text, sourceLang: _activeLang()),
+        ],
+      );
+    }
+
     return Align(
       alignment: isUser
           ? AlignmentDirectional.centerStart
@@ -857,7 +870,7 @@ Now respond to: "$sentence"
               ),
               child: content,
             ),
-            // 🔊 + ترجمه به زبان‌های مقصدِ کاربر (جوابِ مربی به زبانِ تمرین است)
+            // ترجمه به زبان‌های مبدأ و مقصدِ کاربر (جوابِ مربی به زبانِ تمرین است)
             if (!isUser && m.text.trim().isNotEmpty)
               AiAnswerTools(text: m.text, sourceLang: _activeLang()),
             if (isUser && !_loading)
@@ -918,24 +931,9 @@ Now respond to: "$sentence"
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        textDirection: TextDirection.ltr, // دکمه‌ی ارسال سمتِ راست
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Opacity(
-            opacity: canSend ? 1 : 0.5,
-            child: Material(
-              color: c.teal,
-              borderRadius: BorderRadius.circular(10),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: canSend ? _send : null,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                  child: Icon(Icons.send_rounded, size: 17, color: Colors.white),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
           Expanded(
             child: TextField(
               controller: _input,
@@ -953,6 +951,22 @@ Now respond to: "$sentence"
                 isDense: true,
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Opacity(
+            opacity: canSend ? 1 : 0.5,
+            child: Material(
+              color: c.teal,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: canSend ? _send : null,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  child: Icon(Icons.send_rounded, size: 17, color: Colors.white),
+                ),
               ),
             ),
           ),
