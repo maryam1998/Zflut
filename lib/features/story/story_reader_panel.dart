@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/audio/story_audio_controller.dart';
 import '../../core/constants/supported_languages.dart' show dirFor;
 import '../../core/models/text_prefs.dart';
-import '../../core/player_sync/sync_widgets.dart' show SyncSpeakButton;
+import '../../core/player_sync/player_track.dart' show SyncItem, TrackMode;
+import '../../core/player_sync/sync_widgets.dart'
+    show SyncAnchor, SyncPlayScope, SyncSpeakButton, syncReportTranslation;
 import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/text_prefs_provider.dart';
 import '../../core/providers/translation_provider.dart';
@@ -124,6 +126,10 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
   int _flashGi = -1;
   int? _lastActive;
   String _sig = '';
+
+  // ثبتِ متنِ داستان در پلیرِ همگام (هایلایت + اسکرولِ خودکارِ 🔊 و پلیرِ پایین)
+  Object _scopeRev = Object();
+  String _scopeSig = '';
 
   final Map<String, String> _tr = {};
   final Set<String> _inflight = {};
@@ -384,6 +390,24 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     }
   }
 
+  /// آیتم‌های پلیر: جمله‌به‌جمله (حالتِ ۲) یا پاراگراف‌به‌پاراگراف (حالتِ ۰ و ۱)
+  /// — همان شناسه‌هایی که ردیف‌ها برای هایلایت/اسکرول استفاده می‌کنند.
+  List<SyncItem> _syncItems() {
+    final out = <SyncItem>[];
+    final paras = _structure();
+    for (var pi = 0; pi < paras.length; pi++) {
+      final p = paras[pi];
+      if (_mode == 2) {
+        for (var si = 0; si < p.sents.length; si++) {
+          out.add(SyncItem('${widget.storyId}-s${p.firstGi + si}', p.sents[si]));
+        }
+      } else {
+        out.add(SyncItem('${widget.storyId}-p$pi', p.text));
+      }
+    }
+    return out;
+  }
+
   // ───────────── ساخت ─────────────
   @override
   Widget build(BuildContext context) {
@@ -434,7 +458,19 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     final hasEdit = widget.onTextEdited != null;
     final hasSave = widget.onSave != null || widget.saved;
 
-    return Directionality(
+    final sig = '${widget.storyId}|${widget.text.hashCode}|$_mode|'
+        '${widget.langCode}|$_editing';
+    if (sig != _scopeSig) {
+      _scopeSig = sig;
+      _scopeRev = Object();
+    }
+
+    return SyncPlayScope(
+      revision: _scopeRev,
+      mode: TrackMode.lines,
+      mainCode: widget.langCode,
+      itemsBuilder: () => _editing ? const <SyncItem>[] : _syncItems(),
+      child: Directionality(
       textDirection: TextDirection.rtl,
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -584,6 +620,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -756,7 +793,10 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
   }) {
     final dir = autoDir(src);
     final rtl = dir == TextDirection.rtl;
-    return Container(
+    return SyncAnchor(
+      code: widget.langCode,
+      id: id,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
@@ -819,6 +859,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
             for (final lang in _langs) _trRow(c, tp, lang, src, id, paraIdx),
         ],
       ),
+    ),
     );
   }
 
@@ -840,7 +881,13 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
               color: c.gold, fontSize: 11, fontWeight: FontWeight.w700)),
     );
 
-    return Padding(
+    // Builder: contextِ زیرِ SyncPlayScope لازم است (گزارشِ ترجمه به پلیر)
+    return Builder(builder: (bctx) {
+      if (t != null) syncReportTranslation(bctx, ref, lang, id, t);
+      return SyncAnchor(
+        code: lang,
+        id: id,
+        child: Padding(
       padding: const EdgeInsets.only(top: 2),
       child: Row(
         textDirection: TextDirection.ltr,
@@ -861,7 +908,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                               : Alignment.centerLeft,
                           child: SelectableSyncText(
                             code: lang,
-                            id: '$id-$lang',
+                            id: id,
                             text: t,
                             sentence: t,
                             style: TextStyle(
@@ -892,24 +939,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
               ],
             ),
           ),
-          if (t != null)
-            SyncSpeakButton(
-              code: lang,
-              id: '$id-$lang',
-              text: t,
-              color: c.gold,
-              size: 17,
-              padding: const EdgeInsets.all(5),
-            ),
-          if (t != null)
-            NeuralPathButton(
-              onTap: () => showNeuralPath(
-                context,
-                word: t,
-                langCode: lang,
-                baseText: src,
-              ),
-            ),
+          // از راست به چپ: 🔊 ← 🧬 ← رفرش
           InkWell(
             onTap: busy ? null : () => _retry(lang, src, paraIdx: paraIdx),
             borderRadius: BorderRadius.circular(20),
@@ -926,9 +956,29 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                       size: 17, color: c.inkSoft.withOpacity(0.75)),
             ),
           ),
+          if (t != null)
+            NeuralPathButton(
+              onTap: () => showNeuralPath(
+                context,
+                word: t,
+                langCode: lang,
+                baseText: src,
+              ),
+            ),
+          if (t != null)
+            SyncSpeakButton(
+              code: lang,
+              id: id,
+              text: t,
+              color: c.gold,
+              size: 17,
+              padding: const EdgeInsets.all(5),
+            ),
         ],
       ),
-    );
+        ),
+      );
+    });
   }
 }
 

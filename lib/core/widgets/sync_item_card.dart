@@ -159,14 +159,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                       size: 10,
                     ),
                   ],
-                  SyncSpeakButton(
-                    code: 'en',
-                    id: widget.id,
-                    text: widget.en,
-                    color: c.gold,
-                    size: 20,
-                    padding: const EdgeInsets.all(4),
-                  ),
+                  // از راست به چپ: 🔊 ← 🧬
                   // 🧬 مسیر عصبیِ متنِ اصلی (تکرارهای پلیر خودکار ثبت می‌شود)
                   NeuralPathButton(
                     onTap: () => showNeuralPath(
@@ -175,6 +168,14 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                       langCode: 'en',
                       baseText: widget.en,
                     ),
+                  ),
+                  SyncSpeakButton(
+                    code: 'en',
+                    id: widget.id,
+                    text: widget.en,
+                    color: c.gold,
+                    size: 20,
+                    padding: const EdgeInsets.all(4),
                   ),
                 ],
               ),
@@ -579,6 +580,16 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                     style: TextStyle(color: c.rose, fontSize: 10),
                   ),
                 ),
+              // از راست به چپ: 🔊 ← 🧬 ← رفرش (⭐ سمتِ چپِ همه)
+              if (widget.showActions && text != null)
+                _IconBtn(
+                  icon: widget.isFavorite ? Icons.star : Icons.star_border,
+                  color: widget.isFavorite
+                      ? const Color(0xFFF5C518)
+                      : c.inkSoft.withOpacity(0.4),
+                  onTap: widget.onToggleFavorite,
+                  size: 18,
+                ),
               if (canRetry)
                 _IconBtn(
                   onTap: _retrying ? null : _retry,
@@ -594,15 +605,6 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                       : null,
                   icon: Icons.refresh,
                 ),
-              if (text != null)
-                SyncSpeakButton(
-                  code: widget.langCode,
-                  id: widget.itemId,
-                  text: text,
-                  color: c.gold,
-                  size: widget.compact ? 17 : 16,
-                  padding: const EdgeInsets.all(5),
-                ),
               // 🧬 مسیر عصبیِ همین زبان؛ تقویمش با بقیه‌ی زبان‌های همین آیتم مشترک است
               if (text != null)
                 NeuralPathButton(
@@ -613,14 +615,14 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                     baseText: widget.en,
                   ),
                 ),
-              if (widget.showActions && text != null)
-                _IconBtn(
-                  icon: widget.isFavorite ? Icons.star : Icons.star_border,
-                  color: widget.isFavorite
-                      ? const Color(0xFFF5C518)
-                      : c.inkSoft.withOpacity(0.4),
-                  onTap: widget.onToggleFavorite,
-                  size: 18,
+              if (text != null)
+                SyncSpeakButton(
+                  code: widget.langCode,
+                  id: widget.itemId,
+                  text: text,
+                  color: c.gold,
+                  size: widget.compact ? 17 : 16,
+                  padding: const EdgeInsets.all(5),
                 ),
             ],
           ),

@@ -405,7 +405,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ═══ هدر: متنِ اصلی + 🔊 + 📄 + ✕ ═══
+              // ═══ هدر: متنِ اصلی + ✕ + 🧬 + 🔊 (از راست: 🔊 🧬 ✕) ═══
               Directionality(
                 textDirection: TextDirection.ltr,
                 child: Row(
@@ -443,14 +443,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                       tooltip: _s(ui, 'close'),
                       onTap: widget.onClose,
                     ),
-                    _SpeakIcon(
-                      text: _text,
-                      code: lang,
-                      color: Colors.white,
-                      size: 20,
-                      tooltip: _s(ui, 'speak'),
-                      hintBase: neuralBase(_text),
-                    ),
+                    // از راست به چپ: 🔊 ← 🧬 ← ✕
                     _CardIconButton(
                       icon: Icons.hub_outlined,
                       emoji: '🧬',
@@ -458,6 +451,14 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                       size: 20,
                       tooltip: _s(ui, 'neural'),
                       onTap: () => _openNeural(_text, lang, null),
+                    ),
+                    _SpeakIcon(
+                      text: _text,
+                      code: lang,
+                      color: Colors.white,
+                      size: 20,
+                      tooltip: _s(ui, 'speak'),
+                      hintBase: neuralBase(_text),
                     ),
                   ],
                 ),
@@ -756,7 +757,7 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
               const SizedBox(width: 10),
             ],
             Expanded(child: body),
-            // از راست به چپ: 🧬 ← 🔊 ← رفرش (رفرشِ ساده، مثلِ صفحه‌های اصلی)
+            // از راست به چپ: 🔊 ← 🧬 ← رفرش
             if (res != null || _failed)
               _CardIconButton(
                 icon: Icons.refresh,
@@ -767,15 +768,6 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
                 onTap: _busy ? null : () => _fetch(retry: true),
               ),
             if (res != null)
-              _SpeakIcon(
-                text: res,
-                code: widget.to,
-                color: Colors.white,
-                size: 17,
-                tooltip: _s(widget.ui, 'speak'),
-                hintBase: neuralBase(widget.text),
-              ),
-            if (res != null)
               _CardIconButton(
                 icon: Icons.hub_outlined,
                 emoji: '🧬',
@@ -783,6 +775,15 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
                 size: 16,
                 tooltip: _s(widget.ui, 'neural'),
                 onTap: () => widget.onNeural(res, widget.to),
+              ),
+            if (res != null)
+              _SpeakIcon(
+                text: res,
+                code: widget.to,
+                color: Colors.white,
+                size: 17,
+                tooltip: _s(widget.ui, 'speak'),
+                hintBase: neuralBase(widget.text),
               ),
           ],
         ),

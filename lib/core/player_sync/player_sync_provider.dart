@@ -27,10 +27,15 @@ class PlayerSyncState {
   /// شناسه‌ی «اسکوپ» فعلی (هر تب/لیستِ بازشده یکی دارد)
   final String? scopeId;
 
-  /// متنِ کاملِ هر زبان: 'en' = متنِ اصلی، بقیه = ترجمه‌ها
+  /// کدِ زبانِ «متنِ اصلی» این اسکوپ (برای لغات/مکالمات 'en'؛ برای داستان
+  /// زبانِ خودِ داستان)
+  final String mainCode;
+
+  /// متنِ کاملِ هر زبان: [mainCode] = متنِ اصلی، بقیه = ترجمه‌ها
   final Map<String, PlayerTrack> tracks;
 
-  const PlayerSyncState({this.scopeId, this.tracks = const {}});
+  const PlayerSyncState(
+      {this.scopeId, this.mainCode = 'en', this.tracks = const {}});
 }
 
 /// قلبِ سیستمِ مشترکِ پلیر برای همه‌ی تب‌ها — معادلِ این الگوی Hope که
@@ -45,6 +50,7 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
 
   List<SyncItem> _items = const [];
   TrackMode _mode = TrackMode.lines;
+  String _mainCode = 'en';
   final Map<String, Map<String, String>> _trans = {};
   final Map<String, Map<String, String>> _pending = {};
   Timer? _debounce;
@@ -59,15 +65,18 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
   }
 
   /// ثبتِ آیتم‌های اسکوپ. اگر اسکوپِ دیگری فعال بود جایگزین می‌شود.
-  void setScope(String scopeId, List<SyncItem> items, TrackMode mode) {
+  void setScope(String scopeId, List<SyncItem> items, TrackMode mode,
+      {String mainCode = 'en'}) {
     _debounce?.cancel();
     _items = items;
     _mode = mode;
+    _mainCode = mainCode;
     _trans.clear();
     _pending.clear();
     state = PlayerSyncState(
       scopeId: scopeId,
-      tracks: {'en': PlayerTrack.build('en', items, mode)},
+      mainCode: mainCode,
+      tracks: {mainCode: PlayerTrack.build(mainCode, items, mode)},
     );
   }
 
@@ -85,7 +94,7 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
   /// هر ردیفِ ترجمه، به محضِ آماده‌شدنِ مقدارش صدا می‌زند
   /// (معادل onResolveTranslation / reportTranslation در Hope).
   void reportTranslation(String scopeId, String code, String id, String text) {
-    if (state.scopeId != scopeId) return;
+    if (state.scopeId != scopeId || code == _mainCode) return;
     final t = text.trim();
     if (t.isEmpty) return;
     if (_trans[code]?[id] == t || _pending[code]?[id] == t) return;
@@ -123,7 +132,8 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
     }
 
     if (changed) {
-      state = PlayerSyncState(scopeId: state.scopeId, tracks: tracks);
+      state = PlayerSyncState(
+          scopeId: state.scopeId, mainCode: _mainCode, tracks: tracks);
     }
     if (deferred) {
       _debounce = Timer(const Duration(seconds: 1), _flush);

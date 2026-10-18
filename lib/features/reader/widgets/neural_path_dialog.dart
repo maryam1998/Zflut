@@ -278,37 +278,41 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
-                              Row(
-                                children: [
-                                  const Padding(
-                                    padding: EdgeInsets.all(4),
-                                    child: Text('🧬',
-                                        style:
-                                            TextStyle(fontSize: 18, height: 1.1)),
-                                  ),
-                                  InkResponse(
-                                    onTap: _speak,
-                                    radius: 18,
-                                    child: const Padding(
+                              Directionality(
+                                textDirection: TextDirection.ltr,
+                                child: Row(
+                                  children: [
+                                    InkResponse(
+                                      onTap: () => Navigator.of(context).pop(),
+                                      radius: 18,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Icon(Icons.close,
+                                            size: 19, color: c.inkSoft),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    _LangChip(code: _lang, c: c),
+                                    const Spacer(),
+                                    // از راست به چپ: 🔊 ← 🧬
+                                    const Padding(
                                       padding: EdgeInsets.all(4),
-                                      child: Text('🔊',
+                                      child: Text('🧬',
                                           style: TextStyle(
                                               fontSize: 18, height: 1.1)),
                                     ),
-                                  ),
-                                  const Spacer(),
-                                  _LangChip(code: _lang, c: c),
-                                  const SizedBox(width: 4),
-                                  InkResponse(
-                                    onTap: () => Navigator.of(context).pop(),
-                                    radius: 18,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4),
-                                      child: Icon(Icons.close,
-                                          size: 19, color: c.inkSoft),
+                                    InkResponse(
+                                      onTap: _speak,
+                                      radius: 18,
+                                      child: const Padding(
+                                        padding: EdgeInsets.all(4),
+                                        child: Text('🔊',
+                                            style: TextStyle(
+                                                fontSize: 18, height: 1.1)),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),

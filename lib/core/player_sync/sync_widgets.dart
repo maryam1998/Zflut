@@ -48,6 +48,9 @@ class SyncPlayScope extends ConsumerStatefulWidget {
   final List<SyncItem> Function() itemsBuilder;
   final TrackMode mode;
 
+  /// زبانِ متنِ اصلی (پیش‌فرض 'en'؛ داستان زبانِ خودش را می‌دهد)
+  final String mainCode;
+
   final Widget child;
 
   const SyncPlayScope({
@@ -56,6 +59,7 @@ class SyncPlayScope extends ConsumerStatefulWidget {
     required this.itemsBuilder,
     required this.mode,
     required this.child,
+    this.mainCode = 'en',
   });
 
   @override
@@ -67,6 +71,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   late final PlayerSyncNotifier _notifier;
   Object? _registeredRevision;
   TrackMode? _registeredMode;
+  String? _registeredMain;
   Map<String, int> _indexById = const {};
   int _count = 0;
   ActiveSync? _lastActive;
@@ -95,15 +100,18 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   void _register() {
     if (_registeredRevision != null &&
         identical(_registeredRevision, widget.revision) &&
-        _registeredMode == widget.mode) {
+        _registeredMode == widget.mode &&
+        _registeredMain == widget.mainCode) {
       return;
     }
     final items = widget.itemsBuilder();
     _registeredRevision = widget.revision;
     _registeredMode = widget.mode;
+    _registeredMain = widget.mainCode;
     _count = items.length;
     _indexById = {for (var i = 0; i < items.length; i++) items[i].id: i};
-    _notifier.setScope(_scopeId, items, widget.mode);
+    _notifier.setScope(_scopeId, items, widget.mode,
+        mainCode: widget.mainCode);
   }
 
   @override
@@ -142,7 +150,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     var refCode = a.code;
     var ids = SyncAnchorRegistry.mountedIds(refCode).toList();
     if (ids.isEmpty) {
-      refCode = 'en';
+      refCode = widget.mainCode;
       ids = SyncAnchorRegistry.mountedIds(refCode).toList();
     }
     if (ids.isEmpty) return;
@@ -404,11 +412,12 @@ Future<void> syncSpeak(WidgetRef ref, String code, String id, String text) async
 /// دکمه‌ی مرکزیِ پلیرِ پایین وقتی چیزی پخش نمی‌شود: کلِ متنِ تبِ فعلی
 /// را از اول می‌خواند (onFullTextChange → دکمه‌ی پخش در Hope).
 Future<bool> syncPlayMainTrack(WidgetRef ref) async {
-  final track = ref.read(playerSyncProvider).tracks['en'];
+  final sync = ref.read(playerSyncProvider);
+  final track = sync.tracks[sync.mainCode];
   if (track == null || track.fullText.isEmpty) return false;
   await ref.read(speechControllerProvider.notifier).toggle(
         track.fullText,
-        'en',
+        sync.mainCode,
         loop: true,
         sentenceBoundaries: track.boundaries,
       );
