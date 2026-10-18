@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../ai/ai_gateway.dart';
 import '../constants/supported_languages.dart';
 import '../models/language_selection.dart';
 import '../providers/ai_settings_provider.dart';
@@ -9,7 +8,7 @@ import '../providers/language_selection_provider.dart';
 import '../providers/speech_provider.dart';
 import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
-import '../translate/translation_service.dart' show englishLangName;
+import '../translate/translation_service.dart' show runWithConcurrencyLimit;
 import '../../features/reader/widgets/neural_path_dialog.dart';
 import 'sync_item_card.dart' show NeuralPathButton;
 
@@ -76,6 +75,28 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
     ref.read(speechControllerProvider.notifier).toggle(t, lang);
   }
 
+  /// بخش‌های کوتاه (برای سرویس‌های ترجمه که طولِ متن را محدود می‌کنند)
+  static List<String> _chunks(String line) {
+    final t = line.trim();
+    if (t.length <= 380) return [t];
+    final parts = t.split(RegExp(r'(?<=[.!?؟。])\s+'));
+    final out = <String>[];
+    var cur = '';
+    for (final p in parts) {
+      if (cur.isNotEmpty && cur.length + p.length + 1 > 380) {
+        out.add(cur);
+        cur = p;
+      } else {
+        cur = cur.isEmpty ? p : '$cur $p';
+      }
+    }
+    if (cur.isNotEmpty) out.add(cur);
+    return out;
+  }
+
+  /// ترجمه با همان سرویسِ ترجمه‌ی برنامه (Google/MyMemory/Lingva/Libre + کشِ
+  /// دائمی + بررسیِ AI) — مثلِ ترجمه‌ی لغت‌ها و مثال‌ها؛ خط‌به‌خط/بخش‌به‌بخش.
+  /// force = رفرش: بدونِ کش، اول AI.
   Future<void> _translate(String lang, {bool force = false}) async {
     if (_loading.contains(lang)) return;
     if (!force && _results.containsKey(lang)) return;
@@ -83,24 +104,47 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
       _loading.add(lang);
       _failed.remove(lang);
     });
-    final src = _plain(widget.text);
     final original = widget.text;
+    final svc = ref.read(translationServiceProvider);
+    final ai = ref.read(aiSettingsProvider);
+    final from = _source;
     try {
-      final label = englishLangName(lang);
-      final text = await aiGenerate(
-        svc: ref.read(translationServiceProvider),
-        settings: ref.read(aiSettingsProvider),
-        prompt: 'Translate the following text into $label. Keep the meaning, '
-            'tone, line breaks and list structure. Output ONLY the translation '
-            '— no notes, no original text, no quotes.\n\nText:\n$src',
-        maxTokens: (src.length ~/ 1.5 + 200).clamp(300, 1800).toInt(),
-        retries: 1,
-        timeoutMs: 45000,
-      );
+      final lines = _plain(original).split('\n');
+      final jobs = <String>[];
+      for (final l in lines) {
+        if (l.trim().isNotEmpty) jobs.addAll(_chunks(l));
+      }
+      var ok = 0;
+      final outs = await runWithConcurrencyLimit<String, String>(jobs, 3,
+          (seg, _) async {
+        try {
+          final t = force
+              ? await svc.retranslate(
+                  text: seg, targetLang: lang, sourceLang: from, aiSettings: ai)
+              : await svc.translate(
+                  text: seg, targetLang: lang, sourceLang: from, aiSettings: ai);
+          final v = t.trim();
+          if (v.isEmpty || v == seg.trim()) return seg;
+          ok++;
+          return v;
+        } catch (_) {
+          return seg;
+        }
+      });
       if (!mounted || original != widget.text) return;
-      final clean = _plain(text);
-      if (clean.isEmpty) throw Exception('empty');
-      setState(() => _results[lang] = clean);
+      if (ok == 0) throw Exception('failed');
+      final buf = <String>[];
+      var k = 0;
+      for (final l in lines) {
+        if (l.trim().isEmpty) {
+          buf.add('');
+          continue;
+        }
+        final n = _chunks(l).length;
+        buf.add(outs.sublist(k, k + n).join(' '));
+        k += n;
+      }
+      setState(() => _results[lang] = buf.join('\n').trim());
     } catch (_) {
       if (!mounted || original != widget.text) return;
       setState(() => _failed.add(lang));
@@ -171,7 +215,7 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
     );
   }
 
-  /// جعبه‌ی ترجمه‌ی سفید زیرِ چیپ‌ها؛ 🔁 🧬 🔊 کنارِ متن (🔊 سمتِ راست)
+  /// جعبه‌ی ترجمه‌ی سفید زیرِ چیپ‌ها؛ از راست به چپ: 🧬 ← 🔊 ← 🔁
   Widget _resultRow(AppThemeColorsExt c, String lang) {
     final text = _results[lang];
     final loading = _loading.contains(lang);
@@ -220,20 +264,20 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
               ),
             ),
           if (text != null && !loading) ...[
-            NeuralPathButton(
-              onTap: () => showNeuralPath(
-                context,
-                word: text,
-                langCode: lang,
-                baseText: _plain(widget.text),
-              ),
-            ),
             InkResponse(
               onTap: () => _speak(text, lang),
               radius: 16,
               child: Padding(
                 padding: const EdgeInsets.all(5),
                 child: Icon(Icons.volume_up_outlined, size: 18, color: c.gold),
+              ),
+            ),
+            NeuralPathButton(
+              onTap: () => showNeuralPath(
+                context,
+                word: text,
+                langCode: lang,
+                baseText: _plain(widget.text),
               ),
             ),
           ],
@@ -243,7 +287,7 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
   }
 }
 
-/// 🧬 و 🔊 که داخلِ کادرِ جوابِ AI، بالا سمتِ راست می‌نشینند (🔊 در لبه‌ی راست).
+/// 🧬 و 🔊 که داخلِ کادرِ جوابِ AI، بالا سمتِ راست می‌نشینند (از راست به چپ: 🧬 ← 🔊).
 class AiBubbleActions extends ConsumerWidget {
   final String text;
   final String? sourceLang;
@@ -260,10 +304,6 @@ class AiBubbleActions extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          NeuralPathButton(
-            onTap: () => showNeuralPath(context,
-                word: plain, langCode: lang, baseText: plain),
-          ),
           InkResponse(
             onTap: () =>
                 ref.read(speechControllerProvider.notifier).toggle(plain, lang),
@@ -272,6 +312,10 @@ class AiBubbleActions extends ConsumerWidget {
               padding: const EdgeInsets.all(4),
               child: Icon(Icons.volume_up_outlined, size: 18, color: c.gold),
             ),
+          ),
+          NeuralPathButton(
+            onTap: () => showNeuralPath(context,
+                word: plain, langCode: lang, baseText: plain),
           ),
         ],
       ),
