@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../app.dart';
@@ -33,27 +35,73 @@ class SubTabsRow extends StatelessWidget {
           horizontal: context.px(20),
           vertical: context.px(26),
         ),
-        child: Row(
-          children: [
-            for (var i = 0; i < group.tabs.length; i++) ...[
-              if (i > 0) SizedBox(width: context.px(10)),
-              Expanded(
-                child: Builder(builder: (_) {
-                  final key = group.tabs[i];
-                  final meta = kTabMeta[key]!;
-                  return _SubChip(
-                    icon: meta.icon,
-                    label: _labelFor(L, meta.labelKey),
-                    active: key == activeTabKey,
-                    isAi: meta.isAiPowered,
-                    c: c,
-                    onTap: () => onTabSelected(key),
-                  );
-                }),
+        child: LayoutBuilder(builder: (ctx, box) {
+          final gap = context.px(10);
+          final n = group.tabs.length;
+          final chipW = (box.maxWidth - gap * (n - 1)) / n;
+          // پهنای قابل‌استفاده‌ی داخل هر چیپ (منهای پدینگ و حاشیه)
+          final inner = chipW - context.px(14) * 2 - context.px(2) * 2;
+          final base = DefaultTextStyle.of(ctx).style;
+
+          // طبیعی‌ترین پهنای محتوای هر تب؛ یک مقیاسِ مشترک برای همه‌ی تب‌ها
+          // انتخاب می‌شود تا اندازه‌ی آیکون/متن در همه یکسان بماند.
+          var scale = 1.0;
+          for (final key in group.tabs) {
+            final meta = kTabMeta[key]!;
+            final tp = TextPainter(
+              text: TextSpan(
+                text: _labelFor(L, meta.labelKey),
+                style: base.copyWith(
+                  fontSize: context.px(31),
+                  fontWeight: FontWeight.w700,
+                ),
               ),
+              textDirection: Directionality.of(ctx),
+              maxLines: 1,
+            )..layout();
+            var w = context.px(38) + context.px(14) + tp.width;
+            if (meta.isAiPowered) {
+              final ai = TextPainter(
+                text: TextSpan(
+                  text: 'AI',
+                  style: base.copyWith(
+                    fontSize: context.px(18),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                textDirection: TextDirection.ltr,
+                maxLines: 1,
+              )..layout();
+              w += context.px(10) + ai.width + context.px(10) * 2;
+            }
+            if (w > inner) scale = math.min(scale, inner / w);
+          }
+          if (scale < 1) scale *= 0.97; // کمی فاصله‌ی اطمینان
+
+          return Row(
+            children: [
+              for (var i = 0; i < n; i++) ...[
+                if (i > 0) SizedBox(width: gap),
+                Expanded(
+                  child: Builder(builder: (_) {
+                    final key = group.tabs[i];
+                    final meta = kTabMeta[key]!;
+                    return _SubChip(
+                      icon: meta.icon,
+                      label: _labelFor(L, meta.labelKey),
+                      active: key == activeTabKey,
+                      isAi: meta.isAiPowered,
+                      scale: scale,
+                      c: c,
+                      onTap: () => onTabSelected(key),
+                    );
+                  }),
+                ),
+              ],
             ],
-          ],
-        ),
+          );
+        }),
       ),
     );
   }
@@ -80,6 +128,7 @@ class _SubChip extends StatelessWidget {
   final String label;
   final bool active;
   final bool isAi;
+  final double scale;
   final dynamic c;
   final VoidCallback onTap;
 
@@ -88,6 +137,7 @@ class _SubChip extends StatelessWidget {
     required this.label,
     required this.active,
     required this.isAi,
+    required this.scale,
     required this.c,
     required this.onTap,
   });
@@ -124,22 +174,22 @@ class _SubChip extends StatelessWidget {
               child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: context.px(38), color: iconColor),
-                SizedBox(width: context.px(14)),
+                Icon(icon, size: context.px(38) * scale, color: iconColor),
+                SizedBox(width: context.px(14) * scale),
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: context.px(31),
+                    fontSize: context.px(31) * scale,
                     color: fg,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w600,
                   ),
                 ),
                 if (isAi) ...[
-                  SizedBox(width: context.px(10)),
+                  SizedBox(width: context.px(10) * scale),
                   Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: context.px(10),
-                      vertical: context.px(3),
+                      horizontal: context.px(10) * scale,
+                      vertical: context.px(3) * scale,
                     ),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -151,7 +201,7 @@ class _SubChip extends StatelessWidget {
                       'AI',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: context.px(18),
+                        fontSize: context.px(18) * scale,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0.4,
                       ),
