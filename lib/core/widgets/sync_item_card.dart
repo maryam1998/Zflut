@@ -94,7 +94,8 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
             onToggleRead: widget.onToggleRead,
           )
         : null;
-    final sideInHeader = side != null && langs.isEmpty && !_showAiExamples;
+    // ⭐ِ لغت (+ ○) همیشه بالا سمت راست، پشتِ 🔊 است؛ ⭐ِ مثال‌ها دقیقاً زیرِ آن
+    final sideInHeader = side != null;
 
     return SyncAnchor(
       code: 'en',
@@ -226,7 +227,6 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                 knownText: widget.knownTranslations[langs[li]] ?? '',
                 compact: compact,
                 gutter: gutter,
-                sideActions: (li == 0 && !_showAiExamples) ? side : null,
               ),
 
             if (widget.showActions) ...[
@@ -259,7 +259,6 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                       '',
                   targetLangs: langs,
                   gutter: gutter,
-                  sideActions: side,
                 ),
               ],
             ],

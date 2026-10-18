@@ -24,9 +24,9 @@ class WordExamplesPanel extends ConsumerStatefulWidget {
   final String nativeCode;
   final List<String> targetLangs;
 
-  /// ستونِ کناریِ کارت (عرض + ⭐/○): کنارِ اولین جعبه‌ی مثال قرار می‌گیرد
+  /// عرضِ ستونِ کناریِ کارت: کنارِ هر جعبه‌ی مثال یک ⭐ (علاقه‌مندیِ همان مثال)
+  /// دقیقاً زیرِ ⭐ِ لغتِ بالای کارت قرار می‌گیرد.
   final double gutter;
-  final Widget? sideActions;
 
   const WordExamplesPanel({
     super.key,
@@ -36,7 +36,6 @@ class WordExamplesPanel extends ConsumerStatefulWidget {
     required this.nativeCode,
     required this.targetLangs,
     this.gutter = 0,
-    this.sideActions,
   });
 
   @override
@@ -131,18 +130,8 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
         widget.targetLangs.where((l) => l != widget.langCode).toList();
 
     final g = widget.gutter;
-    final side = widget.sideActions;
 
-    Widget sideBox(bool show) => g > 0
-        ? SizedBox(
-            width: g,
-            child: show && side != null
-                ? Align(alignment: Alignment.centerLeft, child: side)
-                : null,
-          )
-        : const SizedBox.shrink();
-
-    // ⭐/○ : کنارِ اولین جعبه‌ی مثال؛ اگر هنوز مثالی نیست کنارِ دکمه
+    // ⭐ِ هر مثال: ستونِ کناری، هم‌راستا با ⭐ِ لغت
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Column(
@@ -192,7 +181,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
                     ),
                   ),
                 ),
-                sideBox(_examples.isEmpty),
+                if (g > 0) SizedBox(width: g),
               ],
             ),
           ),
@@ -221,15 +210,17 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
                   if (g > 0)
                     SizedBox(
                       width: g,
-                      child: i == 0 && side != null
-                          ? Align(
-                              alignment: Alignment.topLeft,
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 10),
-                                child: side,
-                              ),
-                            )
-                          : null,
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: _ExampleStar(
+                            word: widget.word,
+                            langCode: widget.langCode,
+                            example: _examples[i],
+                          ),
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -240,11 +231,59 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
   }
 }
 
-/// ردیفِ دکمه‌ها — از راست به چپ: 🔊 ← 🧬 ← رفرش ← ⭐ (مثل ردیف‌های ترجمه)
+/// ⭐ِ مثال (ستونِ کناریِ جعبه‌ی مثال) — کلِ مثال با ترجمه‌هایش به علاقه‌مندی‌ها می‌رود.
+class _ExampleStar extends ConsumerWidget {
+  final String word;
+  final String langCode;
+  final WordExample example;
+
+  const _ExampleStar({
+    required this.word,
+    required this.langCode,
+    required this.example,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.appColors;
+    final key = '$langCode::${example.text.trim()}';
+    final fav = ref.watch(
+        exampleFavoritesProvider.select((l) => l.any((f) => f.key == key)));
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: InkResponse(
+        onTap: () {
+          // ترجمه‌هایی که تا الان گرفته شده‌اند، از حافظه‌ی مثال‌ها
+          final stored = ref
+              .read(wordExamplesStoreProvider)
+              .load(word, langCode)
+              .where((e) => e.id == example.id);
+          final tr = stored.isNotEmpty ? stored.first.translations : example.translations;
+          ref.read(exampleFavoritesProvider.notifier).toggle(
+                example.text,
+                langCode,
+                word,
+                translations: tr,
+              );
+        },
+        radius: 16,
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: Icon(fav ? Icons.star : Icons.star_border,
+              size: 20,
+              color: fav
+                  ? const Color(0xFFF5C518)
+                  : c.inkSoft.withOpacity(0.4)),
+        ),
+      ),
+    );
+  }
+}
+
+/// ردیفِ دکمه‌ها — از راست به چپ: 🔊 ← 🧬 ← رفرش (مثل ردیف‌های ترجمه)
 class _ExActions extends ConsumerWidget {
   final String text;
   final String lang;
-  final String word;
   final String baseText;
   final bool refreshing;
   final VoidCallback? onRefresh;
@@ -252,7 +291,6 @@ class _ExActions extends ConsumerWidget {
   const _ExActions({
     required this.text,
     required this.lang,
-    required this.word,
     required this.baseText,
     required this.refreshing,
     required this.onRefresh,
@@ -261,27 +299,11 @@ class _ExActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
-    final fav = ref.watch(
-        exampleFavoritesProvider.select((l) => l.any((f) => f.key == '$lang::${text.trim()}')));
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          InkResponse(
-            onTap: () => ref
-                .read(exampleFavoritesProvider.notifier)
-                .toggle(text, lang, word),
-            radius: 16,
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Icon(fav ? Icons.star : Icons.star_border,
-                  size: 18,
-                  color: fav
-                      ? const Color(0xFFF5C518)
-                      : c.inkSoft.withOpacity(0.4)),
-            ),
-          ),
           InkResponse(
             onTap: refreshing ? null : onRefresh,
             radius: 16,
@@ -373,7 +395,6 @@ class _ExampleRow extends ConsumerWidget {
                 _ExActions(
                   text: example.text,
                   lang: langCode,
-                  word: word,
                   baseText: example.text,
                   refreshing: refreshing,
                   onRefresh: onRefresh,
@@ -443,6 +464,8 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
       setState(() => _text = t.trim());
       await ref.read(wordExamplesStoreProvider).setTranslation(
           widget.word, widget.langCode, widget.example.id, widget.target, t);
+      ref.read(exampleFavoritesProvider.notifier).setTranslation(
+          widget.example.text, widget.langCode, widget.target, t);
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     }
@@ -471,6 +494,8 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
       setState(() => _text = v);
       await ref.read(wordExamplesStoreProvider).setTranslation(
           widget.word, widget.langCode, widget.example.id, widget.target, v);
+      ref.read(exampleFavoritesProvider.notifier).setTranslation(
+          widget.example.text, widget.langCode, widget.target, v);
     } catch (_) {
       if (mounted && _text.isEmpty) setState(() => _failed = true);
     } finally {
@@ -527,7 +552,6 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
           _ExActions(
             text: _text,
             lang: widget.target,
-            word: widget.word,
             baseText: widget.example.text,
             refreshing: _refreshing,
             onRefresh: _refresh,

@@ -10,22 +10,25 @@ import '../providers/speech_provider.dart';
 import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart' show englishLangName;
+import '../../features/reader/widgets/neural_path_dialog.dart';
+import 'sync_item_card.dart' show NeuralPathButton;
 
 /// زبان‌هایی که زیر یک جوابِ AI دکمه‌ی ترجمه می‌گیرند:
-/// زبان‌های مقصدِ کاربر، بدونِ تکرار، و بدونِ خودِ زبانِ جواب
-/// (اگر زبانِ جواب و مقصد یکی باشد فقط همان یک نسخه وجود دارد).
+/// زبانِ مبدأ (مادریِ کاربر) + زبان‌های مقصدِ او، بدونِ تکرار، و بدونِ
+/// خودِ زبانِ جواب (جواب به همان زبان است و ترجمه‌اش لازم نیست).
 List<String> answerTranslationLangs(LanguageSelection sel, String source) {
   final out = <String>[];
-  for (final t in sel.targets) {
+  for (final t in [sel.native, ...sel.targets]) {
     if (t.isNotEmpty && t != source && !out.contains(t)) out.add(t);
   }
   return out;
 }
 
-/// نوارِ کوچکِ زیرِ کادرِ جوابِ هوش مصنوعی:
-///   [🔊 خواندنِ جواب]  [EN] [ES] [DE] …   ← زبان‌های مقصدِ کاربر
-/// با زدنِ هر زبان، جواب به همان زبان ترجمه و زیرِ کادر نشان داده می‌شود
-/// (همراهِ 🔊). دوباره زدن، ترجمه را می‌بندد.
+/// نوارِ زیرِ کادرِ جوابِ هوش مصنوعی — هم‌شکلِ کارتِ لغت:
+///   [FA] [ES] [DE] …                      🧬 🔊   ← 🔊 سمتِ راست
+/// با زدنِ هر زبان (مبدأ و تارگت‌های کاربر)، جواب به همان زبان ترجمه و در یک
+/// ردیفِ ترجمه نشان داده می‌شود: [زبان] متن … 🔁 🧬 🔊
+/// دوباره زدن، ترجمه را می‌بندد.
 class AiAnswerTools extends ConsumerStatefulWidget {
   /// متنِ جواب
   final String text;
@@ -138,39 +141,63 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            padding: const EdgeInsets.only(top: 4, right: 5),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _Pill(
-                  onTap: () => _speak(widget.text, source),
-                  child: Icon(Icons.volume_up_outlined,
-                      size: 16, color: c.gold),
-                ),
-                for (final l in langs)
-                  _Pill(
-                    active: _open.contains(l),
-                    onTap: () => _toggleLang(l),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.translate,
-                            size: 12,
-                            color: _open.contains(l) ? Colors.white : c.gold),
-                        const SizedBox(width: 4),
-                        Text(
-                          _info(l)?.abbr ?? l.toUpperCase(),
-                          style: TextStyle(
-                            color: _open.contains(l) ? Colors.white : c.gold,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      for (final l in langs)
+                        _Pill(
+                          active: _open.contains(l),
+                          onTap: () => _toggleLang(l),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.translate,
+                                  size: 12,
+                                  color: _open.contains(l)
+                                      ? Colors.white
+                                      : c.gold),
+                              const SizedBox(width: 4),
+                              Text(
+                                _info(l)?.abbr ?? l.toUpperCase(),
+                                style: TextStyle(
+                                  color: _open.contains(l)
+                                      ? Colors.white
+                                      : c.gold,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
+                ),
+                // از راست: 🔊 ← 🧬
+                NeuralPathButton(
+                  onTap: () => showNeuralPath(
+                    context,
+                    word: _plain(widget.text),
+                    langCode: source,
+                    baseText: _plain(widget.text),
+                  ),
+                ),
+                InkResponse(
+                  onTap: () => _speak(widget.text, source),
+                  radius: 16,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(Icons.volume_up_outlined,
+                        size: 18, color: c.gold),
+                  ),
+                ),
               ],
             ),
           ),
@@ -187,7 +214,7 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
     final rtl = dirFor(lang) == TextDirection.rtl;
     return Container(
       margin: const EdgeInsets.only(top: 6),
-      padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
+      padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
@@ -238,6 +265,14 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
                 padding: const EdgeInsets.all(4),
                 child: Icon(Icons.refresh,
                     size: 16, color: c.inkSoft.withOpacity(0.7)),
+              ),
+            ),
+            NeuralPathButton(
+              onTap: () => showNeuralPath(
+                context,
+                word: text,
+                langCode: lang,
+                baseText: _plain(widget.text),
               ),
             ),
             InkResponse(
