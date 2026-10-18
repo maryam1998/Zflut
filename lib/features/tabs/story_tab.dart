@@ -1635,7 +1635,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (busy) ...[
-                  const SizedBox(
+                  SizedBox(
                     width: 14,
                     height: 14,
                     child: CircularProgressIndicator(
