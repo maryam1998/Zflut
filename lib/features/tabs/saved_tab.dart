@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app.dart';
+import '../../core/constants/supported_languages.dart' show langDisplayName;
 import '../../core/models/saved_word.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
@@ -49,11 +51,11 @@ class _SavedTabState extends ConsumerState<SavedTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('انصراف'),
+            child: Text(context.l10n.cancel_button),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('حذف دائمی'),
+            child: Text(context.l10n.saved_delete_permanently),
           ),
         ],
       ),
@@ -65,25 +67,25 @@ class _SavedTabState extends ConsumerState<SavedTab> {
     if (visible.isEmpty) return;
     final isAll = visible.length == all.length;
     final ok = await _confirm(isAll
-        ? 'همه‌ی ${visible.length} لغت ذخیره‌شده برای همیشه پاک بشن؟'
-        : '${visible.length} لغتِ در حال نمایش برای همیشه پاک بشن؟');
+        ? context.l10n.saved_confirm_clear_all('${visible.length}')
+        : context.l10n.saved_confirm_clear_filtered('${visible.length}'));
     if (!ok) return;
     ref.read(savedWordsProvider.notifier).removeWords(visible);
     setState(() {
       _picked.removeAll(visible.map(_key));
-      _msg = '${visible.length} لغت پاک شد';
+      _msg = context.l10n.saved_words_cleared('${visible.length}');
     });
   }
 
   Future<void> _deleteSelected(List<SavedWord> all) async {
     final chosen = all.where((w) => _picked.contains(_key(w))).toList();
     if (chosen.isEmpty) return;
-    final ok = await _confirm('حذف دائمی ${chosen.length} لغت انتخاب‌شده؟');
+    final ok = await _confirm(context.l10n.saved_confirm_delete_selected('${chosen.length}'));
     if (!ok) return;
     ref.read(savedWordsProvider.notifier).removeWords(chosen);
     setState(() {
       _picked.removeAll(chosen.map(_key));
-      _msg = '${chosen.length} لغت حذف شد';
+      _msg = context.l10n.saved_words_deleted('${chosen.length}');
     });
   }
 
@@ -112,11 +114,8 @@ class _SavedTabState extends ConsumerState<SavedTab> {
     final totalPicked = all.where((w) => _picked.contains(_key(w))).length;
 
     return HopePanel(
-      title: 'لغات ذخیره‌شده',
-      intro:
-          'لغاتی که با دکمه‌ی «ذخیره برای داستان بعدی» نشون کردی، یا موقع '
-          'ساختن هر داستانی انتخاب کردی، همه‌شون اینجا جمع می‌شن. هرکدوم رو '
-          'خواستی بزن تا انتخاب بشه، بعد «افزودن به داستان‌ساز» رو بزن.',
+      title: context.l10n.saved_words_title,
+      intro: context.l10n.saved_words_hint,
       children: [
         if (all.isNotEmpty)
           Column(
@@ -141,7 +140,7 @@ class _SavedTabState extends ConsumerState<SavedTab> {
                         onChanged: (_) => setState(() => _msg = ''),
                         style: TextStyle(color: c.ink, fontSize: 13),
                         decoration: InputDecoration(
-                          hintText: 'جستجو در لغات ذخیره‌شده...',
+                          hintText: context.l10n.saved_search_placeholder,
                           hintStyle: TextStyle(
                               color: c.inkSoft.withOpacity(0.6), fontSize: 13),
                           border: InputBorder.none,
@@ -166,7 +165,9 @@ class _SavedTabState extends ConsumerState<SavedTab> {
                   _toolButton(
                     c,
                     icon: Icons.check_box_outlined,
-                    label: allVisiblePicked ? 'لغو انتخاب همه' : 'انتخاب همه',
+                    label: allVisiblePicked
+                        ? context.l10n.saved_deselect_all
+                        : context.l10n.select_all,
                     color: c.ink,
                     enabled: visible.isNotEmpty,
                     onTap: () => setState(() {
@@ -180,7 +181,7 @@ class _SavedTabState extends ConsumerState<SavedTab> {
                   _toolButton(
                     c,
                     icon: Icons.delete_outline,
-                    label: 'پاک کردن همه',
+                    label: context.l10n.clear_all_words,
                     color: c.rose,
                     enabled: visible.isNotEmpty,
                     onTap: () => _clearVisible(all, visible),
@@ -189,7 +190,7 @@ class _SavedTabState extends ConsumerState<SavedTab> {
                     _toolButton(
                       c,
                       icon: Icons.close,
-                      label: 'حذف $totalPicked انتخاب‌شده',
+                      label: context.l10n.saved_delete_n_selected('$totalPicked'),
                       color: c.rose,
                       enabled: true,
                       onTap: () => _deleteSelected(all),
@@ -208,10 +209,8 @@ class _SavedTabState extends ConsumerState<SavedTab> {
         if (byLang.isEmpty)
           HopeEmptyText(
             all.isEmpty
-                ? 'هنوز لغتی ذخیره نکردی. روی هر کلمه‌ی داخل متن‌ها بزن و از '
-                    'پاپ‌آپش «ذخیره برای داستان بعدی» رو انتخاب کن، یا موقع '
-                    'ساخت داستان لغت انتخاب کن.'
-                : 'با این جستجو لغتی پیدا نشد.',
+                ? context.l10n.saved_none_yet
+                : context.l10n.saved_none_for_search,
           )
         else
           for (final entry in byLang.entries)
@@ -262,7 +261,7 @@ class _SavedTabState extends ConsumerState<SavedTab> {
             children: [
               Expanded(
                 child: Text(
-                  '${langFaName(lang)} (${group.length})',
+                  '${langDisplayName(context, lang)} (${group.length})',
                   style: TextStyle(
                     color: c.ink,
                     fontSize: 14.5,
@@ -283,8 +282,8 @@ class _SavedTabState extends ConsumerState<SavedTab> {
                       const SizedBox(width: 4),
                       Text(
                         pickedHere == 0
-                            ? 'افزودن به داستان‌ساز'
-                            : 'افزودن $pickedHere لغت به داستان‌ساز',
+                            ? context.l10n.saved_add_to_story_builder
+                            : context.l10n.saved_add_n_words('$pickedHere'),
                         style: TextStyle(
                           color: pickedHere == 0 ? c.inkSoft : c.teal,
                           fontSize: 12,

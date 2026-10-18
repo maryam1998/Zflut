@@ -663,5 +663,20 @@
   "srt_tool_stopped": "تم إيقاف الترجمة",
   "srt_tool_save_dialog": "حفظ الترجمة",
   "srt_tool_saved": "تم الحفظ: {name}",
-  "srt_tool_err_save": "تعذّر حفظ الملف"
+  "srt_tool_err_save": "تعذّر حفظ الملف",
+  "saved_words_title": "الكلمات المحفوظة",
+  "storyaudio_back_10": "رجوع 10 ثوانٍ",
+  "storyaudio_forward_10": "تقديم 10 ثوانٍ",
+  "storyaudio_ab_set_b": "تم تحديد A — اضغط B",
+  "storyaudio_ab_active": "تكرار (اضغط للإيقاف)",
+  "storyaudio_sync_count": "{done} من {n} جملة",
+  "storyaudio_follow": "تتبّع",
+  "storyaudio_syncing_phone": "جارٍ المزامنة على هاتفك",
+  "storyaudio_syncing_note": "يعمل كل جزء فور جاهزيته؛ لا حاجة للانتظار.",
+  "storyaudio_sync_stop": "إيقاف المزامنة",
+  "storyaudio_sync_auto": "مزامنة تلقائية",
+  "storyaudio_estimate": "تقدير تلقائي",
+  "storyaudio_mark_line": "تحديد بداية هذه الجملة والانتقال للتالية",
+  "storyaudio_sync_clear": "مسح المزامنة",
+  "storyaudio_sync_tip": "للدقة: شغّل الصوت واضغط «تحديد بداية هذه الجملة» عند بدء كل جملة."
 }

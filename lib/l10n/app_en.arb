@@ -1076,5 +1076,30 @@
         "type": "String"
       }
     }
+  },
+  "saved_words_title": "Saved words",
+  "storyaudio_back_10": "Back 10 seconds",
+  "storyaudio_forward_10": "Forward 10 seconds",
+  "storyaudio_ab_set_b": "A set — tap B",
+  "storyaudio_ab_active": "Repeating (tap to turn off)",
+  "storyaudio_sync_count": "{done} of {n} sentences",
+  "storyaudio_follow": "Follow",
+  "storyaudio_syncing_phone": "Syncing on your phone",
+  "storyaudio_syncing_note": "Each part works as soon as it’s ready; no need to wait.",
+  "storyaudio_sync_stop": "Stop syncing",
+  "storyaudio_sync_auto": "Auto sync",
+  "storyaudio_estimate": "Auto estimate",
+  "storyaudio_mark_line": "Mark start of this sentence and go to next",
+  "storyaudio_sync_clear": "Clear sync",
+  "storyaudio_sync_tip": "For accuracy: play the audio and tap “Mark start of this sentence” whenever a sentence begins.",
+  "@storyaudio_sync_count": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "n": {
+        "type": "String"
+      }
+    }
   }
 }

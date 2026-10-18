@@ -663,5 +663,20 @@
   "srt_tool_stopped": "Übersetzung gestoppt",
   "srt_tool_save_dialog": "Übersetzte Untertitel speichern",
   "srt_tool_saved": "Gespeichert: {name}",
-  "srt_tool_err_save": "Datei konnte nicht gespeichert werden"
+  "srt_tool_err_save": "Datei konnte nicht gespeichert werden",
+  "saved_words_title": "Gespeicherte Wörter",
+  "storyaudio_back_10": "10 Sekunden zurück",
+  "storyaudio_forward_10": "10 Sekunden vor",
+  "storyaudio_ab_set_b": "A gesetzt — B antippen",
+  "storyaudio_ab_active": "Wiederholung (zum Ausschalten tippen)",
+  "storyaudio_sync_count": "{done} von {n} Sätzen",
+  "storyaudio_follow": "Folgen",
+  "storyaudio_syncing_phone": "Synchronisierung auf deinem Handy",
+  "storyaudio_syncing_note": "Jeder Teil funktioniert, sobald er fertig ist; du musst nicht warten.",
+  "storyaudio_sync_stop": "Synchronisierung stoppen",
+  "storyaudio_sync_auto": "Automatisch synchronisieren",
+  "storyaudio_estimate": "Automatisch schätzen",
+  "storyaudio_mark_line": "Satzanfang markieren und weiter",
+  "storyaudio_sync_clear": "Synchronisierung löschen",
+  "storyaudio_sync_tip": "Für mehr Genauigkeit: Audio abspielen und bei jedem Satzbeginn „Satzanfang markieren“ tippen."
 }

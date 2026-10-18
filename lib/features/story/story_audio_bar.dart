@@ -32,7 +32,7 @@ class StoryAudioBar extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _header(c),
+              _header(context, c),
               if (ctrl.error.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
@@ -41,7 +41,7 @@ class StoryAudioBar extends StatelessWidget {
                 ),
               if (ctrl.hasAudio && !ctrl.saving) ...[
                 const SizedBox(height: 8),
-                _player(c),
+                _player(context, c),
                 const SizedBox(height: 8),
                 _sync(context, c),
               ],
@@ -52,7 +52,8 @@ class StoryAudioBar extends StatelessWidget {
     );
   }
 
-  Widget _header(AppThemeColorsExt c) {
+  Widget _header(BuildContext context, AppThemeColorsExt c) {
+    final L = context.l10n;
     return Row(
       children: [
         Icon(Icons.headphones, size: 16, color: c.inkSoft),
@@ -60,10 +61,10 @@ class StoryAudioBar extends StatelessWidget {
         Expanded(
           child: Text(
             ctrl.saving
-                ? 'در حال ذخیره‌ی صدا روی گوشی...'
+                ? L.player_audio_saving
                 : ctrl.hasAudio
-                    ? 'صوتِ شما وصل شد: ${ctrl.fileName}'
-                    : 'فایلِ صوتیِ خودت رو برای این داستان آپلود کن',
+                    ? '${L.player_audio_attached}: ${ctrl.fileName}'
+                    : L.player_audio_upload_prompt,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(color: c.inkSoft, fontSize: 12),
@@ -82,13 +83,14 @@ class StoryAudioBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               visualDensity: VisualDensity.compact,
             ),
-            child: Text('آپلود صوت',
+            child: Text(L.player_audio_upload,
                 style: TextStyle(color: c.ink, fontSize: 13)),
           )
         else
           TextButton(
             onPressed: ctrl.removeAudio,
-            child: Text('حذف', style: TextStyle(color: c.rose, fontSize: 12)),
+            child: Text(L.library_delete,
+                style: TextStyle(color: c.rose, fontSize: 12)),
           ),
       ],
     );
@@ -104,7 +106,8 @@ class StoryAudioBar extends StatelessWidget {
     );
   }
 
-  Widget _player(AppThemeColorsExt c) {
+  Widget _player(BuildContext context, AppThemeColorsExt c) {
+    final L = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -138,8 +141,8 @@ class StoryAudioBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           textDirection: TextDirection.ltr,
           children: [
-            _iconBtn(c, Icons.skip_previous, ctrl.prevLine, tip: 'جمله‌ی قبل'),
-            _iconBtn(c, Icons.replay_10, () => ctrl.skip(-10), tip: '۱۰ ثانیه عقب'),
+            _iconBtn(c, Icons.skip_previous, ctrl.prevLine, tip: L.player_prev_sentence),
+            _iconBtn(c, Icons.replay_10, () => ctrl.skip(-10), tip: L.storyaudio_back_10),
             Material(
               color: c.teal,
               shape: const CircleBorder(),
@@ -153,8 +156,8 @@ class StoryAudioBar extends StatelessWidget {
                 ),
               ),
             ),
-            _iconBtn(c, Icons.forward_10, () => ctrl.skip(10), tip: '۱۰ ثانیه جلو'),
-            _iconBtn(c, Icons.skip_next, ctrl.nextLine, tip: 'جمله‌ی بعد'),
+            _iconBtn(c, Icons.forward_10, () => ctrl.skip(10), tip: L.storyaudio_forward_10),
+            _iconBtn(c, Icons.skip_next, ctrl.nextLine, tip: L.player_next_sentence),
           ],
         ),
         const SizedBox(height: 4),
@@ -170,10 +173,10 @@ class StoryAudioBar extends StatelessWidget {
             _chip(
               c,
               ctrl.abState == AbState.idle
-                  ? 'تکرارِ A-B'
+                  ? L.player_ab_aria
                   : ctrl.abState == AbState.waitingB
-                      ? 'A ثبت شد — B رو بزن'
-                      : 'در حال تکرار (خاموش)',
+                      ? L.storyaudio_ab_set_b
+                      : L.storyaudio_ab_active,
               ctrl.abState != AbState.idle,
               ctrl.markAB,
             ),
@@ -229,14 +232,14 @@ class StoryAudioBar extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'همگام‌سازیِ متن با صدا'
-                  '${ctrl.syncTimes == null ? '' : ' — ${ctrl.syncedCount} از $n جمله'}',
+                  '${context.l10n.settings_sync_title}'
+                  '${ctrl.syncTimes == null ? '' : ' — ${context.l10n.storyaudio_sync_count('${ctrl.syncedCount}', '$n')}'}',
                   style: TextStyle(
                       color: c.ink, fontSize: 12, fontWeight: FontWeight.w700),
                 ),
               ),
               if (ctrl.syncTimes != null) ...[
-                Text('دنبال کن',
+                Text(context.l10n.storyaudio_follow,
                     style: TextStyle(color: c.inkSoft, fontSize: 11)),
                 Switch(
                   value: ctrl.syncOn,
@@ -257,9 +260,9 @@ class StoryAudioBar extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4, bottom: 4),
               child: Text(
-                'در حال همگام‌سازی روی گوشی'
-                '${ctrl.syncFrac > 0 ? ' — ${(ctrl.syncFrac * 100).round()}٪' : '...'}\n'
-                'هر بخش که آماده شد همان لحظه کار می‌کند؛ لازم نیست صبر کنی.',
+                '${context.l10n.storyaudio_syncing_phone}'
+                '${ctrl.syncFrac > 0 ? ' — ${(ctrl.syncFrac * 100).round()}%' : '...'}\n'
+                '${context.l10n.storyaudio_syncing_note}',
                 style: TextStyle(color: c.inkSoft, fontSize: 10.5, height: 1.6),
               ),
             ),
@@ -274,20 +277,20 @@ class StoryAudioBar extends StatelessWidget {
             runSpacing: 4,
             children: [
               if (ctrl.syncBuilding)
-                _chip(c, 'توقفِ همگام‌سازی', false, ctrl.cancelSyncBuild)
+                _chip(c, context.l10n.storyaudio_sync_stop, false, ctrl.cancelSyncBuild)
               else
-                _chip(c, 'همگام‌سازیِ خودکار', false, ctrl.buildSync),
-              _chip(c, 'تخمینِ خودکار', false, ctrl.estimateSync),
-              _chip(c, 'ثبتِ شروعِ این جمله و رفتن به بعدی', false,
+                _chip(c, context.l10n.storyaudio_sync_auto, false, ctrl.buildSync),
+              _chip(c, context.l10n.storyaudio_estimate, false, ctrl.estimateSync),
+              _chip(c, context.l10n.storyaudio_mark_line, false,
                   ctrl.markCurrentLine),
               if (ctrl.syncTimes != null)
-                _chip(c, 'پاک کردنِ همگام‌سازی', false, ctrl.clearSync),
+                _chip(c, context.l10n.storyaudio_sync_clear, false, ctrl.clearSync),
             ],
           ),
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              'برای دقت: صدا رو پخش کن و هر وقت یه جمله شروع شد دکمه‌ی «ثبتِ شروعِ این جمله» رو بزن.',
+              context.l10n.storyaudio_sync_tip,
               style: TextStyle(color: c.inkSoft, fontSize: 10.5),
             ),
           ),

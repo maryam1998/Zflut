@@ -663,5 +663,20 @@
   "srt_tool_stopped": "Traduction arrêtée",
   "srt_tool_save_dialog": "Enregistrer les sous-titres traduits",
   "srt_tool_saved": "Enregistré : {name}",
-  "srt_tool_err_save": "Impossible d’enregistrer le fichier"
+  "srt_tool_err_save": "Impossible d’enregistrer le fichier",
+  "saved_words_title": "Mots enregistrés",
+  "storyaudio_back_10": "Reculer de 10 secondes",
+  "storyaudio_forward_10": "Avancer de 10 secondes",
+  "storyaudio_ab_set_b": "A défini — touchez B",
+  "storyaudio_ab_active": "Répétition (touchez pour arrêter)",
+  "storyaudio_sync_count": "{done} sur {n} phrases",
+  "storyaudio_follow": "Suivre",
+  "storyaudio_syncing_phone": "Synchronisation sur votre téléphone",
+  "storyaudio_syncing_note": "Chaque partie fonctionne dès qu’elle est prête ; inutile d’attendre.",
+  "storyaudio_sync_stop": "Arrêter la synchronisation",
+  "storyaudio_sync_auto": "Synchronisation auto",
+  "storyaudio_estimate": "Estimation auto",
+  "storyaudio_mark_line": "Marquer le début de cette phrase et passer à la suivante",
+  "storyaudio_sync_clear": "Effacer la synchronisation",
+  "storyaudio_sync_tip": "Pour plus de précision : lisez l’audio et touchez « Marquer le début de cette phrase » au début de chaque phrase."
 }

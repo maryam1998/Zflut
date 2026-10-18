@@ -663,5 +663,20 @@
   "srt_tool_stopped": "ترجمه متوقف شد",
   "srt_tool_save_dialog": "ذخیره‌ی زیرنویسِ ترجمه‌شده",
   "srt_tool_saved": "ذخیره شد: {name}",
-  "srt_tool_err_save": "ذخیره‌ی فایل انجام نشد"
+  "srt_tool_err_save": "ذخیره‌ی فایل انجام نشد",
+  "saved_words_title": "لغات ذخیره‌شده",
+  "storyaudio_back_10": "۱۰ ثانیه عقب",
+  "storyaudio_forward_10": "۱۰ ثانیه جلو",
+  "storyaudio_ab_set_b": "A ثبت شد — B رو بزن",
+  "storyaudio_ab_active": "در حال تکرار (خاموش)",
+  "storyaudio_sync_count": "{done} از {n} جمله",
+  "storyaudio_follow": "دنبال کن",
+  "storyaudio_syncing_phone": "در حال همگام‌سازی روی گوشی",
+  "storyaudio_syncing_note": "هر بخش که آماده شد همان لحظه کار می‌کند؛ لازم نیست صبر کنی.",
+  "storyaudio_sync_stop": "توقفِ همگام‌سازی",
+  "storyaudio_sync_auto": "همگام‌سازیِ خودکار",
+  "storyaudio_estimate": "تخمینِ خودکار",
+  "storyaudio_mark_line": "ثبتِ شروعِ این جمله و رفتن به بعدی",
+  "storyaudio_sync_clear": "پاک کردنِ همگام‌سازی",
+  "storyaudio_sync_tip": "برای دقت: صدا رو پخش کن و هر وقت یه جمله شروع شد دکمه‌ی «ثبتِ شروعِ این جمله» رو بزن."
 }
