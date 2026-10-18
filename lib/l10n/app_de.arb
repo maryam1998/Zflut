@@ -678,5 +678,6 @@
   "storyaudio_estimate": "Automatisch schätzen",
   "storyaudio_mark_line": "Satzanfang markieren und weiter",
   "storyaudio_sync_clear": "Synchronisierung löschen",
-  "storyaudio_sync_tip": "Für mehr Genauigkeit: Audio abspielen und bei jedem Satzbeginn „Satzanfang markieren“ tippen."
+  "storyaudio_sync_tip": "Für mehr Genauigkeit: Audio abspielen und bei jedem Satzbeginn „Satzanfang markieren“ tippen.",
+  "grammar_conversation_correction": "Gesprächskorrektur"
 }

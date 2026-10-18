@@ -6,6 +6,14 @@ import '../shell/widgets/shell_header.dart';
 /// اسکلتِ مشترکِ تب‌های «هم‌شکل Hope» (گرامر، تمرین مکالمه، داستان‌ساز،
 /// لغات ذخیره‌شده): هدرِ شل داخلِ اسکرول، بعد عنوان + توضیح، بعد محتوا با
 /// فاصله‌ی ۱۶ (معادل `flex flex-col gap-4` در Hope).
+/// جهتِ محتوا بر اساسِ زبانِ رابط: فارسی/عربی → راست‌به‌چپ، بقیه → چپ‌به‌راست.
+/// (خودِ اپ همیشه RTL می‌ماند؛ این فقط برای پنل‌هایی است که می‌خواهند متنِ
+/// انگلیسی/اروپایی را چپ‌به‌راست نشان بدهند.)
+TextDirection uiContentDirection(BuildContext context) {
+  final code = Localizations.localeOf(context).languageCode;
+  return (code == 'fa' || code == 'ar') ? TextDirection.rtl : TextDirection.ltr;
+}
+
 class HopePanel extends StatelessWidget {
   /// عنوانِ بزرگ (۱۸، ضخیم). اگر null باشد عنوان نشان داده نمی‌شود.
   final String? title;
@@ -18,12 +26,16 @@ class HopePanel extends StatelessWidget {
 
   final List<Widget> children;
 
+  /// اگر داده شود، محتوای پنل (نه هدرِ بالای صفحه) با این جهت چیده می‌شود.
+  final TextDirection? contentDirection;
+
   const HopePanel({
     super.key,
     this.title,
     this.intro,
     this.titleSize = 18,
     required this.children,
+    this.contentDirection,
   });
 
   @override
@@ -65,7 +77,11 @@ class HopePanel extends StatelessWidget {
               delegate: SliverChildListDelegate([
                 for (var i = 0; i < body.length; i++) ...[
                   if (i > 0) const SizedBox(height: 16),
-                  body[i],
+                  contentDirection == null
+                      ? body[i]
+                      : Directionality(
+                          textDirection: contentDirection!,
+                          child: body[i]),
                 ],
               ]),
             ),

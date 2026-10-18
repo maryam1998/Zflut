@@ -678,5 +678,6 @@
   "storyaudio_estimate": "Estimation auto",
   "storyaudio_mark_line": "Marquer le début de cette phrase et passer à la suivante",
   "storyaudio_sync_clear": "Effacer la synchronisation",
-  "storyaudio_sync_tip": "Pour plus de précision : lisez l’audio et touchez « Marquer le début de cette phrase » au début de chaque phrase."
+  "storyaudio_sync_tip": "Pour plus de précision : lisez l’audio et touchez « Marquer le début de cette phrase » au début de chaque phrase.",
+  "grammar_conversation_correction": "Correction de conversation"
 }

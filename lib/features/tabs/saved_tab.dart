@@ -114,6 +114,7 @@ class _SavedTabState extends ConsumerState<SavedTab> {
     final totalPicked = all.where((w) => _picked.contains(_key(w))).length;
 
     return HopePanel(
+      contentDirection: uiContentDirection(context),
       title: context.l10n.saved_words_title,
       intro: context.l10n.saved_words_hint,
       children: [

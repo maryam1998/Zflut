@@ -1101,5 +1101,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "grammar_conversation_correction": "Conversation correction"
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app.dart';
+import '../../core/constants/supported_languages.dart' show langDisplayName;
 import '../../core/models/grammar_note.dart';
 import '../../core/models/saved_word.dart';
 import '../../core/providers/language_selection_provider.dart';
@@ -38,15 +40,15 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        content: Text('$n یادداشتِ انتخاب‌شده پاک بشه؟'),
+        content: Text(context.l10n.grammar_confirm_delete_notes('$n')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('انصراف'),
+            child: Text(context.l10n.cancel_button),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('حذف'),
+            child: Text(context.l10n.grammar_delete),
           ),
         ],
       ),
@@ -73,24 +75,18 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
     final labels = groups.keys.toList()..sort((a, b) => b.compareTo(a));
 
     return HopePanel(
-      title: 'گرامر',
-      intro:
-          'توضیحات گرامری‌ای که از روی لغت‌های داستان ذخیره کردی اینجاست. '
-          'پایین‌تر هم می‌تونی با هوش مصنوعی جمله بنویسی تا مثل یه معلم زبان، '
-          'اصلاحش کنه و گرامرش رو کلمه‌به‌کلمه بهت یاد بده — یا هر سوال '
-          'گرامری دیگه‌ای هم داشتی همون‌جا بپرسی.',
+      contentDirection: uiContentDirection(context),
+      title: context.l10n.grammar_title,
+      intro: context.l10n.grammar_intro,
       children: [
         if (notes.isEmpty)
-          const HopeEmptyText(
-            'هنوز نکته‌ی گرامری‌ای ذخیره نکردی. روی هر کلمه‌ی داخل داستان بزن '
-            'و «افزودن به یادگیری گرامر» رو انتخاب کن.',
-          ),
+          HopeEmptyText(context.l10n.grammar_empty_notes),
         if (notes.isNotEmpty && !_selectMode)
           Align(
             alignment: AlignmentDirectional.centerEnd,
             child: HopeTextAction(
               icon: Icons.checklist_rounded,
-              label: 'انتخاب / حذف',
+              label: context.l10n.grammar_select_delete,
               color: c.rose,
               onTap: () => setState(() => _selectMode = true),
             ),
@@ -110,8 +106,8 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
               children: [
                 Text(
                   _selected.isNotEmpty
-                      ? '${_selected.length} مورد انتخاب شد'
-                      : 'انتخاب کن',
+                      ? context.l10n.grammar_n_selected('${_selected.length}')
+                      : context.l10n.grammar_select_items,
                   style: TextStyle(
                     color: c.ink,
                     fontSize: 12,
@@ -123,7 +119,7 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
                   children: [
                     HopeTextAction(
                       icon: Icons.checklist_rounded,
-                      label: 'انتخاب همه',
+                      label: context.l10n.select_all,
                       color: c.teal,
                       onTap: () => setState(() {
                         _selected
@@ -134,7 +130,7 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
                     const SizedBox(width: 12),
                     HopeTextAction(
                       icon: Icons.delete_outline,
-                      label: 'حذف',
+                      label: context.l10n.grammar_delete,
                       color: _selected.isEmpty
                           ? c.rose.withOpacity(0.5)
                           : c.rose,
@@ -142,7 +138,7 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
                     ),
                     const SizedBox(width: 12),
                     HopeTextAction(
-                      label: 'انصراف',
+                      label: context.l10n.cancel_button,
                       color: c.inkSoft,
                       onTap: _exitSelect,
                     ),
@@ -264,7 +260,9 @@ class _NoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    final title = note.word.trim().isEmpty ? 'تصحیح مکالمه' : note.word;
+    final title = note.word.trim().isEmpty
+        ? context.l10n.grammar_conversation_correction
+        : note.word;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -302,7 +300,7 @@ class _NoteCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${langFaName(note.langCode)} · $timeLabel',
+                        '${langDisplayName(context, note.langCode)} · $timeLabel',
                         style: TextStyle(color: c.inkSoft, fontSize: 11),
                       ),
                     ],

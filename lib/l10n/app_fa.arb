@@ -678,5 +678,6 @@
   "storyaudio_estimate": "تخمینِ خودکار",
   "storyaudio_mark_line": "ثبتِ شروعِ این جمله و رفتن به بعدی",
   "storyaudio_sync_clear": "پاک کردنِ همگام‌سازی",
-  "storyaudio_sync_tip": "برای دقت: صدا رو پخش کن و هر وقت یه جمله شروع شد دکمه‌ی «ثبتِ شروعِ این جمله» رو بزن."
+  "storyaudio_sync_tip": "برای دقت: صدا رو پخش کن و هر وقت یه جمله شروع شد دکمه‌ی «ثبتِ شروعِ این جمله» رو بزن.",
+  "grammar_conversation_correction": "تصحیح مکالمه"
 }

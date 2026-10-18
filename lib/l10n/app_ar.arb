@@ -678,5 +678,6 @@
   "storyaudio_estimate": "تقدير تلقائي",
   "storyaudio_mark_line": "تحديد بداية هذه الجملة والانتقال للتالية",
   "storyaudio_sync_clear": "مسح المزامنة",
-  "storyaudio_sync_tip": "للدقة: شغّل الصوت واضغط «تحديد بداية هذه الجملة» عند بدء كل جملة."
+  "storyaudio_sync_tip": "للدقة: شغّل الصوت واضغط «تحديد بداية هذه الجملة» عند بدء كل جملة.",
+  "grammar_conversation_correction": "تصحيح المحادثة"
 }
