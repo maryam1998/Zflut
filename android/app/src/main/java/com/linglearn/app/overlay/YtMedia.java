@@ -104,24 +104,28 @@ public class YtMedia extends NotificationListenerService {
         }
     }
 
-    /** صفحه‌ی تنظیماتِ «دسترسی به اعلان‌ها» رو باز می‌کنه (در اندروید ۱۱+ مستقیم صفحه‌ی همین اپ). */
+    /**
+     * صفحه‌ی تنظیماتِ «دسترسی به اعلان‌ها» رو باز می‌کنه.
+     * اول «لیستِ» اپ‌ها (Notification read, reply & control) باز می‌شه و کاربر
+     * خودش اپ رو انتخاب می‌کنه تا به صفحه‌ی دسترسیِ همون اپ بره. فقط اگر لیست
+     * باز نشد، مستقیم صفحه‌ی همین اپ (اندروید ۱۱+) باز می‌شه.
+     */
     public static void openAccessSettings(Context ctx) {
-        Intent i = null;
+        try {
+            ctx.startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            return;
+        } catch (Throwable ignored) {}
         if (Build.VERSION.SDK_INT >= 30) {
             try {
-                i = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
+                Intent i = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
                         .putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
                                 new ComponentName(ctx, YtMedia.class).flattenToString());
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 ctx.startActivity(i);
-                return;
-            } catch (Throwable ignored) {}
-        }
-        try {
-            i = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            ctx.startActivity(i);
-        } catch (Throwable e) {
-            Log.w(TAG, "cannot open notification access settings", e);
+            } catch (Throwable e) {
+                Log.w(TAG, "cannot open notification access settings", e);
+            }
         }
     }
 
