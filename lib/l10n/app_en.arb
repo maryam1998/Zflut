@@ -1447,7 +1447,7 @@
   "pos_determiner": "Determiner",
   "pos_exclamation": "Exclamation",
   "pos_idiom": "Idiom",
-  "speaking_tab_speaking": "Speaking",
+  "speaking_tab_speaking": "Conversation",
   "speaking_tab_history": "Conversation history",
   "speaking_history_intro": "Conversations you saved are kept here, newest first. Open one to keep chatting, edit your messages, or delete messages.",
   "speaking_history_empty": "No saved conversations yet. In the Speaking tab, tap “Save to history”.",

@@ -385,31 +385,64 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.appColors;
+    Widget seg(int i, String label, IconData icon) {
+      final active = _sub == i;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => _go(i),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 5),
+            decoration: BoxDecoration(
+              color: active ? c.gold : Colors.transparent,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: active ? c.gold : Colors.transparent,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 15, color: active ? c.headerTo : c.inkSoft),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: active ? c.headerTo : c.inkSoft,
+                      fontSize: 12,
+                      fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return HopePanel(
       contentDirection: uiContentDirection(context),
-      title: _plain(context.l10n.speaking_title),
-      intro: _sub == 0
-          ? context.l10n.speaking_intro
-          : context.l10n.speaking_history_intro,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _SubTabChip(
-                label: context.l10n.speaking_tab_speaking,
-                active: _sub == 0,
-                onTap: () => _go(0),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _SubTabChip(
-                label: context.l10n.speaking_tab_history,
-                active: _sub == 1,
-                onTap: () => _go(1),
-              ),
-            ),
-          ],
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: c.paperDark,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: c.cardBorder),
+          ),
+          child: Row(
+            children: [
+              seg(0, context.l10n.speaking_tab_speaking,
+                  Icons.chat_bubble_outline),
+              seg(1, context.l10n.speaking_tab_history, Icons.history),
+            ],
+          ),
         ),
         // هر دو زنده می‌مانند (مکالمه‌ی در حال ارسال با رفتن به تاریخچه گم نشود)
         Column(
@@ -420,42 +453,6 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _SubTabChip extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _SubTabChip(
-      {required this.label, required this.active, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active ? c.teal : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: active ? c.teal : c.cardBorder),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: active ? Colors.white : c.ink.withOpacity(0.85),
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1343,14 +1340,6 @@ Now respond to: "$sentence"
             runSpacing: 2,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              if (!_embedded && hasReal)
-                HopeTextAction(
-                  label: _inHistory
-                      ? _plain(context.l10n.speaking_saved_to_history)
-                      : _plain(context.l10n.speaking_save_to_history),
-                  color: _inHistory ? c.inkSoft : c.teal,
-                  onTap: (_inHistory || !_hasUserMsg) ? null : _saveToHistory,
-                ),
               if (hasReal && !_selectMode && !_loading)
                 HopeTextAction(
                   icon: Icons.checklist_rounded,
@@ -1814,6 +1803,20 @@ Now respond to: "$sentence"
                         });
                         _persist();
                       },
+              ),
+            if (!_embedded &&
+                !isUser &&
+                !_loading &&
+                !_selectMode &&
+                idx == _messages.length - 1 &&
+                _hasUserMsg)
+              HopeTextAction(
+                label: _inHistory
+                    ? _plain(context.l10n.speaking_saved_to_history)
+                    : _plain(context.l10n.speaking_save_to_history),
+                color: _inHistory ? c.inkSoft : c.teal,
+                fontSize: 11,
+                onTap: _inHistory ? null : _saveToHistory,
               ),
           ],
         ),
