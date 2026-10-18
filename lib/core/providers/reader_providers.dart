@@ -121,6 +121,18 @@ class GrammarNotesNotifier extends StateNotifier<List<GrammarNote>> {
   void removeNote(String id) => _set(state.where((n) => n.id != id).toList());
 
   /// یک پرسش‌وپاسخ را به رشته‌ی همان یادداشت اضافه می‌کند (فوراً ذخیره می‌شود).
+  /// ویرایش/رفرشِ یک پرسش: از ایندکسِ [index] به بعد حذف و با [item] جایگزین می‌شود.
+  void replaceThreadFrom(String id, int index, GrammarThreadItem item) => _set([
+        for (final n in state)
+          if (n.id == id)
+            n.copyWith(thread: [
+              ...n.thread.take(index.clamp(0, n.thread.length)),
+              item,
+            ])
+          else
+            n,
+      ]);
+
   void appendThread(String id, GrammarThreadItem item) => _set([
         for (final n in state)
           if (n.id == id) n.copyWith(thread: [...n.thread, item]) else n,

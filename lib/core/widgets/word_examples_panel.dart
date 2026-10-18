@@ -306,6 +306,38 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
     if (_text.isEmpty) _load();
   }
 
+  bool _refreshing = false;
+
+  /// رفرش: ترجمه‌ی دوباره بدون کش، اول با AI.
+  Future<void> _refresh() async {
+    if (_refreshing) return;
+    setState(() {
+      _refreshing = true;
+      _failed = false;
+    });
+    try {
+      final t = await ref.read(translationServiceProvider).retranslate(
+            text: widget.example.text,
+            targetLang: widget.target,
+            sourceLang: widget.langCode,
+            aiSettings: ref.read(aiSettingsProvider),
+          );
+      if (!mounted) return;
+      final v = t.trim();
+      if (v.isEmpty || v == widget.example.text.trim()) {
+        setState(() => _failed = _text.isEmpty);
+        return;
+      }
+      setState(() => _text = v);
+      await ref.read(wordExamplesStoreProvider).setTranslation(
+          widget.word, widget.langCode, widget.example.id, widget.target, v);
+    } catch (_) {
+      if (mounted && _text.isEmpty) setState(() => _failed = true);
+    } finally {
+      if (mounted) setState(() => _refreshing = false);
+    }
+  }
+
   Future<void> _load() async {
     try {
       final t = await ref.read(translationServiceProvider).translate(
@@ -369,6 +401,21 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
                             fontWeight: FontWeight.w800,
                             height: 1.45)),
                   ),
+          ),
+          InkResponse(
+            onTap: _refreshing ? null : _refresh,
+            radius: 14,
+            child: Padding(
+              padding: const EdgeInsets.all(3),
+              child: _refreshing
+                  ? SizedBox(
+                      width: 11,
+                      height: 11,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 1.5, color: c.teal))
+                  : Icon(Icons.refresh,
+                      size: 14, color: c.teal.withOpacity(0.8)),
+            ),
           ),
         ],
       ),

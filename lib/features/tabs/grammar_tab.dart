@@ -291,6 +291,25 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
   bool _loading = false;
   String _error = '';
   String _failedQ = ''; // آخرین پرسشی که جوابش نیامد (برای «تلاش دوباره»)
+  int? _failedIndex;
+  int? _editIndex; // اگر null نباشد، ارسال = ویرایشِ همان پرسش
+
+  bool get _fa => Localizations.localeOf(context).languageCode == 'fa';
+  String _t(String fa, String en) => _fa ? fa : en;
+
+  void _startEdit(int i, String question) {
+    if (_loading) return;
+    setState(() {
+      _editIndex = i;
+      _ctrl.text = question;
+      _ctrl.selection = TextSelection.collapsed(offset: question.length);
+    });
+  }
+
+  void _cancelEdit() => setState(() {
+        _editIndex = null;
+        _ctrl.clear();
+      });
 
   @override
   void dispose() {
@@ -311,7 +330,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
       multiLine: true);
 
   /// پورتِ askGrammarTeacher در Hope — با تاریخچه‌ی خودِ یادداشت
-  String _prompt(String question) {
+  String _prompt(String question, {int? upTo}) {
     final note = widget.note;
     final sel = ref.read(languageSelectionProvider);
     final label = englishLangName(sel.native);
@@ -329,7 +348,8 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
       return x.length > n ? '${x.substring(0, n)}…' : x;
     }
 
-    final okThread = note.thread
+    final base = upTo == null ? note.thread : note.thread.take(upTo).toList();
+    final okThread = base
         .where((t) => t.answer.trim().isNotEmpty && !looksLikeGuardOutput(t.answer))
         .toList();
     final lastTurns =
@@ -352,10 +372,16 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         "Be concise (under ~150 words), plain text.";
   }
 
-  Future<void> _ask([String? retryQuestion]) async {
+  /// [index] = ایندکسِ پرسشی که ویرایش/رفرش می‌شود (پاسخ‌های بعدش حذف می‌شوند)؛
+  /// null = پرسشِ جدید.
+  Future<void> _ask([String? retryQuestion, int? index]) async {
     final question = (retryQuestion ?? _ctrl.text).trim();
     if (question.isEmpty || _loading) return;
-    if (retryQuestion == null) _ctrl.clear();
+    final target = retryQuestion == null ? _editIndex : index;
+    if (retryQuestion == null) {
+      _ctrl.clear();
+      _editIndex = null;
+    }
     setState(() {
       _loading = true;
       _error = '';
@@ -365,25 +391,30 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
     try {
       final svc = ref.read(translationServiceProvider);
       final ai = ref.read(aiSettingsProvider);
-      // جوابِ گرامر بلند است؛ timeoutِ پیش‌فرضِ ۱۰ ثانیه کافی نبود. aiGenerate هم
-      // خروجیِ گارد/فکرکردن را رد می‌کند و یک بار با دستورِ سخت‌گیرانه دوباره می‌پرسد.
       final text = await aiGenerate(
         svc: svc,
         settings: ai,
-        prompt: _prompt(question),
+        prompt: _prompt(question, upTo: target),
         maxTokens: 600,
         retries: 1,
         timeoutMs: 45000,
       );
-      // یادداشت قبلاً ذخیره شده؛ پاسخ مستقیم به همان اضافه می‌شود
-      notifier.appendThread(
-          noteId, GrammarThreadItem(question: question, answer: text));
+      final item = GrammarThreadItem(question: question, answer: text);
+      if (target != null) {
+        notifier.replaceThreadFrom(noteId, target, item);
+      } else {
+        notifier.appendThread(noteId, item);
+      }
       if (!mounted) return;
-      setState(() => _failedQ = '');
+      setState(() {
+        _failedQ = '';
+        _failedIndex = null;
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _failedQ = question;
+        _failedIndex = target;
         _error = context.l10n.speaking_ai_no_response;
       });
     } finally {
@@ -490,7 +521,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                   MiniMarkdown(text: note.markdown),
 
                   // ═══ پرسش‌وپاسخ‌های ذخیره‌شده‌ی همین یادداشت ═══
-                  for (final t in note.thread)
+                  for (var ti = 0; ti < note.thread.length; ti++)
                     Padding(
                       padding: const EdgeInsets.only(top: 10),
                       child: Column(
@@ -499,8 +530,8 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 4),
                             child: Text(
-                              t.question,
-                              textDirection: autoDir(t.question),
+                              note.thread[ti].question,
+                              textDirection: autoDir(note.thread[ti].question),
                               style: TextStyle(
                                 color: c.inkSoft,
                                 fontSize: 12,
@@ -515,12 +546,60 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                               color: c.goldSoft,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: MiniMarkdown(text: t.answer),
+                            child: MiniMarkdown(text: note.thread[ti].answer),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                _MiniAction(
+                                  icon: Icons.edit_outlined,
+                                  label: _t('ویرایش', 'Edit'),
+                                  color: c.teal,
+                                  onTap: _loading
+                                      ? null
+                                      : () => _startEdit(
+                                          ti, note.thread[ti].question),
+                                ),
+                                if (ti == note.thread.length - 1)
+                                  _MiniAction(
+                                    icon: Icons.refresh,
+                                    label: _t('رفرش', 'Refresh'),
+                                    color: c.teal,
+                                    onTap: _loading
+                                        ? null
+                                        : () => _ask(
+                                            note.thread[ti].question, ti),
+                                  ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
 
+                  if (_editIndex != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined, size: 13, color: c.gold),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              _t('در حال ویرایش پرسش — پاسخ‌های بعدی جایگزین می‌شوند',
+                                  'Editing question — later answers will be replaced'),
+                              style: TextStyle(color: c.inkSoft, fontSize: 11),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: _cancelEdit,
+                            child: Icon(Icons.close, size: 16, color: c.inkSoft),
+                          ),
+                        ],
+                      ),
+                    ),
                   // ═══ کادرِ پرسش از همین یادداشت ═══
                   Container(
                     margin: const EdgeInsets.only(top: 10),
@@ -611,7 +690,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                           if (_failedQ.isNotEmpty)
                             InkWell(
                               borderRadius: BorderRadius.circular(8),
-                              onTap: _loading ? null : () => _ask(_failedQ),
+                              onTap: _loading ? null : () => _ask(_failedQ, _failedIndex),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 4),
@@ -644,6 +723,42 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _MiniAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+  const _MiniAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final col = onTap == null ? color.withOpacity(0.4) : color;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: col),
+            const SizedBox(width: 3),
+            Text(label,
+                style: TextStyle(
+                    color: col, fontSize: 11, fontWeight: FontWeight.w700)),
+          ],
+        ),
       ),
     );
   }

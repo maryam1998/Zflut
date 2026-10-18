@@ -489,6 +489,37 @@ Now respond to: "$sentence"
     await _ask(text, _messages);
   }
 
+  bool get _fa => Localizations.localeOf(context).languageCode == 'fa';
+  String _t(String fa, String en) => _fa ? fa : en;
+
+  /// ویرایشِ پیامِ کاربر: متن به کادرِ ورودی برمی‌گردد و از همین پیام به بعد
+  /// (پیام‌های بعدیِ گفتگو) حذف می‌شود؛ کاربر ویرایش می‌کند و دوباره می‌فرستد.
+  void _editMessage(int idx) {
+    if (_loading || idx < 0 || idx >= _messages.length) return;
+    final m = _messages[idx];
+    if (m.role != 'user') return;
+    setState(() {
+      _messages = _messages.sublist(0, idx);
+      _corrections = [];
+      _correctionsSaved = false;
+      _error = '';
+      _failedText = null;
+      _failedHistory = null;
+      _input.text = m.text;
+      _input.selection = TextSelection.collapsed(offset: m.text.length);
+    });
+    _persist();
+  }
+
+  /// رفرشِ آخرین پاسخِ AI: همان پیامِ کاربر دوباره فرستاده می‌شود.
+  void _refreshReply(int idx) {
+    if (_loading || idx < 1 || idx >= _messages.length) return;
+    if (_messages[idx].role != 'ai' || _messages[idx - 1].role != 'user') return;
+    final text = _messages[idx - 1].text;
+    final history = _messages.sublist(0, idx - 1);
+    unawaited(_ask(text, history));
+  }
+
   void _retry() {
     final t = _failedText;
     final h = _failedHistory;
@@ -825,6 +856,26 @@ Now respond to: "$sentence"
               ),
               child: content,
             ),
+            if (isUser && !_loading)
+              HopeTextAction(
+                icon: Icons.edit_outlined,
+                label: _t('ویرایش', 'Edit'),
+                color: c.teal,
+                fontSize: 11,
+                onTap: () => _editMessage(idx),
+              ),
+            if (!isUser &&
+                !_loading &&
+                idx >= 1 &&
+                idx == _messages.length - 1 &&
+                _messages[idx - 1].role == 'user')
+              HopeTextAction(
+                icon: Icons.refresh,
+                label: _t('رفرش', 'Refresh'),
+                color: c.teal,
+                fontSize: 11,
+                onTap: () => _refreshReply(idx),
+              ),
             if (!isUser && m.corrections.isNotEmpty)
               HopeTextAction(
                 label: m.savedToGrammar
