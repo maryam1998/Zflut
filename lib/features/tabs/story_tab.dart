@@ -1197,22 +1197,24 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
             decoration: BoxDecoration(
-              color: active ? c.ink : Colors.transparent,
+              color: active ? c.paper : Colors.transparent,
               borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                  color: active ? c.gold : Colors.transparent, width: 1.6),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 15, color: active ? c.paper : c.inkSoft),
+                Icon(icon, size: 15, color: active ? c.gold : c.inkSoft),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
                     label,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: active ? c.paper : c.inkSoft,
+                      color: active ? c.ink : c.inkSoft,
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w600,
                     ),
                   ),
                 ),
@@ -1359,8 +1361,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               Opacity(
                 opacity: _translating ? 0.6 : 1,
                 child: Material(
-                  color: c.ink,
-                  borderRadius: BorderRadius.circular(10),
+                  color: c.paper,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(color: c.gold, width: 1.6),
+                  ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(10),
                     onTap: _translating ? null : () => _addCustom(lang),
@@ -1369,16 +1374,15 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                       height: 40,
                       child: Center(
                         child: _translating
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 16,
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: c.gold,
                                 ),
                               )
-                            : const Icon(Icons.add,
-                                size: 18, color: Colors.white),
+                            : Icon(Icons.add, size: 18, color: c.gold),
                       ),
                     ),
                   ),
@@ -1467,21 +1471,22 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: c.ink,
+                            color: c.paper,
                             borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: c.gold, width: 1.4),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(w,
                                   textDirection: autoDir(w),
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 12)),
+                                  style: TextStyle(
+                                      color: c.ink, fontSize: 12)),
                               const SizedBox(width: 4),
                               GestureDetector(
                                 onTap: () => _toggleWord(w),
-                                child: const Icon(Icons.close,
-                                    size: 13, color: Colors.white),
+                                child: Icon(Icons.close,
+                                    size: 13, color: c.inkSoft),
                               ),
                             ],
                           ),
@@ -1616,8 +1621,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     return Opacity(
       opacity: onTap == null ? 0.5 : 1,
       child: Material(
-        color: c.teal,
-        borderRadius: BorderRadius.circular(10),
+        color: c.paper,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: c.gold, width: 1.6),
+        ),
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: onTap,
@@ -1631,13 +1639,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                     width: 14,
                     height: 14,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2, color: c.gold),
                   ),
                   const SizedBox(width: 8),
                 ],
                 Text(label,
-                    style: const TextStyle(
-                        color: Colors.white,
+                    style: TextStyle(
+                        color: c.ink,
                         fontSize: 13,
                         fontWeight: FontWeight.w700)),
               ],
@@ -1859,8 +1867,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     return Opacity(
       opacity: disabled ? 0.6 : 1,
       child: Material(
-        color: c.gold,
-        borderRadius: BorderRadius.circular(14),
+        color: c.paper,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: c.gold, width: 1.6),
+        ),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: disabled ? null : () => _generate(lang),
@@ -1870,19 +1881,19 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (_generating)
-                  const SizedBox(
+                  SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2, color: c.gold),
                   )
                 else
-                  const Icon(Icons.auto_awesome, size: 18, color: Colors.white),
+                  Icon(Icons.auto_awesome, size: 18, color: c.gold),
                 const SizedBox(width: 8),
                 Text(
                   _generating ? 'در حال ساخت داستان...' : 'داستان بساز',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: c.ink,
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),

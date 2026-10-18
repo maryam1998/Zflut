@@ -214,14 +214,20 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
                     ElevatedButton(
                       onPressed: () => _translateAll(_target),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: c.teal, foregroundColor: Colors.white),
+                          backgroundColor: c.paper,
+                          foregroundColor: c.ink,
+                          elevation: 0,
+                          side: BorderSide(color: c.gold, width: 1.6)),
                       child: const Text('ترجمه کن'),
                     )
                   else
                     ElevatedButton(
                       onPressed: () => setState(() => _cancel = true),
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: c.rose, foregroundColor: Colors.white),
+                          backgroundColor: c.paper,
+                          foregroundColor: c.rose,
+                          elevation: 0,
+                          side: BorderSide(color: c.rose, width: 1.6)),
                       child: Text('توقف ($_done از ${_entries.length})'),
                     ),
                   if (_translated != null && !_translating)

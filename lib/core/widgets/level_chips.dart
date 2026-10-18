@@ -79,11 +79,11 @@ class LevelChip extends StatelessWidget {
     final c = context.appColors;
     final isAll = level == 'all';
     final Color base = isAll ? c.headerFrom : levelColor(level);
+    // فعال: زمینه‌ی کرمِ روشن + کادرِ طلایی (مثلِ تبِ فعالِ Story)؛ متن همان رنگِ سطح
     final Color fill =
-        active ? base : (isAll ? Colors.white : levelBgColor(level));
-    final Color border = active ? base : (isAll ? c.cardBorder : base);
-    final Color text =
-        active ? (isAll ? c.headerText : Colors.white) : (isAll ? c.inkSoft : base);
+        active ? c.paper : (isAll ? Colors.white : levelBgColor(level));
+    final Color border = active ? c.gold : (isAll ? c.cardBorder : base);
+    final Color text = active ? (isAll ? c.ink : base) : (isAll ? c.inkSoft : base);
 
     return GestureDetector(
       onTap: onTap,
@@ -93,7 +93,7 @@ class LevelChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: fill,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: border, width: 1.1),
+          border: Border.all(color: border, width: active ? 1.8 : 1.1),
         ),
         child: Text(
           isAll ? (allLabel ?? context.l10n.levels_all) : level,

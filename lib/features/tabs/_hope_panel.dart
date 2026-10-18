@@ -157,19 +157,22 @@ class HopeChoiceChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: padding,
+        // حالتِ فعال در همه‌جا یکسان: زمینه‌ی کرمِ روشن + کادرِ طلایی + متنِ تیره
+        // (مثلِ تبِ فعالِ Story و دایره‌های زبان) — رنگ‌های activeFill/Text نادیده‌اند.
         decoration: BoxDecoration(
-          color: active ? activeFill : (inactiveFill ?? Colors.white),
+          color: active ? c.paper : (inactiveFill ?? Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: active ? activeBorder : (inactiveBorder ?? c.cardBorder),
-            width: 1,
+            color: active ? c.gold : (inactiveBorder ?? c.cardBorder),
+            width: active ? 1.6 : 1,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: active ? activeText : c.ink,
+            color: c.ink,
             fontSize: fontSize,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
           ),
         ),
       ),
