@@ -432,7 +432,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     }
 
     final hasEdit = widget.onTextEdited != null;
-    final hasSave = widget.onSave != null;
+    final hasSave = widget.onSave != null || widget.saved;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -470,7 +470,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                   ),
                 if (hasSave)
                   _HeadIcon(
-                    icon: widget.saved ? Icons.check : Icons.bookmark_border,
+                    icon: widget.saved ? Icons.bookmark_added : Icons.bookmark_border,
                     color: widget.saved ? c.teal : c.gold,
                     tooltip:
                         widget.saved ? 'ذخیره شد' : 'ذخیره در کتابخانه‌ی من',
