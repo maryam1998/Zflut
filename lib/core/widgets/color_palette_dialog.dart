@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app.dart';
 import '../../features/tabs/_hope_panel.dart' show uiContentDirection;
 import '../theme/app_theme_colors.dart';
 
