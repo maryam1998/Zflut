@@ -740,5 +740,12 @@
   "rv_rate_good": "خوب",
   "rv_rate_easy": "آسان",
   "rv_in_n_days": "{n} روز بعد",
-  "rv_weekday_letters": "د,س,چ,پ,ج,ش,ی"
+  "rv_weekday_letters": "د,س,چ,پ,ج,ش,ی",
+  "cp_title": "انتخاب رنگ",
+  "cp_selected_color": "رنگ انتخاب‌شده",
+  "cp_swatches": "رنگ‌های آماده",
+  "cp_advanced": "پیشرفته",
+  "cp_hue": "فام (Hue)",
+  "cp_saturation": "اشباع (Saturation)",
+  "cp_value": "روشنایی (Value)"
 }

@@ -1284,5 +1284,12 @@
       }
     }
   },
-  "rv_weekday_letters": "M,T,W,T,F,S,S"
+  "rv_weekday_letters": "M,T,W,T,F,S,S",
+  "cp_title": "Choose a color",
+  "cp_selected_color": "Selected color",
+  "cp_swatches": "Preset colors",
+  "cp_advanced": "Advanced",
+  "cp_hue": "Hue",
+  "cp_saturation": "Saturation",
+  "cp_value": "Brightness"
 }

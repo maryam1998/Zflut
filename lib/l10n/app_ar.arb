@@ -740,5 +740,12 @@
   "rv_rate_good": "جيد",
   "rv_rate_easy": "سهل",
   "rv_in_n_days": "بعد {n} أيام",
-  "rv_weekday_letters": "ن,ث,ر,خ,ج,س,ح"
+  "rv_weekday_letters": "ن,ث,ر,خ,ج,س,ح",
+  "cp_title": "اختر لونًا",
+  "cp_selected_color": "اللون المحدد",
+  "cp_swatches": "ألوان جاهزة",
+  "cp_advanced": "متقدم",
+  "cp_hue": "تدرّج اللون",
+  "cp_saturation": "التشبّع",
+  "cp_value": "السطوع"
 }

@@ -740,5 +740,12 @@
   "rv_rate_good": "Bien",
   "rv_rate_easy": "Fácil",
   "rv_in_n_days": "En {n} días",
-  "rv_weekday_letters": "L,M,X,J,V,S,D"
+  "rv_weekday_letters": "L,M,X,J,V,S,D",
+  "cp_title": "Elegir un color",
+  "cp_selected_color": "Color seleccionado",
+  "cp_swatches": "Colores predefinidos",
+  "cp_advanced": "Avanzado",
+  "cp_hue": "Tono",
+  "cp_saturation": "Saturación",
+  "cp_value": "Brillo"
 }

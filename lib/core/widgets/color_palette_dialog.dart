@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../features/tabs/_hope_panel.dart' show uiContentDirection;
 import '../theme/app_theme_colors.dart';
 
 /// 🎨 پالت رنگِ پیشرفته — بدون نیاز به کدِ رنگ.
@@ -8,15 +9,18 @@ import '../theme/app_theme_colors.dart';
 Future<String?> showColorPaletteDialog(
   BuildContext context, {
   required String initial,
-  String title = 'انتخاب رنگ',
+  String? title,
   List<Color>? swatches,
 }) {
   return showDialog<String>(
     context: context,
-    builder: (_) => _ColorPaletteDialog(
-      initial: colorFromHex(initial),
-      title: title,
-      swatches: swatches ?? kPaletteSwatches,
+    builder: (ctx) => Directionality(
+      textDirection: uiContentDirection(ctx),
+      child: _ColorPaletteDialog(
+        initial: colorFromHex(initial),
+        title: title ?? ctx.l10n.cp_title,
+        swatches: swatches ?? kPaletteSwatches,
+      ),
     ),
   );
 }
@@ -107,7 +111,7 @@ class _ColorPaletteDialogState extends State<_ColorPaletteDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _label('Hue', c),
+                      _label(context.l10n.cp_hue, c),
                       _GradSlider(
                         value: _hsv.hue / 360,
                         colors: [
@@ -117,7 +121,7 @@ class _ColorPaletteDialogState extends State<_ColorPaletteDialog> {
                         onChanged: (v) => setState(
                             () => _hsv = _hsv.withHue((v * 360).clamp(0, 359.999))),
                       ),
-                      _label('Saturation', c),
+                      _label(context.l10n.cp_saturation, c),
                       _GradSlider(
                         value: _hsv.saturation,
                         colors: [
@@ -126,7 +130,7 @@ class _ColorPaletteDialogState extends State<_ColorPaletteDialog> {
                         ],
                         onChanged: (v) => setState(() => _hsv = _hsv.withSaturation(v)),
                       ),
-                      _label('Value', c),
+                      _label(context.l10n.cp_value, c),
                       _GradSlider(
                         value: _hsv.value,
                         colors: [
@@ -155,7 +159,7 @@ class _ColorPaletteDialogState extends State<_ColorPaletteDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('رنگ انتخاب‌شده',
+                        Text(context.l10n.cp_selected_color,
                             style: TextStyle(color: c.ink, fontSize: 13)),
                         Directionality(
                           textDirection: TextDirection.ltr,
@@ -167,7 +171,7 @@ class _ColorPaletteDialogState extends State<_ColorPaletteDialog> {
                   ),
                   TextButton(
                     onPressed: () => setState(() => _advanced = !_advanced),
-                    child: Text(_advanced ? 'رنگ‌های آماده' : 'پیشرفته'),
+                    child: Text(_advanced ? context.l10n.cp_swatches : context.l10n.cp_advanced),
                   ),
                 ],
               ),

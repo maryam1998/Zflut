@@ -740,5 +740,12 @@
   "rv_rate_good": "Gut",
   "rv_rate_easy": "Leicht",
   "rv_in_n_days": "In {n} Tagen",
-  "rv_weekday_letters": "M,D,M,D,F,S,S"
+  "rv_weekday_letters": "M,D,M,D,F,S,S",
+  "cp_title": "Farbe wählen",
+  "cp_selected_color": "Gewählte Farbe",
+  "cp_swatches": "Vorgabefarben",
+  "cp_advanced": "Erweitert",
+  "cp_hue": "Farbton",
+  "cp_saturation": "Sättigung",
+  "cp_value": "Helligkeit"
 }
