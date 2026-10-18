@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app.dart';
 import '../../core/providers/favorites_provider.dart';
 import '../words/widgets/word_list_view.dart';
 
@@ -20,10 +21,10 @@ class FavoritesTab extends ConsumerWidget {
       words: words,
       // اگر چیزی علاقه‌مند نشده، پیامِ Hope را نشان بده (نه «داده‌ای بارگذاری نشد»)
       hasAnyData: true,
-      heading: 'لغات',
+      heading: context.l10n.phrasebook_favorites_words_heading,
       emptyMessage: favIds.isEmpty
-          ? 'هنوز چیزی به علاقه‌مندی‌ها اضافه نکردی. روی ⭐ کنار هر عبارت یا لغت بزن.'
-          : 'چیزی پیدا نشد',
+          ? context.l10n.phrasebook_no_favorites
+          : context.l10n.dialogs_no_results,
     );
   }
 }

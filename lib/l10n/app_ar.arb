@@ -639,5 +639,7 @@
   "sync_restore_body": "تم تنزيل هذه الحزم بحسابك على جهاز آخر:",
   "sync_restore_download": "تنزيل",
   "sync_restore_later": "لاحقًا",
-  "sync_restore_started": "بدأ التنزيل — تابع التقدّم من الإعدادات."
+  "sync_restore_started": "بدأ التنزيل — تابع التقدّم من الإعدادات.",
+  "sort_recent": "أُضيفت مؤخرًا",
+  "wordlist_not_loaded": "لم يتم تحميل أي بيانات"
 }

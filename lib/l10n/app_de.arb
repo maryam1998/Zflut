@@ -639,5 +639,7 @@
   "sync_restore_body": "Diese Pakete wurden mit deinem Konto auf einem anderen Gerät heruntergeladen:",
   "sync_restore_download": "Herunterladen",
   "sync_restore_later": "Später",
-  "sync_restore_started": "Download gestartet — Fortschritt siehst du in den Einstellungen."
+  "sync_restore_started": "Download gestartet — Fortschritt siehst du in den Einstellungen.",
+  "sort_recent": "Zuletzt hinzugefügt",
+  "wordlist_not_loaded": "Keine Daten geladen"
 }

@@ -1045,5 +1045,7 @@
   "sync_restore_body": "These packs were downloaded with your account on another device:",
   "sync_restore_download": "Download",
   "sync_restore_later": "Later",
-  "sync_restore_started": "Downloads started — follow progress in Settings."
+  "sync_restore_started": "Downloads started — follow progress in Settings.",
+  "sort_recent": "Recently added",
+  "wordlist_not_loaded": "No data loaded"
 }

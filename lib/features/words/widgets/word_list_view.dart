@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app.dart';
 import '../../../core/widgets/level_chips.dart';
 import '../../../core/models/daily_word.dart';
 import '../../../core/player_sync/player_track.dart';
@@ -20,6 +21,19 @@ import 'word_card.dart';
 /// با رسیدنِ اسکرول به ته، بخشِ بعدی خودکار اضافه می‌شود.
 const int kWordsPageSize = 60;
 
+/// گزینه‌های مرتب‌سازیِ لیستِ لغات — همان WORD_LIST_SORT_OPTIONS در Hope
+/// (sortHelpers.js): پیش‌فرض / نام الف→ی / نام ی→الف / سطح ساده→سخت / سطح سخت→ساده
+enum WordListSort { byDefault, nameAsc, nameDesc, levelAsc, levelDesc }
+
+const Map<String, int> _kLevelRank = {
+  'A1': 1,
+  'A2': 2,
+  'B1': 3,
+  'B2': 4,
+  'C1': 5,
+  'C2': 6,
+};
+
 class WordListView extends ConsumerStatefulWidget {
   /// شناسه‌ی لیست برای ذخیره‌ی «خوانده‌شده‌ها» ('words' / 'slang' / …)
   final String listId;
@@ -31,7 +45,8 @@ class WordListView extends ConsumerStatefulWidget {
   final bool hasAnyData;
 
   /// پیام حالت خالی
-  final String emptyMessage;
+  /// (اگر null باشد، متنِ محلی‌شده‌ی «چیزی پیدا نشد» نشان داده می‌شود)
+  final String? emptyMessage;
 
   /// هنوز در حال بارگذاری است؟ (به‌جای «بارگذاری نشد» چرخنده نشان بده)
   final bool loading;
@@ -44,7 +59,7 @@ class WordListView extends ConsumerStatefulWidget {
     required this.listId,
     required this.words,
     required this.hasAnyData,
-    this.emptyMessage = 'چیزی پیدا نشد',
+    this.emptyMessage,
     this.loading = false,
     this.heading,
   });
@@ -60,6 +75,55 @@ class _WordListViewState extends ConsumerState<WordListView> {
 
   // مرزِ بالاییِ «خودکار» — با اسکرول به ته، kWordsPageSize تا زیاد می‌شود.
   int _autoTo = kWordsPageSize;
+
+  // مرتب‌سازی (مثل Hope) + کشِ لیستِ مرتب‌شده تا identity ثابت بماند
+  WordListSort _sort = WordListSort.byDefault;
+  List<DailyWord>? _sortedSrc;
+  WordListSort? _sortedKey;
+  List<DailyWord> _sortedList = const <DailyWord>[];
+
+  List<DailyWord> _applySort(List<DailyWord> src) {
+    if (_sort == WordListSort.byDefault) return src;
+    if (identical(_sortedSrc, src) && _sortedKey == _sort) return _sortedList;
+    final arr = [...src];
+    int rank(DailyWord w) => _kLevelRank[w.level] ?? 99;
+    switch (_sort) {
+      case WordListSort.nameAsc:
+        arr.sort((a, b) => a.en.toLowerCase().compareTo(b.en.toLowerCase()));
+        break;
+      case WordListSort.nameDesc:
+        arr.sort((a, b) => b.en.toLowerCase().compareTo(a.en.toLowerCase()));
+        break;
+      case WordListSort.levelAsc:
+        arr.sort((a, b) => rank(a).compareTo(rank(b)));
+        break;
+      case WordListSort.levelDesc:
+        arr.sort((a, b) => rank(b).compareTo(rank(a)));
+        break;
+      case WordListSort.byDefault:
+        break;
+    }
+    _sortedSrc = src;
+    _sortedKey = _sort;
+    _sortedList = arr;
+    return arr;
+  }
+
+  String _sortLabel(WordListSort m) {
+    final L = context.l10n;
+    switch (m) {
+      case WordListSort.byDefault:
+        return L.sort_default;
+      case WordListSort.nameAsc:
+        return L.sort_name_asc;
+      case WordListSort.nameDesc:
+        return L.sort_name_desc;
+      case WordListSort.levelAsc:
+        return L.sort_level_asc;
+      case WordListSort.levelDesc:
+        return L.sort_level_desc;
+    }
+  }
 
   String _sigLevel = 'all';
   String _sigQuery = '';
@@ -78,7 +142,8 @@ class _WordListViewState extends ConsumerState<WordListView> {
 
   @override
   Widget build(BuildContext context) {
-    final words = widget.words;
+    final L = context.l10n;
+    final words = _applySort(widget.words);
     final c = context.appColors;
     final sel = ref.watch(languageSelectionProvider);
     final filter = ref.watch(wordsFilterProvider);
@@ -141,28 +206,57 @@ class _WordListViewState extends ConsumerState<WordListView> {
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight, // همیشه سمتِ راست (فیزیکی)
-                    child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: c.paperDark.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: c.cardBorder),
+                    child: PopupMenuButton<WordListSort>(
+                      initialValue: _sort,
+                      color: c.paper,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.sort, size: 14, color: c.inkSoft),
-                          const SizedBox(width: 6),
-                          Text('مرتب‌سازی: پیش‌فرض',
-                              style: TextStyle(
-                                  color: c.ink,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w600)),
-                          const SizedBox(width: 3),
-                          Icon(Icons.keyboard_arrow_down,
-                              size: 14, color: c.inkSoft),
-                        ],
+                      onSelected: (m) => setState(() {
+                        _sort = m;
+                        _resetRange();
+                      }),
+                      itemBuilder: (_) => WordListSort.values.map((m) {
+                        return PopupMenuItem<WordListSort>(
+                          value: m,
+                          height: 40,
+                          child: Row(
+                            children: [
+                              if (m == _sort)
+                                Icon(Icons.check, size: 16, color: c.gold)
+                              else
+                                const SizedBox(width: 16),
+                              const SizedBox(width: 8),
+                              Text(_sortLabel(m),
+                                  style: TextStyle(
+                                      color: c.ink, fontSize: 13.5)),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: c.paperDark.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: c.cardBorder),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.sort, size: 14, color: c.inkSoft),
+                            const SizedBox(width: 6),
+                            Text('${L.sort_label}: ${_sortLabel(_sort)}',
+                                style: TextStyle(
+                                    color: c.ink,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 3),
+                            Icon(Icons.keyboard_arrow_down,
+                                size: 14, color: c.inkSoft),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -179,7 +273,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                       textAlign: TextAlign.right,
                       style: TextStyle(color: c.ink, fontSize: 13.5),
                       decoration: InputDecoration(
-                        hintText: 'جستجوی لغت...',
+                        hintText: L.phrasebook_search_words,
                         hintStyle: TextStyle(
                             color: c.inkSoft.withOpacity(0.55), fontSize: 13.5),
                         prefixIcon:
@@ -229,7 +323,9 @@ class _WordListViewState extends ConsumerState<WordListView> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                 child: RangeCard(
-                  label: widget.listId == 'favorites' ? 'لغات' : 'دیکشنری',
+                  label: widget.listId == 'favorites'
+                      ? L.phrasebook_favorites_words_heading
+                      : L.dictionary_range_label,
                   max: total,
                   from: from,
                   to: to,
@@ -252,7 +348,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                 c: c,
                 hasData: widget.hasAnyData,
                 loading: widget.loading && !widget.hasAnyData,
-                message: widget.emptyMessage,
+                message: widget.emptyMessage ?? L.dialogs_no_results,
               ),
             )
           else
@@ -375,7 +471,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              hasData ? message : 'داده‌ای بارگذاری نشد',
+              hasData ? message : context.l10n.wordlist_not_loaded,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: c.inkSoft,

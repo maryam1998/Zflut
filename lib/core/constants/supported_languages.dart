@@ -39,3 +39,12 @@ const List<String> kRtlLangCodes = ['fa', 'ar'];
 
 TextDirection dirFor(String code) =>
     kRtlLangCodes.contains(code) ? TextDirection.rtl : TextDirection.ltr;
+
+/// نامِ زبان بر اساس زبانِ رابط: فارسی → نام فارسی، بقیه → نام انگلیسی.
+String langDisplayName(BuildContext context, String code) {
+  final fa = Localizations.localeOf(context).languageCode == 'fa';
+  for (final l in kSupportedLanguages) {
+    if (l.code == code) return fa ? l.faLabel : l.enLabel;
+  }
+  return code.toUpperCase();
+}

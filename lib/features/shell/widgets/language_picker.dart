@@ -355,7 +355,7 @@ class _OrderChip extends StatelessWidget {
             ),
             const SizedBox(width: 5),
             Text(
-              langFaName(code),
+              langDisplayName(context, code),
               style: TextStyle(
                 color: c.ink,
                 fontSize: 11,

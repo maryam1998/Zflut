@@ -639,5 +639,7 @@
   "sync_restore_body": "Estos paquetes se descargaron con tu cuenta en otro dispositivo:",
   "sync_restore_download": "Descargar",
   "sync_restore_later": "Más tarde",
-  "sync_restore_started": "Descarga iniciada: sigue el progreso en Ajustes."
+  "sync_restore_started": "Descarga iniciada: sigue el progreso en Ajustes.",
+  "sort_recent": "Añadido recientemente",
+  "wordlist_not_loaded": "No se cargaron datos"
 }

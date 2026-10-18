@@ -639,5 +639,7 @@
   "sync_restore_body": "Ces packs ont été téléchargés avec votre compte sur un autre appareil :",
   "sync_restore_download": "Télécharger",
   "sync_restore_later": "Plus tard",
-  "sync_restore_started": "Téléchargement lancé — suivez la progression dans les réglages."
+  "sync_restore_started": "Téléchargement lancé — suivez la progression dans les réglages.",
+  "sort_recent": "Ajouté récemment",
+  "wordlist_not_loaded": "Aucune donnée chargée"
 }

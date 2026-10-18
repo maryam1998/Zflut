@@ -639,5 +639,7 @@
   "sync_restore_body": "این بسته‌ها قبلاً با حساب شما روی دستگاه دیگری دانلود شده بودند:",
   "sync_restore_download": "دانلود",
   "sync_restore_later": "بعداً",
-  "sync_restore_started": "دانلود شروع شد — پیشرفت را در تنظیمات ببینید."
+  "sync_restore_started": "دانلود شروع شد — پیشرفت را در تنظیمات ببینید.",
+  "sort_recent": "اخیراً اضافه‌شده",
+  "wordlist_not_loaded": "داده‌ای بارگذاری نشد"
 }

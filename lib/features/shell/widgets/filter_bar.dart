@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../app.dart';
 
 import '../../../core/models/filter_state.dart';
 import '../../../core/providers/words_filter_provider.dart';
@@ -112,7 +113,7 @@ class _SortRow extends StatelessWidget {
                 else
                   const SizedBox(width: 16),
                 const SizedBox(width: 8),
-                Text(mode.faLabel,
+                Text(mode.label(context.l10n),
                     style: TextStyle(color: c.ink, fontSize: 13.5)),
               ],
             ),
@@ -131,7 +132,7 @@ class _SortRow extends StatelessWidget {
               Icon(Icons.sort, size: 15, color: c.inkSoft),
               const SizedBox(width: 6),
               Text(
-                'مرتب‌سازی: ${current.faLabel}',
+                '${context.l10n.sort_label}: ${current.label(context.l10n)}',
                 style: TextStyle(
                   color: c.ink,
                   fontSize: 11.5,
