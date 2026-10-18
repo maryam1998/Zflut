@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app.dart';
 import '../../core/audio/story_audio_controller.dart';
 import '../../core/constants/supported_languages.dart' show dirFor;
 import '../../core/models/text_prefs.dart';
@@ -501,7 +502,9 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                   _HeadIcon(
                     icon: _editing ? Icons.close : Icons.edit_outlined,
                     color: _editing ? c.rose : c.teal,
-                    tooltip: _editing ? 'انصرافِ ویرایش' : 'ویرایشِ متن',
+                    tooltip: _editing
+                        ? context.l10n.reader_cancel_editing
+                        : context.l10n.reader_edit_text,
                     onTap: _toggleEdit,
                   ),
                 if (hasSave)
@@ -509,7 +512,9 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                     icon: widget.saved ? Icons.bookmark_added : Icons.bookmark_border,
                     color: widget.saved ? c.teal : c.gold,
                     tooltip:
-                        widget.saved ? 'ذخیره شد' : 'ذخیره در کتابخانه‌ی من',
+                        widget.saved
+                            ? context.l10n.grammar_saved
+                            : context.l10n.reader_save_story,
                     onTap: widget.saved ? null : widget.onSave,
                   ),
               ],
@@ -533,7 +538,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                         onChanged: (_) => setState(() {}),
                         style: TextStyle(color: c.ink, fontSize: 13),
                         decoration: InputDecoration(
-                          hintText: 'جستجو در متنِ داستان — هر زبانی',
+                          hintText: context.l10n.reader_search_placeholder,
                           hintStyle: TextStyle(
                               color: c.inkSoft.withOpacity(0.6), fontSize: 13),
                           border: InputBorder.none,
@@ -554,10 +559,10 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
               if (q.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 if (hits.isEmpty)
-                  Text('چیزی پیدا نشد.',
+                  Text(context.l10n.reader_nothing_found,
                       style: TextStyle(color: c.inkSoft, fontSize: 12))
                 else ...[
-                  Text('${hits.length} نتیجه',
+                  Text(context.l10n.reader_n_results('${hits.length}'),
                       style: TextStyle(color: c.inkSoft, fontSize: 11)),
                   for (final h in hits)
                     GestureDetector(
@@ -585,7 +590,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
               const SizedBox(height: 12),
 
               // ── نمایشِ ترجمه ──
-              Text('نمایش ترجمه:',
+              Text(context.l10n.reader_translation_display,
                   style: TextStyle(color: c.inkSoft, fontSize: 13)),
               const SizedBox(height: 6),
               // از راست به چپ: جمله به جمله ← پاراگراف به پاراگراف ← هیچ
@@ -596,10 +601,10 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final m in const [
-                    [2, 'جمله به جمله'],
-                    [1, 'پاراگراف به پاراگراف'],
-                    [0, 'هیچ'],
+                  for (final m in [
+                    [2, context.l10n.reader_sentence_by_sentence],
+                    [1, context.l10n.reader_paragraph_by_paragraph],
+                    [0, context.l10n.reader_none],
                   ])
                     HopeChoiceChip(
                       label: m[1] as String,
@@ -634,7 +639,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'متن را ویرایش کن؛ ترجمه‌ها دوباره ساخته می‌شوند.',
+          context.l10n.reader_edit_hint,
           style: TextStyle(color: c.inkSoft, fontSize: 12),
         ),
         const SizedBox(height: 6),
@@ -667,7 +672,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                     color: c.gold,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text('اعمال',
+                  child: Text(context.l10n.reader_apply_edit,
                       style: TextStyle(
                           color: c.headerTo,
                           fontSize: 13,
@@ -685,7 +690,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                   border: Border.all(color: c.cardBorder),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text('انصراف',
+                child: Text(context.l10n.cancel_button,
                     style: TextStyle(color: c.ink, fontSize: 13)),
               ),
             ),
@@ -699,7 +704,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
         const SizedBox(height: 14),
         Divider(color: c.cardBorder, height: 1),
         const SizedBox(height: 12),
-        Text('یادداشت‌های من درباره‌ی این داستان',
+        Text(context.l10n.reader_notes_title,
             style: TextStyle(
                 color: c.ink, fontSize: 13, fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
@@ -711,7 +716,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
           textDirection: autoDir(_notesCtrl.text),
           style: TextStyle(color: c.ink, fontSize: 13, height: 1.7),
           decoration: InputDecoration(
-            hintText: 'هر چیزی دوست داری بنویس — بدون محدودیتِ کلمه…',
+            hintText: context.l10n.reader_notes_placeholder,
             hintStyle:
                 TextStyle(color: c.inkSoft.withOpacity(0.6), fontSize: 13),
             isDense: true,
@@ -945,8 +950,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
                             failed
-                                ? 'ترجمه نشد — دوباره بزن'
-                                : 'در حال ترجمه...',
+                                ? context.l10n.reader_not_translated_retry
+                                : context.l10n.grammar_translating,
                             textDirection: TextDirection.rtl,
                             style: TextStyle(
                               color: failed ? c.rose : c.inkSoft,

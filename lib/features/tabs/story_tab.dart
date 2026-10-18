@@ -1132,15 +1132,15 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        content: const Text('این داستان برای همیشه پاک بشه؟'),
+        content: Text(context.l10n.story_delete_confirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('انصراف'),
+            child: Text(context.l10n.cancel_button),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('حذف'),
+            child: Text(context.l10n.library_delete),
           ),
         ],
       ),
@@ -2285,7 +2285,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                       Text(
                         link != null
                             ? '${_sourceOf(s)} · $date'
-                            : '${langFaName(s.langCode)} · ${s.level} · '
+                            : '${langDisplayName(context, s.langCode)} · ${s.level} · '
                                 '${_contentLabel(context.l10n, s.contentType)} · $date',
                         style: TextStyle(color: c.inkSoft, fontSize: 11),
                       ),

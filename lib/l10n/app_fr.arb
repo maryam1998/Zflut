@@ -657,5 +657,11 @@
   "story_paste_close": "Fermer la zone de texte",
   "story_paste_open": "Ou collez un texte/une histoire ici",
   "story_paste_hint": "Collez votre texte ici...",
-  "story_prepare_reading": "Préparer pour la lecture"
+  "story_prepare_reading": "Préparer pour la lecture",
+  "story_delete_confirm": "Supprimer définitivement cette histoire ?",
+  "srt_tool_err_not_srt": "Le fichier sélectionné n’est pas un .srt",
+  "srt_tool_stopped": "Traduction arrêtée",
+  "srt_tool_save_dialog": "Enregistrer les sous-titres traduits",
+  "srt_tool_saved": "Enregistré : {name}",
+  "srt_tool_err_save": "Impossible d’enregistrer le fichier"
 }

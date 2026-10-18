@@ -657,5 +657,11 @@
   "story_paste_close": "إغلاق مربع النص",
   "story_paste_open": "أو الصق نصًا/قصة هنا",
   "story_paste_hint": "الصق نصك هنا...",
-  "story_prepare_reading": "جهّز للقراءة"
+  "story_prepare_reading": "جهّز للقراءة",
+  "story_delete_confirm": "هل تريد حذف هذه القصة نهائيًا؟",
+  "srt_tool_err_not_srt": "الملف المحدد ليس بصيغة .srt",
+  "srt_tool_stopped": "تم إيقاف الترجمة",
+  "srt_tool_save_dialog": "حفظ الترجمة",
+  "srt_tool_saved": "تم الحفظ: {name}",
+  "srt_tool_err_save": "تعذّر حفظ الملف"
 }

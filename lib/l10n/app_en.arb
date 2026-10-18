@@ -1063,5 +1063,18 @@
   "story_paste_close": "Close text box",
   "story_paste_open": "Or paste a text/story here",
   "story_paste_hint": "Paste your text here...",
-  "story_prepare_reading": "Prepare for reading"
+  "story_prepare_reading": "Prepare for reading",
+  "story_delete_confirm": "Delete this story permanently?",
+  "srt_tool_err_not_srt": "The selected file is not an .srt file",
+  "srt_tool_stopped": "Translation stopped",
+  "srt_tool_save_dialog": "Save translated subtitles",
+  "srt_tool_saved": "Saved: {name}",
+  "srt_tool_err_save": "Couldn’t save the file",
+  "@srt_tool_saved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

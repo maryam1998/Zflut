@@ -657,5 +657,11 @@
   "story_paste_close": "بستنِ کادرِ متن",
   "story_paste_open": "یا یه متن/داستان رو اینجا پیست کن",
   "story_paste_hint": "متنت رو اینجا پیست کن...",
-  "story_prepare_reading": "آماده‌ی خوانش کن"
+  "story_prepare_reading": "آماده‌ی خوانش کن",
+  "story_delete_confirm": "این داستان برای همیشه پاک بشه؟",
+  "srt_tool_err_not_srt": "فایلِ انتخابی با پسوندِ .srt نیست",
+  "srt_tool_stopped": "ترجمه متوقف شد",
+  "srt_tool_save_dialog": "ذخیره‌ی زیرنویسِ ترجمه‌شده",
+  "srt_tool_saved": "ذخیره شد: {name}",
+  "srt_tool_err_save": "ذخیره‌ی فایل انجام نشد"
 }

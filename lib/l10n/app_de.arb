@@ -657,5 +657,11 @@
   "story_paste_close": "Textfeld schließen",
   "story_paste_open": "Oder Text/Geschichte hier einfügen",
   "story_paste_hint": "Füge deinen Text hier ein...",
-  "story_prepare_reading": "Zum Lesen vorbereiten"
+  "story_prepare_reading": "Zum Lesen vorbereiten",
+  "story_delete_confirm": "Diese Geschichte endgültig löschen?",
+  "srt_tool_err_not_srt": "Die ausgewählte Datei ist keine .srt-Datei",
+  "srt_tool_stopped": "Übersetzung gestoppt",
+  "srt_tool_save_dialog": "Übersetzte Untertitel speichern",
+  "srt_tool_saved": "Gespeichert: {name}",
+  "srt_tool_err_save": "Datei konnte nicht gespeichert werden"
 }

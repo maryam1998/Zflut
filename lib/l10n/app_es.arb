@@ -657,5 +657,11 @@
   "story_paste_close": "Cerrar cuadro de texto",
   "story_paste_open": "O pega aquí un texto/historia",
   "story_paste_hint": "Pega tu texto aquí...",
-  "story_prepare_reading": "Preparar para leer"
+  "story_prepare_reading": "Preparar para leer",
+  "story_delete_confirm": "¿Eliminar esta historia para siempre?",
+  "srt_tool_err_not_srt": "El archivo seleccionado no es un .srt",
+  "srt_tool_stopped": "Traducción detenida",
+  "srt_tool_save_dialog": "Guardar subtítulos traducidos",
+  "srt_tool_saved": "Guardado: {name}",
+  "srt_tool_err_save": "No se pudo guardar el archivo"
 }

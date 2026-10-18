@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app.dart';
 import '../../core/audio/srt_utils.dart';
 import '../../core/constants/supported_languages.dart';
 import '../../core/providers/ai_settings_provider.dart';
@@ -52,13 +53,13 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
       final f = res?.files.isNotEmpty == true ? res!.files.first : null;
       if (f == null || f.bytes == null) return;
       if (!f.name.toLowerCase().endsWith('.srt')) {
-        setState(() => _error = 'فایلِ انتخابی با پسوندِ .srt نیست');
+        setState(() => _error = context.l10n.srt_tool_err_not_srt);
         return;
       }
       final parsed = parseSrt(utf8.decode(f.bytes!, allowMalformed: true));
       if (parsed.isEmpty) {
         setState(() {
-          _error = 'این فایل زیرنویسِ معتبری نداشت';
+          _error = context.l10n.srt_tool_err_empty_file;
           _entries = const [];
         });
         return;
@@ -70,7 +71,7 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
         _done = 0;
       });
     } catch (_) {
-      setState(() => _error = 'خوندنِ فایل انجام نشد');
+      setState(() => _error = context.l10n.srt_tool_err_read);
     }
   }
 
@@ -107,7 +108,7 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
     setState(() {
       _translated = out.length == _entries.length ? out : null;
       _translating = false;
-      if (out.length != _entries.length) _info = 'ترجمه متوقف شد';
+      if (out.length != _entries.length) _info = context.l10n.srt_tool_stopped;
     });
   }
 
@@ -119,13 +120,13 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
     final bytes = Uint8List.fromList(utf8.encode(serializeSrt(t)));
     try {
       final path = await FilePicker.platform.saveFile(
-        dialogTitle: 'ذخیره‌ی زیرنویسِ ترجمه‌شده',
+        dialogTitle: context.l10n.srt_tool_save_dialog,
         fileName: name,
         bytes: bytes,
       );
-      if (mounted && path != null) setState(() => _info = 'ذخیره شد: $name');
+      if (mounted && path != null) setState(() => _info = context.l10n.srt_tool_saved(name));
     } catch (_) {
-      if (mounted) setState(() => _error = 'ذخیره‌ی فایل انجام نشد');
+      if (mounted) setState(() => _error = context.l10n.srt_tool_err_save);
     }
   }
 
@@ -151,7 +152,7 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
             child: Row(
               children: [
                 Expanded(
-                  child: Text('🎬 ترجمه‌ی فایلِ زیرنویس (SRT)',
+                  child: Text('🎬 ${context.l10n.srt_tool_title}',
                       style: TextStyle(
                           color: c.ink,
                           fontSize: 14,
@@ -165,8 +166,7 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
           if (_open) ...[
             const SizedBox(height: 8),
             Text(
-              'یه فایلِ .srt وارد کن؛ متنِ هر خط ترجمه می‌شه و تایم‌کدها دست‌نخورده می‌مونن. '
-              'بعد فایلِ جدید رو ذخیره کن تا تو پلیرِ خودت بازش کنی.',
+context.l10n.srt_tool_desc,
               style: TextStyle(color: c.inkSoft, fontSize: 12),
             ),
             const SizedBox(height: 8),
@@ -179,11 +179,11 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
                   onPressed: _translating ? null : _pick,
                   style: OutlinedButton.styleFrom(
                       side: BorderSide(color: c.cardBorder)),
-                  child: Text('انتخابِ فایل SRT',
+                  child: Text(context.l10n.srt_tool_choose_file,
                       style: TextStyle(color: c.ink, fontSize: 13)),
                 ),
                 if (_fileName.isNotEmpty)
-                  Text('$_fileName (${_entries.length} خط)',
+                  Text('$_fileName (${context.l10n.srt_tool_lines_count('${_entries.length}')})',
                       textDirection: TextDirection.ltr,
                       style: TextStyle(color: c.inkSoft, fontSize: 12)),
               ],
@@ -201,7 +201,9 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
                         : 'en',
                     items: [
                       for (final l in kSupportedLanguages)
-                        DropdownMenuItem(value: l.code, child: Text(l.faLabel)),
+                        DropdownMenuItem(
+                            value: l.code,
+                            child: Text(langDisplayName(context, l.code))),
                     ],
                     onChanged: _translating
                         ? null
@@ -217,7 +219,7 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
                           backgroundColor: c.gold,
                           foregroundColor: c.headerTo,
                           elevation: 0),
-                      child: const Text('ترجمه کن'),
+                      child: Text(context.l10n.srt_tool_translate),
                     )
                   else
                     ElevatedButton(
@@ -226,14 +228,14 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
                           backgroundColor: c.rose,
                           foregroundColor: Colors.white,
                           elevation: 0),
-                      child: Text('توقف ($_done از ${_entries.length})'),
+                      child: Text(context.l10n.srt_tool_stop('$_done', '${_entries.length}')),
                     ),
                   if (_translated != null && !_translating)
                     OutlinedButton(
                       onPressed: () => _save(_target),
                       style: OutlinedButton.styleFrom(
                           side: BorderSide(color: c.teal)),
-                      child: Text('ذخیره‌ی فایلِ ترجمه‌شده',
+                      child: Text(context.l10n.srt_tool_download,
                           style: TextStyle(color: c.teal)),
                     ),
                 ],
