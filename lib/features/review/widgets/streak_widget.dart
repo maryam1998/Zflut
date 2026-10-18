@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/theme/app_theme_colors.dart';
 import '../models/review_stats.dart';
+import '../review_i18n.dart';
 
 /// زنجیره‌ی روزانه: «🔥 X روز پشت‌سرهم» + ۷ نقطه‌ی فعالیتِ هفته.
 class StreakWidget extends StatelessWidget {
@@ -17,7 +17,7 @@ class StreakWidget extends StatelessWidget {
     final dates = stats.lastDates(now, n: 7);
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: uiContentDirection(context),
       child: Row(
         children: [
           const Text('🔥', style: TextStyle(fontSize: 30)),
@@ -28,8 +28,8 @@ class StreakWidget extends StatelessWidget {
               children: [
                 Text(
                   streak == 0
-                      ? 'هنوز زنجیره‌ای نداری'
-                      : '${faDigits(streak)} روز پشت‌سرهم',
+                      ? context.l10n.rv_streak_none
+                      : context.l10n.rv_streak_days(context.rvNum(streak)),
                   style: TextStyle(
                     color: c.ink,
                     fontSize: 16,
@@ -39,8 +39,8 @@ class StreakWidget extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   streak == 0
-                      ? 'امروز یک جلسه مرور کن تا شروع شود'
-                      : 'زنجیره را نشکن؛ هر روز حداقل یک لغت',
+                      ? context.l10n.rv_streak_start
+                      : context.l10n.rv_streak_keep,
                   style: TextStyle(color: c.inkSoft, fontSize: 12),
                 ),
               ],

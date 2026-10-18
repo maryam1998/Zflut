@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/word_entry.dart';
-import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/providers/speech_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../models/review_item.dart';
+import '../review_i18n.dart';
 import '../providers/review_provider.dart';
 import '../providers/review_session_provider.dart';
 import '../widgets/rating_buttons.dart';
@@ -86,7 +86,7 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen>
 
     if (item == null) {
       return Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: uiContentDirection(context),
         child: Scaffold(
           backgroundColor: c.paper,
           body: SafeArea(
@@ -94,12 +94,12 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('جلسه‌ی فعالی وجود ندارد',
+                  Text(context.l10n.rv_no_active_session,
                       style: TextStyle(color: c.ink, fontSize: 16)),
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('بازگشت'),
+                    child: Text(context.l10n.rv_back),
                   ),
                 ],
               ),
@@ -120,7 +120,7 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen>
     final progress = s.queue.isEmpty ? 0.0 : s.index / s.queue.length;
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: uiContentDirection(context),
       child: Scaffold(
         backgroundColor: c.paper,
         body: SafeArea(
@@ -134,7 +134,7 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen>
                     IconButton(
                       onPressed: () => Navigator.of(context).pop(),
                       icon: Icon(Icons.close_rounded, color: c.ink),
-                      tooltip: 'بستن',
+                      tooltip: context.l10n.rv_close,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -154,7 +154,8 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen>
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      '${faDigits(s.index + 1)} از ${faDigits(s.queue.length)}',
+                      context.l10n.rv_progress_of(
+                          context.rvNum(s.index + 1), context.rvNum(s.queue.length)),
                       style: TextStyle(
                         color: c.inkSoft,
                         fontSize: 13,
@@ -179,8 +180,9 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen>
                       revealed: s.revealed,
                       level: entry?.level,
                       example: example,
-                      sourceLabel:
-                          item.storyId != null ? 'داستان' : 'لغات ذخیره‌شده',
+                      sourceLabel: item.storyId != null
+                          ? context.l10n.rv_source_story
+                          : context.l10n.rv_source_saved_words,
                       onSpeak: () => _speak(item),
                     ),
                   ),
@@ -220,13 +222,13 @@ class _RevealButton extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
-        child: const SizedBox(
+        child: SizedBox(
           width: double.infinity,
           height: double.infinity,
           child: Center(
             child: Text(
-              'نمایش جواب',
-              style: TextStyle(
+              context.l10n.rv_show_answer,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,

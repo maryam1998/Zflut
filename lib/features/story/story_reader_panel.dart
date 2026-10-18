@@ -484,20 +484,9 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── سرتیتر: عنوان | ✏️ | 🔖 ──
+            // (این پنل همیشه RTL است؛ پس اولین فرزند = راست‌ترین)
             Row(
               children: [
-                Expanded(
-                  child: Text(
-                    widget.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textDirection: autoDir(widget.title),
-                    style: TextStyle(
-                        color: c.ink,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800),
-                  ),
-                ),
                 if (hasEdit)
                   _HeadIcon(
                     icon: _editing ? Icons.close : Icons.edit_outlined,
@@ -517,6 +506,19 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                             : context.l10n.reader_save_story,
                     onTap: widget.saved ? null : widget.onSave,
                   ),
+                if (hasEdit || hasSave) const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textDirection: autoDir(widget.title),
+                    style: TextStyle(
+                        color: c.ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),

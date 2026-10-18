@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../app.dart';
 import '../../../core/constants/app_languages.dart';
-import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/widgets/level_chips.dart';
 import '../../tabs/_hope_panel.dart';
 import '../providers/review_provider.dart';
+import '../review_i18n.dart';
 
 /// چیپ‌های اصلی: امروز / این هفته / یاد گرفته / همه / سخت‌ها / جدیدها
 class ReviewFilterChips extends StatelessWidget {
@@ -25,14 +25,14 @@ class ReviewFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.appColors;
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: uiContentDirection(context),
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
         children: [
           for (final f in ReviewFilter.values)
             HopeChoiceChip(
-              label: '${f.label} ${faDigits(counts[f] ?? 0)}',
+              label: '${context.rvFilterLabel(f)} ${context.rvNum(counts[f] ?? 0)}',
               active: f == selected,
               activeBorder: c.gold,
               activeFill: c.gold.withOpacity(0.18),
@@ -91,7 +91,7 @@ class ReviewSubFilters extends StatelessWidget {
       return Row(
         children: [
           SizedBox(
-            width: 44,
+            width: 64,
             child: Text(
               title,
               style: TextStyle(
@@ -113,12 +113,12 @@ class ReviewSubFilters extends StatelessWidget {
     }
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: uiContentDirection(context),
       child: Column(
         children: [
           // کارت مشترک سطح‌ها — همان LevelChips بقیه‌ی تب‌ها (رنگی)
           row(
-            'سطح',
+            context.l10n.rv_level,
             const [],
             custom: LevelChips(
               selected: filter.level ?? 'all',
@@ -128,19 +128,19 @@ class ReviewSubFilters extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          row('زبان', [
-            chip('همه', filter.lang == null, () => onLang(null)),
+          row(context.l10n.rv_language, [
+            chip(context.l10n.review_filter_all, filter.lang == null, () => onLang(null)),
             for (final code in langs)
               chip(kAppLanguages[code]?.label ?? code, filter.lang == code,
                   () => onLang(code)),
           ]),
           const SizedBox(height: 8),
-          row('منبع', [
-            chip('همه', filter.source == ReviewSource.any,
+          row(context.l10n.rv_source, [
+            chip(context.l10n.review_filter_all, filter.source == ReviewSource.any,
                 () => onSource(ReviewSource.any)),
-            chip('داستان', filter.source == ReviewSource.story,
+            chip(context.l10n.rv_source_story, filter.source == ReviewSource.story,
                 () => onSource(ReviewSource.story)),
-            chip('لغات', filter.source == ReviewSource.words,
+            chip(context.l10n.rv_source_words, filter.source == ReviewSource.words,
                 () => onSource(ReviewSource.words)),
           ]),
         ],

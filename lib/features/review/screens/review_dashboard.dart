@@ -6,11 +6,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_languages.dart';
 import '../../../core/constants/level_colors.dart';
-import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/providers/speech_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../tabs/_hope_panel.dart';
 import '../models/review_item.dart';
+import '../review_i18n.dart';
 import '../providers/review_provider.dart';
 import '../providers/review_session_provider.dart';
 import '../widgets/box_visualization.dart';
@@ -51,12 +51,10 @@ class ReviewDashboard extends ConsumerWidget {
     final langs = <String>{for (final e in all) e.langCode}.toList()..sort();
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: uiContentDirection(context),
       child: HopePanel(
-        title: 'مرور',
-        intro:
-            'لغت‌هایی که به جعبه‌ی لایتنر اضافه کردی، در فاصله‌های زمانی بهینه '
-            'دوباره به تو نشان داده می‌شوند تا ماندگار شوند.',
+        title: context.l10n.rv_title,
+        intro: context.l10n.rv_intro,
         children: [
           // ── ۱. کارت مرور امروز ──
           _TodayCard(
@@ -67,17 +65,19 @@ class ReviewDashboard extends ConsumerWidget {
 
           // ── ۲. نمودار هفتگی ──
           _SectionCard(
-            title: 'پیشرفت هفتگی',
+            title: context.l10n.rv_weekly_progress,
             child: WeeklyChart(
               stats: stats,
               // دعوت‌به‌شروع: اگر مروری موعد دارد → شروع؛ اگر جعبه خالی است → رفتن به لغات
               onEmptyAction: due.isNotEmpty
                   ? () => _startSession(context, ref, due)
                   : (all.isEmpty ? () => context.go('/words') : null),
-              emptyActionLabel: due.isNotEmpty ? 'شروع مرور' : 'رفتن به لغات',
+              emptyActionLabel: due.isNotEmpty
+                  ? context.l10n.rv_start_review
+                  : context.l10n.rv_go_to_words,
               emptyText: all.isNotEmpty && due.isEmpty
-                  ? 'امروز چیزی برای مرور نیست.\nفردا دوباره سر بزن 🌱'
-                  : 'هنوز این هفته مروری نکرده‌ای!\nبیا با هم شروع کنیم 🌱',
+                  ? context.l10n.rv_empty_nothing_today
+                  : context.l10n.rv_empty_no_reviews,
             ),
           ),
 
@@ -86,7 +86,7 @@ class ReviewDashboard extends ConsumerWidget {
             children: [
               Expanded(
                 child: _MiniStat(
-                  label: 'درست',
+                  label: context.l10n.rv_correct,
                   value: today.correct,
                   color: const Color(0xFF3F9B72),
                 ),
@@ -94,7 +94,7 @@ class ReviewDashboard extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _MiniStat(
-                  label: 'غلط',
+                  label: context.l10n.rv_wrong,
                   value: today.wrong,
                   color: c.rose,
                 ),
@@ -102,7 +102,7 @@ class ReviewDashboard extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _MiniStat(
-                  label: 'یاد گرفته',
+                  label: context.l10n.rv_learned,
                   value: today.learned,
                   color: c.gold,
                 ),
@@ -112,7 +112,7 @@ class ReviewDashboard extends ConsumerWidget {
 
           // ── ۴. جعبه‌ها ──
           _SectionCard(
-            title: 'جعبه‌های لایتنر',
+            title: context.l10n.rv_leitner_boxes,
             child: BoxVisualization(counts: boxCounts),
           ),
 
@@ -121,7 +121,7 @@ class ReviewDashboard extends ConsumerWidget {
 
           // ── ۶ و ۷. فیلترها ──
           _SectionCard(
-            title: 'فیلتر',
+            title: context.l10n.rv_filter,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -186,14 +186,14 @@ class _TodayCard extends StatelessWidget {
     final String headline;
     final String sub;
     if (totalCount == 0) {
-      headline = 'جعبه‌ی لایتنر خالی است';
-      sub = 'روی هر لغتی در متن بزن و «افزودن به جعبه‌ی لایتنر» را انتخاب کن.';
+      headline = context.l10n.rv_box_empty_headline;
+      sub = context.l10n.rv_box_empty_sub;
     } else if (!has) {
-      headline = 'امروز چیزی برای مرور نیست 🎉';
-      sub = 'لغت‌های بعدی سر موعدشان برمی‌گردند.';
+      headline = context.l10n.rv_nothing_today_headline;
+      sub = context.l10n.rv_nothing_today_sub;
     } else {
-      headline = '${faDigits(dueCount)} لغت برای مرور امروز';
-      sub = 'حدود ${faDigits(minutes)} دقیقه';
+      headline = context.l10n.rv_due_headline(context.rvNum(dueCount));
+      sub = context.l10n.rv_minutes_approx(context.rvNum(minutes));
     }
 
     return Container(
@@ -262,7 +262,7 @@ class _TodayCard extends StatelessWidget {
                           color: has ? Colors.white : c.gold),
                       const SizedBox(width: 6),
                       Text(
-                        'شروع مرور',
+                        context.l10n.rv_start_review,
                         style: TextStyle(
                           color: has ? Colors.white : c.gold,
                           fontSize: 17,
@@ -337,7 +337,7 @@ class _MiniStat extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            faDigits(value),
+            context.rvNum(value),
             style: TextStyle(
               color: c.ink,
               fontSize: 24,
@@ -377,11 +377,11 @@ class _WordList extends ConsumerWidget {
     final rest = items.length - shown.length;
 
     return _SectionCard(
-      title: 'لغت‌ها (${faDigits(items.length)})',
+      title: context.l10n.rv_words_title(context.rvNum(items.length)),
       child: items.isEmpty
           ? HopeEmptyText(isEmptyBox
-              ? 'هنوز لغتی در جعبه نیست.'
-              : 'با این فیلتر لغتی پیدا نشد.')
+              ? context.l10n.rv_no_words_in_box
+              : context.l10n.rv_no_words_for_filter)
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -402,7 +402,7 @@ class _WordList extends ConsumerWidget {
                 if (rest > 0) ...[
                   const SizedBox(height: 10),
                   Text(
-                    'و ${faDigits(rest)} لغت دیگر',
+                    context.l10n.rv_and_n_more(context.rvNum(rest)),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: c.inkSoft, fontSize: 12),
                   ),
@@ -410,7 +410,7 @@ class _WordList extends ConsumerWidget {
                 const SizedBox(height: 12),
                 HopeTextAction(
                   icon: Icons.play_circle_outline_rounded,
-                  label: 'مرور همین لیست (${faDigits(items.length)})',
+                  label: context.l10n.rv_review_this_list(context.rvNum(items.length)),
                   color: c.teal,
                   onTap: onReviewList,
                   fontSize: 13,
@@ -468,7 +468,9 @@ class _WordBox extends StatelessWidget {
             ),
             const SizedBox(height: 3),
             Text(
-              item.isMastered ? '✅ یاد گرفته' : 'جعبه ${faDigits(item.box)}',
+              item.isMastered
+                  ? context.l10n.rv_mastered
+                  : context.l10n.review_box_n(context.rvNum(item.box)),
               style: TextStyle(color: c.inkSoft, fontSize: 10),
             ),
           ],

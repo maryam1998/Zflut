@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_languages.dart';
 import '../../../core/constants/level_colors.dart';
-import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/theme/app_theme_colors.dart';
 import '../models/review_item.dart';
+import '../review_i18n.dart';
 
 TextDirection textDirOf(String s) =>
     RegExp(r'[\u0600-\u06FF]').hasMatch(s) ? TextDirection.rtl : TextDirection.ltr;
@@ -127,14 +127,16 @@ class _ReviewCardState extends State<ReviewCard>
       children: [
         Row(
           children: [
-            _pill(c, 'جعبه ${faDigits(it.box)}', c.gold),
+            _pill(c, context.l10n.review_box_n(context.rvNum(it.box)), c.gold),
             const SizedBox(width: 8),
             if (widget.level != null)
               _pill(c, widget.level!, levelColor(widget.level!),
                   textColor: levelColor(widget.level!)),
             const Spacer(),
             Text(
-              it.reviewCount == 0 ? 'جدید' : '${faDigits(it.reviewCount)} بار مرور',
+              it.reviewCount == 0
+                  ? context.l10n.rv_card_new
+                  : context.l10n.rv_reviewed_n_times(context.rvNum(it.reviewCount)),
               style: TextStyle(color: c.inkSoft, fontSize: 11.5),
             ),
           ],
@@ -159,7 +161,7 @@ class _ReviewCardState extends State<ReviewCard>
         _SpeakButton(onTap: widget.onSpeak),
         const SizedBox(height: 10),
         Text(
-          'اول معنی را به یاد بیاور، بعد «نمایش جواب» را بزن',
+          context.l10n.rv_recall_hint,
           textAlign: TextAlign.center,
           style: TextStyle(color: c.inkSoft, fontSize: 12),
         ),
@@ -235,7 +237,7 @@ class _ReviewCardState extends State<ReviewCard>
             Icon(Icons.bookmark_outline_rounded, size: 14, color: c.inkSoft),
             const SizedBox(width: 4),
             Text(
-              'منبع: ${widget.sourceLabel}',
+              context.l10n.rv_source_label(widget.sourceLabel),
               style: TextStyle(color: c.inkSoft, fontSize: 12),
             ),
           ],

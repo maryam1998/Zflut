@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/theme/app_theme_colors.dart';
 import '../models/review_item.dart';
+import '../review_i18n.dart';
 
 /// نمای ۵ جعبه‌ی لایتنر — هر جعبه یک پروگرس‌بار نسبت به کل لغت‌ها.
 class BoxVisualization extends StatelessWidget {
@@ -17,7 +17,7 @@ class BoxVisualization extends StatelessWidget {
     final total = counts.fold<int>(0, (a, b) => a + b);
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: uiContentDirection(context),
       child: Column(
         children: [
           for (var i = 0; i < 5; i++) ...[
@@ -63,9 +63,9 @@ class _BoxRow extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 74,
+          width: 78,
           child: Text(
-            'جعبه ${faDigits(box)}',
+            context.l10n.review_box_n(context.rvNum(box)),
             style: TextStyle(
               color: ink,
               fontSize: 13,
@@ -91,18 +91,18 @@ class _BoxRow extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         SizedBox(
-          width: 52,
+          width: 60,
           child: Text(
-            '${faDigits(count)} لغت',
+            context.l10n.rv_box_words_count(context.rvNum(count)),
             textAlign: TextAlign.end,
             style: TextStyle(color: inkSoft, fontSize: 11.5),
           ),
         ),
         const SizedBox(width: 4),
         SizedBox(
-          width: 44,
+          width: 56,
           child: Text(
-            '${faDigits(intervalForBox(box))} روزه',
+            context.l10n.rv_box_interval_days(context.rvNum(intervalForBox(box))),
             textAlign: TextAlign.end,
             style: TextStyle(color: inkSoft.withOpacity(0.8), fontSize: 10.5),
           ),

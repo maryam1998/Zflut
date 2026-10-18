@@ -1102,5 +1102,187 @@
       }
     }
   },
-  "grammar_conversation_correction": "Conversation correction"
+  "grammar_conversation_correction": "Conversation correction",
+  "rv_title": "Review",
+  "rv_intro": "Words you add to your Leitner box come back at optimal intervals so they stick.",
+  "rv_weekly_progress": "Weekly progress",
+  "rv_start_review": "Start review",
+  "rv_go_to_words": "Go to Words",
+  "rv_empty_nothing_today": "Nothing to review today.\nCome back tomorrow 🌱",
+  "rv_empty_no_reviews": "You haven't reviewed anything this week yet!\nLet's get started 🌱",
+  "rv_correct": "Correct",
+  "rv_wrong": "Wrong",
+  "rv_learned": "Learned",
+  "rv_leitner_boxes": "Leitner boxes",
+  "rv_filter": "Filter",
+  "rv_box_empty_headline": "Your Leitner box is empty",
+  "rv_box_empty_sub": "Tap any word in a text and choose “Add to Leitner box”.",
+  "rv_nothing_today_headline": "Nothing to review today 🎉",
+  "rv_nothing_today_sub": "Upcoming words will come back when they're due.",
+  "rv_due_headline": "{n} words to review today",
+  "@rv_due_headline": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_minutes_approx": "About {n} min",
+  "@rv_minutes_approx": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_words_title": "Words ({n})",
+  "@rv_words_title": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_no_words_in_box": "No words in the box yet.",
+  "rv_no_words_for_filter": "No words match this filter.",
+  "rv_and_n_more": "and {n} more words",
+  "@rv_and_n_more": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_review_this_list": "Review this list ({n})",
+  "@rv_review_this_list": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_mastered": "✅ Learned",
+  "rv_no_active_session": "No active session",
+  "rv_back": "Back",
+  "rv_close": "Close",
+  "rv_progress_of": "{a} of {b}",
+  "@rv_progress_of": {
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_show_answer": "Show answer",
+  "rv_source_story": "Story",
+  "rv_source_saved_words": "Saved words",
+  "rv_source_label": "Source: {s}",
+  "@rv_source_label": {
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_card_new": "New",
+  "rv_reviewed_n_times": "Reviewed {n} times",
+  "@rv_reviewed_n_times": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_recall_hint": "Try to recall the meaning first, then tap “Show answer”",
+  "rv_session_done": "Well done! Session complete",
+  "rv_words_in_time": "{n} words in {t}",
+  "@rv_words_in_time": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "t": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_seconds": "{s} sec",
+  "@rv_seconds": {
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_min_sec": "{m} min {s} sec",
+  "@rv_min_sec": {
+    "placeholders": {
+      "m": {
+        "type": "String"
+      },
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_none_left": "No words left to review",
+  "rv_review_again": "Review again ({n})",
+  "@rv_review_again": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_back_to_dashboard": "Back to dashboard",
+  "rv_box_words_count": "{n} words",
+  "@rv_box_words_count": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_box_interval_days": "{n} days",
+  "@rv_box_interval_days": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_streak_none": "No streak yet",
+  "rv_streak_days": "{n} days in a row",
+  "@rv_streak_days": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_streak_start": "Do a review session today to start one",
+  "rv_streak_keep": "Don't break the chain: at least one word every day",
+  "rv_f_today": "Today",
+  "rv_f_week": "This week",
+  "rv_f_hard": "Hard ones",
+  "rv_f_new": "New ones",
+  "rv_level": "Level",
+  "rv_language": "Language",
+  "rv_source": "Source",
+  "rv_source_words": "Words",
+  "rv_rate_hard": "Hard",
+  "rv_rate_good": "Good",
+  "rv_rate_easy": "Easy",
+  "rv_in_n_days": "In {n} days",
+  "@rv_in_n_days": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "rv_weekday_letters": "M,T,W,T,F,S,S"
 }

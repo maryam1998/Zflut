@@ -162,6 +162,10 @@ class _SavedTabState extends ConsumerState<SavedTab> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
+                // دکمه‌ها همیشه سمت راست (در رابط راست‌به‌چپ، start = راست)
+                alignment: uiContentDirection(context) == TextDirection.rtl
+                    ? WrapAlignment.start
+                    : WrapAlignment.end,
                 children: [
                   _toolButton(
                     c,

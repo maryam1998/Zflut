@@ -136,24 +136,7 @@ final wordInfoProvider = FutureProvider<Map<String, WordEntry>>((ref) async {
 // ═══════════════════════════════════════════════════════════════════
 enum ReviewFilter { today, week, learned, all, hard, fresh }
 
-extension ReviewFilterX on ReviewFilter {
-  String get label {
-    switch (this) {
-      case ReviewFilter.today:
-        return 'امروز';
-      case ReviewFilter.week:
-        return 'این هفته';
-      case ReviewFilter.learned:
-        return 'یاد گرفته';
-      case ReviewFilter.all:
-        return 'همه';
-      case ReviewFilter.hard:
-        return 'سخت‌ها';
-      case ReviewFilter.fresh:
-        return 'جدیدها';
-    }
-  }
-}
+// برچسبِ ترجمه‌شده‌ی فیلترها: context.rvFilterLabel(f) در review_i18n.dart
 
 enum ReviewSource { any, story, words }
 

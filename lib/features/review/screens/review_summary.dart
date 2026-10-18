@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/theme/app_theme_colors.dart';
 import '../providers/review_provider.dart';
+import '../review_i18n.dart';
 import '../providers/review_session_provider.dart';
 import 'review_session.dart';
 
@@ -11,11 +11,11 @@ import 'review_session.dart';
 class ReviewSummaryScreen extends ConsumerWidget {
   const ReviewSummaryScreen({super.key});
 
-  static String _duration(Duration d) {
+  static String _duration(BuildContext context, Duration d) {
     final m = d.inMinutes;
     final s = d.inSeconds % 60;
-    if (m == 0) return '${faDigits(s)} ثانیه';
-    return '${faDigits(m)} دقیقه و ${faDigits(s)} ثانیه';
+    if (m == 0) return context.l10n.rv_seconds(context.rvNum(s));
+    return context.l10n.rv_min_sec(context.rvNum(m), context.rvNum(s));
   }
 
   @override
@@ -34,7 +34,7 @@ class ReviewSummaryScreen extends ConsumerWidget {
     }
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: uiContentDirection(context),
       child: Scaffold(
         backgroundColor: c.paper,
         body: SafeArea(
@@ -46,7 +46,7 @@ class ReviewSummaryScreen extends ConsumerWidget {
                 const Text('🎉', style: TextStyle(fontSize: 64)),
                 const SizedBox(height: 12),
                 Text(
-                  'آفرین! جلسه تمام شد',
+                  context.l10n.rv_session_done,
                   style: TextStyle(
                     color: c.ink,
                     fontSize: 22,
@@ -55,7 +55,8 @@ class ReviewSummaryScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${faDigits(total)} لغت در ${_duration(s.elapsed)}',
+                  context.l10n.rv_words_in_time(
+                      context.rvNum(total), _duration(context, s.elapsed)),
                   style: TextStyle(color: c.inkSoft, fontSize: 14),
                 ),
                 const SizedBox(height: 28),
@@ -63,7 +64,7 @@ class ReviewSummaryScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: _Stat(
-                        label: 'درست',
+                        label: context.l10n.rv_correct,
                         value: s.correct,
                         color: const Color(0xFF3F9B72),
                       ),
@@ -71,7 +72,7 @@ class ReviewSummaryScreen extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _Stat(
-                        label: 'غلط',
+                        label: context.l10n.rv_wrong,
                         value: s.wrong,
                         color: c.rose,
                       ),
@@ -79,7 +80,7 @@ class ReviewSummaryScreen extends ConsumerWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: _Stat(
-                        label: 'یاد گرفته',
+                        label: context.l10n.rv_learned,
                         value: s.learned,
                         color: c.gold,
                       ),
@@ -101,8 +102,8 @@ class ReviewSummaryScreen extends ConsumerWidget {
                     ),
                     child: Text(
                       due.isEmpty
-                          ? 'لغتی برای مرور دوباره نمانده'
-                          : 'مرور دوباره (${faDigits(due.length)})',
+                          ? context.l10n.rv_none_left
+                          : context.l10n.rv_review_again(context.rvNum(due.length)),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -123,9 +124,9 @@ class ReviewSummaryScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      'بازگشت به داشبورد',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    child: Text(
+                      context.l10n.rv_back_to_dashboard,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -157,7 +158,7 @@ class _Stat extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            faDigits(value),
+            context.rvNum(value),
             style: TextStyle(
               color: c.ink,
               fontSize: 30,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/theme/app_theme_colors.dart';
 import '../models/review_stats.dart';
+import '../review_i18n.dart';
 
 /// نمودار ستونی ۷ روز اخیر (تعداد مرورها) — با CustomPainter.
 /// قدیمی‌ترین روز سمت راست، امروز سمت چپ (جهت RTL).
@@ -11,31 +11,24 @@ class WeeklyChart extends StatelessWidget {
 
   /// وقتی این هفته هیچ مروری نشده: دکمه‌ی دعوت‌به‌شروع (null = بدونِ دکمه).
   final VoidCallback? onEmptyAction;
-  final String emptyActionLabel;
-  final String emptyText;
+  final String? emptyActionLabel;
+  final String? emptyText;
 
   const WeeklyChart({
     super.key,
     required this.stats,
     this.onEmptyAction,
-    this.emptyActionLabel = 'شروع مرور',
-    this.emptyText = 'هنوز این هفته مروری نکرده‌ای!\nبیا با هم شروع کنیم 🌱',
+    this.emptyActionLabel,
+    this.emptyText,
   });
-
-  // DateTime.weekday: ۱=دوشنبه … ۷=یکشنبه
-  static const Map<int, String> _dayLabels = {
-    6: 'ش',
-    7: 'ی',
-    1: 'د',
-    2: 'س',
-    3: 'چ',
-    4: 'پ',
-    5: 'ج',
-  };
 
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
+    final dir = uiContentDirection(context);
+    final isRtl = dir == TextDirection.rtl;
+    // DateTime.weekday: ۱=دوشنبه … ۷=یکشنبه → برچسب‌ها از ARB (rv_weekday_letters)
+    final dayLabels = context.rvWeekdayLetters;
     final now = DateTime.now();
     final dates = stats.lastDates(now, n: 7);
     final values = [for (final d in dates) stats.dayStat(d).total];
@@ -43,7 +36,7 @@ class WeeklyChart extends StatelessWidget {
     // ── حالتِ خالی: به‌جای کادرِ سفیدِ خالی، پیام + دکمه ──
     if (values.every((v) => v == 0)) {
       return Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: dir,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
@@ -59,7 +52,7 @@ class WeeklyChart extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                emptyText,
+                emptyText ?? context.l10n.rv_empty_no_reviews,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: c.inkSoft, fontSize: 13, height: 1.7),
               ),
@@ -75,7 +68,7 @@ class WeeklyChart extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 22, vertical: 10),
                       child: Text(
-                        emptyActionLabel,
+                        emptyActionLabel ?? context.l10n.rv_start_review,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,
@@ -93,7 +86,7 @@ class WeeklyChart extends StatelessWidget {
     }
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: dir,
       child: Column(
         children: [
           SizedBox(
@@ -106,6 +99,8 @@ class WeeklyChart extends StatelessWidget {
                 todayColor: c.gold,
                 gridColor: c.cardBorder,
                 textColor: c.inkSoft,
+                isRtl: isRtl,
+                numText: context.rvNum,
               ),
             ),
           ),
@@ -115,7 +110,7 @@ class WeeklyChart extends StatelessWidget {
               for (var i = 0; i < dates.length; i++)
                 Expanded(
                   child: Text(
-                    _dayLabels[dates[i].weekday] ?? '',
+                    dayLabels[dates[i].weekday - 1],
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: i == dates.length - 1 ? c.ink : c.inkSoft,
@@ -140,6 +135,8 @@ class _BarsPainter extends CustomPainter {
   final Color todayColor;
   final Color gridColor;
   final Color textColor;
+  final bool isRtl;
+  final String Function(Object) numText;
 
   _BarsPainter({
     required this.values,
@@ -147,6 +144,8 @@ class _BarsPainter extends CustomPainter {
     required this.todayColor,
     required this.gridColor,
     required this.textColor,
+    required this.isRtl,
+    required this.numText,
   });
 
   @override
@@ -172,8 +171,8 @@ class _BarsPainter extends CustomPainter {
 
     for (var i = 0; i < n; i++) {
       final v = values[i];
-      // RTL: i=0 (قدیمی‌ترین) سمت راست
-      final cx = size.width - (i + 0.5) * slot;
+      // RTL: i=0 (قدیمی‌ترین) سمت راست؛ LTR: سمت چپ
+      final cx = isRtl ? size.width - (i + 0.5) * slot : (i + 0.5) * slot;
       final isToday = i == n - 1;
       // حداقل ارتفاعِ ستون (حتی با ۱ مرور) تا حسِ پیشرفت دیده شود
       final h = v == 0 ? 3.0 : ((v / maxV) * chartH).clamp(12.0, chartH);
@@ -193,14 +192,14 @@ class _BarsPainter extends CustomPainter {
       if (v > 0) {
         final tp = TextPainter(
           text: TextSpan(
-            text: faDigits(v),
+            text: numText(v),
             style: TextStyle(
               color: textColor,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
           ),
-          textDirection: TextDirection.rtl,
+          textDirection: TextDirection.ltr,
         )..layout();
         tp.paint(canvas, Offset(cx - tp.width / 2, size.height - h - tp.height - 2));
       }
@@ -213,5 +212,6 @@ class _BarsPainter extends CustomPainter {
       old.barColor != barColor ||
       old.todayColor != todayColor ||
       old.gridColor != gridColor ||
-      old.textColor != textColor;
+      old.textColor != textColor ||
+      old.isRtl != isRtl;
 }

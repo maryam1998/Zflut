@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_themes.dart';
-import '../../../core/neural/neural_dates.dart' show faDigits;
 import '../../../core/theme/app_theme_colors.dart';
 import '../models/review_item.dart';
+import '../review_i18n.dart';
 
 /// سه دکمه‌ی ارزیابی: 😰 سخت (قرمز) / 😊 خوب (زرد) / 😎 آسان (سبز)
 class RatingButtons extends StatelessWidget {
@@ -16,17 +16,17 @@ class RatingButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.appColors;
     final now = DateTime.now();
-    String when(ReviewRating r) =>
-        '${faDigits(item.rated(r, now).intervalDays)} روز بعد';
+    String when(ReviewRating r) => context.l10n
+        .rv_in_n_days(context.rvNum(item.rated(r, now).intervalDays));
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: uiContentDirection(context),
       child: Row(
         children: [
           Expanded(
             child: _RatingButton(
               emoji: '😰',
-              label: 'سخت',
+              label: context.l10n.rv_rate_hard,
               hint: when(ReviewRating.hard),
               color: c.rose,
               onTap: () => onRate(ReviewRating.hard),
@@ -36,7 +36,7 @@ class RatingButtons extends StatelessWidget {
           Expanded(
             child: _RatingButton(
               emoji: '😊',
-              label: 'خوب',
+              label: context.l10n.rv_rate_good,
               hint: when(ReviewRating.good),
               color: c.gold,
               onTap: () => onRate(ReviewRating.good),
@@ -46,7 +46,7 @@ class RatingButtons extends StatelessWidget {
           Expanded(
             child: _RatingButton(
               emoji: '😎',
-              label: 'آسان',
+              label: context.l10n.rv_rate_easy,
               hint: when(ReviewRating.easy),
               color: AppFixedColors.readDoneCheck1,
               onTap: () => onRate(ReviewRating.easy),
