@@ -1020,14 +1020,9 @@ class _FloatingBubbleSectionState
     final ml = MaterialLocalizations.of(context);
     final go = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('نمایش روی سایر برنامه‌ها'),
-        content: const Text(
-            'برای نشان‌دادنِ حباب و زیرنویس روی ویدیو، این اجازه لازم است (فقط یک‌بار).\n\n'
-            'در صفحه‌ی بعد گزینه را روشن کن و برگرد؛ خودکار ادامه می‌دهد.\n\n'
-            'اگر پیامِ «restricted permission» آمد (نصب از بیرونِ استور): '
-            'تنظیمات ← برنامه‌ها ← LingoLearn ← منوی ⋮ ← «Allow restricted settings» '
-            'و دوباره امتحان کن.'),
+      builder: (ctx) => _dirDialog(ctx, AlertDialog(
+        title: Text(context.l10n.st_overlay_title),
+        content: Text(context.l10n.st_overlay_body),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -1036,7 +1031,7 @@ class _FloatingBubbleSectionState
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(ml.continueButtonLabel)),
         ],
-      ),
+      )),
     );
     if (go != true) return false;
     await LinLearnBridge.requestOverlayPermission();
@@ -1061,7 +1056,7 @@ class _FloatingBubbleSectionState
         await notifier.start(mode: _kind == 'live' ? 'translator' : _kind);
       }
     } catch (e) {
-      _toast('خطا: $e');
+      _toast(context.l10n.st_error('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -1078,8 +1073,7 @@ class _FloatingBubbleSectionState
         if (!await _ensureOverlay()) return;
         // ترجمه‌ی زنده فقط آفلاین کار می‌کند: بسته‌ی زبانِ صدا باید روی گوشی باشد.
         if (!await _ensureSpeechPack(
-            afterDownload:
-                'دانلود شروع شد؛ وقتی تمام شد دوباره «شروع ترجمه‌ی زنده» را بزن.')) {
+            afterDownload: context.l10n.st_live_download_started)) {
           return;
         }
         await ref.read(nativeSyncProvider).pushLangs();
@@ -1090,7 +1084,7 @@ class _FloatingBubbleSectionState
         );
       }
     } catch (e) {
-      _toast('خطا: $e');
+      _toast(context.l10n.st_error('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -1103,25 +1097,24 @@ class _FloatingBubbleSectionState
     if (pack == null || pack['downloaded'] == true) return true;
     if (!mounted) return false;
     if (pack['downloading'] == true) {
-      _toast('بسته‌ی آفلاین در حال دانلود است؛ کمی صبر کن.');
+      _toast(context.l10n.st_pack_wait);
       return false;
     }
     final yes = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('بسته‌ی آفلاین تشخیص گفتار'),
+      builder: (ctx) => _dirDialog(ctx, AlertDialog(
+        title: Text(context.l10n.st_speech_pack_title),
         content: Text(
-            'برای زبان «${_srcLangs[_src]}» به بسته‌ی آفلاین نیاز است '
-            '(فقط یک‌بار دانلود می‌شود و بعدش بدون اینترنت کار می‌کند). دانلود شود؟'),
+            context.l10n.st_speech_pack_body('${_srcLangs[_src]}')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('نه')),
+              child: Text(context.l10n.st_no)),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('دانلود')),
+              child: Text(context.l10n.settings_download)),
         ],
-      ),
+      )),
     );
     if (yes == true) {
       await LinLearnBridge.packDownload('speech', _src);
@@ -1139,8 +1132,8 @@ class _FloatingBubbleSectionState
     final ml = MaterialLocalizations.of(context);
     final go = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('دسترسی به اعلان‌ها'),
+      builder: (ctx) => _dirDialog(ctx, AlertDialog(
+        title: Text(context.l10n.st_notif_title),
         content: Text(context.l10n.settings_notification_access_needed),
         actions: [
           TextButton(
@@ -1150,7 +1143,7 @@ class _FloatingBubbleSectionState
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(ml.continueButtonLabel)),
         ],
-      ),
+      )),
     );
     if (go != true) return false;
     await LinLearnBridge.ytRequestAccess();
@@ -1171,7 +1164,7 @@ class _FloatingBubbleSectionState
       if (!await _ensureNotificationAccess()) return;
       // نتیجه نادیده گرفته می‌شود (مثل Hope): زیرنویسِ یوتیوب خودش بسته نمی‌خواهد، فقط ترجمه‌ی زنده می‌خواهد.
       await _ensureSpeechPack(
-          afterDownload: 'دانلود بسته‌ی آفلاین شروع شد؛ زیرنویس یوتیوب بدون آن هم کار می‌کند.');
+          afterDownload: context.l10n.st_yt_download_started);
       await ref.read(nativeSyncProvider).pushLangs();
       await _pushOptions();
       if (!ref.read(bubbleProvider).running) {
@@ -1180,7 +1173,7 @@ class _FloatingBubbleSectionState
       await _pushOptions();
       await LinLearnBridge.ytSetEnabled(true);
     } catch (e) {
-      _toast('خطا: $e');
+      _toast(context.l10n.st_error('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -2017,14 +2010,14 @@ class _OfflineTtsSectionState extends State<_OfflineTtsSection> {
         if (_allCancel || !mounted) break;
         final st = await LinLearnBridge.packStatus('tts', code);
         if (st == null) {
-          _toast('دانلود شروع نشد.');
+          _toast(context.l10n.st_download_failed);
           break;
         }
         if (st['downloaded'] == true) continue;
         _current = code;
         final ok = await LinLearnBridge.packDownload('tts', code);
         if (!ok) {
-          _toast('دانلود شروع نشد.');
+          _toast(context.l10n.st_download_failed);
           break;
         }
         if (mounted) setState(() => _epoch++);
@@ -2178,3 +2171,7 @@ class _OfflineWordsButton extends StatelessWidget {
     );
   }
 }
+
+/// دیالوگ‌های تنظیمات هم طبقِ زبانِ رابط جهت می‌گیرند.
+Widget _dirDialog(BuildContext ctx, Widget child) =>
+    Directionality(textDirection: uiContentDirection(ctx), child: child);

@@ -1291,5 +1291,134 @@
   "cp_advanced": "Advanced",
   "cp_hue": "Hue",
   "cp_saturation": "Saturation",
-  "cp_value": "Brightness"
+  "cp_value": "Brightness",
+  "st_overlay_title": "Display over other apps",
+  "st_overlay_body": "This permission is needed to show the bubble and subtitles over video (one time only).\n\nOn the next screen, turn the option on and come back; it will continue automatically.\n\nIf you see a “restricted permission” message (app installed from outside the store): Settings → Apps → LingoLearn → ⋮ menu → “Allow restricted settings”, then try again.",
+  "st_error": "Error: {e}",
+  "@st_error": {
+    "placeholders": {
+      "e": {
+        "type": "String"
+      }
+    }
+  },
+  "st_live_download_started": "Download started; when it finishes, tap “Start live translation” again.",
+  "st_pack_wait": "The offline pack is downloading; please wait a moment.",
+  "st_speech_pack_title": "Offline speech recognition pack",
+  "st_speech_pack_body": "An offline pack is needed for “{lang}” (downloaded only once, then works without internet). Download it?",
+  "@st_speech_pack_body": {
+    "placeholders": {
+      "lang": {
+        "type": "String"
+      }
+    }
+  },
+  "st_no": "No",
+  "st_delete": "Delete",
+  "st_notif_title": "Notification access",
+  "st_yt_download_started": "Offline pack download started; YouTube subtitles work without it too.",
+  "st_download_failed": "The download couldn’t start.",
+  "st_pack_delete_confirm": "Delete the offline pack?",
+  "st_pack_not_native": "This pack isn’t enabled in the native version yet (it must be added on the Android side).",
+  "st_pack_downloading": "📥 Downloading… {mb} MB{pct}",
+  "@st_pack_downloading": {
+    "placeholders": {
+      "mb": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "st_pack_stopping": "Stopping...",
+  "st_pack_stop": "Stop (I’ll resume later)",
+  "st_pack_ready": "✅ Pack downloaded and ready",
+  "st_pack_delete_btn": "🗑 Delete pack",
+  "st_unit_kb": "{n} KB",
+  "@st_unit_kb": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "st_unit_mb": "{n} MB",
+  "@st_unit_mb": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "wd_title": "Offline word download",
+  "wd_intro": "Pick the languages you want. The app will translate {n} words one by one with the translation services and save them on your phone — it only needs internet this one time; afterwards these words are available offline.",
+  "@wd_intro": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "wd_start": "Start download",
+  "wd_start_n": "Start download ({n} translations)",
+  "@wd_start_n": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "wd_cached": "{n} translations already saved (these won’t be downloaded again)",
+  "@wd_cached": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "wd_progress": "{done} of {total} ({pct}%) · {size}",
+  "@wd_progress": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "wd_pending": "{n} haven’t got a response yet (will be retried later)",
+  "@wd_pending": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "wd_cancel": "Cancel",
+  "wd_done": "✅ Done",
+  "wd_done_body": "{n} translations are now saved on your phone and available offline.",
+  "@wd_done_body": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "wd_failed": "{n} weren’t translated — you can tap “Start download” again; only those will be retried.",
+  "@wd_failed": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "wd_ok": "OK"
 }

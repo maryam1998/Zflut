@@ -115,7 +115,7 @@ class _PackTileState extends State<PackTile> {
 
   Future<void> _download() async {
     final ok = await LinLearnBridge.packDownload(widget.kind, widget.id);
-    if (!ok) _toast('دانلود شروع نشد.');
+    if (!ok) _toast(context.l10n.st_download_failed);
     await _refresh();
   }
 
@@ -128,17 +128,17 @@ class _PackTileState extends State<PackTile> {
   Future<void> _delete() async {
     final yes = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        content: const Text('بسته‌ی آفلاین حذف بشه؟'),
+      builder: (ctx) => _dirDialog(ctx, AlertDialog(
+        content: Text(context.l10n.st_pack_delete_confirm),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('نه')),
+              child: Text(context.l10n.st_no)),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('حذف')),
+              child: Text(context.l10n.st_delete)),
         ],
-      ),
+      )),
     );
     if (yes != true) return;
     await LinLearnBridge.packDelete(widget.kind, widget.id);
@@ -204,9 +204,7 @@ class _PackTileState extends State<PackTile> {
         child: LinearProgressIndicator(minHeight: 2),
       );
     } else if (_st == null) {
-      body = Text(
-          'این بسته هنوز در نسخه‌ی نیتیو فعال نشده (سمت اندروید باید اضافه شود).',
-          style: note);
+      body = Text(context.l10n.st_pack_not_native, style: note);
     } else if (_downloading) {
       final bytes = (_st!['bytes'] as num?) ?? 0;
       final total = (_st!['total'] as num?) ?? 0;
@@ -215,13 +213,14 @@ class _PackTileState extends State<PackTile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-              '📥 در حال دانلود... ${_mb(bytes)} مگابایت'
-              '${total > 0 ? ' (~${(pct! * 100).round()}٪)' : ''}',
+              context.l10n.st_pack_downloading(
+                  _mb(bytes),
+                  total > 0 ? ' (~${(pct! * 100).round()}%)' : ''),
               style: note),
           const SizedBox(height: 6),
           LinearProgressIndicator(value: pct, minHeight: 4, color: c.teal),
           const SizedBox(height: 8),
-          btn(_stopping ? 'در حال توقف...' : 'توقف (بعداً ادامه می‌دهم)',
+          btn(_stopping ? context.l10n.st_pack_stopping : context.l10n.st_pack_stop,
               _stopping ? null : _cancel),
         ],
       );
@@ -230,7 +229,7 @@ class _PackTileState extends State<PackTile> {
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('✅ بسته دانلود شده و آماده‌ست', style: note),
+          Text(context.l10n.st_pack_ready, style: note),
           if (widget.toggleTitle != null && _st!.containsKey('enabled'))
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -245,7 +244,7 @@ class _PackTileState extends State<PackTile> {
               onChanged: _setEnabled,
             ),
           const SizedBox(height: 6),
-          btn('🗑 حذف بسته', _delete, color: c.inkSoft),
+          btn(context.l10n.st_pack_delete_btn, _delete, color: c.inkSoft),
         ],
       );
     } else {
@@ -365,7 +364,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
     final ml = MaterialLocalizations.of(context);
     final yes = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => _dirDialog(ctx, AlertDialog(
         content: Text(context.l10n.settings_tts_delete_confirm),
         actions: [
           TextButton(
@@ -375,7 +374,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(ml.deleteButtonTooltip)),
         ],
-      ),
+      )),
     );
     if (yes != true) return;
     await LinLearnBridge.packDelete('tts', widget.code);
@@ -416,7 +415,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
       final pct = total > 0 ? (bytes / total * 100).clamp(0, 100).round() : null;
       trailing = _pill(
         context,
-        '⏹ ${pct != null ? '$pct٪' : L.settings_stop}',
+        '⏹ ${pct != null ? '$pct%' : L.settings_stop}',
         _cancel,
       );
     } else if (_downloaded) {
@@ -506,10 +505,13 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
     });
   }
 
-  static String _size(int bytes) {
+  static String _size(BuildContext context, int bytes) {
     final kb = bytes / 1024;
-    if (kb < 1024) return '${kb < 10 ? kb.toStringAsFixed(1) : kb.round()} کیلوبایت';
-    return '${(kb / 1024).toStringAsFixed(1)} مگابایت';
+    if (kb < 1024) {
+      return context.l10n
+          .st_unit_kb('${kb < 10 ? kb.toStringAsFixed(1) : kb.round()}');
+    }
+    return context.l10n.st_unit_mb((kb / 1024).toStringAsFixed(1));
   }
 
   Future<void> _start() async {
@@ -594,7 +596,7 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
               Row(
                 children: [
                   Expanded(
-                    child: Text('دانلود آفلاین لغات',
+                    child: Text(context.l10n.wd_title,
                         style: TextStyle(
                             color: c.ink,
                             fontSize: 15,
@@ -609,9 +611,7 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
               ),
               const SizedBox(height: 6),
               Text(
-                'زبان‌های موردنظرت رو انتخاب کن. برنامه ${_words.length} لغت رو '
-                'یکی‌یکی با سرویس‌های ترجمه ترجمه و روی گوشی ذخیره می‌کنه — فقط '
-                'همین یک‌بار به اینترنت نیاز داره؛ بعدش این لغات آفلاین در دسترسن.',
+                context.l10n.wd_intro('${_words.length}'),
                 style: note,
               ),
               const SizedBox(height: 14),
@@ -640,7 +640,7 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
                                     : c.cardBorder,
                                 width: 1.5),
                           ),
-                          child: Text(l.faLabel,
+                          child: Text(langDisplayName(context, l.code),
                               style: TextStyle(
                                   color: c.ink,
                                   fontSize: 12.5,
@@ -658,15 +658,17 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
                       backgroundColor: c.ink,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: Text(
-                        'شروع دانلود${_selected.isNotEmpty ? ' (${_words.length * _selected.length} ترجمه)' : ''}'),
+                    child: Text(_selected.isNotEmpty
+                        ? context.l10n
+                            .wd_start_n('${_words.length * _selected.length}')
+                        : context.l10n.wd_start),
                   ),
                 ),
                 if (_cached > 0) ...[
                   const SizedBox(height: 12),
                   Center(
                     child: Text(
-                        '$_cached ترجمه از قبل ذخیره شده (این‌ها دوباره دانلود نمی‌شن)',
+                        context.l10n.wd_cached('$_cached'),
                         style: note.copyWith(fontSize: 11)),
                   ),
                 ],
@@ -680,9 +682,12 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
                       color: c.gold),
                 ),
                 const SizedBox(height: 8),
-                Text('$_done از $_total ($pct٪) · ${_size(_bytes)}', style: note),
+                Text(
+                    context.l10n.wd_progress('$_done', '$_total', '$pct',
+                        _size(context, _bytes)),
+                    style: note),
                 if (_failed > 0)
-                  Text('$_failed تا هنوز جواب نگرفتن (بعداً دوباره امتحان می‌شن)',
+                  Text(context.l10n.wd_pending('$_failed'),
                       style: note.copyWith(color: c.rose, fontSize: 11)),
                 Text(_current,
                     textDirection: TextDirection.ltr,
@@ -696,7 +701,8 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
                     }),
                     style: OutlinedButton.styleFrom(
                         side: BorderSide(color: c.rose)),
-                    child: Text('لغو', style: TextStyle(color: c.rose)),
+                    child: Text(context.l10n.wd_cancel,
+                        style: TextStyle(color: c.rose)),
                   ),
                 ),
               ],
@@ -704,19 +710,19 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
                 Center(
                   child: Column(
                     children: [
-                      Text('✅ تمام شد',
+                      Text(context.l10n.wd_done,
                           style: TextStyle(
                               color: c.ink,
                               fontSize: 14,
                               fontWeight: FontWeight.w700)),
                       const SizedBox(height: 6),
                       Text(
-                          'الان $_cached ترجمه روی گوشی ذخیره‌ست و آفلاین در دسترسه.',
+                          context.l10n.wd_done_body('$_cached'),
                           style: note,
                           textAlign: TextAlign.center),
                       if (_failed > 0)
                         Text(
-                            '$_failed تا ترجمه نشدن — می‌تونی دوباره «شروع دانلود» رو بزنی، فقط همین‌ها امتحان می‌شن.',
+                            context.l10n.wd_failed('$_failed'),
                             style: note.copyWith(color: c.rose, fontSize: 11),
                             textAlign: TextAlign.center),
                       const SizedBox(height: 10),
@@ -725,7 +731,7 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
                         child: FilledButton(
                           onPressed: () => Navigator.pop(context),
                           style: FilledButton.styleFrom(backgroundColor: c.ink),
-                          child: const Text('باشه'),
+                          child: Text(context.l10n.wd_ok),
                         ),
                       ),
                     ],
@@ -739,3 +745,7 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
     );
   }
 }
+
+/// دیالوگ‌های تنظیمات هم طبقِ زبانِ رابط جهت می‌گیرند.
+Widget _dirDialog(BuildContext ctx, Widget child) =>
+    Directionality(textDirection: uiContentDirection(ctx), child: child);
