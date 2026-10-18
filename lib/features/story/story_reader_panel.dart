@@ -664,13 +664,12 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                   padding: const EdgeInsets.symmetric(vertical: 9),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: c.paper,
+                    color: c.gold,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: c.gold, width: 1.6),
                   ),
                   child: Text('اعمال',
                       style: TextStyle(
-                          color: c.ink,
+                          color: c.headerTo,
                           fontSize: 13,
                           fontWeight: FontWeight.w700)),
                 ),

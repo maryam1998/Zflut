@@ -26,29 +26,34 @@ class SubTabsRow extends StatelessWidget {
     return Container(
       color: c.paperDark,
       height: context.px(140),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsetsDirectional.fromSTEB(
-          context.px(34),
-          context.px(26),
-          context.px(17),
-          context.px(26),
+      // همه‌ی زیرتب‌ها همیشه کاملاً در صفحه دیده می‌شوند (بدون اسکرول افقی):
+      // هر تب سهمِ مساوی می‌گیرد و اگر جا کم بود، محتوایش کوچک می‌شود.
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: context.px(20),
+          vertical: context.px(26),
         ),
-        itemCount: group.tabs.length,
-        separatorBuilder: (_, __) => SizedBox(width: context.px(17)),
-        itemBuilder: (_, i) {
-          final key = group.tabs[i];
-          final meta = kTabMeta[key]!;
-          final active = key == activeTabKey;
-          return _SubChip(
-            icon: meta.icon,
-            label: _labelFor(L, meta.labelKey),
-            active: active,
-            isAi: meta.isAiPowered,
-            c: c,
-            onTap: () => onTabSelected(key),
-          );
-        },
+        child: Row(
+          children: [
+            for (var i = 0; i < group.tabs.length; i++) ...[
+              if (i > 0) SizedBox(width: context.px(10)),
+              Expanded(
+                child: Builder(builder: (_) {
+                  final key = group.tabs[i];
+                  final meta = kTabMeta[key]!;
+                  return _SubChip(
+                    icon: meta.icon,
+                    label: _labelFor(L, meta.labelKey),
+                    active: key == activeTabKey,
+                    isAi: meta.isAiPowered,
+                    c: c,
+                    onTap: () => onTabSelected(key),
+                  );
+                }),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -112,8 +117,11 @@ class _SubChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           onTap: onTap,
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.px(34)),
-            child: Row(
+            padding: EdgeInsets.symmetric(horizontal: context.px(14)),
+            child: Center(
+             child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(icon, size: context.px(38), color: iconColor),
@@ -151,6 +159,8 @@ class _SubChip extends StatelessWidget {
                   ),
                 ],
               ],
+              ),
+             ),
             ),
           ),
         ),

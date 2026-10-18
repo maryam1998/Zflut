@@ -140,7 +140,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                   ),
                   const SizedBox(height: 8),
                   Align(
-                    alignment: AlignmentDirectional.centerEnd,
+                    alignment: Alignment.centerRight, // همیشه سمتِ راست (فیزیکی)
                     child: Container(
                       padding:
                           const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

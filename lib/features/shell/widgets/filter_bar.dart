@@ -93,7 +93,7 @@ class _SortRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: AlignmentDirectional.centerEnd,
+      alignment: Alignment.centerRight, // همیشه سمتِ راست (فیزیکی)
       child: PopupMenuButton<SortMode>(
         initialValue: current,
         onSelected: onSelect,
