@@ -296,22 +296,37 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
   int? _editIndex; // اگر null نباشد، ارسال = ویرایشِ همان پرسش
 
 
+  final _editCtrl = TextEditingController();
+
+  /// زبانِ متنِ اصلیِ یادداشت: تصحیحِ مکالمه (بدون لغت) به زبانِ تمرین است،
+  /// توضیحِ لغت به زبانِ مادری.
+  String? get _mdLang =>
+      widget.note.word.trim().isEmpty ? widget.note.langCode : null;
+
+  /// ویرایشِ درجا (مثل تبِ مکالمه): پرسش در همان جا به کادرِ ویرایش تبدیل
+  /// می‌شود؛ چیزی حذف نمی‌شود تا «ذخیره و ارسالِ مجدد» زده شود.
   void _startEdit(int i, String question) {
     if (_loading) return;
     setState(() {
       _editIndex = i;
-      _ctrl.text = question;
-      _ctrl.selection = TextSelection.collapsed(offset: question.length);
+      _editCtrl.text = question;
+      _editCtrl.selection = TextSelection.collapsed(offset: question.length);
     });
   }
 
-  void _cancelEdit() => setState(() {
-        _editIndex = null;
-        _ctrl.clear();
-      });
+  void _cancelEdit() => setState(() => _editIndex = null);
+
+  void _saveEdit() {
+    final i = _editIndex;
+    final q = _editCtrl.text.trim();
+    if (i == null || q.isEmpty || _loading) return;
+    setState(() => _editIndex = null);
+    _ask(q, i);
+  }
 
   @override
   void dispose() {
+    _editCtrl.dispose();
     _ctrl.dispose();
     super.dispose();
   }
@@ -376,11 +391,9 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
   Future<void> _ask([String? retryQuestion, int? index]) async {
     final question = (retryQuestion ?? _ctrl.text).trim();
     if (question.isEmpty || _loading) return;
-    final target = retryQuestion == null ? _editIndex : index;
-    if (retryQuestion == null) {
-      _ctrl.clear();
-      _editIndex = null;
-    }
+    final target = retryQuestion == null ? null : index;
+    if (retryQuestion == null) _ctrl.clear();
+    _editIndex = null;
     setState(() {
       _loading = true;
       _error = '';
@@ -521,7 +534,31 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  MiniMarkdown(text: note.markdown),
+                  // 🧬 🔊 بالا سمتِ راست + چیپ‌های ترجمه — هم‌شکلِ جوابِ تبِ مکالمه
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: c.goldSoft,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          textDirection: TextDirection.ltr,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: MiniMarkdown(text: note.markdown)),
+                            AiBubbleActions(
+                                text: note.markdown, sourceLang: _mdLang),
+                          ],
+                        ),
+                        AiAnswerTools(text: note.markdown, sourceLang: _mdLang),
+                      ],
+                    ),
+                  ),
 
                   // ═══ پرسش‌وپاسخ‌های ذخیره‌شده‌ی همین یادداشت ═══
                   for (var ti = 0; ti < note.thread.length; ti++)
@@ -530,36 +567,110 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // پرسشِ کاربر + «ویرایش» (فقط برای پرسشِ خودِ کاربر)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    note.thread[ti].question,
-                                    textDirection:
-                                        autoDir(note.thread[ti].question),
+                          // پرسشِ کاربر + «ویرایش» (درجا) — یا کادرِ ویرایش
+                          if (_editIndex == ti)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  TextField(
+                                    controller: _editCtrl,
+                                    autofocus: true,
+                                    minLines: 1,
+                                    maxLines: 6,
+                                    onChanged: (_) => setState(() {}),
                                     style: TextStyle(
-                                      color: c.inkSoft,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
+                                        color: c.ink, fontSize: 12.5),
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 9),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        borderSide:
+                                            BorderSide(color: c.teal),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        borderSide: BorderSide(
+                                            color: c.teal, width: 1.5),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                _MiniAction(
-                                  icon: Icons.edit_outlined,
-                                  label: context.l10n.grammar_edit,
-                                  color: c.teal,
-                                  onTap: _loading
-                                      ? null
-                                      : () => _startEdit(
-                                          ti, note.thread[ti].question),
-                                ),
-                              ],
+                                  const SizedBox(height: 6),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 6,
+                                    alignment: WrapAlignment.end,
+                                    children: [
+                                      OutlinedButton(
+                                        onPressed: _cancelEdit,
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: c.inkSoft,
+                                          side: BorderSide(
+                                              color: c.cardBorder),
+                                          visualDensity:
+                                              VisualDensity.compact,
+                                        ),
+                                        child: Text(
+                                            context.l10n.speaking_cancel,
+                                            style: const TextStyle(
+                                                fontSize: 12)),
+                                      ),
+                                      FilledButton(
+                                        onPressed:
+                                            _editCtrl.text.trim().isEmpty
+                                                ? null
+                                                : _saveEdit,
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: c.teal,
+                                          visualDensity:
+                                              VisualDensity.compact,
+                                        ),
+                                        child: Text(
+                                            context.l10n.speaking_save_resend,
+                                            style: const TextStyle(
+                                                fontSize: 12)),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      note.thread[ti].question,
+                                      textDirection:
+                                          autoDir(note.thread[ti].question),
+                                      style: TextStyle(
+                                        color: c.inkSoft,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  _MiniAction(
+                                    icon: Icons.edit_outlined,
+                                    label: context.l10n.grammar_edit,
+                                    color: c.teal,
+                                    onTap: _loading
+                                        ? null
+                                        : () => _startEdit(
+                                            ti, note.thread[ti].question),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 8),
@@ -610,26 +721,6 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                       ),
                     ),
 
-                  if (_editIndex != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined, size: 13, color: c.gold),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              context.l10n.grammar_editing_question,
-                              style: TextStyle(color: c.inkSoft, fontSize: 11),
-                            ),
-                          ),
-                          InkWell(
-                            onTap: _cancelEdit,
-                            child: Icon(Icons.close, size: 16, color: c.inkSoft),
-                          ),
-                        ],
-                      ),
-                    ),
                   // ═══ کادرِ پرسش از همین یادداشت ═══
                   Container(
                     margin: const EdgeInsets.only(top: 10),
