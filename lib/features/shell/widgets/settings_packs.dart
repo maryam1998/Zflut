@@ -3,6 +3,7 @@
 // بخش‌های «بسته‌های آفلاین» و «دانلود آفلاین لغات» تنظیمات — معادل
 // OfflineSpeechSettings / VoiceSettings / AudioSyncSettings / OfflineWordsModal در Hope.
 
+import '../../tabs/_hope_panel.dart' show uiContentDirection;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -456,7 +457,10 @@ class OfflineWordsDialog extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context) => showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const OfflineWordsDialog(),
+        builder: (ctx) => Directionality(
+          textDirection: uiContentDirection(ctx),
+          child: const OfflineWordsDialog(),
+        ),
       );
 
   @override

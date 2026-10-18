@@ -22,6 +22,7 @@ import '../../../core/sync/cloud_sync.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/widgets/color_palette_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../tabs/_hope_panel.dart' show uiContentDirection;
 import 'settings_packs.dart';
 
 class SettingsSheet extends ConsumerWidget {
@@ -48,7 +49,11 @@ class SettingsSheet extends ConsumerWidget {
               width: width,
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: size.height * 0.70),
-                child: const SettingsSheet(),
+                // جهتِ متن‌ها طبقِ زبانِ رابط (فارسی/عربی RTL، بقیه LTR)
+                child: Directionality(
+                  textDirection: uiContentDirection(ctx),
+                  child: const SettingsSheet(),
+                ),
               ),
             ),
           ],
