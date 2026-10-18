@@ -10,6 +10,7 @@ import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/read_ids_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/widgets/level_chips.dart';
 import '../../core/widgets/range_card.dart';
 import '../../core/widgets/sync_item_card.dart';
 import '../shell/widgets/shell_header.dart';
@@ -26,6 +27,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   String? _activeTopic;
   int? _openScenario;
   String _query = '';
+  String _level = 'all';
   int _rangeFrom = 1;
   int _rangeTo = 60;
 
@@ -64,6 +66,13 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     }
 
     final filtered = topics.where((t) {
+      // فیلتر سطح: موضوعی که دست‌کم یک جمله‌ی هم‌سطح دارد
+      if (_level != 'all' &&
+          !t.scenarios.any((s) =>
+              s.speakerA.any((l) => l.level == _level) ||
+              s.speakerB.any((l) => l.level == _level))) {
+        return false;
+      }
       if (_query.trim().isEmpty) return true;
       final q = _query.trim().toLowerCase();
       if (t.topic.toLowerCase().contains(q)) return true;
@@ -81,6 +90,19 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     return _buildTopicsGrid(context, filtered);
   }
 
+  /// ردیف فیلتر سطح (A1–C2) بالای لیست موضوع‌ها.
+  Widget _levelBar() => Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+        child: LevelChips(
+          selected: _level,
+          onSelect: (l) => setState(() {
+            _level = l;
+            _rangeFrom = 1;
+            _rangeTo = 60;
+          }),
+        ),
+      );
+
   Widget _buildTopicsGrid(
       BuildContext context, List<ConversationTopic> topics) {
     final c = context.appColors;
@@ -90,6 +112,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       return ListView(
         children: [
           const ShellHeader(),
+          _levelBar(),
           Padding(
             padding: const EdgeInsets.all(40),
             child: Center(
@@ -114,6 +137,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       padding: const EdgeInsets.only(bottom: 90),
       children: [
         const ShellHeader(),
+        _levelBar(),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
           child: Column(
