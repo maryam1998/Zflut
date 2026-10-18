@@ -641,5 +641,21 @@
   "sync_restore_later": "Später",
   "sync_restore_started": "Download gestartet — Fortschritt siehst du in den Einstellungen.",
   "sort_recent": "Zuletzt hinzugefügt",
-  "wordlist_not_loaded": "Keine Daten geladen"
+  "wordlist_not_loaded": "Keine Daten geladen",
+  "story_builder_title": "Geschichten-Generator",
+  "story_content_reading": "Lesen",
+  "story_busy_processing": "Wird verarbeitet...",
+  "story_import_pdf": "Oder ein PDF zum Lesen importieren",
+  "story_import_images": "Bilder zum Übersetzen und Lesen importieren",
+  "story_pdf_opening": "PDF wird geöffnet...",
+  "story_pdf_view_btn": "PDF hier mit Originalseite + Übersetzung anzeigen",
+  "story_link_close": "Link schließen",
+  "story_link_open": "Oder einen Seitenlink eingeben",
+  "story_link_note": "Der Haupttext der Seite wird geladen und für Lesen und Übersetzung vorbereitet.",
+  "story_link_fetching": "Text wird geladen...",
+  "story_link_fetch_btn": "Laden und zum Lesen vorbereiten",
+  "story_paste_close": "Textfeld schließen",
+  "story_paste_open": "Oder Text/Geschichte hier einfügen",
+  "story_paste_hint": "Füge deinen Text hier ein...",
+  "story_prepare_reading": "Zum Lesen vorbereiten"
 }

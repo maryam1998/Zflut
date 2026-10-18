@@ -641,5 +641,21 @@
   "sync_restore_later": "Plus tard",
   "sync_restore_started": "Téléchargement lancé — suivez la progression dans les réglages.",
   "sort_recent": "Ajouté récemment",
-  "wordlist_not_loaded": "Aucune donnée chargée"
+  "wordlist_not_loaded": "Aucune donnée chargée",
+  "story_builder_title": "Créateur d’histoires",
+  "story_content_reading": "Lecture",
+  "story_busy_processing": "Traitement...",
+  "story_import_pdf": "Ou importez un PDF à lire",
+  "story_import_images": "Importer des images à traduire et lire",
+  "story_pdf_opening": "Ouverture du PDF...",
+  "story_pdf_view_btn": "Afficher le PDF ici avec la page originale + traduction",
+  "story_link_close": "Fermer le lien",
+  "story_link_open": "Ou saisissez le lien d’une page",
+  "story_link_note": "Le texte principal de la page est récupéré et préparé pour la lecture et la traduction.",
+  "story_link_fetching": "Récupération du texte...",
+  "story_link_fetch_btn": "Récupérer et préparer pour la lecture",
+  "story_paste_close": "Fermer la zone de texte",
+  "story_paste_open": "Ou collez un texte/une histoire ici",
+  "story_paste_hint": "Collez votre texte ici...",
+  "story_prepare_reading": "Préparer pour la lecture"
 }

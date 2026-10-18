@@ -641,5 +641,21 @@
   "sync_restore_later": "بعداً",
   "sync_restore_started": "دانلود شروع شد — پیشرفت را در تنظیمات ببینید.",
   "sort_recent": "اخیراً اضافه‌شده",
-  "wordlist_not_loaded": "داده‌ای بارگذاری نشد"
+  "wordlist_not_loaded": "داده‌ای بارگذاری نشد",
+  "story_builder_title": "داستان‌ساز",
+  "story_content_reading": "خوانش",
+  "story_busy_processing": "در حال پردازش...",
+  "story_import_pdf": "به‌جاش یه PDF برای خوانش وارد کن",
+  "story_import_images": "وارد کردنِ عکس برای ترجمه و خوانش",
+  "story_pdf_opening": "در حال باز کردنِ PDF...",
+  "story_pdf_view_btn": "PDF رو با عکسِ اصلی + ترجمه همینجا نشون بده",
+  "story_link_close": "بستنِ لینک",
+  "story_link_open": "یا لینکِ یه صفحه رو وارد کن",
+  "story_link_note": "متنِ اصلیِ صفحه خونده می‌شه و آماده‌ی خوانش و ترجمه می‌شه.",
+  "story_link_fetching": "در حال گرفتنِ متن...",
+  "story_link_fetch_btn": "بگیر و آماده‌ی خوانش کن",
+  "story_paste_close": "بستنِ کادرِ متن",
+  "story_paste_open": "یا یه متن/داستان رو اینجا پیست کن",
+  "story_paste_hint": "متنت رو اینجا پیست کن...",
+  "story_prepare_reading": "آماده‌ی خوانش کن"
 }

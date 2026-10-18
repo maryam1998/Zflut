@@ -1047,5 +1047,21 @@
   "sync_restore_later": "Later",
   "sync_restore_started": "Downloads started — follow progress in Settings.",
   "sort_recent": "Recently added",
-  "wordlist_not_loaded": "No data loaded"
+  "wordlist_not_loaded": "No data loaded",
+  "story_builder_title": "Story builder",
+  "story_content_reading": "Reading",
+  "story_busy_processing": "Processing...",
+  "story_import_pdf": "Or import a PDF to read",
+  "story_import_images": "Import images to translate and read",
+  "story_pdf_opening": "Opening PDF...",
+  "story_pdf_view_btn": "Show the PDF here with original page image + translation",
+  "story_link_close": "Close link",
+  "story_link_open": "Or enter a page link",
+  "story_link_note": "The page’s main text is fetched and prepared for reading and translation.",
+  "story_link_fetching": "Fetching text...",
+  "story_link_fetch_btn": "Fetch and prepare for reading",
+  "story_paste_close": "Close text box",
+  "story_paste_open": "Or paste a text/story here",
+  "story_paste_hint": "Paste your text here...",
+  "story_prepare_reading": "Prepare for reading"
 }

@@ -5,6 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/widgets/level_chips.dart';
 import '../../core/constants/supported_languages.dart';
 import '../../core/providers/ai_settings_provider.dart';
@@ -89,12 +91,29 @@ String _enName(String code) {
   return code;
 }
 
-String _contentLabel(String key) {
-  if (key == 'reading') return 'خوانش';
-  for (final c in _kContentTypes) {
-    if (c.key == key) return c.label;
+String _contentLabel(AppLocalizations L, String key) {
+  switch (key) {
+    case 'reading': return L.story_content_reading;
+    case 'news': return L.story_content_news;
+    case 'psychology': return L.story_content_psychology;
+    case 'children': return L.story_content_children;
+    case 'funny': return L.story_content_funny;
+    case 'mystery': return L.story_content_mystery;
+    case 'crime': return L.story_content_crime;
+    case 'scientific': return L.story_content_scientific;
+    case 'conversational': return L.story_content_conversational;
+    case 'philosophical': return L.story_content_philosophical;
+    case 'metaphysical': return L.story_content_metaphysical;
+    default: return L.story_content_general;
   }
-  return 'عمومی';
+}
+
+String _lengthLabel(AppLocalizations L, String key) {
+  switch (key) {
+    case 'long': return L.story_length_long;
+    case 'medium': return L.story_length_medium;
+    default: return L.story_length_short;
+  }
 }
 
 String _stripThink(String t) => t
@@ -1169,7 +1188,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     if (!options.contains(lang)) options.add(lang);
 
     return HopePanel(
-      title: 'داستان‌ساز',
+      title: context.l10n.story_builder_title,
       titleSize: 16,
       children: [
         _modeSwitch(c, stories.length),
@@ -1238,8 +1257,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       ),
       child: Row(
         children: [
-          seg(false, 'ساخت داستان', Icons.auto_fix_high),
-          seg(true, 'کتابخانه‌ی من ($count)', Icons.local_library_outlined),
+          seg(false, context.l10n.story_mode_create, Icons.auto_fix_high),
+          seg(true, '${context.l10n.story_mode_library} ($count)', Icons.local_library_outlined),
         ],
       ),
     );
@@ -1256,13 +1275,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('۱. زبان و سطح داستان',
+          Text(context.l10n.story_lang_level_section,
               style: TextStyle(
                   color: c.ink, fontSize: 14.5, fontWeight: FontWeight.w700)),
           const SizedBox(height: 10),
           if (options.length > 1) ...[
             Text(
-              'زبان داستان (از بین زبان‌های مقصدی که بالای صفحه انتخاب کردی)',
+              context.l10n.story_lang_pick_hint,
               style: TextStyle(color: c.inkSoft, fontSize: 12),
             ),
             const SizedBox(height: 6),
@@ -1272,7 +1291,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               children: [
                 for (final code in options)
                   HopeChoiceChip(
-                    label: langFaName(code),
+                    label: langDisplayName(context, code),
                     active: lang == code,
                     activeBorder: c.gold,
                     activeFill: c.goldSoft,
@@ -1290,24 +1309,24 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             const SizedBox(height: 6),
           ] else
             Text(
-              'زبان داستان: ${langFaName(lang)} (طبق زبان مقصدی که بالای صفحه انتخاب کردی)',
+              context.l10n.story_lang_single_note(langDisplayName(context, lang)),
               style: TextStyle(color: c.inkSoft, fontSize: 12),
             ),
-          label('سطح داستان', top: 4),
+          label(context.l10n.story_level_label, top: 4),
           LevelChips(
             selected: _level,
             includeAll: false,
             wrap: true,
             onSelect: (lv) => setState(() => _level = lv),
           ),
-          label('نوع محتوا'),
+          label(context.l10n.story_content_type_label),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               for (final t in _kContentTypes)
                 HopeChoiceChip(
-                  label: t.label,
+                  label: _contentLabel(context.l10n, t.key),
                   active: _contentType == t.key,
                   activeBorder: c.rose,
                   activeFill: c.rose,
@@ -1316,14 +1335,14 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 ),
             ],
           ),
-          label('طول داستان'),
+          label(context.l10n.story_length_label),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
               for (final l in _kLengths)
                 HopeChoiceChip(
-                  label: l.label,
+                  label: _lengthLabel(context.l10n, l.key),
                   active: _length == l.key,
                   activeBorder: c.gold,
                   activeFill: c.gold,
@@ -1343,7 +1362,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('۲. انتخاب لغت‌ها',
+          Text(context.l10n.story_words_section,
               style: TextStyle(
                   color: c.ink, fontSize: 14.5, fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
@@ -1357,7 +1376,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                   onSubmitted: (_) => _addCustom(lang),
                   decoration: _fieldDeco(
                     c,
-                    'یه لغت بنویس (به هر زبونی) — به ${langFaName(lang)} ترجمه و اضافه می‌شه...',
+                    context.l10n.story_word_input_placeholder(langDisplayName(context, lang)),
                   ),
                 ),
               ),
@@ -1404,7 +1423,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             style: TextStyle(color: c.ink, fontSize: 13),
             decoration: _fieldDeco(
               c,
-              'یا از دیکشنری من، دیالوگ‌های روزمره، لغات، اصطلاحات عامیانه، لغات ذخیره‌شده جستجو کن...',
+              context.l10n.story_vocab_search_placeholder,
             ),
           ),
           if (matches.isNotEmpty) ...[
@@ -1497,7 +1516,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                   GestureDetector(
                     onTap: () => setState(_words.clear),
                     child: Text(
-                      'پاک کردن همه',
+                      context.l10n.clear_all_words,
                       style: TextStyle(
                         color: c.rose,
                         fontSize: 11,
@@ -1539,20 +1558,20 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'داستان همزمان به چه زبان‌هایی ترجمه بشه؟ (می‌تونی چند تا انتخاب کنی)',
+            context.l10n.story_translate_langs_question,
             style: TextStyle(color: c.inkSoft, fontSize: 12.5, height: 1.7),
           ),
           Row(
             children: [
               HopeTextAction(
-                label: 'انتخاب همه',
+                label: context.l10n.select_all,
                 color: c.teal,
                 onTap: () =>
                     setAll({for (final l in kSupportedLanguages) l.code}),
               ),
               const SizedBox(width: 14),
               HopeTextAction(
-                label: 'پاک کردن همه',
+                label: context.l10n.clear_all_words,
                 color: c.rose,
                 onTap: () => setAll({}),
               ),
@@ -1565,7 +1584,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             children: [
               for (final l in kSupportedLanguages)
                 HopeChoiceChip(
-                  label: l.faLabel,
+                  label: langDisplayName(context, l.code),
                   active: selected.contains(l.code),
                   activeBorder: c.gold,
                   activeFill: c.goldSoft,
@@ -1769,35 +1788,36 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   List<Widget> _importSection(AppThemeColorsExt c) {
+    final L = context.l10n;
     final busyAny = _pdfReadBusy || _imgReadBusy || _pdfViewBusy;
     String lbl(bool busy, String idle) =>
-        busy ? (_importProgress.isEmpty ? 'در حال پردازش...' : _importProgress) : idle;
+        busy ? (_importProgress.isEmpty ? L.story_busy_processing : _importProgress) : idle;
     return [
       _importButton(
         c,
         emoji: '📖',
-        label: lbl(_pdfReadBusy, 'به‌جاش یه PDF برای خوانش وارد کن'),
+        label: lbl(_pdfReadBusy, L.story_import_pdf),
         onTap: busyAny ? () {} : _importPdfForReading,
       ),
       _importButton(
         c,
         emoji: '🖼️',
-        label: lbl(_imgReadBusy, 'وارد کردنِ عکس برای ترجمه و خوانش'),
+        label: lbl(_imgReadBusy, L.story_import_images),
         onTap: busyAny ? () {} : _importImagesForReading,
       ),
       _importButton(
         c,
         emoji: '📑',
         label: _pdfViewBusy
-            ? 'در حال باز کردنِ PDF...'
-            : 'PDF رو با عکسِ اصلی + ترجمه همینجا نشون بده',
+            ? L.story_pdf_opening
+            : L.story_pdf_view_btn,
         onTap: busyAny ? () {} : _openPdfView,
       ),
       if (_pdfDoc != null) _pdfViewer(c),
       _importButton(
         c,
         emoji: '🔗',
-        label: _showLink ? 'بستنِ لینک' : 'یا لینکِ یه صفحه رو وارد کن',
+        label: _showLink ? L.story_link_close : L.story_link_open,
         onTap: () => setState(() => _showLink = !_showLink),
       ),
       if (_showLink)
@@ -1814,13 +1834,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             ),
             const SizedBox(height: 4),
             Text(
-              'متنِ اصلیِ صفحه خونده می‌شه و آماده‌ی خوانش و ترجمه می‌شه.',
+              L.story_link_note,
               style: TextStyle(color: c.inkSoft, fontSize: 10.5),
             ),
             const SizedBox(height: 6),
             _primaryBtn(
               c,
-              _linkBusy ? 'در حال گرفتنِ متن...' : 'بگیر و آماده‌ی خوانش کن',
+              _linkBusy ? L.story_link_fetching : L.story_link_fetch_btn,
               _linkCtrl.text.trim().isEmpty || _linkBusy ? null : _importLink,
               busy: _linkBusy,
             ),
@@ -1829,7 +1849,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       _importButton(
         c,
         emoji: '📋',
-        label: _showPaste ? 'بستنِ کادرِ متن' : 'یا یه متن/داستان رو اینجا پیست کن',
+        label: _showPaste ? L.story_paste_close : L.story_paste_open,
         onTap: () => setState(() => _showPaste = !_showPaste),
       ),
       if (_showPaste)
@@ -1842,13 +1862,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               maxLines: 10,
               textDirection: TextDirection.ltr,
               style: TextStyle(color: c.ink, fontSize: 13, height: 1.6),
-              decoration: _fieldDeco(c, 'متنت رو اینجا پیست کن...'),
+              decoration: _fieldDeco(c, L.story_paste_hint),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 6),
             _primaryBtn(
               c,
-              '📖 آماده‌ی خوانش کن',
+              '📖 ${L.story_prepare_reading}',
               _pasteCtrl.text.trim().isEmpty ? null : _importPasted,
             ),
           ],
@@ -1885,7 +1905,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                   Icon(Icons.auto_awesome, size: 18, color: c.headerTo),
                 const SizedBox(width: 8),
                 Text(
-                  _generating ? 'در حال ساخت داستان...' : 'داستان بساز',
+                  _generating
+                      ? context.l10n.story_generating_btn
+                      : context.l10n.story_generate_btn,
                   style: TextStyle(
                     color: c.headerTo,
                     fontWeight: FontWeight.w700,
@@ -2166,7 +2188,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                   onChanged: (_) => setState(() {}),
                   style: TextStyle(color: c.ink, fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'جستجو در کتابخانه...',
+                    hintText: context.l10n.library_search_placeholder,
                     hintStyle: TextStyle(
                         color: c.inkSoft.withOpacity(0.6), fontSize: 13),
                     border: InputBorder.none,
@@ -2188,9 +2210,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         onSelect: (lv) => setState(() => _libLevel = lv),
       ),
       if (stories.isEmpty)
-        const HopeEmptyText('هنوز داستانی ذخیره نکردی.')
+        HopeEmptyText(context.l10n.library_empty)
       else if (shown.isEmpty)
-        const HopeEmptyText('چیزی پیدا نشد.')
+        HopeEmptyText(context.l10n.reader_nothing_found)
       else
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2220,7 +2242,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final ls = s.text.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     return ls.length > 1 && !RegExp(r'^https?://', caseSensitive: false).hasMatch(ls[1])
         ? ls[1]
-        : _contentLabel(s.contentType);
+        : _contentLabel(context.l10n, s.contentType);
   }
 
   Future<void> _openLink(String url) async {
@@ -2264,7 +2286,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                         link != null
                             ? '${_sourceOf(s)} · $date'
                             : '${langFaName(s.langCode)} · ${s.level} · '
-                                '${_contentLabel(s.contentType)} · $date',
+                                '${_contentLabel(context.l10n, s.contentType)} · $date',
                         style: TextStyle(color: c.inkSoft, fontSize: 11),
                       ),
                     ],

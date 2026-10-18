@@ -641,5 +641,21 @@
   "sync_restore_later": "لاحقًا",
   "sync_restore_started": "بدأ التنزيل — تابع التقدّم من الإعدادات.",
   "sort_recent": "أُضيفت مؤخرًا",
-  "wordlist_not_loaded": "لم يتم تحميل أي بيانات"
+  "wordlist_not_loaded": "لم يتم تحميل أي بيانات",
+  "story_builder_title": "صانع القصص",
+  "story_content_reading": "قراءة",
+  "story_busy_processing": "جارٍ المعالجة...",
+  "story_import_pdf": "أو استورد ملف PDF للقراءة",
+  "story_import_images": "استورد صورًا للترجمة والقراءة",
+  "story_pdf_opening": "جارٍ فتح PDF...",
+  "story_pdf_view_btn": "اعرض ملف PDF هنا مع صورة الصفحة الأصلية + الترجمة",
+  "story_link_close": "إغلاق الرابط",
+  "story_link_open": "أو أدخل رابط صفحة",
+  "story_link_note": "يتم جلب النص الرئيسي للصفحة وتجهيزه للقراءة والترجمة.",
+  "story_link_fetching": "جارٍ جلب النص...",
+  "story_link_fetch_btn": "اجلب وجهّز للقراءة",
+  "story_paste_close": "إغلاق مربع النص",
+  "story_paste_open": "أو الصق نصًا/قصة هنا",
+  "story_paste_hint": "الصق نصك هنا...",
+  "story_prepare_reading": "جهّز للقراءة"
 }
