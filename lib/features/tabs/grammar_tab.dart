@@ -14,6 +14,7 @@ import '../../core/translate/translation_service.dart'
 import '../../core/providers/reader_providers.dart';
 import '../../core/ai/ai_gateway.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/utils/html_entities.dart';
 import '../../core/widgets/ai_answer_tools.dart';
 import '_hope_panel.dart';
 
@@ -550,7 +551,9 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                           textDirection: TextDirection.ltr,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(child: MiniMarkdown(text: note.markdown)),
+                            Expanded(
+                                child: MiniMarkdown(
+                                    text: decodeHtmlEntities(note.markdown))),
                             AiBubbleActions(
                                 text: note.markdown, sourceLang: _mdLang),
                           ],
@@ -689,7 +692,8 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                                   children: [
                                     Expanded(
                                         child: MiniMarkdown(
-                                            text: note.thread[ti].answer)),
+                                            text: decodeHtmlEntities(
+                                                note.thread[ti].answer))),
                                     AiBubbleActions(
                                         text: note.thread[ti].answer),
                                   ],

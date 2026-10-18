@@ -1446,5 +1446,21 @@
   "pos_auxiliary": "Auxiliary verb",
   "pos_determiner": "Determiner",
   "pos_exclamation": "Exclamation",
-  "pos_idiom": "Idiom"
+  "pos_idiom": "Idiom",
+  "speaking_tab_speaking": "Speaking",
+  "speaking_tab_history": "Conversation history",
+  "speaking_history_intro": "Conversations you saved are kept here, newest first. Open one to keep chatting, edit your messages, or delete messages.",
+  "speaking_history_empty": "No saved conversations yet. In the Speaking tab, tap “Save to history”.",
+  "speaking_history_untitled": "Conversation",
+  "speaking_save_to_history": "💾 Save to history",
+  "speaking_saved_to_history": "✅ Saved to history",
+  "speaking_saved_to_grammar": "✅ Saved to grammar",
+  "speaking_confirm_delete_chats": "Delete {n} selected conversations?",
+  "@speaking_confirm_delete_chats": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  }
 }

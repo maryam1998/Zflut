@@ -806,5 +806,14 @@
   "pos_auxiliary": "Verbo auxiliar",
   "pos_determiner": "Determinante",
   "pos_exclamation": "Exclamación",
-  "pos_idiom": "Modismo"
+  "pos_idiom": "Modismo",
+  "speaking_tab_speaking": "Conversación",
+  "speaking_tab_history": "Historial de conversaciones",
+  "speaking_history_intro": "Aquí están las conversaciones que guardaste, las más recientes primero. Abre una para seguir chateando, editar tus mensajes o eliminar mensajes.",
+  "speaking_history_empty": "Aún no has guardado conversaciones. En la pestaña Conversación toca «Guardar en el historial».",
+  "speaking_history_untitled": "Conversación",
+  "speaking_save_to_history": "💾 Guardar en el historial",
+  "speaking_saved_to_history": "✅ Guardado en el historial",
+  "speaking_saved_to_grammar": "✅ Guardado en gramática",
+  "speaking_confirm_delete_chats": "¿Eliminar las {n} conversaciones seleccionadas?"
 }

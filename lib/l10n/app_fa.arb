@@ -806,5 +806,14 @@
   "pos_auxiliary": "فعل کمکی",
   "pos_determiner": "حرف تعیین‌کننده",
   "pos_exclamation": "صوت",
-  "pos_idiom": "اصطلاح"
+  "pos_idiom": "اصطلاح",
+  "speaking_tab_speaking": "مکالمه",
+  "speaking_tab_history": "تاریخچه مکالمات",
+  "speaking_history_intro": "مکالماتی که ذخیره کرده‌ای اینجاست، جدیدترین اول. هر کدوم رو باز کن تا ادامه‌اش بدی، پیام‌هات رو ویرایش کنی یا پیام‌ها رو حذف کنی.",
+  "speaking_history_empty": "هنوز مکالمه‌ای ذخیره نکرده‌ای. در تب مکالمه روی «ذخیره در تاریخچه» بزن.",
+  "speaking_history_untitled": "مکالمه",
+  "speaking_save_to_history": "💾 ذخیره در تاریخچه",
+  "speaking_saved_to_history": "✅ در تاریخچه ذخیره شد",
+  "speaking_saved_to_grammar": "✅ در گرامر ذخیره شد",
+  "speaking_confirm_delete_chats": "{n} مکالمه‌ی انتخاب‌شده پاک بشه؟"
 }

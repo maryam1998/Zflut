@@ -10,6 +10,7 @@ import '../providers/speech_provider.dart';
 import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart' show runWithConcurrencyLimit;
+import '../utils/html_entities.dart';
 import '../../features/reader/widgets/neural_path_dialog.dart';
 import 'sync_item_card.dart' show NeuralPathButton;
 
@@ -60,7 +61,8 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
     }
   }
 
-  static String _plain(String t) => t
+  static String _plain(String t) => decodeHtmlEntities(t)
+      .replaceAll(RegExp('[\u2066-\u2069]'), '')
       .replaceAll(RegExp(r'\*\*|__|`'), '')
       .replaceAll(RegExp(r'^\s{0,3}#{1,6}\s*', multiLine: true), '')
       .replaceAll(RegExp(r'^\s*[-*•]\s+', multiLine: true), '')
@@ -110,7 +112,14 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
     final ai = ref.read(aiSettingsProvider);
     final from = _source;
     try {
-      final lines = _plain(original).split('\n');
+      var lines = _plain(original).split('\n');
+      // خط‌هایی که تکه‌ی فارسی/عربی (زبانِ مادری/رابط) وسطِ متنِ زبانِ تمرین دارند،
+      // اول به زبانِ مبدأ برمی‌گردند تا کلِ خط یک‌دست ترجمه شود و تکه‌ی فارسی
+      // دست‌نخورده وسطِ ترجمه نماند.
+      if (dirFor(from) != TextDirection.rtl &&
+          dirFor(lang) != TextDirection.rtl) {
+        lines = [for (final l in lines) await _unmix(l, svc, ai, from)];
+      }
       final jobs = <String>[];
       for (final l in lines) {
         if (l.trim().isNotEmpty) jobs.addAll(_chunks(l));
@@ -124,7 +133,7 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
                   text: seg, targetLang: lang, sourceLang: from, aiSettings: ai)
               : await svc.translate(
                   text: seg, targetLang: lang, sourceLang: from, aiSettings: ai);
-          final v = t.trim();
+          final v = decodeHtmlEntities(t.trim());
           if (v.isEmpty || v == seg.trim()) return seg;
           ok++;
           return v;
@@ -154,6 +163,40 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
         setState(() => _loading.remove(lang));
       }
     }
+  }
+
+  static final RegExp _arabicRun = RegExp(
+      r'[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]'
+      r'[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF\u200c\u200d\s.,!?؟،؛:]*');
+
+  /// هر تکه‌ی عربی‌نویس (فارسی/عربی) داخلِ خط را به زبانِ مبدأ ترجمه می‌کند.
+  Future<String> _unmix(String line, dynamic svc, dynamic ai, String from) async {
+    if (!_arabicRun.hasMatch(line)) return line;
+    final buf = StringBuffer();
+    var last = 0;
+    for (final m in _arabicRun.allMatches(line)) {
+      final run = m.group(0)!;
+      final core = run.trimRight();
+      final tail = run.substring(core.length);
+      var t = core;
+      try {
+        final r = (await svc.translate(
+          text: core,
+          targetLang: from,
+          sourceLang: 'auto',
+          aiSettings: ai,
+        ) as String)
+            .trim();
+        if (r.isNotEmpty) t = decodeHtmlEntities(r);
+      } catch (_) {}
+      buf
+        ..write(line.substring(last, m.start))
+        ..write(t)
+        ..write(tail);
+      last = m.end;
+    }
+    buf.write(line.substring(last));
+    return buf.toString();
   }
 
   void _toggleLang(String lang) {

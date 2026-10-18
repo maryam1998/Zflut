@@ -806,5 +806,14 @@
   "pos_auxiliary": "Verbe auxiliaire",
   "pos_determiner": "Déterminant",
   "pos_exclamation": "Exclamation",
-  "pos_idiom": "Expression idiomatique"
+  "pos_idiom": "Expression idiomatique",
+  "speaking_tab_speaking": "Conversation",
+  "speaking_tab_history": "Historique des conversations",
+  "speaking_history_intro": "Les conversations enregistrées sont ici, les plus récentes d’abord. Ouvre-en une pour continuer à discuter, modifier tes messages ou supprimer des messages.",
+  "speaking_history_empty": "Aucune conversation enregistrée pour l’instant. Dans l’onglet Conversation, touche « Enregistrer dans l’historique ».",
+  "speaking_history_untitled": "Conversation",
+  "speaking_save_to_history": "💾 Enregistrer dans l’historique",
+  "speaking_saved_to_history": "✅ Enregistré dans l’historique",
+  "speaking_saved_to_grammar": "✅ Enregistré dans la grammaire",
+  "speaking_confirm_delete_chats": "Supprimer les {n} conversations sélectionnées ?"
 }

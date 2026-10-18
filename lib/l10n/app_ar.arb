@@ -806,5 +806,14 @@
   "pos_auxiliary": "فعل مساعد",
   "pos_determiner": "محدِّد",
   "pos_exclamation": "تعجّب",
-  "pos_idiom": "تعبير اصطلاحي"
+  "pos_idiom": "تعبير اصطلاحي",
+  "speaking_tab_speaking": "المحادثة",
+  "speaking_tab_history": "سجل المحادثات",
+  "speaking_history_intro": "المحادثات التي حفظتها هنا، الأحدث أولاً. افتح أي محادثة لمتابعتها أو تعديل رسائلك أو حذف الرسائل.",
+  "speaking_history_empty": "لم تحفظ أي محادثة بعد. في تبويب المحادثة اضغط «حفظ في السجل».",
+  "speaking_history_untitled": "محادثة",
+  "speaking_save_to_history": "💾 حفظ في السجل",
+  "speaking_saved_to_history": "✅ تم الحفظ في السجل",
+  "speaking_saved_to_grammar": "✅ تم الحفظ في القواعد",
+  "speaking_confirm_delete_chats": "هل تريد حذف {n} من المحادثات المحددة؟"
 }

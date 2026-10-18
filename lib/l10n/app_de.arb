@@ -806,5 +806,14 @@
   "pos_auxiliary": "Hilfsverb",
   "pos_determiner": "Determinativ",
   "pos_exclamation": "Ausruf",
-  "pos_idiom": "Redewendung"
+  "pos_idiom": "Redewendung",
+  "speaking_tab_speaking": "Sprechen",
+  "speaking_tab_history": "Gesprächsverlauf",
+  "speaking_history_intro": "Hier liegen deine gespeicherten Gespräche, neueste zuerst. Öffne eines, um weiterzuchatten, deine Nachrichten zu bearbeiten oder Nachrichten zu löschen.",
+  "speaking_history_empty": "Noch keine gespeicherten Gespräche. Tippe im Tab „Sprechen“ auf „Im Verlauf speichern“.",
+  "speaking_history_untitled": "Gespräch",
+  "speaking_save_to_history": "💾 Im Verlauf speichern",
+  "speaking_saved_to_history": "✅ Im Verlauf gespeichert",
+  "speaking_saved_to_grammar": "✅ In Grammatik gespeichert",
+  "speaking_confirm_delete_chats": "{n} ausgewählte Gespräche löschen?"
 }

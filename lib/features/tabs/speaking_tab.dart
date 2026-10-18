@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../app.dart';
 import '../../core/constants/supported_languages.dart';
@@ -13,6 +14,7 @@ import '../../core/providers/reader_providers.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/utils/html_entities.dart';
 import '../../core/widgets/ai_answer_tools.dart';
 import '_hope_panel.dart';
 
@@ -24,6 +26,7 @@ import '_hope_panel.dart';
 
 const String _kChatKey = 'zflut-speaking-chat-v1';
 const String _kLangKey = 'zflut-speaking-lang-v1';
+const String _kHistKey = 'zflut-speaking-history-v1';
 const Color _kMistake = Color(0xFFC81E1E);
 const Color _kCorrection = Color(0xFF166534);
 
@@ -68,19 +71,25 @@ class _Msg {
   final String text;
   final List<_Correction> corrections;
   final bool savedToGrammar;
+  final bool welcome; // پیامِ ثابتِ معرفیِ Jimmy — وارد تاریخچه نمی‌شود
 
   const _Msg({
     required this.role,
     required this.text,
     this.corrections = const [],
     this.savedToGrammar = false,
+    this.welcome = false,
   });
+
+  bool get isWelcome =>
+      welcome || (role == 'ai' && text.startsWith("Hey there! I'm Jimmy"));
 
   _Msg copyWith({bool? savedToGrammar}) => _Msg(
         role: role,
         text: text,
         corrections: corrections,
         savedToGrammar: savedToGrammar ?? this.savedToGrammar,
+        welcome: welcome,
       );
 
   Map<String, dynamic> toJson() => {
@@ -88,17 +97,55 @@ class _Msg {
         'text': text,
         'corrections': corrections.map((c) => c.toJson()).toList(),
         'savedToGrammar': savedToGrammar,
+        if (welcome) 'welcome': true,
       };
 
-  factory _Msg.fromJson(Map<String, dynamic> j) => _Msg(
-        role: (j['role'] ?? 'ai').toString(),
-        text: (j['text'] ?? '').toString(),
-        corrections: [
-          for (final e in (j['corrections'] as List? ?? const []))
-            if (e is Map) _Correction.fromJson(Map<String, dynamic>.from(e)),
-        ],
-        savedToGrammar: j['savedToGrammar'] == true,
-      );
+  factory _Msg.fromJson(Map<String, dynamic> j) {
+    var text = (j['text'] ?? '').toString();
+    var cs = <_Correction>[
+      for (final e in (j['corrections'] as List? ?? const []))
+        if (e is Map) _Correction.fromJson(Map<String, dynamic>.from(e)),
+    ];
+    // پیام‌های قدیمی ممکن است `&#39;` داشته باشند → رمزگشایی و جابه‌جاییِ آفست‌ها
+    final dec = decodeHtmlEntities(text);
+    if (dec != text) {
+      text = dec;
+      cs = _relocate(text, cs);
+    }
+    return _Msg(
+      role: (j['role'] ?? 'ai').toString(),
+      text: text,
+      corrections: cs,
+      savedToGrammar: j['savedToGrammar'] == true,
+      welcome: j['welcome'] == true,
+    );
+  }
+}
+
+List<_Correction> _relocate(String text, List<_Correction> list) {
+  final out = <_Correction>[];
+  var cursor = 0;
+  for (final c in list) {
+    final o = decodeHtmlEntities(c.original);
+    final k = decodeHtmlEntities(c.corrected);
+    final oi = text.indexOf(o, cursor);
+    final ki = oi < 0 ? -1 : text.indexOf(k, oi + o.length);
+    if (oi < 0 || ki < 0) {
+      out.add(_Correction(
+          original: o, corrected: k, oStart: 0, oEnd: 0, cStart: 0, cEnd: 0));
+      continue;
+    }
+    out.add(_Correction(
+      original: o,
+      corrected: k,
+      oStart: oi,
+      oEnd: oi + o.length,
+      cStart: ki,
+      cEnd: ki + k.length,
+    ));
+    cursor = ki + k.length;
+  }
+  return out;
 }
 
 class _Reply {
@@ -114,7 +161,7 @@ String _enName(String code) {
   return code;
 }
 
-String _normalizeAiText(String t) => t
+String _normalizeAiText(String t) => decodeHtmlEntities(t)
     .replaceAll('**', '')
     .replaceAll('*', '')
     .replaceAll(RegExp('[\u2018\u2019]'), "'")
@@ -215,6 +262,110 @@ String _historyText(List<_Msg> history) {
 String _plain(String t) =>
     t.replaceFirst(RegExp(r'^[^\p{L}\p{N}]+', unicode: true), '');
 
+// ═══════════════════════════════════════════════════════════════════
+// تاریخچه‌ی مکالمات — هر مکالمه‌ی ذخیره‌شده یک «جلسه» است با شناسه، زبان،
+// زمانِ آخرین تغییر و پیام‌ها (بدون پیامِ ثابتِ معرفیِ Jimmy).
+// ═══════════════════════════════════════════════════════════════════
+class _Session {
+  final String id;
+  final String lang;
+  final DateTime updatedAt;
+  final List<_Msg> messages;
+
+  const _Session({
+    required this.id,
+    required this.lang,
+    required this.updatedAt,
+    required this.messages,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'lang': lang,
+        'updatedAt': updatedAt.toIso8601String(),
+        'messages': messages.map((m) => m.toJson()).toList(),
+      };
+
+  static _Session? fromJson(Map<String, dynamic> j) {
+    final id = (j['id'] ?? '').toString();
+    final at = DateTime.tryParse((j['updatedAt'] ?? '').toString());
+    if (id.isEmpty || at == null) return null;
+    final msgs = <_Msg>[];
+    for (final e in (j['messages'] as List? ?? const [])) {
+      if (e is Map) {
+        try {
+          msgs.add(_Msg.fromJson(Map<String, dynamic>.from(e)));
+        } catch (_) {}
+      }
+    }
+    return _Session(
+      id: id,
+      lang: (j['lang'] ?? 'en').toString(),
+      updatedAt: at,
+      messages: msgs,
+    );
+  }
+}
+
+/// هر بار که تاریخچه عوض شود یکی زیاد می‌شود تا لیستِ تاریخچه تازه شود.
+final ValueNotifier<int> _histTick = ValueNotifier<int>(0);
+
+class _HistoryStore {
+  static List<_Session> load(LocalStorage ls) {
+    final raw = ls.readJson(_kHistKey)['sessions'];
+    final out = <_Session>[];
+    if (raw is List) {
+      for (final e in raw) {
+        if (e is Map) {
+          try {
+            final x = _Session.fromJson(Map<String, dynamic>.from(e));
+            if (x != null) out.add(x);
+          } catch (_) {}
+        }
+      }
+    }
+    out.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return out;
+  }
+
+  static _Session? find(LocalStorage ls, String id) {
+    for (final x in load(ls)) {
+      if (x.id == id) return x;
+    }
+    return null;
+  }
+
+  static void _save(LocalStorage ls, List<_Session> list) {
+    unawaited(ls
+        .writeJson(_kHistKey, {'sessions': list.map((x) => x.toJson()).toList()}));
+    _histTick.value++;
+  }
+
+  static void upsert(LocalStorage ls, _Session s) {
+    final list = load(ls).where((x) => x.id != s.id).toList()..add(s);
+    _save(ls, list);
+  }
+
+  static void remove(LocalStorage ls, Iterable<String> ids) {
+    final drop = ids.toSet();
+    _save(ls, load(ls).where((x) => !drop.contains(x.id)).toList());
+  }
+}
+
+String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
+
+String _sessionTitle(_Session s) {
+  for (final m in s.messages) {
+    if (m.role == 'user' && m.text.trim().isNotEmpty) {
+      return m.text.trim().replaceAll(RegExp(r'\s+'), ' ');
+    }
+  }
+  return '';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// تب «تمرین مکالمه»: دو زیرتب — «مکالمه» و «تاریخچه‌ی مکالمات»
+// ═══════════════════════════════════════════════════════════════════
 class SpeakingTab extends ConsumerStatefulWidget {
   const SpeakingTab({super.key});
 
@@ -223,6 +374,421 @@ class SpeakingTab extends ConsumerStatefulWidget {
 }
 
 class _SpeakingTabState extends ConsumerState<SpeakingTab> {
+  int _sub = 0; // 0 = مکالمه، 1 = تاریخچه
+  final GlobalKey<_ChatPaneState> _mainKey = GlobalKey<_ChatPaneState>();
+
+  void _go(int i) {
+    if (i == _sub) return;
+    setState(() => _sub = i);
+    if (i == 0) _mainKey.currentState?.reloadFromHistory();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return HopePanel(
+      contentDirection: uiContentDirection(context),
+      title: _plain(context.l10n.speaking_title),
+      intro: _sub == 0
+          ? context.l10n.speaking_intro
+          : context.l10n.speaking_history_intro,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _SubTabChip(
+                label: context.l10n.speaking_tab_speaking,
+                active: _sub == 0,
+                onTap: () => _go(0),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _SubTabChip(
+                label: context.l10n.speaking_tab_history,
+                active: _sub == 1,
+                onTap: () => _go(1),
+              ),
+            ),
+          ],
+        ),
+        // هر دو زنده می‌مانند (مکالمه‌ی در حال ارسال با رفتن به تاریخچه گم نشود)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Offstage(offstage: _sub != 0, child: _ChatPane(key: _mainKey)),
+            if (_sub == 1) const _HistoryList(),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SubTabChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _SubTabChip(
+      {required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active ? c.teal : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: active ? c.teal : c.cardBorder),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: active ? Colors.white : c.ink.withOpacity(0.85),
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// لیستِ تاریخچه — گروه‌بندی بر اساس روز (مثل گرامر)، جدیدترین اول.
+// باز کردنِ هر مکالمه = همان چتِ کامل (ادامه، ویرایش، حذفِ پیام).
+// ═══════════════════════════════════════════════════════════════════
+class _HistoryList extends ConsumerStatefulWidget {
+  const _HistoryList();
+
+  @override
+  ConsumerState<_HistoryList> createState() => _HistoryListState();
+}
+
+class _HistoryListState extends ConsumerState<_HistoryList> {
+  String? _expanded;
+  bool _selectMode = false;
+  final Set<String> _selected = {};
+
+  static String _two(int n) => n.toString().padLeft(2, '0');
+  static String _dayKey(DateTime d) =>
+      '${d.year}/${_two(d.month)}/${_two(d.day)}';
+
+  String _dayLabel(DateTime d) {
+    final loc = Localizations.localeOf(context).toString();
+    try {
+      return DateFormat.yMMMEd(loc).format(d);
+    } catch (_) {
+      return _dayKey(d);
+    }
+  }
+
+  String _timeLabel(DateTime d) {
+    final loc = Localizations.localeOf(context).toString();
+    try {
+      return DateFormat.jm(loc).format(d);
+    } catch (_) {
+      return '${_two(d.hour)}:${_two(d.minute)}';
+    }
+  }
+
+  void _exitSelect() => setState(() {
+        _selectMode = false;
+        _selected.clear();
+      });
+
+  Future<void> _deleteSelected() async {
+    if (_selected.isEmpty) return;
+    final n = _selected.length;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(context.l10n.speaking_confirm_delete_chats('$n')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(context.l10n.cancel_button),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(context.l10n.grammar_delete),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    _HistoryStore.remove(ref.read(localStorageProvider), _selected.toList());
+    if (_expanded != null && _selected.contains(_expanded)) _expanded = null;
+    _exitSelect();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return ValueListenableBuilder<int>(
+      valueListenable: _histTick,
+      builder: (context, _, __) {
+        final ls = ref.read(localStorageProvider);
+        final sessions = _HistoryStore.load(ls);
+        final groups = <String, List<_Session>>{};
+        for (final x in sessions) {
+          groups.putIfAbsent(_dayKey(x.updatedAt), () => []).add(x);
+        }
+        final labels = groups.keys.toList()..sort((a, b) => b.compareTo(a));
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (sessions.isEmpty)
+              HopeEmptyText(context.l10n.speaking_history_empty),
+            if (sessions.isNotEmpty && !_selectMode)
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: HopeTextAction(
+                  icon: Icons.checklist_rounded,
+                  label: context.l10n.grammar_select_delete,
+                  color: c.rose,
+                  onTap: () => setState(() => _selectMode = true),
+                ),
+              ),
+            if (sessions.isNotEmpty && _selectMode)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: c.goldSoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      _selected.isNotEmpty
+                          ? context.l10n.grammar_n_selected('${_selected.length}')
+                          : context.l10n.grammar_select_items,
+                      style: TextStyle(
+                        color: c.ink,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        HopeTextAction(
+                          icon: Icons.checklist_rounded,
+                          label: context.l10n.select_all,
+                          color: c.teal,
+                          onTap: () => setState(() {
+                            _selected
+                              ..clear()
+                              ..addAll(sessions.map((x) => x.id));
+                          }),
+                        ),
+                        const SizedBox(width: 12),
+                        HopeTextAction(
+                          icon: Icons.delete_outline,
+                          label: context.l10n.grammar_delete,
+                          color: _selected.isEmpty
+                              ? c.rose.withOpacity(0.5)
+                              : c.rose,
+                          onTap: _selected.isEmpty ? null : _deleteSelected,
+                        ),
+                        const SizedBox(width: 12),
+                        HopeTextAction(
+                          label: context.l10n.cancel_button,
+                          color: c.inkSoft,
+                          onTap: _exitSelect,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            for (final label in labels)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 8),
+                    child: Row(
+                      children: [
+                        if (_selectMode)
+                          Padding(
+                            padding:
+                                const EdgeInsetsDirectional.only(end: 8),
+                            child: GestureDetector(
+                              onTap: () => setState(() {
+                                final ids = groups[label]!.map((x) => x.id);
+                                if (ids.every(_selected.contains)) {
+                                  _selected.removeAll(ids);
+                                } else {
+                                  _selected.addAll(ids);
+                                }
+                              }),
+                              child: Icon(
+                                groups[label]!
+                                        .every((x) => _selected.contains(x.id))
+                                    ? Icons.check_box
+                                    : Icons.check_box_outline_blank,
+                                size: 18,
+                                color: groups[label]!
+                                        .every((x) => _selected.contains(x.id))
+                                    ? c.gold
+                                    : c.inkSoft,
+                              ),
+                            ),
+                          ),
+                        Text(
+                          _dayLabel(groups[label]!.first.updatedAt),
+                          style: TextStyle(
+                            color: c.inkSoft,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  for (final x in groups[label]!)
+                    Padding(
+                      key: ValueKey('hist-card-${x.id}'),
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _card(c, x),
+                    ),
+                ],
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _card(AppThemeColorsExt c, _Session x) {
+    final open = _expanded == x.id && !_selectMode;
+    final selected = _selected.contains(x.id);
+    final t = _sessionTitle(x);
+    final title = t.isEmpty ? context.l10n.speaking_history_untitled : t;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: selected ? c.gold : c.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: () => setState(() {
+              if (_selectMode) {
+                if (!_selected.add(x.id)) _selected.remove(x.id);
+              } else {
+                _expanded = _expanded == x.id ? null : x.id;
+              }
+            }),
+            child: Row(
+              children: [
+                if (_selectMode)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 8),
+                    child: Icon(
+                      selected ? Icons.check_box : Icons.check_box_outline_blank,
+                      size: 18,
+                      color: selected ? c.gold : c.inkSoft,
+                    ),
+                  ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textDirection: autoDir(title),
+                        style: TextStyle(
+                          color: c.ink,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        '${langDisplayName(context, x.lang)} · ${_timeLabel(x.updatedAt)}',
+                        style: TextStyle(color: c.inkSoft, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!_selectMode) ...[
+                  GestureDetector(
+                    onTap: () {
+                      if (_expanded == x.id) _expanded = null;
+                      _HistoryStore.remove(
+                          ref.read(localStorageProvider), [x.id]);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(Icons.close, size: 18, color: c.inkSoft),
+                    ),
+                  ),
+                  Icon(
+                    open ? Icons.keyboard_arrow_down : Icons.chevron_left,
+                    size: 20,
+                    color: c.inkSoft,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (open)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: 10),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: c.cardBorder)),
+              ),
+              child: _ChatPane(
+                key: ValueKey('hist-pane-${x.id}'),
+                historyId: x.id,
+                onEmptied: () {
+                  if (mounted) setState(() => _expanded = null);
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// خودِ چت. دو حالت دارد:
+//  • historyId == null → چتِ جاری (تبِ مکالمه)، روی همین گوشی ذخیره می‌شود؛
+//    با «ذخیره در تاریخچه» به یک جلسه‌ی تاریخچه گره می‌خورد و از آن به بعد
+//    هر تغییرش (و زمانش) در تاریخچه به‌روز می‌شود.
+//  • historyId != null → همان جلسه‌ی تاریخچه، درجا و کامل (مثل پیام‌رسان).
+// ═══════════════════════════════════════════════════════════════════
+class _ChatPane extends ConsumerStatefulWidget {
+  final String? historyId;
+  final VoidCallback? onEmptied;
+  const _ChatPane({super.key, this.historyId, this.onEmptied});
+
+  @override
+  ConsumerState<_ChatPane> createState() => _ChatPaneState();
+}
+
+class _ChatPaneState extends ConsumerState<_ChatPane> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   final _editCtrl = TextEditingController();
@@ -237,22 +803,47 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
   String? _failedText;
   List<_Msg>? _failedHistory;
 
+  // تاریخچه
+  String _sessionId = '';
+  bool _inHistory = false;
+  DateTime? _syncedAt;
+
+  // انتخاب/حذفِ پیام‌ها
+  bool _selectMode = false;
+  final Set<int> _sel = {};
+
+  bool get _embedded => widget.historyId != null;
+
   @override
   void initState() {
     super.initState();
+    final ls = ref.read(localStorageProvider);
+    if (_embedded) {
+      final s = _HistoryStore.find(ls, widget.historyId!);
+      _sessionId = widget.historyId!;
+      _chatLang = s?.lang ?? 'en';
+      _messages = s?.messages ?? [];
+      _inHistory = s != null;
+      _syncedAt = s?.updatedAt;
+      return;
+    }
     final sel = ref.read(languageSelectionProvider);
     final options = sel.targets.isNotEmpty ? sel.targets : const ['en'];
     // زبانِ تمرینِ انتخاب‌شده‌ی قبلی حفظ می‌شود (با جابجایی بین تب‌ها ریست نشود)
-    final saved =
-        (ref.read(localStorageProvider).readJson(_kLangKey)['lang'] ?? '')
-            .toString();
+    final saved = (ls.readJson(_kLangKey)['lang'] ?? '').toString();
     _chatLang = options.contains(saved) ? saved : options.first;
+    final raw = ls.readJson(_kChatKey);
+    _sessionId = (raw['sessionId'] ?? '').toString();
+    if (_sessionId.isEmpty) _sessionId = _newId();
     _messages = _load();
+    final hs = _HistoryStore.find(ls, _sessionId);
+    _inHistory = hs != null;
+    _syncedAt = hs?.updatedAt;
     // اگر فقط پیامِ خوش‌آمد هست، با زبانِ فعلی بازسازی شود
     if (_messages.isEmpty ||
         (_messages.length == 1 && _messages.first.role == 'ai')) {
       _messages = [_welcome(_chatLang)];
-      _persist();
+      _persist(history: false);
     }
   }
 
@@ -262,7 +853,7 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
       if (_messages.length <= 1) _messages = [_welcome(v)];
     });
     unawaited(ref.read(localStorageProvider).writeJson(_kLangKey, {'lang': v}));
-    _persist();
+    _persist(history: false);
   }
 
   @override
@@ -288,13 +879,79 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
     return out;
   }
 
-  void _persist() {
-    unawaited(ref.read(localStorageProvider).writeJson(
-        _kChatKey, {'items': _messages.map((m) => m.toJson()).toList()}));
+  void _persist({bool history = true}) {
+    if (!mounted) return;
+    final ls = ref.read(localStorageProvider);
+    if (!_embedded) {
+      unawaited(ls.writeJson(_kChatKey, {
+        'sessionId': _sessionId,
+        'items': _messages.map((m) => m.toJson()).toList(),
+      }));
+    }
+    if (history && _inHistory) _syncHistory();
+  }
+
+  /// جلسه را در تاریخچه به‌روز می‌کند (پیامِ معرفیِ Jimmy ذخیره نمی‌شود).
+  /// اگر دیگر هیچ پیامی نمانده، جلسه از تاریخچه برداشته می‌شود.
+  void _syncHistory() {
+    final ls = ref.read(localStorageProvider);
+    final real = _messages.where((m) => !m.isWelcome).toList();
+    if (real.isEmpty) {
+      _HistoryStore.remove(ls, [_sessionId]);
+      _inHistory = false;
+      _syncedAt = null;
+      widget.onEmptied?.call();
+      return;
+    }
+    final now = DateTime.now();
+    _HistoryStore.upsert(
+      ls,
+      _Session(
+        id: _sessionId,
+        lang: _activeLang(),
+        updatedAt: now,
+        messages: real,
+      ),
+    );
+    _inHistory = true;
+    _syncedAt = now;
+  }
+
+  bool get _hasUserMsg => _messages.any((m) => m.role == 'user');
+
+  void _saveToHistory() {
+    if (!_hasUserMsg || _inHistory) return;
+    setState(() {
+      _inHistory = true;
+      _syncHistory();
+    });
+  }
+
+  /// وقتی از تبِ تاریخچه برمی‌گردیم: اگر همین مکالمه آن‌جا ادامه یافته/حذف شده،
+  /// چتِ جاری با آن هم‌گام می‌شود.
+  void reloadFromHistory() {
+    if (_embedded || !_inHistory || _loading) return;
+    final s = _HistoryStore.find(ref.read(localStorageProvider), _sessionId);
+    if (s == null) {
+      setState(() => _inHistory = false);
+      return;
+    }
+    if (s.updatedAt == _syncedAt) return;
+    setState(() {
+      _messages = [_welcome(s.lang), ...s.messages];
+      _syncedAt = s.updatedAt;
+      _selectMode = false;
+      _sel.clear();
+      _editIdx = null;
+      _corrections = [];
+      _correctionsSaved = false;
+    });
+    _persist(history: false);
   }
 
   _Msg _welcome(String lang) => _Msg(
         role: 'ai',
+        welcome: true,
         text: "Hey there! I'm Jimmy, your conversation coach. Let's practice "
             '${_enName(lang)} together.\n\n'
             "I'll help you with grammar, vocabulary, and natural expressions. "
@@ -303,6 +960,7 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
       );
 
   String _activeLang() {
+    if (_embedded) return _chatLang;
     final sel = ref.read(languageSelectionProvider);
     final options = sel.targets.isEmpty ? ['en'] : sel.targets;
     return options.contains(_chatLang) ? _chatLang : options.first;
@@ -317,6 +975,48 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
         curve: Curves.easeOut,
       );
     });
+  }
+
+  // ───────────── انتخاب/حذفِ پیام‌ها ─────────────
+  void _enterSelect([int? first]) {
+    if (_loading) return;
+    setState(() {
+      _selectMode = true;
+      _editIdx = null;
+      _sel.clear();
+      if (first != null) _sel.add(first);
+    });
+  }
+
+  void _exitSelect() => setState(() {
+        _selectMode = false;
+        _sel.clear();
+      });
+
+  void _toggleSel(int i) => setState(() {
+        if (!_sel.add(i)) _sel.remove(i);
+      });
+
+  void _deleteSelected() {
+    if (_sel.isEmpty) return;
+    setState(() {
+      _messages = [
+        for (var i = 0; i < _messages.length; i++)
+          if (!_sel.contains(i)) _messages[i],
+      ];
+      _selectMode = false;
+      _sel.clear();
+      _editIdx = null;
+      _corrections = [];
+      _correctionsSaved = false;
+      _error = '';
+      _failedText = null;
+      _failedHistory = null;
+      if (_messages.isEmpty && !_embedded) {
+        _messages = [_welcome(_activeLang())];
+      }
+    });
+    _persist();
   }
 
   // ───────────── AI ─────────────
@@ -394,13 +1094,15 @@ Now respond to: "$sentence"
       // فارسی نوشته → فقط ترجمه است؛ اول ترجمه‌ی رایگان (بدون توکنِ AI)
       var translated = '';
       try {
-        translated = (await ref.read(translationServiceProvider).translate(
+        translated = decodeHtmlEntities((await ref
+                .read(translationServiceProvider)
+                .translate(
                   text: text,
                   targetLang: lang,
                   sourceLang: native,
                   aiSettings: ref.read(aiSettingsProvider),
                 ))
-            .trim();
+            .trim());
       } catch (_) {
         translated = '';
       }
@@ -453,6 +1155,8 @@ Now respond to: "$sentence"
     final lang = _activeLang();
     setState(() {
       _editIdx = null;
+      _selectMode = false;
+      _sel.clear();
       _error = '';
       _corrections = [];
       _correctionsSaved = false;
@@ -549,6 +1253,11 @@ Now respond to: "$sentence"
 
   void _clearChat() {
     setState(() {
+      _sessionId = _newId(); // مکالمه‌ی جدید = جلسه‌ی جدید؛ قبلی (اگر ذخیره شده) می‌ماند
+      _inHistory = false;
+      _syncedAt = null;
+      _selectMode = false;
+      _sel.clear();
       _messages = [_welcome(_activeLang())];
       _editIdx = null;
       _corrections = [];
@@ -584,64 +1293,160 @@ Now respond to: "$sentence"
     final sel = ref.watch(languageSelectionProvider);
     final options = sel.targets.isEmpty ? ['en'] : sel.targets;
     final lang = options.contains(_chatLang) ? _chatLang : options.first;
+    final hasReal = _messages.any((m) => !m.isWelcome);
 
-    return HopePanel(
-      contentDirection: uiContentDirection(context),
-      title: _plain(context.l10n.speaking_title),
-      intro: context.l10n.speaking_intro,
-      children: [
-        // ── زبان تمرین + پاک کردن گفتگو ──
-        Row(
-          children: [
-            Text(context.l10n.speaking_practice_language,
-                style: TextStyle(color: c.inkSoft, fontSize: 12)),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: c.cardBorder),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: lang,
-                  isDense: true,
-                  style: TextStyle(color: c.ink, fontSize: 13),
-                  dropdownColor: Colors.white,
-                  items: [
-                    for (final code in options)
-                      DropdownMenuItem(
-                        value: code,
-                        child: Text(langDisplayName(context, code)),
-                      ),
-                  ],
-                  onChanged: (v) {
-                    if (v != null) _setChatLang(v);
-                  },
+    final parts = <Widget>[
+      // ── زبان تمرین + اکشن‌ها ──
+      Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 12,
+        runSpacing: 4,
+        children: [
+          if (!_embedded)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(context.l10n.speaking_practice_language,
+                    style: TextStyle(color: c.inkSoft, fontSize: 12)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: c.cardBorder),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: lang,
+                      isDense: true,
+                      style: TextStyle(color: c.ink, fontSize: 13),
+                      dropdownColor: Colors.white,
+                      items: [
+                        for (final code in options)
+                          DropdownMenuItem(
+                            value: code,
+                            child: Text(langDisplayName(context, code)),
+                          ),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) _setChatLang(v);
+                      },
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-            const Spacer(),
-            if (_messages.isNotEmpty)
+          Wrap(
+            spacing: 14,
+            runSpacing: 2,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (!_embedded && hasReal)
+                HopeTextAction(
+                  label: _inHistory
+                      ? _plain(context.l10n.speaking_saved_to_history)
+                      : _plain(context.l10n.speaking_save_to_history),
+                  color: _inHistory ? c.inkSoft : c.teal,
+                  onTap: (_inHistory || !_hasUserMsg) ? null : _saveToHistory,
+                ),
+              if (hasReal && !_selectMode && !_loading)
+                HopeTextAction(
+                  icon: Icons.checklist_rounded,
+                  label: context.l10n.grammar_select_delete,
+                  color: c.rose,
+                  onTap: () => _enterSelect(),
+                ),
+              if (!_embedded && _messages.isNotEmpty)
+                HopeTextAction(
+                  icon: Icons.delete_outline,
+                  label: context.l10n.speaking_clear_chat,
+                  color: c.rose,
+                  onTap: _clearChat,
+                ),
+            ],
+          ),
+        ],
+      ),
+
+      // ── نوارِ انتخابِ پیام‌ها ──
+      if (_selectMode) _selectBar(c),
+
+      // ── کادر تصحیحات ──
+      if (_corrections.isNotEmpty) _correctionsBox(c),
+
+      // ── منطقه‌ی چت ──
+      _chatArea(c),
+
+      // ── نوار ورودی ──
+      _inputBar(c),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < parts.length; i++) ...[
+          if (i > 0) const SizedBox(height: 16),
+          parts[i],
+        ],
+      ],
+    );
+  }
+
+  Widget _selectBar(AppThemeColorsExt c) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: c.goldSoft,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 12,
+        runSpacing: 4,
+        children: [
+          Text(
+            _sel.isNotEmpty
+                ? context.l10n.grammar_n_selected('${_sel.length}')
+                : context.l10n.grammar_select_items,
+            style: TextStyle(
+              color: c.ink,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HopeTextAction(
+                icon: Icons.checklist_rounded,
+                label: context.l10n.select_all,
+                color: c.teal,
+                onTap: () => setState(() {
+                  _sel
+                    ..clear()
+                    ..addAll(List<int>.generate(_messages.length, (i) => i));
+                }),
+              ),
+              const SizedBox(width: 12),
               HopeTextAction(
                 icon: Icons.delete_outline,
-                label: context.l10n.speaking_clear_chat,
-                color: c.rose,
-                onTap: _clearChat,
+                label: context.l10n.grammar_delete,
+                color: _sel.isEmpty ? c.rose.withOpacity(0.5) : c.rose,
+                onTap: _sel.isEmpty ? null : _deleteSelected,
               ),
-          ],
-        ),
-
-        // ── کادر تصحیحات ──
-        if (_corrections.isNotEmpty) _correctionsBox(c),
-
-        // ── منطقه‌ی چت ──
-        _chatArea(c),
-
-        // ── نوار ورودی ──
-        _inputBar(c),
-      ],
+              const SizedBox(width: 12),
+              HopeTextAction(
+                label: context.l10n.cancel_button,
+                color: c.inkSoft,
+                onTap: _exitSelect,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -672,7 +1477,7 @@ Now respond to: "$sentence"
               ),
               HopeTextAction(
                 label: _correctionsSaved
-                    ? _plain(context.l10n.speaking_saved)
+                    ? _plain(context.l10n.speaking_saved_to_grammar)
                     : _plain(context.l10n.speaking_save_to_grammar),
                 color: _correctionsSaved ? c.inkSoft : c.teal,
                 fontSize: 11,
@@ -942,7 +1747,7 @@ Now respond to: "$sentence"
       );
     }
 
-    return Align(
+    final row = Align(
       alignment: isUser
           ? AlignmentDirectional.centerStart
           : AlignmentDirectional.centerEnd,
@@ -958,11 +1763,16 @@ Now respond to: "$sentence"
               decoration: BoxDecoration(
                 color: isUser ? c.paper : c.goldSoft,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: c.cardBorder),
+                border: Border.all(
+                  color: _selectMode && _sel.contains(idx)
+                      ? c.gold
+                      : c.cardBorder,
+                  width: _selectMode && _sel.contains(idx) ? 2 : 1,
+                ),
               ),
               child: content,
             ),
-            if (isUser && !_loading && !editing)
+            if (isUser && !_loading && !editing && !_selectMode)
               HopeTextAction(
                 icon: Icons.edit_outlined,
                 label: context.l10n.speaking_edit,
@@ -972,6 +1782,7 @@ Now respond to: "$sentence"
               ),
             if (!isUser &&
                 !_loading &&
+                !_selectMode &&
                 idx >= 1 &&
                 idx == _messages.length - 1 &&
                 _messages[idx - 1].role == 'user')
@@ -982,10 +1793,10 @@ Now respond to: "$sentence"
                 fontSize: 11,
                 onTap: () => _refreshReply(idx),
               ),
-            if (!isUser && m.corrections.isNotEmpty)
+            if (!isUser && m.corrections.isNotEmpty && !_selectMode)
               HopeTextAction(
                 label: m.savedToGrammar
-                    ? _plain(context.l10n.speaking_saved)
+                    ? _plain(context.l10n.speaking_saved_to_grammar)
                     : _plain(context.l10n.speaking_save_to_grammar),
                 color: m.savedToGrammar ? c.inkSoft : c.teal,
                 fontSize: 11,
@@ -1007,6 +1818,31 @@ Now respond to: "$sentence"
           ],
         ),
       ),
+    );
+
+    if (_selectMode) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _toggleSel(idx),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(
+              _sel.contains(idx)
+                  ? Icons.check_box
+                  : Icons.check_box_outline_blank,
+              size: 18,
+              color: _sel.contains(idx) ? c.gold : c.inkSoft,
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: IgnorePointer(child: row)),
+          ],
+        ),
+      );
+    }
+    return GestureDetector(
+      onLongPress: (_loading || editing) ? null : () => _enterSelect(idx),
+      child: row,
     );
   }
 
