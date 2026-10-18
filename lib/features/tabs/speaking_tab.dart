@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app.dart';
 import '../../core/constants/supported_languages.dart';
 import '../../core/models/grammar_note.dart';
 import '../../core/providers/ai_settings_provider.dart';
@@ -207,6 +208,10 @@ String _historyText(List<_Msg> history) {
     return 'Learner: $t';
   }).join('\n');
 }
+
+/// متنِ ترجمه را بدونِ ایموجیِ ابتدایی برمی‌گرداند (مثلاً «✅ Saved» → «Saved»).
+String _plain(String t) =>
+    t.replaceFirst(RegExp(r'^[^\p{L}\p{N}]+', unicode: true), '');
 
 class SpeakingTab extends ConsumerStatefulWidget {
   const SpeakingTab({super.key});
@@ -451,8 +456,7 @@ Now respond to: "$sentence"
       setState(() {
         _failedText = text;
         _failedHistory = history;
-        _error =
-            'هوش مصنوعی جواب نداد. اینترنتت رو چک کن و دوباره امتحان کن.';
+        _error = context.l10n.speaking_ai_no_response;
       });
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -491,8 +495,8 @@ Now respond to: "$sentence"
     if (list.isEmpty) return;
     final md = [
       for (var i = 0; i < list.length; i++)
-        '**${i + 1}. اشتباه:** ${list[i].original}\n\n'
-            '**پیشنهاد:** ${list[i].corrected}',
+        '**${i + 1}. ${_plain(context.l10n.speaking_mistake)}** ${list[i].original}\n\n'
+            '**${_plain(context.l10n.speaking_suggestion)}** ${list[i].corrected}',
     ].join('\n\n---\n\n');
     ref.read(grammarNotesProvider.notifier).addNote(GrammarNote(
           id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -513,16 +517,14 @@ Now respond to: "$sentence"
     final lang = options.contains(_chatLang) ? _chatLang : options.first;
 
     return HopePanel(
-      title: 'تمرین مکالمه',
-      intro:
-          'یک جمله به زبانی که یاد می‌گیری بنویس و جیمی (AI) آن را بررسی '
-          'می‌کند، اشتباهات را تصحیح می‌کند و بر اساس زبان مادری‌ات توضیح '
-          'می‌دهد. مثل یک معلم مکالمه!',
+      contentDirection: uiContentDirection(context),
+      title: _plain(context.l10n.speaking_title),
+      intro: context.l10n.speaking_intro,
       children: [
         // ── زبان تمرین + پاک کردن گفتگو ──
         Row(
           children: [
-            Text('زبان تمرین:',
+            Text(context.l10n.speaking_practice_language,
                 style: TextStyle(color: c.inkSoft, fontSize: 12)),
             const SizedBox(width: 8),
             Container(
@@ -542,7 +544,7 @@ Now respond to: "$sentence"
                     for (final code in options)
                       DropdownMenuItem(
                         value: code,
-                        child: Text(langFaName(code)),
+                        child: Text(langDisplayName(context, code)),
                       ),
                   ],
                   onChanged: (v) {
@@ -555,7 +557,7 @@ Now respond to: "$sentence"
             if (_messages.isNotEmpty)
               HopeTextAction(
                 icon: Icons.delete_outline,
-                label: 'پاک کردن گفتگو',
+                label: context.l10n.speaking_clear_chat,
                 color: c.rose,
                 onTap: _clearChat,
               ),
@@ -591,7 +593,7 @@ Now respond to: "$sentence"
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'تصحیحات',
+                  _plain(context.l10n.speaking_corrections_title),
                   style: TextStyle(
                     color: c.ink,
                     fontSize: 13,
@@ -600,7 +602,9 @@ Now respond to: "$sentence"
                 ),
               ),
               HopeTextAction(
-                label: _correctionsSaved ? 'ذخیره شد' : 'ذخیره در گرامر',
+                label: _correctionsSaved
+                    ? _plain(context.l10n.speaking_saved)
+                    : _plain(context.l10n.speaking_save_to_grammar),
                 color: _correctionsSaved ? c.inkSoft : c.teal,
                 fontSize: 11,
                 onTap: _correctionsSaved
@@ -621,7 +625,7 @@ Now respond to: "$sentence"
                   style: TextStyle(color: c.ink, fontSize: 13, height: 1.7),
                   children: [
                     TextSpan(
-                      text: '${i + 1}. اشتباه: ',
+                      text: '${i + 1}. ${_plain(context.l10n.speaking_mistake)} ',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     TextSpan(
@@ -634,9 +638,9 @@ Now respond to: "$sentence"
                       ),
                     ),
                     const TextSpan(text: '\n'),
-                    const TextSpan(
-                      text: 'پیشنهاد: ',
-                      style: TextStyle(
+                    TextSpan(
+                      text: '${_plain(context.l10n.speaking_suggestion)} ',
+                      style: const TextStyle(
                         color: _kCorrection,
                         fontWeight: FontWeight.w600,
                       ),
@@ -693,7 +697,7 @@ Now respond to: "$sentence"
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text('در حال بررسی...',
+                      Text(context.l10n.speaking_checking,
                           style: TextStyle(color: c.inkSoft, fontSize: 13)),
                     ],
                   ),
@@ -719,13 +723,13 @@ Now respond to: "$sentence"
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                Icon(Icons.refresh,
+                              children: [
+                                const Icon(Icons.refresh,
                                     size: 13, color: Colors.white),
-                                SizedBox(width: 4),
+                                const SizedBox(width: 4),
                                 Text(
-                                  'تلاش مجدد',
-                                  style: TextStyle(
+                                  context.l10n.speaking_try_again,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
@@ -806,7 +810,9 @@ Now respond to: "$sentence"
             ),
             if (!isUser && m.corrections.isNotEmpty)
               HopeTextAction(
-                label: m.savedToGrammar ? 'ذخیره شد' : 'ذخیره در گرامر',
+                label: m.savedToGrammar
+                    ? _plain(context.l10n.speaking_saved)
+                    : _plain(context.l10n.speaking_save_to_grammar),
                 color: m.savedToGrammar ? c.inkSoft : c.teal,
                 fontSize: 11,
                 onTap: m.savedToGrammar
@@ -866,7 +872,7 @@ Now respond to: "$sentence"
               onChanged: (_) => setState(() {}),
               style: TextStyle(color: c.ink, fontSize: 13, height: 1.6),
               decoration: InputDecoration(
-                hintText: 'متن خود را بنویسید...',
+                hintText: context.l10n.speaking_input_placeholder,
                 hintStyle: TextStyle(
                   color: c.inkSoft.withOpacity(0.6),
                   fontSize: 13,
