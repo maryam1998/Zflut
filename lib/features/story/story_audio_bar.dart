@@ -1,6 +1,7 @@
 // نوارِ صوتِ آپلودیِ داستان — معادلِ UserAudioBar.jsx + AudioSyncSettings.jsx در Hope.
 import 'package:flutter/material.dart';
 
+import '../../app.dart' show AppL10nX;
 import '../../core/audio/story_audio_controller.dart';
 import '../../core/theme/app_theme_colors.dart';
 
@@ -42,7 +43,7 @@ class StoryAudioBar extends StatelessWidget {
                 const SizedBox(height: 8),
                 _player(c),
                 const SizedBox(height: 8),
-                _sync(c),
+                _sync(context, c),
               ],
             ],
           ),
@@ -202,8 +203,20 @@ class StoryAudioBar extends StatelessWidget {
     );
   }
 
-  Widget _sync(AppThemeColorsExt c) {
+  String? _syncErrorText(BuildContext context) {
+    final e = ctrl.syncError;
+    if (e.isEmpty) return null;
+    final L = context.l10n;
+    if (e == 'need_pack') return L.player_sync_need_pack;
+    if (e.startsWith('coverage:')) {
+      return L.player_sync_coverage(e.substring(9));
+    }
+    return L.player_sync_failed;
+  }
+
+  Widget _sync(BuildContext context, AppThemeColorsExt c) {
     final n = ctrl.sentenceCount;
+    final err = _syncErrorText(context);
     return Container(
       padding: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
@@ -234,10 +247,36 @@ class StoryAudioBar extends StatelessWidget {
               ],
             ],
           ),
+          if (ctrl.syncBuilding) ...[
+            LinearProgressIndicator(
+              value: ctrl.syncFrac > 0 ? ctrl.syncFrac : null,
+              minHeight: 3,
+              color: c.teal,
+              backgroundColor: c.cardBorder,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 4),
+              child: Text(
+                'در حال همگام‌سازی روی گوشی'
+                '${ctrl.syncFrac > 0 ? ' — ${(ctrl.syncFrac * 100).round()}٪' : '...'}\n'
+                'هر بخش که آماده شد همان لحظه کار می‌کند؛ لازم نیست صبر کنی.',
+                style: TextStyle(color: c.inkSoft, fontSize: 10.5, height: 1.6),
+              ),
+            ),
+          ],
+          if (err != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(err, style: TextStyle(color: c.rose, fontSize: 11)),
+            ),
           Wrap(
             spacing: 6,
             runSpacing: 4,
             children: [
+              if (ctrl.syncBuilding)
+                _chip(c, 'توقفِ همگام‌سازی', false, ctrl.cancelSyncBuild)
+              else
+                _chip(c, 'همگام‌سازیِ خودکار', false, ctrl.buildSync),
               _chip(c, 'تخمینِ خودکار', false, ctrl.estimateSync),
               _chip(c, 'ثبتِ شروعِ این جمله و رفتن به بعدی', false,
                   ctrl.markCurrentLine),

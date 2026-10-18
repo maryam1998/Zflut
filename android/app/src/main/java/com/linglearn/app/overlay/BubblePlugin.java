@@ -540,6 +540,59 @@ public class BubblePlugin extends Plugin {
     }
 
     // ================================================================
+    // ============ همگام‌سازیِ متن با صوتِ آپلودیِ داستان ============
+    // ================================================================
+
+    // syncTranscribe({ job, path, lang, model: "tiny"|"base"|"small" })
+    //   فایلِ صوتی رو پنجره‌پنجره با Whisper رونویسی می‌کنه و هر پنجره رو بلافاصله می‌فرسته:
+    //   events: syncChunk {job, text, start, end, frac} / syncDone {job} / syncError {job, code, error}
+    @PluginMethod
+    public void syncTranscribe(PluginCall call) {
+        final Context ctx = getContext();
+        final String job = call.getString("job", "");
+        final String path = call.getString("path", "");
+        final String lang = call.getString("lang", "");
+        String model = call.getString("model", "base");
+        if (!WhisperModelManager.isValid(model)) model = "base";
+        if (WhisperModelManager.getModelDir(ctx, model) == null) {
+            call.reject("NO_MODEL");
+            return;
+        }
+        if (path == null || path.isEmpty() || !new java.io.File(path).isFile()) {
+            call.reject("NO_AUDIO");
+            return;
+        }
+        AudioSyncTranscriber.start(ctx.getApplicationContext(), job, path, lang, model,
+                new AudioSyncTranscriber.Listener() {
+                    @Override public void onChunk(String j, String text, double start, double end, double frac) {
+                        JSObject o = new JSObject();
+                        o.put("job", j); o.put("text", text);
+                        o.put("start", start); o.put("end", end); o.put("frac", frac);
+                        notifyListeners("syncChunk", o);
+                    }
+                    @Override public void onDone(String j) {
+                        JSObject o = new JSObject();
+                        o.put("job", j);
+                        notifyListeners("syncDone", o);
+                    }
+                    @Override public void onError(String j, String code, String message) {
+                        JSObject o = new JSObject();
+                        o.put("job", j); o.put("code", code);
+                        o.put("error", message == null ? "" : message);
+                        notifyListeners("syncError", o);
+                    }
+                });
+        call.resolve();
+    }
+
+    // syncTranscribeCancel()
+    @PluginMethod
+    public void syncTranscribeCancel(PluginCall call) {
+        AudioSyncTranscriber.cancel();
+        call.resolve();
+    }
+
+    // ================================================================
     // ============ TTS: تبدیل متن به گفتار (Piper/VITS) ==============
     // ================================================================
 

@@ -79,6 +79,25 @@ class LinLearnBridge {
     }
   }
 
+  /// اندازه‌ی «همگام‌سازی» (fast/balanced) → نامِ بسته‌ی Whisper روی گوشی.
+  static String syncModelFor(String size) {
+    switch (size) {
+      case 'fast':
+      case 'tiny':
+        return 'tiny';
+      case 'small':
+        return 'small';
+      default:
+        return 'base';
+    }
+  }
+
+  /// آیا بسته‌ی همگام‌سازیِ این اندازه دانلود شده؟
+  static Future<bool> syncPackReady(String size) async {
+    final st = await packStatus('sync', size);
+    return st?['downloaded'] == true;
+  }
+
   static Future<bool> _ok(Future<dynamic> Function() f) async {
     try {
       await f();
@@ -166,7 +185,7 @@ class LinLearnBridge {
   // بسته‌های آفلاین
   // kind: 'tts' | 'speech' | 'song' | 'sync'   —   id: کد زبان یا نام مدل
   // وضعیت: {downloaded, downloading, bytes, total, partialBytes, approxMb, enabled}
-  // 'sync' (همگام‌سازی صدا) سمت اندروید پیاده نشده → null
+  // 'sync' (همگام‌سازی صدا): همان بسته‌های Whisper؛ fast→tiny ، balanced→base
   // ═══════════════════════════════════════════════════════════
   static Map<String, dynamic> _status(
     String key, {
@@ -221,7 +240,8 @@ class LinLearnBridge {
           partial: (s['partialBytes'] as num?) ?? 0,
         );
       }
-      if (kind == 'song') {
+      if (kind == 'song' || kind == 'sync') {
+        final wid = kind == 'sync' ? syncModelFor(id) : id;
         final s = await _n.getWhisperStatus();
         bool downloaded = false;
         num partial = 0;
@@ -229,7 +249,7 @@ class LinLearnBridge {
         final models = s['models'];
         if (models is List) {
           for (final m in models) {
-            if (m is Map && m['id'] == id) {
+            if (m is Map && m['id'] == wid) {
               downloaded = m['downloaded'] == true;
               partial = (m['partialBytes'] as num?) ?? 0;
               approx = m['approxMb'] as num?;
@@ -237,15 +257,17 @@ class LinLearnBridge {
           }
         }
         return _status(
-          'song:$id',
+          'song:$wid',
           downloaded: downloaded,
-          downloading: s['downloading'] == true && s['activeModel'] == id,
+          downloading: s['downloading'] == true && s['activeModel'] == wid,
           partial: partial,
           approxMb: approx,
-          enabled: s['engine'] == 'whisper' && s['model'] == id,
+          enabled: kind == 'song'
+              ? (s['engine'] == 'whisper' && s['model'] == id)
+              : null,
         );
       }
-      return null; // 'sync' و ناشناخته
+      return null; // ناشناخته
     } on PlatformException {
       return null;
     } on MissingPluginException {
@@ -263,6 +285,8 @@ class LinLearnBridge {
         return _ok(() => _n.downloadModel(lang: id));
       case 'song':
         return _ok(() => _n.downloadWhisperModel(model: id));
+      case 'sync':
+        return _ok(() => _n.downloadWhisperModel(model: syncModelFor(id)));
       default:
         return Future.value(false);
     }
@@ -276,6 +300,7 @@ class LinLearnBridge {
       case 'speech':
         return _ok(() => _n.cancelModelDownload());
       case 'song':
+      case 'sync':
         return _ok(() => _n.cancelWhisperDownload());
       default:
         return Future.value(false);
@@ -298,10 +323,17 @@ class LinLearnBridge {
       case 'song':
         ok = await _ok(() => _n.deleteWhisperModel(model: id));
         break;
+      case 'sync':
+        ok = await _ok(() => _n.deleteWhisperModel(model: syncModelFor(id)));
+        break;
       default:
         return false;
     }
-    if (ok) onPackDeleted?.call(kind, id);
+    // بسته‌ی همگام‌سازی همان مدلِ Whisper است؛ در حساب هم با نامِ 'song' ثبت می‌شود
+    if (ok) {
+      onPackDeleted?.call(kind == 'sync' ? 'song' : kind,
+          kind == 'sync' ? syncModelFor(id) : id);
+    }
     return ok;
   }
 

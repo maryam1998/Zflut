@@ -2101,10 +2101,10 @@ class _AudioSyncSectionState extends ConsumerState<_AudioSyncSection> {
     final c = context.appColors;
     final L = context.l10n;
     final sizes = {
-      'fast': '${L.settings_sync_model_fast} ~45MB',
-      'balanced': '${L.settings_sync_model_balanced} ~85MB',
+      'fast': '${L.settings_sync_model_fast} ~100MB',
+      'balanced': '${L.settings_sync_model_balanced} ~160MB',
     };
-    final mb = _size == 'fast' ? 45 : 85;
+    final mb = _size == 'fast' ? 100 : 160;
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 12),
       child: Column(

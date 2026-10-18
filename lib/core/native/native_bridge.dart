@@ -136,6 +136,19 @@ class NativeBridge {
   Future<Map<String, dynamic>> deleteWhisperModel({String? model}) =>
       _call('deleteWhisperModel', {if (model != null) 'model': model});
 
+  /// همگام‌سازیِ صوتِ آپلودی: فایل را پنجره‌پنجره با Whisper رونویسی می‌کند.
+  /// رویدادها: syncChunk {job,text,start,end,frac} / syncDone {job} / syncError {job,code,error}
+  Future<Map<String, dynamic>> syncTranscribe(
+          {required String job, required String path, String? lang, String? model}) =>
+      _call('syncTranscribe', {
+        'job': job,
+        'path': path,
+        if (lang != null) 'lang': lang,
+        if (model != null) 'model': model,
+      });
+
+  Future<Map<String, dynamic>> syncTranscribeCancel() => _call('syncTranscribeCancel');
+
   Future<Map<String, dynamic>> setTtsEnabled({bool? enabled}) =>
       _call('setTtsEnabled', {if (enabled != null) 'enabled': enabled});
 

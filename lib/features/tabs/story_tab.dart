@@ -832,6 +832,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final sents = _sentencesOf(s.text);
     final ex = _audioCtrls[s.id];
     if (ex != null) {
+      ex.langCode = s.langCode;
       ex.updateSentences(sents);
       return ex;
     }
@@ -839,6 +840,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       storyKey: s.id,
       sentences: sents,
       prefs: ref.read(sharedPrefsProvider),
+      langCode: s.langCode,
     );
     _audioCtrls[s.id] = c;
     return c;
