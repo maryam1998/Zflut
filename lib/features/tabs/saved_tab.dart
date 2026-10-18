@@ -14,7 +14,10 @@ import '_hope_panel.dart';
 /// تب «لغات ذخیره‌شده» (زیرتبِ گروه «داستان») — هم‌شکل SavedWordsPanel در Hope.
 /// حالتِ خالی: عنوان + توضیح + «هنوز لغتی ذخیره نکردی...»
 class SavedTab extends ConsumerStatefulWidget {
-  const SavedTab({super.key});
+  /// true = داخلِ تبِ «داستان» (بین «ساخت داستان» و «کتابخانه») نمایش داده می‌شود؛
+  /// بدون اسکرولِ مستقل و بدون هدرِ صفحه.
+  final bool embedded;
+  const SavedTab({super.key, this.embedded = false});
 
   @override
   ConsumerState<SavedTab> createState() => _SavedTabState();
@@ -95,7 +98,7 @@ class _SavedTabState extends ConsumerState<SavedTab> {
     ref.read(storyDraftProvider.notifier).state =
         StoryDraft(lang, chosen.map((w) => w.word).toList());
     setState(() => _picked.removeAll(chosen.map(_key)));
-    context.go('/story');
+    if (!widget.embedded) context.go('/story');
   }
 
   @override
@@ -113,11 +116,7 @@ class _SavedTabState extends ConsumerState<SavedTab> {
         visible.isNotEmpty && visible.every((w) => _picked.contains(_key(w)));
     final totalPicked = all.where((w) => _picked.contains(_key(w))).length;
 
-    return HopePanel(
-      contentDirection: uiContentDirection(context),
-      title: context.l10n.saved_words_title,
-      intro: context.l10n.saved_words_hint,
-      children: [
+    final kids = <Widget>[
         if (all.isNotEmpty)
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -220,7 +219,29 @@ class _SavedTabState extends ConsumerState<SavedTab> {
         else
           for (final entry in byLang.entries)
             _langCard(c, entry.key, entry.value),
-      ],
+    ];
+
+    if (widget.embedded) {
+      return Directionality(
+        textDirection: uiContentDirection(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              context.l10n.saved_words_hint,
+              style: TextStyle(color: c.inkSoft, fontSize: 13, height: 1.7),
+            ),
+            for (final w in kids) ...[const SizedBox(height: 16), w],
+          ],
+        ),
+      );
+    }
+
+    return HopePanel(
+      contentDirection: uiContentDirection(context),
+      title: context.l10n.saved_words_title,
+      intro: context.l10n.saved_words_hint,
+      children: kids,
     );
   }
 

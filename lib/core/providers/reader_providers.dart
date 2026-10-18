@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/grammar_note.dart';
 import '../models/saved_word.dart';
 import '../storage/local_storage.dart';
+import '../translate/translation_service.dart' show looksLikeGuardOutput;
 
 // ═══════════════════════════════════════════════════════════════════
 // ذخیره‌ی ماندگار برای سه دکمه‌ی «کارت مشترکِ انتخاب» (SelectionCard):
@@ -17,6 +18,13 @@ import '../storage/local_storage.dart';
 const String _kSavedKey = 'zflut-saved-story-words-v1';
 const String _kGrammarKey = 'zflut-grammar-notes-v1';
 const String _kLeitnerKey = 'zflut-leitner-words-v1';
+
+/// جوابِ خالی / خروجیِ گارد (مثل «User Safety: safe») جواب حساب نمی‌شود و
+/// هرگز در یادداشت‌های گرامر ذخیره نمی‌شود.
+bool isBadGrammarAnswer(String answer) {
+  final a = answer.trim();
+  return a.isEmpty || looksLikeGuardOutput(a);
+}
 
 /// نرمال‌سازی برای مقایسه‌ی لغت‌ها (بدون حساسیت به حروف بزرگ/فاصله‌ی کناره‌ها).
 String normWord(String s) => s.trim().toLowerCase();
@@ -94,7 +102,10 @@ class GrammarNotesNotifier extends StateNotifier<List<GrammarNote>> {
     final out = <GrammarNote>[];
     for (final m in _readItems(s, _kGrammarKey)) {
       try {
-        out.add(GrammarNote.fromJson(m));
+        final n = GrammarNote.fromJson(m);
+        // پرسش‌وپاسخ‌های خراب/بی‌جوابِ ذخیره‌شده‌ی قبلی پاک می‌شوند
+        final clean = n.thread.where((t) => !isBadGrammarAnswer(t.answer)).toList();
+        out.add(clean.length == n.thread.length ? n : n.copyWith(thread: clean));
       } catch (_) {}
     }
     return out;
@@ -122,7 +133,9 @@ class GrammarNotesNotifier extends StateNotifier<List<GrammarNote>> {
 
   /// یک پرسش‌وپاسخ را به رشته‌ی همان یادداشت اضافه می‌کند (فوراً ذخیره می‌شود).
   /// ویرایش/رفرشِ یک پرسش: از ایندکسِ [index] به بعد حذف و با [item] جایگزین می‌شود.
-  void replaceThreadFrom(String id, int index, GrammarThreadItem item) => _set([
+  void replaceThreadFrom(String id, int index, GrammarThreadItem item) {
+    if (isBadGrammarAnswer(item.answer)) return;
+    _set([
         for (final n in state)
           if (n.id == id)
             n.copyWith(thread: [
@@ -132,11 +145,15 @@ class GrammarNotesNotifier extends StateNotifier<List<GrammarNote>> {
           else
             n,
       ]);
+  }
 
-  void appendThread(String id, GrammarThreadItem item) => _set([
-        for (final n in state)
-          if (n.id == id) n.copyWith(thread: [...n.thread, item]) else n,
-      ]);
+  void appendThread(String id, GrammarThreadItem item) {
+    if (isBadGrammarAnswer(item.answer)) return;
+    _set([
+      for (final n in state)
+        if (n.id == id) n.copyWith(thread: [...n.thread, item]) else n,
+    ]);
+  }
 }
 
 final grammarNotesProvider =

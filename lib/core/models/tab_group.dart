@@ -35,7 +35,7 @@ const List<TabGroup> kTabGroups = [
     key: 'story',
     labelKey: 'group_story',
     icon: Icons.auto_stories,
-    tabs: ['story', 'saved', 'grammar', 'speaking'],
+    tabs: ['story', 'grammar', 'speaking'],
     isAiPowered: true,
   ),
   TabGroup(

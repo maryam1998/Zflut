@@ -399,6 +399,10 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         retries: 1,
         timeoutMs: 45000,
       );
+      // جوابِ خالی/خراب (گارد، استدلال، پژواکِ پرامپت) → خطا؛ چیزی ذخیره نمی‌شود
+      if (text.trim().isEmpty || aiOutputProblem(text) != null) {
+        throw Exception('bad ai output');
+      }
       final item = GrammarThreadItem(question: question, answer: text);
       if (target != null) {
         notifier.replaceThreadFrom(noteId, target, item);
@@ -527,16 +531,34 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // پرسشِ کاربر + «ویرایش» (فقط برای پرسشِ خودِ کاربر)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 4),
-                            child: Text(
-                              note.thread[ti].question,
-                              textDirection: autoDir(note.thread[ti].question),
-                              style: TextStyle(
-                                color: c.inkSoft,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    note.thread[ti].question,
+                                    textDirection:
+                                        autoDir(note.thread[ti].question),
+                                    style: TextStyle(
+                                      color: c.inkSoft,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                _MiniAction(
+                                  icon: Icons.edit_outlined,
+                                  label: _t('ویرایش', 'Edit'),
+                                  color: c.teal,
+                                  onTap: _loading
+                                      ? null
+                                      : () => _startEdit(
+                                          ti, note.thread[ti].question),
+                                ),
+                              ],
                             ),
                           ),
                           Container(
@@ -548,21 +570,13 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                             ),
                             child: MiniMarkdown(text: note.thread[ti].answer),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                _MiniAction(
-                                  icon: Icons.edit_outlined,
-                                  label: _t('ویرایش', 'Edit'),
-                                  color: c.teal,
-                                  onTap: _loading
-                                      ? null
-                                      : () => _startEdit(
-                                          ti, note.thread[ti].question),
-                                ),
-                                if (ti == note.thread.length - 1)
+                          // جوابِ AI: فقط «رفرش» (آخرین جواب)، بدون «ویرایش»
+                          if (ti == note.thread.length - 1)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
                                   _MiniAction(
                                     icon: Icons.refresh,
                                     label: _t('رفرش', 'Refresh'),
@@ -572,9 +586,9 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                                         : () => _ask(
                                             note.thread[ti].question, ti),
                                   ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),

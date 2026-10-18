@@ -33,6 +33,7 @@ import '../story/srt_translator_tool.dart';
 import '../story/story_audio_bar.dart';
 import '../story/story_reader_panel.dart';
 import '_hope_panel.dart';
+import 'saved_tab.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // تب «داستان‌ساز» — هم‌شکل StoryBuilder.jsx در Hope
@@ -312,6 +313,7 @@ class StoryTab extends ConsumerStatefulWidget {
 
 class _StoryTabState extends ConsumerState<StoryTab> {
   bool _showLibrary = false;
+  bool _showSaved = false;
 
   String _storyLang = 'en';
   bool _langTouched = false;
@@ -409,6 +411,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   void _consumeDraft(StoryDraft d) {
     setState(() {
       _showLibrary = false;
+      _showSaved = false;
       _storyLang = d.langCode;
       _langTouched = true;
       for (final w in d.words) {
@@ -1205,7 +1208,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       titleSize: 16,
       children: [
         _modeSwitch(c, stories.length),
-        if (_showLibrary)
+        if (_showSaved)
+          const SavedTab(embedded: true)
+        else if (_showLibrary)
           ..._libraryChildren(c, stories)
         else ...[
           _settingsCard(c, lang, options),
@@ -1223,13 +1228,18 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   Widget _modeSwitch(AppThemeColorsExt c, int count) {
-    Widget seg(bool isLib, String label, IconData icon) {
-      final active = _showLibrary == isLib;
+    // سه حالت: ساخت داستان | لغات ذخیره‌شده | کتابخانه
+    Widget seg(int mode, String label, IconData icon) {
+      final cur = _showSaved ? 1 : (_showLibrary ? 2 : 0);
+      final active = cur == mode;
       return Expanded(
         child: GestureDetector(
-          onTap: () => setState(() => _showLibrary = isLib),
+          onTap: () => setState(() {
+            _showSaved = mode == 1;
+            _showLibrary = mode == 2;
+          }),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 5),
             decoration: BoxDecoration(
               color: active ? c.gold : Colors.transparent,
               borderRadius: BorderRadius.circular(999),
@@ -1270,8 +1280,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       ),
       child: Row(
         children: [
-          seg(false, context.l10n.story_mode_create, Icons.auto_fix_high),
-          seg(true, '${context.l10n.story_mode_library} ($count)', Icons.local_library_outlined),
+          seg(0, context.l10n.story_mode_create, Icons.auto_fix_high),
+          seg(1, context.l10n.tab_saved, Icons.bookmark_outline),
+          seg(2, '${context.l10n.story_mode_library} ($count)', Icons.local_library_outlined),
         ],
       ),
     );

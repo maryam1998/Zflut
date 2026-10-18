@@ -11,7 +11,6 @@ import '../../features/tabs/conversations_tab.dart';
 import '../../features/tabs/favorites_tab.dart';
 import '../../features/tabs/grammar_tab.dart';
 import '../../features/review/review_tab.dart';
-import '../../features/tabs/saved_tab.dart';
 import '../../features/tabs/slang_tab.dart';
 import '../../features/tabs/speaking_tab.dart';
 import '../../features/tabs/story_tab.dart';
@@ -80,7 +79,7 @@ final List<RouteBase> _routes = [
     routes: [
       _tab('/conversations', () => const ConversationsTab()),
       _tab('/story', () => const StoryTab()),
-      _tab('/saved', () => const SavedTab()),
+      GoRoute(path: '/saved', redirect: (_, __) => '/story'),
       _tab('/grammar', () => const GrammarTab()),
       _tab('/speaking', () => const SpeakingTab()),
       _tab('/words', () => const WordsTab()),
