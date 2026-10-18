@@ -53,7 +53,11 @@ class ShellHeader extends StatelessWidget {
       orElse: () => currentGroup.tabs.first,
     );
 
-    return Column(
+    // هدرِ شل همیشه راست‌چین می‌ماند (آواتار راست، منو چپ) — حتی وقتی
+    // محتوای تب برای زبانِ رابطِ انگلیسی/اروپایی چپ‌به‌راست است.
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         AccountHeader(
@@ -74,6 +78,6 @@ class ShellHeader extends StatelessWidget {
             onTabSelected: (tab) => context.go(routeOf(tab)),
           ),
       ],
-    );
+    ));
   }
 }

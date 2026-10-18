@@ -13,6 +13,7 @@ import '../../core/theme/app_theme_colors.dart';
 import '../../core/widgets/range_card.dart';
 import '../../core/widgets/sync_item_card.dart';
 import '../shell/widgets/shell_header.dart';
+import '_hope_panel.dart' show uiContentDirection;
 
 class ConversationsTab extends ConsumerStatefulWidget {
   const ConversationsTab({super.key});
@@ -29,7 +30,13 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   int _rangeTo = 60;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Directionality(
+        // جهتِ محتوا طبقِ زبانِ رابط؛ ShellHeader خودش RTL می‌ماند
+        textDirection: uiContentDirection(context),
+        child: _buildBody(context),
+      );
+
+  Widget _buildBody(BuildContext context) {
     final c = context.appColors;
     final topics = ref.watch(allTopicsProvider);
 

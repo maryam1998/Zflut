@@ -1188,6 +1188,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     if (!options.contains(lang)) options.add(lang);
 
     return HopePanel(
+      contentDirection: uiContentDirection(context),
       title: context.l10n.story_builder_title,
       titleSize: 16,
       children: [

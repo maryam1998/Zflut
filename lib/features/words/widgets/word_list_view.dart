@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../tabs/_hope_panel.dart' show uiContentDirection;
 import '../../../app.dart';
 import '../../../core/widgets/level_chips.dart';
 import '../../../core/models/daily_word.dart';
@@ -205,7 +206,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                   ),
                   const SizedBox(height: 8),
                   Align(
-                    alignment: Alignment.centerRight, // همیشه سمتِ راست (فیزیکی)
+                    alignment: AlignmentDirectional.centerStart,
                     child: PopupMenuButton<WordListSort>(
                       initialValue: _sort,
                       color: c.paper,
@@ -270,7 +271,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                     ),
                     child: TextField(
                       onChanged: notifier.setQuery,
-                      textAlign: TextAlign.right,
+                      textAlign: TextAlign.start,
                       style: TextStyle(color: c.ink, fontSize: 13.5),
                       decoration: InputDecoration(
                         hintText: L.phrasebook_search_words,
@@ -296,7 +297,10 @@ class _WordListViewState extends ConsumerState<WordListView> {
       itemsBuilder: () => [
         for (final w in visible) SyncItem(w.sid, w.en),
       ],
-      child: CustomScrollView(
+      // محتوا طبقِ زبانِ رابط (فارسی/عربی RTL، بقیه LTR)؛ ShellHeader خودش RTL می‌ماند
+      child: Directionality(
+        textDirection: uiContentDirection(context),
+        child: CustomScrollView(
         cacheExtent: 600,
         slivers: [
           const SliverToBoxAdapter(child: ShellHeader()),
@@ -396,6 +400,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
               ),
             ),
         ],
+      ),
       ),
     );
   }
