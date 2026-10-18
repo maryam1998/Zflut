@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app.dart';
 import '../../core/constants/supported_languages.dart';
 import '../../core/mascot/mascot_pin_provider.dart';
+import '../../core/providers/player_prefs_provider.dart';
 import '../../core/sync/cloud_sync.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../grammar/widgets/practice_sheet.dart';
@@ -64,6 +65,28 @@ class AppShell extends ConsumerWidget {
                   const PlayerBar(),
                 ],
               ),
+              // ═══ پلیر با شفافیتِ صفر: فقط دکمه‌ی بازنشانی ═══
+              if (ref.watch(playerOpacityProvider) == 0)
+                Positioned(
+                  left: 10,
+                  bottom: 10 + MediaQuery.of(context).padding.bottom,
+                  child: Material(
+                    color: c.paper,
+                    shape: CircleBorder(side: BorderSide(color: c.cardBorder)),
+                    elevation: 3,
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () =>
+                          ref.read(playerOpacityProvider.notifier).set(100),
+                      child: SizedBox(
+                        width: 34,
+                        height: 34,
+                        child:
+                            Icon(Icons.restart_alt, size: 18, color: c.gold),
+                      ),
+                    ),
+                  ),
+                ),
               // ═══ آدمکِ Lingova (نوار بالا + حباب‌ها) ═══
               const Positioned.fill(child: LingovaMascotLayer()),
             ],

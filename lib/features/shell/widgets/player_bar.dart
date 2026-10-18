@@ -29,30 +29,25 @@ class PlayerBar extends ConsumerWidget {
 
     final isPlaying = state.status == SpeechStatus.playing;
 
-    // قابِ بیرونی: همان گرادیانِ هدر (مثل Hope)؛ داخلش پنلِ روشنِ paper.
+    // شفافیت صفر = پلیر کاملاً ناپدید می‌شود و جایی هم اشغال نمی‌کند
+    // (دکمه‌ی بازنشانی را AppShell نشان می‌دهد).
+    if (opacity == 0) return const SizedBox.shrink();
+
+    // بدون قابِ سبزِ دورِ پلیر: فقط پنلِ paper با گوشه‌های گردِ بالا.
     final bar = Container(
-      padding: const EdgeInsets.fromLTRB(7, 7, 7, 0),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: const Alignment(-0.4, -1),
-          end: const Alignment(0.4, 1),
-          colors: [c.headerFrom, c.headerTo],
-        ),
+        color: c.paper,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        border: Border(top: BorderSide(color: c.cardBorder, width: 1)),
         boxShadow: [
           BoxShadow(
-            color: c.ink.withOpacity(0.18),
-            blurRadius: 14,
+            color: c.ink.withOpacity(0.10),
+            blurRadius: 12,
             offset: const Offset(0, -4),
           ),
         ],
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: c.paper,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-        ),
-        child: SafeArea(
+      child: SafeArea(
           top: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -195,7 +190,6 @@ class PlayerBar extends ConsumerWidget {
             ],
           ),
         ),
-      ),
     );
 
     return Stack(
