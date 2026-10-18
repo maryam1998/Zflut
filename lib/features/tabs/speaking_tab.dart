@@ -840,13 +840,20 @@ Now respond to: "$sentence"
 
     // 🧬 🔊 داخلِ کادرِ جوابِ AI، بالا سمتِ راست
     if (!isUser && m.text.trim().isNotEmpty) {
-      content = Row(
-        textDirection: TextDirection.ltr,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(child: content),
-          AiBubbleActions(text: m.text, sourceLang: _activeLang()),
+          Row(
+            textDirection: TextDirection.ltr,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: content),
+              AiBubbleActions(text: m.text, sourceLang: _activeLang()),
+            ],
+          ),
+          // خطِ‌چین + چیپ‌های ترجمه داخلِ کادر
+          AiAnswerTools(text: m.text, sourceLang: _activeLang()),
         ],
       );
     }
@@ -870,9 +877,6 @@ Now respond to: "$sentence"
               ),
               child: content,
             ),
-            // ترجمه به زبان‌های مبدأ و مقصدِ کاربر (جوابِ مربی به زبانِ تمرین است)
-            if (!isUser && m.text.trim().isNotEmpty)
-              AiAnswerTools(text: m.text, sourceLang: _activeLang()),
             if (isUser && !_loading)
               HopeTextAction(
                 icon: Icons.edit_outlined,

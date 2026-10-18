@@ -473,13 +473,6 @@ class _GrammarPracticeContentState
         mainAxisSize: MainAxisSize.min,
         children: [
           _bubbleBox(c, m),
-          // 🔊 + ترجمه به زبان‌های مقصدِ کاربر
-          if (!m.isUser && m.text.trim().isNotEmpty)
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.92),
-              child: AiAnswerTools(text: m.text),
-            ),
         ],
       ),
     );
@@ -505,13 +498,19 @@ class _GrammarPracticeContentState
                 style: TextStyle(color: c.ink, fontSize: 13, height: 1.6),
               )
             // 🧬 🔊 داخلِ کادر، بالا سمتِ راست
-            : Row(
-                textDirection: TextDirection.ltr,
-                crossAxisAlignment: CrossAxisAlignment.start,
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Flexible(child: MiniMarkdown(text: m.text)),
-                  AiBubbleActions(text: m.text),
+                  Row(
+                    textDirection: TextDirection.ltr,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: MiniMarkdown(text: m.text)),
+                      AiBubbleActions(text: m.text),
+                    ],
+                  ),
+                  AiAnswerTools(text: m.text),
                 ],
               ),
       ),

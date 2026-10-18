@@ -133,121 +133,80 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
     final sel = ref.watch(languageSelectionProvider);
     final source = _source;
     final langs = answerTranslationLangs(sel, source);
-    if (widget.text.trim().isEmpty) return const SizedBox.shrink();
+    if (widget.text.trim().isEmpty || langs.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
+    // داخلِ کادرِ جواب: خطِ‌چین ← 🌐 + چیپ‌های زبان ← جعبه‌ی ترجمه‌ی زبانِ انتخابی
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                for (final l in langs)
-                  _Pill(
-                    active: _open.contains(l),
-                    onTap: () => _toggleLang(l),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.translate,
-                            size: 12,
-                            color: _open.contains(l) ? Colors.white : c.gold),
-                        const SizedBox(width: 4),
-                        Text(
-                          _info(l)?.abbr ?? l.toUpperCase(),
-                          style: TextStyle(
-                            color: _open.contains(l) ? Colors.white : c.gold,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
+            padding: const EdgeInsets.only(top: 10, bottom: 10),
+            child: CustomPaint(
+              size: const Size(double.infinity, 1),
+              painter: _DashedLinePainter(c.inkSoft.withOpacity(0.35)),
             ),
           ),
-          // ترجمه‌ها دقیقاً مثلِ ردیف‌های ترجمه‌ی کارتِ لغت
-          if (_open.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 6),
-              padding: const EdgeInsets.fromLTRB(12, 2, 8, 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: c.cardBorder),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [for (final l in _open) _resultRow(c, l)],
-              ),
-            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Icon(Icons.language, size: 22, color: c.inkSoft),
+              for (final l in langs)
+                _Pill(
+                  active: _open.contains(l),
+                  onTap: () => _toggleLang(l),
+                  label: _info(l)?.enLabel ?? l.toUpperCase(),
+                ),
+            ],
+          ),
+          for (final l in _open) _resultRow(c, l),
         ],
       ),
     );
   }
 
-  /// [زبان] متنِ ترجمه … 🔁 🧬 🔊 — همان چیدمانِ SyncTranslationRow
+  /// جعبه‌ی ترجمه‌ی سفید زیرِ چیپ‌ها؛ 🔁 🧬 🔊 کنارِ متن (🔊 سمتِ راست)
   Widget _resultRow(AppThemeColorsExt c, String lang) {
     final text = _results[lang];
     final loading = _loading.contains(lang);
     final failed = _failed.contains(lang);
     final rtl = dirFor(lang) == TextDirection.rtl;
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: c.cardBorder, width: 0.8),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: c.paperDark,
-              borderRadius: BorderRadius.circular(5),
-              border: Border.all(color: c.cardBorder, width: 0.6),
-            ),
-            child: Text(
-              lang.toUpperCase(),
-              style: TextStyle(
-                  color: c.gold,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.4),
-            ),
-          ),
-          const SizedBox(width: 10),
           Expanded(
-            child: loading
-                ? Text('در حال ترجمه...',
-                    style: TextStyle(
-                        color: c.inkSoft,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600))
-                : failed || text == null
-                    ? Text('ترجمه نشد — دوباره بزن',
-                        style: TextStyle(
-                            color: c.rose,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600))
-                    : Align(
-                        alignment:
-                            rtl ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Directionality(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: loading
+                  ? Text('در حال ترجمه...',
+                      style: TextStyle(color: c.inkSoft, fontSize: 13))
+                  : failed || text == null
+                      ? Text('ترجمه نشد — دوباره بزن',
+                          style: TextStyle(color: c.rose, fontSize: 13))
+                      : Directionality(
                           textDirection:
                               rtl ? TextDirection.rtl : TextDirection.ltr,
                           child: SelectableText(
                             text,
-                            textAlign: rtl ? TextAlign.right : TextAlign.left,
-                            style: const TextStyle(
-                                color: Color(0xFF0F5C34),
-                                fontSize: 14,
-                                height: 1.3),
+                            style: TextStyle(
+                                color: c.ink, fontSize: 14, height: 1.6),
                           ),
                         ),
-                      ),
+            ),
           ),
           if (!loading && (text != null || failed))
             InkResponse(
@@ -320,11 +279,12 @@ class AiBubbleActions extends ConsumerWidget {
   }
 }
 
+/// چیپ‌ِ زبان — سفید و گرد؛ انتخاب‌شده: سبزِ تیره با متنِ سفید
 class _Pill extends StatelessWidget {
-  final Widget child;
+  final String label;
   final VoidCallback onTap;
   final bool active;
-  const _Pill({required this.child, required this.onTap, this.active = false});
+  const _Pill({required this.label, required this.onTap, this.active = false});
 
   @override
   Widget build(BuildContext context) {
@@ -333,16 +293,41 @@ class _Pill extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
-        constraints: const BoxConstraints(minHeight: 28, minWidth: 34),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: active ? c.gold : c.gold.withOpacity(0.08),
+          color: active ? c.teal : Colors.white,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: c.gold.withOpacity(0.4)),
+          border: Border.all(color: active ? c.teal : c.cardBorder),
         ),
-        child: child,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? Colors.white : c.ink.withOpacity(0.85),
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
   }
+}
+
+class _DashedLinePainter extends CustomPainter {
+  final Color color;
+  const _DashedLinePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    double x = 0;
+    while (x < size.width) {
+      canvas.drawLine(Offset(x, 0), Offset(x + 4, 0), paint);
+      x += 7;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedLinePainter old) => old.color != color;
 }
