@@ -94,10 +94,6 @@ class NativeBridge {
 
   Future<Map<String, dynamic>> ytRequestAccess() => _call('ytRequestAccess');
 
-  Future<Map<String, dynamic>> ytLoginOpen() => _call('ytLoginOpen');
-
-  Future<Map<String, dynamic>> ytLoginStatus() => _call('ytLoginStatus');
-
   Future<Map<String, dynamic>> ytSetEnabled({bool? enabled, num? offsetMs}) =>
       _call('ytSetEnabled', {if (enabled != null) 'enabled': enabled, if (offsetMs != null) 'offsetMs': offsetMs});
 

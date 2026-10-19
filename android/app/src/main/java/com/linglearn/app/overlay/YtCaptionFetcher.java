@@ -115,9 +115,7 @@ final class YtCaptionFetcher {
         String all = join(reasons);
         boolean blocked = all.contains("LOGIN_REQUIRED") || all.contains("not a bot") || all.contains("HTTP 429") || all.contains("HTTP 403");
         throw new Fail(blocked && noCapVotes < NOCAP_VOTES
-                ? (YtLoginActivity.isLoggedIn()
-                    ? "یوتیوب درخواست را رد کرد؛ چند دقیقه بعد دوباره امتحان کن یا شبکه را عوض کن · "
-                    : "یوتیوب ورود می‌خواهد: تنظیمات ← «ورود به یوتیوب» را یک‌بار بزن (ترجیحاً حساب جدا) · ") + brief(all, 120)
+                ? "یوتیوب درخواست را رد کرد؛ چند دقیقه بعد دوباره امتحان کن یا شبکه را عوض کن · " + brief(all, 120)
                 : all, noCapVotes >= NOCAP_VOTES);
     }
 
@@ -277,7 +275,7 @@ final class YtCaptionFetcher {
                     st.setDomStorageEnabled(true);
                     st.setMediaPlaybackRequiresUserGesture(true);
                     st.setLoadsImagesAutomatically(false);
-                    st.setUserAgentString(YtLoginActivity.cleanUa(st));
+                    st.setUserAgentString(st.getUserAgentString().replace("; wv", "").replace("Version/4.0 ", ""));
                     cm.setAcceptThirdPartyCookies(wv, true);
                     wv.addJavascriptInterface(br, "LL");
                     wv.setWebViewClient(new WebViewClient() {

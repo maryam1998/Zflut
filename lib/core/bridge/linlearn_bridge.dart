@@ -370,21 +370,6 @@ class LinLearnBridge {
     return _ok(() => _n.ytRequestAccess());
   }
 
-  static Future<bool> ytLoginOpen() {
-    if (!_n.isSupported) return Future.value(false);
-    return _ok(() => _n.ytLoginOpen());
-  }
-
-  static Future<bool> ytLoggedIn() async {
-    if (!_n.isSupported) return false;
-    try {
-      final r = await _n.ytLoginStatus();
-      return r['loggedIn'] == true;
-    } on PlatformException {
-      return false;
-    }
-  }
-
   static Future<bool> ytSetEnabled(bool enabled) {
     if (!_n.isSupported) return Future.value(false);
     return _ok(() => _n.ytSetEnabled(enabled: enabled));

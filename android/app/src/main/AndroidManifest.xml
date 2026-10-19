@@ -61,13 +61,6 @@
             </intent-filter>
         </activity>
 
-        <!-- 🔑 ورود به یوتیوب برای دریافتِ زیرنویس (بدون bot-check) -->
-        <activity
-            android:name=".overlay.YtLoginActivity"
-            android:exported="false"
-            android:configChanges="orientation|keyboardHidden|screenSize"
-            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
-
         <!-- 📤 Share → Hope: لینکِ دقیقِ ریل/ویدیو از اینستاگرام، تیک‌تاک، تلگرام و… (بدون هیچ مجوزِ ویژه) -->
         <activity
             android:name=".overlay.ShareReceiverActivity"

@@ -1546,14 +1546,6 @@ class _FloatingBubbleSectionState
                           busy: _busy,
                           onTap: _startYoutube,
                         ),
-                        _BubbleButton(
-                          emoji: '🔑',
-                          label: 'ورود به یوتیوب (برای دریافت زیرنویس)',
-                          busy: _busy,
-                          onTap: () async {
-                            await LinLearnBridge.ytLoginOpen();
-                          },
-                        ),
                         // «نمایش: متن اصلی + ترجمه‌ها» درست زیرِ دکمه‌ی زیرنویس یوتیوب
                         _LabeledDrop(
                           label: L.settings_display_mode_label,
