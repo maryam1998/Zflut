@@ -285,6 +285,25 @@ final class TtsEngine {
         return pcm;
     }
 
+    /**
+     * سکوتِ زیادِ اول/آخرِ هر جمله (مکثِ بعد از نقطه و بینِ دو زبان) را کوتاه می‌کند:
+     * فقط ~۳۰ms اول و ~۹۰ms آخر می‌ماند، پس مکثِ طبیعی هست ولی کش نمی‌آید.
+     */
+    private static float[] trimSilence(float[] x, int sr) {
+        if (x == null || x.length == 0 || sr <= 0) return x;
+        final float th = 0.008f;
+        int first = -1, last = -1;
+        for (int i = 0; i < x.length; i++) {
+            float v = x[i] < 0 ? -x[i] : x[i];
+            if (v > th) { if (first < 0) first = i; last = i; }
+        }
+        if (first < 0) return x;                       // کاملاً سکوت: دست نزن
+        int from = Math.max(0, first - sr * 30 / 1000);
+        int to = Math.min(x.length, last + 1 + sr * 90 / 1000);
+        if (from == 0 && to == x.length) return x;
+        return java.util.Arrays.copyOfRange(x, from, to);
+    }
+
     /** تولیدِ استریم؛ sink برای هر تکه صدا زده می‌شه. اگه sink false بده، null برمی‌گرده (لغو). */
     private float[] synth(String t, float sp, boolean pl, final Sink sink) {
         if (pl) {
@@ -292,6 +311,7 @@ final class TtsEngine {
             synchronized (NATIVE_LOCK) { ga = tts.generate(t, 0, sp); }
             float[] all = ga == null ? null : ga.getSamples();
             if (all == null || all.length == 0) return new float[0];
+            all = trimSilence(all, sampleRate);
             if (!sink.accept(all)) return null;
             return all;
         }
@@ -304,7 +324,7 @@ final class TtsEngine {
                 // و ART با exceptionِ معلق کلِ پردازه رو abort می‌کنه (SIGABRT / status=6).
                 try {
                     if (samples == null || samples.length == 0) return 1;
-                    float[] copy = samples.clone();
+                    float[] copy = trimSilence(samples.clone(), sampleRate);
                     parts.add(copy);
                     if (!sink.accept(copy)) {
                         aborted[0] = true;
@@ -529,7 +549,7 @@ final class TtsEngine {
                 // head یعنی «به mixer رسید»، نه «از بلندگو درآمد»؛ چند ده میلی‌ثانیه صبر می‌کنیم
                 // تا ته‌ِ صدا با pause()/flush() آخرِ finally بریده نشه.
                 if (!cancelled) {
-                    long until = SystemClock.uptimeMillis() + 120;
+                    long until = SystemClock.uptimeMillis() + 70;
                     while (SystemClock.uptimeMillis() < until) {
                         if (epoch.get() != myEpoch || released) { cancelled = true; break; }
                         Thread.sleep(10);
