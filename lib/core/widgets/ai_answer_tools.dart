@@ -13,6 +13,7 @@ import '../translate/translation_service.dart' show runWithConcurrencyLimit;
 import '../utils/html_entities.dart';
 import '../../features/reader/widgets/neural_path_dialog.dart';
 import 'sync_item_card.dart' show NeuralPathButton;
+import 'selection_card.dart' show SelectableSyncText;
 
 /// زبان‌هایی که زیر یک جوابِ AI دکمه‌ی ترجمه می‌گیرند:
 /// زبانِ مبدأ (مادریِ کاربر) + زبان‌های مقصدِ او، بدونِ تکرار، و بدونِ
@@ -288,8 +289,12 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
                       : Directionality(
                           textDirection:
                               rtl ? TextDirection.rtl : TextDirection.ltr,
-                          child: SelectableText(
-                            text,
+                          child: SelectableSyncText(
+                            code: lang,
+                            id: 'ai-tr-$lang-${text.hashCode}',
+                            text: text,
+                            textDirection:
+                                rtl ? TextDirection.rtl : TextDirection.ltr,
                             style: TextStyle(
                                 color: c.ink, fontSize: 14, height: 1.6),
                           ),

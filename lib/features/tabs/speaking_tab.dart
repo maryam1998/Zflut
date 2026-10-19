@@ -16,6 +16,8 @@ import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/utils/html_entities.dart';
 import '../../core/widgets/ai_answer_tools.dart';
+import '../../core/widgets/selection_card.dart'
+    show SelectableSyncText, SelectableRun;
 import '_hope_panel.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1683,36 +1685,43 @@ Now respond to: "$sentence"
         ],
       );
     } else if (isUser) {
-      content = Text(
-        m.text,
+      // لمسِ لغت یا انتخابِ محدوده → کادرِ پاپ‌آپِ مشترک (متن + ترجمه)
+      content = SelectableSyncText(
+        code: _activeLang(),
+        id: 'speaking-user-$idx',
+        text: m.text,
+        autoLang: true,
         textDirection: dir,
         style: TextStyle(color: c.ink, fontSize: 13, height: 1.7),
       );
     } else {
-      content = Text.rich(
-        TextSpan(
-          style: TextStyle(color: c.ink, fontSize: 13, height: 1.7),
-          children: [
-            for (final s in _segments(m.text, m.corrections))
-              TextSpan(
-                text: s.text,
-                style: s.type == 1
-                    ? const TextStyle(
-                        color: _kMistake,
-                        fontWeight: FontWeight.w700,
-                        decoration: TextDecoration.underline,
-                        decorationColor: _kMistake,
-                      )
-                    : s.type == 2
-                        ? const TextStyle(
-                            color: _kCorrection,
-                            fontWeight: FontWeight.w700,
-                          )
-                        : null,
-              ),
-          ],
-        ),
+      final segs = _segments(m.text, m.corrections);
+      content = SelectableSyncText(
+        code: _activeLang(),
+        id: 'speaking-ai-$idx',
+        text: segs.map((s) => s.text).join(),
+        autoLang: true,
         textDirection: dir,
+        style: TextStyle(color: c.ink, fontSize: 13, height: 1.7),
+        runs: [
+          for (final s in segs)
+            SelectableRun(
+              s.text,
+              s.type == 1
+                  ? const TextStyle(
+                      color: _kMistake,
+                      fontWeight: FontWeight.w700,
+                      decoration: TextDecoration.underline,
+                      decorationColor: _kMistake,
+                    )
+                  : s.type == 2
+                      ? const TextStyle(
+                          color: _kCorrection,
+                          fontWeight: FontWeight.w700,
+                        )
+                      : null,
+            ),
+        ],
       );
     }
 

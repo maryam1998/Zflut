@@ -991,6 +991,47 @@ TextRange? _wordRangeAt(String text, int offset, String code) {
   return s < e ? TextRange(start: s, end: e) : null;
 }
 
+/// تکه‌ای از متنِ رنگی/استایل‌دار برای [SelectableSyncText.runs]؛ مجموعِ متنِ تکه‌ها باید دقیقاً برابرِ `text` باشد.
+class SelectableRun {
+  final String text;
+  final TextStyle? style;
+  const SelectableRun(this.text, [this.style]);
+}
+
+/// زبانِ «خودِ متنِ انتخاب‌شده»: عربی‌خط → fa (یا ar/ur اگر fallback همان باشد)، سیریلیک → ru،
+/// هان → zh، دیوانگری → hi؛ لاتین → fallback اگر لاتین‌خط باشد وگرنه en.
+String guessTextLang(String text, String fallback) {
+  const latin = {
+    'en', 'de', 'fr', 'es', 'it', 'pt', 'nl', 'tr', 'pl', 'sv', 'no', 'da', 'fi',
+    'cs', 'ro', 'hu', 'id', 'vi'
+  };
+  var ar = 0, lat = 0, cyr = 0, han = 0, dev = 0;
+  for (final r in text.runes) {
+    if (r >= 0x0600 && r <= 0x06FF ||
+        r >= 0x0750 && r <= 0x077F ||
+        r >= 0x08A0 && r <= 0x08FF ||
+        r >= 0xFB50 && r <= 0xFDFF ||
+        r >= 0xFE70 && r <= 0xFEFF) {
+      ar++;
+    } else if (r >= 0x0400 && r <= 0x04FF) {
+      cyr++;
+    } else if (r >= 0x4E00 && r <= 0x9FFF) {
+      han++;
+    } else if (r >= 0x0900 && r <= 0x097F) {
+      dev++;
+    } else if ((r >= 0x41 && r <= 0x5A) || (r >= 0x61 && r <= 0x7A) || (r >= 0xC0 && r <= 0x24F)) {
+      lat++;
+    }
+  }
+  final best = [ar, lat, cyr, han, dev].fold<int>(0, (a, b) => b > a ? b : a);
+  if (best == 0) return fallback;
+  if (ar == best) return const {'fa', 'ar', 'ur'}.contains(fallback) ? fallback : 'fa';
+  if (cyr == best) return 'ru';
+  if (han == best) return 'zh';
+  if (dev == best) return 'hi';
+  return latin.contains(fallback) ? fallback : 'en';
+}
+
 class SelectableSyncText extends ConsumerStatefulWidget {
   final String code;
   final String id;
@@ -1003,6 +1044,12 @@ class SelectableSyncText extends ConsumerStatefulWidget {
   final TextAlign? textAlign;
   final Duration duration;
 
+  /// متنِ رنگی (مثلاً غلط/اصلاحِ مکالمه)؛ اگر بدهید، مجموعِ متنِ تکه‌ها باید برابرِ [text] باشد.
+  final List<SelectableRun>? runs;
+
+  /// true = زبانِ هر انتخاب از روی خطِ خودِ متن تشخیص داده شود ([code] فقط پیش‌فرض است).
+  final bool autoLang;
+
   const SelectableSyncText({
     super.key,
     required this.code,
@@ -1013,6 +1060,8 @@ class SelectableSyncText extends ConsumerStatefulWidget {
     this.textDirection,
     this.textAlign,
     this.duration = const Duration(milliseconds: 350),
+    this.runs,
+    this.autoLang = false,
   });
 
   @override
@@ -1089,7 +1138,7 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
     showSelectionCard(
       context,
       text: picked,
-      langCode: widget.code,
+      langCode: widget.autoLang ? guessTextLang(picked, widget.code) : widget.code,
       sentence: widget.sentence ?? widget.text,
       anchor: anchor,
     ).whenComplete(() {
@@ -1100,6 +1149,31 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
         _gen++; // انتخابِ بومی را پاک کن
       });
     });
+  }
+
+  /// متنِ رنگی با هایلایتِ لغتِ لمس‌شده روی هر تکه‌ای که با محدوده‌ی [r] هم‌پوشانی دارد.
+  TextSpan _runsSpan(TextStyle base, List<SelectableRun> runs, TextRange? r, Color? hlBg) {
+    final kids = <InlineSpan>[];
+    var off = 0;
+    for (final run in runs) {
+      final t = run.text;
+      final s = off, e = off + t.length;
+      off = e;
+      if (t.isEmpty) continue;
+      if (r == null || r.end <= s || r.start >= e) {
+        kids.add(TextSpan(text: t, style: run.style));
+        continue;
+      }
+      final a = (r.start - s).clamp(0, t.length).toInt();
+      final b = (r.end - s).clamp(0, t.length).toInt();
+      if (a > 0) kids.add(TextSpan(text: t.substring(0, a), style: run.style));
+      kids.add(TextSpan(
+        text: t.substring(a, b),
+        style: (run.style ?? const TextStyle()).copyWith(backgroundColor: hlBg),
+      ));
+      if (b < t.length) kids.add(TextSpan(text: t.substring(b), style: run.style));
+    }
+    return TextSpan(style: base, children: kids);
   }
 
   @override
@@ -1122,7 +1196,10 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
       builder: (_, bg, __) {
         final base = widget.style.copyWith(backgroundColor: bg);
         final r = _hl;
-        final span = (r == null || r.end > text.length)
+        final hlBg = hl == null ? null : hl.withOpacity(0.75);
+        final span = widget.runs != null
+            ? _runsSpan(base, widget.runs!, (r == null || r.end > text.length) ? null : r, hlBg)
+            : (r == null || r.end > text.length)
             ? TextSpan(text: text, style: base)
             : TextSpan(
                 style: base,

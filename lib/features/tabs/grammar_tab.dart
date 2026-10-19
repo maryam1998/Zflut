@@ -16,6 +16,7 @@ import '../../core/ai/ai_gateway.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/utils/html_entities.dart';
 import '../../core/widgets/ai_answer_tools.dart';
+import '../../core/widgets/selection_card.dart' show SelectableSyncText;
 import '_hope_panel.dart';
 
 /// تب «گرامر» — هم‌شکل GrammarPanel در Hope.
@@ -553,6 +554,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                           children: [
                             Expanded(
                                 child: MiniMarkdown(
+                                    code: _mdLang ?? note.langCode,
                                     text: decodeHtmlEntities(note.markdown))),
                             AiBubbleActions(
                                 text: note.markdown, sourceLang: _mdLang),
@@ -651,8 +653,11 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Expanded(
-                                    child: Text(
-                                      note.thread[ti].question,
+                                    child: SelectableSyncText(
+                                      code: note.langCode,
+                                      id: 'grammar-q-${note.hashCode}-$ti',
+                                      text: note.thread[ti].question,
+                                      autoLang: true,
                                       textDirection:
                                           autoDir(note.thread[ti].question),
                                       style: TextStyle(
@@ -692,6 +697,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
                                   children: [
                                     Expanded(
                                         child: MiniMarkdown(
+                                            code: note.langCode,
                                             text: decodeHtmlEntities(
                                                 note.thread[ti].answer))),
                                     AiBubbleActions(

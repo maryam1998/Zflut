@@ -6,6 +6,7 @@ import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/providers/translation_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/widgets/ai_answer_tools.dart';
+import '../../../core/widgets/selection_card.dart' show SelectableSyncText;
 import '../../../core/translate/translation_service.dart';
 import '../../tabs/_hope_panel.dart' show MiniMarkdown, autoDir;
 
@@ -479,6 +480,8 @@ class _GrammarPracticeContentState
   }
 
   Widget _bubbleBox(AppThemeColorsExt c, _ChatMsg m) {
+    final chatCode =
+        _chatLang ?? ref.read(languageSelectionProvider).primaryTarget ?? 'en';
     return Align(
       alignment: m.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -492,8 +495,11 @@ class _GrammarPracticeContentState
           borderRadius: BorderRadius.circular(12),
         ),
         child: m.isUser
-            ? SelectableText(
-                m.text,
+            ? SelectableSyncText(
+                code: chatCode,
+                id: 'practice-user-${m.text.hashCode}',
+                text: m.text,
+                autoLang: true,
                 textDirection: autoDir(m.text),
                 style: TextStyle(color: c.ink, fontSize: 13, height: 1.6),
               )
@@ -506,7 +512,7 @@ class _GrammarPracticeContentState
                     textDirection: TextDirection.ltr,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: MiniMarkdown(text: m.text)),
+                      Expanded(child: MiniMarkdown(text: m.text, code: chatCode)),
                       AiBubbleActions(text: m.text),
                     ],
                   ),

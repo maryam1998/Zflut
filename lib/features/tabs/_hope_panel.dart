@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/widgets/selection_card.dart' show SelectableSyncText, SelectableRun;
 import '../shell/widgets/shell_header.dart';
 
 /// اسکلتِ مشترکِ تب‌های «هم‌شکل Hope» (گرامر، تمرین مکالمه، داستان‌ساز،
@@ -282,7 +283,11 @@ class MiniMarkdown extends StatelessWidget {
   final String text;
   final double fontSize;
 
-  const MiniMarkdown({super.key, required this.text, this.fontSize = 13});
+  /// اگر بدهید (زبانِ پیش‌فرضِ متن)، لمسِ لغت یا انتخابِ محدوده کادرِ پاپ‌آپِ مشترک را باز می‌کند
+  /// و زبانِ هر انتخاب از روی خودِ متن تشخیص داده می‌شود.
+  final String? code;
+
+  const MiniMarkdown({super.key, required this.text, this.fontSize = 13, this.code});
 
   List<InlineSpan> _inline(String s, Color codeBg) {
     final spans = <InlineSpan>[];
@@ -317,7 +322,9 @@ class MiniMarkdown extends StatelessWidget {
     final c = context.appColors;
     final lines = text.split(RegExp(r'\r?\n'));
     final out = <Widget>[];
+    var lineNo = 0;
     for (final raw in lines) {
+      lineNo++;
       final line = raw.trimRight();
       if (line.trim().isEmpty) {
         out.add(const SizedBox(height: 6));
@@ -345,19 +352,37 @@ class MiniMarkdown extends StatelessWidget {
         }
       }
       final dir = autoDir(body);
-      final rich = Text.rich(
-        TextSpan(
-          children: _inline(body, c.paperDark),
-          style: TextStyle(
-            color: c.ink,
-            fontSize: size,
-            height: 1.7,
-            fontWeight: weight,
-          ),
-        ),
-        textDirection: dir,
-        textAlign: TextAlign.start,
+      final lineStyle = TextStyle(
+        color: c.ink,
+        fontSize: size,
+        height: 1.7,
+        fontWeight: weight,
       );
+      final inline = _inline(body, c.paperDark);
+      final Widget rich;
+      if (code != null) {
+        final runs = <SelectableRun>[
+          for (final s in inline)
+            if (s is TextSpan) SelectableRun(s.text ?? '', s.style),
+        ];
+        final plain = runs.map((r) => r.text).join();
+        rich = SelectableSyncText(
+          code: code!,
+          id: 'md-${text.hashCode}-$lineNo',
+          text: plain,
+          runs: runs,
+          autoLang: true,
+          style: lineStyle,
+          textDirection: dir,
+          textAlign: TextAlign.start,
+        );
+      } else {
+        rich = Text.rich(
+          TextSpan(children: inline, style: lineStyle),
+          textDirection: dir,
+          textAlign: TextAlign.start,
+        );
+      }
       out.add(Padding(
         padding: const EdgeInsets.symmetric(vertical: 1),
         child: bullet
