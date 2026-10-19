@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/config/app_config.dart';
+import 'core/storage/durable_store.dart';
 import 'core/storage/local_storage.dart' show sharedPrefsProvider;
 import 'core/sync/app_restarter.dart';
 import 'core/storage/translation_cache_db.dart';
@@ -75,6 +76,10 @@ Future<void> main() async {
     }
 
     final prefs = await SharedPreferences.getInstance();
+
+    // نسخه‌ی دائمیِ داده‌های کاربر (IndexedDB روی وب / فایل روی موبایل):
+    // اگر prefs خالی/پاک شده باشد، لغات و داستان‌ها و ... از این‌جا برمی‌گردند.
+    await DurableStore.instance.init(prefs);
 
     // کشِ دائمیِ ترجمه‌ها (IndexedDB / فایل) — در پس‌زمینه باز و پر می‌شود؛
     // تا آماده شود کش فقط در حافظه کار می‌کند و اپ منتظر نمی‌ماند.

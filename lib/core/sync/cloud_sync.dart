@@ -23,8 +23,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../bridge/linlearn_bridge.dart';
 import '../constants/supported_languages.dart';
 import '../native/native_bridge.dart';
+import '../storage/durable_store.dart';
 import '../storage/local_storage.dart' show sharedPrefsProvider;
 import 'app_restarter.dart';
+import 'data_merge.dart';
 
 const String _kMeta = 'zflut-cloud-meta-v1';
 const String _kDeleted = 'zflut-cloud-deleted-packs-v1';
@@ -63,6 +65,8 @@ class CloudSync with WidgetsBindingObserver {
   Timer? _timer;
   Timer? _debounce;
   String? _startedFor;
+  String? _reconciledFor; // تا تطبیقِ موفق انجام نشده هیچ‌چیز روی ابر نوشته نمی‌شود
+  Timer? _retry;
   bool _pushing = false;
   bool _disposed = false;
 
@@ -92,6 +96,7 @@ class CloudSync with WidgetsBindingObserver {
       } else {
         _timer?.cancel();
         _startedFor = null;
+        _reconciledFor = null;
       }
     }, onError: (Object _) {});
     if (c.auth.currentSession != null) unawaited(_start());
@@ -120,6 +125,7 @@ class CloudSync with WidgetsBindingObserver {
     _nativeSub?.cancel();
     _timer?.cancel();
     _debounce?.cancel();
+    _retry?.cancel();
     if (LinLearnBridge.onPackDeleted == noteDeleted) {
       LinLearnBridge.onPackDeleted = null;
     }
@@ -228,6 +234,7 @@ class CloudSync with WidgetsBindingObserver {
     return out;
   }
 
+  /// داده‌ی ابری را با داده‌ی محلی «ادغام» می‌کند (به‌جای جایگزینی).
   Future<bool> _applyData(dynamic v) async {
     if (v is! Map) return false;
     var changed = false;
@@ -235,13 +242,21 @@ class CloudSync with WidgetsBindingObserver {
       final k = e.key.toString();
       final val = e.value;
       if (val is! String || !_syncable(k)) continue;
-      if (_sp.getString(k) != val) {
-        await _sp.setString(k, val);
+      final cur = _sp.getString(k);
+      final next = cur == null ? val : mergeSyncValue(cur, val);
+      if (cur != next) {
+        await _sp.setString(k, next);
         changed = true;
       }
     }
+    if (changed) unawaited(DurableStore.instance.flush());
     return changed;
   }
+
+  bool _cloudIsNewer(DateTime? cloudAt, DateTime? lastSync) =>
+      cloudAt != null &&
+      (lastSync == null ||
+          cloudAt.isAfter(lastSync.add(const Duration(seconds: 2))));
 
   // ───────────────────────── شروع و تطبیق ─────────────────────────
   Future<void> _start() async {
@@ -249,11 +264,18 @@ class CloudSync with WidgetsBindingObserver {
     if (user == null || _disposed) return;
     if (_startedFor == user.id) return;
     _startedFor = user.id;
+    _reconciledFor = null;
     try {
       final restarting = await _reconcile(user.id);
       if (restarting) return;
     } catch (e) {
       debugPrint('CloudSync reconcile failed: $e');
+      // اینترنت/سرور مشکل داشت: هرگز در این حالت چیزی روی ابر نمی‌نویسیم
+      // (وگرنه داده‌ی خالیِ این دستگاه می‌توانست داده‌ی حساب را پاک کند).
+      _startedFor = null;
+      _retry?.cancel();
+      _retry = Timer(const Duration(seconds: 20), () => unawaited(_start()));
+      return;
     }
     _timer?.cancel();
     _timer = Timer.periodic(
@@ -276,31 +298,33 @@ class CloudSync with WidgetsBindingObserver {
     }
 
     final meta = _readMeta();
-    final deviceId = _deviceId(meta);
+    _deviceId(meta);
     var applied = false;
 
     if (dataRow != null) {
       final cloudAt = DateTime.tryParse('${dataRow['updated_at']}');
       final lastSync = DateTime.tryParse('${meta['lastSyncAt']}');
       final sameUser = meta['userId'] == uid;
-      final fromOther = dataRow['device_id'] != deviceId;
-      final cloudNewer = cloudAt != null &&
-          (lastSync == null || cloudAt.isAfter(lastSync));
+      final cloudNewer = _cloudIsNewer(cloudAt, lastSync);
 
-      if (!sameUser || (fromOther && cloudNewer)) {
+      if (!sameUser || cloudNewer) {
         // حسابِ دیگری قبلاً روی این دستگاه بوده: دادهٔ او با حساب جدید قاطی نشود.
         if (meta['userId'] != null && !sameUser) {
-          for (final k in _sp.getKeys().where(_syncable).toList()) {
+          final old = _sp.getKeys().where(_syncable).toList();
+          for (final k in old) {
             await _sp.remove(k);
           }
+          await DurableStore.instance.removeKeys(old);
         }
         applied = await _applyData(dataRow['value']);
         meta['lastSyncAt'] = cloudAt?.toUtc().toIso8601String();
-        meta['lastHash'] = _fnv1a(jsonEncode(_collectData())).toString();
+        // بعد از ادغام، نسخه‌ی محلی ممکن است از ابر کامل‌تر باشد ← یک‌بار ارسال شود
+        meta['lastHash'] = '';
       }
     }
     meta['userId'] = uid;
     await _writeMeta(meta);
+    _reconciledFor = uid; // از این لحظه ارسال به ابر مجاز است
 
     // فهرست مدل‌ها: آنچه در حساب هست ولی روی این دستگاه نیست
     await _computeMissing(packsRow);
@@ -365,7 +389,7 @@ class CloudSync with WidgetsBindingObserver {
     final c = _client;
     final user = c?.auth.currentUser;
     if (c == null || user == null) return;
-    if (_startedFor != user.id) return; // هنوز تطبیق انجام نشده
+    if (_reconciledFor != user.id) return; // هنوز تطبیقِ موفق انجام نشده
     _pushing = true;
     try {
       final uid = user.id;
@@ -373,9 +397,44 @@ class CloudSync with WidgetsBindingObserver {
       final deviceId = _deviceId(meta);
       final now = DateTime.now().toUtc().toIso8601String();
 
-      final data = _collectData();
-      final h = _fnv1a(jsonEncode(data)).toString();
+      var data = _collectData();
+      var h = _fnv1a(jsonEncode(data)).toString();
       if (force || meta['lastHash'] != h) {
+        // ۱) اگر بعد از آخرین همگام‌سازیِ ما چیزی در ابر عوض شده (دستگاهِ دیگر یا
+        //    بکاپِ قدیمیِ همین دستگاه)، اول ادغام کن؛ بازنویسی نکن.
+        final heads = await c
+            .from(_kTable)
+            .select('updated_at')
+            .eq('user_id', uid)
+            .eq('key', 'data');
+        if ((heads as List).isNotEmpty) {
+          final cloudAt =
+              DateTime.tryParse('${(heads.first as Map)['updated_at']}');
+          final lastSync = DateTime.tryParse('${meta['lastSyncAt']}');
+          if (_cloudIsNewer(cloudAt, lastSync)) {
+            final full = await c
+                .from(_kTable)
+                .select('value')
+                .eq('user_id', uid)
+                .eq('key', 'data');
+            if ((full as List).isNotEmpty) {
+              final changed = await _applyData((full.first as Map)['value']);
+              meta['lastSyncAt'] = cloudAt?.toUtc().toIso8601String();
+              meta['lastHash'] = '';
+              await _writeMeta(meta);
+              if (changed) {
+                AppRestarter.restart(); // نمونه‌ی تازه، داده‌ی ادغام‌شده را می‌فرستد
+                return;
+              }
+              data = _collectData();
+              h = _fnv1a(jsonEncode(data)).toString();
+            }
+          }
+        }
+
+        // ۲) نسخه‌ی پشتیبانِ ابر (حداکثر هر ۶ ساعت) تا هیچ اتفاقی کل داده را نابود نکند
+        await _backupCloud(c, uid, deviceId, now, meta);
+
         await c.from(_kTable).upsert(<String, dynamic>{
           'user_id': uid,
           'key': 'data',
@@ -395,6 +454,34 @@ class CloudSync with WidgetsBindingObserver {
     } finally {
       _pushing = false;
     }
+  }
+
+  /// نسخه‌ی قبلیِ ردیفِ «data» را در ردیفِ «data_prev» نگه می‌دارد.
+  Future<void> _backupCloud(SupabaseClient c, String uid, String deviceId,
+      String now, Map<String, dynamic> meta) async {
+    try {
+      final last = DateTime.tryParse('${meta['lastBackupAt']}');
+      if (last != null &&
+          DateTime.now().toUtc().difference(last) < const Duration(hours: 6)) {
+        return;
+      }
+      final rows = await c
+          .from(_kTable)
+          .select('value')
+          .eq('user_id', uid)
+          .eq('key', 'data');
+      if ((rows as List).isEmpty) return;
+      final v = (rows.first as Map)['value'];
+      if (v is! Map || jsonEncode(v).length < 500) return;
+      await c.from(_kTable).upsert(<String, dynamic>{
+        'user_id': uid,
+        'key': 'data_prev',
+        'value': v,
+        'device_id': deviceId,
+        'updated_at': now,
+      }, onConflict: 'user_id,key');
+      meta['lastBackupAt'] = now;
+    } catch (_) {}
   }
 
   Future<void> _pushPacks(
