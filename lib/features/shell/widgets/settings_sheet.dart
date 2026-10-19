@@ -1027,7 +1027,7 @@ class _FloatingBubbleSectionState
     final disp = sp.getString(_kDispKey);
     final color = sp.getString(_kColorKey);
     _kind = _kinds.contains(kind) ? kind! : 'both';
-    _src = _srcLangs.containsKey(src) ? src! : 'en';
+    _src = (src == 'auto' || _srcLangs.containsKey(src)) ? src! : 'en';
     _disp = _displayModes.contains(disp) ? disp! : 'both';
     _color = (color != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color))
         ? color.toUpperCase()
@@ -1182,6 +1182,8 @@ class _FloatingBubbleSectionState
   /// مثل ensureOfflineSpeechModel در Hope: اگر بسته‌ی آفلاینِ «زبان صدا» دانلود نشده، یک‌بار می‌پرسد و
   /// دانلود را شروع می‌کند. true = می‌شود ادامه داد، false = اول باید بسته دانلود شود.
   Future<bool> _ensureSpeechPack({required String afterDownload}) async {
+    // 🌐 «تشخیص خودکار»: موتورِ چندزبانه‌ی Whisper لازم است (هر کدام از tiny / base / small کافی است)
+    if (_src == 'auto') return _ensureAutoPack(afterDownload: afterDownload);
     final pack = await LinLearnBridge.packStatus('speech', _src);
     if (pack == null || pack['downloaded'] == true) return true;
     if (!mounted) return false;
@@ -1207,6 +1209,44 @@ class _FloatingBubbleSectionState
     );
     if (yes == true) {
       await LinLearnBridge.packDownload('speech', _src);
+      _toast(afterDownload);
+      if (mounted) setState(() => _packEpoch++);
+    }
+    return false;
+  }
+
+  /// حالتِ «تشخیص خودکار»: اگر هیچ مدلِ Whisper روی گوشی نیست یک‌بار می‌پرسد و «base» را دانلود می‌کند.
+  Future<bool> _ensureAutoPack({required String afterDownload}) async {
+    Map<String, dynamic>? baseSt;
+    for (final id in const ['base', 'small', 'tiny']) {
+      final st = await LinLearnBridge.packStatus('song', id);
+      if (st == null) return true; // پشتیبانی نمی‌شود/خطا: مانعِ شروع نشو
+      if (st['downloaded'] == true) return true;
+      if (id == 'base') baseSt = st;
+      if (st['downloading'] == true) {
+        if (mounted) _toast(context.l10n.st_pack_wait);
+        return false;
+      }
+    }
+    if (baseSt == null || !mounted) return false;
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => _dirDialog(ctx, AlertDialog(
+        title: Text(context.l10n.st_speech_pack_title),
+        content: Text(context.l10n.st_speech_pack_body(
+            context.l10n.settings_lang_auto.replaceFirst('🌐 ', ''))),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(context.l10n.st_no)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(context.l10n.settings_download)),
+        ],
+      )),
+    );
+    if (yes == true) {
+      await LinLearnBridge.packDownload('song', 'base');
       _toast(afterDownload);
       if (mounted) setState(() => _packEpoch++);
     }
@@ -1480,7 +1520,10 @@ class _FloatingBubbleSectionState
                   _LabeledDrop(
                     label: L.settings_audio_language,
                     value: _src,
-                    items: _srcLangs,
+                    items: <String, String>{
+                      'auto': L.settings_lang_auto,
+                      ..._srcLangs,
+                    },
                     onChanged: (v) {
                       setState(() => _src = v);
                       _save(_kSrcKey, v);
@@ -1491,11 +1534,12 @@ class _FloatingBubbleSectionState
                   ),
                   PackTile(
                     key: ValueKey('speech-$_src-$_packEpoch'),
-                    kind: 'speech',
-                    id: _src,
+                    // 🌐 خودکار: مدلِ چندزبانه‌ی Whisper (base)؛ وگرنه بسته‌ی زبانِ انتخابی
+                    kind: _src == 'auto' ? 'sync' : 'speech',
+                    id: _src == 'auto' ? 'base' : _src,
                     title: '',
                     bare: true,
-                    approxMb: 70,
+                    approxMb: _src == 'auto' ? 160 : 70,
                   ),
                   const _SongModeSection(),
                   Padding(

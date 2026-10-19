@@ -364,6 +364,7 @@
   "settings_account": "الحساب",
   "settings_android_only": "تعمل هذه الميزة في تطبيق أندرويد فقط",
   "settings_audio_language": "لغة الصوت",
+  "settings_lang_auto": "🌐 كشف تلقائي",
   "settings_bg_change_photo": "تغيير الصورة",
   "settings_bg_error_format": "الصيغ المدعومة هي JPG وPNG وGIF فقط.",
   "settings_bg_error_save_failed": "تعذّر حفظ الصورة — جرّب ملفًا أصغر.",

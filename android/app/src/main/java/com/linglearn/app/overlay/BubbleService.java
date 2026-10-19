@@ -206,10 +206,15 @@ public class BubbleService extends Service {
     }
 
     public static void saveLangs(Context ctx, String target, String source) {
-        SharedPreferences.Editor e = ctx.getSharedPreferences(PREFS, MODE_PRIVATE).edit();
+        final SharedPreferences sp = ctx.getSharedPreferences(PREFS, MODE_PRIVATE);
+        final String oldSource = sp.getString("source", "auto");
+        SharedPreferences.Editor e = sp.edit();
         if (target != null && !target.isEmpty()) e.putString("target", target);
         if (source != null && !source.isEmpty()) e.putString("source", source);
         e.apply();
+        // زبانِ صدا عوض شد (مثلاً از «خودکار» به یک زبانِ مشخص): تشخیصِ قبلی را کنار بگذار
+        final BubbleService live = instance;
+        if (live != null && source != null && !source.isEmpty() && !source.equals(oldSource)) live.resetDetected();
     }
 
     /** Comma-separated list of ALL translation target languages the user picked in the app (e.g. "fa,fr,ar"). */
@@ -700,7 +705,48 @@ public class BubbleService extends Service {
      */
     private String effectiveSource() {
         if (srcExplicit()) return sourceLang();
+        // 🌐 «تشخیص خودکار»: زبانی که از روی متنِ گفتار تشخیص داده شده (تا وقتی چیزی نیامده: پیش‌فرضِ قبلی)
+        final String d = detectedSrc;
+        if (d != null) return d;
         return "en".equals(targetLang()) ? "auto" : "en";
+    }
+
+    /** زبانِ مخصوصِ «انتخابِ موتورِ تشخیص گفتار»: در حالتِ خودکار همیشه "auto" (Whisperِ چندزبانه)، نه زبانِ تشخیص‌داده‌شده. */
+    private String engineSource() {
+        return srcExplicit() ? sourceLang() : "auto";
+    }
+
+    // ───────── 🌐 تشخیصِ خودکارِ زبانِ گفتار (فقط وقتی زبانِ صدا روی «خودکار» است) ─────────
+    private volatile String detectedSrc = null;
+    private String detectCand = null;
+    private int detectStreak = 0;
+
+    /** از روی متنِ تازه‌ی تشخیصِ گفتار، زبان را حدس می‌زند؛ اولین تشخیص فوری، تغییرِ زبان بعد از دو تشخیصِ پشت‌سرهم. */
+    private void noteDetected(String text) {
+        if (srcExplicit()) return;
+        if (yt != null && yt.isActive()) return;               // یوتیوب: زبانِ خودِ زیرنویس مشخص است
+        final String d = LangDetect.detect(text);
+        if (d == null) return;
+        final String cur = detectedSrc;
+        if (d.equals(cur)) { detectCand = null; detectStreak = 0; return; }
+        if (cur == null) { applyDetected(d); return; }
+        if (d.equals(detectCand)) detectStreak++; else { detectCand = d; detectStreak = 1; }
+        if (detectStreak >= 2) applyDetected(d);
+    }
+
+    private void applyDetected(String d) {
+        detectedSrc = d;
+        detectCand = null;
+        detectStreak = 0;
+        syncSentenceLang();
+        final Entry e = live;
+        if (e != null) e.srcLang = d;                          // 🔊 و کادرِ لغتِ همین خط با زبانِ درست
+    }
+
+    private void resetDetected() {
+        detectedSrc = null;
+        detectCand = null;
+        detectStreak = 0;
     }
 
     /**
@@ -3386,6 +3432,7 @@ public class BubbleService extends Service {
         if (wm == null || bubble == null || raw == null || raw.isEmpty()) return;
         if (asrMuted()) return;
         wakeFromIdle();
+        noteDetected(raw);                                // 🌐 زبان را پیش از ساختنِ خطِ زنده تشخیص بده
         trackSpeechRate(raw);
         final String text = stripConsumed(raw);          // بخشِ قبلاً‌بسته‌شده (خط‌های جدا) دوباره نمایش داده نشود
         if (text.isEmpty()) return;
@@ -3925,6 +3972,7 @@ public class BubbleService extends Service {
             return;
         }
         lastFinalText = raw;
+        noteDetected(raw);                                // 🌐 پیش از ترجمه
         final String text = stripConsumed(raw);           // قسمت‌هایی که با مکث قبلاً خطِ جدا شده‌اند تکرار نشود
         consumedWords = 0;                                // گفتارِ جاری تمام شد
         if (text.trim().isEmpty()) {
@@ -4507,7 +4555,7 @@ public class BubbleService extends Service {
                     "The offline pack is still downloading — please wait"));
             return false;
         }
-        String[] need = missingOfflinePack(effectiveSource());
+        String[] need = missingOfflinePack(engineSource());
         if (need == null) return true;
         askOfflinePack(need[0], need[1]);
         return false;
@@ -4653,7 +4701,8 @@ public class BubbleService extends Service {
         cancelLivePending();
         speechHostRestarts = 0;
         gotAsrText = false; voicedSinceText = 0;
-        final String src = effectiveSource();
+        resetDetected();                                      // هر شروعِ تازه: تشخیصِ زبان از اول
+        final String src = engineSource();
         // 📦 فقط موتورِ آفلاین (Sherpa یا Whisper). بدونِ بسته: پیامِ تأییدِ دانلود، نه سرور و نه تشخیص‌دهنده‌ی آنلاین.
         String[] need = missingOfflinePack(src);
         if (need != null) { askOfflinePack(need[0], need[1]); return; }
@@ -4950,6 +4999,7 @@ public class BubbleService extends Service {
         recording = false;
         if (micEngine) { micEngine = false; SpeechHostActivity.finishIfRunning(); PcmFeed.close(); }
         releaseSherpa();
+        resetDetected();
         AudioRecord r = record; record = null;
         if (r != null) { try { r.stop(); } catch (Exception ignored) {} }
         setRecordingUi(false);

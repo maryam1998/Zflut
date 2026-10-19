@@ -364,6 +364,7 @@
   "settings_account": "حساب کاربری",
   "settings_android_only": "این قابلیت فقط در نسخه‌ی اندروید کار می‌کنه",
   "settings_audio_language": "زبان صدا",
+  "settings_lang_auto": "🌐 تشخیص خودکار",
   "settings_bg_change_photo": "تغییرِ عکس",
   "settings_bg_error_format": "فقط فرمت‌هایِ JPG، PNG و GIF پشتیبانی می‌شن.",
   "settings_bg_error_save_failed": "ذخیره‌ی عکس ناموفق بود — یه فایلِ کوچیک‌تر امتحان کن.",

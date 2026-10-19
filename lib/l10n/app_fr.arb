@@ -364,6 +364,7 @@
   "settings_account": "Compte",
   "settings_android_only": "Cette fonction ne marche que dans l'application Android",
   "settings_audio_language": "Langue de l'audio",
+  "settings_lang_auto": "🌐 Détection automatique",
   "settings_bg_change_photo": "Changer la photo",
   "settings_bg_error_format": "Seules les images JPG, PNG et GIF sont prises en charge.",
   "settings_bg_error_save_failed": "Impossible d'enregistrer l'image — essaie avec un fichier plus petit.",
