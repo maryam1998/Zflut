@@ -416,6 +416,9 @@ public class BubbleService extends Service {
     private volatile long lastTextMs = 0;    // آخرین لحظه‌ای که متنِ تشخیص‌داده‌شده رسید
     private volatile long lastActiveMs = 0;  // آخرین لحظه‌ای که «چیزی در حالِ پخش» یا کاربر مشغول بود
     private boolean idleHidden = false;      // کادر را خودکار (نه کاربر) بسته‌ایم
+    // 📌 «باز بمان»: وقتی روشن است کادر هیچ‌وقت خودکار (بی‌کاری / لمسِ بیرونِ کادر) بسته نمی‌شود؛ خاموش = رفتارِ قبلی
+    private boolean keepOpen = false;
+    private TextView tvPin;
     private boolean idlePinned = false;      // کاربر در حالِ سکوت کادر را برای خواندن باز کرده؛ تا بستنِ دستی خودکار بسته نشه
     private boolean fadingOut = false;       // کادر در حالِ محو شدنِ خودکار است
     private int fadeGen = 0;
@@ -448,7 +451,7 @@ public class BubbleService extends Service {
         } else if (active && idleHidden) {
             boolean ytNow = yt != null && yt.isPlaying();
             if (ytNow || now - activeSinceMs >= REOPEN_CONFIRM_MS) reopenFromIdle();
-        } else if (!active && !busy && panelShown && !userHidden && !idlePinned
+        } else if (!active && !busy && panelShown && !userHidden && !idlePinned && !keepOpen
                 && now - lastActiveMs > IDLE_HIDE_MS) {
             fadeOutPanelForIdle();
         }
@@ -471,6 +474,34 @@ public class BubbleService extends Service {
             removePanel();
             panelFree = wasFree;
         }).start();
+    }
+
+    private void loadKeepOpen() {
+        keepOpen = getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("keepPanelOpen", false);
+    }
+
+    private void toggleKeepOpen() {
+        keepOpen = !keepOpen;
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean("keepPanelOpen", keepOpen).apply();
+        updatePinUi();
+        if (keepOpen) {
+            cancelPanelFade();
+            idleHidden = false;
+            lastActiveMs = SystemClock.elapsedRealtime();
+        }
+        showNotice(keepOpen
+                ? msg("📌 کادر باز می‌ماند تا خودت ببندی", "📌 Panel stays open until you close it")
+                : msg("📌 بسته‌شدنِ خودکارِ کادر دوباره فعال شد", "📌 Auto-hide is back on"));
+    }
+
+    private void updatePinUi() {
+        if (tvPin == null) return;
+        tvPin.setAlpha(keepOpen ? 1f : 0.5f);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(dp(10));
+        bg.setColor(keepOpen ? Color.parseColor("#55F2C14E") : Color.parseColor("#1AFFFFFF"));
+        if (keepOpen) bg.setStroke(dp(1), COLOR_GOLD);
+        tvPin.setBackground(bg);
     }
 
     private void cancelPanelFade() {
@@ -1568,6 +1599,26 @@ public class BubbleService extends Service {
         panel.addView(gripBottom, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(24)));
 
+        // 📌 دکمه‌ی «باز بمان» — پایین-راستِ کادر
+        loadKeepOpen();
+        LinearLayout pinRow = new LinearLayout(this);
+        pinRow.setOrientation(LinearLayout.HORIZONTAL);
+        pinRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        pinRow.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        tvPin = new TextView(this);
+        tvPin.setText("\uD83D\uDCCC");
+        tvPin.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        tvPin.setGravity(Gravity.CENTER);
+        tvPin.setPadding(dp(12), dp(3), dp(12), dp(3));
+        tvPin.setOnClickListener(v -> toggleKeepOpen());
+        updatePinUi();
+        LinearLayout.LayoutParams pinLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        pinLp.topMargin = dp(2);
+        pinRow.addView(tvPin, pinLp);
+        panel.addView(pinRow, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
         // touchable (history scrolls, buttons work) but touches outside the panel still reach the app below
         panelLp = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -1585,7 +1636,7 @@ public class BubbleService extends Service {
         panel.setOnTouchListener((v, ev) -> {
             if (ev.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
                 boolean cardOpen = wordCard != null && wordCard.getVisibility() == View.VISIBLE;
-                if (!cardOpen && !panelDragging && panelShown && !fadingOut && !somethingPlaying(SystemClock.elapsedRealtime())) {
+                if (!cardOpen && !keepOpen && !panelDragging && panelShown && !fadingOut && !somethingPlaying(SystemClock.elapsedRealtime())) {
                     main.post(this::fadeOutPanelForIdle);
                 }
                 return false;
