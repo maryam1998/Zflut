@@ -990,7 +990,7 @@ class _FloatingBubbleSectionState
     extends ConsumerState<_FloatingBubbleSection> {
   static const String _kKindKey = 'phrasebook-bubble-kind';
   static const String _kSrcKey = 'phrasebook-live-src-lang';
-  static const String _kSrcMigKey = 'phrasebook-live-src-auto-v2';
+  static const String _kSrcMigKey = 'phrasebook-live-src-explicit-v3';
   static const String _kScreenInfoKey = 'phrasebook-screenrec-info-seen';
   static const String _kDispKey = 'phrasebook-live-display-mode';
   static const String _kColorKey = 'phrasebook-bubble-panel-color';
@@ -1026,18 +1026,19 @@ class _FloatingBubbleSectionState
     final sp = ref.read(sharedPrefsProvider);
     final kind = sp.getString(_kKindKey);
     var src = sp.getString(_kSrcKey);
-    // 🌐 «زبان صدا» پیش‌فرض = تشخیص خودکار؛ مقدارِ قدیمیِ «en» (پیش‌فرضِ قبلی) یک‌بار به خودکار تبدیل می‌شود
+    // 🌐 مثل Hope: «زبان صدا» پیش‌فرض یک زبانِ صریح است (en). «auto» موتورِ Whisper لازم دارد و کندتر/نادرست‌تر است؛
+    //    پس مقدارِ «auto»ِ ذخیره‌شده‌ی نسخه‌های قبلی یک‌بار به «en» برمی‌گردد (بعد از آن کاربر خودش می‌تواند auto بگذارد).
     if (sp.getBool(_kSrcMigKey) != true) {
       sp.setBool(_kSrcMigKey, true);
-      if (src == null || src == 'en') {
-        src = 'auto';
-        sp.setString(_kSrcKey, 'auto');
+      if (src == null || src == 'auto') {
+        src = 'en';
+        sp.setString(_kSrcKey, 'en');
       }
     }
     final disp = sp.getString(_kDispKey);
     final color = sp.getString(_kColorKey);
     _kind = _kinds.contains(kind) ? kind! : 'both';
-    _src = (src == 'auto' || _srcLangs.containsKey(src)) ? src! : 'auto';
+    _src = (src == 'auto' || _srcLangs.containsKey(src)) ? src! : 'en';
     _disp = _displayModes.contains(disp) ? disp! : 'both';
     _color = (color != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color))
         ? color.toUpperCase()

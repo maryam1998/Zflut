@@ -63,7 +63,7 @@ final class YtCaptionFetcher {
 
     private static final MediaType JSON_MT = MediaType.get("application/json; charset=utf-8");
     private static final long OVERALL_MS = 26000;
-    private static final int NOCAP_VOTES = 3;
+    private static final int NOCAP_VOTES = 2;
     private static final long WEBVIEW_MS = 22000;
 
     // ═════════════════════════ زیرنویس ═════════════════════════
