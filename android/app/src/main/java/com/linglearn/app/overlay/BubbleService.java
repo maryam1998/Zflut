@@ -1330,6 +1330,8 @@ public class BubbleService extends Service {
         long mediaPosMs = -1;                                              // موقعیتِ پلیرِ بیرونی (ms) وقتی این جمله شروع شد؛ -1 = نامشخص
         TextView srcSpeakBtn;                                              // 🔊 کنار متن اصلی
         TextView ytReplayBtn;                                              // ↺ پخش دوباره‌ی جمله با صدای پلیر یوتیوب
+        long aStart = -1;                                                  // 🎙 شروعِ صدای این جمله در بافرِ ضبط (sample)
+        short[] pcm;                                                       // 🎙 صدای خودِ گوینده برای ↺ (16kHz mono)
         final HashMap<String, TextView> rowSpeakBtn = new HashMap<>();     // 🔊 کنار ترجمه‌ی هر زبان
     }
 
@@ -1765,6 +1767,7 @@ public class BubbleService extends Service {
 
     private void clearHistory() {
         stopPanelSpeech();
+        stopStoredReplay();
         closeWordCard();
         history.clear();
         typing.clear();
@@ -1943,6 +1946,8 @@ public class BubbleService extends Service {
     private void updateRepeatButton() {
         for (Entry en : ytEntries.values())
             if (en != null && en.ytReplayBtn != null) en.ytReplayBtn.setText(replayLabel());
+        for (Entry en : history)
+            if (en != null && en.pcm != null && en.ytReplayBtn != null) en.ytReplayBtn.setText(replayLabel());
         if (tvRepeat == null) return;
         tvRepeat.setText(repeatSetting == 0 ? "\uD83D\uDD01"
                 : repeatSetting == REPEAT_INF ? "\uD83D\uDD01\u221E" : "\uD83D\uDD01" + repeatSetting);
@@ -1976,6 +1981,7 @@ public class BubbleService extends Service {
     private void toggleSpeak(final TextView b, final String text, final String lang, final TextView hl,
                              final Entry ent, final String kind) {
         if (text == null || text.trim().isEmpty() || text.equals("…")) return;
+        if (replayingEntry != null) stopStoredReplay();
         if (fullLoop) stopFullText();
         if (speakingBtn == b) { stopPanelSpeech(); return; }
         if (speakTv != null) clearSpeakHighlight();
@@ -2069,6 +2075,7 @@ public class BubbleService extends Service {
             return;
         }
         stopPanelSpeech();                                   // صدای برنامه با صدای یوتیوب قاطی نشود
+        stopStoredReplay();
         int times = repeatSetting == 0 ? 1 : repeatSetting;  // REPEAT_INF = -1 → بی‌نهایت
         if (!yt.replaySentence(e.ytIdx, times))
             showNotice(msg("پلیر یوتیوب در دسترس نیست", "YouTube player not available"));
@@ -2095,6 +2102,81 @@ public class BubbleService extends Service {
         if (r == 1) showNotice(msg("ادامه‌ی پخش", "Playing"));
         else if (r == 0) showNotice(msg("مکث", "Paused"));
         else showNotice(msg("پلیر یوتیوب در دسترس نیست", "YouTube player not available"));
+    }
+
+    // ───────── 🎙 ↺ در ترجمه‌ی زنده: پخشِ صدای خودِ گوینده که موقع ضبط نگه داشته شده ─────────
+
+    private static final int MAX_KEPT_AUDIO = 60;             // صدای حداکثر ۶۰ جمله‌ی آخر نگه داشته می‌شود
+    private long lastAudioEnd = 0;                            // پایانِ صدای آخرین جمله‌ی بسته‌شده (sample)
+    private long partAStart = -1, partAEnd = -1;              // بازه‌ی صدای جمله‌ای که همین الان commit می‌شود
+    private Entry replayingEntry;
+
+    private long asrLagSamples() {
+        return sherpaEngine instanceof WhisperEngine ? (long) SAMPLE_RATE * 30 : (long) (SAMPLE_RATE * 1.3);
+    }
+
+    /** ↺ روی هر جمله: اگر از یوتیوب است با صدای پلیر، وگرنه با صدای ضبط‌شده‌ی خودِ گوینده. */
+    private void replayEntry(Entry e) {
+        if (e == null) return;
+        if (e.ytIdx >= 0 && yt != null && yt.isActive()) { replayInYoutube(e); return; }
+        replayStored(e);
+    }
+
+    private void replayStored(final Entry e) {
+        if (e.pcm == null) return;
+        if (replayingEntry == e) {
+            stopStoredReplay();
+            showNotice(msg("تکرار متوقف شد", "Repeat stopped"));
+            return;
+        }
+        stopPanelSpeech();                                   // صدای TTS با صدای ضبط‌شده قاطی نشود
+        stopStoredReplay();
+        final int times = repeatSetting == 0 ? 1 : repeatSetting;   // REPEAT_INF = -1 → بی‌نهایت
+        replayingEntry = e;
+        setReplayActive(e, true);
+        SentenceAudio.play(e.pcm, times, () -> main.post(() -> {
+            if (replayingEntry == e) { replayingEntry = null; setReplayActive(e, false); }
+        }));
+    }
+
+    private void stopStoredReplay() {
+        SentenceAudio.stop();
+        Entry r = replayingEntry;
+        replayingEntry = null;
+        if (r != null) setReplayActive(r, false);
+    }
+
+    private void setReplayActive(Entry e, boolean on) {
+        if (e != null && e.ytReplayBtn != null) e.ytReplayBtn.setTextColor(on ? COLOR_GOLD : Color.WHITE);
+    }
+
+    /** صدای جمله‌ی بسته‌شده را از بافرِ ضبط جدا می‌کند و دکمه‌ی ↺ را برایش نشان می‌دهد. */
+    private void attachAudio(Entry e, long from, long to) {
+        if (e == null || e.ytIdx >= 0) return;
+        if (from < 0) from = e.aStart >= 0 ? e.aStart : Math.max(lastAudioEnd, SentenceAudio.now() - 4L * SAMPLE_RATE);
+        if (to < 0) to = SentenceAudio.now();
+        from = Math.max(from, lastAudioEnd);                  // صدای جمله‌ی قبلی توی این یکی نیاید
+        if (to > lastAudioEnd) lastAudioEnd = to;
+        short[] a = SentenceAudio.extract(from, to);
+        if (a == null) return;
+        e.pcm = a;
+        if (e.ytReplayBtn != null) {
+            e.ytReplayBtn.setText(replayLabel());
+            e.ytReplayBtn.setVisibility(View.VISIBLE);
+        }
+        trimStoredAudio();
+    }
+
+    private void trimStoredAudio() {
+        int kept = 0;
+        for (int i = history.size() - 1; i >= 0; i--) {
+            Entry h = history.get(i);
+            if (h.pcm == null) continue;
+            if (++kept > MAX_KEPT_AUDIO && h != replayingEntry) {
+                h.pcm = null;
+                if (h.ytIdx < 0 && h.ytReplayBtn != null) h.ytReplayBtn.setVisibility(View.GONE);
+            }
+        }
     }
 
     private void stopPanelSpeech() {
@@ -3245,7 +3327,7 @@ public class BubbleService extends Service {
         replay.setMinHeight(dp(40));
         replay.setPadding(dp(4), dp(4), dp(4), dp(4));
         replay.setVisibility(View.GONE);                    // فقط در لیستِ زیرنویسِ یوتیوب دیده می‌شود
-        replay.setOnClickListener(v -> replayInYoutube(e));
+        replay.setOnClickListener(v -> replayEntry(e));
         e.ytReplayBtn = replay;
         e.srcRow.addView(replay, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -3552,6 +3634,7 @@ public class BubbleService extends Service {
 
     private Entry newLiveEntry() {
         Entry e = newEntry();
+        e.aStart = Math.max(lastAudioEnd, SentenceAudio.now() - asrLagSamples());   // 🎙 آغازِ صدای این جمله (با کسرِ تأخیرِ تشخیص)
         e.shownChars = 0;                 // متنِ زنده حرف‌به‌حرف تایپ می‌شود
         try {
             YtMedia.Now n = YtMedia.nowPlaying(this);
@@ -3700,9 +3783,36 @@ public class BubbleService extends Service {
         return out;
     }
 
-    private void commitSentences(String text) {
+    private void commitSentences(String text) { commitSentences(text, -1f); }
+
+    /**
+     * liveFrac در (0,1): گوینده هنوز ادامه می‌دهد و فقط این کسر از گفتارِ تشخیص‌داده‌شده بسته می‌شود؛
+     * وگرنه همه‌ی صدا تا همین لحظه مالِ این متن است. صدا بینِ جمله‌ها به نسبتِ تعدادِ کلمه‌ها تقسیم می‌شود.
+     */
+    private void commitSentences(String text, float liveFrac) {
+        final List<String> parts = new ArrayList<>();
+        int totalWords = 0;
         for (String part : splitSentences(text)) {
-            if (!part.trim().isEmpty()) commitSentence(part);
+            if (part.trim().isEmpty()) continue;
+            parts.add(part);
+            totalWords += Math.max(1, words(part).length);
+        }
+        if (parts.isEmpty()) return;
+        final long now = SentenceAudio.now();
+        final Entry cur = live;
+        final long s = (cur != null && cur.aStart >= 0) ? cur.aStart
+                : Math.max(lastAudioEnd, now - 4L * SAMPLE_RATE);
+        long en = now;
+        if (liveFrac > 0f && liveFrac < 1f)
+            en = s + (long) (Math.max(0, now - asrLagSamples() - s) * (double) liveFrac);
+        int before = 0;
+        for (String part : parts) {
+            int w = Math.max(1, words(part).length);
+            partAStart = s + (long) ((en - s) * (before / (double) totalWords));
+            partAEnd = s + (long) ((en - s) * ((before + w) / (double) totalWords));
+            before += w;
+            commitSentence(part);
+            partAStart = partAEnd = -1;
         }
     }
 
@@ -3727,7 +3837,7 @@ public class BubbleService extends Service {
         final String head = joinWords(w, 0, end);
         final String tail = joinWords(w, end, n);
         consumedWords += end;
-        commitSentences(head);                                // live = null؛ تایمرها هم پاک می‌شوند
+        commitSentences(head, end / (float) n);                                // live = null؛ تایمرها هم پاک می‌شوند
         live = newLiveEntry();
         live.src = tail;
         pendingHyp = tail;
@@ -4049,6 +4159,7 @@ public class BubbleService extends Service {
         final Entry e = live != null ? live : newLiveEntry();
         live = null;                      // this sentence is finished; the next partial starts a new line
         e.src = text;
+        attachAudio(e, partAStart, partAEnd);             // 🎙 صدای خودِ گوینده برای ↺
 
         final List<String> ts = activeTargets();
         if (ts.isEmpty()) { renderEntry(e); afterChange(); return; }
@@ -4753,6 +4864,8 @@ public class BubbleService extends Service {
         partialBusy = false;
         shownPartialSeq = partialSeq;
         lastPartialSrc = ""; live = null; consumedWords = 0;
+        SentenceAudio.reset();
+        lastAudioEnd = SentenceAudio.now();
         cancelLivePending();
         speechHostRestarts = 0;
         gotAsrText = false; voicedSinceText = 0;
@@ -4914,6 +5027,7 @@ public class BubbleService extends Service {
                 if (n < 0) break;
                 if (n == 0) continue;
                 int outBytes = toPcm16k(in, n, rate, out);
+                SentenceAudio.write(out, outBytes);                 // 🎙 برای ↺ (صدای خودِ گوینده)
                 final PcmSink se = sherpaEngine;
                 if (se != null) {
                     se.accept(out, outBytes);
@@ -5125,6 +5239,7 @@ public class BubbleService extends Service {
         if (s == null || !s.micEngine || s.live == null) return;
         s.flushPartial(true);
         s.cancelLivePending();
+        s.attachAudio(s.live, -1, -1);
         s.live = null;
         s.consumedWords = 0;
     }
@@ -5407,6 +5522,7 @@ public class BubbleService extends Service {
         ytWatchOn = false;
 
         recording = false;
+        try { SentenceAudio.stop(); } catch (Throwable ignored) {}
         if (micEngine) {
             micEngine = false;
             try { SpeechHostActivity.finishIfRunning(); } catch (Throwable ignored) {}
