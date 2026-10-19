@@ -79,9 +79,20 @@ class NativeSync with WidgetsBindingObserver {
     try {
       final prefs = _ref.read(appPrefsProvider);
       final sel = _ref.read(languageSelectionProvider);
-      var src = 'en';
+      // 🌐 پیش‌فرضِ «زبان صدا» = تشخیص خودکار؛ «en»ِ قدیمی (پیش‌فرضِ قبلی) یک‌بار به خودکار تبدیل می‌شود
+      var src = 'auto';
       try {
-        final s = _ref.read(sharedPrefsProvider).getString('phrasebook-live-src-lang');
+        final sp = _ref.read(sharedPrefsProvider);
+        const key = 'phrasebook-live-src-lang';
+        const mig = 'phrasebook-live-src-auto-v2';
+        var s = sp.getString(key);
+        if (sp.getBool(mig) != true) {
+          sp.setBool(mig, true);
+          if (s == null || s == 'en') {
+            s = 'auto';
+            sp.setString(key, 'auto');
+          }
+        }
         if (s != null && s.isNotEmpty) src = s;
       } catch (_) {}
       final targets = sel.targets.isNotEmpty

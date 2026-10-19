@@ -990,6 +990,8 @@ class _FloatingBubbleSectionState
     extends ConsumerState<_FloatingBubbleSection> {
   static const String _kKindKey = 'phrasebook-bubble-kind';
   static const String _kSrcKey = 'phrasebook-live-src-lang';
+  static const String _kSrcMigKey = 'phrasebook-live-src-auto-v2';
+  static const String _kScreenInfoKey = 'phrasebook-screenrec-info-seen';
   static const String _kDispKey = 'phrasebook-live-display-mode';
   static const String _kColorKey = 'phrasebook-bubble-panel-color';
 
@@ -1023,11 +1025,19 @@ class _FloatingBubbleSectionState
     super.initState();
     final sp = ref.read(sharedPrefsProvider);
     final kind = sp.getString(_kKindKey);
-    final src = sp.getString(_kSrcKey);
+    var src = sp.getString(_kSrcKey);
+    // 🌐 «زبان صدا» پیش‌فرض = تشخیص خودکار؛ مقدارِ قدیمیِ «en» (پیش‌فرضِ قبلی) یک‌بار به خودکار تبدیل می‌شود
+    if (sp.getBool(_kSrcMigKey) != true) {
+      sp.setBool(_kSrcMigKey, true);
+      if (src == null || src == 'en') {
+        src = 'auto';
+        sp.setString(_kSrcKey, 'auto');
+      }
+    }
     final disp = sp.getString(_kDispKey);
     final color = sp.getString(_kColorKey);
     _kind = _kinds.contains(kind) ? kind! : 'both';
-    _src = (src == 'auto' || _srcLangs.containsKey(src)) ? src! : 'en';
+    _src = (src == 'auto' || _srcLangs.containsKey(src)) ? src! : 'auto';
     _disp = _displayModes.contains(disp) ? disp! : 'both';
     _color = (color != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color))
         ? color.toUpperCase()
@@ -1131,6 +1141,33 @@ class _FloatingBubbleSectionState
     return false;
   }
 
+  /// توضیحِ شفافِ «ضبط صفحه» (MediaProjection) پیش از اولین ذره‌بین / ترجمه‌ی زنده؛ فقط یک‌بار.
+  Future<bool> _ensureScreenRecordInfo() async {
+    final sp = ref.read(sharedPrefsProvider);
+    if (sp.getBool(_kScreenInfoKey) == true) return true;
+    if (!mounted) return false;
+    final ml = MaterialLocalizations.of(context);
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => _dirDialog(ctx, AlertDialog(
+        title: Text(context.l10n.st_screenrec_title),
+        content: SingleChildScrollView(
+            child: Text(context.l10n.st_screenrec_body)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(ml.cancelButtonLabel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(ml.continueButtonLabel)),
+        ],
+      )),
+    );
+    if (go != true) return false;
+    await sp.setBool(_kScreenInfoKey, true);
+    return true;
+  }
+
   Future<void> _toggleBubble() async {
     if (_busy) return;
     setState(() => _busy = true);
@@ -1140,6 +1177,7 @@ class _FloatingBubbleSectionState
         await notifier.stop();
       } else {
         if (!await _ensureOverlay()) return;
+        if (_kind != 'live' && !await _ensureScreenRecordInfo()) return;
         await ref.read(nativeSyncProvider).pushLangs();
         await _pushOptions();
         await notifier.start(mode: _kind == 'live' ? 'translator' : _kind);
@@ -1160,6 +1198,7 @@ class _FloatingBubbleSectionState
         await notifier.stop();
       } else {
         if (!await _ensureOverlay()) return;
+        if (!await _ensureScreenRecordInfo()) return;
         // ترجمه‌ی زنده فقط آفلاین کار می‌کند: بسته‌ی زبانِ صدا باید روی گوشی باشد.
         if (!await _ensureSpeechPack(
             afterDownload: context.l10n.st_live_download_started)) {
@@ -1263,7 +1302,17 @@ class _FloatingBubbleSectionState
       context: context,
       builder: (ctx) => _dirDialog(ctx, AlertDialog(
         title: Text(context.l10n.st_notif_title),
-        content: Text(context.l10n.settings_notification_access_needed),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(context.l10n.st_notif_trust),
+              const SizedBox(height: 10),
+              Text(context.l10n.settings_notification_access_needed),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),

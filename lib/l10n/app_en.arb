@@ -1463,5 +1463,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "st_screenrec_title": "Screen recording permission",
+  "st_screenrec_body": "To extract text under the magnifier in any app, and to capture the audio that is playing for live translation, we need the “Screen recording” permission.\n\nText extraction and speech recognition run entirely on your phone and nothing from them is sent to servers. Only the translated text is saved, and only you can see your translation history.\n\nWhen you turn the tools off, this permission is cut completely until you turn them on again.",
+  "st_notif_trust": "To keep subtitles and lyrics in sync with the YouTube video or music that is playing, we need to know its current playback time — that is why we ask for this permission. It is used for nothing else, and this part is reviewed by Google Play before every release.\n\nTurning the tools off cuts the permission completely."
 }

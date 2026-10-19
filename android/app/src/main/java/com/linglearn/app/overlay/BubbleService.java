@@ -739,7 +739,7 @@ public class BubbleService extends Service {
         // 🌐 «تشخیص خودکار»: زبانی که از روی متنِ گفتار تشخیص داده شده (تا وقتی چیزی نیامده: پیش‌فرضِ قبلی)
         final String d = detectedSrc;
         if (d != null) return d;
-        return "en".equals(targetLang()) ? "auto" : "en";
+        return "auto";           // هنوز تشخیص داده نشده: «انگلیسی» فرض نکن (گفتارِ اسپانیایی/… اشتباه ترجمه می‌شد)
     }
 
     /** زبانِ مخصوصِ «انتخابِ موتورِ تشخیص گفتار»: در حالتِ خودکار همیشه "auto" (Whisperِ چندزبانه)، نه زبانِ تشخیص‌داده‌شده. */
@@ -770,6 +770,7 @@ public class BubbleService extends Service {
         detectCand = null;
         detectStreak = 0;
         syncSentenceLang();
+        try { prepareLocalTranslator(); } catch (Throwable ignored) { /* مترجمِ آفلاین فقط پشتیبان است */ }
         final Entry e = live;
         if (e != null) e.srcLang = d;                          // 🔊 و کادرِ لغتِ همین خط با زبانِ درست
     }
@@ -4467,7 +4468,10 @@ public class BubbleService extends Service {
             ytAutoOffKey = ytWatchKey;           // همین ویدیو دوباره امتحان نشود
             final boolean resume = ytAutoWasRecording;
             ytAutoWasRecording = false;
-            stopYoutube(false);                  // خودکار بود → بی‌سروصدا خاموش
+            stopYoutube(false);                  // خودکار بود → خاموش
+            main.postDelayed(() -> showNotice(msg(                 // قبلاً بی‌صدا بسته می‌شد و کاربر نمی‌فهمید چرا زیرنویس نیامده
+                    "زیرنویسِ یوتیوب برای این ویدیو پیدا نشد",
+                    "No YouTube captions found for this video")), 1500);
             if (resume && !recording) {          // ترجمه‌ی زنده‌ی صدا که قبل از روشن‌شدنِ خودکار در جریان بود، برگردد
                 main.post(() -> { try { toggleRecording(); } catch (Throwable ignored) {} });
             }
@@ -4593,7 +4597,7 @@ public class BubbleService extends Service {
     }
 
     private String anyWhisperModel() {
-        for (String m : new String[]{"base", "small", "tiny"}) {
+        for (String m : new String[]{"small", "base", "tiny"}) {      // مدلِ بزرگ‌تر = تشخیصِ زبانِ دقیق‌تر
             if (WhisperModelManager.getModelDir(this, m) != null) return m;
         }
         return null;

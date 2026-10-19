@@ -63,6 +63,7 @@ final class YtCaptionFetcher {
 
     private static final MediaType JSON_MT = MediaType.get("application/json; charset=utf-8");
     private static final long OVERALL_MS = 26000;
+    private static final int NOCAP_VOTES = 3;
     private static final long WEBVIEW_MS = 22000;
 
     // ═════════════════════════ زیرنویس ═════════════════════════
@@ -100,7 +101,7 @@ final class YtCaptionFetcher {
                     Throwable t = e.getCause();
                     if (t instanceof Fail) {
                         reasons.add(t.getMessage());
-                        if (((Fail) t).noCaptions && ++noCapVotes >= 2) break;   // دو منبع می‌گویند زیرنویس ندارد
+                        if (((Fail) t).noCaptions && ++noCapVotes >= NOCAP_VOTES) break;   // سه منبع می‌گویند زیرنویس ندارد (کلاینت‌های API گاهی اشتباه «بدونِ ترک» می‌گویند؛ مرورگرِ واقعی هم باید نظر بدهد)
                     } else {
                         reasons.add(t == null ? "error" : t.getClass().getSimpleName() + ": " + brief(t.getMessage(), 60));
                     }
@@ -113,9 +114,9 @@ final class YtCaptionFetcher {
         }
         String all = join(reasons);
         boolean blocked = all.contains("LOGIN_REQUIRED") || all.contains("not a bot") || all.contains("HTTP 429") || all.contains("HTTP 403");
-        throw new Fail(blocked && noCapVotes < 2
+        throw new Fail(blocked && noCapVotes < NOCAP_VOTES
                 ? "یوتیوب این IP را مسدود کرده؛ VPN/شبکه را عوض کن (YouTube bot-check) · " + brief(all, 120)
-                : all, noCapVotes >= 2);
+                : all, noCapVotes >= NOCAP_VOTES);
     }
 
     private static <T> void submit(ExecutorCompletionService<T> ecs, final long delayMs, final Callable<T> job) {
