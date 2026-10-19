@@ -282,6 +282,72 @@ public class BubbleService extends Service {
         return s != null && s.yt != null && s.yt.isActive();
     }
 
+    // ───────── 👀 روشن‌شدنِ خودکارِ زیرنویسِ یوتیوب ─────────
+    // تا حباب بالاست، sessionِ اپ یوتیوب زیر نظر است؛ به‌محضِ پخشِ یک ویدیو، حالتِ یوتیوب خودش روشن می‌شود
+    // (کلِ زیرنویس + ترجمه یک‌جا در کادر، همه کم‌رنگ و جمله‌ی در حالِ پخش پررنگ). اگر ویدیو زیرنویس نداشته باشد
+    // بی‌سروصدا خاموش می‌شود و ترجمه‌ی زنده‌ی معمولی دست‌نخورده می‌ماند. اگر کاربر خودش ▶ را خاموش کند،
+    // برای همان ویدیو دوباره خودکار روشن نمی‌شود. (نیازمندِ «دسترسی به اعلان‌ها»؛ بدونِ آن فقط دستی کار می‌کند.)
+    private YtMedia.Tracker ytWatch;
+    private boolean ytWatchOn = false;
+    private boolean ytAutoStarted = false;   // این بار خودکار روشن شد (نه با دکمه)
+    private boolean ytAutoWasRecording = false;   // خودکار که روشن شد، ترجمه‌ی زنده‌ی صدا (STT) در حالِ ضبط بود؟
+    private String ytWatchKey = "";          // کلیدِ ویدیوی فعلیِ یوتیوب
+    private String ytAutoOffKey = "";        // ویدیویی که کاربر خاموشش کرده / زیرنویس نداشت
+
+    private boolean ytAutoPref() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("ytAuto", true);
+    }
+
+    private static String ytKeyOf(YtMedia.State s) {
+        if (s == null || !s.hasSession) return "";
+        return s.videoId != null ? s.videoId : "t:" + s.title + "|" + (s.durationMs / 1000);
+    }
+
+    private final Runnable ytWatchTick = new Runnable() {
+        @Override public void run() {
+            if (!running) return;
+            if (!ytWatchOn && YtMedia.hasAccess(BubbleService.this)) {
+                try {
+                    if (ytWatch == null) ytWatch = new YtMedia.Tracker(BubbleService.this, BubbleService.this::onYtWatch);
+                    ytWatchOn = ytWatch.start();
+                } catch (Throwable t) { Log.w(TAG, "yt watcher start failed", t); }
+            }
+            main.postDelayed(this, 3000);      // دسترسیِ اعلان بعداً هم که داده شد، خودش وصل می‌شود
+        }
+    };
+
+    private void onYtWatch(YtMedia.State s) {
+        if (!running) return;
+        if (s == null || !s.hasSession) {          // یوتیوب بسته شد / sessionی نیست
+            ytWatchKey = "";
+            ytAutoOffKey = "";
+            main.removeCallbacks(ytAutoRunnable);
+            return;
+        }
+        final String key = ytKeyOf(s);
+        ytWatchKey = key;
+        if (yt != null && yt.isActive()) return;
+        if (!s.playing || !ytAutoPref()) { main.removeCallbacks(ytAutoRunnable); return; }
+        if (s.videoId == null && s.title.isEmpty()) return;
+        if (key.equals(ytAutoOffKey)) return;
+        main.removeCallbacks(ytAutoRunnable);
+        main.postDelayed(ytAutoRunnable, 900);     // چند لحظه صبر: تبلیغ/وضعیتِ گذرا نباشد
+    }
+
+    private final Runnable ytAutoRunnable = new Runnable() {
+        @Override public void run() {
+            if (!running || wm == null || bubble == null) return;
+            if (yt != null && yt.isActive()) return;
+            YtMedia.State s = ytWatch == null ? null : ytWatch.snapshot();
+            if (s == null || !s.hasSession || !s.playing) return;
+            if (ytKeyOf(s).equals(ytAutoOffKey)) return;
+            ytAutoWasRecording = recording;
+            ytAutoStarted = true;
+            startYoutube(false);
+            if (yt == null || !yt.isActive()) ytAutoStarted = false;
+        }
+    };
+
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService net = Executors.newSingleThreadExecutor();
     private final ExecutorService netTr = Executors.newFixedThreadPool(3);
@@ -543,6 +609,8 @@ public class BubbleService extends Service {
             addBubbleIfNeeded();
             prepareLocalTranslator();
             if (pendingYt) { pendingYt = false; main.post(() -> startYoutube(true)); }
+            main.removeCallbacks(ytWatchTick);
+            main.post(ytWatchTick);               // 👀 تشخیصِ خودکارِ ویدیوی یوتیوب
         }
         return START_NOT_STICKY;
     }
@@ -4227,6 +4295,8 @@ public class BubbleService extends Service {
     private void stopYoutube(boolean notify) {
         YtSubtitles engine = yt;
         yt = null;
+        ytAutoStarted = false;
+        if (notify && engine != null) ytAutoOffKey = ytWatchKey;   // کاربر خودش خاموش کرد → برای همین ویدیو دوباره خودکار روشن نشود
         ytFullMode = false;
         stopFullText();
         ytEntries.clear();
@@ -4291,6 +4361,17 @@ public class BubbleService extends Service {
             e.trSrc.put(lang, e.src);
             renderEntry(e);
             queueYtRefresh();
+        }
+
+        @Override public void noCaptions() {
+            if (!ytAutoStarted) return;          // با دکمه روشن شده بود: پیامِ «زیرنویس ندارد» نشان داده شود
+            ytAutoOffKey = ytWatchKey;           // همین ویدیو دوباره امتحان نشود
+            final boolean resume = ytAutoWasRecording;
+            ytAutoWasRecording = false;
+            stopYoutube(false);                  // خودکار بود → بی‌سروصدا خاموش
+            if (resume && !recording) {          // ترجمه‌ی زنده‌ی صدا که قبل از روشن‌شدنِ خودکار در جریان بود، برگردد
+                main.post(() -> { try { toggleRecording(); } catch (Throwable ignored) {} });
+            }
         }
 
         @Override public void videoChanged() {
@@ -5217,6 +5298,8 @@ public class BubbleService extends Service {
         main.removeCallbacksAndMessages(null);
 
         try { stopYoutube(false); } catch (Throwable ignored) {}
+        if (ytWatch != null) { try { ytWatch.stop(); } catch (Throwable ignored) {} ytWatch = null; }
+        ytWatchOn = false;
 
         recording = false;
         if (micEngine) {

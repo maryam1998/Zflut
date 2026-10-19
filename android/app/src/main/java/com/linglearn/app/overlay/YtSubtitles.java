@@ -83,6 +83,8 @@ final class YtSubtitles {
         void updateSentence(int sentIdx, String lang, String text);
         /** ویدیوی دیگری شروع شد: تاریخچه‌ی ویدیوی قبلی باید پاک شود. */
         void videoChanged();
+        /** این ویدیو زیرنویس ندارد. (حالتِ خودکار: میزبان می‌تواند حالتِ یوتیوب را بی‌سروصدا خاموش کند.) */
+        default void noCaptions() {}
     }
 
     static final class Cue {
@@ -271,6 +273,10 @@ final class YtSubtitles {
         active = true;
         YtMedia.setActive(tracker);
         main.post(tick);
+        // 🔧 tracker.start() همان لحظه وضعیتِ فعلیِ یوتیوب را publish می‌کند، ولی آن‌موقع active هنوز false بود
+        //    و onState آن را دور می‌ریخت؛ اگر ویدیو از قبل در حالِ پخش بود تا اولین play/pause/seek هیچ زیرنویسی
+        //    نمی‌آمد. حالا وضعیتِ فعلی را دوباره می‌دهیم.
+        onState(tracker.snapshot());
         return true;
     }
 
@@ -411,6 +417,10 @@ final class YtSubtitles {
             main.post(() -> {
                 if (g != gen || !active) return;
                 if (fin == null) {
+                    if (fNoCaps) {
+                        host.noCaptions();          // حالتِ خودکار: میزبان ممکن است همین‌جا حالتِ یوتیوب را ببندد
+                        if (!active) return;
+                    }
                     host.notice(fNoCaps
                             ? msg("این ویدیو زیرنویس ندارد", "This video has no captions")
                             : msg("زیرنویس نیامد: ", "Captions failed: ") + ferr);

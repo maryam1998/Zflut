@@ -1243,17 +1243,16 @@ class _FloatingBubbleSectionState
     return false;
   }
 
-  /// ▶ زیرنویس زنده‌ی یوتیوب — ترتیبِ Hope: مجوزِ نمایش روی برنامه‌ها ← دسترسی به اعلان‌ها ←
-  /// بسته‌ی آفلاین (بدون مسدود کردن) ← حباب (با زبانِ صدا و همه‌ی زبان‌های مقصد) ← حالت نمایش ← ytSetEnabled.
+  /// ▶ زیرنویس زنده‌ی یوتیوب: مجوزِ نمایش روی برنامه‌ها ← دسترسی به اعلان‌ها ← حباب ← ytSetEnabled.
+  /// زیرنویسِ یوتیوب به بسته‌ی تشخیصِ گفتار (STT) نیازی ندارد؛ پس هیچ پرسش/دانلودی جلوی آن گرفته نمی‌شود
+  /// و دانلودِ بسته‌ها (در تنظیمات) هم‌زمان با پخشِ یوتیوب آزادانه ادامه دارد.
+  /// بعد از اولین بار، با باز بودنِ حباب هر ویدیوی یوتیوب خودکار شناسایی و زیرنویسش باز می‌شود.
   Future<void> _startYoutube() async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
       if (!await _ensureOverlay()) return;
       if (!await _ensureNotificationAccess()) return;
-      // نتیجه نادیده گرفته می‌شود (مثل Hope): زیرنویسِ یوتیوب خودش بسته نمی‌خواهد، فقط ترجمه‌ی زنده می‌خواهد.
-      await _ensureSpeechPack(
-          afterDownload: context.l10n.st_yt_download_started);
       await ref.read(nativeSyncProvider).pushLangs();
       await _pushOptions();
       if (!ref.read(bubbleProvider).running) {
