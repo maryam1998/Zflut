@@ -50,6 +50,8 @@ class SpeechController extends StateNotifier<SpeechState> {
     _initLocalTts();
     // فهرست صداها پیش از اولین تپ در پس‌زمینه گرم شود (خوانشِ ترجمه‌ها تأخیر نداشته باشد)
     unawaited(_warmVoices());
+    // ⚡ مدل‌های دانلودیِ Piper همان اولِ کار لود و گرم شوند (اولین خوانش بی‌تأخیر)
+    unawaited(NativeTtsBridge.preload());
   }
 
   final String? Function(String lang)? _voicePref;
@@ -500,6 +502,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     required int idx,
     required String text,
     required int myGen,
+    void Function()? onStarted,
   }) async {
     try {
       final id = 'f${++_utteranceSeq}';
@@ -520,6 +523,11 @@ class SpeechController extends StateNotifier<SpeechState> {
       final started = await speakFn(id);
       if (myGen != _generation) return false;
       if (!started) return false;
+      if (onStarted != null) {
+        try {
+          onStarted();
+        } catch (_) {}
+      }
 
       final finished = await waiter.future.timeout(
         Duration(seconds: 30 + text.length ~/ 10),
@@ -543,7 +551,17 @@ class SpeechController extends StateNotifier<SpeechState> {
       idx: idx,
       text: text,
       myGen: myGen,
+      // جمله‌ی بعدی را همین حین که این یکی پخش می‌شود آماده کن (بعد از شروعِ پخش، تا خوانشِ فعلی کند نشود)
+      onStarted: () => _prefetchNext(idx, code),
     );
+  }
+
+  void _prefetchNext(int idx, String code) {
+    final n = idx + 1;
+    if (n >= _chunks.length) return;
+    final t = SentenceSplitter.sanitize(_chunks[n].text);
+    if (t.isEmpty || !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(t)) return;
+    unawaited(NativeTtsBridge.prefetch(t, code, state.rate));
   }
 
   Future<bool> _playSystemTts(int idx, String text, String code, int myGen) {

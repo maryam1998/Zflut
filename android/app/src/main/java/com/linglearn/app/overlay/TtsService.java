@@ -115,12 +115,25 @@ public class TtsService extends Service {
                 case MSG_PREFETCH: {
                     String text = b.getString("text", "");
                     String lang = b.getString("lang", "en");
-                    float speed = b.getFloat("speed", 1.0f);
-                    TtsEngine e = engines.get(lang);
-                    if (e != null && !e.isReleased()) {
-                        e.plain = b.getBoolean("plain", false);
-                        e.prefetch(text, speed);
-                    }
+                    final float speed = b.getFloat("speed", 1.0f);
+                    final boolean plainPf = b.getBoolean("plain", false);
+                    final int seqPf = speakSeq.get();
+                    // متنِ دوزبانه → هر تکه روی موتورِ زبانِ خودش (دقیقاً همون تکه‌بندیِ موقعِ پخش، تا کش بخوره)
+                    final java.util.List<TtsSegmenter.Seg> segsPf = TtsSegmenter.split(text, lang);
+                    try {
+                        loader.execute(() -> {
+                            for (TtsSegmenter.Seg s : segsPf) {
+                                try {
+                                    if (seqPf != speakSeq.get()) return;   // بینِ راه speak/stop ی جدید اومد
+                                    TtsEngine e = obtainEngine(s.lang, false);
+                                    if (e != null && !e.isReleased()) {
+                                        e.plain = plainPf;
+                                        e.prefetch(s.text, speed);
+                                    }
+                                } catch (Throwable ignored) {}
+                            }
+                        });
+                    } catch (Throwable ignored) {}
                     return true;
                 }
                 case MSG_PRELOAD: {
@@ -160,24 +173,77 @@ public class TtsService extends Service {
         }
     }
 
+    /**
+     * متن رو به تکه‌های تک‌زبانه می‌شکنه (فارسی ↔ انگلیسی و …) و هر تکه رو با مدلِ «زبانِ خودش» پشتِ‌سرهم می‌خونه
+     * (همون کاری که TTS خودِ گوشی خودکار می‌کنه). اگه مدلِ یکی از زبان‌ها دانلود نشده باشه، قبل از شروع ok=false
+     * برمی‌گرده تا سمتِ اپ به TTS گوشی (که دوزبانه رو بلده) برگرده.
+     */
     private void doSpeak(String text, String lang, float speed, String id, int mySeq, boolean plain) {
         try {
-            TtsEngine engine = obtainEngine(lang, true);
-            if (engine == null) {
-                String err = TtsEngine.lastCreateError;
-                replyDone(lang, id, false, err == null ? "failed to load TTS engine" : err);
-                return;
+            java.util.List<TtsSegmenter.Seg> segs = TtsSegmenter.split(text, lang);
+            for (TtsSegmenter.Seg s : segs) {
+                if (SherpaModelManager.getTtsModelDir(getApplicationContext(), s.lang) == null) {
+                    replyDone(lang, id, false, "no TTS model for " + s.lang);
+                    return;
+                }
             }
-            engine.plain = plain;
-            // وسطِ لود، stop() یا speak ی جدید اومده → این یکی دیگه پخش نشه
-            if (mySeq != speakSeq.get()) {
-                replyDone(lang, id, true, null);
-                return;
-            }
-            engine.speakAsync(text, speed, ok -> replyDone(lang, id, ok, null));
+            speakSegment(segs, 0, lang, speed, id, mySeq, plain);
         } catch (Throwable e) {
             Log.e(TAG, "doSpeak failed", e);
             replyDone(lang, id, false, String.valueOf(e));
+        }
+    }
+
+    private void speakSegment(final java.util.List<TtsSegmenter.Seg> segs, final int i, final String reqLang,
+                              final float speed, final String id, final int mySeq, final boolean plain) {
+        try {
+            // وسطِ لود/پخش، stop() یا speak ی جدید اومده، یا همه‌ی تکه‌ها تموم شد
+            if (mySeq != speakSeq.get() || i >= segs.size()) {
+                replyDone(reqLang, id, true, null);
+                return;
+            }
+            final TtsSegmenter.Seg s = segs.get(i);
+            TtsEngine engine = obtainEngine(s.lang, true);
+            if (engine == null) {
+                String err = TtsEngine.lastCreateError;
+                replyDone(reqLang, id, false, err == null ? "failed to load TTS engine" : err);
+                return;
+            }
+            engine.plain = plain;
+            if (mySeq != speakSeq.get()) {
+                replyDone(reqLang, id, true, null);
+                return;
+            }
+            // صدای موتورهای «زبانِ دیگه» هم‌زمان پخش نشه
+            for (TtsEngine e : engines.values()) {
+                if (e != engine) { try { e.stop(); } catch (Throwable ignored) {} }
+            }
+            // تکه‌ی بعدی (اگه هست) پیش‌پیش ساخته بشه تا بینِ دو زبان وقفه نیفته
+            if (i + 1 < segs.size()) {
+                final TtsSegmenter.Seg nx = segs.get(i + 1);
+                try {
+                    loader.execute(() -> {
+                        try {
+                            if (mySeq != speakSeq.get()) return;
+                            TtsEngine ne = obtainEngine(nx.lang, false);
+                            if (ne != null && !ne.isReleased()) { ne.plain = plain; ne.prefetch(nx.text, speed); }
+                        } catch (Throwable ignored) {}
+                    });
+                } catch (Throwable ignored) {}
+            }
+            engine.speakAsync(s.text, speed, ok -> {
+                if (!ok) { replyDone(reqLang, id, false, null); return; }
+                if (i + 1 >= segs.size()) { replyDone(reqLang, id, true, null); return; }
+                // لودِ موتورِ تکه‌ی بعد ممکنه کند باشه → روی thread ی loader (نه thread ی پلیر)
+                try {
+                    loader.execute(() -> speakSegment(segs, i + 1, reqLang, speed, id, mySeq, plain));
+                } catch (Throwable t) {
+                    replyDone(reqLang, id, false, String.valueOf(t));
+                }
+            });
+        } catch (Throwable e) {
+            Log.e(TAG, "speakSegment failed", e);
+            replyDone(reqLang, id, false, String.valueOf(e));
         }
     }
 

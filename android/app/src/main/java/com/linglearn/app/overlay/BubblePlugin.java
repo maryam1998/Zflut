@@ -722,6 +722,7 @@ public class BubblePlugin extends Plugin {
                     @Override
                     public void onDone(String l) {
                         TtsClient.resetCrash(l);
+                        TtsClient.preload(l);   // ⚡ مدلِ تازه دانلودشده فوراً لود و گرم بشه
                         JSObject ret = new JSObject();
                         ret.put("lang", l);
                         notifyListeners("ttsModelDownloadDone", ret);
@@ -821,15 +822,26 @@ public class BubblePlugin extends Plugin {
         final Context ctx = getContext().getApplicationContext();
         String l = SherpaModelManager.normalize(call.getString("lang"));
         call.resolve();
-        if (l == null) l = SherpaModelManager.normalize(lastTtsLang(ctx));
-        if (l == null) {
+        // بدونِ lang: آخرین زبانِ استفاده‌شده + یک زبانِ دانلودشده‌ی دیگر (متن‌های دوزبانه، مثلاً فارسی+انگلیسی،
+        // هر دو مدل را لازم دارند؛ هر دو از قبل لود می‌شوند تا سوئیچ بینشان بدون تأخیر باشد)
+        java.util.LinkedHashSet<String> want = new java.util.LinkedHashSet<>();
+        if (l != null) want.add(l);
+        else {
+            String last = SherpaModelManager.normalize(lastTtsLang(ctx));
+            if (last != null) want.add(last);
             for (String x : SherpaModelManager.ttsLanguages()) {
-                if (SherpaModelManager.getTtsModelDir(ctx, x) != null) { l = x; break; }
+                if (want.size() >= 2) break;
+                if (SherpaModelManager.getTtsModelDir(ctx, x) != null) want.add(x);
             }
         }
-        if (l == null || SherpaModelManager.getTtsModelDir(ctx, l) == null) return;
-        if (TtsClient.isBlocked(l)) return;
-        TtsClient.preload(l);
+        int n = 0;
+        for (String x : want) {
+            if (n >= 2) break;
+            if (SherpaModelManager.getTtsModelDir(ctx, x) == null) continue;
+            if (TtsClient.isBlocked(x)) continue;
+            TtsClient.preload(x);
+            n++;
+        }
     }
 
     /**

@@ -35,15 +35,44 @@ class NativeTtsBridge {
   }
 
   /// آیا بسته‌ی آفلاینِ (Piper) این زبان نصب شده؟
+  static final Map<String, DateTime> _readyAt = {};
+
   static Future<bool> isModelReady(String lang) async {
     if (!isAvailable) return false;
+    // ⚡ بدون رفت‌وبرگشتِ اضافه به نیتیو برای هر جمله: جوابِ «آماده» ۳۰ ثانیه کش می‌شود
+    final t = _readyAt[lang];
+    if (t != null && DateTime.now().difference(t) < const Duration(seconds: 30)) {
+      return true;
+    }
     try {
       final r = await _b.checkTtsStatus(lang: lang);
-      return r['downloaded'] == true;
+      final ok = r['downloaded'] == true;
+      if (ok) {
+        _readyAt[lang] = DateTime.now();
+      } else {
+        _readyAt.remove(lang);
+      }
+      return ok;
     } catch (e) {
       debugPrint('checkTtsStatus error: $e');
       return false;
     }
+  }
+
+  /// موتورِ Piper را از قبل (پس‌زمینه) لود و گرم می‌کند تا اولین خوانش تأخیر نداشته باشد.
+  static Future<void> preload({String? lang}) async {
+    if (!isAvailable) return;
+    try {
+      await _b.preloadTts(lang: lang);
+    } catch (_) {}
+  }
+
+  /// صدای جمله‌ی بعدی را پیش‌پیش می‌سازد (موقعِ نوبتش بدون تأخیر پخش می‌شود).
+  static Future<void> prefetch(String text, String lang, double rate) async {
+    if (!isAvailable) return;
+    try {
+      await _b.prefetchTts(text: text, lang: lang, speed: rate);
+    } catch (_) {}
   }
 
   /// TTS نیتیو (Piper) — true یعنی خوانش شروع شد (پایانش با [onDone] می‌رسد).
