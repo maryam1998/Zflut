@@ -347,6 +347,27 @@ public class BubblePlugin extends Plugin {
         call.resolve(ret);
     }
 
+    // ytLoginOpen() — صفحه‌ی ورود به یوتیوب (یک‌بار) را باز می‌کند
+    @PluginMethod
+    public void ytLoginOpen(PluginCall call) {
+        try {
+            android.content.Intent i = new android.content.Intent(getContext(), YtLoginActivity.class);
+            i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(i);
+            call.resolve(new JSObject());
+        } catch (Throwable t) {
+            call.reject(String.valueOf(t));
+        }
+    }
+
+    // ytLoginStatus() → { loggedIn }
+    @PluginMethod
+    public void ytLoginStatus(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("loggedIn", YtLoginActivity.isLoggedIn());
+        call.resolve(ret);
+    }
+
     // ytSetEnabled({ enabled, offsetMs? }) — حالت یوتیوبِ حباب رو روشن/خاموش می‌کنه.
     // اگه حباب هنوز بالا نیومده (showBubble تازه صدا زده شده)، درخواست نگه داشته می‌شه.
     @PluginMethod

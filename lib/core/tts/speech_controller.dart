@@ -1000,12 +1000,13 @@ class SpeechController extends StateNotifier<SpeechState> {
     final trimmed = chunk.trimRight();
     final last = trimmed.isEmpty ? '' : trimmed[trimmed.length - 1];
     final base = switch (last) {
-      '!' || '！' => 420,
-      '?' || '؟' || '？' => 400,
-      '…' => 480,
-      _ => 360,
+      '!' || '！' => 220,
+      '?' || '؟' || '？' => 220,
+      '…' => 260,
+      _ => 180,
     };
-    return (base / rate.clamp(0.2, 2.0)).round();
+    // مکثِ طبیعی: با سرعتِ بالا کمی کوتاه‌تر، با سرعتِ پایین حداکثر ۴۰۰ms
+    return (base / rate.clamp(0.5, 2.0)).round().clamp(80, 400).toInt();
   }
 
   @override

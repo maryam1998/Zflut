@@ -300,8 +300,41 @@ final class TtsEngine {
         if (first < 0) return x;                       // کاملاً سکوت: دست نزن
         int from = Math.max(0, first - sr * 30 / 1000);
         int to = Math.min(x.length, last + 1 + sr * 90 / 1000);
-        if (from == 0 && to == x.length) return x;
-        return java.util.Arrays.copyOfRange(x, from, to);
+        float[] y = (from == 0 && to == x.length) ? x : java.util.Arrays.copyOfRange(x, from, to);
+        return capInnerSilence(y, sr);
+    }
+
+    /**
+     * مکثِ «وسطِ» صدا (بعد از ویرگول/نقطه/…) را سقف می‌زند: هر سکوتِ بلندتر از ~۲۵۰ms به ~۲۵۰ms
+     * (با محوِ نرم) کوتاه می‌شود. مدل‌های Piper گاهی بعد از علائمِ نگارشی مکثِ چند‌ثانیه‌ای می‌سازند.
+     */
+    private static float[] capInnerSilence(float[] x, int sr) {
+        final float th = 0.008f;
+        final int maxGap = sr * 250 / 1000;
+        final int minRun = maxGap + sr * 40 / 1000;   // فقط سکوتِ واقعاً بلند دست می‌خورد
+        final int fade = Math.max(1, sr * 8 / 1000);
+        float[] out = new float[x.length];
+        int o = 0, i = 0, n = x.length;
+        while (i < n) {
+            float v = x[i] < 0 ? -x[i] : x[i];
+            if (v > th) { out[o++] = x[i++]; continue; }
+            int j = i;
+            while (j < n) {
+                float w = x[j] < 0 ? -x[j] : x[j];
+                if (w > th) break;
+                j++;
+            }
+            int run = j - i;
+            if (run >= minRun) {
+                int half = maxGap / 2;
+                for (int k = 0; k < half; k++) out[o++] = x[i + k];
+                for (int k = run - half; k < run; k++) out[o++] = x[i + k];
+            } else {
+                for (int k = 0; k < run; k++) out[o++] = x[i + k];
+            }
+            i = j;
+        }
+        return o == n ? x : java.util.Arrays.copyOf(out, o);
     }
 
     /** تولیدِ استریم؛ sink برای هر تکه صدا زده می‌شه. اگه sink false بده، null برمی‌گرده (لغو). */

@@ -756,11 +756,19 @@ public class BubbleService extends Service {
     private void noteDetected(String text) {
         if (srcExplicit()) return;
         if (yt != null && yt.isActive()) return;               // یوتیوب: زبانِ خودِ زیرنویس مشخص است
+        // متنِ خیلی کوتاه/تکراری («az az az») هرگز زبان را تعیین نمی‌کند
+        final String[] dw = text == null ? new String[0] : text.trim().split("\\s+");
+        if (dw.length < 3 || WhisperEngine.looksLikeLoop(text)) return;
         final String d = LangDetect.detect(text);
         if (d == null) return;
         final String cur = detectedSrc;
         if (d.equals(cur)) { detectCand = null; detectStreak = 0; return; }
-        if (cur == null) { applyDetected(d); return; }
+        if (cur == null && dw.length >= 8) { applyDetected(d); return; }       // جمله‌ی بلند: فوری
+        if (cur == null) {                                                      // کوتاه: دو تشخیصِ هم‌نظر
+            if (d.equals(detectCand)) detectStreak++; else { detectCand = d; detectStreak = 1; }
+            if (detectStreak >= 2) applyDetected(d);
+            return;
+        }
         if (d.equals(detectCand)) detectStreak++; else { detectCand = d; detectStreak = 1; }
         if (detectStreak >= 2) applyDetected(d);
     }

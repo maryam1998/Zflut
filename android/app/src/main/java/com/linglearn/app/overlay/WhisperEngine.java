@@ -14,8 +14,11 @@ import com.k2fsa.sherpa.onnx.OfflineWhisperModelConfig;
 
 import java.io.File;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -35,9 +38,13 @@ final class WhisperEngine implements PcmSink {
     private static final String TAG = "WhisperEngine";
     private static final int SR = 16000;
     private static final int FRAME = SR / 10;              // ۱۰۰ms
-    private static final int PARTIAL_MIN = 2 * SR;         // اولین «پیش‌نمایشِ زنده» بعد از ۲ ثانیه صدا
-    private static final long PARTIAL_MIN_GAP_MS = 1500;   // کمترین فاصله‌ی دو پیش‌نمایش
-    private static final long PARTIAL_MAX_GAP_MS = 6000;
+    private static final int PARTIAL_MIN = SR;             // اولین «پیش‌نمایشِ زنده» بعد از ۱ ثانیه صدا
+    private static final long PARTIAL_MIN_GAP_MS = 600;    // کمترین فاصله‌ی دو پیش‌نمایش (متنِ زنده پیوسته‌تر بیاید)
+    private static final long PARTIAL_MAX_GAP_MS = 4000;
+
+    /** زبان‌هایی که برنامه پشتیبانی می‌کند؛ تشخیصِ بیرون از این فهرست (مثلاً az) هذیانِ نویز حساب می‌شود. */
+    private static final Set<String> ALLOWED = new HashSet<>(Arrays.asList(
+            "en", "de", "fr", "es", "it", "pt", "nl", "tr", "fa", "ar", "ur", "ru", "ja", "ko", "zh", "hi"));
     private static final int MIN_WIN_FLOOR = 5 * SR;       // کمترین طولِ پنجره‌ی «نهایی» (پیش‌نمایش‌ها زودتر متن رو نشون می‌دن)
     private static final int MIN_WIN_CEIL = 9 * SR;        // بیشترین مقدارِ «حداقلِ تطبیقی»
     private static final int MAX_WIN = 12 * SR;
@@ -64,10 +71,22 @@ final class WhisperEngine implements PcmSink {
     private double avgDecodeMs = 0;
     private String lastText = "";
 
-    private final OfflineRecognizer recognizer;   // فقط از نخِ worker استفاده می‌شه
+    private final OfflineRecognizer recognizer;   // فقط از نخِ worker استفاده می‌شه (در حالتِ خودکار: تشخیصِ زبان)
     private final Thread worker;
 
-    private WhisperEngine(OfflineRecognizer r) {
+    // ── تشخیصِ خودکارِ زبان (همه‌ی فیلدها فقط از نخِ worker لمس می‌شوند) ──
+    private final Context ctx;
+    private final String model;
+    private final boolean auto;
+    private final Map<String, OfflineRecognizer> pinned = new LinkedHashMap<>();   // زبان → recognizerِ قفل‌شده روی همان زبان
+    private String lockedLang = null;
+    private String candLang = null;
+    private int candStreak = 0;
+
+    private WhisperEngine(Context ctx, String model, boolean auto, OfflineRecognizer r) {
+        this.ctx = ctx;
+        this.model = model;
+        this.auto = auto;
         this.recognizer = r;
         this.worker = new Thread(this::runWorker, "whisper-decode");
         this.worker.setDaemon(true);
@@ -86,38 +105,43 @@ final class WhisperEngine implements PcmSink {
         try {
             String l = SherpaModelManager.normalize(lang);
             if (l == null || "auto".equals(l)) l = "";
-
-            OfflineWhisperModelConfig w = new OfflineWhisperModelConfig();
-            w.setEncoder(new File(dir, WhisperModelManager.encoderFile(model)).getAbsolutePath());
-            w.setDecoder(new File(dir, WhisperModelManager.decoderFile(model)).getAbsolutePath());
-            w.setLanguage(l);
-            w.setTask("transcribe");
-
-            OfflineModelConfig mc = new OfflineModelConfig();
-            mc.setWhisper(w);
-            mc.setTokens(new File(dir, WhisperModelManager.tokensFile(model)).getAbsolutePath());
-            int cores = Runtime.getRuntime().availableProcessors();
-            mc.setNumThreads(Math.max(2, Math.min(4, cores >= 8 ? 4 : cores - 1)));
-            mc.setDebug(false);
-            mc.setProvider("cpu");
-
-            FeatureConfig fc = new FeatureConfig();
-            fc.setSampleRate(SR);
-            fc.setFeatureDim(80);
-
-            OfflineRecognizerConfig cfg = new OfflineRecognizerConfig();
-            cfg.setFeatConfig(fc);
-            cfg.setModelConfig(mc);
-            cfg.setDecodingMethod("greedy_search");
-
-            rec = new OfflineRecognizer(null, cfg);
+            rec = build(ctx, model, l);
             Log.i(TAG, "whisper " + model + " loaded, lang='" + l + "'");
-            return new WhisperEngine(rec);
+            return new WhisperEngine(ctx.getApplicationContext(), model, l.isEmpty(), rec);
         } catch (Throwable e) {
             Log.e(TAG, "cannot load whisper " + model, e);
             if (rec != null) { try { rec.release(); } catch (Throwable ignored) {} }
             return null;
         }
+    }
+
+    /** یک recognizerِ Whisper روی زبانِ داده‌شده می‌سازد ("" = تشخیصِ خودکارِ خودِ Whisper). */
+    private static OfflineRecognizer build(Context ctx, String model, String l) {
+        File dir = WhisperModelManager.getModelDir(ctx, model);
+        if (dir == null) throw new IllegalStateException("whisper model missing: " + model);
+        OfflineWhisperModelConfig w = new OfflineWhisperModelConfig();
+        w.setEncoder(new File(dir, WhisperModelManager.encoderFile(model)).getAbsolutePath());
+        w.setDecoder(new File(dir, WhisperModelManager.decoderFile(model)).getAbsolutePath());
+        w.setLanguage(l);
+        w.setTask("transcribe");
+
+        OfflineModelConfig mc = new OfflineModelConfig();
+        mc.setWhisper(w);
+        mc.setTokens(new File(dir, WhisperModelManager.tokensFile(model)).getAbsolutePath());
+        int cores = Runtime.getRuntime().availableProcessors();
+        mc.setNumThreads(Math.max(2, Math.min(4, cores >= 8 ? 4 : cores - 1)));
+        mc.setDebug(false);
+        mc.setProvider("cpu");
+
+        FeatureConfig fc = new FeatureConfig();
+        fc.setSampleRate(SR);
+        fc.setFeatureDim(80);
+
+        OfflineRecognizerConfig cfg = new OfflineRecognizerConfig();
+        cfg.setFeatConfig(fc);
+        cfg.setModelConfig(mc);
+        cfg.setDecodingMethod("greedy_search");
+        return new OfflineRecognizer(null, cfg);
     }
 
     // ------------------------------------------------------------------ ورودی صدا
@@ -264,6 +288,7 @@ final class WhisperEngine implements PcmSink {
                 }
             }
         } finally {
+            releasePinned();
             try { recognizer.release(); } catch (Throwable e) { Log.w(TAG, "release", e); }
         }
     }
@@ -277,14 +302,82 @@ final class WhisperEngine implements PcmSink {
         }
     }
 
-    /** متنِ پاک‌شده؛ "" = چیزی نبود/هذیان؛ null = خطا. */
-    private String decode(float[] samples, boolean isFinal) {
+    /** نتیجه‌ی یک decode: متنِ خام + زبانِ تشخیص‌داده‌شده (ممکن است null باشد). */
+    private static final class Res {
+        final String text, lang;
+        Res(String text, String lang) { this.text = text; this.lang = lang; }
+    }
+
+    private Res run(OfflineRecognizer rec, float[] samples) throws Exception {
         OfflineStream st = null;
         try {
-            st = recognizer.createStream();
+            st = rec.createStream();
             st.acceptWaveform(samples, SR);
-            recognizer.decode(st);
-            String text = clean(recognizer.getResult(st).getText());
+            rec.decode(st);
+            Object r = rec.getResult(st);
+            String text = clean(((com.k2fsa.sherpa.onnx.OfflineRecognizerResult) r).getText());
+            String lang = null;
+            try {   // نسخه‌های مختلفِ AAR: اگر getLang نبود، فقط از روی متن تصمیم می‌گیریم
+                Object l = r.getClass().getMethod("getLang").invoke(r);
+                lang = normLang(l == null ? null : String.valueOf(l));
+            } catch (Throwable ignored) { /* بدونِ زبانِ مدل */ }
+            return new Res(text, lang);
+        } finally {
+            if (st != null) { try { st.release(); } catch (Throwable ignored) {} }
+        }
+    }
+
+    /** "<|es|>" ، "es-ES" ، "Spanish" … → "es" (نامعلوم = null) */
+    private static String normLang(String l) {
+        if (l == null) return null;
+        String t = l.replace("<|", "").replace("|>", "").trim().toLowerCase(Locale.ROOT);
+        if (t.isEmpty()) return null;
+        int dash = t.indexOf('-');
+        if (dash > 0) t = t.substring(0, dash);
+        return t.length() == 2 ? t : null;
+    }
+
+    /** recognizerِ قفل‌شده روی [lang] (در صورت نبودن ساخته می‌شود؛ حداکثر ۲ تا نگه داشته می‌شود، برای «small» فقط ۱ تا). */
+    private OfflineRecognizer pinnedFor(String lang) {
+        OfflineRecognizer r = pinned.get(lang);
+        if (r != null) { pinned.remove(lang); pinned.put(lang, r); return r; }
+        try {
+            long t0 = android.os.SystemClock.elapsedRealtime();
+            r = build(ctx, model, lang);
+            Log.i(TAG, "pinned whisper '" + lang + "' ready in ms=" + (android.os.SystemClock.elapsedRealtime() - t0));
+        } catch (Throwable e) {
+            Log.w(TAG, "cannot pin whisper to " + lang, e);
+            return null;
+        }
+        int cap = "small".equals(model) ? 1 : 2;
+        while (pinned.size() >= cap) {
+            String oldest = pinned.keySet().iterator().next();
+            OfflineRecognizer o = pinned.remove(oldest);
+            if (o != null) { try { o.release(); } catch (Throwable ignored) {} }
+        }
+        pinned.put(lang, r);
+        return r;
+    }
+
+    private void releasePinned() {
+        for (OfflineRecognizer r : pinned.values()) { try { r.release(); } catch (Throwable ignored) {} }
+        pinned.clear();
+    }
+
+    /** متنِ پاک‌شده؛ "" = چیزی نبود/هذیان؛ null = خطا. */
+    private String decode(float[] samples, boolean isFinal) {
+        try {
+            Res res;
+            if (!auto) {
+                res = run(recognizer, samples);                       // زبانِ مشخص: مثلِ قبل
+            } else if (lockedLang != null && !isFinal) {
+                OfflineRecognizer pr = pinnedFor(lockedLang);         // پیش‌نمایشِ زنده: روی زبانِ قفل‌شده (سریع و بی‌هذیان)
+                res = run(pr != null ? pr : recognizer, samples);
+            } else {
+                res = run(recognizer, samples);                       // پنجره‌ی نهایی / هنوز قفل نشده: تشخیصِ زبان
+                res = resolveAuto(res, samples, isFinal);
+            }
+            String text = res == null ? "" : res.text;
             if (text.isEmpty() || looksLikeLoop(text)) return "";
             if (!isFinal) return text;                       // پیش‌نمایش: dedupe نداره
             if (text.equalsIgnoreCase(lastText)) return "";
@@ -293,9 +386,54 @@ final class WhisperEngine implements PcmSink {
         } catch (Throwable e) {
             Log.e(TAG, "decode failed", e);
             return null;
-        } finally {
-            if (st != null) { try { st.release(); } catch (Throwable ignored) {} }
         }
+    }
+
+    /**
+     * 🌐 تصمیمِ زبان در حالتِ خودکار.
+     *  ۱) زبانِ خارج از فهرستِ پشتیبانی‌شده (مثلاً az) یا متنِ تکراری = هذیان → دور ریخته می‌شود
+     *     (یا اگر زبانی قفل شده، همان پنجره با زبانِ قفل‌شده دوباره decode می‌شود).
+     *  ۲) قفلِ اول: دو تشخیصِ هم‌نظر (یا یک پنجره‌ی نهایی با ≥۶ کلمه).
+     *  ۳) تغییرِ زبان: فقط روی پنجره‌ی نهایی، با ≥۴ کلمه و تأییدِ تشخیصِ متنی؛ هر پنجره زبانِ خودش را دارد.
+     */
+    private Res resolveAuto(Res res, float[] samples, boolean isFinal) throws Exception {
+        if (res.text.isEmpty()) return res;
+        final int words = res.text.split("\\s+").length;
+        final String byText = LangDetect.detect(res.text);
+        String lang = res.lang != null ? res.lang : byText;
+
+        boolean bad = looksLikeLoop(res.text) || words < 1
+                || (lang != null && !ALLOWED.contains(lang))
+                || (res.lang != null && byText != null && ALLOWED.contains(byText) && !byText.equals(res.lang) && words >= 4);
+        if (bad) {
+            if (lockedLang != null) {                       // همان صدا با زبانِ قفل‌شده
+                OfflineRecognizer pr = pinnedFor(lockedLang);
+                if (pr != null) {
+                    Res again = run(pr, samples);
+                    if (!again.text.isEmpty() && !looksLikeLoop(again.text)) return again;
+                }
+            }
+            return new Res("", null);
+        }
+        if (lang == null) return res;                       // زبان معلوم نیست ولی متن سالم است: همان را نشان بده
+
+        if (lockedLang == null) {
+            if (lang.equals(candLang)) candStreak++; else { candLang = lang; candStreak = 1; }
+            if (candStreak >= 2 || (isFinal && words >= 6)) { lockedLang = lang; candLang = null; candStreak = 0; }
+            return res;
+        }
+        if (lang.equals(lockedLang)) { candLang = null; candStreak = 0; return res; }
+        if (!isFinal || words < 4) {                         // تغییرِ زبان فقط با شواهدِ کافی
+            OfflineRecognizer pr = pinnedFor(lockedLang);
+            if (pr != null) {
+                Res again = run(pr, samples);
+                if (!again.text.isEmpty() && !looksLikeLoop(again.text)) return again;
+            }
+            return new Res("", null);
+        }
+        lockedLang = lang;                                   // گوینده/ویدیو زبان را عوض کرد
+        candLang = null; candStreak = 0;
+        return res;
     }
 
     private static String clean(String t) {
@@ -306,6 +444,17 @@ final class WhisperEngine implements PcmSink {
     /** موتور روی موسیقی گاهی یه عبارت رو بی‌نهایت تکرار می‌کنه؛ اون خروجی رو دور بریز. */
     static boolean looksLikeLoop(String t) {
         String s = t.toLowerCase(Locale.ROOT);
+        // هذیانِ کلمه‌ای: «az az az az …» یا فقط یکی‌دو کلمه‌ی تکراری در متنی بلند
+        String[] ws = s.trim().split("\\s+");
+        if (ws.length >= 5) {
+            Set<String> dw = new HashSet<>(Arrays.asList(ws));
+            if (dw.size() <= Math.max(1, ws.length / 4)) return true;
+            int run = 1;
+            for (int i = 1; i < ws.length; i++) {
+                run = ws[i].equals(ws[i - 1]) ? run + 1 : 1;
+                if (run >= 4) return true;
+            }
+        }
         if (s.length() < 24) return false;
         Set<String> distinct = new HashSet<>();
         int total = 0;
