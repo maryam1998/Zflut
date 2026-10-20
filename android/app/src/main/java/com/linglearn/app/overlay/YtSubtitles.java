@@ -85,6 +85,8 @@ final class YtSubtitles {
         void videoChanged();
         /** این ویدیو زیرنویس ندارد. (حالتِ خودکار: میزبان می‌تواند حالتِ یوتیوب را بی‌سروصدا خاموش کند.) */
         default void noCaptions() {}
+        /** 🔁 حالتِ تکرارِ کلِ ویدیو عوض شد (on) یا یک دور تمام و از اول شروع شد (count = تعداد دورهای کامل). */
+        default void videoLoopChanged(boolean on, int count) {}
     }
 
     static final class Cue {
@@ -217,6 +219,7 @@ final class YtSubtitles {
      */
     boolean replaySentence(int sentIdx, int times) {
         if (!active || fullText || sentIdx < 0 || sentIdx >= sentFirstCue.length) return false;
+        setVideoLoop(false);                       // تکرارِ جمله جای تکرارِ کلِ ویدیو را می‌گیرد
         int c = sentFirstCue[sentIdx], c2 = sentLastCue[sentIdx];
         if (c < 0 || c >= cues.size() || c2 < c) return false;
         loopStartMs = Math.max(0L, cues.get(c).startMs - offsetMs);
@@ -238,10 +241,60 @@ final class YtSubtitles {
         return tracker.togglePlayPause();
     }
 
+    // ── ♾ تکرارِ کلِ ویدیو (از اول تا آخر، بی‌نهایت، تا کاربر خاموشش کند)
+    private boolean videoLoop = false;
+    private int videoLoopCount = 0;            // تعدادِ دورهای کاملِ تمام‌شده
+    private long videoLoopCooldownUntil = 0;   // بعد از هر برگشت صبر می‌کنیم تا وضعیتِ پلیر به‌روز شود
+
+    boolean isVideoLoop() { return videoLoop; }
+
+    /**
+     * روشن: ویدیو همین الان از ثانیه‌ی صفر شروع می‌شود و هر بار که به آخر برسد دوباره از اول پخش می‌شود.
+     * خاموش: فقط حلقه برداشته می‌شود و ویدیو به پخشِ عادی ادامه می‌دهد.
+     * false = پلیر در دسترس نیست یا مدتِ ویدیو نامشخص است (مثلاً لایو) و حلقه روشن نشد.
+     */
+    boolean setVideoLoop(boolean on) {
+        if (!on) {
+            if (videoLoop) { videoLoop = false; videoLoopCount = 0; host.videoLoopChanged(false, 0); }
+            return true;
+        }
+        if (!active || fullText) return false;
+        YtMedia.State s = last;
+        if (s == null || !s.hasSession || s.durationMs <= 0) return false;   // لایو/نامشخص: «آخرِ ویدیو» معنا ندارد
+        stopLoop();                                    // حلقه‌ی جمله با حلقه‌ی کلِ ویدیو قاطی نشود
+        if (!tracker.seekTo(0L)) return false;
+        tracker.play();
+        videoLoop = true;
+        videoLoopCount = 0;
+        videoLoopCooldownUntil = android.os.SystemClock.uptimeMillis() + 2000;
+        host.videoLoopChanged(true, 0);
+        return true;
+    }
+
+    /** هر تیک: اگر ویدیو به آخر رسید (یا روی آخر مکث/تمام شد) دوباره از ثانیه‌ی صفر پخشش کن. */
+    private void videoLoopTick(YtMedia.State s) {
+        if (!videoLoop) return;
+        if (android.os.SystemClock.uptimeMillis() < videoLoopCooldownUntil) return;
+        long dur = s.durationMs;
+        if (dur <= 0) return;
+        long pos = s.nowMs();
+        boolean atEnd = s.playing ? pos >= dur - 450 : (dur > 3000 && pos >= dur - 1200);
+        if (!atEnd) return;
+        if (tracker.seekTo(0L)) {
+            tracker.play();
+            videoLoopCount++;
+            videoLoopCooldownUntil = android.os.SystemClock.uptimeMillis() + 2000;
+            host.videoLoopChanged(true, videoLoopCount);
+        } else {
+            setVideoLoop(false);
+        }
+    }
+
     /** کلِ ویدیو را از ثانیه‌ی صفر و بدونِ هیچ حلقه‌ی جمله‌ای پخش می‌کند. false = پلیر در دسترس نیست. */
     boolean restartVideo() {
         if (!active || fullText) return false;
         stopLoop();
+        setVideoLoop(false);                       // ⏮ با نگه‌داشتن = فقط یک بار از اول، بدونِ حلقه
         if (!tracker.seekTo(0L)) return false;
         tracker.play();
         loopCooldownUntil = android.os.SystemClock.uptimeMillis() + 900;
@@ -282,6 +335,7 @@ final class YtSubtitles {
 
     void stop() {
         stopLoop();
+        videoLoop = false; videoLoopCount = 0;
         active = false;
         fullText = false;
         YtMedia.setActive(null);
@@ -366,6 +420,7 @@ final class YtSubtitles {
 
     private void resetVideo() {
         stopLoop();
+        setVideoLoop(false);                       // ویدیوی دیگری آمد → حلقه برای ویدیوی قبلی بود
         gen++;
         cues = new ArrayList<>();
         buildSentences();
@@ -473,6 +528,7 @@ final class YtSubtitles {
 
     private void onTick() {
         final YtMedia.State s = last;
+        if (s != null && s.hasSession) videoLoopTick(s);
         if (cues.isEmpty() || s == null || !s.hasSession) return;
         long pos = s.nowMs() + offsetMs;
         loopTick(pos);

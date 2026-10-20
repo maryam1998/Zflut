@@ -1515,7 +1515,8 @@ public class BubbleService extends Service {
         header.addView(tvHeader, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         tvYt = headerButton("\u25B6", v -> toggleYoutube());
         header.addView(tvYt);
-        tvYtRestart = headerButton("\u23EE", v -> restartYoutubeFromStart());   // ⏮ فقط در حالتِ یوتیوب دیده می‌شود
+        tvYtRestart = headerButton("\u23EE", v -> toggleVideoLoop());   // ⏮ فقط در حالتِ یوتیوب: کلیک = تکرارِ بی‌نهایتِ کلِ ویدیو از اول (دوباره کلیک = خاموش)
+        tvYtRestart.setOnLongClickListener(v -> { restartYoutubeFromStart(); return true; });   // نگه‌داشتن = فقط یک بار از اول، بدونِ حلقه
         tvYtRestart.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtRestart.setVisibility(View.GONE);
         header.addView(tvYtRestart);
@@ -2096,7 +2097,60 @@ public class BubbleService extends Service {
                     : msg("تکرار " + times + " بار با صدای یوتیوب", "Repeat " + times + "× with YouTube audio"));
     }
 
-    /** ⏮ کلِ ویدیوی یوتیوب را از ثانیه‌ی صفر دوباره پخش می‌کند (تکرارِ جمله، اگر فعال بود، متوقف می‌شود). */
+    /**
+     * ⏮ کلیک: تکرارِ بی‌نهایتِ کلِ ویدیو (همین الان از ثانیه‌ی صفر؛ هر بار به آخر رسید دوباره از اول).
+     * کلیکِ دوباره: حلقه خاموش می‌شود و ویدیو عادی ادامه می‌دهد.
+     */
+    private void toggleVideoLoop() {
+        if (yt == null || !yt.isActive()) return;
+        if (yt.isVideoLoop()) {
+            yt.setVideoLoop(false);
+            showNotice(msg("تکرارِ کلِ ویدیو خاموش شد", "Whole-video repeat off"));
+            return;
+        }
+        stopPanelSpeech();                                   // صدای برنامه با صدای یوتیوب قاطی نشود
+        stopStoredReplay();
+        if (yt.setVideoLoop(true))
+            showNotice(msg("♾ کلِ ویدیو از اول تا آخر تکرار می‌شود", "♾ Whole video repeats from start to end"));
+        else
+            showNotice(msg("تکرار فقط برای ویدیوی با مدتِ مشخص ممکن است (لایو یا پلیرِ ناآماده نه)",
+                    "Repeat needs a video with a known length (not live / player not ready)"));
+    }
+
+    private int ytLoopShownCount = -1;
+
+    /** ظاهرِ دکمه‌ی ⏮: خاموش = ساده؛ روشن = طلاییِ قرص‌مانند با ∞ و یک پالسِ کوتاه با هر دورِ تازه. */
+    private void updateVideoLoopButton(boolean on, int count) {
+        if (tvYtRestart == null) return;
+        if (!on) {
+            ytLoopShownCount = -1;
+            tvYtRestart.setText("\u23EE");
+            tvYtRestart.setTextColor(Color.WHITE);
+            tvYtRestart.setBackground(null);
+            tvYtRestart.setScaleX(1f); tvYtRestart.setScaleY(1f);
+            return;
+        }
+        SpannableString ss = new SpannableString("\u23EE\u221E");
+        ss.setSpan(new android.text.style.RelativeSizeSpan(0.8f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        ss.setSpan(new android.text.style.StyleSpan(Typeface.BOLD), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        tvYtRestart.setText(ss);
+        tvYtRestart.setTextColor(COLOR_GOLD);
+        GradientDrawable pill = new GradientDrawable();
+        pill.setColor(Color.parseColor("#33C9A227"));
+        pill.setCornerRadius(dp(12));
+        pill.setStroke(dp(1), COLOR_GOLD);
+        tvYtRestart.setBackground(pill);
+        if (ytLoopShownCount != count) {          // دورِ تازه شروع شد → پالس
+            ytLoopShownCount = count;
+            tvYtRestart.animate().cancel();
+            tvYtRestart.setScaleX(1f); tvYtRestart.setScaleY(1f);
+            tvYtRestart.animate().scaleX(1.25f).scaleY(1.25f).setDuration(160)
+                    .withEndAction(() -> { if (tvYtRestart != null) tvYtRestart.animate().scaleX(1f).scaleY(1f).setDuration(220).start(); })
+                    .start();
+        }
+    }
+
+    /** ⏮ کلِ ویدیوی یوتیوب را از ثانیه‌ی صفر دوباره پخش می‌کند (نگه‌داشتنِ ⏮؛ تکرارِ جمله/ویدیو، اگر فعال بود، متوقف می‌شود). */
     private void restartYoutubeFromStart() {
         if (yt == null || !yt.isActive()) return;
         stopPanelSpeech();                                   // صدای برنامه با صدای یوتیوب قاطی نشود
@@ -4677,6 +4731,7 @@ public class BubbleService extends Service {
         ytAutoStarted = false;
         if (notify && engine != null) ytAutoOffKey = ytWatchKey;   // کاربر خودش خاموش کرد → برای همین ویدیو دوباره خودکار روشن نشود
         ytFullMode = false;
+        updateVideoLoopButton(false, 0);
         stopFullText();
         ytEntries.clear();
         ytListMode = false; ytListGen++; ytCur = -1;
@@ -4754,6 +4809,10 @@ public class BubbleService extends Service {
             if (resume && !recording) {          // ترجمه‌ی زنده‌ی صدا که قبل از روشن‌شدنِ خودکار در جریان بود، برگردد
                 main.post(() -> { try { toggleRecording(); } catch (Throwable ignored) {} });
             }
+        }
+
+        @Override public void videoLoopChanged(boolean on, int count) {
+            main.post(() -> updateVideoLoopButton(on, count));
         }
 
         @Override public void videoChanged() {
