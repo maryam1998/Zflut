@@ -1515,8 +1515,7 @@ public class BubbleService extends Service {
         header.addView(tvHeader, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         tvYt = headerButton("\u25B6", v -> toggleYoutube());
         header.addView(tvYt);
-        tvYtRestart = headerButton("\u23EE", v -> toggleVideoLoop());   // ⏮ فقط در حالتِ یوتیوب: کلیک = تکرارِ بی‌نهایتِ کلِ ویدیو از اول (دوباره کلیک = خاموش)
-        tvYtRestart.setOnLongClickListener(v -> { restartYoutubeFromStart(); return true; });   // نگه‌داشتن = فقط یک بار از اول، بدونِ حلقه
+        tvYtRestart = headerButton("\u23EE", v -> restartYoutubeFromStart());   // ⏮ فقط در حالتِ یوتیوب دیده می‌شود
         tvYtRestart.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtRestart.setVisibility(View.GONE);
         header.addView(tvYtRestart);
@@ -1537,11 +1536,13 @@ public class BubbleService extends Service {
         header.addView(tvRepeat);
         updateRepeatButton();
         updateYtButton();
-        // Aa (انتخابِ فونت) از سربرگ برداشته شد و کنارِ A− | A+ در پایین-چپِ کادر قرار گرفته (makeGrip)
+        TextView tvFont = headerButton("Aa", v -> toggleFontRow());   // انتخابِ فونت: همان فونت‌های «نوع فونت» در تنظیماتِ اپ
+        tvFont.setTypeface(Typeface.DEFAULT_BOLD);
+        tvFont.setOnLongClickListener(v -> { resetView(); return true; });
+        header.addView(tvFont);
         TextView tvSpeed = headerButton("\u23E9", v -> toggleSpeedRow());   // ⏩ سرعتِ پخشِ ویدیو/صدای برنامه‌ی دیگر (MediaSession؛ بدونِ Accessibility)
         tvSpeed.setPadding(dp(8), dp(6), dp(8), dp(6));
         header.addView(tvSpeed);
-        tvSpeed.setVisibility(View.GONE);   // ⏩ فعلاً مخفی؛ کدِ سرعت سالم است — برای فعال‌کردنِ دوباره GONE را به VISIBLE تغییر بده
         TextView tvOpacity = headerButton("\uD83C\uDF13", v -> toggleOpacityRow());
         tvOpacity.setPadding(dp(8), dp(6), dp(8), dp(6));
         header.addView(tvOpacity);
@@ -2097,60 +2098,7 @@ public class BubbleService extends Service {
                     : msg("تکرار " + times + " بار با صدای یوتیوب", "Repeat " + times + "× with YouTube audio"));
     }
 
-    /**
-     * ⏮ کلیک: تکرارِ بی‌نهایتِ کلِ ویدیو (همین الان از ثانیه‌ی صفر؛ هر بار به آخر رسید دوباره از اول).
-     * کلیکِ دوباره: حلقه خاموش می‌شود و ویدیو عادی ادامه می‌دهد.
-     */
-    private void toggleVideoLoop() {
-        if (yt == null || !yt.isActive()) return;
-        if (yt.isVideoLoop()) {
-            yt.setVideoLoop(false);
-            showNotice(msg("تکرارِ کلِ ویدیو خاموش شد", "Whole-video repeat off"));
-            return;
-        }
-        stopPanelSpeech();                                   // صدای برنامه با صدای یوتیوب قاطی نشود
-        stopStoredReplay();
-        if (yt.setVideoLoop(true))
-            showNotice(msg("♾ کلِ ویدیو از اول تا آخر تکرار می‌شود", "♾ Whole video repeats from start to end"));
-        else
-            showNotice(msg("تکرار فقط برای ویدیوی با مدتِ مشخص ممکن است (لایو یا پلیرِ ناآماده نه)",
-                    "Repeat needs a video with a known length (not live / player not ready)"));
-    }
-
-    private int ytLoopShownCount = -1;
-
-    /** ظاهرِ دکمه‌ی ⏮: خاموش = ساده؛ روشن = طلاییِ قرص‌مانند با ∞ و یک پالسِ کوتاه با هر دورِ تازه. */
-    private void updateVideoLoopButton(boolean on, int count) {
-        if (tvYtRestart == null) return;
-        if (!on) {
-            ytLoopShownCount = -1;
-            tvYtRestart.setText("\u23EE");
-            tvYtRestart.setTextColor(Color.WHITE);
-            tvYtRestart.setBackground(null);
-            tvYtRestart.setScaleX(1f); tvYtRestart.setScaleY(1f);
-            return;
-        }
-        SpannableString ss = new SpannableString("\u23EE\u221E");
-        ss.setSpan(new android.text.style.RelativeSizeSpan(0.8f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        ss.setSpan(new android.text.style.StyleSpan(Typeface.BOLD), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        tvYtRestart.setText(ss);
-        tvYtRestart.setTextColor(COLOR_GOLD);
-        GradientDrawable pill = new GradientDrawable();
-        pill.setColor(Color.parseColor("#33C9A227"));
-        pill.setCornerRadius(dp(12));
-        pill.setStroke(dp(1), COLOR_GOLD);
-        tvYtRestart.setBackground(pill);
-        if (ytLoopShownCount != count) {          // دورِ تازه شروع شد → پالس
-            ytLoopShownCount = count;
-            tvYtRestart.animate().cancel();
-            tvYtRestart.setScaleX(1f); tvYtRestart.setScaleY(1f);
-            tvYtRestart.animate().scaleX(1.25f).scaleY(1.25f).setDuration(160)
-                    .withEndAction(() -> { if (tvYtRestart != null) tvYtRestart.animate().scaleX(1f).scaleY(1f).setDuration(220).start(); })
-                    .start();
-        }
-    }
-
-    /** ⏮ کلِ ویدیوی یوتیوب را از ثانیه‌ی صفر دوباره پخش می‌کند (نگه‌داشتنِ ⏮؛ تکرارِ جمله/ویدیو، اگر فعال بود، متوقف می‌شود). */
+    /** ⏮ کلِ ویدیوی یوتیوب را از ثانیه‌ی صفر دوباره پخش می‌کند (تکرارِ جمله، اگر فعال بود، متوقف می‌شود). */
     private void restartYoutubeFromStart() {
         if (yt == null || !yt.isActive()) return;
         stopPanelSpeech();                                   // صدای برنامه با صدای یوتیوب قاطی نشود
@@ -3415,22 +3363,6 @@ public class BubbleService extends Service {
         div.setBackgroundColor(Color.parseColor("#33FFFFFF"));
         cap.addView(div, new LinearLayout.LayoutParams(dp(1), dp(12)));
         cap.addView(fontStep("A+", 14, +0.1f));
-        if (atBottom) {   // Aa = نوعِ فونت (کلیک) ، نگه‌داشتن = بازنشانیِ اندازه/شفافیت/فونت
-            View div2 = new View(this);
-            div2.setBackgroundColor(Color.parseColor("#33FFFFFF"));
-            cap.addView(div2, new LinearLayout.LayoutParams(dp(1), dp(12)));
-            TextView tvFont = new TextView(this);
-            tvFont.setText("Aa");
-            tvFont.setTextColor(Color.WHITE);
-            tvFont.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-            tvFont.setTypeface(Typeface.DEFAULT_BOLD);
-            tvFont.setGravity(Gravity.CENTER);
-            tvFont.setPadding(dp(10), 0, dp(10), 0);
-            tvFont.setOnClickListener(v -> toggleFontRow());
-            tvFont.setOnLongClickListener(v -> { resetView(); return true; });
-            cap.addView(tvFont, new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        }
         FrameLayout.LayoutParams clp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(22),
                 (atBottom ? Gravity.START : Gravity.END) | Gravity.CENTER_VERTICAL);
@@ -4731,7 +4663,6 @@ public class BubbleService extends Service {
         ytAutoStarted = false;
         if (notify && engine != null) ytAutoOffKey = ytWatchKey;   // کاربر خودش خاموش کرد → برای همین ویدیو دوباره خودکار روشن نشود
         ytFullMode = false;
-        updateVideoLoopButton(false, 0);
         stopFullText();
         ytEntries.clear();
         ytListMode = false; ytListGen++; ytCur = -1;
@@ -4809,18 +4740,6 @@ public class BubbleService extends Service {
             if (resume && !recording) {          // ترجمه‌ی زنده‌ی صدا که قبل از روشن‌شدنِ خودکار در جریان بود، برگردد
                 main.post(() -> { try { toggleRecording(); } catch (Throwable ignored) {} });
             }
-        }
-
-        @Override public String translateChecked(String text, String src, String tgt) throws Exception {
-            return LiveTranslator.translate(BubbleService.this, HTTP_FAST, text, src, tgt, aiBackend);
-        }
-
-        @Override public String translateWithAi(String text, String src, String tgt) throws Exception {
-            return LiveTranslator.aiOnly(BubbleService.this, text, src, tgt, aiBackend);
-        }
-
-        @Override public void videoLoopChanged(boolean on, int count) {
-            main.post(() -> updateVideoLoopButton(on, count));
         }
 
         @Override public void videoChanged() {
