@@ -1536,13 +1536,11 @@ public class BubbleService extends Service {
         header.addView(tvRepeat);
         updateRepeatButton();
         updateYtButton();
-        TextView tvFont = headerButton("Aa", v -> toggleFontRow());   // انتخابِ فونت: همان فونت‌های «نوع فونت» در تنظیماتِ اپ
-        tvFont.setTypeface(Typeface.DEFAULT_BOLD);
-        tvFont.setOnLongClickListener(v -> { resetView(); return true; });
-        header.addView(tvFont);
+        // Aa (انتخابِ فونت) از سربرگ برداشته شد و کنارِ A− | A+ در پایین-چپِ کادر قرار گرفته (makeGrip)
         TextView tvSpeed = headerButton("\u23E9", v -> toggleSpeedRow());   // ⏩ سرعتِ پخشِ ویدیو/صدای برنامه‌ی دیگر (MediaSession؛ بدونِ Accessibility)
         tvSpeed.setPadding(dp(8), dp(6), dp(8), dp(6));
         header.addView(tvSpeed);
+        tvSpeed.setVisibility(View.GONE);   // ⏩ فعلاً مخفی؛ کدِ سرعت سالم است — برای فعال‌کردنِ دوباره GONE را به VISIBLE تغییر بده
         TextView tvOpacity = headerButton("\uD83C\uDF13", v -> toggleOpacityRow());
         tvOpacity.setPadding(dp(8), dp(6), dp(8), dp(6));
         header.addView(tvOpacity);
@@ -3363,6 +3361,22 @@ public class BubbleService extends Service {
         div.setBackgroundColor(Color.parseColor("#33FFFFFF"));
         cap.addView(div, new LinearLayout.LayoutParams(dp(1), dp(12)));
         cap.addView(fontStep("A+", 14, +0.1f));
+        if (atBottom) {   // Aa = نوعِ فونت (کلیک) ، نگه‌داشتن = بازنشانیِ اندازه/شفافیت/فونت
+            View div2 = new View(this);
+            div2.setBackgroundColor(Color.parseColor("#33FFFFFF"));
+            cap.addView(div2, new LinearLayout.LayoutParams(dp(1), dp(12)));
+            TextView tvFont = new TextView(this);
+            tvFont.setText("Aa");
+            tvFont.setTextColor(Color.WHITE);
+            tvFont.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            tvFont.setTypeface(Typeface.DEFAULT_BOLD);
+            tvFont.setGravity(Gravity.CENTER);
+            tvFont.setPadding(dp(10), 0, dp(10), 0);
+            tvFont.setOnClickListener(v -> toggleFontRow());
+            tvFont.setOnLongClickListener(v -> { resetView(); return true; });
+            cap.addView(tvFont, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         FrameLayout.LayoutParams clp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(22),
                 (atBottom ? Gravity.START : Gravity.END) | Gravity.CENTER_VERTICAL);
