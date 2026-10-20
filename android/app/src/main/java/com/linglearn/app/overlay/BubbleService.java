@@ -1350,6 +1350,7 @@ public class BubbleService extends Service {
         boolean frozen = false;      // وقتی کاربر دارد متن انتخاب می‌کند / کادرِ لغت باز است، خودکار به پایین نپر
         boolean ytMode = false;      // 📺 لیستِ کاملِ زیرنویس: به‌جای پرش به انتها، خودِ برنامه خطِ جاری را اسکرول می‌کند
         long lastUserTouch = 0;      // آخرین لمسِ کاربر (تا وسطِ خواندن اسکرولش را نپرانیم)
+        boolean follow = false;      // ترجمه‌ی زنده در حال ضبط است: تا کاربر لمس نکرده، همیشه دنبالِ آخرین خط برو
 
         @Override
         public boolean dispatchTouchEvent(MotionEvent ev) {
@@ -1369,10 +1370,18 @@ public class BubbleService extends Service {
 
         @Override
         protected void onLayout(boolean changed, int l, int t, int r, int b) {
+            // پیش از چیدمان: آیا تا همین الان ته بودیم؟ (رشدِ ناگهانیِ ارتفاع، فلگِ atBottom را بعد از چیدمان اشتباه می‌کند)
+            View c0 = getChildAt(0);
+            boolean wasAtBottom = c0 == null || c0.getHeight() <= getHeight()
+                    || c0.getHeight() - (getHeight() + getScrollY()) < 60;
             super.onLayout(changed, l, t, r, b);
-            if (atBottom && !frozen && !ytMode) {
-                View c = getChildAt(0);
-                if (c != null) scrollTo(0, Math.max(0, c.getHeight() - getHeight()));
+            if (frozen || ytMode) return;           // حالتِ یوتیوب مثلِ قبل دست‌نخورده
+            View c = getChildAt(0);
+            if (c == null) return;
+            boolean userIdle = SystemClock.uptimeMillis() - lastUserTouch > 6000;
+            if (atBottom || wasAtBottom || (follow && userIdle)) {
+                scrollTo(0, Math.max(0, c.getHeight() - getHeight()));
+                atBottom = true;
             }
         }
 
@@ -1593,6 +1602,7 @@ public class BubbleService extends Service {
         panel.addView(wordCard);   // LayoutParams (با margin) داخلِ buildWordCard ست شده
 
         scroll = new HistoryScroll(this);
+        scroll.follow = recording;
         scroll.maxHeightPx = panelMaxH();
         scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
         scroll.setVerticalScrollBarEnabled(false);
@@ -4833,6 +4843,7 @@ public class BubbleService extends Service {
     private void setRecordingUi(boolean rec) {
         if (bubble == null) return;
         bubble.setRecording(rec);
+        if (scroll != null) scroll.follow = rec;
         if (rec) {
             lastVoiceMs = lastTextMs = lastActiveMs = SystemClock.elapsedRealtime();
             idleHidden = false;
