@@ -155,6 +155,68 @@ final class LiveTranslator {
         if (src.length() > 3 && (ratio < lo || ratio > 3.5)) return true;
         // یک کلمه‌ی تکراریِ پشتِ‌سرهم (نشانه‌ی خرابیِ سرویس)
         if (out.length() > 20 && out.matches("(?s).*\\b(\\p{L}{2,})(\\s+\\1){4,}\\b.*")) return true;
+
+        // ── بررسی‌های تازه (ترجمه‌ی غلط/نیمه‌کاره‌ای که از فیلترهای بالا رد می‌شد) ──
+        // پیامِ خطای سرویس / HTML / JSON / توضیحِ AI به‌جای ترجمه
+        if (SERVICE_JUNK.matcher(out).find() && !SERVICE_JUNK.matcher(src).find()) return true;
+        // عدد در مبدأ هست (۲ رقم یا بیشتر) ولی هیچ رقمی در خروجی نیست
+        if (MULTI_DIGIT.matcher(src).find() && !ANY_DIGIT.matcher(out).find() && out.length() < src.length() * 2) return true;
+        boolean tgtLatin = isLatinTarget(targetLang);
+        boolean srcHasForeign = FOREIGN_SCRIPT.matcher(src).find();
+        // رسم‌الخطِ بی‌ربط در خروجی (مثلاً چینی/سیریلیک/هانگول وسطِ ترجمه‌ی فارسی)
+        if (!srcHasForeign && FOREIGN_SCRIPT.matcher(out).find()
+                && !"zh".equals(targetLang) && !"ja".equals(targetLang) && !"ko".equals(targetLang) && !"ru".equals(targetLang)) return true;
+        // مقصد غیرلاتین ولی بخشِ بزرگی از خروجی هنوز لاتین است = ترجمه‌نشده/نیمه‌ترجمه
+        if (!tgtLatin && src.length() > 12) {
+            int latin = 0, letters = 0;
+            for (int i = 0; i < out.length(); i++) {
+                char c = out.charAt(i);
+                if (!Character.isLetter(c)) continue;
+                letters++;
+                if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) latin++;
+            }
+            if (letters >= 8 && latin / (double) letters > 0.45) return true;
+        }
+        // مقصدِ لاتین: بیشترِ کلمه‌های خروجی عیناً همان کلمه‌های مبدأ است = ترجمه نشده
+        if (tgtLatin && sourceLang != null && !sourceLang.equals(targetLang)) {
+            String[] sw = src.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}']+");
+            String[] ow = out.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}']+");
+            if (sw.length >= 5 && ow.length >= 5) {
+                java.util.HashSet<String> set = new java.util.HashSet<>(java.util.Arrays.asList(sw));
+                int same = 0;
+                for (String w : ow) if (set.contains(w)) same++;
+                if (same / (double) ow.length >= 0.85) return true;
+            }
+        }
         return false;
+    }
+
+    private static final Pattern SERVICE_JUNK = Pattern.compile(
+            "(<\\s*/?\\s*(html|body|div|br)\\b|\\{\\s*\"|\\bhttp error\\b|\\bquota\\b|\\brequest failed\\b|here'?s the translation|here is the translation"
+                    + "|\\btranslation\\s*:|\\bas an ai\\b|\\bi (cannot|can'?t|am unable to) translate\\b|\\bsorry,? i\\b|MYMEMORY WARNING|PLEASE SELECT)",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern MULTI_DIGIT = Pattern.compile("\\d{2,}");
+    private static final Pattern ANY_DIGIT = Pattern.compile("[0-9\\u06F0-\\u06F9\\u0660-\\u0669]");
+    private static final Pattern FOREIGN_SCRIPT = Pattern.compile("[\\u0400-\\u04FF\\u3040-\\u30FF\\u4E00-\\u9FFF\\uAC00-\\uD7AF\\u0E00-\\u0E7F]");
+
+    private static boolean isLatinTarget(String lang) {
+        return scriptRangeFor(lang == null ? "" : lang) == null;
+    }
+
+    /**
+     * ترجمه‌ی «مستقیم با AI» برای جمله‌ای که ترجمه‌ی موجودش مشکوک است (بدونِ مرحله‌ی رایگان).
+     * فقط نتیجه‌ی سالم برمی‌گردد و کش می‌شود؛ وگرنه استثنا پرتاب می‌شود.
+     */
+    static String aiOnly(Context ctx, String text, String src, String tgt, Ai ai) throws Exception {
+        if (ai == null) throw new IOException("no ai");
+        final String t = text == null ? "" : text.trim();
+        if (t.isEmpty()) return "";
+        final String s = (src == null || src.isEmpty()) ? "auto" : src;
+        String r = ai.translate(t, tgt);
+        if (r == null) throw new IOException("ai empty");
+        r = cleanQuotes(r.trim());
+        if (r.isEmpty() || looksLikelyMistranslated(t, r, tgt, s)) throw new IOException("ai result rejected");
+        TransCache.get(ctx).put(s, tgt, t, r);
+        return r;
     }
 }

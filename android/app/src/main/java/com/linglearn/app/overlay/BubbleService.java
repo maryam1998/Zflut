@@ -4811,6 +4811,14 @@ public class BubbleService extends Service {
             }
         }
 
+        @Override public String translateChecked(String text, String src, String tgt) throws Exception {
+            return LiveTranslator.translate(BubbleService.this, HTTP_FAST, text, src, tgt, aiBackend);
+        }
+
+        @Override public String translateWithAi(String text, String src, String tgt) throws Exception {
+            return LiveTranslator.aiOnly(BubbleService.this, text, src, tgt, aiBackend);
+        }
+
         @Override public void videoLoopChanged(boolean on, int count) {
             main.post(() -> updateVideoLoopButton(on, count));
         }

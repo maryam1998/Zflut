@@ -87,6 +87,10 @@ final class YtSubtitles {
         default void noCaptions() {}
         /** 🔁 حالتِ تکرارِ کلِ ویدیو عوض شد (on) یا یک دور تمام و از اول شروع شد (count = تعداد دورهای کامل). */
         default void videoLoopChanged(boolean on, int count) {}
+        /** ترجمه‌ی یک جمله با کش + سرویس‌های رایگان + (اگر مشکوک بود) AI. null = پشتیبانی نمی‌شود. فقط روی thread پس‌زمینه. */
+        default String translateChecked(String text, String src, String tgt) throws Exception { return null; }
+        /** ترجمه‌ی مستقیم با AI برای جمله‌ای که ترجمه‌اش مشکوک است. null = پشتیبانی نمی‌شود؛ شکست = استثنا. فقط روی thread پس‌زمینه. */
+        default String translateWithAi(String text, String src, String tgt) throws Exception { return null; }
     }
 
     static final class Cue {
@@ -658,13 +662,14 @@ final class YtSubtitles {
             String[] out = null;
             try {
                 out = requestChunk(lines, before, after, title, src, srcName, lang, tgtName, tone);
+                out = vetTranslations(lines.toArray(new String[0]), out, src, lang);   // 🔍 مشکوک‌ها → AI
             } catch (Exception e) {
                 Log.w(TAG, "chunk request failed (" + e + "); falling back to per-sentence translation");
             }
             if (out == null) {
                 out = new String[lines.size()];
                 for (int i = 0; i < lines.size(); i++) {
-                    try { out[i] = FreeTranslator.translate(httpFast, lines.get(i), src, lang); }
+                    try { out[i] = trSentence(lines.get(i), src, lang); }   // کش → رایگان → AI اگر مشکوک
                     catch (Exception e) { break; }     // شبکه/سرویس‌ها پایین‌ان؛ بقیه رو الکی منتظر نمون
                 }
             }
@@ -703,7 +708,12 @@ final class YtSubtitles {
             String[] saved = YtDiskCache.loadTr(app, curVideoId, lang, tone, sig);
             if (saved == null || saved.length != sents.size()) continue;
             String[] sa = sentArr(lang);
-            for (int i = 0; i < saved.length; i++) if (saved[i] != null) sa[i] = saved[i];
+            for (int i = 0; i < saved.length; i++) {
+                if (saved[i] == null) continue;
+                // ترجمه‌ی مشکوکِ ذخیره‌شده از دفعه‌ی قبل را قبول نکن تا دوباره (با AI) ترجمه شود
+                if (LiveTranslator.looksLikelyMistranslated(sentTexts.get(i), saved[i], lang, trackLang)) continue;
+                sa[i] = saved[i];
+            }
             String[] a = arr(lang);
             for (int c = 0; c < a.length; c++) {
                 String v = composeCue(lang, c);
@@ -750,6 +760,30 @@ final class YtSubtitles {
         return out;
     }
 
+    /** ترجمه‌ی یک جمله: کش → رایگان → AI (اگر مشکوک بود). اگر میزبان پشتیبانی نکند، فقط رایگان. */
+    private String trSentence(String text, String src, String lang) throws Exception {
+        String r = host.translateChecked(text, src, lang);
+        return r != null ? r : FreeTranslator.translate(httpFast, text, src, lang);
+    }
+
+    /**
+     * خروجیِ chunk را جمله‌به‌جمله می‌سنجد؛ هر ترجمه‌ی مشکوک (ترجمه‌نشده، رسم‌الخطِ اشتباه، عددِ گم‌شده،
+     * متنِ خطا/توضیحِ AI، طولِ غیرعادی …) با AI از نو ترجمه می‌شود. اگر AI هم نشد، آن جمله خالی می‌ماند
+     * (ترجمه‌ی غلط نشان داده نمی‌شود) و بعداً دوباره تلاش می‌شود.
+     */
+    private String[] vetTranslations(String[] lines, String[] out, String src, String lang) {
+        for (int i = 0; i < out.length && i < lines.length; i++) {
+            String o = out[i];
+            if (o == null || o.trim().isEmpty()) continue;
+            if (!LiveTranslator.looksLikelyMistranslated(lines[i], o, lang, src)) continue;
+            String fixed = null;
+            try { fixed = host.translateWithAi(lines[i], src, lang); }
+            catch (Exception e) { Log.d(TAG, "ai re-translate failed: " + e); }
+            out[i] = fixed;                       // null = نشان داده نشود
+        }
+        return out;
+    }
+
     /**
      * ترجمه‌ی سریعِ «جمله‌ی کامل» (نه تکه‌ی شکسته) برای خطِ جاری تا منتظر chunk نمونیم؛
      * chunk بعداً جایگزینش می‌کنه.
@@ -765,7 +799,7 @@ final class YtSubtitles {
             try {
                 netQuick.execute(() -> {
                     final String out;
-                    try { out = FreeTranslator.translate(httpFast, text, src, lang); }
+                    try { out = trSentence(text, src, lang); }   // کش → رایگان → AI اگر مشکوک
                     catch (Exception e) { return; }
                     main.post(() -> {
                         if (g != gen || !active) return;
