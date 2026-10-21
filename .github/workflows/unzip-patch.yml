@@ -41,12 +41,17 @@ jobs:
             rm -rf "$tmp/__MACOSX"
             find "$tmp" -name '.DS_Store' -delete
 
-            # اگر zip یک پوشه‌ی ریشه‌ی واحد دارد (مثل Zflut-main/)، یک سطح بالا بیا.
+            # اگر zip یک پوشه‌ی ریشه‌ی واحد دارد، یک سطح بالا بیا. شرط: اسمش مثل zipهای گیت‌هاب
+            # باشد (X-main / X-master / Zflut-main ...) یا داخلش lib یا pubspec.yaml باشد.
+            # (قبلاً فقط حالتِ دوم بود و zip فقط‌شاملِ android/ پوشه‌ی اضافه می‌ساخت.)
             src="$tmp"
             entries=("$tmp"/* "$tmp"/.[!.]*)
-            if [ ${#entries[@]} -eq 1 ] && [ -d "${entries[0]}" ] \
-               && { [ -d "${entries[0]}/lib" ] || [ -f "${entries[0]}/pubspec.yaml" ]; }; then
-              src="${entries[0]}"
+            if [ ${#entries[@]} -eq 1 ] && [ -d "${entries[0]}" ]; then
+              top="$(basename "${entries[0]}")"
+              case "$top" in
+                *-main|*-master|Zflut*|Hope*) src="${entries[0]}" ;;
+                *) if [ -d "${entries[0]}/lib" ] || [ -f "${entries[0]}/pubspec.yaml" ]; then src="${entries[0]}"; fi ;;
+              esac
             fi
 
             # workflow فایل‌ها را GITHUB_TOKEN اجازه‌ی push ندارد → نادیده بگیر.
