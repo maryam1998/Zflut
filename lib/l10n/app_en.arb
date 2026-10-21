@@ -1466,5 +1466,17 @@
   },
   "st_screenrec_title": "Screen recording permission",
   "st_screenrec_body": "To extract text under the magnifier in any app, and to capture the audio that is playing for live translation, we need the “Screen recording” permission.\n\nText extraction and speech recognition run entirely on your phone and nothing from them is sent to servers. Only the translated text is saved, and only you can see your translation history.\n\nWhen you turn the tools off, this permission is cut completely until you turn them on again.",
-  "st_notif_trust": "To keep subtitles and lyrics in sync with the YouTube video or music that is playing, we need to know its current playback time — that is why we ask for this permission. It is used for nothing else, and this part is reviewed by Google Play before every release.\n\nTurning the tools off cuts the permission completely."
+  "st_notif_trust": "To keep subtitles and lyrics in sync with the YouTube video or music that is playing, we need to know its current playback time — that is why we ask for this permission. It is used for nothing else, and this part is reviewed by Google Play before every release.\n\nTurning the tools off cuts the permission completely.",
+  "settings_stt_title": "Speech recognition engine",
+  "settings_stt_offline": "Offline (on-device)",
+  "settings_stt_badge_offline": "Offline",
+  "settings_stt_offline_hint": "Private and works without internet. Uses the language pack you download below.",
+  "settings_stt_google": "Google (Android speech recognition)",
+  "settings_stt_badge_online": "Online",
+  "settings_stt_google_hint": "Usually more accurate than small offline models. Needs internet.",
+  "settings_stt_google_needs_13": "Requires Android 13 or newer.",
+  "settings_stt_google_missing": "Google's speech service isn't available on this phone.",
+  "settings_stt_google_unavailable": "Google speech recognition isn't available on this phone.",
+  "settings_stt_note_google": "If Google can't recognise the language or the connection drops, the app switches to the offline engine automatically.",
+  "settings_stt_note_offline": "Choose Google for better accuracy when you're online."
 }

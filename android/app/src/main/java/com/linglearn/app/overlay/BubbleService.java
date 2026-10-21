@@ -736,6 +736,7 @@ public class BubbleService extends Service {
      */
     private String effectiveSource() {
         if (srcExplicit()) return sourceLang();
+        if (!LangDetect.ENABLED) return "en".equals(targetLang()) ? "auto" : "en";   // مثلِ linlearn-App
         // 🌐 «تشخیص خودکار»: زبانی که از روی متنِ گفتار تشخیص داده شده (تا وقتی چیزی نیامده: پیش‌فرضِ قبلی)
         final String d = detectedSrc;
         if (d != null) return d;
@@ -744,6 +745,7 @@ public class BubbleService extends Service {
 
     /** زبانِ مخصوصِ «انتخابِ موتورِ تشخیص گفتار»: در حالتِ خودکار همیشه "auto" (Whisperِ چندزبانه)، نه زبانِ تشخیص‌داده‌شده. */
     private String engineSource() {
+        if (!LangDetect.ENABLED) return effectiveSource();   // مثلِ linlearn-App
         return srcExplicit() ? sourceLang() : "auto";
     }
 
@@ -754,6 +756,7 @@ public class BubbleService extends Service {
 
     /** از روی متنِ تازه‌ی تشخیصِ گفتار، زبان را حدس می‌زند؛ اولین تشخیص فوری، تغییرِ زبان بعد از دو تشخیصِ پشت‌سرهم. */
     private void noteDetected(String text) {
+        if (!LangDetect.ENABLED) return;                        // تشخیصِ خودکار فعلاً خاموش است
         if (srcExplicit()) return;
         if (yt != null && yt.isActive()) return;               // یوتیوب: زبانِ خودِ زیرنویس مشخص است
         // متنِ خیلی کوتاه/تکراری («az az az») هرگز زبان را تعیین نمی‌کند
@@ -5004,6 +5007,33 @@ public class BubbleService extends Service {
         }
     }
 
+    // ───────── 🌐 انتخابِ موتورِ تشخیص گفتار: «offline» (پیش‌فرض) یا «google» ─────────
+    /** بعد از شکستِ Google در همین نشست، تا تغییرِ تنظیمات یا ری‌استارتِ سرویس، دیگر امتحان نمی‌شود. */
+    private static volatile boolean googleSkipped = false;
+
+    static void resetGoogleSkip() { googleSkipped = false; }
+
+    private String speechProvider() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getString("speechProvider", "offline");
+    }
+
+    /** Google با ورودیِ صدای سیستم فقط روی اندروید ۱۳+ (EXTRA_AUDIO_SOURCE) و با زبانِ مشخص کار می‌کند. */
+    private boolean googleUsable(String src) {
+        if (Build.VERSION.SDK_INT < 33) return false;
+        if (src == null || src.isEmpty() || "auto".equals(src)) return false;
+        try { return SpeechRecognizer.isRecognitionAvailable(this); } catch (Throwable t) { return false; }
+    }
+
+    /** Google کار نکرد (آفلاین/زبانِ ناپشتیبان/نبودنِ سرویس): ضبط را می‌بندد و با موتورِ آفلاین دوباره شروع می‌کند. */
+    private void fallbackToOffline(String notice) {
+        if (!micEngine) return;
+        final boolean canRestart = mediaProjection != null;
+        googleSkipped = true;
+        stopRecording();
+        if (notice != null) showNotice(notice);
+        if (canRestart) main.postDelayed(() -> { if (!recording) startCapture(); }, 500);
+    }
+
     private static String localeTag(String lang) {
         String t = LOCALE_TAGS.get(lang);
         return t != null ? t : lang;
@@ -5025,7 +5055,13 @@ public class BubbleService extends Service {
         gotAsrText = false; voicedSinceText = 0;
         resetDetected();                                      // هر شروعِ تازه: تشخیصِ زبان از اول
         final String src = engineSource();
-        // 📦 فقط موتورِ آفلاین (Sherpa یا Whisper). بدونِ بسته: پیامِ تأییدِ دانلود، نه سرور و نه تشخیص‌دهنده‌ی آنلاین.
+        // 🌐 موتورِ «Google» (SpeechRecognizerِ خودِ اندروید) اگر کاربر در تنظیمات انتخاب کرده باشد
+        if ("google".equals(speechProvider()) && !googleSkipped) {
+            if (googleUsable(src) && startMicEngine(src)) return;
+            showNotice(msg("تشخیص گفتارِ گوگل در دسترس نیست؛ موتورِ آفلاین استفاده شد",
+                    "Google speech unavailable — using the offline engine"));
+        }
+        // 📦 موتورِ آفلاین (Sherpa یا Whisper). بدونِ بسته: پیامِ تأییدِ دانلود، نه سرور و نه تشخیص‌دهنده‌ی آنلاین.
         String[] need = missingOfflinePack(src);
         if (need != null) { askOfflinePack(need[0], need[1]); return; }
         String wModel = whisperModelPref();
@@ -5258,11 +5294,11 @@ public class BubbleService extends Service {
     private void restartSpeechHost() {
         if (!recording || !micEngine) return;
         if (speechHostRestarts >= MAX_SPEECH_HOST_RESTARTS) {
-            fallbackToServer(null); return;
+            fallbackToOffline(null); return;
         }
         final String src = effectiveSource();
         if (src == null || src.isEmpty() || "auto".equals(src)) {
-            fallbackToServer(null); return;
+            fallbackToOffline(null); return;
         }
         speechHostRestarts++;
         main.postDelayed(() -> {
@@ -5274,7 +5310,7 @@ public class BubbleService extends Service {
                 startActivity(i);
             } catch (Exception e) {
                 Log.w(TAG, "restart speech host failed", e);
-                fallbackToServer(null);
+                fallbackToOffline(null);
             }
         }, 200);
     }
@@ -5401,8 +5437,8 @@ public class BubbleService extends Service {
     static void asrFallback() {
         BubbleService s = instance;
         if (s == null || !s.micEngine) return;
-        s.fallbackToServer(s.msg("تشخیص گفتار گوگل در دسترس نیست؛ حالت سرور فعال شد",
-                "Google speech unavailable; using server"));
+        s.fallbackToOffline(s.msg("تشخیص گفتار گوگل در دسترس نیست؛ موتورِ آفلاین فعال شد",
+                "Google speech unavailable; switching to the offline engine"));
     }
 
     static void asrNeedsPermission() {

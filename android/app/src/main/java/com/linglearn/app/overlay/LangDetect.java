@@ -20,6 +20,15 @@ final class LangDetect {
 
     private LangDetect() {}
 
+    /**
+     * 🔒 کلیدِ اصلیِ «تشخیص خودکارِ زبان».
+     * false (پیش‌فرض) = غیرفعال؛ برنامه دقیقاً مثلِ linlearn-App رفتار می‌کند:
+     * زبانِ صدا همان است که کاربر انتخاب کرده (و در حالتِ Auto فرضِ en).
+     * کدِ تشخیص (این فایل، resolveAuto در WhisperEngine، noteDetected در BubbleService) نگه داشته شده
+     * و فقط با true کردنِ این مقدار دوباره فعال می‌شود.
+     */
+    static final boolean ENABLED = false;
+
     private static final Map<String, Set<String>> STOP = new HashMap<>();
 
     private static void add(String lang, String csv) {

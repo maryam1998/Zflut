@@ -107,7 +107,7 @@ final class WhisperEngine implements PcmSink {
             if (l == null || "auto".equals(l)) l = "";
             rec = build(ctx, model, l);
             Log.i(TAG, "whisper " + model + " loaded, lang='" + l + "'");
-            return new WhisperEngine(ctx.getApplicationContext(), model, l.isEmpty(), rec);
+            return new WhisperEngine(ctx.getApplicationContext(), model, LangDetect.ENABLED && l.isEmpty(), rec);
         } catch (Throwable e) {
             Log.e(TAG, "cannot load whisper " + model, e);
             if (rec != null) { try { rec.release(); } catch (Throwable ignored) {} }

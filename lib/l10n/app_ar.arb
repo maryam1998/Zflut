@@ -816,5 +816,17 @@
   "speaking_save_to_history": "💾 حفظ في السجل",
   "speaking_saved_to_history": "✅ تم الحفظ في السجل",
   "speaking_saved_to_grammar": "✅ تم الحفظ في القواعد",
-  "speaking_confirm_delete_chats": "هل تريد حذف {n} من المحادثات المحددة؟"
+  "speaking_confirm_delete_chats": "هل تريد حذف {n} من المحادثات المحددة؟",
+  "settings_stt_title": "محرك التعرف على الكلام",
+  "settings_stt_offline": "دون اتصال (على الجهاز)",
+  "settings_stt_badge_offline": "دون اتصال",
+  "settings_stt_offline_hint": "خاص ويعمل بلا إنترنت؛ يستخدم حزمة اللغة التي تنزّلها أدناه.",
+  "settings_stt_google": "جوجل (التعرف على الكلام في أندرويد)",
+  "settings_stt_badge_online": "متصل",
+  "settings_stt_google_hint": "غالبًا أدق من النماذج الصغيرة دون اتصال. يحتاج إلى إنترنت.",
+  "settings_stt_google_needs_13": "يتطلب أندرويد 13 أو أحدث.",
+  "settings_stt_google_missing": "خدمة الكلام من جوجل غير متاحة على هذا الهاتف.",
+  "settings_stt_google_unavailable": "التعرف على الكلام من جوجل غير متاح على هذا الهاتف.",
+  "settings_stt_note_google": "إذا لم تتعرّف جوجل على اللغة أو انقطع الاتصال، يتحول التطبيق تلقائيًا إلى المحرك دون اتصال.",
+  "settings_stt_note_offline": "اختر جوجل لدقة أعلى عندما تكون متصلًا بالإنترنت."
 }

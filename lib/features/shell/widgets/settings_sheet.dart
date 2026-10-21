@@ -978,6 +978,13 @@ class _HighlightSection extends ConsumerWidget {
 // چیدمان دقیقاً مثل Hope: عنوان ← سه دکمه‌ی نوع ← رنگ ← ذره‌بین ←
 // ترجمه‌ی زنده‌ی صدا (زبان صدا، بسته‌ی آفلاین، حالت آهنگ، نمایش، شروع، یوتیوب)
 // ═══════════════════════════════════════════════════════════════════
+/// 🔒 «تشخیص خودکارِ زبان» فعلاً در رابط پنهان است (کدش در نیتیو نگه داشته شده: LangDetect.ENABLED).
+/// برای فعال‌سازیِ دوباره، هر دو را true کن.
+const bool _kAutoLangUi = false;
+
+/// کلیدِ موتورِ تشخیص گفتار: 'offline' (پیش‌فرض) یا 'google'
+const String _kSpeechProviderKey = 'phrasebook-speech-provider';
+
 class _FloatingBubbleSection extends ConsumerStatefulWidget {
   const _FloatingBubbleSection();
 
@@ -1035,10 +1042,17 @@ class _FloatingBubbleSectionState
         sp.setString(_kSrcKey, 'en');
       }
     }
+    // 🔒 تشخیصِ خودکار خاموش است: هر «auto»ِ ذخیره‌شده به «en» برمی‌گردد.
+    if (!_kAutoLangUi && src == 'auto') {
+      src = 'en';
+      sp.setString(_kSrcKey, 'en');
+    }
     final disp = sp.getString(_kDispKey);
     final color = sp.getString(_kColorKey);
     _kind = _kinds.contains(kind) ? kind! : 'both';
-    _src = (src == 'auto' || _srcLangs.containsKey(src)) ? src! : 'en';
+    _src = ((_kAutoLangUi && src == 'auto') || _srcLangs.containsKey(src))
+        ? src!
+        : 'en';
     _disp = _displayModes.contains(disp) ? disp! : 'both';
     _color = (color != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color))
         ? color.toUpperCase()
@@ -1222,6 +1236,11 @@ class _FloatingBubbleSectionState
   /// مثل ensureOfflineSpeechModel در Hope: اگر بسته‌ی آفلاینِ «زبان صدا» دانلود نشده، یک‌بار می‌پرسد و
   /// دانلود را شروع می‌کند. true = می‌شود ادامه داد، false = اول باید بسته دانلود شود.
   Future<bool> _ensureSpeechPack({required String afterDownload}) async {
+    // موتورِ Google انتخاب شده: بسته‌ی آفلاین شرطِ شروع نیست (فقط پشتیبان است)
+    if (ref.read(sharedPrefsProvider).getString(_kSpeechProviderKey) == 'google' &&
+        _src != 'auto') {
+      return true;
+    }
     // 🌐 «تشخیص خودکار»: موتورِ چندزبانه‌ی Whisper لازم است (هر کدام از tiny / base / small کافی است)
     if (_src == 'auto') return _ensureAutoPack(afterDownload: afterDownload);
     final pack = await LinLearnBridge.packStatus('speech', _src);
@@ -1571,7 +1590,7 @@ class _FloatingBubbleSectionState
                     label: L.settings_audio_language,
                     value: _src,
                     items: <String, String>{
-                      'auto': L.settings_lang_auto,
+                      if (_kAutoLangUi) 'auto': L.settings_lang_auto,
                       ..._srcLangs,
                     },
                     onChanged: (v) {
@@ -1582,6 +1601,7 @@ class _FloatingBubbleSectionState
                           () => ref.read(nativeSyncProvider).pushLangs());
                     },
                   ),
+                  const _SpeechEngineSection(),
                   PackTile(
                     key: ValueKey('speech-$_src-$_packEpoch'),
                     // 🌐 خودکار: مدلِ چندزبانه‌ی Whisper (base)؛ وگرنه بسته‌ی زبانِ انتخابی
@@ -2030,6 +2050,192 @@ class _LabeledDrop extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: _DropBox(value: value, items: items, onChanged: onChanged),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// موتورِ تشخیص گفتارِ ترجمه‌ی زنده: «آفلاین» (پیش‌فرض) یا «Google»
+// Google = SpeechRecognizerِ خودِ اندروید؛ نیاز به اینترنت و اندروید ۱۳+ دارد.
+// اگر Google در دسترس نباشد یا خطا بدهد، خودکار با موتورِ آفلاین ادامه می‌دهد.
+// ═══════════════════════════════════════════════════════════════════
+class _SpeechEngineSection extends ConsumerStatefulWidget {
+  const _SpeechEngineSection();
+
+  @override
+  ConsumerState<_SpeechEngineSection> createState() =>
+      _SpeechEngineSectionState();
+}
+
+class _SpeechEngineSectionState extends ConsumerState<_SpeechEngineSection> {
+  late String _provider;
+  bool _supported = true; // اندروید ۱۳+
+  bool _available = true; // سرویسِ تشخیص گفتارِ گوگل روی گوشی
+
+  bool get _googleOk => _supported && _available;
+
+  @override
+  void initState() {
+    super.initState();
+    final v = ref.read(sharedPrefsProvider).getString(_kSpeechProviderKey);
+    _provider = v == 'google' ? 'google' : 'offline';
+    _loadStatus();
+  }
+
+  Future<void> _loadStatus() async {
+    final st = await LinLearnBridge.speechProviderStatus();
+    if (!mounted || st == null) return;
+    setState(() {
+      _supported = st['googleSupported'] != false;
+      _available = st['googleAvailable'] != false;
+      final p = st['provider'];
+      if (p == 'google' || p == 'offline') _provider = p as String;
+    });
+    ref.read(sharedPrefsProvider).setString(_kSpeechProviderKey, _provider);
+  }
+
+  Future<void> _set(String v) async {
+    if (v == 'google' && !_googleOk) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.settings_stt_google_unavailable)),
+      );
+      return;
+    }
+    setState(() => _provider = v);
+    await ref.read(sharedPrefsProvider).setString(_kSpeechProviderKey, v);
+    await LinLearnBridge.speechProviderSet(v);
+  }
+
+  Widget _card({
+    required String id,
+    required IconData icon,
+    required String title,
+    required String badge,
+    required String hint,
+    bool enabled = true,
+    String? warning,
+  }) {
+    final c = context.appColors;
+    final sel = _provider == id;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Opacity(
+        opacity: enabled ? 1 : 0.55,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _set(id),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: sel ? c.gold : c.cardBorder,
+                width: sel ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, size: 22, color: sel ? c.gold : c.inkSoft),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(title,
+                                style: TextStyle(
+                                    color: c.ink,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: c.cardBorder),
+                            ),
+                            child: Text(badge,
+                                style: TextStyle(
+                                    color: c.inkSoft,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(hint,
+                          style: TextStyle(
+                              color: c.inkSoft, fontSize: 11.5, height: 1.6)),
+                      if (warning != null) ...[
+                        const SizedBox(height: 4),
+                        Text('⚠️ $warning',
+                            style: TextStyle(
+                                color: c.inkSoft,
+                                fontSize: 11,
+                                height: 1.6,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  sel ? Icons.radio_button_checked : Icons.radio_button_off,
+                  size: 20,
+                  color: sel ? c.gold : c.inkSoft,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isAndroidApp) return const SizedBox.shrink();
+    final c = context.appColors;
+    final L = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(emoji: '🎙', label: L.settings_stt_title),
+          const SizedBox(height: 6),
+          _card(
+            id: 'offline',
+            icon: Icons.offline_bolt_rounded,
+            title: L.settings_stt_offline,
+            badge: L.settings_stt_badge_offline,
+            hint: L.settings_stt_offline_hint,
+          ),
+          _card(
+            id: 'google',
+            icon: Icons.cloud_queue_rounded,
+            title: L.settings_stt_google,
+            badge: L.settings_stt_badge_online,
+            hint: L.settings_stt_google_hint,
+            enabled: _googleOk,
+            warning: !_supported
+                ? L.settings_stt_google_needs_13
+                : (!_available ? L.settings_stt_google_missing : null),
+          ),
+          Text(
+            _provider == 'google'
+                ? L.settings_stt_note_google
+                : L.settings_stt_note_offline,
+            style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.6),
           ),
         ],
       ),

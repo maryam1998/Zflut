@@ -126,6 +126,13 @@ class NativeBridge {
   Future<Map<String, dynamic>> setSttEngine({String? engine, String? model}) =>
       _call('setSttEngine', {if (engine != null) 'engine': engine, if (model != null) 'model': model});
 
+  /// provider: 'offline' | 'google' (SpeechRecognizerِ خودِ اندروید)
+  Future<Map<String, dynamic>> setSpeechProvider({required String provider}) =>
+      _call('setSpeechProvider', {'provider': provider});
+
+  /// → { provider, googleSupported (اندروید ۱۳+), googleAvailable }
+  Future<Map<String, dynamic>> getSpeechProvider() => _call('getSpeechProvider');
+
   Future<Map<String, dynamic>> getWhisperStatus() => _call('getWhisperStatus');
 
   Future<Map<String, dynamic>> downloadWhisperModel({String? model}) =>

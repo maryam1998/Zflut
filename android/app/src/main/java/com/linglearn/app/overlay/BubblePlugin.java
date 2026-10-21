@@ -511,6 +511,37 @@ public class BubblePlugin extends Plugin {
         call.resolve();
     }
 
+    // setSpeechProvider({ provider: "offline" | "google" }) — موتورِ تشخیص گفتارِ ترجمه‌ی زنده
+    @PluginMethod
+    public void setSpeechProvider(PluginCall call) {
+        String p = call.getString("provider", "offline");
+        if (!"google".equals(p)) p = "offline";
+        try {
+            getContext().getSharedPreferences("bubble_prefs", Context.MODE_PRIVATE).edit()
+                    .putString("speechProvider", p).apply();
+        } catch (Throwable ignored) {}
+        BubbleService.resetGoogleSkip();
+        call.resolve();
+    }
+
+    // getSpeechProvider() → { provider, googleSupported (اندروید ۱۳+), googleAvailable (سرویسِ گوگل روی گوشی) }
+    @PluginMethod
+    public void getSpeechProvider(PluginCall call) {
+        Context ctx = getContext();
+        JSObject ret = new JSObject();
+        ret.put("provider", ctx.getSharedPreferences("bubble_prefs", Context.MODE_PRIVATE)
+                .getString("speechProvider", "offline"));
+        boolean supported = android.os.Build.VERSION.SDK_INT >= 33;
+        boolean available = false;
+        if (supported) {
+            try { available = android.speech.SpeechRecognizer.isRecognitionAvailable(ctx); }
+            catch (Throwable ignored) {}
+        }
+        ret.put("googleSupported", supported);
+        ret.put("googleAvailable", available);
+        call.resolve(ret);
+    }
+
     // getWhisperStatus() → { engine, model, models: [{id, downloaded, approxMb, partialBytes}], downloading, activeModel }
     @PluginMethod
     public void getWhisperStatus(PluginCall call) {

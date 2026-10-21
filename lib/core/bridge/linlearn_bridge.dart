@@ -353,6 +353,25 @@ class LinLearnBridge {
   }
 
   // ═══════════════════════════════════════════════════════════
+  // موتورِ تشخیص گفتارِ ترجمه‌ی زنده: آفلاین یا Google
+  // ═══════════════════════════════════════════════════════════
+  static Future<Map<String, dynamic>?> speechProviderStatus() async {
+    if (!_n.isSupported) return null;
+    try {
+      return await _n.getSpeechProvider();
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  static Future<bool> speechProviderSet(String provider) {
+    if (!_n.isSupported) return Future.value(false);
+    return _ok(() => _n.setSpeechProvider(provider: provider));
+  }
+
+  // ═══════════════════════════════════════════════════════════
   // زیرنویس زنده‌ی یوتیوب (نیازمند «دسترسی به اعلان‌ها»)
   // ═══════════════════════════════════════════════════════════
   static Future<bool> ytCheckAccess() async {

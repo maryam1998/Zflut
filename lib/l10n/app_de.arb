@@ -816,5 +816,17 @@
   "speaking_save_to_history": "💾 Im Verlauf speichern",
   "speaking_saved_to_history": "✅ Im Verlauf gespeichert",
   "speaking_saved_to_grammar": "✅ In Grammatik gespeichert",
-  "speaking_confirm_delete_chats": "{n} ausgewählte Gespräche löschen?"
+  "speaking_confirm_delete_chats": "{n} ausgewählte Gespräche löschen?",
+  "settings_stt_title": "Spracherkennungs-Engine",
+  "settings_stt_offline": "Offline (auf dem Gerät)",
+  "settings_stt_badge_offline": "Offline",
+  "settings_stt_offline_hint": "Privat und ohne Internet nutzbar; verwendet das unten heruntergeladene Sprachpaket.",
+  "settings_stt_google": "Google (Android-Spracherkennung)",
+  "settings_stt_badge_online": "Online",
+  "settings_stt_google_hint": "Meist genauer als kleine Offline-Modelle. Benötigt Internet.",
+  "settings_stt_google_needs_13": "Erfordert Android 13 oder neuer.",
+  "settings_stt_google_missing": "Der Google-Sprachdienst ist auf diesem Telefon nicht verfügbar.",
+  "settings_stt_google_unavailable": "Die Google-Spracherkennung ist auf diesem Telefon nicht verfügbar.",
+  "settings_stt_note_google": "Erkennt Google die Sprache nicht oder bricht die Verbindung ab, wechselt die App automatisch zur Offline-Engine.",
+  "settings_stt_note_offline": "Wähle Google für höhere Genauigkeit, wenn du online bist."
 }
