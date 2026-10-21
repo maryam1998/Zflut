@@ -431,11 +431,11 @@ public class BubbleService extends Service {
     // ── نمایش/پنهان‌شدنِ خودکارِ کادر ───────────────────────────────────────
     // وقتی چیزی پخش نمی‌شه (ویدیو pause، صدا قطع، یا ضبط متوقف شد) کادر خودش جمع می‌شه و
     // با شروعِ دوباره‌ی پخش خودش برمی‌گرده. بستنِ دستی با ▾ همچنان تا لمسِ حباب پنهان می‌مونه.
-    private static final long IDLE_HIDE_MS = 3000;   // بعد از قطعِ صدا/ویدیو چند ثانیه صبر می‌کنه (مکثِ بین جمله‌ها کادر را نپرانه) و بعد نرم محو می‌شه
-    private static final long IDLE_TICK_MS = 250;     // دقتِ بررسیِ وضعیتِ پخش
+    private static final long IDLE_HIDE_MS = 0;   // ⚡ بلافاصله بعد از قطعِ صدا بسته می‌شود (مگر 📌 روشن باشد).   // بعد از قطعِ صدا/ویدیو چند ثانیه صبر می‌کنه (مکثِ بین جمله‌ها کادر را نپرانه) و بعد نرم محو می‌شه
+    private static final long IDLE_TICK_MS = 120;     // دقتِ بررسیِ وضعیتِ پخش
     private static final long REOPEN_CONFIRM_MS = 400; // صدا باید این‌قدر پیوسته باشه تا کادر باز شه (نویزِ کوتاه کادر را باز نکنه)
     private static final long PANEL_FADE_IN_MS = 180;
-    private static final long PANEL_FADE_OUT_MS = 280;
+    private static final long PANEL_FADE_OUT_MS = 160;
     private static final long REOPEN_KEEP_HISTORY_MS = 600000;  // منبعِ ناشناس: اگه کمتر از این مدت بسته بوده، تاریخچه نگه داشته می‌شه
     private volatile long lastVoiceMs = 0;   // آخرین لحظه‌ای که صدایی از سیستم شنیده شد
     private volatile long lastTextMs = 0;    // آخرین لحظه‌ای که متنِ تشخیص‌داده‌شده رسید
@@ -451,10 +451,44 @@ public class BubbleService extends Service {
     private long activeSinceMs = 0;          // از کی صدا/پخش پیوسته فعال است (0 = فعال نیست)
     private final Runnable idleRunnable = this::idleTick;
 
+    // ── 🎬 حالتِ مینیمال: سربرگ و دکمه‌های پایین بعد از چند ثانیه جمع می‌شوند و فقط متن + نوارِ هاشورخورده می‌ماند ──
+    private static final long CHROME_HIDE_MS = 4000;
+    private View headerView, pinRowView;
+    private final ArrayList<View> gripExtras = new ArrayList<>();
+    private boolean chromeHidden = false;
+    private volatile long lastPanelTouchMs = 0;
+
+    private boolean anyRowOpen() {
+        return (opacityRow != null && opacityRow.getVisibility() == View.VISIBLE)
+                || (speedRow != null && speedRow.getVisibility() == View.VISIBLE)
+                || (fontRow != null && fontRow.getVisibility() == View.VISIBLE)
+                || (langRow != null && langRow.getVisibility() == View.VISIBLE);
+    }
+
+    private void applyChrome() {
+        final int vis = chromeHidden ? View.GONE : View.VISIBLE;
+        if (headerView != null) headerView.setVisibility(vis);
+        if (pinRowView != null) pinRowView.setVisibility(vis);
+        for (View v : gripExtras) v.setVisibility(vis);
+        if (chromeHidden) {
+            closeLangRow();
+            if (opacityRow != null) opacityRow.setVisibility(View.GONE);
+            if (speedRow != null) speedRow.setVisibility(View.GONE);
+            if (fontRow != null) fontRow.setVisibility(View.GONE);
+        }
+        refreshLayout();
+    }
+
+    private void toggleChrome() {
+        chromeHidden = !chromeHidden;
+        lastPanelTouchMs = SystemClock.elapsedRealtime();
+        applyChrome();
+    }
+
     private boolean somethingPlaying(long now) {
         YtSubtitles y = yt;
         if (y != null && y.isPlaying()) return true;
-        return recording && (now - lastVoiceMs < 1200 || now - lastTextMs < 2000);
+        return recording && (now - lastVoiceMs < 900 || now - lastTextMs < 900);
     }
 
     private void idleTick() {
@@ -463,10 +497,19 @@ public class BubbleService extends Service {
         long now = SystemClock.elapsedRealtime();
         boolean active = somethingPlaying(now);
         boolean busy = panelDragging || (wordCard != null && wordCard.getVisibility() == View.VISIBLE)
-                || (scroll != null && (scroll.frozen || SystemClock.uptimeMillis() - scroll.lastUserTouch < 6000))
+                || (scroll != null && (scroll.frozen || SystemClock.uptimeMillis() - scroll.lastUserTouch < 1500))
                 // تمرینِ shadowing: وسطِ ضبط/پخشِ صدای خودت کادر نباید جمع بشه (ضبط حداکثر ۱۰ دقیقه حساب می‌شود)
                 || (shadowRecording && now - shadowStartMs < 600000) || shadowPlayer != null;
         if (active || busy) lastActiveMs = now;
+        if (panelShown && !fadingOut) {
+            final boolean cardOpen = wordCard != null && wordCard.getVisibility() == View.VISIBLE;
+            if (!chromeHidden && active && !anyRowOpen() && !cardOpen && !panelDragging
+                    && now - lastPanelTouchMs > CHROME_HIDE_MS) {
+                chromeHidden = true; applyChrome();                 // در حالِ پخش، چند ثانیه بعد از آخرین لمس: فقط متن
+            } else if (chromeHidden && !active && !busy) {
+                chromeHidden = false; applyChrome();                // 📌 روشن و صدا قطع: کنترل‌ها برگردند
+            }
+        }
         if (!active) activeSinceMs = 0;
         else if (activeSinceMs == 0) activeSinceMs = now;
 
@@ -833,13 +876,13 @@ public class BubbleService extends Service {
         if (out.isEmpty()) out.add(targetLang());
         // در حالتِ یوتیوب، «زبانِ مبدأ» = زبانِ زیرنویسِ همان ویدیو (مثلاً es)، نه زبانِ صدای تنظیمات؛
         // وگرنه برای ویدیوی غیرانگلیسی، «انگلیسی» به‌اشتباه از ترجمه‌ها حذف می‌شد.
-        String src = currentSrcLang();
+        String src = panelSrcLang();
         if (src != null && !"auto".equals(src)) out.remove(src);
         return out;
     }
 
     /** زبانِ چیزی که الان ترجمه می‌شود: زیرنویسِ ویدیو (حالتِ یوتیوب) یا زبانِ گفتار (ترجمه‌ی زنده). */
-    private String currentSrcLang() {
+    private String panelSrcLang() {
         return (yt != null && yt.isActive()) ? yt.trackLang() : effectiveSource();
     }
 
@@ -1535,20 +1578,30 @@ public class BubbleService extends Service {
     private void ensurePanel() {
         if (panel != null) return;
         loadViewPrefs();
-        panel = new LinearLayout(this);
+        gripExtras.clear();
+        panel = new LinearLayout(this) {
+            @Override public boolean dispatchTouchEvent(MotionEvent ev) {
+                lastPanelTouchMs = SystemClock.elapsedRealtime();       // هر لمسِ کادر، شمارشِ جمع‌شدنِ کنترل‌ها را از نو می‌کند
+                return super.dispatchTouchEvent(ev);
+            }
+        };
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setPadding(dp(12), dp(6), dp(12), dp(10));
+        panel.setClipToPadding(false);                // نوارِ هاشور تا لبه‌ها (بیرون از padding) کشیده می‌شود
+        panel.setClipToOutline(true);                 // و گوشه‌های گردِ کادر آن را می‌برد
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.parseColor("#F01C2541"));
-        bg.setCornerRadius(dp(16));
-        bg.setStroke(dp(1), COLOR_GOLD);
+        bg.setCornerRadius(dp(22));
+        bg.setStroke(dp(1), Color.parseColor("#40FFFFFF"));
         panel.setBackground(bg);
         panelBgDrawable = bg;
         applyPanelAlpha();
 
         gripTop = makeGrip(false);
-        panel.addView(gripTop, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(24)));
+        LinearLayout.LayoutParams gtLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(30));
+        gtLp.setMargins(-dp(12), -dp(6), -dp(12), dp(4));
+        panel.addView(gripTop, gtLp);
 
         // header: title + languages, clear-history, close
         LinearLayout header = new LinearLayout(this);
@@ -1564,7 +1617,7 @@ public class BubbleService extends Service {
         tvHeader.setSingleLine(true);
         tvHeader.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         tvHeader.setGravity(Gravity.CENTER);
-        tvHeader.setPadding(dp(10), dp(5), dp(10), dp(5));
+        tvHeader.setPadding(dp(4), dp(8), dp(10), dp(8));
         tvHeader.setContentDescription(msg("زبان‌های ترجمه — برای تغییر بزنید", "Translation languages — tap to change"));
         tvHeader.setOnClickListener(v -> toggleLangRow());
         paintLangPill(false);
@@ -1613,6 +1666,7 @@ public class BubbleService extends Service {
         minLp.setMarginStart(dp(4));
         header.addView(minimize, minLp);
         header.setOnTouchListener(new PanelMover());      // کشیدنِ سربرگ = جابه‌جایی؛ نگه‌داشتن = برداشتنِ کادر + ✕ پایینِ صفحه
+        headerView = header;
         panel.addView(header, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -1678,9 +1732,7 @@ public class BubbleService extends Service {
         tvStatus.setVisibility(View.GONE);
         panel.addView(tvStatus);
 
-        gripBottom = makeGrip(true);
-        panel.addView(gripBottom, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(24)));
+        gripBottom = makeGrip(true);       // نوارِ هاشور: پایینِ همه‌چیز (بعد از ردیفِ دکمه‌ها) اضافه می‌شود
 
         // 📌 دکمه‌ی «باز بمان» — پایین-راستِ کادر
         loadKeepOpen();
@@ -1726,8 +1778,13 @@ public class BubbleService extends Service {
         clrLp.topMargin = dp(2);
         pinRow.addView(tvClear, clrLp);
         pinRow.addView(tvPin, pinLp);
+        pinRowView = pinRow;
         panel.addView(pinRow, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams gbLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(30));
+        gbLp.setMargins(-dp(12), dp(4), -dp(12), -dp(10));
+        panel.addView(gripBottom, gbLp);
 
         // touchable (history scrolls, buttons work) but touches outside the panel still reach the app below
         panelLp = new WindowManager.LayoutParams(
@@ -1898,12 +1955,13 @@ public class BubbleService extends Service {
 
     private void refreshHeader() {
         if (tvHeader == null) return;
-        StringBuilder sb = new StringBuilder();
+        // علامتِ ریزِ ▾ جلوی زبان‌ها؛ باز شد ▴
+        final boolean open = langRow != null && langRow.getVisibility() == View.VISIBLE;
+        StringBuilder sb = new StringBuilder(open ? "\u25B4 " : "\u25BE ");
         List<String> ts = activeTargets();
         for (int i = 0; i < ts.size(); i++) {
-            sb.append(i == 0 ? "\u2192 " : " / ").append(ts.get(i).toUpperCase(Locale.ROOT));
+            sb.append(i == 0 ? "" : " / ").append(ts.get(i).toUpperCase(Locale.ROOT));
         }
-        sb.append(" \u25BE");
         tvHeader.setText(sb.toString());
         paintLangChips();
         updateModeSwitch();
@@ -1918,11 +1976,11 @@ public class BubbleService extends Service {
 
     private void paintLangPill(boolean open) {
         if (tvHeader == null) return;
-        GradientDrawable g = new GradientDrawable();
-        g.setCornerRadius(dp(15));
-        g.setColor(open ? COLOR_GOLD : Color.parseColor("#26FFFFFF"));
-        tvHeader.setBackground(g);
-        tvHeader.setTextColor(open ? Color.parseColor("#1C2541") : COLOR_GOLD);
+        // بدونِ قاب و پس‌زمینه (شلوغ نشود)؛ فقط متنِ طلایی. باز بودن: کمی پررنگ‌تر.
+        tvHeader.setBackground(null);
+        tvHeader.setTextColor(COLOR_GOLD);
+        tvHeader.setAlpha(open ? 1f : 0.85f);
+        refreshHeader();
     }
 
     private View buildLangRow() {
@@ -1971,7 +2029,7 @@ public class BubbleService extends Service {
     private void paintLangChips() {
         if (langChips.isEmpty()) return;
         final List<String> picked = pickedTargets();
-        final String src = currentSrcLang();
+        final String src = panelSrcLang();
         for (TextView c : langChips) {
             final String code = (String) c.getTag();
             final boolean isSrc = src != null && !"auto".equals(src) && src.equals(code);
@@ -2014,7 +2072,7 @@ public class BubbleService extends Service {
     }
 
     private void onPickLang(String code) {
-        final String src = currentSrcLang();
+        final String src = panelSrcLang();
         if (src != null && !"auto".equals(src) && src.equals(code)) {
             langHint(msg("این زبانِ خودِ گفتار/ویدیوست؛ ترجمه ندارد", "That's the spoken language — nothing to translate"));
             return;
@@ -2104,6 +2162,8 @@ public class BubbleService extends Service {
         computePanelPos();
         try {
             if (!panelShown) {
+                lastPanelTouchMs = SystemClock.elapsedRealtime();
+                if (chromeHidden) { chromeHidden = false; applyChrome(); }
                 panel.animate().cancel();
                 panel.setAlpha(0f);
                 wm.addView(panel, panelLp);
@@ -2129,6 +2189,7 @@ public class BubbleService extends Service {
         }
         panelShown = false;
         panelFree = false;
+        chromeHidden = false;
         if (tvStatus != null) { tvStatus.setText(""); tvStatus.setVisibility(View.GONE); }
     }
 
@@ -3756,14 +3817,9 @@ public class BubbleService extends Service {
     }
 
     private View makeGrip(final boolean atBottom) {
-        final FrameLayout f = new FrameLayout(this);
-
-        final GradientDrawable pillBg = new GradientDrawable();
-        pillBg.setColor(Color.parseColor("#59FFFFFF"));
-        pillBg.setCornerRadius(dp(2));
-        final View pill = new View(this);
-        pill.setBackground(pillBg);
-        f.addView(pill, new FrameLayout.LayoutParams(dp(36), dp(4), Gravity.CENTER));
+        final HatchBar f = new HatchBar(this);
+        f.setContentDescription(msg("بکش: تغییرِ اندازه یا جابه‌جایی · بزن: نمایش/پنهانِ کنترل‌ها",
+                "Drag: resize or move · Tap: show/hide controls"));
 
         // کپسولِ اندازه‌ی متن
         LinearLayout cap = new LinearLayout(this);
@@ -3771,7 +3827,7 @@ public class BubbleService extends Service {
         cap.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         cap.setGravity(Gravity.CENTER_VERTICAL);
         GradientDrawable capBg = new GradientDrawable();
-        capBg.setColor(Color.parseColor("#1AFFFFFF"));
+        capBg.setColor(Color.parseColor("#59000000"));
         capBg.setCornerRadius(dp(10));
         cap.setBackground(capBg);
         cap.addView(fontStep("A\u2212", 11, -0.1f));
@@ -3784,6 +3840,7 @@ public class BubbleService extends Service {
                 (atBottom ? Gravity.START : Gravity.END) | Gravity.CENTER_VERTICAL);
         if (atBottom) clp.setMarginStart(dp(2)); else clp.setMarginEnd(dp(2));
         f.addView(cap, clp);
+        gripExtras.add(cap);
 
         // 🎙 دکمه‌ی ضبطِ shadowing (پایین-راستِ کادر)
         if (atBottom) {
@@ -3814,32 +3871,101 @@ public class BubbleService extends Service {
                     ViewGroup.LayoutParams.WRAP_CONTENT, dp(22), Gravity.END | Gravity.CENTER_VERTICAL);
             slp.setMarginEnd(dp(2));
             f.addView(sh, slp);
+            gripExtras.add(sh);
         }
 
-        final float[] d = new float[2];      // downY, startH(frac)
+        // کشیدن: عمودی = تغییرِ ارتفاع (↕)، افقی = جابه‌جاییِ کادر؛ بدونِ حرکت (بزن) = نمایش/پنهانِ کنترل‌ها
+        final float[] d = new float[6];      // 0 downY, 1 startH(frac), 2 downX, 3 mode(0 نامعلوم/1 اندازه/2 جابه‌جایی), 4 panelX, 5 panelY
+        final int slop = ViewConfiguration.get(this).getScaledTouchSlop();
         f.setOnTouchListener((v, ev) -> {
             switch (ev.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    d[0] = ev.getRawY(); d[1] = panelHFrac;
-                    pillBg.setColor(COLOR_GOLD);
+                case MotionEvent.ACTION_DOWN: {
+                    d[0] = ev.getRawY(); d[1] = panelHFrac; d[2] = ev.getRawX(); d[3] = 0;
+                    int[] loc = new int[2];
+                    if (panel != null) panel.getLocationOnScreen(loc);
+                    d[4] = loc[0]; d[5] = loc[1];
+                    f.setActive(true);
+                    panelDragging = true;
+                    main.removeCallbacks(hidePanel);
                     return true;
+                }
                 case MotionEvent.ACTION_MOVE: {
-                    float dy = (ev.getRawY() - d[0]) * (atBottom ? 1f : -1f);
-                    panelHFrac = Math.max(0.12f, Math.min(0.85f, d[1] + dy / screenH()));
-                    if (scroll != null) scroll.atBottom = false;
-                    applyScrollMax();
-                    refreshLayout();
+                    float rdx = ev.getRawX() - d[2], rdy = ev.getRawY() - d[0];
+                    if (d[3] == 0 && Math.max(Math.abs(rdx), Math.abs(rdy)) > slop) {
+                        d[3] = Math.abs(rdy) >= Math.abs(rdx) ? 1 : 2;
+                    }
+                    if (d[3] == 1) {
+                        float dy = rdy * (atBottom ? 1f : -1f);
+                        panelHFrac = Math.max(0.12f, Math.min(0.85f, d[1] + dy / screenH()));
+                        if (scroll != null) scroll.atBottom = false;
+                        applyScrollMax();
+                        refreshLayout();
+                    } else if (d[3] == 2) {
+                        panelFree = true;
+                        panelFreeX = Math.round(d[4] + rdx);
+                        panelFreeY = Math.round(d[5] + rdy);
+                        refreshLayout();
+                    }
                     return true;
                 }
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
-                    pillBg.setColor(Color.parseColor("#59FFFFFF"));
-                    saveViewPrefs();
+                    f.setActive(false);
+                    panelDragging = false;
+                    lastActiveMs = SystemClock.elapsedRealtime();
+                    if (d[3] == 0 && ev.getActionMasked() == MotionEvent.ACTION_UP) toggleChrome();
+                    else saveViewPrefs();
                     return true;
             }
             return true;
         });
         return f;
+    }
+
+    /** 🟦 نوارِ هاشورخوردهٔ پایین (و بالا) کادر با آیکنِ ↕؛ برای تغییرِ اندازه/جابه‌جاییِ آسان. */
+    private final class HatchBar extends FrameLayout {
+        private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint icBg = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint ic = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path arrows = new Path();
+        private boolean active;
+
+        HatchBar(Context c) {
+            super(c);
+            setWillNotDraw(false);
+            line.setStyle(Paint.Style.STROKE);
+            line.setStrokeWidth(dp(1.4f));
+            ic.setStyle(Paint.Style.STROKE);
+            ic.setStrokeWidth(dp(2));
+            ic.setStrokeCap(Paint.Cap.ROUND);
+            ic.setStrokeJoin(Paint.Join.ROUND);
+            icBg.setColor(Color.parseColor("#80000000"));
+        }
+
+        void setActive(boolean a) { active = a; invalidate(); }
+
+        @Override protected void dispatchDraw(Canvas cv) {
+            final int w = getWidth(), h = getHeight();
+            fill.setColor(active ? Color.parseColor("#40F2C14E") : Color.parseColor("#33000000"));
+            cv.drawRect(0, 0, w, h, fill);
+            line.setColor(active ? Color.parseColor("#80F2C14E") : Color.parseColor("#2EFFFFFF"));
+            cv.save();
+            cv.clipRect(0, 0, w, h);
+            final float step = dp(7);
+            for (float x = -h; x < w + h; x += step) cv.drawLine(x, h, x + h, 0, line);
+            cv.restore();
+            final float cx = w / 2f, cy = h / 2f;
+            cv.drawRoundRect(cx - dp(18), cy - dp(11), cx + dp(18), cy + dp(11), dp(11), dp(11), icBg);
+            ic.setColor(active ? COLOR_GOLD : Color.WHITE);
+            final float a = dp(5.5f), c = dp(3.5f);
+            arrows.reset();
+            arrows.moveTo(cx, cy - a); arrows.lineTo(cx, cy + a);
+            arrows.moveTo(cx - c, cy - a + c); arrows.lineTo(cx, cy - a); arrows.lineTo(cx + c, cy - a + c);
+            arrows.moveTo(cx - c, cy + a - c); arrows.lineTo(cx, cy + a); arrows.lineTo(cx + c, cy + a - c);
+            cv.drawPath(arrows, ic);
+            super.dispatchDraw(cv);
+        }
     }
 
     private TextView fontStep(String label, int sp, final float delta) {
