@@ -2606,8 +2606,9 @@ public class BubbleService extends Service {
             new FontOpt("fa_serif", "سریف", "Serif", "serif", null, false, false, 1f, false),
             new FontOpt("fa_medium", "متوسط", "Medium", "sans-serif-medium", null, false, false, 1f, false),
             // فونت‌های فارسیِ خودِ گوشی؛ «serif/medium» اندروید روی حروفِ فارسی اثری ندارد و همه با یک فونتِ fallback رسم می‌شوند
-            new FontOpt("fa_sysnaskh", "نسخ", "Naskh", null, null, false, false, 1.05f, false).sys("notonaskharabic", "droidnaskh", "naskh"),
+            new FontOpt("fa_sysnaskh", "نسخ", "Naskh", null, new String[]{"notonaskh"}, false, false, 1.05f, false).sys("notonaskharabic", "droidnaskh", "naskh"),
             new FontOpt("fa_syssans", "ساده", "Sans", null, null, false, false, 1f, false).sys("notosansarabic", "droidsansarabic", "sansarabic"),
+            new FontOpt("fa_aref", "عارف رقعه", "Aref Ruqaa", null, new String[]{"aref"}, true, true, 1.1f, true),
             new FontOpt("fa_syskufi", "کوفی", "Kufi", null, null, false, false, 1f, false).sys("kufi"),
             new FontOpt("fa_sysnastaliq", "نستعلیق", "Nastaliq", null, null, true, true, 1.1f, false).sys("nastaliq", "nastaleeq"),
     };
@@ -2634,7 +2635,7 @@ public class BubbleService extends Service {
         boolean lora = fontById(EN_FONTS, "en_lora").id.equals("en_lora") && fontAvailable(fontById(EN_FONTS, "en_lora"));
         switch (id == null ? "default" : id) {
             case "classic": return new String[]{pickFa("fa_sysnaskh", "fa_serif"), "en_serif"};
-            case "elegant": return new String[]{pickFa("fa_sysnastaliq", "fa_sysnaskh", "fa_serif"), "en_cursive"};
+            case "elegant": return new String[]{pickFa("fa_aref", "fa_sysnastaliq", "fa_sysnaskh", "fa_serif"), "en_cursive"};
             case "rounded": return new String[]{pickFa("fa_syskufi", "fa_medium"), "en_casual"};
             case "modern":  return new String[]{vazir ? "fa_vazir" : pickFa("fa_syssans", "fa_default"), inter ? "en_inter" : "en_light"};
             case "warm":    return new String[]{vazir ? "fa_vazir" : pickFa("fa_sysnaskh", "fa_default"), "en_cond"};
