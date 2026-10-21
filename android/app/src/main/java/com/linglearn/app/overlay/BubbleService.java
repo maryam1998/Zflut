@@ -480,9 +480,8 @@ public class BubbleService extends Service {
     }
 
     private void toggleChrome() {
-        chromeHidden = !chromeHidden;
-        lastPanelTouchMs = SystemClock.elapsedRealtime();
-        applyChrome();
+        // کنترل‌ها همیشه دیده می‌شوند؛ زدن روی نوارِ پایین دیگر آن‌ها را پنهان نمی‌کند
+        if (chromeHidden) { chromeHidden = false; applyChrome(); }
     }
 
     private boolean somethingPlaying(long now) {
@@ -503,10 +502,8 @@ public class BubbleService extends Service {
         if (active || busy) lastActiveMs = now;
         if (panelShown && !fadingOut) {
             final boolean cardOpen = wordCard != null && wordCard.getVisibility() == View.VISIBLE;
-            if (!chromeHidden && active && !anyRowOpen() && !cardOpen && !panelDragging
-                    && now - lastPanelTouchMs > CHROME_HIDE_MS) {
-                chromeHidden = true; applyChrome();                 // در حالِ پخش، چند ثانیه بعد از آخرین لمس: فقط متن
-            } else if (chromeHidden && !active && !busy) {
+            // کنترل‌ها (سربرگ، انتخابِ زبان، دکمه‌های پایین) همیشه نمایش داده می‌شوند؛ جمع‌شدنِ خودکار حذف شد
+            if (chromeHidden) {
                 chromeHidden = false; applyChrome();                // 📌 روشن و صدا قطع: کنترل‌ها برگردند
             }
         }
@@ -1632,14 +1629,14 @@ public class BubbleService extends Service {
         header.addView(langWrap, wrapLp);
         tvYtRestart = headerButton("\u23EE", v -> restartYoutubeFromStart());   // ⏮ فقط در حالتِ یوتیوب دیده می‌شود
         tvYtRestart.setPadding(dp(8), dp(6), dp(8), dp(6));
+        tvYtRestart.setContentDescription(msg("پخشِ ویدیو از اول", "Restart video from the beginning"));
         tvYtRestart.setVisibility(View.GONE);
-        tvYtLoop = headerButton("\u221E", v -> toggleYoutubeVideoLoop());   // ∞ کلِ ویدیو از اول و بی‌نهایت بار؛ فقط در حالتِ یوتیوب
-        tvYtLoop.setTypeface(Typeface.DEFAULT_BOLD);
-        tvYtLoop.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19);
-        tvYtLoop.setPadding(dp(8), dp(2), dp(8), dp(2));
+        tvYtLoop = headerButton("\uD83C\uDFAC\uD83D\uDD01", v -> toggleYoutubeVideoLoop());   // 🎬🔁 تکرارِ کلِ ویدیو؛ فقط در حالتِ یوتیوب
+        tvYtLoop.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        tvYtLoop.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtLoop.setContentDescription(msg("تکرارِ بی‌نهایتِ کلِ ویدیو", "Loop the whole video"));
         tvYtLoop.setVisibility(View.GONE);
-        tvYtPause = headerButton("\u23EF", v -> toggleYoutubePause());   // ⏯ فقط در حالتِ یوتیوب دیده می‌شود
+        tvYtPause = headerButton("\u23F8", v -> toggleYoutubePause());   // ⏸ = در حالِ پخش (بزن: مکث) | ▶ = مکث شده (بزن: پخش)   // ⏯ فقط در حالتِ یوتیوب دیده می‌شود
         tvYtPause.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtPause.setVisibility(View.GONE);
         tvYtAll = headerButton("\uD83D\uDD02", v -> toggleFullText());   // 🔂 فقط در حالتِ «متنِ کامل»
@@ -1648,7 +1645,8 @@ public class BubbleService extends Service {
         header.addView(tvYtAll);
         tvSave = headerButton("\uD83D\uDCBE", v -> saveCurrent());
         loadRepeatPref();
-        tvRepeat = headerButton("\uD83D\uDD01", v -> cycleRepeat());
+        tvRepeat = headerButton("\u21BA", v -> cycleRepeat());
+        tvRepeat.setContentDescription(msg("تکرارِ هر جمله (خاموش / ۲ / ۳ / ∞)", "Repeat each sentence (off / 2 / 3 / ∞)"));
         tvRepeat.setPadding(dp(8), dp(6), dp(8), dp(6));
         updateRepeatButton();
         updateYtButton();
@@ -1745,7 +1743,7 @@ public class BubbleService extends Service {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         // دکمه‌های ⏮ ∞ ⏯ 🔁 💾 از هدر آمدند پایین، بعد از دکمه‌ی فونت (paddingِ کمتر تا همه جا شوند)
         tvYtRestart.setPadding(dp(5), dp(4), dp(5), dp(4));
-        tvYtLoop.setPadding(dp(5), dp(1), dp(5), dp(1));
+        tvYtLoop.setPadding(dp(5), dp(4), dp(5), dp(4));
         tvYtPause.setPadding(dp(5), dp(4), dp(5), dp(4));
         tvRepeat.setPadding(dp(5), dp(4), dp(5), dp(4));
         tvSave.setPadding(dp(5), dp(4), dp(5), dp(4));
@@ -2398,8 +2396,7 @@ public class BubbleService extends Service {
         for (Entry en : history)
             if (en != null && en.pcm != null && en.ytReplayBtn != null) en.ytReplayBtn.setText(replayLabel());
         if (tvRepeat == null) return;
-        tvRepeat.setText(repeatSetting == 0 ? "\uD83D\uDD01"
-                : repeatSetting == REPEAT_INF ? "\uD83D\uDD01\u221E" : "\uD83D\uDD01" + repeatSetting);
+        tvRepeat.setText(replayLabel());   // ↺ / ↺2 / ↺3 / ↺∞ (هم‌شکلِ دکمه‌ی ↺ روی هر جمله)
         tvRepeat.setTextColor(repeatSetting == 0 ? Color.WHITE : COLOR_GOLD);
         tvRepeat.setAlpha(repeatSetting == 0 ? 0.6f : 1f);
     }
@@ -2565,8 +2562,8 @@ public class BubbleService extends Service {
         if (yt == null || !yt.isActive()) return;
         stopPanelSpeech();                                   // صدای برنامه با صدای یوتیوب قاطی نشود
         int r = yt.togglePlayPause();
-        if (r == 1) showNotice(msg("ادامه‌ی پخش", "Playing"));
-        else if (r == 0) showNotice(msg("مکث", "Paused"));
+        if (r == 1) { if (tvYtPause != null) tvYtPause.setText("\u23F8"); showNotice(msg("ادامه‌ی پخش", "Playing")); }
+        else if (r == 0) { if (tvYtPause != null) tvYtPause.setText("\u25B6"); showNotice(msg("مکث", "Paused")); }
         else showNotice(msg("پلیر یوتیوب در دسترس نیست", "YouTube player not available"));
     }
 
@@ -3947,14 +3944,8 @@ public class BubbleService extends Service {
 
         @Override protected void dispatchDraw(Canvas cv) {
             final int w = getWidth(), h = getHeight();
-            fill.setColor(active ? Color.parseColor("#40F2C14E") : Color.parseColor("#33000000"));
+            fill.setColor(active ? Color.parseColor("#40F2C14E") : Color.parseColor("#59000000"));   // پس‌زمینه‌ی ساده و تیره‌تر (بدون هاشور)
             cv.drawRect(0, 0, w, h, fill);
-            line.setColor(active ? Color.parseColor("#80F2C14E") : Color.parseColor("#2EFFFFFF"));
-            cv.save();
-            cv.clipRect(0, 0, w, h);
-            final float step = dp(7);
-            for (float x = -h; x < w + h; x += step) cv.drawLine(x, h, x + h, 0, line);
-            cv.restore();
             final float cx = w / 2f, cy = h / 2f;
             cv.drawRoundRect(cx - dp(18), cy - dp(11), cx + dp(18), cy + dp(11), dp(11), dp(11), icBg);
             ic.setColor(active ? COLOR_GOLD : Color.WHITE);
@@ -4940,7 +4931,11 @@ public class BubbleService extends Service {
         boolean on = yt != null && yt.isActive();
         updateModeSwitch();
         if (tvYtRestart != null) tvYtRestart.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
-        if (tvYtPause != null) tvYtPause.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
+        if (tvYtPause != null) {
+            tvYtPause.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
+            tvYtPause.setText(on && yt != null && !yt.isPlaying() ? "\u25B6" : "\u23F8");
+            tvYtPause.setContentDescription(msg("مکث / ادامه‌ی پخش", "Pause / resume"));
+        }
         if (tvYtLoop != null) {
             boolean looping = on && yt != null && yt.isVideoLooping();
             tvYtLoop.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
