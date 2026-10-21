@@ -66,10 +66,64 @@ final class YtCaptionFetcher {
     private static final int NOCAP_VOTES = 2;
     private static final long WEBVIEW_MS = 22000;
 
+    // ═════════════════════════ DNS امن (مستقل از VPN/فیلترینگ) ═════════════════════════
+    // بعضی شبکه‌ها/VPNها برای یوتیوب آدرسِ جعلیِ داخلی (مثلاً 10.10.34.x) برمی‌گردانند → ConnectException.
+    // اگر جوابِ DNSِ سیستم خصوصی/جعلی بود یا شکست خورد، آدرسِ واقعی از DoH (Cloudflare / Google) گرفته می‌شود.
+    private static final java.util.concurrent.ConcurrentHashMap<String, Object[]> DOH_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final OkHttpClient DOH_HTTP = new OkHttpClient.Builder()
+            .connectTimeout(3, TimeUnit.SECONDS).readTimeout(4, TimeUnit.SECONDS).callTimeout(6, TimeUnit.SECONDS).build();
+
+    private static final okhttp3.Dns SAFE_DNS = new okhttp3.Dns() {
+        @Override public List<java.net.InetAddress> lookup(String host) throws java.net.UnknownHostException {
+            List<java.net.InetAddress> sys = null;
+            java.net.UnknownHostException err = null;
+            try { sys = okhttp3.Dns.SYSTEM.lookup(host); } catch (java.net.UnknownHostException e) { err = e; }
+            if (sys != null && !sys.isEmpty() && !allBogus(sys)) return sys;
+            List<java.net.InetAddress> d = doh(host);
+            if (!d.isEmpty()) return d;
+            if (sys != null && !sys.isEmpty()) return sys;
+            throw err != null ? err : new java.net.UnknownHostException(host);
+        }
+    };
+
+    private static boolean allBogus(List<java.net.InetAddress> l) {
+        for (java.net.InetAddress a : l)
+            if (!(a.isSiteLocalAddress() || a.isLoopbackAddress() || a.isAnyLocalAddress() || a.isLinkLocalAddress())) return false;
+        return true;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<java.net.InetAddress> doh(String host) {
+        Object[] c = DOH_CACHE.get(host);
+        if (c != null && System.currentTimeMillis() - (Long) c[0] < 5 * 60 * 1000L) return (List<java.net.InetAddress>) c[1];
+        final String[] urls = {
+                "https://1.1.1.1/dns-query?type=A&name=" + host,
+                "https://8.8.8.8/resolve?type=A&name=" + host,
+                "https://1.0.0.1/dns-query?type=A&name=" + host };
+        for (String u : urls) {
+            try (Response r = DOH_HTTP.newCall(new Request.Builder().url(u)
+                    .header("accept", "application/dns-json").get().build()).execute()) {
+                if (!r.isSuccessful() || r.body() == null) continue;
+                JSONArray ans = new JSONObject(r.body().string()).optJSONArray("Answer");
+                if (ans == null) continue;
+                List<java.net.InetAddress> out = new ArrayList<>();
+                for (int i = 0; i < ans.length(); i++) {
+                    JSONObject o = ans.getJSONObject(i);
+                    if (o.optInt("type") != 1) continue;
+                    java.net.InetAddress ip = java.net.InetAddress.getByName(o.optString("data"));   // آدرسِ عددی: DNS نمی‌زند
+                    out.add(java.net.InetAddress.getByAddress(host, ip.getAddress()));
+                }
+                if (!out.isEmpty() && !allBogus(out)) { DOH_CACHE.put(host, new Object[]{System.currentTimeMillis(), out}); return out; }
+            } catch (Throwable ignored) { /* بعدی */ }
+        }
+        return new ArrayList<>();
+    }
+
     // ═════════════════════════ زیرنویس ═════════════════════════
 
     static Out fetch(OkHttpClient base, final String workerBase, final String videoId, final String wantLang) throws Fail {
         final OkHttpClient http = base.newBuilder()
+                .dns(SAFE_DNS)
                 .connectTimeout(5, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS)
                 .writeTimeout(8, TimeUnit.SECONDS)
@@ -81,12 +135,13 @@ final class YtCaptionFetcher {
         final List<String> reasons = Collections.synchronizedList(new ArrayList<String>());
         int noCapVotes = 0;
 
+        // 🏠 اولویت با خودِ گوشیِ کاربر (آی‌پیِ خودش): مرورگرِ واقعی (WebView) و کلاینت‌های مستقیم؛ Worker (سرورِ ابری، که یوتیوب «ربات» می‌بیند) فقط آخرین پشتیبان و با تأخیر
         submit(ecs, 0, new Callable<Out>() { public Out call() throws Exception { return viaClient(http, "ANDROID", videoId, wantLang); } });
-        submit(ecs, 0, new Callable<Out>() { public Out call() throws Exception { return viaWorker(http, workerBase, videoId, wantLang); } });
+        submit(ecs, 3500, new Callable<Out>() { public Out call() throws Exception { return viaWorker(http, workerBase, videoId, wantLang); } });
         submit(ecs, 300, new Callable<Out>() { public Out call() throws Exception { return viaClient(http, "ANDROID_VR", videoId, wantLang); } });
         submit(ecs, 600, new Callable<Out>() { public Out call() throws Exception { return viaClient(http, "IOS", videoId, wantLang); } });
         // کلاینت TV-embed دیگر از طرف یوتیوب پشتیبانی نمی‌شود؛ جایش یک مرورگرِ واقعی (WebView) است
-        submit(ecs, 1200, new Callable<Out>() { public Out call() throws Exception { return viaWebView(videoId, wantLang); } });
+        submit(ecs, 0, new Callable<Out>() { public Out call() throws Exception { return viaWebView(videoId, wantLang); } });
 
         final long deadline = System.currentTimeMillis() + OVERALL_MS;
         try {
@@ -557,6 +612,7 @@ final class YtCaptionFetcher {
     static String resolve(OkHttpClient base, final String workerBase, final String title, final String channel,
                           final long durSec) throws Fail {
         final OkHttpClient http = base.newBuilder()
+                .dns(SAFE_DNS)
                 .connectTimeout(5, TimeUnit.SECONDS).readTimeout(8, TimeUnit.SECONDS)
                 .callTimeout(10, TimeUnit.SECONDS).build();
         final ExecutorService pool = Executors.newFixedThreadPool(2);
@@ -702,10 +758,13 @@ final class YtCaptionFetcher {
     private static String join(List<String> parts) {
         StringBuilder sb = new StringBuilder();
         synchronized (parts) {
+            java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();   // دلیل‌های تکراری (مثلاً سه‌بار ConnectException) یک‌بار بیایند تا دلیلِ Worker/WebView دیده شود
             for (String p : parts) {
                 if (p == null || p.isEmpty()) continue;
+                String q = p.replaceAll("^[A-Za-z]+Exception: ", "").trim();
+                if (!seen.add(q.length() > 60 ? q.substring(0, 60) : q)) continue;
                 if (sb.length() > 0) sb.append(" · ");
-                sb.append(p);
+                sb.append(brief(p, 70));
             }
         }
         return brief(sb.length() == 0 ? "unknown error" : sb.toString(), 220);
