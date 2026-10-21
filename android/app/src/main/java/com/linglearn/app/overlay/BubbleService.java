@@ -2625,22 +2625,31 @@ public class BubbleService extends Service {
             // خانواده‌های داخلیِ اندروید (بدونِ نیاز به فایل): تا هر شش گزینه‌ی «نوع فونت» روی متنِ لاتین هم واقعاً فرق کند
             new FontOpt("en_cursive", "دست‌نویس", "Cursive", "cursive", null, false, false, 1.1f, false),
             new FontOpt("en_casual", "غیررسمی", "Casual", "casual", null, false, false, 1f, false),
+            // فونت‌های لاتینِ داخلِ برنامه (assets/fonts): روی همه‌ی گوشی‌ها یکسان و واقعاً متفاوت‌اند
+            new FontOpt("en_vazir", "Vazirmatn", "Vazirmatn", null, new String[]{"vazir"}, false, false, 1f, true),
+            new FontOpt("en_caladea", "Caladea", "Caladea", null, new String[]{"caladea"}, false, false, 1.04f, true),
+            new FontOpt("en_aref", "Aref Ruqaa", "Aref Ruqaa", null, new String[]{"aref"}, true, true, 1.05f, true),
+            new FontOpt("en_carlito", "Carlito", "Carlito", null, new String[]{"carlito"}, false, false, 1.06f, true),
+            new FontOpt("en_dvcond", "DejaVu Condensed", "DejaVu Condensed", null, new String[]{"dejavusanscondensed"}, false, false, 0.98f, true),
     };
 
     /** «نوع فونت» تنظیماتِ اپ (default/modern/classic/elegant/rounded/warm) → نزدیک‌ترین فونتِ قابل‌استفاده در کادر.
      *  فونتِ وبِ دقیق (Vazirmatn/Lora/…) فقط اگر فایلش در assets/fonts باشد استفاده می‌شود؛ وگرنه معادلِ سیستمی. */
     private String[] mapAppFont(String id) {
-        boolean vazir = fontById(FA_FONTS, "fa_vazir").id.equals("fa_vazir") && fontAvailable(fontById(FA_FONTS, "fa_vazir"));
-        boolean inter = fontById(EN_FONTS, "en_inter").id.equals("en_inter") && fontAvailable(fontById(EN_FONTS, "en_inter"));
-        boolean lora = fontById(EN_FONTS, "en_lora").id.equals("en_lora") && fontAvailable(fontById(EN_FONTS, "en_lora"));
         switch (id == null ? "default" : id) {
-            case "classic": return new String[]{pickFa("fa_sysnaskh", "fa_serif"), "en_serif"};
-            case "elegant": return new String[]{pickFa("fa_aref", "fa_sysnastaliq", "fa_sysnaskh", "fa_serif"), "en_cursive"};
-            case "rounded": return new String[]{pickFa("fa_syskufi", "fa_medium"), "en_casual"};
-            case "modern":  return new String[]{vazir ? "fa_vazir" : pickFa("fa_syssans", "fa_default"), inter ? "en_inter" : "en_light"};
-            case "warm":    return new String[]{vazir ? "fa_vazir" : pickFa("fa_sysnaskh", "fa_default"), "en_cond"};
-            default:        return new String[]{vazir ? "fa_vazir" : "fa_default", lora ? "en_lora" : "en_default"};
+            case "modern":  return new String[]{pickFa("fa_vazir", "fa_syssans", "fa_default"), pickEn("en_vazir", "en_light")};
+            case "classic": return new String[]{pickFa("fa_sysnaskh", "fa_serif"), pickEn("en_caladea", "en_serif")};
+            case "elegant": return new String[]{pickFa("fa_aref", "fa_sysnastaliq", "fa_sysnaskh", "fa_serif"), pickEn("en_aref", "en_cursive")};
+            case "rounded": return new String[]{pickFa("fa_syskufi", "fa_medium"), pickEn("en_carlito", "en_casual")};
+            case "warm":    return new String[]{pickFa("fa_vazir", "fa_sysnaskh", "fa_default"), pickEn("en_dvcond", "en_cond")};
+            default:        return new String[]{pickFa("fa_vazir", "fa_default"), pickEn("en_lora", "en_default")};
         }
+    }
+
+    /** اولین فونتِ لاتین از لیست که واقعاً موجود است (آخری = پشتیبانِ سیستمی). */
+    private String pickEn(String... ids) {
+        for (String i : ids) if (fontAvailable(fontById(EN_FONTS, i))) return i;
+        return ids[ids.length - 1];
     }
 
     /** اولین فونتِ فارسی از لیست که واقعاً روی این گوشی/برنامه موجود است (آخری = پشتیبان). */
@@ -3089,6 +3098,35 @@ public class BubbleService extends Service {
     private static final String[] APP_FONT_EN = {"Default", "Modern", "Classic", "Elegant", "Rounded", "Warm"};
     private final ArrayList<TextView> appFontChips = new ArrayList<>();
 
+    /** span برای نمایشِ یک تکه‌متن با یک Typeface مشخص (پیش‌نمایشِ فونت روی کلیدها). */
+    private static final class FontSpan extends android.text.style.MetricAffectingSpan {
+        private final Typeface tf;
+        FontSpan(Typeface t) { tf = t; }
+        @Override public void updateDrawState(android.text.TextPaint p) { p.setTypeface(tf); }
+        @Override public void updateMeasureState(android.text.TextPaint p) { p.setTypeface(tf); }
+    }
+
+    /** متنِ کلید: خطِ اول «Aa آب» (نمونه‌ی لاتین و فارسیِ همین فونت)، خطِ دوم نامِ فونت به زبانِ رابط. */
+    private CharSequence presetChipText(String id, String name) {
+        String[] m = mapAppFont(id);
+        FontOpt fo = fontById(FA_FONTS, m[0]), eo = fontById(EN_FONTS, m[1]);
+        android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder();
+        int a = sb.length();
+        sb.append("Aa");
+        sb.setSpan(new FontSpan(typefaceOf(eo, false)), a, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new android.text.style.RelativeSizeSpan(1.45f * eo.sizeMul), a, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.append("  ");
+        a = sb.length();
+        sb.append("آب");
+        sb.setSpan(new FontSpan(typefaceOf(fo, false)), a, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new android.text.style.RelativeSizeSpan(1.45f * fo.sizeMul), a, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.append("\n");
+        a = sb.length();
+        sb.append(name);
+        sb.setSpan(new android.text.style.RelativeSizeSpan(0.74f), a, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return sb;
+    }
+
     private View buildFontRow() {
         fontRow = new LinearLayout(this);
         fontRow.setOrientation(LinearLayout.VERTICAL);
@@ -3119,16 +3157,16 @@ public class BubbleService extends Service {
         final boolean fa = isFa();
         for (int i = 0; i < APP_FONT_IDS.length; i++) {
             final String id = APP_FONT_IDS[i];
-            String[] m = mapAppFont(id);
-            FontOpt o = fa ? fontById(FA_FONTS, m[0]) : fontById(EN_FONTS, m[1]);
             TextView c = new TextView(this);
             c.setTag(id);
-            c.setText(fa ? APP_FONT_FA[i] : APP_FONT_EN[i]);
-            c.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            c.setText(presetChipText(id, fa ? APP_FONT_FA[i] : APP_FONT_EN[i]));
+            c.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             c.setGravity(Gravity.CENTER);
-            c.setSingleLine(true);
-            c.setPadding(dp(12), dp(5), dp(12), dp(5));
-            c.setTypeface(typefaceOf(o, false));              // پیش‌نمایش: نامِ هر فونت با خودِ همان فونت
+            c.setMaxLines(2);
+            c.setMinWidth(dp(68));
+            c.setLineSpacing(0f, 1.05f);
+            c.setTextDirection(View.TEXT_DIRECTION_LTR);
+            c.setPadding(dp(12), dp(6), dp(12), dp(6));
             c.setOnClickListener(v -> pickAppFont(id));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             lp.setMarginEnd(dp(6));
