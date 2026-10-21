@@ -16,6 +16,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.PixelFormat;
@@ -1514,13 +1515,15 @@ public class BubbleService extends Service {
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
         header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        header.addView(buildModeSwitch(), new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         tvHeader = new TextView(this);
         tvHeader.setTextColor(COLOR_GOLD);
         style(tvHeader, 11, true);
         tvHeader.setSingleLine(true);
+        tvHeader.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        tvHeader.setPadding(dp(8), 0, 0, 0);
         header.addView(tvHeader, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        tvYt = headerButton("\u25B6", v -> toggleYoutube());
-        header.addView(tvYt);
         tvYtRestart = headerButton("\u23EE", v -> restartYoutubeFromStart());   // ⏮ فقط در حالتِ یوتیوب دیده می‌شود
         tvYtRestart.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtRestart.setVisibility(View.GONE);
@@ -1533,7 +1536,6 @@ public class BubbleService extends Service {
         tvYtAll.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtAll.setVisibility(View.GONE);
         header.addView(tvYtAll);
-        tvYt.setOnLongClickListener(v -> { askYoutubeAccessChoice(); return true; });   // نگه‌داشتنِ ▶ = انتخابِ «همگام» یا «فقط متنِ کامل»
         tvSave = headerButton("\uD83D\uDCBE", v -> saveCurrent());
         header.addView(tvSave);
         loadRepeatPref();
@@ -1542,10 +1544,6 @@ public class BubbleService extends Service {
         header.addView(tvRepeat);
         updateRepeatButton();
         updateYtButton();
-        TextView tvFont = headerButton("Aa", v -> toggleFontRow());   // انتخابِ فونت: همان فونت‌های «نوع فونت» در تنظیماتِ اپ
-        tvFont.setTypeface(Typeface.DEFAULT_BOLD);
-        tvFont.setOnLongClickListener(v -> { resetView(); return true; });
-        header.addView(tvFont);
         TextView tvSpeed = headerButton("\u23E9", v -> toggleSpeedRow());   // ⏩ سرعتِ پخشِ ویدیو/صدای برنامه‌ی دیگر (MediaSession؛ بدونِ Accessibility)
         tvSpeed.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvSpeed.setVisibility(View.GONE);   // 🙈 دکمه‌ی سرعت فعلاً مخفی است (کدِ سرعت دست‌نخورده مانده؛ برای نمایش، GONE را VISIBLE کنید)
@@ -1554,7 +1552,12 @@ public class BubbleService extends Service {
         tvOpacity.setPadding(dp(8), dp(6), dp(8), dp(6));
         header.addView(tvOpacity);
         header.addView(headerButton("\uD83D\uDDD1", v -> clearHistory()));
-        header.addView(headerButton("\u25BE", v -> { idleHidden = false; userHidden = true; removePanel(); }));   // ▾ = فقط کادرِ تاریخچه را پنهان می‌کند (بستنِ حباب: ✕ روی خودِ حباب)
+        ChevronButton minimize = new ChevronButton(this);   // ⌄ = فقط کادرِ تاریخچه را پنهان می‌کند (بستنِ حباب: ✕ روی خودِ حباب)
+        minimize.setContentDescription(msg("کوچک‌کردنِ کادر", "Minimize panel"));
+        minimize.setOnClickListener(v -> { idleHidden = false; userHidden = true; removePanel(); });
+        LinearLayout.LayoutParams minLp = new LinearLayout.LayoutParams(dp(32), dp(32));
+        minLp.setMarginStart(dp(4));
+        header.addView(minimize, minLp);
         tvHeader.setPadding(0, dp(8), 0, dp(8));          // سطحِ لمسِ بزرگ‌تر برای کشیدنِ کادر
         header.setOnTouchListener(new PanelMover());      // کشیدنِ سربرگ = جابه‌جایی؛ نگه‌داشتن = برداشتنِ کادر + ✕ پایینِ صفحه
         panel.addView(header, new LinearLayout.LayoutParams(
@@ -1628,7 +1631,11 @@ public class BubbleService extends Service {
         LinearLayout pinRow = new LinearLayout(this);
         pinRow.setOrientation(LinearLayout.HORIZONTAL);
         pinRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        pinRow.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        pinRow.setGravity(Gravity.CENTER_VERTICAL);
+        tvFontBtn = buildFontButton();
+        pinRow.addView(tvFontBtn, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        pinRow.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
         tvPin = new TextView(this);
         tvPin.setText("\uD83D\uDCCC");
         tvPin.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
@@ -1669,6 +1676,136 @@ public class BubbleService extends Service {
         });
     }
 
+    // ───────── کلیدِ حالت: [ ● LIVE | ▶ YT ] ─────────
+    private TextView tvModeLive, tvModeYt, tvFontBtn;
+
+    private TextView modeSegment(String label) {
+        TextView t = new TextView(this);
+        t.setText(label);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setLetterSpacing(0.04f);
+        t.setSingleLine(true);
+        t.setGravity(Gravity.CENTER);
+        t.setPadding(dp(10), dp(5), dp(10), dp(5));
+        return t;
+    }
+
+    private View buildModeSwitch() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.HORIZONTAL);
+        box.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        box.setGravity(Gravity.CENTER_VERTICAL);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.parseColor("#26FFFFFF"));
+        bg.setCornerRadius(dp(15));
+        box.setBackground(bg);
+        box.setPadding(dp(2), dp(2), dp(2), dp(2));
+
+        tvModeLive = modeSegment("\u25CF LIVE");
+        tvModeLive.setContentDescription(msg("ترجمه‌ی زنده", "Live translation"));
+        tvModeLive.setOnClickListener(v -> {
+            if (yt != null && yt.isActive()) {
+                stopYoutube(true);                  // از یوتیوب به زنده: یوتیوب بسته و ترجمه‌ی زنده شروع می‌شود
+                if (!recording) toggleRecording();
+            } else {
+                toggleRecording();                  // شروع/توقفِ ترجمه‌ی زنده
+            }
+        });
+        box.addView(tvModeLive);
+
+        tvModeYt = modeSegment("\u25B6 YT");
+        tvModeYt.setContentDescription(msg("زیرنویس یوتیوب", "YouTube subtitles"));
+        tvModeYt.setOnClickListener(v -> toggleYoutube());
+        tvModeYt.setOnLongClickListener(v -> { askYoutubeAccessChoice(); return true; });   // نگه‌داشتن = «همگام» یا «فقط متنِ کامل»
+        box.addView(tvModeYt);
+        tvYt = tvModeYt;
+        updateModeSwitch();
+        return box;
+    }
+
+    private void paintSegment(TextView t, boolean active) {
+        GradientDrawable g = new GradientDrawable();
+        g.setCornerRadius(dp(13));
+        g.setColor(active ? COLOR_GOLD : Color.TRANSPARENT);
+        t.setBackground(g);
+        t.setTextColor(active ? Color.parseColor("#1C2541") : Color.parseColor("#B3FFFFFF"));
+    }
+
+    private void updateModeSwitch() {
+        if (tvModeLive == null || tvModeYt == null) return;
+        boolean ytOn = yt != null && yt.isActive();
+        paintSegment(tvModeLive, !ytOn);
+        paintSegment(tvModeYt, ytOn);
+        // نقطه‌ی LIVE: قرمز وقتی واقعاً در حالِ ضبط/ترجمه است
+        SpannableString sp = new SpannableString("\u25CF LIVE");
+        int dot = recording ? Color.parseColor("#FF4D4F") : (ytOn ? Color.parseColor("#66FFFFFF") : Color.parseColor("#661C2541"));
+        sp.setSpan(new android.text.style.ForegroundColorSpan(dot), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        tvModeLive.setText(sp);
+    }
+
+    // ───────── دکمه‌ی کوچک‌کردن: دایره + شورونِ رسم‌شده (بدونِ emoji؛ در همه‌ی گوشی‌ها یکسان) ─────────
+    private final class ChevronButton extends View {
+        private final Paint bgP = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint icP = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path path = new Path();
+
+        ChevronButton(Context c) {
+            super(c);
+            setClickable(true);
+            icP.setStyle(Paint.Style.STROKE);
+            icP.setStrokeWidth(dp(2));
+            icP.setStrokeCap(Paint.Cap.ROUND);
+            icP.setStrokeJoin(Paint.Join.ROUND);
+            icP.setColor(Color.WHITE);
+        }
+
+        @Override protected void drawableStateChanged() { super.drawableStateChanged(); invalidate(); }
+
+        @Override protected void onDraw(Canvas cv) {
+            float cx = getWidth() / 2f, cy = getHeight() / 2f;
+            bgP.setColor(isPressed() ? Color.parseColor("#59FFFFFF") : Color.parseColor("#26FFFFFF"));
+            cv.drawCircle(cx, cy, Math.min(cx, cy) - dp(1), bgP);
+            float w = dp(5), h = dp(2.5f);
+            path.reset();
+            path.moveTo(cx - w, cy - h);
+            path.lineTo(cx, cy + h);
+            path.lineTo(cx + w, cy - h);
+            cv.drawPath(path, icP);
+        }
+    }
+
+    // ───────── دکمه‌ی فونت (پایین-چپِ کادر) ─────────
+    private TextView buildFontButton() {
+        TextView t = new TextView(this);
+        SpannableString sp = new SpannableString("Aa");
+        sp.setSpan(new android.text.style.RelativeSizeSpan(0.78f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        t.setText(sp);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setGravity(Gravity.CENTER);
+        t.setPadding(dp(14), dp(4), dp(14), dp(4));
+        t.setContentDescription(msg("تغییرِ فونت", "Change font"));
+        t.setOnClickListener(v -> toggleFontRow());
+        t.setOnLongClickListener(v -> { resetView(); return true; });
+        paintFontButton(t, false);
+        return t;
+    }
+
+    private void paintFontButton(TextView t, boolean active) {
+        GradientDrawable g = new GradientDrawable();
+        g.setCornerRadius(dp(14));
+        g.setColor(active ? COLOR_GOLD : Color.parseColor("#1AFFFFFF"));
+        g.setStroke(dp(1), active ? COLOR_GOLD : Color.parseColor("#40FFFFFF"));
+        t.setBackground(g);
+        t.setTextColor(active ? Color.parseColor("#1C2541") : Color.WHITE);
+    }
+
+    private void updateFontButton() {
+        if (tvFontBtn == null) return;
+        paintFontButton(tvFontBtn, fontRow != null && fontRow.getVisibility() == View.VISIBLE);
+    }
+
     private TextView headerButton(String label, View.OnClickListener l) {
         TextView t = new TextView(this);
         t.setText(label);
@@ -1682,14 +1819,13 @@ public class BubbleService extends Service {
 
     private void refreshHeader() {
         if (tvHeader == null) return;
-        StringBuilder sb = (yt != null && yt.isActive())
-                ? new StringBuilder(msg("\u25B6 زیرنویس یوتیوب", "\u25B6 YouTube subtitles"))
-                : new StringBuilder(msg("\uD83C\uDF99 ترجمه‌ی زنده", "\uD83C\uDF99 Live translation"));
+        StringBuilder sb = new StringBuilder();
         List<String> ts = activeTargets();
         for (int i = 0; i < ts.size(); i++) {
-            sb.append(i == 0 ? "  \u00B7  " : " / ").append(ts.get(i).toUpperCase(Locale.ROOT));
+            sb.append(i == 0 ? "\u2192 " : " / ").append(ts.get(i).toUpperCase(Locale.ROOT));
         }
         tvHeader.setText(sb.toString());
+        updateModeSwitch();
     }
 
     private void computePanelPos() {
@@ -1725,6 +1861,7 @@ public class BubbleService extends Service {
 
     private void refreshLayout() {
         if (!panelShown || panel == null || wm == null) return;
+        updateFontButton();
         computePanelPos();
         try { wm.updateViewLayout(panel, panelLp); } catch (Exception ignored) {}
     }
@@ -4441,10 +4578,8 @@ public class BubbleService extends Service {
     }
 
     private void updateYtButton() {
-        if (tvYt == null) return;
         boolean on = yt != null && yt.isActive();
-        tvYt.setTextColor(on ? COLOR_GOLD : Color.WHITE);
-        tvYt.setAlpha(on ? 1f : 0.6f);
+        updateModeSwitch();
         if (tvYtRestart != null) tvYtRestart.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
         if (tvYtPause != null) tvYtPause.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
         if (tvYtAll != null) {
@@ -4879,6 +5014,7 @@ public class BubbleService extends Service {
     private void setRecordingUi(boolean rec) {
         if (bubble == null) return;
         bubble.setRecording(rec);
+        updateModeSwitch();
         if (rec) {
             lastVoiceMs = lastTextMs = lastActiveMs = SystemClock.elapsedRealtime();
             idleHidden = false;
