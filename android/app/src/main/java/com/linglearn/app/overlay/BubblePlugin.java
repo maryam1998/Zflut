@@ -75,6 +75,13 @@ public class BubblePlugin extends Plugin {
         try { p.notifyListeners("targetsChanged", new JSObject()); } catch (Throwable ignored) {}
     }
 
+    /** از پنلِ شناور: ↺ (تکرارِ جمله) شروع/تمام شد — پلیرِ اپ تا پایانِ تکرار مکث می‌کند و بعدش ادامه می‌دهد. */
+    static void notifyPanelReplay(boolean active) {
+        BubblePlugin p = inst;
+        if (p == null) return;
+        try { p.notifyListeners("panelReplay", new JSObject().put("active", active)); } catch (Throwable ignored) {}
+    }
+
     @Override
     public void load() {
         super.load();

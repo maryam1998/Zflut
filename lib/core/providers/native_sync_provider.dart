@@ -22,6 +22,7 @@ import 'app_prefs_provider.dart';
 import 'language_selection_provider.dart';
 import 'linlearn_provider.dart';
 import 'reader_providers.dart';
+import 'speech_provider.dart';
 import '../storage/local_storage.dart' show sharedPrefsProvider;
 import 'story_library_provider.dart';
 
@@ -29,6 +30,7 @@ class NativeSync with WidgetsBindingObserver {
   final Ref _ref;
   StreamSubscription<Map<String, dynamic>>? _sub;
   StreamSubscription<Map<String, dynamic>>? _tSub;
+  StreamSubscription<Map<String, dynamic>>? _rSub;
   bool _busy = false;
 
   NativeSync(this._ref) {
@@ -41,6 +43,18 @@ class NativeSync with WidgetsBindingObserver {
     _tSub = NativeBridge.instance
         .on('targetsChanged')
         .listen((_) => _pullPanelTargets(), onError: (Object _) {});
+    // 🔁 ↺ داخلِ کادرِ ترجمه‌ی زنده: پلیر مکث کند تا صدای گوینده با صدای پلیر قاطی نشود،
+    // و بعد از تمام شدنِ تکرار از همان‌جا ادامه دهد.
+    _rSub = NativeBridge.instance.on('panelReplay').listen((d) {
+      try {
+        final sp = _ref.read(speechControllerProvider.notifier);
+        if (d['active'] == true) {
+          sp.holdForPanel();
+        } else {
+          sp.releasePanelHold();
+        }
+      } catch (_) {}
+    }, onError: (Object _) {});
     // مثل Hope (useEffect در SettingsMenu): هر بار زبان‌های مقصد یا زبان رابط عوض شد،
     // به حبابِ در حال اجرا هم خبر بده — وگرنه زیرنویسِ یوتیوب به زبان‌های قبلی ترجمه می‌شد.
     _ref.listen<LanguageSelection>(languageSelectionProvider, (_, __) => pushLangs());
@@ -54,6 +68,7 @@ class NativeSync with WidgetsBindingObserver {
   void dispose() {
     _sub?.cancel();
     _tSub?.cancel();
+    _rSub?.cancel();
     if (NativeBridge.instance.isSupported) {
       WidgetsBinding.instance.removeObserver(this);
     }

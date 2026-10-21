@@ -2517,15 +2517,17 @@ public class BubbleService extends Service {
         if (e == null || e.ytIdx < 0 || yt == null || !yt.isActive()) return;
         if (yt.isLooping(e.ytIdx)) {
             yt.stopLoop();
+            setReplayHold(false);
             showNotice(msg("تکرار متوقف شد", "Repeat stopped"));
             return;
         }
         stopPanelSpeech();                                   // صدای برنامه با صدای یوتیوب قاطی نشود
-        stopStoredReplay();
+        stopStoredReplay(false);
         int times = repeatSetting == 0 ? 1 : repeatSetting;  // REPEAT_INF = -1 → بی‌نهایت
         if (!yt.replaySentence(e.ytIdx, times))
             showNotice(msg("پلیر یوتیوب در دسترس نیست", "YouTube player not available"));
-        else if (times != 1)
+        else holdPlayerForYtReplay(e.ytIdx, times);
+        if (times != 1 && yt != null && yt.isLooping(e.ytIdx))
             showNotice(times < 0 ? msg("تکرار ∞ با صدای یوتیوب", "Repeat ∞ with YouTube audio")
                     : msg("تکرار " + times + " بار با صدای یوتیوب", "Repeat " + times + "× with YouTube audio"));
     }
@@ -2593,20 +2595,54 @@ public class BubbleService extends Service {
             return;
         }
         stopPanelSpeech();                                   // صدای TTS با صدای ضبط‌شده قاطی نشود
-        stopStoredReplay();
+        stopStoredReplay(false);
         final int times = repeatSetting == 0 ? 1 : repeatSetting;   // REPEAT_INF = -1 → بی‌نهایت
         replayingEntry = e;
         setReplayActive(e, true);
+        setReplayHold(true);                                 // ⏸ پلیرِ اپ تا پایانِ تکرار مکث کند
         SentenceAudio.play(e.pcm, times, () -> main.post(() -> {
-            if (replayingEntry == e) { replayingEntry = null; setReplayActive(e, false); }
+            if (replayingEntry == e) { replayingEntry = null; setReplayActive(e, false); setReplayHold(false); }
         }));
     }
 
-    private void stopStoredReplay() {
+    private void stopStoredReplay() { stopStoredReplay(true); }
+
+    private void stopStoredReplay(boolean release) {
         SentenceAudio.stop();
         Entry r = replayingEntry;
         replayingEntry = null;
         if (r != null) setReplayActive(r, false);
+        if (release) setReplayHold(false);
+    }
+
+    // ───────── ⏸ هماهنگی با پلیرِ اپ: وقتی ↺ می‌زنی، پلیر مکث کند؛ بعد از تمام شدنِ تکرار ادامه بدهد ─────────
+    private boolean replayHold = false;
+    private long ytHoldUntil = 0;
+    private final Runnable ytHoldWatch = new Runnable() {
+        @Override public void run() {
+            if (!replayHold || replayingEntry != null) return;
+            YtSubtitles y = yt;
+            boolean looping = y != null && y.isLooping(ytHoldIdx);
+            if (y == null || (!looping && SystemClock.uptimeMillis() > ytHoldUntil)) { setReplayHold(false); return; }
+            main.postDelayed(this, 300);
+        }
+    };
+    private int ytHoldIdx = -1;
+
+    private void setReplayHold(boolean on) {
+        if (replayHold == on) return;
+        replayHold = on;
+        if (!on) main.removeCallbacks(ytHoldWatch);
+        try { BubblePlugin.notifyPanelReplay(on); } catch (Throwable ignored) {}
+    }
+
+    private void holdPlayerForYtReplay(int sentIdx, int times) {
+        long span = yt == null ? 0 : yt.loopSpanMs();
+        ytHoldIdx = sentIdx;
+        ytHoldUntil = SystemClock.uptimeMillis() + span + 1500;
+        main.removeCallbacks(ytHoldWatch);
+        setReplayHold(true);
+        main.postDelayed(ytHoldWatch, 400);
     }
 
     private void setReplayActive(Entry e, boolean on) {
@@ -6287,6 +6323,7 @@ public class BubbleService extends Service {
         running = false;
         if (instance == this) instance = null;
         main.removeCallbacksAndMessages(null);
+        setReplayHold(false);                                // پلیرِ اپ اگر بخاطرِ ↺ مکث شده بود ادامه دهد
 
         try { stopYoutube(false); } catch (Throwable ignored) {}
         if (ytWatch != null) { try { ytWatch.stop(); } catch (Throwable ignored) {} ytWatch = null; }

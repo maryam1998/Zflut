@@ -238,9 +238,41 @@ class SpeechController extends StateNotifier<SpeechState> {
     );
   }
 
+  // ─── ⏸ هماهنگی با کادرِ شناور (ترجمه‌ی زنده) ───
+  // کاربر داخل کادر ↺ (تکرارِ جمله با صدای اصلیِ گوینده) را زد: پلیر مکث می‌کند،
+  // اجازه می‌دهد آن تکرار تمام شود، و بعد از همان جمله‌ای که بود ادامه می‌دهد.
+  bool _heldByPanel = false;
+  Timer? _panelResumeTimer;
+
+  Future<void> holdForPanel() async {
+    _panelResumeTimer?.cancel();
+    if (_disposed) return;
+    if (state.status == SpeechStatus.playing) {
+      _heldByPanel = true;
+      await _pause();
+    }
+  }
+
+  void releasePanelHold() {
+    if (!_heldByPanel) return;
+    _panelResumeTimer?.cancel();
+    // کمی تأخیر: اگر بلافاصله تکرارِ دیگری شروع شد، پلیر الکی ادامه نده
+    _panelResumeTimer = Timer(const Duration(milliseconds: 450), () {
+      if (_disposed || !_heldByPanel) return;
+      _heldByPanel = false;
+      // فقط اگر کاربر در این فاصله خودش چیز دیگری را پخش/متوقف نکرده باشد
+      if (state.status != SpeechStatus.paused || _currentKey == null) return;
+      _generation++;
+      state = state.copyWith(status: SpeechStatus.playing);
+      unawaited(_playFrom(_chunkIndex));
+    });
+  }
+
   Future<void> stop() async {
     _generation++;
     await _stopAll();
+    _heldByPanel = false;
+    _panelResumeTimer?.cancel();
     _fullText = '';
     _chunks = [];
     _chunkIndex = 0;
@@ -1012,6 +1044,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   @override
   void dispose() {
     _disposed = true;
+    _panelResumeTimer?.cancel();
     _cancelWaiters();
     _localTts.stop();
     _onlinePlayer.dispose();

@@ -216,6 +216,9 @@ final class YtSubtitles {
 
     void stopLoop() { loopSent = -1; loopLeft = 0; }
 
+    /** طولِ جمله‌ی آخرین ↺ (ms) — برای اینکه پلیرِ اپ تا پایانش مکث کند. */
+    long loopSpanMs() { return Math.max(0L, loopEndMs - loopStartMs); }
+
     /**
      * پلیر یوتیوب را به ابتدای جمله‌ی sentIdx برمی‌گرداند و با صدای خودِ یوتیوب پخش می‌کند.
      * times: تعداد کلِ پخش‌ها (۱ = یک بار)، یا -1 = بی‌نهایت تا وقتی کاربر دوباره بزند.
