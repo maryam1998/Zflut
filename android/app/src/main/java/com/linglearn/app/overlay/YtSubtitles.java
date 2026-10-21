@@ -85,6 +85,8 @@ final class YtSubtitles {
         void videoChanged();
         /** این ویدیو زیرنویس ندارد. (حالتِ خودکار: میزبان می‌تواند حالتِ یوتیوب را بی‌سروصدا خاموش کند.) */
         default void noCaptions() {}
+        /** تکرارِ بی‌نهایتِ کلِ ویدیو روشن/خاموش شد (از جمله وقتی خودش متوقف شد: ویدیوی دیگر، لایو، …). */
+        default void onVideoLoopChanged(boolean on) {}
     }
 
     static final class Cue {
@@ -217,6 +219,7 @@ final class YtSubtitles {
      */
     boolean replaySentence(int sentIdx, int times) {
         if (!active || fullText || sentIdx < 0 || sentIdx >= sentFirstCue.length) return false;
+        stopVideoLoop();
         int c = sentFirstCue[sentIdx], c2 = sentLastCue[sentIdx];
         if (c < 0 || c >= cues.size() || c2 < c) return false;
         loopStartMs = Math.max(0L, cues.get(c).startMs - offsetMs);
@@ -232,6 +235,52 @@ final class YtSubtitles {
         return true;
     }
 
+    // ── ∞ تکرارِ بی‌نهایتِ کلِ ویدیو: از ثانیه‌ی صفر شروع می‌شود و هر بار به آخر رسید دوباره از اول ──
+    private boolean videoLoop = false;
+    private String videoLoopId = null;
+    private long videoLoopCooldownUntil = 0;
+
+    boolean isVideoLooping() { return videoLoop; }
+
+    void stopVideoLoop() { setVideoLoop(false); }
+
+    private void setVideoLoop(boolean on) {
+        if (videoLoop == on) return;
+        videoLoop = on;
+        if (!on) videoLoopId = null;
+        host.onVideoLoopChanged(on);
+    }
+
+    /** ویدیو را از اول پخش می‌کند و تا وقتی کاربر خاموش کند تکرار می‌کند. false = پلیر/مدتِ ویدیو معلوم نیست (مثلاً لایو). */
+    boolean loopWholeVideo() {
+        if (!active || fullText) return false;
+        YtMedia.State st = last;
+        if (st == null || !st.hasSession || st.durationMs <= 0) return false;
+        stopLoop();                                         // تکرارِ جمله با تکرارِ کل قاطی نشود
+        if (!tracker.seekTo(0L)) return false;
+        tracker.play();
+        long now = android.os.SystemClock.uptimeMillis();
+        loopCooldownUntil = now + 900;
+        videoLoopCooldownUntil = now + 1500;
+        videoLoopId = st.videoId;
+        setVideoLoop(true);
+        return true;
+    }
+
+    private void videoLoopTick(YtMedia.State st) {
+        if (!videoLoop) return;
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now < videoLoopCooldownUntil) return;
+        // ویدیوی دیگری شروع شد (پخشِ خودکارِ بعدی / کاربر عوض کرد) → تکرار را رها کن
+        if (videoLoopId != null && st.videoId != null && !videoLoopId.equals(st.videoId)) { setVideoLoop(false); return; }
+        if (st.durationMs > 0 && st.nowMs() >= st.durationMs - 700) {
+            if (tracker.seekTo(0L)) {
+                tracker.play();
+                videoLoopCooldownUntil = now + 1500;
+            } else setVideoLoop(false);
+        }
+    }
+
     /** مکث/ادامه‌ی ویدیوی یوتیوب. 1 = پخش شد، 0 = مکث شد، -1 = پلیر در دسترس نیست. */
     int togglePlayPause() {
         if (!active) return -1;
@@ -242,6 +291,7 @@ final class YtSubtitles {
     boolean restartVideo() {
         if (!active || fullText) return false;
         stopLoop();
+        stopVideoLoop();
         if (!tracker.seekTo(0L)) return false;
         tracker.play();
         loopCooldownUntil = android.os.SystemClock.uptimeMillis() + 900;
@@ -282,6 +332,7 @@ final class YtSubtitles {
 
     void stop() {
         stopLoop();
+        stopVideoLoop();
         active = false;
         fullText = false;
         YtMedia.setActive(null);
@@ -473,6 +524,7 @@ final class YtSubtitles {
 
     private void onTick() {
         final YtMedia.State s = last;
+        if (s != null && s.hasSession) videoLoopTick(s);
         if (cues.isEmpty() || s == null || !s.hasSession) return;
         long pos = s.nowMs() + offsetMs;
         loopTick(pos);

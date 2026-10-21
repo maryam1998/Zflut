@@ -386,6 +386,7 @@ public class BubbleService extends Service {
     private Entry live;                   // sentence currently being spoken (partial result)
     private YtSubtitles yt;               // 📺 حالت یوتیوب (null = خاموش)
     private TextView tvYt;                // دکمه‌ی ▶ در هدرِ پنل
+    private TextView tvYtLoop;            // دکمه‌ی ∞ (تکرارِ کلِ ویدیو)
     private TextView tvYtRestart;         // دکمه‌ی ⏮ : کلِ ویدیوی یوتیوب از اول
     private TextView tvYtPause;           // دکمه‌ی ⏯ : مکث/ادامه‌ی ویدیوی یوتیوب
     private TextView tvYtAll;             // دکمه‌ی 🔂 : (حالتِ «متنِ کامل») خواندنِ کلِ متن از اول و تکرارِ آن
@@ -1528,6 +1529,13 @@ public class BubbleService extends Service {
         tvYtRestart.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtRestart.setVisibility(View.GONE);
         header.addView(tvYtRestart);
+        tvYtLoop = headerButton("\u221E", v -> toggleYoutubeVideoLoop());   // ∞ کلِ ویدیو از اول و بی‌نهایت بار؛ فقط در حالتِ یوتیوب
+        tvYtLoop.setTypeface(Typeface.DEFAULT_BOLD);
+        tvYtLoop.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19);
+        tvYtLoop.setPadding(dp(8), dp(2), dp(8), dp(2));
+        tvYtLoop.setContentDescription(msg("تکرارِ بی‌نهایتِ کلِ ویدیو", "Loop the whole video"));
+        tvYtLoop.setVisibility(View.GONE);
+        header.addView(tvYtLoop);
         tvYtPause = headerButton("\u23EF", v -> toggleYoutubePause());   // ⏯ فقط در حالتِ یوتیوب دیده می‌شود
         tvYtPause.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtPause.setVisibility(View.GONE);
@@ -2250,6 +2258,23 @@ public class BubbleService extends Service {
             showNotice(msg("ویدیو از اول پخش شد", "Video restarted from the beginning"));
         else
             showNotice(msg("پلیر یوتیوب در دسترس نیست", "YouTube player not available"));
+    }
+
+    /** ∞ کلِ ویدیو را از ثانیه‌ی صفر پخش می‌کند و هر بار به آخر رسید دوباره از اول (تا دوباره بزنی). */
+    private void toggleYoutubeVideoLoop() {
+        if (yt == null || !yt.isActive()) return;
+        if (yt.isVideoLooping()) {
+            yt.stopVideoLoop();
+            showNotice(msg("تکرارِ ویدیو متوقف شد", "Video loop stopped"));
+            return;
+        }
+        stopPanelSpeech();                                   // صدای برنامه با صدای یوتیوب قاطی نشود
+        if (yt.loopWholeVideo())
+            showNotice(msg("∞ ویدیو از اول پخش شد و تا آخر، بی‌نهایت تکرار می‌شود", "∞ Playing from the start, looping forever"));
+        else
+            showNotice(msg("پلیر یوتیوب در دسترس نیست یا ویدیو مدتِ مشخص ندارد (مثلاً لایو)",
+                    "YouTube player not available, or the video has no fixed length (e.g. live)"));
+        updateYtButton();
     }
 
     /** ⏯ مکث/ادامه‌ی ویدیوی یوتیوب (از طریق MediaSession همان اپ یوتیوب). */
@@ -4582,6 +4607,12 @@ public class BubbleService extends Service {
         updateModeSwitch();
         if (tvYtRestart != null) tvYtRestart.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
         if (tvYtPause != null) tvYtPause.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
+        if (tvYtLoop != null) {
+            boolean looping = on && yt != null && yt.isVideoLooping();
+            tvYtLoop.setVisibility(on && !ytFullMode ? View.VISIBLE : View.GONE);
+            tvYtLoop.setTextColor(looping ? COLOR_GOLD : Color.WHITE);
+            tvYtLoop.setAlpha(looping ? 1f : 0.75f);
+        }
         if (tvYtAll != null) {
             tvYtAll.setVisibility(on && ytFullMode ? View.VISIBLE : View.GONE);
             tvYtAll.setText(fullLoop ? "\u23F9" : "\uD83D\uDD02");
@@ -4871,6 +4902,7 @@ public class BubbleService extends Service {
         }
         @Override public boolean fa() { return isFa(); }
         @Override public String lang() { return NativeI18n.lang(BubbleService.this); }
+        @Override public void onVideoLoopChanged(boolean on) { main.post(BubbleService.this::updateYtButton); }
 
         @Override public void notice(String m) {
             if (m == null || m.isEmpty()) { clearStatus(); return; }
