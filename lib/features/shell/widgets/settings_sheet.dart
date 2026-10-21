@@ -891,12 +891,14 @@ class _MascotSection extends ConsumerWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Highlight color — سواچ‌های ۳۰×۳۰ (همان پالت Hope)
+// Highlight color — پنج رنگ اصلی؛ بقیه‌ی رنگ‌ها از «پالت» (🎨) انتخاب می‌شوند
 // ═══════════════════════════════════════════════════════════════════
 const List<String> _kHighlightPalette = [
-  '#F7E98E', '#FBD9AE', '#F7C48C', '#F1968E',
-  '#DCE07E', '#9AD98A', '#8DE0BE', '#A6DEE9',
-  '#A9C7F0', '#C7B6EC', '#F0AEEC', '#F4AAC0',
+  '#F7E98E', // زرد
+  '#F7C48C', // نارنجی
+  '#9AD98A', // سبز
+  '#A9C7F0', // آبی
+  '#F4AAC0', // صورتی
 ];
 
 Color _hexToColor(String hex) {

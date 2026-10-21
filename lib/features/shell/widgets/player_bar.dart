@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app.dart' show AppL10nX;
 import '../../../core/audio/story_audio_controller.dart';
+import '../../../core/player_sync/player_sync_provider.dart';
 import '../../../core/player_sync/sync_widgets.dart';
 import '../../../core/providers/player_prefs_provider.dart';
 import '../../../core/providers/speech_provider.dart';
@@ -278,7 +279,12 @@ class PlayerBar extends ConsumerWidget {
 
   bool _isActive(WidgetRef ref) {
     final s = ref.read(speechControllerProvider);
-    return s.status != SpeechStatus.idle && s.key != null;
+    if (s.status == SpeechStatus.idle || s.key == null) return false;
+    // فقط وقتی متنِ در حال پخش مالِ همین صفحه است «جمله‌ی بعد/قبل» کار کند؛
+    // اگر متنِ صفحه‌ی قبلی است، متنِ همین صفحه از اول شروع می‌شود.
+    final tracks = ref.read(playerSyncProvider).tracks;
+    if (!tracks.values.any((t) => t.fullText.isNotEmpty)) return true;
+    return tracks.values.any((t) => t.key == s.key);
   }
 
   Future<bool> _startMain(BuildContext context, WidgetRef ref) async {

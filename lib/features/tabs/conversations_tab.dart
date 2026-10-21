@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app.dart';
 import '../../core/constants/topic_icons.dart';
+import '../../core/constants/topic_titles.dart';
 import '../../core/models/conversation.dart';
 import '../../core/player_sync/player_track.dart';
 import '../../core/player_sync/sync_widgets.dart';
@@ -76,6 +77,11 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       if (_query.trim().isEmpty) return true;
       final q = _query.trim().toLowerCase();
       if (t.topic.toLowerCase().contains(q)) return true;
+      if (topicTitle(t.topic, Localizations.localeOf(context).languageCode)
+          .toLowerCase()
+          .contains(q)) {
+        return true;
+      }
       return t.scenarios.any((s) =>
           s.scenario.toLowerCase().contains(q) ||
           s.speakerA.any((l) => l.en.toLowerCase().contains(q)) ||
@@ -169,7 +175,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             crossAxisCount: 3,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
-            childAspectRatio: 0.85,
+            childAspectRatio: 0.74,
           ),
           itemCount: visible.length,
           itemBuilder: (_, i) {
@@ -245,7 +251,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
                 Text(context.l10n.dialogs_back_to_topics,
                     style: TextStyle(
                         color: c.teal,
-                        fontSize: 13,
+                        fontSize: 14.5,
                         fontWeight: FontWeight.w700)),
               ],
             ),
@@ -254,13 +260,15 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         const SizedBox(height: 8),
         Row(
           children: [
-            Icon(visual.icon, size: 22, color: visual.color),
+            Icon(visual.icon, size: 26, color: visual.color),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(topic.topic,
+              child: Text(
+                  topicTitle(
+                      topic.topic, Localizations.localeOf(context).languageCode),
                   style: TextStyle(
                       color: c.ink,
-                      fontSize: 17,
+                      fontSize: 19,
                       fontWeight: FontWeight.w800)),
             ),
           ],
@@ -333,8 +341,8 @@ class _TopicCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 54,
+                    height: 54,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isRead
@@ -344,7 +352,7 @@ class _TopicCard extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Icon(
                       visual.icon,
-                      size: 24,
+                      size: 27,
                       color: isRead
                           ? const Color(0xFF2E7D6C)
                           : visual.color,
@@ -355,14 +363,15 @@ class _TopicCard extends StatelessWidget {
                     child: Align(
                       alignment: Alignment.topCenter,
                       child: Text(
-                        topic.topic,
+                        topicTitle(topic.topic,
+                            Localizations.localeOf(context).languageCode),
                         textAlign: TextAlign.center,
-                        maxLines: 2,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: c.ink,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                           height: 1.3,
                         ),
                       ),
@@ -475,14 +484,14 @@ class _ScenarioCard extends StatelessWidget {
                         Text(scenario.scenario,
                             style: TextStyle(
                                 color: c.ink,
-                                fontSize: 14,
+                                fontSize: 15.5,
                                 fontWeight: FontWeight.w700)),
                         if (scenario.context != null) ...[
                           const SizedBox(height: 2),
                           Text(scenario.context!,
                               style: TextStyle(
-                                  color: c.inkSoft, fontSize: 11.5),
-                              maxLines: 1,
+                                  color: c.inkSoft, fontSize: 13),
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis),
                         ],
                       ],
@@ -553,7 +562,7 @@ class _SpeakerBox extends ConsumerWidget {
               Text(title,
                   style: TextStyle(
                       color: c.ink,
-                      fontSize: 12.5,
+                      fontSize: 14,
                       fontWeight: FontWeight.w800)),
             ],
           ),

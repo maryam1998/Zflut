@@ -432,15 +432,21 @@ Future<bool> syncPlayMainTrack(WidgetRef ref) async {
 Future<bool> syncPlayPause(WidgetRef ref) async {
   final st = ref.read(speechControllerProvider);
   final ctrl = ref.read(speechControllerProvider.notifier);
+  final tracks = ref.read(playerSyncProvider).tracks;
+  final hasPageText = tracks.values.any((t) => t.fullText.isNotEmpty);
 
   if (st.key != null && st.status != SpeechStatus.idle) {
-    await ctrl.togglePlayPause();
-    return true;
+    // متنِ در حال پخش/مکث مالِ همین صفحه است (یا این صفحه متنی ندارد) → پخش/توقف
+    if (!hasPageText || tracks.values.any((t) => t.key == st.key)) {
+      await ctrl.togglePlayPause();
+      return true;
+    }
+    // متنِ صفحه‌ی قبلی هنوز در پلیر است → متنِ همین صفحه از اول خوانده شود
+    return syncPlayMainTrack(ref);
   }
 
   final key = st.key;
   if (key != null) {
-    final tracks = ref.read(playerSyncProvider).tracks;
     final stillHere = tracks.values.any((t) => t.key == key);
     if (stillHere) {
       await ctrl.togglePlayPause();
