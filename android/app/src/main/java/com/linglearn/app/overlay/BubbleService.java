@@ -5130,10 +5130,7 @@ public class BubbleService extends Service {
             rec.startRecording();
             final AudioRecord fr = rec;
             new Thread(() -> feedLoop(fr), "bubble-feed").start();
-            Intent i = new Intent(this, SpeechHostActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION)
-                    .putExtra(SpeechHostActivity.EXTRA_LANG_TAG, localeTag(src));
-            startActivity(i);
+            launchGoogleHost(src);
             showNotice(msg("🎙 در حال اجرا…", "🎙 Running…"));
             return true;
         } catch (Exception e) {
@@ -5143,6 +5140,52 @@ public class BubbleService extends Service {
             if (rec != null) { record = null; try { rec.stop(); } catch (Exception ignored) {} try { rec.release(); } catch (Exception ignored) {} }
             return false;
         }
+    }
+
+    // ── میزبانِ موتورِ گوگل: ترجیحاً داخلِ همین سرویس (هیچ صفحه‌ای باز نمی‌شود → ویدیو/اپِ زیرش دست‌نخورده)،
+    //    و فقط اگر اندروید/گوشی اجازه نداد، همان صفحه‌ی نامرئیِ شفاف و بدونِ فوکوس (SpeechHostActivity). ──
+    private GoogleAsr googleAsr;
+
+    private boolean googleNeedsActivityHost() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("googleHostActivity", false);
+    }
+
+    private void launchGoogleHost(String src) {
+        stopGoogleAsr();
+        if (googleNeedsActivityHost()) { launchGoogleActivity(src); return; }
+        final String lang = localeTag(src);
+        final GoogleAsr[] ref = new GoogleAsr[1];
+        ref[0] = new GoogleAsr(this, lang, new GoogleAsr.Host() {
+            @Override public void onFatal() { if (googleAsr == ref[0]) asrFallback(); }
+            @Override public void onNeedsPermission() { if (googleAsr == ref[0]) asrNeedsPermission(); }
+            @Override public void onHostUnsupported() {
+                if (googleAsr != ref[0]) return;
+                // گوگل از داخلِ سرویس صدا نمی‌گیرد → از این به بعد با صفحه‌ی نامرئی
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean("googleHostActivity", true).apply();
+                stopGoogleAsr();
+                if (recording && micEngine) launchGoogleActivity(lang);
+            }
+        });
+        googleAsr = ref[0];
+        googleAsr.start();
+    }
+
+    private void launchGoogleActivity(String langTag) {
+        try {
+            Intent i = new Intent(this, SpeechHostActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION)
+                    .putExtra(SpeechHostActivity.EXTRA_LANG_TAG, langTag);
+            startActivity(i);
+        } catch (Exception e) {
+            Log.w(TAG, "cannot start speech host activity", e);
+            asrFallback();
+        }
+    }
+
+    private void stopGoogleAsr() {
+        GoogleAsr a = googleAsr;
+        googleAsr = null;
+        if (a != null) { try { a.stop(); } catch (Throwable ignored) {} }
     }
 
     /**
@@ -5347,10 +5390,7 @@ public class BubbleService extends Service {
         main.postDelayed(() -> {
             if (!recording || !micEngine) return;
             try {
-                Intent i = new Intent(this, SpeechHostActivity.class)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION)
-                        .putExtra(SpeechHostActivity.EXTRA_LANG_TAG, localeTag(src));
-                startActivity(i);
+                launchGoogleHost(src);
             } catch (Exception e) {
                 Log.w(TAG, "restart speech host failed", e);
                 fallbackToOffline(null);
@@ -5399,7 +5439,7 @@ public class BubbleService extends Service {
     private void stopRecording() {
         if (!recording) return;
         recording = false;
-        if (micEngine) { micEngine = false; SpeechHostActivity.finishIfRunning(); PcmFeed.close(); }
+        if (micEngine) { micEngine = false; stopGoogleAsr(); SpeechHostActivity.finishIfRunning(); PcmFeed.close(); }
         releaseSherpa();
         resetDetected();
         AudioRecord r = record; record = null;
@@ -5758,6 +5798,7 @@ public class BubbleService extends Service {
         try { SentenceAudio.stop(); } catch (Throwable ignored) {}
         if (micEngine) {
             micEngine = false;
+            try { stopGoogleAsr(); } catch (Throwable ignored) {}
             try { SpeechHostActivity.finishIfRunning(); } catch (Throwable ignored) {}
             try { PcmFeed.close(); } catch (Throwable ignored) {}
         }
