@@ -255,7 +255,7 @@
   "player_mute_aria": "بی‌صداکردنِ صدا",
   "player_mute_title": "بی‌صداکردنِ صدایِ خوانش — برایِ وقتی نرم‌افزارِ دیگه‌ای صدایِ خودش رو داره",
   "player_muted_title": "صدا خاموشه — پخش و هایلایت عادی ادامه داره؛ بزن روشنش کن",
-  "player_my_audio": "صوت من",
+  "player_my_audio": "صدای اپلودی",
   "player_my_speed_down": "کم‌کردنِ سرعتِ صوتِ من",
   "player_my_speed_slider": "سرعتِ پخشِ صوتِ من",
   "player_my_speed_title": "سرعتِ پخشِ صوتِ من: {rate}×",

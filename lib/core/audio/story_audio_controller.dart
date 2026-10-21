@@ -63,6 +63,9 @@ class StoryAudioController extends ChangeNotifier {
   final ValueNotifier<Duration> position = ValueNotifier(Duration.zero);
   double _rate = 1;
   double get rate => _rate;
+
+  /// بی‌صدا کردنِ صوتِ آپلودی (از دکمه‌ی میوتِ پلیرِ اصلی)
+  bool muted = false;
   int activeIndex = 0;
 
   bool _syncOn = true;
@@ -134,6 +137,7 @@ class StoryAudioController extends ChangeNotifier {
     final d = await p.setFilePath(path);
     _audioPath = path;
     await p.setSpeed(_rate);
+    await p.setVolume(muted ? 0 : 1);
     duration = d ?? Duration.zero;
     fileName = name;
     hasAudio = true;
@@ -244,6 +248,21 @@ class StoryAudioController extends ChangeNotifier {
   Future<void> pause() async => _player?.pause();
 
   Future<void> toggle() async => isPlaying ? pause() : play();
+
+  /// شروع از ابتدای صوت (هایلایت هم از جمله‌ی اول شروع می‌شود).
+  Future<void> restart() async {
+    if (!hasAudio) return;
+    if (_sentences.isNotEmpty) activeIndex = 0;
+    await seek(Duration.zero);
+    _notify();
+    await play();
+  }
+
+  Future<void> toggleMuted() async {
+    muted = !muted;
+    await _player?.setVolume(muted ? 0 : 1);
+    _notify();
+  }
 
   Future<void> seek(Duration t) async {
     var x = t;

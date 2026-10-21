@@ -1,15 +1,11 @@
 // نوارِ صوتِ آپلودیِ داستان — معادلِ UserAudioBar.jsx + AudioSyncSettings.jsx در Hope.
+// فقط آپلود/حذفِ فایل + تنظیمِ همگام‌سازی؛ کنترل‌های پخش (پخش/توقف، جمله‌ی قبل/بعد،
+// نوارِ زمان، سرعت، A-B) به پلیرِ اصلیِ پایینِ صفحه منتقل شد (سوییچِ «صدای اپ / صدای اپلودی»).
 import 'package:flutter/material.dart';
 
 import '../../app.dart' show AppL10nX;
 import '../../core/audio/story_audio_controller.dart';
 import '../../core/theme/app_theme_colors.dart';
-
-String _fmt(Duration d) {
-  final m = d.inMinutes;
-  final s = d.inSeconds % 60;
-  return '$m:${s.toString().padLeft(2, '0')}';
-}
 
 class StoryAudioBar extends StatelessWidget {
   final StoryAudioController ctrl;
@@ -40,8 +36,6 @@ class StoryAudioBar extends StatelessWidget {
                       style: TextStyle(color: c.rose, fontSize: 11)),
                 ),
               if (ctrl.hasAudio && !ctrl.saving) ...[
-                const SizedBox(height: 8),
-                _player(context, c),
                 const SizedBox(height: 8),
                 _sync(context, c),
               ],
@@ -92,96 +86,6 @@ class StoryAudioBar extends StatelessWidget {
             child: Text(L.library_delete,
                 style: TextStyle(color: c.rose, fontSize: 12)),
           ),
-      ],
-    );
-  }
-
-  Widget _iconBtn(AppThemeColorsExt c, IconData icon, VoidCallback onTap,
-      {String? tip, double size = 22, Color? color}) {
-    return IconButton(
-      onPressed: onTap,
-      tooltip: tip,
-      visualDensity: VisualDensity.compact,
-      icon: Icon(icon, size: size, color: color ?? c.ink),
-    );
-  }
-
-  Widget _player(BuildContext context, AppThemeColorsExt c) {
-    final L = context.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ValueListenableBuilder<Duration>(
-          valueListenable: ctrl.position,
-          builder: (_, pos, __) {
-            final total = ctrl.duration.inMilliseconds.toDouble();
-            final cur = pos.inMilliseconds.toDouble().clamp(0, total > 0 ? total : 1).toDouble();
-            return Row(
-              textDirection: TextDirection.ltr,
-              children: [
-                Text(_fmt(pos), style: TextStyle(color: c.inkSoft, fontSize: 11)),
-                Expanded(
-                  child: Slider(
-                    value: cur,
-                    min: 0,
-                    max: total > 0 ? total : 1,
-                    activeColor: c.teal,
-                    onChanged: total > 0
-                        ? (v) => ctrl.seek(Duration(milliseconds: v.round()))
-                        : null,
-                  ),
-                ),
-                Text(_fmt(ctrl.duration),
-                    style: TextStyle(color: c.inkSoft, fontSize: 11)),
-              ],
-            );
-          },
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          textDirection: TextDirection.ltr,
-          children: [
-            _iconBtn(c, Icons.skip_previous, ctrl.prevLine, tip: L.player_prev_sentence),
-            _iconBtn(c, Icons.replay_10, () => ctrl.skip(-10), tip: L.storyaudio_back_10),
-            Material(
-              color: c.teal,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: ctrl.toggle,
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Icon(ctrl.isPlaying ? Icons.pause : Icons.play_arrow,
-                      color: Colors.white, size: 26),
-                ),
-              ),
-            ),
-            _iconBtn(c, Icons.forward_10, () => ctrl.skip(10), tip: L.storyaudio_forward_10),
-            _iconBtn(c, Icons.skip_next, ctrl.nextLine, tip: L.player_next_sentence),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 6,
-          runSpacing: 4,
-          children: [
-            for (final r in const [0.75, 1.0, 1.25, 1.5])
-              _chip(c, '${r == 1.0 ? '1' : r}×', (ctrl.rate - r).abs() < 0.01,
-                  () => ctrl.setRate(r)),
-            _chip(
-              c,
-              ctrl.abState == AbState.idle
-                  ? L.player_ab_aria
-                  : ctrl.abState == AbState.waitingB
-                      ? L.storyaudio_ab_set_b
-                      : L.storyaudio_ab_active,
-              ctrl.abState != AbState.idle,
-              ctrl.markAB,
-            ),
-          ],
-        ),
       ],
     );
   }

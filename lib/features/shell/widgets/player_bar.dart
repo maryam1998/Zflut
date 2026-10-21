@@ -4,9 +4,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app.dart' show AppL10nX;
+import '../../../core/audio/story_audio_controller.dart';
 import '../../../core/player_sync/sync_widgets.dart';
 import '../../../core/providers/player_prefs_provider.dart';
 import '../../../core/providers/speech_provider.dart';
+import '../../../core/providers/story_user_audio_provider.dart';
 import '../../../core/scroll/global_scroll.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/tts/sentence_splitter.dart';
@@ -29,12 +32,18 @@ class PlayerBar extends ConsumerWidget {
 
     final isPlaying = state.status == SpeechStatus.playing;
 
+    // 🎧 صدای اپلودیِ داستانِ بازشده (فقط تبِ داستان‌ساز) — معادلِ storyUserAudio در Hope
+    final uaCtrl = ref.watch(storyUserAudioProvider);
+    final mode = ref.watch(storyPlaybackModeProvider);
+
     // شفافیت صفر = پلیر کاملاً ناپدید می‌شود و جایی هم اشغال نمی‌کند
     // (دکمه‌ی بازنشانی را AppShell نشان می‌دهد).
     if (opacity == 0) return const SizedBox.shrink();
 
     // بدون قابِ سبزِ دورِ پلیر: فقط پنلِ paper با گوشه‌های گردِ بالا.
-    final bar = Container(
+    Widget buildBar(StoryAudioController? ua) {
+      final userMode = ua != null && ua.hasAudio && mode == 'user';
+      return Container(
       decoration: BoxDecoration(
         color: c.paper,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -67,8 +76,11 @@ class PlayerBar extends ConsumerWidget {
                   ),
                 ),
 
+              // ═══ سوییچِ «صدای اپ / صدای اپلودی» — فقط وقتی داستانی باز است ═══
+              if (ua != null) _StorySourceSwitch(ua: ua, userMode: userMode),
+
               // ═══ زمان — نوارِ کشیدنی — زمانِ کل ═══
-              const _ProgressTrack(),
+              if (userMode) _UserProgressTrack(ua: ua!) else const _ProgressTrack(),
 
               // ═══ سرعت (اسلایدر) + مقدارِ پرشِ ثانیه‌ای ═══
               Padding(
@@ -77,9 +89,15 @@ class PlayerBar extends ConsumerWidget {
                   textDirection: TextDirection.ltr,
                   child: Row(
                     children: [
-                      Expanded(child: _SpeedControl(rate: state.rate)),
-                      const SizedBox(width: 10),
-                      const _SeekAmountControl(),
+                      if (userMode) ...[
+                        Expanded(child: _UserSpeedControl(ua: ua!)),
+                        const SizedBox(width: 10),
+                        _UserSeekAmountControl(ua: ua!),
+                      ] else ...[
+                        Expanded(child: _SpeedControl(rate: state.rate)),
+                        const SizedBox(width: 10),
+                        const _SeekAmountControl(),
+                      ],
                     ],
                   ),
                 ),
@@ -96,31 +114,44 @@ class PlayerBar extends ConsumerWidget {
 
                     // بی‌صدا
                     _IconBtn(
-                      icon: state.muted
+                      icon: (userMode ? ua!.muted : state.muted)
                           ? Icons.volume_off_outlined
                           : Icons.volume_up_outlined,
-                      color: state.muted ? c.rose : c.gold,
-                      onTap: ctrl.toggleMuted,
+                      color: (userMode ? ua!.muted : state.muted)
+                          ? c.rose
+                          : c.gold,
+                      onTap: userMode ? ua!.toggleMuted : ctrl.toggleMuted,
                     ),
 
-                    // 🔁 تکرار
-                    _IconBtn(
-                      icon: Icons.repeat,
-                      color: state.globalRepeat != 0 ? c.gold : c.inkSoft,
-                      onTap: ctrl.cycleRepeat,
-                      badge: state.globalRepeat == -1
-                          ? '∞'
-                          : (state.globalRepeat == 0
-                              ? null
-                              : '${state.globalRepeat}'),
-                    ),
+                    // 🔁 تکرار  |  صدای اپلودی: ↺ شروع از ابتدای صوت
+                    if (userMode)
+                      _IconBtn(
+                        icon: Icons.restart_alt,
+                        color: c.gold,
+                        onTap: ua!.restart,
+                      )
+                    else
+                      _IconBtn(
+                        icon: Icons.repeat,
+                        color: state.globalRepeat != 0 ? c.gold : c.inkSoft,
+                        onTap: ctrl.cycleRepeat,
+                        badge: state.globalRepeat == -1
+                            ? '∞'
+                            : (state.globalRepeat == 0
+                                ? null
+                                : '${state.globalRepeat}'),
+                      ),
 
                     // A-B — همیشه فعال؛ اگر چیزی پخش نمی‌شود اول متنِ صفحه را شروع می‌کند
                     _ABBtn(
-                      abState: state.abState,
+                      abState: userMode ? ua!.abState.name : state.abState,
                       color: c.gold,
                       idleColor: c.ink,
                       onTap: () async {
+                        if (userMode) {
+                          ua!.markAB();
+                          return;
+                        }
                         if (!_isActive(ref)) {
                           final ok = await _startMain(context, ref);
                           if (!ok) return;
@@ -134,19 +165,29 @@ class PlayerBar extends ConsumerWidget {
                       icon: Icons.skip_next,
                       color: c.ink,
                       onTap: () async {
+                        if (userMode) {
+                          await ua!.nextLine();
+                          return;
+                        }
                         if (_isActive(ref)) {
                           await ctrl.nextChunk();
                         } else {
                           await _startMain(context, ref);
                         }
                       },
-                      onStep: () => _seekStep(ref, 1),
+                      onStep: () => userMode
+                          ? ua!.skip(ref.read(seekAmountProvider))
+                          : _seekStep(ref, 1),
                     ),
 
                     // پخش/توقف — همیشه فعال
                     _PlayBtn(
-                      isPlaying: isPlaying,
+                      isPlaying: userMode ? ua!.isPlaying : isPlaying,
                       onTap: () async {
+                        if (userMode) {
+                          await ua!.toggle();
+                          return;
+                        }
                         final ok = await syncPlayPause(ref);
                         if (!ok && context.mounted) _toastNoText(context);
                       },
@@ -157,13 +198,19 @@ class PlayerBar extends ConsumerWidget {
                       icon: Icons.skip_previous,
                       color: c.ink,
                       onTap: () async {
+                        if (userMode) {
+                          await ua!.prevLine();
+                          return;
+                        }
                         if (_isActive(ref)) {
                           await ctrl.prevChunk();
                         } else {
                           await _startMain(context, ref);
                         }
                       },
-                      onStep: () => _seekStep(ref, -1),
+                      onStep: () => userMode
+                          ? ua!.skip(-ref.read(seekAmountProvider))
+                          : _seekStep(ref, -1),
                     ),
 
                     // شفافیتِ پلیر
@@ -190,7 +237,15 @@ class PlayerBar extends ConsumerWidget {
             ],
           ),
         ),
-    );
+      );
+    }
+
+    final Widget bar = uaCtrl == null
+        ? buildBar(null)
+        : ListenableBuilder(
+            listenable: uaCtrl,
+            builder: (_, __) => buildBar(uaCtrl),
+          );
 
     return Stack(
       children: [
@@ -898,6 +953,209 @@ class _ProgressTrackState extends ConsumerState<_ProgressTrack> {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// 🎧 صدای اپلودیِ داستان روی پلیرِ اصلی (معادلِ PlayerBarStorySwitch و
+// UserAudio* در Hope)
+
+String _fmtMs(double ms) {
+  final t = math.max(0, (ms / 1000).round());
+  final m = t ~/ 60;
+  final r = t % 60;
+  return '${m.toString().padLeft(2, '0')}:${r.toString().padLeft(2, '0')}';
+}
+
+/// سوییچِ دوحالته‌ی «صدای اپ ⇄ صدای اپلودی» بالای نوارِ پیشرفت.
+class _StorySourceSwitch extends ConsumerWidget {
+  final StoryAudioController ua;
+  final bool userMode;
+  const _StorySourceSwitch({required this.ua, required this.userMode});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.appColors;
+    final L = context.l10n;
+
+    Widget seg(String label, bool on, bool enabled, VoidCallback onTap) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled ? onTap : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+          decoration: BoxDecoration(
+            color: on ? c.teal : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: on ? Colors.white : (enabled ? c.ink : c.cardBorder),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            border: Border.all(color: c.cardBorder),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              seg(L.player_app_voice, !userMode, true, () {
+                ref.read(storyPlaybackModeProvider.notifier).state = 'tts';
+                ua.pause();
+              }),
+              const SizedBox(width: 4),
+              seg(L.player_my_audio, userMode, ua.hasAudio, () {
+                ref.read(storyPlaybackModeProvider.notifier).state = 'user';
+                ref.read(speechControllerProvider.notifier).stop();
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// نوارِ پیشرفتِ صدای اپلودی: زمانِ فعلی — اسلایدر — زمانِ کل.
+class _UserProgressTrack extends StatelessWidget {
+  final StoryAudioController ua;
+  const _UserProgressTrack({required this.ua});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final timeStyle = TextStyle(
+      fontSize: 12,
+      color: c.inkSoft,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: ValueListenableBuilder<Duration>(
+          valueListenable: ua.position,
+          builder: (_, pos, __) {
+            final total = ua.duration.inMilliseconds.toDouble();
+            final cur = pos.inMilliseconds
+                .toDouble()
+                .clamp(0.0, total > 0 ? total : 1.0)
+                .toDouble();
+            return Row(
+              children: [
+                SizedBox(
+                  width: 38,
+                  child: Text(_fmtMs(cur),
+                      textAlign: TextAlign.center, style: timeStyle),
+                ),
+                Expanded(
+                  child: SliderTheme(
+                    data: _sliderTheme(context),
+                    child: Slider(
+                      value: cur,
+                      min: 0,
+                      max: total > 0 ? total : 1,
+                      onChanged: total > 0
+                          ? (v) => ua.seek(Duration(milliseconds: v.round()))
+                          : null,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 38,
+                  child: Text(_fmtMs(total),
+                      textAlign: TextAlign.center, style: timeStyle),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// سرعتِ صدای اپلودی — هم‌شکلِ _SpeedControl، ولی روی کنترلرِ فایل (۰٫۵× تا ۲×).
+class _UserSpeedControl extends StatelessWidget {
+  final StoryAudioController ua;
+  const _UserSpeedControl({required this.ua});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final rate = ua.rate;
+    void step(double d) =>
+        ua.setRate((((rate + d) * 10).round() / 10).clamp(0.5, 2.0));
+    return Row(
+      children: [
+        Icon(Icons.speed, size: 16, color: c.inkSoft),
+        const SizedBox(width: 4),
+        _MiniBtn(label: '−', enabled: rate > 0.5, onTap: () => step(-0.1)),
+        Expanded(
+          child: SliderTheme(
+            data: _sliderTheme(context),
+            child: Slider(
+              value: rate.clamp(0.5, 2.0),
+              min: 0.5,
+              max: 2.0,
+              divisions: 30,
+              onChanged: (v) => ua.setRate(v),
+            ),
+          ),
+        ),
+        _MiniBtn(label: '+', enabled: rate < 2.0, onTap: () => step(0.1)),
+        const SizedBox(width: 4),
+        SizedBox(
+          width: 30,
+          child: Text(
+            '${rate.toStringAsFixed(1)}×',
+            style: TextStyle(color: c.inkSoft, fontSize: 11),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// پرشِ N ثانیه‌ای عقب/جلو برای صدای اپلودی (تپ = پرش، لمسِ طولانی = تغییرِ N).
+class _UserSeekAmountControl extends ConsumerWidget {
+  final StoryAudioController ua;
+  const _UserSeekAmountControl({required this.ua});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final amount = ref.watch(seekAmountProvider);
+    final n = ref.read(seekAmountProvider.notifier);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _SkipBtn(
+          icon: Icons.replay,
+          amount: amount,
+          onTap: () => ua.skip(-amount),
+          onLongPress: n.cycle,
+        ),
+        _SkipBtn(
+          icon: Icons.refresh,
+          amount: amount,
+          onTap: () => ua.skip(amount),
+          onLongPress: n.cycle,
+        ),
+      ],
     );
   }
 }

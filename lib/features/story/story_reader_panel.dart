@@ -11,6 +11,7 @@ import '../../core/player_sync/player_track.dart' show SyncItem, TrackMode;
 import '../../core/player_sync/sync_widgets.dart'
     show SyncAnchor, SyncPlayScope, SyncSpeakButton, syncReportTranslation;
 import '../../core/providers/ai_settings_provider.dart';
+import '../../core/providers/story_user_audio_provider.dart';
 import '../../core/providers/text_prefs_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
@@ -143,6 +144,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
   @override
   void initState() {
     super.initState();
+    _pc = ProviderScope.containerOf(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _registerAudio());
     try {
       final v = ref.read(sharedPrefsProvider).getInt(_kModeKey);
       if (v != null && v >= 0 && v <= 2) _mode = v;
@@ -153,9 +156,25 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _ensure());
   }
 
+  // ثبتِ صوتِ آپلودیِ این داستان در پلیرِ اصلیِ پایین (معادلِ onUserAudioStateChange در Hope)
+  late final ProviderContainer _pc;
+
+  void _registerAudio() {
+    if (!mounted) return;
+    final a = widget.audio;
+    if (a == null) return;
+    if (!identical(_pc.read(storyUserAudioProvider), a)) {
+      _pc.read(storyPlaybackModeProvider.notifier).state = 'tts';
+      _pc.read(storyUserAudioProvider.notifier).state = a;
+    }
+  }
+
   @override
   void didUpdateWidget(covariant StoryReaderPanel old) {
     super.didUpdateWidget(old);
+    if (!identical(old.audio, widget.audio)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _registerAudio());
+    }
     final s = _signature();
     if (s != _sig) {
       _sig = s;
@@ -169,6 +188,16 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
 
   @override
   void dispose() {
+    final a = widget.audio;
+    final pc = _pc;
+    Future.microtask(() {
+      try {
+        if (a != null && identical(pc.read(storyUserAudioProvider), a)) {
+          pc.read(storyUserAudioProvider.notifier).state = null;
+          pc.read(storyPlaybackModeProvider.notifier).state = 'tts';
+        }
+      } catch (_) {}
+    });
     _notesTimer?.cancel();
     _flashTimer?.cancel();
     _searchCtrl.dispose();
