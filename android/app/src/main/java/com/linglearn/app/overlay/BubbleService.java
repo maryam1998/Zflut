@@ -300,7 +300,10 @@ public class BubbleService extends Service {
     private String ytAutoOffKey = "";        // ویدیویی که کاربر خاموشش کرده / زیرنویس نداشت
 
     private boolean ytAutoPref() {
-        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("ytAuto", true);
+        // ⛔ روشن‌شدنِ خودکارِ حالتِ یوتیوب غیرفعال شد (مثلِ linlearn-App: فقط با دکمه‌ی ▶ روشن می‌شود).
+        //    علت: ویدیوی بدونِ ترکِ شناخته‌شده (یا خطای موقتِ شبکه) حالتِ یوتیوب را می‌بست و به ترجمه‌ی زنده برمی‌گشت.
+        //    کدِ خودکار سرجایش مانده؛ برای روشن‌کردنِ دوباره فقط پیش‌فرضِ زیر را true کنید.
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("ytAuto", false);
     }
 
     private static String ytKeyOf(YtMedia.State s) {
@@ -1545,6 +1548,7 @@ public class BubbleService extends Service {
         header.addView(tvFont);
         TextView tvSpeed = headerButton("\u23E9", v -> toggleSpeedRow());   // ⏩ سرعتِ پخشِ ویدیو/صدای برنامه‌ی دیگر (MediaSession؛ بدونِ Accessibility)
         tvSpeed.setPadding(dp(8), dp(6), dp(8), dp(6));
+        tvSpeed.setVisibility(View.GONE);   // 🙈 دکمه‌ی سرعت فعلاً مخفی است (کدِ سرعت دست‌نخورده مانده؛ برای نمایش، GONE را VISIBLE کنید)
         header.addView(tvSpeed);
         TextView tvOpacity = headerButton("\uD83C\uDF13", v -> toggleOpacityRow());
         tvOpacity.setPadding(dp(8), dp(6), dp(8), dp(6));
