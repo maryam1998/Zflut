@@ -1528,28 +1528,23 @@ public class BubbleService extends Service {
         tvYtRestart = headerButton("\u23EE", v -> restartYoutubeFromStart());   // ⏮ فقط در حالتِ یوتیوب دیده می‌شود
         tvYtRestart.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtRestart.setVisibility(View.GONE);
-        header.addView(tvYtRestart);
         tvYtLoop = headerButton("\u221E", v -> toggleYoutubeVideoLoop());   // ∞ کلِ ویدیو از اول و بی‌نهایت بار؛ فقط در حالتِ یوتیوب
         tvYtLoop.setTypeface(Typeface.DEFAULT_BOLD);
         tvYtLoop.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19);
         tvYtLoop.setPadding(dp(8), dp(2), dp(8), dp(2));
         tvYtLoop.setContentDescription(msg("تکرارِ بی‌نهایتِ کلِ ویدیو", "Loop the whole video"));
         tvYtLoop.setVisibility(View.GONE);
-        header.addView(tvYtLoop);
         tvYtPause = headerButton("\u23EF", v -> toggleYoutubePause());   // ⏯ فقط در حالتِ یوتیوب دیده می‌شود
         tvYtPause.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtPause.setVisibility(View.GONE);
-        header.addView(tvYtPause);
         tvYtAll = headerButton("\uD83D\uDD02", v -> toggleFullText());   // 🔂 فقط در حالتِ «متنِ کامل»
         tvYtAll.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtAll.setVisibility(View.GONE);
         header.addView(tvYtAll);
         tvSave = headerButton("\uD83D\uDCBE", v -> saveCurrent());
-        header.addView(tvSave);
         loadRepeatPref();
         tvRepeat = headerButton("\uD83D\uDD01", v -> cycleRepeat());
         tvRepeat.setPadding(dp(8), dp(6), dp(8), dp(6));
-        header.addView(tvRepeat);
         updateRepeatButton();
         updateYtButton();
         TextView tvSpeed = headerButton("\u23E9", v -> toggleSpeedRow());   // ⏩ سرعتِ پخشِ ویدیو/صدای برنامه‌ی دیگر (MediaSession؛ بدونِ Accessibility)
@@ -1642,12 +1637,23 @@ public class BubbleService extends Service {
         tvFontBtn = buildFontButton();
         pinRow.addView(tvFontBtn, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        // دکمه‌های ⏮ ∞ ⏯ 🔁 💾 از هدر آمدند پایین، بعد از دکمه‌ی فونت (paddingِ کمتر تا همه جا شوند)
+        tvYtRestart.setPadding(dp(5), dp(4), dp(5), dp(4));
+        tvYtLoop.setPadding(dp(5), dp(1), dp(5), dp(1));
+        tvYtPause.setPadding(dp(5), dp(4), dp(5), dp(4));
+        tvRepeat.setPadding(dp(5), dp(4), dp(5), dp(4));
+        tvSave.setPadding(dp(5), dp(4), dp(5), dp(4));
+        pinRow.addView(tvYtRestart);
+        pinRow.addView(tvYtLoop);
+        pinRow.addView(tvYtPause);
+        pinRow.addView(tvRepeat);
+        pinRow.addView(tvSave);
         pinRow.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
         tvPin = new TextView(this);
         tvPin.setText("\uD83D\uDCCC");
         tvPin.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         tvPin.setGravity(Gravity.CENTER);
-        tvPin.setPadding(dp(12), dp(3), dp(12), dp(3));
+        tvPin.setPadding(dp(8), dp(3), dp(8), dp(3));
         tvPin.setOnClickListener(v -> toggleKeepOpen());
         updatePinUi();
         LinearLayout.LayoutParams pinLp = new LinearLayout.LayoutParams(
@@ -1657,7 +1663,7 @@ public class BubbleService extends Service {
         tvClear.setText("\uD83D\uDDD1");
         tvClear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         tvClear.setGravity(Gravity.CENTER);
-        tvClear.setPadding(dp(12), dp(3), dp(12), dp(3));
+        tvClear.setPadding(dp(8), dp(3), dp(8), dp(3));
         tvClear.setAlpha(0.8f);
         tvClear.setContentDescription(msg("پاک‌کردنِ تاریخچه", "Clear history"));
         tvClear.setOnClickListener(v -> clearHistory());
@@ -3282,21 +3288,11 @@ public class BubbleService extends Service {
     /** متنِ کلید: خطِ اول «Aa آب» (نمونه‌ی لاتین و فارسیِ همین فونت)، خطِ دوم نامِ فونت به زبانِ رابط. */
     private CharSequence presetChipText(String id, String name) {
         String[] m = mapAppFont(id);
-        FontOpt fo = fontById(FA_FONTS, m[0]), eo = fontById(EN_FONTS, m[1]);
+        FontOpt eo = fontById(EN_FONTS, m[1]);
         android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder();
-        int a = sb.length();
         sb.append("Aa");
-        sb.setSpan(new FontSpan(typefaceOf(eo, false)), a, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        sb.setSpan(new android.text.style.RelativeSizeSpan(1.45f * eo.sizeMul), a, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        sb.append("  ");
-        a = sb.length();
-        sb.append("آب");
-        sb.setSpan(new FontSpan(typefaceOf(fo, false)), a, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        sb.setSpan(new android.text.style.RelativeSizeSpan(1.45f * fo.sizeMul), a, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        sb.append("\n");
-        a = sb.length();
-        sb.append(name);
-        sb.setSpan(new android.text.style.RelativeSizeSpan(0.74f), a, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new FontSpan(typefaceOf(eo, false)), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new android.text.style.RelativeSizeSpan(1.45f * eo.sizeMul), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return sb;
     }
 
@@ -3313,14 +3309,6 @@ public class BubbleService extends Service {
         line.setGravity(Gravity.CENTER_VERTICAL);
         line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         line.setPadding(0, dp(2), 0, dp(2));
-        TextView lb = new TextView(this);
-        lb.setText(msg("فونت", "Font"));
-        lb.setTextColor(COLOR_GOLD);
-        lb.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
-        lb.setTypeface(Typeface.DEFAULT_BOLD);
-        lb.setMinWidth(dp(50));
-        line.addView(lb, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
         HorizontalScrollView hs = new HorizontalScrollView(this);
         hs.setHorizontalScrollBarEnabled(false);
         hs.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -3333,10 +3321,11 @@ public class BubbleService extends Service {
             TextView c = new TextView(this);
             c.setTag(id);
             c.setText(presetChipText(id, fa ? APP_FONT_FA[i] : APP_FONT_EN[i]));
+            c.setContentDescription(fa ? APP_FONT_FA[i] : APP_FONT_EN[i]);
             c.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             c.setGravity(Gravity.CENTER);
-            c.setMaxLines(2);
-            c.setMinWidth(dp(68));
+            c.setMaxLines(1);
+            c.setMinWidth(dp(48));
             c.setLineSpacing(0f, 1.05f);
             c.setTextDirection(View.TEXT_DIRECTION_LTR);
             c.setPadding(dp(12), dp(6), dp(12), dp(6));
