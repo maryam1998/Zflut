@@ -1559,7 +1559,6 @@ public class BubbleService extends Service {
         TextView tvOpacity = headerButton("\uD83C\uDF13", v -> toggleOpacityRow());
         tvOpacity.setPadding(dp(8), dp(6), dp(8), dp(6));
         header.addView(tvOpacity);
-        header.addView(headerButton("\uD83D\uDDD1", v -> clearHistory()));
         ChevronButton minimize = new ChevronButton(this);   // ⌄ = فقط کادرِ تاریخچه را پنهان می‌کند (بستنِ حباب: ✕ روی خودِ حباب)
         minimize.setContentDescription(msg("کوچک‌کردنِ کادر", "Minimize panel"));
         minimize.setOnClickListener(v -> { idleHidden = false; userHidden = true; removePanel(); });
@@ -1654,6 +1653,18 @@ public class BubbleService extends Service {
         LinearLayout.LayoutParams pinLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         pinLp.topMargin = dp(2);
+        TextView tvClear = new TextView(this);                      // 🗑 پاک‌کردنِ تاریخچه (از هدر آمد پایین تا هدر تنگ نشود)
+        tvClear.setText("\uD83D\uDDD1");
+        tvClear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        tvClear.setGravity(Gravity.CENTER);
+        tvClear.setPadding(dp(12), dp(3), dp(12), dp(3));
+        tvClear.setAlpha(0.8f);
+        tvClear.setContentDescription(msg("پاک‌کردنِ تاریخچه", "Clear history"));
+        tvClear.setOnClickListener(v -> clearHistory());
+        LinearLayout.LayoutParams clrLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        clrLp.topMargin = dp(2);
+        pinRow.addView(tvClear, clrLp);
         pinRow.addView(tvPin, pinLp);
         panel.addView(pinRow, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
