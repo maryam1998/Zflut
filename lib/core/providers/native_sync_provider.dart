@@ -28,6 +28,7 @@ import 'story_library_provider.dart';
 class NativeSync with WidgetsBindingObserver {
   final Ref _ref;
   StreamSubscription<Map<String, dynamic>>? _sub;
+  StreamSubscription<Map<String, dynamic>>? _tSub;
   bool _busy = false;
 
   NativeSync(this._ref) {
@@ -36,6 +37,10 @@ class NativeSync with WidgetsBindingObserver {
     _sub = NativeBridge.instance
         .on('wordQueued')
         .listen((_) => importAll(), onError: (Object _) {});
+    // 🌐 کاربر زبان‌های ترجمه را از داخلِ کادرِ شناور عوض کرد → همان لحظه در اپ هم اعمال شود
+    _tSub = NativeBridge.instance
+        .on('targetsChanged')
+        .listen((_) => _pullPanelTargets(), onError: (Object _) {});
     // مثل Hope (useEffect در SettingsMenu): هر بار زبان‌های مقصد یا زبان رابط عوض شد،
     // به حبابِ در حال اجرا هم خبر بده — وگرنه زیرنویسِ یوتیوب به زبان‌های قبلی ترجمه می‌شد.
     _ref.listen<LanguageSelection>(languageSelectionProvider, (_, __) => pushLangs());
@@ -48,6 +53,7 @@ class NativeSync with WidgetsBindingObserver {
 
   void dispose() {
     _sub?.cancel();
+    _tSub?.cancel();
     if (NativeBridge.instance.isSupported) {
       WidgetsBinding.instance.removeObserver(this);
     }
@@ -75,7 +81,23 @@ class NativeSync with WidgetsBindingObserver {
 
   /// زبان صدا = «زبان صدا»ی تنظیمات (پیش‌فرض en)، مقصدها = *همه‌ی* زبان‌های مقصدِ انتخابی
   /// (اگر هیچ‌کدام نبود، زبان رابط) — دقیقاً مثل liveSrcLang / liveTargets در Hope.
+  /// زبان‌هایی که کاربر از داخلِ کادرِ شناور انتخاب کرده (اگر عوض شده باشد) وارد اپ می‌شود.
+  /// باید *قبل از* هر pushLangs اجرا شود، وگرنه انتخابِ کادر با زبان‌های قدیمیِ اپ بازنویسی می‌شد.
+  Future<void> _pullPanelTargets() async {
+    try {
+      if (!NativeBridge.instance.isSupported) return;
+      final r = await NativeBridge.instance.takePanelTargets();
+      if (r['dirty'] != true) return;
+      final raw = r['targets'];
+      if (raw is! List) return;
+      final codes = raw.map((e) => e.toString()).toList();
+      if (codes.isEmpty) return;
+      await _ref.read(languageSelectionProvider.notifier).setTargets(codes);
+    } catch (_) {}
+  }
+
   Future<void> pushLangs() async {
+    await _pullPanelTargets();
     try {
       final prefs = _ref.read(appPrefsProvider);
       final sel = _ref.read(languageSelectionProvider);

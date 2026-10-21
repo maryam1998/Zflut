@@ -32,6 +32,22 @@ class LanguageSelectionNotifier extends StateNotifier<LanguageSelection> {
     return _persist(state.copyWith(targets: list));
   }
 
+  /// کادرِ شناور فهرستِ زبان‌های مقصد را عوض کرد → همان را جایگزین کن (ترتیب = ترتیبِ انتخاب).
+  Future<void> setTargets(List<String> codes) {
+    final list = <String>[];
+    for (final c in codes) {
+      final t = c.trim().toLowerCase();
+      if (t.isNotEmpty && !list.contains(t)) list.add(t);
+    }
+    if (list.isEmpty) return Future.value();
+    if (list.length == state.targets.length &&
+        List.generate(list.length, (i) => list[i] == state.targets[i])
+            .every((e) => e)) {
+      return Future.value();
+    }
+    return _persist(state.copyWith(targets: list));
+  }
+
   Future<void> removeTarget(String code) {
     final list = [...state.targets]..remove(code);
     if (list.isEmpty) list.add('en');

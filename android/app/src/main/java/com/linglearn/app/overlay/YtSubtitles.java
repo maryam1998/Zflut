@@ -65,6 +65,8 @@ final class YtSubtitles {
     interface Host {
         /** زبان‌های مقصدِ انتخابیِ کاربر. */
         List<String> targets();
+        /** پشتیبانِ AI برای بازبینیِ ترجمه‌های مشکوک (null = فقط ترجمه‌ی رایگان). */
+        default LiveTranslator.Ai ai() { return null; }
         /** زبانِ گفتاریِ انتخاب‌شده در تنظیمات (برای انتخابِ ترکِ زیرنویس). "auto" هم ممکنه. */
         String requestedSource();
         String tone();
@@ -106,6 +108,7 @@ final class YtSubtitles {
     private final ExecutorService netChunk = Executors.newFixedThreadPool(PARALLEL);   // چند chunk موازی
     private final ExecutorService netIo = Executors.newSingleThreadExecutor();        // نوشتن کش روی دیسک
     private final ExecutorService netQuick = Executors.newFixedThreadPool(2);
+    private final ExecutorService netReview = Executors.newFixedThreadPool(3);        // بازبینیِ ترجمه‌های مشکوکِ هر chunk (موازی)
     private final YtMedia.Tracker tracker;
     private final Map<String, String> idByTitle = new HashMap<>();
     // کشِ زیرنویسِ ویدیوهای اخیر (پخشِ دوباره / seek به ویدیوی قبلی فوری باشد)
@@ -345,12 +348,23 @@ final class YtSubtitles {
         netCaps.shutdownNow();
         netChunk.shutdownNow();
         netQuick.shutdownNow();
+        netReview.shutdownNow();
         netIo.shutdown();
     }
 
     /** زبان‌های مقصد یا نمایش عوض شد. */
     void onSettingsChanged() {
-        if (active) main.post(this::pump);
+        if (!active) return;
+        main.post(() -> {
+            // 🌐 زبانِ تازه از داخلِ کادر اضافه شد: جمله‌ی در حالِ پخش همان لحظه ترجمه شود، بقیه را pump می‌گیرد
+            final int idx = shownIdx;
+            if (!cues.isEmpty() && idx >= 0 && idx < cues.size()) {
+                for (String lang : langs()) {
+                    if (arr(lang)[idx] == null) quick(idx, lang);
+                }
+            }
+            pump();
+        });
     }
 
     private String msg(String fa, String en) { return NativeI18n.tr(host.lang(), fa, en); }
@@ -632,6 +646,54 @@ final class YtSubtitles {
         }
     }
 
+    // ───── 🔎 بازبینیِ ترجمه‌های مشکوک (مثل ترجمه‌ی زنده) ─────
+    // ترجمه‌ی مشکوک = خالی / همان متنِ مبدأ / خط‌های «فکرِ AI» / رسم‌الخطِ اشتباه / طولِ غیرعادی / کلمه‌ی تکراری.
+    // چنین خطی نشان داده یا ذخیره نمی‌شود؛ دوباره با «کش ← سرویس‌های رایگان ← AI» ترجمه می‌شود.
+
+    private static final java.util.regex.Pattern HAS_LETTER = java.util.regex.Pattern.compile("\\p{L}");
+
+    private static boolean suspicious(String srcLine, String out, String src, String lang) {
+        if (srcLine == null || !HAS_LETTER.matcher(srcLine).find()) return false;   // «♪♪» و … بازبینی نمی‌خواهد
+        return LiveTranslator.looksLikelyMistranslated(srcLine, out == null ? "" : out, lang, src);
+    }
+
+    /** بعد از بازبینی چیزِ بهتری نیامد: متنِ بدیهیاً خراب (خالی / فکرِ AI) نشان داده نشود؛ بقیه (مثلاً اسمِ خاص) همان بماند. */
+    private static String keepIfUsable(String draft) {
+        if (draft == null || draft.trim().isEmpty() || LiveTranslator.isReasoningLeak(draft)) return null;
+        return draft;
+    }
+
+    private String reviewLine(String line, String draft, String src, String lang) {
+        if (!suspicious(line, draft, src, lang)) return draft;
+        try {
+            String fixed = LiveTranslator.translate(app, httpFast, line, src, lang, host.ai());
+            if (fixed != null && !fixed.trim().isEmpty()) return fixed.trim();
+        } catch (Exception e) {
+            Log.d(TAG, "review failed: " + e);
+        }
+        return keepIfUsable(draft);
+    }
+
+    /** همه‌ی خط‌های یک chunk را بازبینی می‌کند؛ فقط مشکوک‌ها دوباره ترجمه می‌شوند (موازی، با سقفِ زمان). */
+    private String[] reviewAll(final List<String> lines, final String[] draft, final String src, final String lang) {
+        final int n = lines.size();
+        final String[] res = new String[n];
+        final List<java.util.concurrent.Callable<Void>> jobs = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            final int k = i;
+            final String d = (draft != null && i < draft.length) ? draft[i] : null;
+            if (!suspicious(lines.get(i), d, src, lang)) { res[i] = d; continue; }
+            res[i] = keepIfUsable(d);                      // اگر بازبینی به‌موقع تمام نشد، همین می‌ماند
+            jobs.add(() -> { res[k] = reviewLine(lines.get(k), d, src, lang); return null; });
+        }
+        if (!jobs.isEmpty()) {
+            Log.d(TAG, "reviewing " + jobs.size() + " suspicious line(s) [" + lang + "]");
+            try { netReview.invokeAll(jobs, 25, java.util.concurrent.TimeUnit.SECONDS); }
+            catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+        }
+        return res;
+    }
+
     private void startChunk(final int chunk, final String lang) {
         final String key = lang + "#" + chunk;
         running.add(key);
@@ -654,13 +716,16 @@ final class YtSubtitles {
             String[] out = null;
             try {
                 out = requestChunk(lines, before, after, title, src, srcName, lang, tgtName, tone);
+                out = reviewAll(lines, out, src, lang);          // 🔎 خروجیِ سرور هم بازبینی می‌شود
             } catch (Exception e) {
                 Log.w(TAG, "chunk request failed (" + e + "); falling back to per-sentence translation");
+                out = null;
             }
             if (out == null) {
+                // رایگان ← (مشکوک؟) AI، با کشِ تأییدشده؛ همان مسیرِ ترجمه‌ی زنده
                 out = new String[lines.size()];
                 for (int i = 0; i < lines.size(); i++) {
-                    try { out[i] = FreeTranslator.translate(httpFast, lines.get(i), src, lang); }
+                    try { out[i] = LiveTranslator.translate(app, httpFast, lines.get(i), src, lang, host.ai()); }
                     catch (Exception e) { break; }     // شبکه/سرویس‌ها پایین‌ان؛ بقیه رو الکی منتظر نمون
                 }
             }
@@ -699,7 +764,10 @@ final class YtSubtitles {
             String[] saved = YtDiskCache.loadTr(app, curVideoId, lang, tone, sig);
             if (saved == null || saved.length != sents.size()) continue;
             String[] sa = sentArr(lang);
-            for (int i = 0; i < saved.length; i++) if (saved[i] != null) sa[i] = saved[i];
+            for (int i = 0; i < saved.length; i++) {
+                // ترجمه‌ی مشکوکِ ذخیره‌شده از دفعه‌ی قبل دوباره استفاده نشود (chunk اش دوباره ترجمه/بازبینی می‌شود)
+                if (saved[i] != null && !suspicious(sentTexts.get(i), saved[i], trackLang, lang)) sa[i] = saved[i];
+            }
             String[] a = arr(lang);
             for (int c = 0; c < a.length; c++) {
                 String v = composeCue(lang, c);
@@ -763,6 +831,7 @@ final class YtSubtitles {
                     final String out;
                     try { out = FreeTranslator.translate(httpFast, text, src, lang); }
                     catch (Exception e) { return; }
+                    if (suspicious(text, out, src, lang)) return;   // مشکوک: نشان نده؛ ترجمه‌ی بازبینی‌شده‌ی chunk می‌رسد
                     main.post(() -> {
                         if (g != gen || !active) return;
                         setSentence(si, lang, out == null ? "" : out.trim(), false);   // اگه chunk زودتر رسیده بود، دست نزن

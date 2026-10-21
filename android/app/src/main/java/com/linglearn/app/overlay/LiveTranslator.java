@@ -136,6 +136,11 @@ final class LiveTranslator {
         }
     }
 
+    /** خروجیِ AI به‌جای ترجمه «فرایندِ فکر کردن» را نوشته؛ این متن هرگز نباید نشان داده شود. */
+    static boolean isReasoningLeak(String out) {
+        return out != null && REASONING.matcher(out).find();
+    }
+
     static boolean looksLikelyMistranslated(String sourceText, String draft, String targetLang, String sourceLang) {
         final String src = sourceText == null ? "" : sourceText.trim();
         final String out = draft == null ? "" : draft.trim();

@@ -68,6 +68,13 @@ public class BubblePlugin extends Plugin {
         try { p.notifyListeners("wordQueued", new JSObject()); } catch (Throwable ignored) {}
     }
 
+    /** از پنلِ شناور: کاربر زبان‌های مقصد را داخلِ کادر عوض کرد — اگر اپ زنده است همان لحظه هماهنگ می‌شود. */
+    static void notifyTargetsChanged() {
+        BubblePlugin p = inst;
+        if (p == null) return;
+        try { p.notifyListeners("targetsChanged", new JSObject()); } catch (Throwable ignored) {}
+    }
+
     @Override
     public void load() {
         super.load();
@@ -224,6 +231,19 @@ public class BubblePlugin extends Plugin {
         BubbleService.saveTone(getContext(), call.getString("translationTone"));
         BubbleService.settingsChanged();
         call.resolve();
+    }
+
+    // takePanelTargets() → { dirty, targets? }
+    //   اگر کاربر زبان‌ها را از داخلِ کادرِ شناور عوض کرده باشد dirty=true و فهرستِ جدید برمی‌گردد (و پرچم پاک می‌شود).
+    //   اپ باید قبل از هر setLanguages این را بخواند، وگرنه انتخابِ کادر با زبان‌های قدیمیِ اپ بازنویسی می‌شد.
+    @PluginMethod
+    public void takePanelTargets(PluginCall call) {
+        JSObject ret = new JSObject();
+        JSArray arr = new JSArray();
+        boolean dirty = BubbleService.takePanelTargets(getContext(), arr);
+        ret.put("dirty", dirty);
+        if (dirty) ret.put("targets", arr);
+        call.resolve(ret);
     }
 
     /** "fa,fr,ar" from the optional targetLangs array (null when the caller did not send one). */

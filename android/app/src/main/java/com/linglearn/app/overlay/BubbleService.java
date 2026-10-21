@@ -221,7 +221,27 @@ public class BubbleService extends Service {
     /** Comma-separated list of ALL translation target languages the user picked in the app (e.g. "fa,fr,ar"). */
     public static void saveTargets(Context ctx, String csv) {
         if (csv == null) return;
-        ctx.getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString("targets", csv.trim()).apply();
+        final SharedPreferences sp = ctx.getSharedPreferences(PREFS, MODE_PRIVATE);
+        // کاربر همین چند لحظه پیش از داخلِ کادر زبان عوض کرده و اپ هنوز نخوانده → فهرستِ قدیمیِ اپ آن را بازنویسی نکند
+        if (sp.getBoolean("targetsDirty", false)
+                && System.currentTimeMillis() - sp.getLong("targetsDirtyAt", 0L) < 30_000L) return;
+        sp.edit().putString("targets", csv.trim()).apply();
+    }
+
+    /**
+     * 🌐 زبان‌ها از داخلِ کادر عوض شده‌اند و اپ هنوز خبر ندارد؟ → true و فهرستِ جدید در out؛ پرچم پاک می‌شود.
+     * (اپ قبل از هر setLanguages این را می‌خواند تا انتخابِ کادر با زبان‌های قدیمیِ اپ بازنویسی نشود.)
+     */
+    static boolean takePanelTargets(Context ctx, org.json.JSONArray out) {
+        final SharedPreferences sp = ctx.getSharedPreferences(PREFS, MODE_PRIVATE);
+        if (!sp.getBoolean("targetsDirty", false)) return false;
+        final String csv = sp.getString("targets", "");
+        if (csv != null) for (String t : csv.split(",")) {
+            t = t.trim().toLowerCase(Locale.ROOT);
+            if (!t.isEmpty()) out.put(t);
+        }
+        sp.edit().putBoolean("targetsDirty", false).apply();
+        return true;
     }
 
     /** Called by the plugin when languages / display mode change while the bubble is running. */
@@ -813,8 +833,27 @@ public class BubbleService extends Service {
         if (out.isEmpty()) out.add(targetLang());
         // در حالتِ یوتیوب، «زبانِ مبدأ» = زبانِ زیرنویسِ همان ویدیو (مثلاً es)، نه زبانِ صدای تنظیمات؛
         // وگرنه برای ویدیوی غیرانگلیسی، «انگلیسی» به‌اشتباه از ترجمه‌ها حذف می‌شد.
-        String src = (yt != null && yt.isActive()) ? yt.trackLang() : effectiveSource();
+        String src = currentSrcLang();
         if (src != null && !"auto".equals(src)) out.remove(src);
+        return out;
+    }
+
+    /** زبانِ چیزی که الان ترجمه می‌شود: زیرنویسِ ویدیو (حالتِ یوتیوب) یا زبانِ گفتار (ترجمه‌ی زنده). */
+    private String currentSrcLang() {
+        return (yt != null && yt.isActive()) ? yt.trackLang() : effectiveSource();
+    }
+
+    /** همه‌ی زبان‌های انتخابی (بدونِ حذفِ زبانِ مبدأ) به همان ترتیبی که انتخاب شده‌اند. */
+    private ArrayList<String> pickedTargets() {
+        String csv = getSharedPreferences(PREFS, MODE_PRIVATE).getString("targets", "");
+        ArrayList<String> out = new ArrayList<>();
+        if (csv != null && !csv.isEmpty()) {
+            for (String t : csv.split(",")) {
+                t = t.trim().toLowerCase(Locale.ROOT);
+                if (!t.isEmpty() && !out.contains(t)) out.add(t);
+            }
+        }
+        if (out.isEmpty()) out.add(targetLang());
         return out;
     }
 
@@ -1518,13 +1557,26 @@ public class BubbleService extends Service {
         header.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         header.addView(buildModeSwitch(), new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        // 🌐 «→ ES / FA ▾» = دکمه‌ی انتخابِ زبانِ ترجمه (بزن → ردیفِ زبان‌ها باز می‌شود). فضای خالیِ کنارش همچنان برای کشیدنِ کادر است.
         tvHeader = new TextView(this);
         tvHeader.setTextColor(COLOR_GOLD);
         style(tvHeader, 11, true);
         tvHeader.setSingleLine(true);
-        tvHeader.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        tvHeader.setPadding(dp(8), 0, 0, 0);
-        header.addView(tvHeader, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        tvHeader.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
+        tvHeader.setGravity(Gravity.CENTER);
+        tvHeader.setPadding(dp(10), dp(5), dp(10), dp(5));
+        tvHeader.setContentDescription(msg("زبان‌های ترجمه — برای تغییر بزنید", "Translation languages — tap to change"));
+        tvHeader.setOnClickListener(v -> toggleLangRow());
+        paintLangPill(false);
+        LinearLayout langWrap = new LinearLayout(this);
+        langWrap.setOrientation(LinearLayout.HORIZONTAL);
+        langWrap.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        langWrap.setGravity(Gravity.CENTER_VERTICAL);
+        langWrap.addView(tvHeader, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams wrapLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        wrapLp.setMarginStart(dp(6));
+        header.addView(langWrap, wrapLp);
         tvYtRestart = headerButton("\u23EE", v -> restartYoutubeFromStart());   // ⏮ فقط در حالتِ یوتیوب دیده می‌شود
         tvYtRestart.setPadding(dp(8), dp(6), dp(8), dp(6));
         tvYtRestart.setVisibility(View.GONE);
@@ -1560,9 +1612,11 @@ public class BubbleService extends Service {
         LinearLayout.LayoutParams minLp = new LinearLayout.LayoutParams(dp(32), dp(32));
         minLp.setMarginStart(dp(4));
         header.addView(minimize, minLp);
-        tvHeader.setPadding(0, dp(8), 0, dp(8));          // سطحِ لمسِ بزرگ‌تر برای کشیدنِ کادر
         header.setOnTouchListener(new PanelMover());      // کشیدنِ سربرگ = جابه‌جایی؛ نگه‌داشتن = برداشتنِ کادر + ✕ پایینِ صفحه
         panel.addView(header, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        panel.addView(buildLangRow(), new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         opacityRow = new LinearLayout(this);
@@ -1849,8 +1903,159 @@ public class BubbleService extends Service {
         for (int i = 0; i < ts.size(); i++) {
             sb.append(i == 0 ? "\u2192 " : " / ").append(ts.get(i).toUpperCase(Locale.ROOT));
         }
+        sb.append(" \u25BE");
         tvHeader.setText(sb.toString());
+        paintLangChips();
         updateModeSwitch();
+    }
+
+    // ───────── 🌐 انتخابِ زبانِ ترجمه از داخلِ خودِ کادر (بدونِ رفتن به اپ) ─────────
+    private static final String[] PICK_LANGS = {"en", "es", "de", "fr", "fa", "it", "ar", "tr", "ru", "hi", "zh", "ja", "ko"};
+    private static final String[] PICK_LANGS_FA = {"انگلیسی", "اسپانیایی", "آلمانی", "فرانسوی", "فارسی", "ایتالیایی", "عربی", "ترکی", "روسی", "هندی", "چینی", "ژاپنی", "کره‌ای"};
+    private static final String[] PICK_LANGS_EN = {"English", "Spanish", "German", "French", "Persian", "Italian", "Arabic", "Turkish", "Russian", "Hindi", "Chinese", "Japanese", "Korean"};
+    private LinearLayout langRow;
+    private final ArrayList<TextView> langChips = new ArrayList<>();
+
+    private void paintLangPill(boolean open) {
+        if (tvHeader == null) return;
+        GradientDrawable g = new GradientDrawable();
+        g.setCornerRadius(dp(15));
+        g.setColor(open ? COLOR_GOLD : Color.parseColor("#26FFFFFF"));
+        tvHeader.setBackground(g);
+        tvHeader.setTextColor(open ? Color.parseColor("#1C2541") : COLOR_GOLD);
+    }
+
+    private View buildLangRow() {
+        langRow = new LinearLayout(this);
+        langRow.setOrientation(LinearLayout.VERTICAL);
+        langRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        langRow.setVisibility(View.GONE);
+        langRow.setPadding(0, dp(4), 0, dp(6));
+        langChips.clear();
+
+        HorizontalScrollView hs = new HorizontalScrollView(this);
+        hs.setHorizontalScrollBarEnabled(false);
+        hs.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        LinearLayout chips = new LinearLayout(this);
+        chips.setOrientation(LinearLayout.HORIZONTAL);
+        chips.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        final boolean fa = isFa();
+        for (int i = 0; i < PICK_LANGS.length; i++) {
+            final String code = PICK_LANGS[i];
+            TextView c = new TextView(this);
+            c.setTag(code);
+            c.setText(code.toUpperCase(Locale.ROOT));
+            c.setContentDescription(fa ? PICK_LANGS_FA[i] : PICK_LANGS_EN[i]);
+            c.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            c.setTypeface(Typeface.DEFAULT_BOLD);
+            c.setGravity(Gravity.CENTER);
+            c.setSingleLine(true);
+            c.setMinWidth(dp(46));
+            c.setPadding(dp(12), dp(6), dp(12), dp(6));
+            c.setOnClickListener(v -> onPickLang(code));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMarginEnd(dp(6));
+            chips.addView(c, lp);
+            langChips.add(c);
+        }
+        hs.addView(chips, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        langRow.addView(hs, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        paintLangChips();
+        return langRow;
+    }
+
+    /** روشن = طلایی؛ خاموش = شیشه‌ای؛ زبانِ خودِ ویدیو/صدا کم‌رنگ (ترجمه‌ی هم‌زبان بی‌معنی است). */
+    private void paintLangChips() {
+        if (langChips.isEmpty()) return;
+        final List<String> picked = pickedTargets();
+        final String src = currentSrcLang();
+        for (TextView c : langChips) {
+            final String code = (String) c.getTag();
+            final boolean isSrc = src != null && !"auto".equals(src) && src.equals(code);
+            final boolean on = !isSrc && picked.contains(code);
+            GradientDrawable g = new GradientDrawable();
+            g.setCornerRadius(dp(14));
+            g.setColor(on ? COLOR_GOLD : Color.parseColor("#26FFFFFF"));
+            c.setBackground(g);
+            c.setTextColor(on ? Color.parseColor("#1C2541") : Color.WHITE);
+            c.setAlpha(isSrc ? 0.35f : 1f);
+        }
+    }
+
+    private void closeLangRow() {
+        if (langRow != null && langRow.getVisibility() == View.VISIBLE) langRow.setVisibility(View.GONE);
+        paintLangPill(false);
+    }
+
+    private void toggleLangRow() {
+        if (langRow == null) return;
+        boolean show = langRow.getVisibility() != View.VISIBLE;
+        langRow.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) {
+            if (opacityRow != null) opacityRow.setVisibility(View.GONE);
+            if (speedRow != null) speedRow.setVisibility(View.GONE);
+            if (fontRow != null) fontRow.setVisibility(View.GONE);
+            updateFontButton();
+            paintLangChips();
+        }
+        paintLangPill(show);
+        refreshLayout();
+    }
+
+    private final Runnable clearHint = this::clearStatus;
+
+    private void langHint(String m) {
+        showNotice(m);
+        main.removeCallbacks(clearHint);
+        main.postDelayed(clearHint, 2200);
+    }
+
+    private void onPickLang(String code) {
+        final String src = currentSrcLang();
+        if (src != null && !"auto".equals(src) && src.equals(code)) {
+            langHint(msg("این زبانِ خودِ گفتار/ویدیوست؛ ترجمه ندارد", "That's the spoken language — nothing to translate"));
+            return;
+        }
+        final ArrayList<String> list = pickedTargets();
+        if (list.contains(code)) {
+            list.remove(code);
+            boolean anyActive = false;
+            for (String t : list) if (!t.equals(src)) { anyActive = true; break; }
+            if (!anyActive) {
+                langHint(msg("حداقل یک زبان باید روشن بماند", "Keep at least one language on"));
+                return;
+            }
+        } else {
+            list.add(code);
+        }
+        StringBuilder csv = new StringBuilder();
+        for (String t : list) { if (csv.length() > 0) csv.append(','); csv.append(t); }
+        // پرچمِ dirty: اپ (حتی اگر الان بسته باشد) دفعه‌ی بعد این انتخاب را برمی‌دارد، نه برعکس
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                .putString("targets", csv.toString())
+                .putBoolean("targetsDirty", true)
+                .putLong("targetsDirtyAt", System.currentTimeMillis())
+                .apply();
+        BubblePlugin.notifyTargetsChanged();
+        settingsChanged();                        // مثلِ وقتی که از اپ عوض می‌شد: ترجمه‌ها/هدر/یوتیوب تازه می‌شوند
+        translateHistoryFor(code);                // زبانِ تازه برای جمله‌های همین حالا روی صفحه هم ترجمه شود
+    }
+
+    /** ترجمه‌ی زنده: جمله‌های تاریخچه که برای زبانِ تازه ترجمه ندارند (یوتیوب خودش pump می‌کند). */
+    private void translateHistoryFor(final String lang) {
+        if (yt != null && yt.isActive()) return;
+        if (!activeTargets().contains(lang) || !hasInternet()) return;
+        final String srcLang = effectiveSource();
+        for (Entry e : new ArrayList<>(history)) {
+            if (e == null || e.src == null || e.src.trim().isEmpty()) continue;
+            String v = e.tr.get(lang);
+            if (v != null && !v.isEmpty()) continue;
+            e.tr.put(lang, "…");
+            submitTranslate(e, e.src, srcLang, lang, "");
+        }
     }
 
     private void computePanelPos() {
@@ -2935,6 +3140,7 @@ public class BubbleService extends Service {
         if (opacityRow == null) return;
         boolean show = opacityRow.getVisibility() != View.VISIBLE;
         opacityRow.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) closeLangRow();
         if (show && fontRow != null) fontRow.setVisibility(View.GONE);
         if (show && speedRow != null) speedRow.setVisibility(View.GONE);
         refreshLayout();
@@ -2945,6 +3151,7 @@ public class BubbleService extends Service {
         if (fontRow == null) return;
         boolean show = fontRow.getVisibility() != View.VISIBLE;
         fontRow.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) closeLangRow();
         if (show && opacityRow != null) opacityRow.setVisibility(View.GONE);
         if (show && speedRow != null) speedRow.setVisibility(View.GONE);
         refreshLayout();
@@ -3008,6 +3215,7 @@ public class BubbleService extends Service {
         boolean show = speedRow.getVisibility() != View.VISIBLE;
         speedRow.setVisibility(show ? View.VISIBLE : View.GONE);
         if (show) {
+            closeLangRow();
             if (opacityRow != null) opacityRow.setVisibility(View.GONE);
             if (fontRow != null) fontRow.setVisibility(View.GONE);
             float cur = YtMedia.currentSpeed(this);
@@ -4894,6 +5102,7 @@ public class BubbleService extends Service {
 
     private final YtSubtitles.Host ytHost = new YtSubtitles.Host() {
         @Override public List<String> targets() { return activeTargets(); }
+        @Override public LiveTranslator.Ai ai() { return aiBackend; }       // 🔎 بازبینیِ ترجمه‌ی مشکوکِ یوتیوب با همان AIِ ترجمه‌ی زنده
         @Override public String requestedSource() { return effectiveSource(); }
         @Override public String tone() { return BubbleService.this.tone(); }
         @Override public String langName(String code) {
