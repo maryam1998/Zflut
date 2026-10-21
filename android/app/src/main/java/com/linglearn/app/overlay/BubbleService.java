@@ -3292,7 +3292,7 @@ public class BubbleService extends Service {
         android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder();
         sb.append("Aa");
         sb.setSpan(new FontSpan(typefaceOf(eo, false)), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        sb.setSpan(new android.text.style.RelativeSizeSpan(1.45f * eo.sizeMul), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new android.text.style.RelativeSizeSpan(1.15f * eo.sizeMul), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return sb;
     }
 
@@ -3655,7 +3655,7 @@ public class BubbleService extends Service {
 
         e.tvSrc = new TextView(this);
         e.tvSrc.setTextColor(Color.parseColor("#C8CCD8"));
-        styleC(e.tvSrc, 13, false);
+        styleC(e.tvSrc, 16, false);
         e.tvSrc.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
         e.tvSrc.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
 
@@ -5001,7 +5001,7 @@ public class BubbleService extends Service {
         if (ytFullMode) current = false;                    // 📄 متنِ کامل: همه‌ی جمله‌ها یکسان، بدونِ کم‌رنگ/پررنگ
         e.box.setAlpha(current || ytFullMode ? 1f : YT_DIM);
         e.tvSrc.setTextColor(current ? Color.WHITE : Color.parseColor("#C8CCD8"));
-        e.tvSrc.setTag(new float[]{13f, current ? 1f : 0f, 1f});   // ۱ = «متنِ محتوا»؛ بدونِ آن فونتِ انتخابیِ کادر روی متنِ اصلیِ یوتیوب اعمال نمی‌شد
+        e.tvSrc.setTag(new float[]{16f, current ? 1f : 0f, 1f});   // ۱ = «متنِ محتوا»؛ بدونِ آن فونتِ انتخابیِ کادر روی متنِ اصلیِ یوتیوب اعمال نمی‌شد
         applyStyle(e.tvSrc);
     }
 
