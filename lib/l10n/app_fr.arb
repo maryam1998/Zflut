@@ -832,5 +832,13 @@
   "settings_stt_seg_google": "Google",
   "settings_stt_seg_offline": "Hors ligne",
   "settings_stt_advanced": "Modèles hors ligne et mode musique",
-  "settings_stt_when_to_use": "Quand l'utiliser ?"
+  "settings_stt_when_to_use": "Quand l'utiliser ?",
+  "packs_hub_title": "Modules hors ligne",
+  "packs_hub_sub": "Traduction en direct, mode musique et synchronisation",
+  "packs_multi_title": "Module multilingue",
+  "packs_multi_desc": "Pour les langues sans module dédié (p. ex. persan, italien, turc, arabe), le mode musique et la synchronisation texte-audio. Téléchargé une seule fois.",
+  "packs_lang_title": "Modules rapides par langue",
+  "packs_lang_desc": "Facultatif ; un module dédié est plus rapide et plus précis pour ces langues.",
+  "packs_multi_ready": "✅ Le module multilingue est prêt",
+  "packs_manage": "Gérer"
 }

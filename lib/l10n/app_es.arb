@@ -832,5 +832,13 @@
   "settings_stt_seg_google": "Google",
   "settings_stt_seg_offline": "Sin conexión",
   "settings_stt_advanced": "Modelos sin conexión y modo música",
-  "settings_stt_when_to_use": "¿Cuándo usarlo?"
+  "settings_stt_when_to_use": "¿Cuándo usarlo?",
+  "packs_hub_title": "Paquetes sin conexión",
+  "packs_hub_sub": "Traducción en vivo, modo música y sincronización",
+  "packs_multi_title": "Paquete multilingüe",
+  "packs_multi_desc": "Para idiomas sin paquete propio (p. ej. persa, italiano, turco, árabe), el modo música y la sincronización de texto y audio. Se descarga solo una vez.",
+  "packs_lang_title": "Paquetes rápidos por idioma",
+  "packs_lang_desc": "Opcional; un paquete propio es más rápido y preciso para estos idiomas.",
+  "packs_multi_ready": "✅ El paquete multilingüe está listo",
+  "packs_manage": "Gestionar"
 }

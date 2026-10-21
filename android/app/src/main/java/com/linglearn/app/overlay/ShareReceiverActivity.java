@@ -108,8 +108,8 @@ public class ShareReceiverActivity extends Activity {
                 "Live translation uses offline speech recognition: processing happens entirely on your phone, no audio is sent to any server, and the screen stays smooth.")
                 + "\n\n"
                 + (whisper
-                    ? L("برای این زبان (یا حالت «خودکار») بسته‌ی چندزبانه‌ی Whisper لازم است. این بسته از بسته‌های اختصاصیِ هر زبان کندتر است و ترجمه ممکن است با چند ثانیه تأخیر نمایش داده شود.",
-                        "This language (or “Auto”) needs the multilingual Whisper pack. It is slower than the per-language packs, so translations may appear a few seconds late.")
+                    ? L("برای این زبان (یا حالت «خودکار») بسته‌ی چندزبانه لازم است. این بسته از بسته‌های اختصاصیِ هر زبان کندتر است و ترجمه ممکن است با چند ثانیه تأخیر نمایش داده شود.",
+                        "This language (or “Auto”) needs the multilingual pack. It is slower than the per-language packs, so translations may appear a few seconds late.")
                     : L("برای زبان «" + name + "» لازم است بسته‌ی آفلاین یک‌بار دانلود شود.",
                         "A one-time offline pack is required for “" + name + "”."))
                 + "\n\n"

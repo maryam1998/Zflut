@@ -305,11 +305,15 @@ class TtsPackRow extends StatefulWidget {
   /// زبان‌هایی که بسته‌ی آفلاین ندارند و فقط با صدای خودِ گوشی خوانده می‌شوند
   final bool phoneOnly;
 
+  /// 'tts' (صدای خوانش) | 'speech' (بسته‌ی تک‌زبانه‌ی ترجمه‌ی زنده)
+  final String kind;
+
   const TtsPackRow({
     super.key,
     required this.code,
     required this.label,
     this.phoneOnly = false,
+    this.kind = 'tts',
   });
 
   @override
@@ -336,7 +340,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
   bool get _downloaded => _st?['downloaded'] == true;
 
   Future<void> _refresh() async {
-    final st = await LinLearnBridge.packStatus('tts', widget.code);
+    final st = await LinLearnBridge.packStatus(widget.kind, widget.code);
     if (!mounted) return;
     setState(() => _st = st);
     _timer?.cancel();
@@ -346,7 +350,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
   }
 
   Future<void> _download() async {
-    final ok = await LinLearnBridge.packDownload('tts', widget.code);
+    final ok = await LinLearnBridge.packDownload(widget.kind, widget.code);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.settings_sync_download_failed)),
@@ -356,7 +360,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
   }
 
   Future<void> _cancel() async {
-    await LinLearnBridge.packCancel('tts', widget.code);
+    await LinLearnBridge.packCancel(widget.kind, widget.code);
     await _refresh();
   }
 
@@ -365,7 +369,9 @@ class _TtsPackRowState extends State<TtsPackRow> {
     final yes = await showDialog<bool>(
       context: context,
       builder: (ctx) => _dirDialog(ctx, AlertDialog(
-        content: Text(context.l10n.settings_tts_delete_confirm),
+        content: Text(widget.kind == 'tts'
+            ? context.l10n.settings_tts_delete_confirm
+            : context.l10n.st_pack_delete_confirm),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -377,7 +383,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
       )),
     );
     if (yes != true) return;
-    await LinLearnBridge.packDelete('tts', widget.code);
+    await LinLearnBridge.packDelete(widget.kind, widget.code);
     await _refresh();
   }
 
@@ -442,6 +448,404 @@ class _TtsPackRowState extends State<TtsPackRow> {
           const SizedBox(width: 8),
           trailing,
         ],
+      ),
+    );
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// 📦 بسته‌های آفلاین — همه‌ی بسته‌های تشخیص گفتار در یک برگه‌ی واحد
+//   • بسته‌ی چندزبانه (سریع / متعادل / دقیق‌تر): زبان‌های بدون بسته‌ی اختصاصی،
+//     حالت آهنگ و همگام‌سازی متن و صوت — فقط یک بار دانلود می‌شود.
+//   • بسته‌های سریعِ تک‌زبانه (اختیاری) برای چند زبان.
+// ═══════════════════════════════════════════════════════════════════
+
+/// زبان‌هایی که بسته‌ی اختصاصیِ تک‌زبانه دارند (باید با SherpaModelManager.SPECS یکی باشد).
+const List<String> kDedicatedPackLangs = [
+  'en', 'es', 'fr', 'de', 'ru', 'zh', 'ko',
+];
+
+/// نام زبان‌ها به خطِ خودشان
+const Map<String, String> _kPackLangNames = {
+  'en': 'English',
+  'es': 'Español',
+  'fr': 'Français',
+  'de': 'Deutsch',
+  'ru': 'Русский',
+  'zh': '中文',
+  'ko': '한국어',
+};
+
+/// کیفیتِ بسته‌ی چندزبانه → شناسه‌ی بسته روی گوشی (tiny / base / small)
+const Map<String, String> kMultiPackId = {
+  'fast': 'tiny',
+  'balanced': 'base',
+  'accurate': 'small',
+};
+const Map<String, int> _kMultiPackMb = {
+  'fast': 100,
+  'balanced': 160,
+  'accurate': 360,
+};
+const List<String> _kMultiTiers = ['fast', 'balanced', 'accurate'];
+const String kSongQualityKey = 'phrasebook-song-quality';
+
+/// آیا هر کدام از بسته‌های چندزبانه روی گوشی هست؟ (null = پشتیبانی نمی‌شود)
+Future<bool?> anyMultiPackReady() async {
+  for (final id in kMultiPackId.values) {
+    final st = await LinLearnBridge.packStatus('song', id);
+    if (st == null) return null;
+    if (st['downloaded'] == true) return true;
+  }
+  return false;
+}
+
+/// کاشیِ بسته‌ی «زبان صدا» در ترجمه‌ی زنده:
+///  • زبان با بسته‌ی اختصاصی ← همان بسته
+///  • بقیه‌ی زبان‌ها ← بسته‌ی چندزبانه (اگر هیچ‌کدام نباشد، دکمه‌ی دانلود)
+class LangPackTile extends StatefulWidget {
+  final String lang;
+  const LangPackTile({super.key, required this.lang});
+
+  @override
+  State<LangPackTile> createState() => _LangPackTileState();
+}
+
+class _LangPackTileState extends State<LangPackTile> {
+  bool? _ready;
+  Timer? _timer;
+
+  bool get _dedicated => kDedicatedPackLangs.contains(widget.lang);
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_dedicated) {
+      _poll();
+      _timer = Timer.periodic(const Duration(seconds: 2), (_) => _poll());
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _poll() async {
+    final v = await anyMultiPackReady();
+    if (!mounted) return;
+    if (v != _ready) setState(() => _ready = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_dedicated) {
+      return PackTile(
+        key: ValueKey('lp-ded-${widget.lang}'),
+        kind: 'speech',
+        id: widget.lang,
+        title: '',
+        bare: true,
+        approxMb: 70,
+      );
+    }
+    final c = context.appColors;
+    final L = context.l10n;
+    if (_ready == true) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(L.packs_multi_ready,
+                  style: TextStyle(color: c.inkSoft, fontSize: 11.5)),
+            ),
+            TextButton(
+              onPressed: () => OfflinePacksSheet.show(context),
+              child: Text(L.packs_manage,
+                  style: TextStyle(
+                      color: c.ink,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(L.packs_multi_desc,
+              style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7)),
+        ),
+        PackTile(
+          key: const ValueKey('lp-multi-base'),
+          kind: 'song',
+          id: 'base',
+          title: '',
+          bare: true,
+          filled: true,
+          approxMb: 160,
+        ),
+      ],
+    );
+  }
+}
+
+/// برگه‌ی «بسته‌های آفلاین» (جمع‌وجور؛ نه تمام‌صفحه)
+class OfflinePacksSheet extends ConsumerStatefulWidget {
+  const OfflinePacksSheet({super.key});
+
+  static Future<void> show(BuildContext context) => showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => Directionality(
+          textDirection: uiContentDirection(ctx),
+          child: const OfflinePacksSheet(),
+        ),
+      );
+
+  @override
+  ConsumerState<OfflinePacksSheet> createState() => _OfflinePacksSheetState();
+}
+
+class _OfflinePacksSheetState extends ConsumerState<OfflinePacksSheet> {
+  late String _tier;
+
+  @override
+  void initState() {
+    super.initState();
+    final v = ref.read(sharedPrefsProvider).getString(kSongQualityKey);
+    _tier = _kMultiTiers.contains(v) ? v! : 'balanced';
+  }
+
+  String _name(AppLocalizations L, String t) {
+    switch (t) {
+      case 'fast':
+        return L.settings_song_model_fast;
+      case 'accurate':
+        return L.settings_song_model_accurate;
+      default:
+        return L.settings_song_model_balanced;
+    }
+  }
+
+  String _hint(AppLocalizations L, String t) {
+    switch (t) {
+      case 'fast':
+        return L.settings_song_hint_fast;
+      case 'accurate':
+        return L.settings_song_hint_accurate;
+      default:
+        return L.settings_song_hint_balanced;
+    }
+  }
+
+  Widget _card(BuildContext context, {required List<Widget> children}) {
+    final c = context.appColors;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+
+  Widget _tierChip(BuildContext context, String t) {
+    final c = context.appColors;
+    final L = context.l10n;
+    final sel = _tier == t;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          setState(() => _tier = t);
+          ref.read(sharedPrefsProvider).setString(kSongQualityKey, t);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+          decoration: BoxDecoration(
+            color: sel ? c.goldSoft : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: sel ? c.gold : c.cardBorder, width: sel ? 2 : 1),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                t == 'balanced'
+                    ? '${_name(L, t)} ★'
+                    : _name(L, t),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '~${_kMultiPackMb[t]}MB',
+                textDirection: TextDirection.ltr,
+                style: TextStyle(color: c.inkSoft, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final L = context.l10n;
+    final body = TextStyle(color: c.ink, fontSize: 12, height: 1.7);
+    final note = TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7);
+    final title = TextStyle(
+        color: c.ink, fontSize: 13.5, fontWeight: FontWeight.w800);
+    final wid = kMultiPackId[_tier]!;
+    final name = _name(L, _tier);
+    final mb = _kMultiPackMb[_tier]!;
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      minChildSize: 0.35,
+      maxChildSize: 0.92,
+      builder: (ctx, scroll) => Container(
+        decoration: BoxDecoration(
+          color: c.paper,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: c.cardBorder,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 6, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('📦 ${L.packs_hub_title}',
+                        style: TextStyle(
+                            color: c.ink,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800)),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: c.inkSoft),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                controller: scroll,
+                padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
+                children: [
+                  // ── بسته‌ی چندزبانه ──
+                  _card(context, children: [
+                    Text(L.packs_multi_title, style: title),
+                    const SizedBox(height: 4),
+                    Text(L.packs_multi_desc, style: note),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        for (var i = 0; i < _kMultiTiers.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 6),
+                          _tierChip(context, _kMultiTiers[i]),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(_hint(L, _tier), style: note),
+                    PackTile(
+                      key: ValueKey('hub-multi-$wid'),
+                      kind: 'song',
+                      id: wid,
+                      title: '',
+                      bare: true,
+                      filled: true,
+                      approxMb: mb,
+                      toggleTitle: L.settings_song_use,
+                      downloadLabel: (m) => L.settings_song_download(name, '$m'),
+                      resumeLabel: (have, m) =>
+                          L.settings_song_resume(name, have, '$m'),
+                    ),
+                    Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        childrenPadding: const EdgeInsets.only(bottom: 4),
+                        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                        title: Text(L.settings_stt_when_to_use,
+                            style: TextStyle(
+                                color: c.ink,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700)),
+                        children: [
+                          Text(L.settings_song_intro, style: body),
+                          const SizedBox(height: 8),
+                          Text('✅ ${L.settings_song_on_title}',
+                              style: const TextStyle(
+                                  color: Color(0xFF2E7D32),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800)),
+                          Text(L.settings_song_on_list, style: body),
+                          const SizedBox(height: 8),
+                          Text('⛔ ${L.settings_song_off_title}',
+                              style: const TextStyle(
+                                  color: Color(0xFFB3261E),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800)),
+                          Text(L.settings_song_off_list, style: body),
+                          const SizedBox(height: 8),
+                          Text(L.settings_song_on_note, style: body),
+                        ],
+                      ),
+                    ),
+                  ]),
+                  // ── بسته‌های تک‌زبانه ──
+                  _card(context, children: [
+                    Text(L.packs_lang_title, style: title),
+                    const SizedBox(height: 4),
+                    Text(L.packs_lang_desc, style: note),
+                    for (final code in kDedicatedPackLangs)
+                      TtsPackRow(
+                        key: ValueKey('hub-lang-$code'),
+                        kind: 'speech',
+                        code: code,
+                        label: _kPackLangNames[code] ?? code.toUpperCase(),
+                      ),
+                  ]),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

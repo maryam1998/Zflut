@@ -832,5 +832,13 @@
   "settings_stt_seg_google": "جوجل",
   "settings_stt_seg_offline": "دون اتصال",
   "settings_stt_advanced": "النماذج دون اتصال ووضع الموسيقى",
-  "settings_stt_when_to_use": "متى أستخدمه؟"
+  "settings_stt_when_to_use": "متى أستخدمه؟",
+  "packs_hub_title": "الحزم غير المتصلة",
+  "packs_hub_sub": "الترجمة الفورية ووضع الموسيقى والمزامنة",
+  "packs_multi_title": "الحزمة متعددة اللغات",
+  "packs_multi_desc": "للغات التي ليس لها حزمة مخصّصة (مثل الفارسية والإيطالية والتركية والعربية)، ولوضع الموسيقى ومزامنة النص مع الصوت. تُنزَّل مرة واحدة فقط.",
+  "packs_lang_title": "حزم سريعة لكل لغة",
+  "packs_lang_desc": "اختياري؛ الحزمة المخصّصة أسرع وأدق لهذه اللغات.",
+  "packs_multi_ready": "✅ الحزمة متعددة اللغات جاهزة",
+  "packs_manage": "إدارة"
 }

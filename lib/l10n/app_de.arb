@@ -832,5 +832,13 @@
   "settings_stt_seg_google": "Google",
   "settings_stt_seg_offline": "Offline",
   "settings_stt_advanced": "Offline-Modelle & Musikmodus",
-  "settings_stt_when_to_use": "Wann nutze ich das?"
+  "settings_stt_when_to_use": "Wann nutze ich das?",
+  "packs_hub_title": "Offline-Pakete",
+  "packs_hub_sub": "Live-Übersetzung, Musikmodus und Synchronisierung",
+  "packs_multi_title": "Mehrsprachiges Paket",
+  "packs_multi_desc": "Für Sprachen ohne eigenes Paket (z. B. Persisch, Italienisch, Türkisch, Arabisch), den Musikmodus und die Text-Audio-Synchronisierung. Wird nur einmal heruntergeladen.",
+  "packs_lang_title": "Schnelle Einzelsprach-Pakete",
+  "packs_lang_desc": "Optional; ein eigenes Paket ist für diese Sprachen schneller und genauer.",
+  "packs_multi_ready": "✅ Mehrsprachiges Paket ist bereit",
+  "packs_manage": "Verwalten"
 }

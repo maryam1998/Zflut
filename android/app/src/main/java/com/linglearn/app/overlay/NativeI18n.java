@@ -483,11 +483,11 @@ final class NativeI18n {
             "Die Live-Übersetzung nutzt Offline-Spracherkennung: Alles wird komplett auf deinem Handy verarbeitet, es wird kein Audio an einen Server gesendet, und die Anzeige bleibt flüssig.",
             "La traduction en direct utilise la reconnaissance vocale hors ligne : le traitement se fait entièrement sur votre téléphone, aucun son n’est envoyé à un serveur et l’écran reste fluide.",
             "تعتمد الترجمة الفورية على التعرّف على الكلام دون اتصال: تتم المعالجة بالكامل على هاتفك، ولا يُرسل أي صوت إلى أي خادم، وتبقى الشاشة سلسة.");
-        put("This language (or “Auto”) needs the multilingual Whisper pack. It is slower than the per-language packs, so translations may appear a few seconds late.",
-            "Este idioma (o «Automático») necesita el paquete multilingüe Whisper. Es más lento que los paquetes por idioma, así que las traducciones pueden aparecer con unos segundos de retraso.",
-            "Diese Sprache (oder „Automatisch“) benötigt das mehrsprachige Whisper-Paket. Es ist langsamer als die sprachspezifischen Pakete, daher können Übersetzungen einige Sekunden verspätet erscheinen.",
-            "Cette langue (ou « Auto ») nécessite le pack multilingue Whisper. Il est plus lent que les packs propres à chaque langue ; les traductions peuvent donc apparaître avec quelques secondes de retard.",
-            "تحتاج هذه اللغة (أو «تلقائي») إلى حزمة Whisper متعددة اللغات. وهي أبطأ من الحزم الخاصة بكل لغة، لذا قد تظهر الترجمات متأخرة بضع ثوانٍ.");
+        put("This language (or “Auto”) needs the multilingual pack. It is slower than the per-language packs, so translations may appear a few seconds late.",
+            "Este idioma (o «Automático») necesita el paquete multilingüe. Es más lento que los paquetes por idioma, así que las traducciones pueden aparecer con unos segundos de retraso.",
+            "Diese Sprache (oder „Automatisch“) benötigt das mehrsprachige Paket. Es ist langsamer als die sprachspezifischen Pakete, daher können Übersetzungen einige Sekunden verspätet erscheinen.",
+            "Cette langue (ou « Auto ») nécessite le pack multilingue. Il est plus lent que les packs propres à chaque langue ; les traductions peuvent donc apparaître avec quelques secondes de retard.",
+            "تحتاج هذه اللغة (أو «تلقائي») إلى حزمة متعددة اللغات. وهي أبطأ من الحزم الخاصة بكل لغة، لذا قد تظهر الترجمات متأخرة بضع ثوانٍ.");
         put("A one-time offline pack is required for “{0}”.",
             "Se necesita descargar una sola vez un paquete sin conexión para «{0}».",
             "Für „{0}“ ist einmalig ein Offline-Paket erforderlich.",

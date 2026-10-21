@@ -108,10 +108,10 @@ class SettingsSheet extends ConsumerWidget {
             SizedBox(height: 16),
             _VoiceEngineSection(),
             _OfflineTtsSection(),
-            _AudioSyncSection(),
-            SizedBox(height: 10),
             _FloatingBubbleSection(),
             SizedBox(height: 14),
+            _AudioSyncSection(),
+            SizedBox(height: 10),
             _OfflineWordsButton(),
           ],
         ),
@@ -1241,8 +1241,12 @@ class _FloatingBubbleSectionState
         _src != 'auto') {
       return true;
     }
-    // 🌐 «تشخیص خودکار»: موتورِ چندزبانه‌ی Whisper لازم است (هر کدام از tiny / base / small کافی است)
-    if (_src == 'auto') return _ensureAutoPack(afterDownload: afterDownload);
+    // زبان‌های بدونِ بسته‌ی اختصاصی (و «خودکار») از بسته‌ی چندزبانه استفاده می‌کنند (هر کیفیتی کافی است)
+    if (_src == 'auto' || !kDedicatedPackLangs.contains(_src)) {
+      return _ensureAutoPack(
+          afterDownload: afterDownload,
+          langName: _src == 'auto' ? null : _srcLangs[_src]);
+    }
     final pack = await LinLearnBridge.packStatus('speech', _src);
     if (pack == null || pack['downloaded'] == true) return true;
     if (!mounted) return false;
@@ -1275,7 +1279,8 @@ class _FloatingBubbleSectionState
   }
 
   /// حالتِ «تشخیص خودکار»: اگر هیچ مدلِ Whisper روی گوشی نیست یک‌بار می‌پرسد و «base» را دانلود می‌کند.
-  Future<bool> _ensureAutoPack({required String afterDownload}) async {
+  Future<bool> _ensureAutoPack(
+      {required String afterDownload, String? langName}) async {
     Map<String, dynamic>? baseSt;
     for (final id in const ['base', 'small', 'tiny']) {
       final st = await LinLearnBridge.packStatus('song', id);
@@ -1292,7 +1297,7 @@ class _FloatingBubbleSectionState
       context: context,
       builder: (ctx) => _dirDialog(ctx, AlertDialog(
         title: Text(context.l10n.st_speech_pack_title),
-        content: Text(context.l10n.st_speech_pack_body(
+        content: Text(context.l10n.st_speech_pack_body(langName ??
             context.l10n.settings_lang_auto.replaceFirst('🌐 ', ''))),
         actions: [
           TextButton(
@@ -1602,14 +1607,9 @@ class _FloatingBubbleSectionState
                     },
                   ),
                   _SpeechEngineSection(
-                    offlinePack: PackTile(
+                    offlinePack: LangPackTile(
                       key: ValueKey('speech-$_src-$_packEpoch'),
-                      // 🌐 خودکار: مدلِ چندزبانه‌ی Whisper (base)؛ وگرنه بسته‌ی زبانِ انتخابی
-                      kind: _src == 'auto' ? 'sync' : 'speech',
-                      id: _src == 'auto' ? 'base' : _src,
-                      title: '',
-                      bare: true,
-                      approxMb: _src == 'auto' ? 160 : 70,
+                      lang: _src,
                     ),
                   ),
                   Padding(
@@ -1658,231 +1658,6 @@ class _KindChip extends StatelessWidget {
               color: c.ink, fontSize: 12, fontWeight: FontWeight.w700),
         ),
       ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// حالت آهنگ (آفلاین) — کیفیت: سریع / متعادل / دقیق‌تر
-// ═══════════════════════════════════════════════════════════════════
-class _SongModeSection extends ConsumerStatefulWidget {
-  const _SongModeSection();
-
-  @override
-  ConsumerState<_SongModeSection> createState() => _SongModeSectionState();
-}
-
-class _SongModeSectionState extends ConsumerState<_SongModeSection> {
-  static const String _key = 'phrasebook-song-quality';
-  static const List<String> _tiers = ['fast', 'balanced', 'accurate'];
-  static const Map<String, int> _mb = {
-    'fast': 100,
-    'balanced': 160,
-    'accurate': 360,
-  };
-  // «متعادل» همان بسته‌ی قبلی (base) است تا با سمت نیتیو سازگار بماند.
-  static const Map<String, String> _packId = {
-    'fast': 'fast',
-    'balanced': 'base',
-    'accurate': 'accurate',
-  };
-
-  late String _tier;
-  bool _installed = false;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    final v = ref.read(sharedPrefsProvider).getString(_key);
-    _tier = _tiers.contains(v) ? v! : 'balanced';
-    _poll();
-    _timer = Timer.periodic(const Duration(seconds: 3), (_) => _poll());
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _poll() async {
-    final st = await LinLearnBridge.packStatus('song', _packId[_tier]!);
-    if (!mounted) return;
-    final v = st?['downloaded'] == true;
-    if (v != _installed) setState(() => _installed = v);
-  }
-
-  String _name(AppLocalizations L, String t) {
-    switch (t) {
-      case 'fast':
-        return L.settings_song_model_fast;
-      case 'accurate':
-        return L.settings_song_model_accurate;
-      default:
-        return L.settings_song_model_balanced;
-    }
-  }
-
-  String _hint(AppLocalizations L, String t) {
-    switch (t) {
-      case 'fast':
-        return L.settings_song_hint_fast;
-      case 'accurate':
-        return L.settings_song_hint_accurate;
-      default:
-        return L.settings_song_hint_balanced;
-    }
-  }
-
-  Widget _tierCard(BuildContext context, String t) {
-    final c = context.appColors;
-    final L = context.l10n;
-    final sel = _tier == t;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () {
-          setState(() => _tier = t);
-          ref.read(sharedPrefsProvider).setString(_key, t);
-          _poll();
-        },
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: sel ? c.gold : c.cardBorder,
-              width: sel ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      t == 'balanced'
-                          ? '${_name(L, t)} ${L.settings_song_recommended_badge}'
-                          : _name(L, t),
-                      style: TextStyle(
-                          color: c.ink,
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(_hint(L, t),
-                        style: TextStyle(
-                            color: c.inkSoft, fontSize: 11.5, height: 1.6)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '~${_mb[t]}MB',
-                textDirection: TextDirection.ltr,
-                style: TextStyle(
-                    color: c.inkSoft,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    final L = context.l10n;
-    final note = TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7);
-    final body = TextStyle(color: c.ink, fontSize: 12, height: 1.7);
-    final name = _name(L, _tier);
-    final mb = _mb[_tier]!;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text('🎵 ${L.settings_song_title}',
-                  style: TextStyle(
-                      color: c.ink,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700)),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.6),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: c.cardBorder),
-              ),
-              child: Text(
-                _installed ? '✅ ${L.settings_tts_offline}' : L.settings_not_installed,
-                style: TextStyle(color: c.ink, fontSize: 11.5),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Text(L.settings_song_intro, style: body),
-        Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: const EdgeInsets.only(bottom: 8),
-            expandedCrossAxisAlignment: CrossAxisAlignment.start,
-            title: Text(L.settings_stt_when_to_use,
-                style: TextStyle(
-                    color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w700)),
-            children: [
-              Text('✅ ${L.settings_song_on_title}',
-                  style: const TextStyle(
-                      color: Color(0xFF2E7D32),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800)),
-              Text(L.settings_song_on_list, style: body),
-              const SizedBox(height: 8),
-              Text('⛔ ${L.settings_song_off_title}',
-                  style: const TextStyle(
-                      color: Color(0xFFB3261E),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800)),
-              Text(L.settings_song_off_list, style: body),
-              const SizedBox(height: 8),
-              Text(L.settings_song_on_note, style: body),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        Text(L.settings_quality,
-            style: TextStyle(
-                color: c.ink, fontSize: 13, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        for (final t in _tiers) _tierCard(context, t),
-        PackTile(
-          key: ValueKey('song-$_tier'),
-          kind: 'song',
-          id: _packId[_tier]!,
-          title: '',
-          bare: true,
-          filled: true,
-          approxMb: mb,
-          toggleTitle: L.settings_song_use,
-          downloadLabel: (m) => L.settings_song_download(name, '$m'),
-          resumeLabel: (have, m) => L.settings_song_resume(name, have, '$m'),
-        ),
-        const SizedBox(height: 10),
-        Text(L.settings_song_tip, style: note),
-      ],
     );
   }
 }
@@ -2062,7 +1837,7 @@ class _LabeledDrop extends StatelessWidget {
 // Google = SpeechRecognizerِ خودِ اندروید (اینترنت + اندروید ۱۳+)؛ اگر کار نکند خودکار آفلاین می‌شود.
 // ═══════════════════════════════════════════════════════════════════
 class _SpeechEngineSection extends ConsumerStatefulWidget {
-  /// کاشیِ بسته‌ی زبان (فقط در حالتِ آفلاین نشان داده می‌شود)
+  /// کاشیِ بسته‌ی زبانِ صدا (فقط در حالتِ آفلاین نشان داده می‌شود)
   final Widget offlinePack;
   const _SpeechEngineSection({required this.offlinePack});
 
@@ -2149,91 +1924,32 @@ class _SpeechEngineSectionState extends ConsumerState<_SpeechEngineSection> {
     );
   }
 
-  Future<void> _openAdvanced() {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final c = ctx.appColors;
-        final L = ctx.l10n;
-        return _dirDialog(
-          ctx,
-          DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: 0.88,
-            minChildSize: 0.5,
-            maxChildSize: 0.96,
-            builder: (ctx, scroll) => Container(
-              decoration: BoxDecoration(
-                color: c.paper,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(22)),
-              ),
-              child: Column(
-                children: [
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 42,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: c.cardBorder,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(L.settings_stt_advanced,
-                              style: TextStyle(
-                                  color: c.ink,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800)),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.close_rounded, color: c.inkSoft),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      controller: scroll,
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                      children: const [_SongModeSection()],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _advancedRow() {
     final c = context.appColors;
+    final L = context.l10n;
     final rtl = Directionality.of(context) == TextDirection.rtl;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: _openAdvanced,
+      onTap: () => OfflinePacksSheet.show(context),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
         child: Row(
           children: [
-            Icon(Icons.tune_rounded, size: 18, color: c.inkSoft),
+            Icon(Icons.inventory_2_outlined, size: 18, color: c.inkSoft),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(context.l10n.settings_stt_advanced,
-                  style: TextStyle(
-                      color: c.ink,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(L.packs_hub_title,
+                      style: TextStyle(
+                          color: c.ink,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700)),
+                  Text(L.packs_hub_sub,
+                      style: TextStyle(color: c.inkSoft, fontSize: 11)),
+                ],
+              ),
             ),
             Icon(
               rtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
@@ -2298,9 +2014,8 @@ class _SpeechEngineSectionState extends ConsumerState<_SpeechEngineSection> {
                   style: hintStyle.copyWith(fontWeight: FontWeight.w600)),
             ),
           if (!google) ...[
-            const SizedBox(height: 6),
             widget.offlinePack,
-            const Divider(height: 8),
+            const Divider(height: 14),
             _advancedRow(),
           ],
         ],
@@ -2585,6 +2300,18 @@ class _AudioSyncSectionState extends ConsumerState<_AudioSyncSection> {
           Text(
             L.settings_sync_description,
             style: TextStyle(color: c.inkSoft, fontSize: 12, height: 1.7),
+          ),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: () => OfflinePacksSheet.show(context),
+              icon: Icon(Icons.inventory_2_outlined, size: 16, color: c.ink),
+              label: Text(L.packs_hub_title,
+                  style: TextStyle(
+                      color: c.ink,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+            ),
           ),
         ],
       ),

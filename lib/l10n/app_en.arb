@@ -1473,7 +1473,7 @@
   "settings_stt_offline_hint": "Private and works without internet. Uses the language pack you download below.",
   "settings_stt_google": "Google (Android speech recognition)",
   "settings_stt_badge_online": "Online",
-  "settings_stt_google_hint": "More accurate than small offline models. Needs internet — switches to offline automatically if unavailable.",
+  "settings_stt_google_hint": "More accurate than small offline packs. Needs internet — switches to offline automatically if unavailable.",
   "settings_stt_google_needs_13": "Requires Android 13 or newer.",
   "settings_stt_google_missing": "Google's speech service isn't available on this phone.",
   "settings_stt_google_unavailable": "Google speech recognition isn't available on this phone.",
@@ -1482,5 +1482,13 @@
   "settings_stt_seg_google": "Google",
   "settings_stt_seg_offline": "Offline",
   "settings_stt_advanced": "Offline models & music mode",
-  "settings_stt_when_to_use": "When should I use it?"
+  "settings_stt_when_to_use": "When should I use it?",
+  "packs_hub_title": "Offline packs",
+  "packs_hub_sub": "Live translation, music mode and sync",
+  "packs_multi_title": "Multilingual pack",
+  "packs_multi_desc": "For languages without a dedicated pack (e.g. Persian, Italian, Turkish, Arabic), music mode and text–audio sync. Downloaded only once.",
+  "packs_lang_title": "Fast single-language packs",
+  "packs_lang_desc": "Optional; a dedicated pack is faster and more accurate for these languages.",
+  "packs_multi_ready": "✅ Multilingual pack is ready",
+  "packs_manage": "Manage"
 }
