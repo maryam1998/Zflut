@@ -1473,10 +1473,14 @@
   "settings_stt_offline_hint": "Private and works without internet. Uses the language pack you download below.",
   "settings_stt_google": "Google (Android speech recognition)",
   "settings_stt_badge_online": "Online",
-  "settings_stt_google_hint": "Usually more accurate than small offline models. Needs internet.",
+  "settings_stt_google_hint": "More accurate than small offline models. Needs internet — switches to offline automatically if unavailable.",
   "settings_stt_google_needs_13": "Requires Android 13 or newer.",
   "settings_stt_google_missing": "Google's speech service isn't available on this phone.",
   "settings_stt_google_unavailable": "Google speech recognition isn't available on this phone.",
   "settings_stt_note_google": "If Google can't recognise the language or the connection drops, the app switches to the offline engine automatically.",
-  "settings_stt_note_offline": "Choose Google for better accuracy when you're online."
+  "settings_stt_note_offline": "Choose Google for better accuracy when you're online.",
+  "settings_stt_seg_google": "Google",
+  "settings_stt_seg_offline": "Offline",
+  "settings_stt_advanced": "Offline models & music mode",
+  "settings_stt_when_to_use": "When should I use it?"
 }

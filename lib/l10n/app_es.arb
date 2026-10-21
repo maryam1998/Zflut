@@ -823,10 +823,14 @@
   "settings_stt_offline_hint": "Privado y funciona sin internet; usa el paquete de idioma que descargas abajo.",
   "settings_stt_google": "Google (reconocimiento de voz de Android)",
   "settings_stt_badge_online": "En línea",
-  "settings_stt_google_hint": "Suele ser más preciso que los modelos pequeños sin conexión. Requiere internet.",
+  "settings_stt_google_hint": "Más preciso que los modelos pequeños sin conexión. Requiere internet; cambia solo a sin conexión si falla.",
   "settings_stt_google_needs_13": "Requiere Android 13 o superior.",
   "settings_stt_google_missing": "El servicio de voz de Google no está disponible en este teléfono.",
   "settings_stt_google_unavailable": "El reconocimiento de voz de Google no está disponible en este teléfono.",
   "settings_stt_note_google": "Si Google no reconoce el idioma o se corta la conexión, la app cambia sola al motor sin conexión.",
-  "settings_stt_note_offline": "Elige Google para mayor precisión cuando tengas internet."
+  "settings_stt_note_offline": "Elige Google para mayor precisión cuando tengas internet.",
+  "settings_stt_seg_google": "Google",
+  "settings_stt_seg_offline": "Sin conexión",
+  "settings_stt_advanced": "Modelos sin conexión y modo música",
+  "settings_stt_when_to_use": "¿Cuándo usarlo?"
 }

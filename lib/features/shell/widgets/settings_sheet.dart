@@ -1601,17 +1601,17 @@ class _FloatingBubbleSectionState
                           () => ref.read(nativeSyncProvider).pushLangs());
                     },
                   ),
-                  const _SpeechEngineSection(),
-                  PackTile(
-                    key: ValueKey('speech-$_src-$_packEpoch'),
-                    // 🌐 خودکار: مدلِ چندزبانه‌ی Whisper (base)؛ وگرنه بسته‌ی زبانِ انتخابی
-                    kind: _src == 'auto' ? 'sync' : 'speech',
-                    id: _src == 'auto' ? 'base' : _src,
-                    title: '',
-                    bare: true,
-                    approxMb: _src == 'auto' ? 160 : 70,
+                  _SpeechEngineSection(
+                    offlinePack: PackTile(
+                      key: ValueKey('speech-$_src-$_packEpoch'),
+                      // 🌐 خودکار: مدلِ چندزبانه‌ی Whisper (base)؛ وگرنه بسته‌ی زبانِ انتخابی
+                      kind: _src == 'auto' ? 'sync' : 'speech',
+                      id: _src == 'auto' ? 'base' : _src,
+                      title: '',
+                      bare: true,
+                      approxMb: _src == 'auto' ? 160 : 70,
+                    ),
                   ),
-                  const _SongModeSection(),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Text(L.settings_live_audio_description, style: note),
@@ -1833,33 +1833,31 @@ class _SongModeSectionState extends ConsumerState<_SongModeSection> {
           ],
         ),
         const SizedBox(height: 10),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: c.gold.withOpacity(0.22),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: c.cardBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Text(L.settings_song_intro, style: body),
+        Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(bottom: 8),
+            expandedCrossAxisAlignment: CrossAxisAlignment.start,
+            title: Text(L.settings_stt_when_to_use,
+                style: TextStyle(
+                    color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w700)),
             children: [
-              Text(L.settings_song_intro, style: body),
-              const SizedBox(height: 10),
               Text('✅ ${L.settings_song_on_title}',
                   style: const TextStyle(
                       color: Color(0xFF2E7D32),
                       fontSize: 13,
                       fontWeight: FontWeight.w800)),
               Text(L.settings_song_on_list, style: body),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text('⛔ ${L.settings_song_off_title}',
                   style: const TextStyle(
                       color: Color(0xFFB3261E),
                       fontSize: 13,
                       fontWeight: FontWeight.w800)),
               Text(L.settings_song_off_list, style: body),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(L.settings_song_on_note, style: body),
             ],
           ),
@@ -2058,12 +2056,15 @@ class _LabeledDrop extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// موتورِ تشخیص گفتارِ ترجمه‌ی زنده: «آفلاین» (پیش‌فرض) یا «Google»
-// Google = SpeechRecognizerِ خودِ اندروید؛ نیاز به اینترنت و اندروید ۱۳+ دارد.
-// اگر Google در دسترس نباشد یا خطا بدهد، خودکار با موتورِ آفلاین ادامه می‌دهد.
+// موتورِ تشخیص گفتارِ ترجمه‌ی زنده — یک کارتِ جمع‌وجور:
+//   [ آفلاین | Google ] ← یک خط توضیح ← (فقط آفلاین) بسته‌ی زبان + «تنظیمات پیشرفته».
+// مدل‌ها و حالتِ آهنگ داخلِ یک برگه‌ی پایین‌کشو هستند تا صفحه شلوغ نشود.
+// Google = SpeechRecognizerِ خودِ اندروید (اینترنت + اندروید ۱۳+)؛ اگر کار نکند خودکار آفلاین می‌شود.
 // ═══════════════════════════════════════════════════════════════════
 class _SpeechEngineSection extends ConsumerStatefulWidget {
-  const _SpeechEngineSection();
+  /// کاشیِ بسته‌ی زبان (فقط در حالتِ آفلاین نشان داده می‌شود)
+  final Widget offlinePack;
+  const _SpeechEngineSection({required this.offlinePack});
 
   @override
   ConsumerState<_SpeechEngineSection> createState() =>
@@ -2098,6 +2099,7 @@ class _SpeechEngineSectionState extends ConsumerState<_SpeechEngineSection> {
   }
 
   Future<void> _set(String v) async {
+    if (v == _provider) return;
     if (v == 'google' && !_googleOk) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.settings_stt_google_unavailable)),
@@ -2109,93 +2111,136 @@ class _SpeechEngineSectionState extends ConsumerState<_SpeechEngineSection> {
     await LinLearnBridge.speechProviderSet(v);
   }
 
-  Widget _card({
-    required String id,
-    required IconData icon,
-    required String title,
-    required String badge,
-    required String hint,
-    bool enabled = true,
-    String? warning,
-  }) {
+  Widget _segment(String id, String title, String caption,
+      {bool enabled = true}) {
     final c = context.appColors;
     final sel = _provider == id;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Opacity(
-        opacity: enabled ? 1 : 0.55,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => _set(id),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: sel ? c.gold : c.cardBorder,
-                width: sel ? 2 : 1,
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _set(id),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+          decoration: BoxDecoration(
+            color: sel ? c.gold : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Opacity(
+            opacity: enabled ? 1 : 0.5,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 22, color: sel ? c.gold : c.inkSoft),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(title,
-                                style: TextStyle(
-                                    color: c.ink,
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700)),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: c.cardBorder),
-                            ),
-                            child: Text(badge,
-                                style: TextStyle(
-                                    color: c.inkSoft,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w700)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      Text(hint,
-                          style: TextStyle(
-                              color: c.inkSoft, fontSize: 11.5, height: 1.6)),
-                      if (warning != null) ...[
-                        const SizedBox(height: 4),
-                        Text('⚠️ $warning',
-                            style: TextStyle(
-                                color: c.inkSoft,
-                                fontSize: 11,
-                                height: 1.6,
-                                fontWeight: FontWeight.w600)),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  sel ? Icons.radio_button_checked : Icons.radio_button_off,
-                  size: 20,
-                  color: sel ? c.gold : c.inkSoft,
-                ),
+                Text(title,
+                    style: TextStyle(
+                        color: c.ink,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(height: 1),
+                Text(caption,
+                    style: TextStyle(
+                        color: sel ? c.ink.withOpacity(0.75) : c.inkSoft,
+                        fontSize: 10.5)),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openAdvanced() {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final c = ctx.appColors;
+        final L = ctx.l10n;
+        return _dirDialog(
+          ctx,
+          DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.88,
+            minChildSize: 0.5,
+            maxChildSize: 0.96,
+            builder: (ctx, scroll) => Container(
+              decoration: BoxDecoration(
+                color: c.paper,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(22)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: c.cardBorder,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(L.settings_stt_advanced,
+                              style: TextStyle(
+                                  color: c.ink,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800)),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close_rounded, color: c.inkSoft),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      controller: scroll,
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                      children: const [_SongModeSection()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _advancedRow() {
+    final c = context.appColors;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: _openAdvanced,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+        child: Row(
+          children: [
+            Icon(Icons.tune_rounded, size: 18, color: c.inkSoft),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(context.l10n.settings_stt_advanced,
+                  style: TextStyle(
+                      color: c.ink,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700)),
+            ),
+            Icon(
+              rtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+              size: 20,
+              color: c.inkSoft,
+            ),
+          ],
         ),
       ),
     );
@@ -2206,37 +2251,58 @@ class _SpeechEngineSectionState extends ConsumerState<_SpeechEngineSection> {
     if (!_isAndroidApp) return const SizedBox.shrink();
     final c = context.appColors;
     final L = context.l10n;
-    return Padding(
-      padding: const EdgeInsets.only(top: 6, bottom: 10),
+    final google = _provider == 'google';
+    final warn = !_supported
+        ? L.settings_stt_google_needs_13
+        : (!_available ? L.settings_stt_google_missing : null);
+    final hintStyle = TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.6);
+    return Container(
+      margin: const EdgeInsets.only(top: 4, bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.cardBorder),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(emoji: '🎙', label: L.settings_stt_title),
-          const SizedBox(height: 6),
-          _card(
-            id: 'offline',
-            icon: Icons.offline_bolt_rounded,
-            title: L.settings_stt_offline,
-            badge: L.settings_stt_badge_offline,
-            hint: L.settings_stt_offline_hint,
+          Text(L.settings_stt_title,
+              style: TextStyle(
+                  color: c.ink, fontSize: 13, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: c.cardBorder.withOpacity(0.35),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                _segment('offline', L.settings_stt_seg_offline,
+                    L.settings_stt_badge_offline),
+                const SizedBox(width: 3),
+                _segment('google', L.settings_stt_seg_google,
+                    L.settings_stt_badge_online,
+                    enabled: _googleOk),
+              ],
+            ),
           ),
-          _card(
-            id: 'google',
-            icon: Icons.cloud_queue_rounded,
-            title: L.settings_stt_google,
-            badge: L.settings_stt_badge_online,
-            hint: L.settings_stt_google_hint,
-            enabled: _googleOk,
-            warning: !_supported
-                ? L.settings_stt_google_needs_13
-                : (!_available ? L.settings_stt_google_missing : null),
-          ),
-          Text(
-            _provider == 'google'
-                ? L.settings_stt_note_google
-                : L.settings_stt_note_offline,
-            style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.6),
-          ),
+          const SizedBox(height: 8),
+          Text(google ? L.settings_stt_google_hint : L.settings_stt_offline_hint,
+              style: hintStyle),
+          if (warn != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('⚠️ $warn',
+                  style: hintStyle.copyWith(fontWeight: FontWeight.w600)),
+            ),
+          if (!google) ...[
+            const SizedBox(height: 6),
+            widget.offlinePack,
+            const Divider(height: 8),
+            _advancedRow(),
+          ],
         ],
       ),
     );

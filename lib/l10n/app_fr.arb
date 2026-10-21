@@ -823,10 +823,14 @@
   "settings_stt_offline_hint": "Privé et sans internet ; utilise le pack de langue téléchargé ci-dessous.",
   "settings_stt_google": "Google (reconnaissance vocale Android)",
   "settings_stt_badge_online": "En ligne",
-  "settings_stt_google_hint": "Souvent plus précis que les petits modèles hors ligne. Nécessite internet.",
+  "settings_stt_google_hint": "Plus précis que les petits modèles hors ligne. Nécessite internet ; bascule seule vers hors ligne en cas de problème.",
   "settings_stt_google_needs_13": "Nécessite Android 13 ou version ultérieure.",
   "settings_stt_google_missing": "Le service vocal de Google n'est pas disponible sur ce téléphone.",
   "settings_stt_google_unavailable": "La reconnaissance vocale Google n'est pas disponible sur ce téléphone.",
   "settings_stt_note_google": "Si Google ne reconnaît pas la langue ou si la connexion est perdue, l'app bascule automatiquement vers le moteur hors ligne.",
-  "settings_stt_note_offline": "Choisissez Google pour plus de précision quand vous êtes en ligne."
+  "settings_stt_note_offline": "Choisissez Google pour plus de précision quand vous êtes en ligne.",
+  "settings_stt_seg_google": "Google",
+  "settings_stt_seg_offline": "Hors ligne",
+  "settings_stt_advanced": "Modèles hors ligne et mode musique",
+  "settings_stt_when_to_use": "Quand l'utiliser ?"
 }

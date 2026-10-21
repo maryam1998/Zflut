@@ -823,10 +823,14 @@
   "settings_stt_offline_hint": "Privat und ohne Internet nutzbar; verwendet das unten heruntergeladene Sprachpaket.",
   "settings_stt_google": "Google (Android-Spracherkennung)",
   "settings_stt_badge_online": "Online",
-  "settings_stt_google_hint": "Meist genauer als kleine Offline-Modelle. Benötigt Internet.",
+  "settings_stt_google_hint": "Genauer als kleine Offline-Modelle. Benötigt Internet – wechselt bei Problemen automatisch zu Offline.",
   "settings_stt_google_needs_13": "Erfordert Android 13 oder neuer.",
   "settings_stt_google_missing": "Der Google-Sprachdienst ist auf diesem Telefon nicht verfügbar.",
   "settings_stt_google_unavailable": "Die Google-Spracherkennung ist auf diesem Telefon nicht verfügbar.",
   "settings_stt_note_google": "Erkennt Google die Sprache nicht oder bricht die Verbindung ab, wechselt die App automatisch zur Offline-Engine.",
-  "settings_stt_note_offline": "Wähle Google für höhere Genauigkeit, wenn du online bist."
+  "settings_stt_note_offline": "Wähle Google für höhere Genauigkeit, wenn du online bist.",
+  "settings_stt_seg_google": "Google",
+  "settings_stt_seg_offline": "Offline",
+  "settings_stt_advanced": "Offline-Modelle & Musikmodus",
+  "settings_stt_when_to_use": "Wann nutze ich das?"
 }

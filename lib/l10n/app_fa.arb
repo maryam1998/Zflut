@@ -826,10 +826,14 @@
   "settings_stt_offline_hint": "خصوصی و بدون نیاز به اینترنت؛ از بسته‌ی زبانی که پایین‌تر دانلود می‌کنی استفاده می‌کند.",
   "settings_stt_google": "گوگل (تشخیص گفتار اندروید)",
   "settings_stt_badge_online": "آنلاین",
-  "settings_stt_google_hint": "معمولاً از مدل‌های آفلاین کوچک دقیق‌تر است (فارسی، عربی، ایتالیایی و...). به اینترنت نیاز دارد.",
+  "settings_stt_google_hint": "از مدل‌های آفلاین کوچک دقیق‌تر است. به اینترنت نیاز دارد و در صورت مشکل خودکار به آفلاین برمی‌گردد.",
   "settings_stt_google_needs_13": "نیاز به اندروید ۱۳ یا بالاتر.",
   "settings_stt_google_missing": "سرویس تشخیص گفتار گوگل روی این گوشی در دسترس نیست.",
   "settings_stt_google_unavailable": "تشخیص گفتار گوگل روی این گوشی در دسترس نیست.",
   "settings_stt_note_google": "اگر گوگل زبان را نشناسد یا اینترنت قطع شود، برنامه خودکار به موتور آفلاین برمی‌گردد.",
-  "settings_stt_note_offline": "وقتی آنلاین هستی، برای دقت بیشتر گوگل را انتخاب کن."
+  "settings_stt_note_offline": "وقتی آنلاین هستی، برای دقت بیشتر گوگل را انتخاب کن.",
+  "settings_stt_seg_google": "گوگل",
+  "settings_stt_seg_offline": "آفلاین",
+  "settings_stt_advanced": "مدل‌های آفلاین و حالت آهنگ",
+  "settings_stt_when_to_use": "کِی استفاده کنم؟"
 }
