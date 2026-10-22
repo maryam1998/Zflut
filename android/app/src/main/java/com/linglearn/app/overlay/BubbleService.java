@@ -46,6 +46,7 @@ import android.text.style.BackgroundColorSpan;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
+import android.text.Layout;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -1116,6 +1117,7 @@ public class BubbleService extends Service {
     private int tgtCx, tgtCy;
 
     private void showCloseTarget() {
+        if (true) return;   // دایره‌ی ✕ حذف شد: کادر/حباب با کشیدن به ✕ بسته نمی‌شود
         if (wm == null || closeView != null) return;
         int sz = dp(84);
         closeView = new CloseTargetView(this);
@@ -2374,6 +2376,7 @@ public class BubbleService extends Service {
         if (fadingOut) { fadingOut = false; fadeGen++; if (panel != null) panel.animate().cancel(); }
         if (panel != null) { panel.setAlpha(1f); panel.setScaleX(1f); panel.setScaleY(1f); }
         panelDragging = false;
+        setPanelModal(false);
         idlePinned = false;
         if (panelShown && panel != null && wm != null) {
             try { wm.removeView(panel); } catch (Exception ignored) {}
@@ -3950,6 +3953,20 @@ public class BubbleService extends Service {
     /** دستگیره‌ی «کرکره‌ای»: یک خطِ باریک؛ با یک انگشت به‌سمتِ بیرون بکش = کادر باز می‌شود، به‌سمتِ داخل = جمع می‌شود.
      *  سمتِ راستِ همان نوار یک کپسولِ کوچکِ A− | A+ برای اندازه‌ی متن است. */
     @SuppressLint("ClickableViewAccessibility")
+    private boolean panelModal = false;
+
+    /** هنگامِ کشیدنِ کادر، کلِ لمس‌ها فقط به کادر برسد (به یوتیوبِ زیرش نرسد و مینیمایز نشود). */
+    private void setPanelModal(boolean modal) {
+        if (panelModal == modal || panelLp == null) return;
+        panelModal = modal;
+        int f = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
+        if (modal) panelLp.flags &= ~f; else panelLp.flags |= f;
+        if (panelShown && panel != null && wm != null) {
+            try { wm.updateViewLayout(panel, panelLp); } catch (Exception ignored) {}
+        }
+    }
+
     private boolean panelDragging = false;     // کاربر کادر را گرفته (کشیدن/نگه‌داشتن) → کادر خودکار بسته نشود
 
     /**
@@ -3968,6 +3985,7 @@ public class BubbleService extends Service {
             panelDragging = true;
             panel.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
             panel.animate().scaleX(1.02f).scaleY(1.02f).setDuration(120).start();
+            setPanelModal(true);
             showCloseTarget();
         };
 
@@ -3992,6 +4010,7 @@ public class BubbleService extends Service {
                         moved = true;
                         panelDragging = true;
                         if (!picked) main.removeCallbacks(longRun);
+                        setPanelModal(true);
                         showCloseTarget();     // مثلِ ذره‌بین: به‌محضِ شروعِ کشیدن، دایره‌ی ✕ پایینِ صفحه ظاهر می‌شود
                     }
                     if (moved) {
@@ -4010,6 +4029,7 @@ public class BubbleService extends Service {
                     boolean wasPicked = picked, wasHot = hot, wasMoved = moved;
                     picked = false; hot = false; moved = false;
                     panelDragging = false;
+                    setPanelModal(false);
                     lastActiveMs = SystemClock.elapsedRealtime();
                     if (wasPicked || wasMoved) {
                         if (up && wasHot) { closePanelAnimated(); }
@@ -4040,6 +4060,7 @@ public class BubbleService extends Service {
     /** کشیدنِ کادر با نوارِ هاشور: مثلِ ذره‌بین، ✕ نشان داده می‌شود و رها کردن روی آن سرویس را کاملاً می‌بندد. */
     private void gripDragHot(float rx, float ry) {
         if (panel == null) return;
+        setPanelModal(true);
         showCloseTarget();
         boolean h = closeView != null && Math.hypot(rx - tgtCx, ry - tgtCy) < dp(90);
         if (h == gripHot) return;
@@ -4157,6 +4178,7 @@ public class BubbleService extends Service {
                 case MotionEvent.ACTION_CANCEL:
                     f.setActive(false);
                     panelDragging = false;
+                    setPanelModal(false);
                     lastActiveMs = SystemClock.elapsedRealtime();
                     if (d[3] == 2) {
                         boolean onX = gripHot;
@@ -4238,6 +4260,7 @@ public class BubbleService extends Service {
         styleC(e.tvSrc, 16, false);
         e.tvSrc.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
         e.tvSrc.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
+        justify(e.tvSrc);
 
         e.rowsBox = new LinearLayout(this);
         e.rowsBox.setOrientation(LinearLayout.VERTICAL);
@@ -4312,6 +4335,13 @@ public class BubbleService extends Service {
         scroll.post(() -> scroll.smoothScrollTo(0, Math.max(0, e.box.getTop() - dp(4))));
     }
 
+    /** متنِ جمله‌ها/ترجمه‌ها دوطرفه‌تراز (justify) باشد. */
+    private void justify(TextView t) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            t.setJustificationMode(Layout.JUSTIFICATION_MODE_INTER_WORD);
+        }
+    }
+
     private void makeRow(Entry e, String lang) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -4331,6 +4361,7 @@ public class BubbleService extends Service {
         styleC(tv, 16, true);
         tv.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
         tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
+        justify(tv);
 
         attachSelect(tv, () -> lang);
         TextView rowSpeak = speakerButton(() -> tv.getText().toString(), () -> lang, tv, e, lang);
