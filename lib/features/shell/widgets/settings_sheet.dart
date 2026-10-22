@@ -67,7 +67,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
   Widget build(BuildContext context) {
     final c = context.appColors;
     final mq = MediaQuery.of(context);
-    final width = (mq.size.width * 0.68).clamp(270.0, 400.0).toDouble();
+    final width = (mq.size.width * 0.80).clamp(290.0, 440.0).toDouble();
     final top = mq.padding.top + 56;
     final maxH = mq.size.height - top - mq.padding.bottom - 70;
     Widget gap() => const SizedBox(height: 16);
@@ -109,13 +109,14 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   const _MascotSection(),
                   gap(),
                   const _VoiceEngineSection(),
+                  // صداهای دانلودی (کیفیتِ بهتر) درست زیرِ «صدای خوانش»
+                  const _OfflineTtsSection(),
                   // حباب/دکمه‌های شناور فقط در اپِ اندروید معنا دارد
                   if (_isAndroidApp) ...[
                     gap(),
                     const _FloatingBubbleSection(),
+                    gap(),
                   ],
-                  gap(),
-                  const _OfflineTtsSection(),
                   const _AudioSyncSection(),
                   const SizedBox(height: 4),
                   const _OfflineWordsButton(),
@@ -2221,7 +2222,6 @@ class _OfflineTtsSectionState extends State<_OfflineTtsSection> {
   @override
   Widget build(BuildContext context) {
     if (!_isAndroidApp) return const SizedBox.shrink();
-    final c = context.appColors;
     final L = context.l10n;
     final n = '${_toDownload.length}';
     return Padding(
@@ -2229,13 +2229,6 @@ class _OfflineTtsSectionState extends State<_OfflineTtsSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(emoji: '🔊', label: L.settings_tts_title),
-          const SizedBox(height: 8),
-          Text(
-            L.settings_tts_intro,
-            style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7),
-          ),
-          const SizedBox(height: 12),
           _PlainButton(
             label: _allRunning
                 ? '⏹ ${L.settings_tts_stop_all(n)}'
