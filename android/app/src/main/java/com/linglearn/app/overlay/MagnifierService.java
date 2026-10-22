@@ -726,6 +726,7 @@ public class MagnifierService extends Service {
     // ───────────────────────── هایلایت + کادرِ ترجمه ─────────────────────────
 
     private void clearSelection() {
+        main.removeCallbacks(cardTick);
         cardSeq++;
         stopSpeech();
         if (selView != null) { try { wm.removeViewImmediate(selView); } catch (Exception ignored) {} selView = null; }
@@ -970,8 +971,54 @@ public class MagnifierService extends Service {
         b.setTextColor(done ? COLOR_GOLD : Color.WHITE);
     }
 
+    // ── ⏳ بستنِ خودکارِ کادرِ لغت: ۶ ثانیه بعد از باز شدن؛ اگر یکی از دکمه‌های افزودن زده شد، ۴ ثانیه بعد از آن.
+    //    هر لمس داخلِ کادر شمارش را از نو می‌کند. نوارِ باریکِ طلاییِ پایینِ کادر زمانِ باقی‌مانده را نشان می‌دهد.
+    private static final long CARD_IDLE_CLOSE_MS = 6000;
+    private static final long CARD_ACTION_CLOSE_MS = 4000;
+    private View cardBar;
+    private boolean cardActed = false;
+    private long cardDeadline = 0, cardSpan = CARD_IDLE_CLOSE_MS;
+    private final Runnable cardTick = new Runnable() {
+        @Override public void run() {
+            main.removeCallbacks(this);
+            if (wordCard == null || wordCard.getVisibility() != View.VISIBLE) return;
+            long now = android.os.SystemClock.uptimeMillis();
+            if (speakingBtn != null) {                              // وسطِ خوانشِ 🔊 کادر نبند؛ بعد از پایانِ خوانش شمارش از نو
+                cardDeadline = now + cardSpan;
+                if (cardBar != null) { cardBar.setScaleX(1f); cardBar.setAlpha(1f); }
+                main.postDelayed(this, 100);
+                return;
+            }
+            float left = (cardDeadline - now) / (float) Math.max(1L, cardSpan);
+            if (left <= 0f) { closeWordCard(); return; }
+            left = Math.min(1f, left);
+            if (cardBar != null) {
+                cardBar.setPivotX(cardBar.getWidth() / 2f);
+                cardBar.setScaleX(left);
+                cardBar.setAlpha(0.55f + 0.45f * left);
+            }
+            main.postDelayed(this, 33);
+        }
+    };
+
+    /** شمارشِ بسته‌شدن را از نو شروع می‌کند (۶ ثانیه؛ بعد از زدنِ یکی از دکمه‌های افزودن ۴ ثانیه). */
+    private void armCardTimer() {
+        cardSpan = cardActed ? CARD_ACTION_CLOSE_MS : CARD_IDLE_CLOSE_MS;
+        cardDeadline = android.os.SystemClock.uptimeMillis() + cardSpan;
+        main.removeCallbacks(cardTick);
+        if (cardBar != null) { cardBar.setScaleX(1f); cardBar.setAlpha(1f); }
+        if (wordCard != null && wordCard.getVisibility() == View.VISIBLE) main.post(cardTick);
+    }
+
+    private void markCardActed() { cardActed = true; armCardTimer(); }
+
     private void buildWordCard() {
-        wordCard = new LinearLayout(this);
+        wordCard = new LinearLayout(this) {
+            @Override public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) armCardTimer();   // هر لمسِ داخلِ کارت شمارش را از نو می‌کند
+                return super.dispatchTouchEvent(ev);
+            }
+        };
         wordCard.setOrientation(LinearLayout.VERTICAL);
         wordCard.setPadding(dp(10), dp(6), dp(8), dp(10));
         GradientDrawable bg = new GradientDrawable();
@@ -1017,10 +1064,20 @@ public class MagnifierService extends Service {
             lp.rightMargin = dp(2);
             wordCard.addView(b, lp);
         }
+        // نوارِ باریکِ طلاییِ شمارشِ بسته‌شدنِ خودکار
+        cardBar = new View(this);
+        GradientDrawable cbg = new GradientDrawable();
+        cbg.setColor(COLOR_GOLD);
+        cbg.setCornerRadius(dp(2));
+        cardBar.setBackground(cbg);
+        LinearLayout.LayoutParams cbLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(2));
+        cbLp.topMargin = dp(8);
+        wordCard.addView(cardBar, cbLp);
     }
 
     /** ✕ی کادرِ لغت: فقط کادرِ «ذخیره برای داستان بعدی / گرامر / لایتنر» را می‌بندد؛ پنجره‌ی ترجمه می‌ماند. */
     private void closeWordCard() {
+        main.removeCallbacks(cardTick);
         cardSeq++;
         stopSpeech();
         if (wordCard != null) wordCard.setVisibility(View.GONE);
@@ -1123,6 +1180,8 @@ public class MagnifierService extends Service {
         cardStoryDone = cardGrammarDone = cardLeitnerDone = false;
         wordTerm.setText(word);
         wordCard.setVisibility(View.VISIBLE);
+        cardActed = false;
+        armCardTimer();                        // ⏳ ۶ ثانیه تا بسته‌شدنِ خودکار (نوارِ طلایی)
         refreshCardButtons();
 
         if (whole && !wholeResults.isEmpty()) {           // ترجمه‌ی کلِ متن را از قبل داریم
@@ -1184,9 +1243,9 @@ public class MagnifierService extends Service {
         }
     }
 
-    private void onCardStory()   { if (cardStoryDone) return;   cardStoryDone = true;   queueWord("story");   refreshCardButtons(); }
-    private void onCardGrammar() { if (cardGrammarDone) return; cardGrammarDone = true; queueWord("grammar"); refreshCardButtons(); }
-    private void onCardLeitner() { if (cardLeitnerDone) return; cardLeitnerDone = true; queueWord("leitner"); refreshCardButtons(); }
+    private void onCardStory()   { markCardActed(); if (cardStoryDone) return;   cardStoryDone = true;   queueWord("story");   refreshCardButtons(); }
+    private void onCardGrammar() { markCardActed(); if (cardGrammarDone) return; cardGrammarDone = true; queueWord("grammar"); refreshCardButtons(); }
+    private void onCardLeitner() { markCardActed(); if (cardLeitnerDone) return; cardLeitnerDone = true; queueWord("leitner"); refreshCardButtons(); }
 
     private void toast(String s) { Toast.makeText(getApplicationContext(), s, Toast.LENGTH_SHORT).show(); }
 

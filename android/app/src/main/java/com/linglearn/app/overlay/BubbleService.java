@@ -322,10 +322,10 @@ public class BubbleService extends Service {
     private String ytAutoOffKey = "";        // ویدیویی که کاربر خاموشش کرده / زیرنویس نداشت
 
     private boolean ytAutoPref() {
-        // ⛔ روشن‌شدنِ خودکارِ حالتِ یوتیوب غیرفعال شد (مثلِ linlearn-App: فقط با دکمه‌ی ▶ روشن می‌شود).
-        //    علت: ویدیوی بدونِ ترکِ شناخته‌شده (یا خطای موقتِ شبکه) حالتِ یوتیوب را می‌بست و به ترجمه‌ی زنده برمی‌گشت.
-        //    کدِ خودکار سرجایش مانده؛ برای روشن‌کردنِ دوباره فقط پیش‌فرضِ زیر را true کنید.
-        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("ytAuto", false);
+        // ✅ تشخیصِ خودکارِ یوتیوب دوباره روشن شد: به‌محضِ پخشِ ویدیو در اپ یوتیوب، حالتِ زیرنویسِ یوتیوب خودش روشن می‌شود
+        //    (دیگر لازم نیست دستی ▶ بزنی). ویدیوی بدونِ زیرنویس بی‌سروصدا به ترجمه‌ی زنده برمی‌گردد (noCaptions)،
+        //    و اگر کاربر خودش ▶ را خاموش کند برای همان ویدیو دوباره خودکار روشن نمی‌شود.
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("ytAuto", true);
     }
 
     private static String ytKeyOf(YtMedia.State s) {
@@ -497,6 +497,9 @@ public class BubbleService extends Service {
         if (!running) return;
         long now = SystemClock.elapsedRealtime();
         boolean active = somethingPlaying(now);
+        // 🔧 قفل‌های گیرکرده‌ی اسکرولِ خودکار: لمسی که پنل وسطش برداشته شد، یا هایلایتِ خوانشی که پایان نگرفت، کادر را «فریز» نگه نمی‌دارند
+        if (selectingTv != null && (!panelShown || !selectingTv.isAttachedToWindow())) { selectingTv = null; updateScrollFreeze(); }
+        if (speakTv != null && run == null && !panelSpeaking) clearSpeakHighlight();
         boolean busy = panelDragging || (wordCard != null && wordCard.getVisibility() == View.VISIBLE)
                 || now - lastPanelTouchMs < 2500
                 || (scroll != null && (scroll.frozen || SystemClock.uptimeMillis() - scroll.lastUserTouch < 1500))
@@ -1508,6 +1511,13 @@ public class BubbleService extends Service {
         boolean frozen = false;      // وقتی کاربر دارد متن انتخاب می‌کند / کادرِ لغت باز است، خودکار به پایین نپر
         boolean ytMode = false;      // 📺 لیستِ کاملِ زیرنویس: به‌جای پرش به انتها، خودِ برنامه خطِ جاری را اسکرول می‌کند
         long lastUserTouch = 0;      // آخرین لمسِ کاربر (تا وسطِ خواندن اسکرولش را نپرانیم)
+        private boolean wasYtMode = false;   // قبلاً در حالتِ یوتیوب بودیم؛ بعد از خروج، اسکرولِ خودکارِ ترجمه‌ی زنده باید دوباره کار کند
+
+        /** atBottom را از روی جای‌گیریِ واقعیِ اسکرول دوباره حساب می‌کند (بعد از تغییرِ اندازه‌ی کادر). */
+        void syncAtBottom() {
+            View c = getChildAt(0);
+            if (c != null) atBottom = c.getHeight() - (getHeight() + getScrollY()) < 60;
+        }
 
         @Override
         public boolean dispatchTouchEvent(MotionEvent ev) {
@@ -1528,8 +1538,17 @@ public class BubbleService extends Service {
         @Override
         protected void onLayout(boolean changed, int l, int t, int r, int b) {
             super.onLayout(changed, l, t, r, b);
+            // 🔧 اسکرولِ خودکارِ ترجمه‌ی زنده: پرچمِ atBottom فقط با «رویدادِ اسکرول» به‌روز می‌شد؛ پس بعد از خروج از
+            //    حالتِ یوتیوب، یا بعد از کشیدنِ دستگیره‌ی کادر، روی false گیر می‌کرد و دیگر دنبالِ متنِ تازه نمی‌رفت.
+            //    ۱) خروج از حالتِ یوتیوب → دوباره «پایین» حساب می‌شود  ۲) وقتی کلِ متن در کادر جا می‌شود، حتماً «پایین» است.
+            View c = getChildAt(0);
+            if (ytMode) {
+                wasYtMode = true;
+            } else {
+                if (wasYtMode) { wasYtMode = false; atBottom = true; }
+                if (c != null && c.getHeight() - getHeight() < 60) atBottom = true;
+            }
             if (atBottom && !frozen && !ytMode) {
-                View c = getChildAt(0);
                 if (c != null) scrollTo(0, Math.max(0, c.getHeight() - getHeight()));
             }
         }
@@ -3220,8 +3239,54 @@ public class BubbleService extends Service {
         b.setTextColor(done ? COLOR_GOLD : Color.WHITE);
     }
 
+    // ── ⏳ بستنِ خودکارِ کادرِ لغت: ۶ ثانیه بعد از باز شدن؛ اگر یکی از دکمه‌های افزودن زده شد، ۴ ثانیه بعد از آن.
+    //    هر لمس داخلِ کادر شمارش را از نو می‌کند. نوارِ باریکِ طلاییِ پایینِ کادر (مثلِ نوارِ بسته‌شدنِ کادرِ ترجمه‌ی زنده) زمانِ باقی‌مانده را نشان می‌دهد.
+    private static final long CARD_IDLE_CLOSE_MS = 6000;
+    private static final long CARD_ACTION_CLOSE_MS = 4000;
+    private View cardBar;
+    private boolean cardActed = false;
+    private long cardDeadline = 0, cardSpan = CARD_IDLE_CLOSE_MS;
+    private final Runnable cardTick = new Runnable() {
+        @Override public void run() {
+            main.removeCallbacks(this);
+            if (wordCard == null || wordCard.getVisibility() != View.VISIBLE) return;
+            long now = SystemClock.uptimeMillis();
+            if (panelSpeaking) {                                   // وسطِ خوانشِ 🔊 کادر نبند؛ بعد از پایانِ خوانش شمارش از نو
+                cardDeadline = now + cardSpan;
+                if (cardBar != null) { cardBar.setScaleX(1f); cardBar.setAlpha(1f); }
+                main.postDelayed(this, 100);
+                return;
+            }
+            float left = (cardDeadline - now) / (float) Math.max(1L, cardSpan);
+            if (left <= 0f) { closeWordCard(); return; }
+            left = Math.min(1f, left);
+            if (cardBar != null) {
+                cardBar.setPivotX(cardBar.getWidth() / 2f);
+                cardBar.setScaleX(left);
+                cardBar.setAlpha(0.55f + 0.45f * left);
+            }
+            main.postDelayed(this, 33);
+        }
+    };
+
+    /** شمارشِ بسته‌شدن را از نو شروع می‌کند (۶ ثانیه؛ بعد از زدنِ یکی از دکمه‌های افزودن ۴ ثانیه). */
+    private void armCardTimer() {
+        cardSpan = cardActed ? CARD_ACTION_CLOSE_MS : CARD_IDLE_CLOSE_MS;
+        cardDeadline = SystemClock.uptimeMillis() + cardSpan;
+        main.removeCallbacks(cardTick);
+        if (cardBar != null) { cardBar.setScaleX(1f); cardBar.setAlpha(1f); }
+        if (wordCard != null && wordCard.getVisibility() == View.VISIBLE) main.post(cardTick);
+    }
+
+    private void markCardActed() { cardActed = true; armCardTimer(); }
+
     private void buildWordCard() {
-        wordCard = new LinearLayout(this);
+        wordCard = new LinearLayout(this) {
+            @Override public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) armCardTimer();   // هر لمسِ داخلِ کارت شمارش را از نو می‌کند
+                return super.dispatchTouchEvent(ev);
+            }
+        };
         wordCard.setOrientation(LinearLayout.VERTICAL);
         wordCard.setPadding(dp(10), dp(8), dp(10), dp(10));
         GradientDrawable bg = new GradientDrawable();
@@ -3291,6 +3356,15 @@ public class BubbleService extends Service {
             lp.topMargin = dp(5);
             wordCard.addView(b, lp);
         }
+        // نوارِ باریکِ طلاییِ شمارشِ بسته‌شدنِ خودکار (همان ظاهرِ نوارِ پایینِ کادرِ ترجمه‌ی زنده)
+        cardBar = new View(this);
+        GradientDrawable cbg = new GradientDrawable();
+        cbg.setColor(COLOR_GOLD);
+        cbg.setCornerRadius(dp(2));
+        cardBar.setBackground(cbg);
+        LinearLayout.LayoutParams cbLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(2));
+        cbLp.topMargin = dp(8);
+        wordCard.addView(cardBar, cbLp);
     }
 
     private void refreshCardButtons() {
@@ -3311,6 +3385,7 @@ public class BubbleService extends Service {
     private void setScrollCompact(boolean compact) { applyScrollMax(); }
 
     private void closeWordCard() {
+        main.removeCallbacks(cardTick);
         cardSeq++;
         if (cardSrcTv != null) { clearHighlight(cardSrcTv); cardSrcTv = null; }
         refreshRecentEntries();                // متنی که تا الان فریز بود، به آخرین نسخه برمی‌گردد
@@ -3354,6 +3429,8 @@ public class BubbleService extends Service {
         applyStyle(cardMeaningTv);
         refreshCardButtons();
         wordCard.setVisibility(View.VISIBLE);
+        cardActed = false;
+        armCardTimer();                        // ⏳ ۶ ثانیه تا بسته‌شدنِ خودکار (نوارِ طلایی)
         updateScrollFreeze();
         setScrollCompact(true);
         if (!userHidden) showPanel(); else refreshLayout();
@@ -3458,9 +3535,9 @@ public class BubbleService extends Service {
         }
     }
 
-    private void onCardStory()   { if (cardStoryDone) return;   cardStoryDone = true;   queueWord("story");   refreshCardButtons(); }
-    private void onCardGrammar() { if (cardGrammarDone) return; cardGrammarDone = true; queueWord("grammar"); refreshCardButtons(); }
-    private void onCardLeitner() { if (cardLeitnerDone) return; cardLeitnerDone = true; queueWord("leitner"); refreshCardButtons(); }
+    private void onCardStory()   { markCardActed(); if (cardStoryDone) return;   cardStoryDone = true;   queueWord("story");   refreshCardButtons(); }
+    private void onCardGrammar() { markCardActed(); if (cardGrammarDone) return; cardGrammarDone = true; queueWord("grammar"); refreshCardButtons(); }
+    private void onCardLeitner() { markCardActed(); if (cardLeitnerDone) return; cardLeitnerDone = true; queueWord("leitner"); refreshCardButtons(); }
 
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -4380,6 +4457,10 @@ public class BubbleService extends Service {
                     f.setActive(false);
                     panelDragging = false;
                     lastActiveMs = SystemClock.elapsedRealtime();
+                    if (d[3] == 1 && scroll != null) {          // تغییرِ ارتفاع تمام شد → جای‌گیریِ اسکرول را دوباره بسنج تا اسکرولِ خودکار از کار نیفتد
+                        final HistoryScroll hs = scroll;
+                        hs.post(() -> { hs.syncAtBottom(); hs.requestLayout(); });
+                    }
                     if (d[3] == 2) {
                         boolean onX = gripHot;
                         gripHot = false;
