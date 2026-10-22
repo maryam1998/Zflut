@@ -2795,9 +2795,103 @@ public class BubbleService extends Service {
         replayingEntry = e;
         setReplayActive(e, true);
         setReplayHold(true);                                 // ⏸ پلیرِ اپ تا پایانِ تکرار مکث کند
-        SentenceAudio.play(e.pcm, times, () -> main.post(() -> {
-            if (replayingEntry == e) { replayingEntry = null; setReplayActive(e, false); setReplayHold(false); }
-        }));
+        final boolean pausedExt = holdExternalPlayer();      // ⏸ پلیرِ برنامه‌ی دیگر (Poweramp، یوتیوب، …) هم مکث شود
+        final Runnable startPlay = () -> {
+            if (replayingEntry != e) return;                 // وسطِ صبر متوقف/عوض شد
+            SentenceAudio.play(e.pcm, times, () -> main.post(() -> {
+                if (replayingEntry == e) { replayingEntry = null; setReplayActive(e, false); setReplayHold(false); }
+            }));
+        };
+        if (pausedExt) main.postDelayed(startPlay, 220);     // چند لحظه تا پلیرِ بیرونی واقعاً بایستد
+        else startPlay.run();
+    }
+
+    // ───────── ⏸ مکث/ادامه‌ی پلیرِ برنامه‌ی دیگر (جز اپ خودمان) ─────────
+    //   ↺ با صدای خودِ گوینده: پلیرِ بیرونی مکث می‌شود؛ بعد از پایانِ تکرار از همان‌جا ادامه می‌دهد.
+    private final ArrayList<android.media.session.MediaController> extPaused = new ArrayList<>();
+    private boolean extHeld = false, extPausedSomething = false, extKeyPaused = false;
+    private android.media.AudioFocusRequest extFocusReq;
+
+    private static void sendMediaKey(android.media.AudioManager am, int code) {
+        try {
+            long t = SystemClock.uptimeMillis();
+            am.dispatchMediaKeyEvent(new android.view.KeyEvent(t, t, android.view.KeyEvent.ACTION_DOWN, code, 0));
+            am.dispatchMediaKeyEvent(new android.view.KeyEvent(t, t, android.view.KeyEvent.ACTION_UP, code, 0));
+        } catch (Throwable ignored) {}
+    }
+
+    /** true = یک پلیرِ بیرونی در حالِ پخش بود و مکث شد. چند بار پشتِ‌سرهم صدا زدن بی‌اثر است. */
+    private boolean holdExternalPlayer() {
+        if (extHeld) return extPausedSomething;
+        extHeld = true;
+        extPausedSomething = false;
+        extKeyPaused = false;
+        extPaused.clear();
+        final android.media.AudioManager am = (android.media.AudioManager) getSystemService(AUDIO_SERVICE);
+        boolean playing = false;
+        try { playing = am != null && am.isMusicActive(); } catch (Throwable ignored) {}
+        // ۱) اگر «دسترسی به اعلان‌ها» داده شده: دقیقاً همان MediaSessionهایی که در حالِ پخش‌اند
+        if (YtMedia.hasAccess(this)) {
+            try {
+                android.media.session.MediaSessionManager msm =
+                        (android.media.session.MediaSessionManager) getSystemService(MEDIA_SESSION_SERVICE);
+                List<android.media.session.MediaController> list =
+                        msm.getActiveSessions(new android.content.ComponentName(this, YtMedia.class));
+                for (android.media.session.MediaController mc : list) {
+                    if (getPackageName().equals(mc.getPackageName())) continue;
+                    android.media.session.PlaybackState ps = mc.getPlaybackState();
+                    if (ps != null && ps.getState() == android.media.session.PlaybackState.STATE_PLAYING) {
+                        mc.getTransportControls().pause();
+                        extPaused.add(mc);
+                        extPausedSomething = true;
+                    }
+                }
+            } catch (Throwable t) { Log.w(TAG, "pause external sessions failed", t); }
+        }
+        // ۲) بدونِ آن دسترسی: کلیدِ «مکث»ِ رسانه
+        if (!extPausedSomething && playing && am != null) {
+            sendMediaKey(am, android.view.KeyEvent.KEYCODE_MEDIA_PAUSE);
+            extKeyPaused = true;
+            extPausedSomething = true;
+        }
+        // ۳) فوکوسِ صدا (گذرا): پلیرهایی که به آن احترام می‌گذارند ساکت می‌مانند و بعد خودشان ادامه می‌دهند
+        if (am != null && (playing || extPausedSomething)) {
+            try {
+                android.media.AudioFocusRequest fr = new android.media.AudioFocusRequest.Builder(
+                        android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                        .setAudioAttributes(new AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
+                        .setWillPauseWhenDucked(true)
+                        .setOnAudioFocusChangeListener(ch -> { })
+                        .build();
+                if (am.requestAudioFocus(fr) == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED) extFocusReq = fr;
+            } catch (Throwable t) { Log.w(TAG, "audio focus request failed", t); }
+        }
+        return extPausedSomething;
+    }
+
+    /** پلیرِ بیرونی را (فقط اگر خودمان مکث کرده بودیم) از همان‌جا ادامه می‌دهد. */
+    private void releaseExternalPlayer() {
+        if (!extHeld) return;
+        extHeld = false;
+        final android.media.AudioManager am = (android.media.AudioManager) getSystemService(AUDIO_SERVICE);
+        if (am != null && extFocusReq != null) {
+            try { am.abandonAudioFocusRequest(extFocusReq); } catch (Throwable ignored) {}
+        }
+        extFocusReq = null;
+        for (android.media.session.MediaController mc : extPaused) {
+            try {
+                android.media.session.PlaybackState ps = mc.getPlaybackState();
+                // اگر کاربر وسطِ تکرار خودش پلیر را ادامه داده/عوض کرده، دست نمی‌زنیم
+                if (ps == null || ps.getState() == android.media.session.PlaybackState.STATE_PAUSED)
+                    mc.getTransportControls().play();
+            } catch (Throwable ignored) {}
+        }
+        extPaused.clear();
+        if (extKeyPaused && am != null) sendMediaKey(am, android.view.KeyEvent.KEYCODE_MEDIA_PLAY);
+        extKeyPaused = false;
+        extPausedSomething = false;
     }
 
     private void stopStoredReplay() { stopStoredReplay(true); }
@@ -2825,6 +2919,7 @@ public class BubbleService extends Service {
     private int ytHoldIdx = -1;
 
     private void setReplayHold(boolean on) {
+        if (!on) releaseExternalPlayer();                    // پلیرِ بیرونی (اگر بخاطرِ ↺ مکث شده بود) ادامه دهد
         if (replayHold == on) return;
         replayHold = on;
         if (!on) main.removeCallbacks(ytHoldWatch);
@@ -3008,6 +3103,7 @@ public class BubbleService extends Service {
 
     private LinearLayout wordCard;
     private TextView cardTerm, cardMeaningTv, cardBtnStory, cardBtnGrammar, cardBtnLeitner;
+    private LinearLayout cardMeaningBox;               // ردیف‌های ترجمه؛ هر ردیف 🔊 دارد
     private TextView cardSrcTv;                       // متنی که هایلایت دارد
     private String cardWord, cardLang, cardSentence, cardMeaning = "", cardMeaningLang;
     private boolean cardStoryDone, cardGrammarDone, cardLeitnerDone;
@@ -3081,6 +3177,12 @@ public class BubbleService extends Service {
         cardMeaningTv.setPadding(0, dp(2), 0, dp(6));
         wordCard.addView(cardMeaningTv);
 
+        cardMeaningBox = new LinearLayout(this);
+        cardMeaningBox.setOrientation(LinearLayout.VERTICAL);
+        cardMeaningBox.setPadding(0, dp(2), 0, dp(6));
+        cardMeaningBox.setVisibility(View.GONE);
+        wordCard.addView(cardMeaningBox);
+
         cardBtnStory = cardAction("", v -> onCardStory());
         cardBtnGrammar = cardAction("", v -> onCardGrammar());
         cardBtnLeitner = cardAction("", v -> onCardLeitner());
@@ -3147,6 +3249,8 @@ public class BubbleService extends Service {
 
         cardTerm.setText(word);
         cardMeaningTv.setText("…");
+        cardMeaningTv.setVisibility(View.VISIBLE);
+        if (cardMeaningBox != null) { cardMeaningBox.removeAllViews(); cardMeaningBox.setVisibility(View.GONE); }
         applyStyle(cardTerm);
         applyStyle(cardMeaningTv);
         refreshCardButtons();
@@ -3191,18 +3295,35 @@ public class BubbleService extends Service {
     /** معنی‌ها (به ترتیبِ زبان‌های انتخابی) در کادرِ لغت؛ اولین معنیِ موجود برای ذخیره (لایتنر/داستان) استفاده می‌شود. */
     private void onCardMeanings(int token, List<String> langs, List<String> outs) {
         if (token != cardSeq || cardMeaningTv == null) return;
-        StringBuilder sb = new StringBuilder();
         String firstText = null, firstLang = null;
         boolean multi = langs.size() > 1;
+        if (cardMeaningBox != null) cardMeaningBox.removeAllViews();
         for (int i = 0; i < langs.size(); i++) {
-            String m = i < outs.size() ? outs.get(i) : "";
+            final String m = i < outs.size() ? outs.get(i) : "";
             if (m == null || m.isEmpty()) continue;
-            if (firstText == null) { firstText = m; firstLang = langs.get(i); }
-            if (sb.length() > 0) sb.append('\n');
-            if (multi) sb.append(langs.get(i).toUpperCase(Locale.ROOT)).append("  ·  ");
-            sb.append(m);
+            final String lg = langs.get(i);
+            if (firstText == null) { firstText = m; firstLang = lg; }
+            if (cardMeaningBox == null) continue;
+            // ردیف: «FA · ترجمه» + 🔊 (خواندنِ همان ترجمه با زبانِ خودش)
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            TextView tv = new TextView(this);
+            tv.setTextColor(Color.parseColor("#E8EAF2"));
+            styleC(tv, 15, false);
+            tv.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
+            tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
+            tv.setText(multi ? lg.toUpperCase(Locale.ROOT) + "  ·  " + m : m);
+            applyStyle(tv);
+            row.addView(tv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            row.addView(speakerButton(() -> m, () -> lg));
+            cardMeaningBox.addView(row, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
         if (firstText == null) {
+            if (cardMeaningBox != null) cardMeaningBox.setVisibility(View.GONE);
+            cardMeaningTv.setVisibility(View.VISIBLE);
             cardMeaningTv.setText(msg("ترجمه در دسترس نیست — ذخیره بدون معنی هم کار می‌کند",
                     "No translation — saving still works"));
             applyStyle(cardMeaningTv);
@@ -3210,8 +3331,8 @@ public class BubbleService extends Service {
         }
         cardMeaning = firstText;
         cardMeaningLang = firstLang;
-        cardMeaningTv.setText(sb.toString());
-        applyStyle(cardMeaningTv);
+        cardMeaningTv.setVisibility(View.GONE);
+        if (cardMeaningBox != null) cardMeaningBox.setVisibility(View.VISIBLE);
         // اگر قبل از رسیدنِ معنی دکمه‌ای زده شده بود، همان ردیف با معنی به‌روز می‌شود (گرامر یک‌بار ثبت می‌شود)
         if (cardStoryDone) queueWord("story");
         if (cardLeitnerDone) queueWord("leitner");
@@ -5906,44 +6027,30 @@ public class BubbleService extends Service {
         }
     }
 
-    // ── میزبانِ موتورِ گوگل: ترجیحاً داخلِ همین سرویس (هیچ صفحه‌ای باز نمی‌شود → ویدیو/اپِ زیرش دست‌نخورده)،
-    //    و فقط اگر اندروید/گوشی اجازه نداد، همان صفحه‌ی نامرئیِ شفاف و بدونِ فوکوس (SpeechHostActivity). ──
+    // ── میزبانِ موتورِ آنلاین (SpeechRecognizerِ اندروید): فقط داخلِ همین سرویس. ──
+    //    هیچ صفحه‌ای (Activity) باز نمی‌شود، پس صفحه‌ی گوشی/ویدیو/پلیرِ زیرش قفل نمی‌شود.
+    //    اگر اندروید/گوشی از داخلِ سرویس اجازه ندهد، خودکار موتورِ آفلاین جایگزین می‌شود. ──
     private GoogleAsr googleAsr;
-
-    private boolean googleNeedsActivityHost() {
-        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("googleHostActivity", false);
-    }
 
     private void launchGoogleHost(String src) {
         stopGoogleAsr();
-        if (googleNeedsActivityHost()) { launchGoogleActivity(src); return; }
+        // پرچمِ قدیمیِ «میزبانِ صفحه» (نسخه‌های قبلی) که باعثِ قفل‌شدنِ صفحه می‌شد برای همیشه پاک شود
+        try {
+            SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
+            if (sp.contains("googleHostActivity")) sp.edit().remove("googleHostActivity").apply();
+        } catch (Throwable ignored) {}
         final String lang = localeTag(src);
         final GoogleAsr[] ref = new GoogleAsr[1];
         ref[0] = new GoogleAsr(this, lang, new GoogleAsr.Host() {
             @Override public void onFatal() { if (googleAsr == ref[0]) asrFallback(); }
             @Override public void onNeedsPermission() { if (googleAsr == ref[0]) asrNeedsPermission(); }
             @Override public void onHostUnsupported() {
-                if (googleAsr != ref[0]) return;
-                // گوگل از داخلِ سرویس صدا نمی‌گیرد → از این به بعد با صفحه‌ی نامرئی
-                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean("googleHostActivity", true).apply();
-                stopGoogleAsr();
-                if (recording && micEngine) launchGoogleActivity(lang);
+                // از داخلِ سرویس مجاز نیست → به‌جای باز کردنِ صفحه (که لمس را قفل می‌کرد) موتورِ آفلاین
+                if (googleAsr == ref[0]) asrFallback();
             }
         });
         googleAsr = ref[0];
         googleAsr.start();
-    }
-
-    private void launchGoogleActivity(String langTag) {
-        try {
-            Intent i = new Intent(this, SpeechHostActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION)
-                    .putExtra(SpeechHostActivity.EXTRA_LANG_TAG, langTag);
-            startActivity(i);
-        } catch (Exception e) {
-            Log.w(TAG, "cannot start speech host activity", e);
-            asrFallback();
-        }
     }
 
     private void stopGoogleAsr() {
