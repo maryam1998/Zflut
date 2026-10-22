@@ -32,6 +32,7 @@ import '../../core/audio/story_audio_controller.dart';
 import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/web/ocr_block.dart';
 import '../story/page_translate_render.dart';
+import '../story/pdf_page_nav.dart';
 import '../story/srt_translator_tool.dart';
 import '../story/story_audio_bar.dart';
 import '../story/story_reader_panel.dart';
@@ -1969,23 +1970,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 splitSentences: _splitSentences,
               );
             }),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              HopeTextAction(
-                label: '◀ صفحه‌ی قبل',
-                color: c.teal,
-                onTap: i == 0 || _pdfPageBusy ? null : () => _loadPdfPage(i - 1),
-              ),
-              HopeTextAction(
-                label: 'صفحه‌ی بعد ▶',
-                color: c.teal,
-                onTap: i >= doc.pageCount - 1 || _pdfPageBusy
-                    ? null
-                    : () => _loadPdfPage(i + 1),
-              ),
-            ],
+          const SizedBox(height: 6),
+          PdfPageNavBar(
+            index: i,
+            count: doc.pageCount,
+            busy: _pdfPageBusy,
+            onGo: (p) => _loadPdfPage(p),
           ),
         ],
       ),

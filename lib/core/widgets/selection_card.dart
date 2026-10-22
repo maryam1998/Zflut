@@ -891,15 +891,63 @@ class _SpeakIcon extends ConsumerWidget {
         radius: size,
         child: Padding(
           padding: const EdgeInsets.all(5),
-          // 🔊 ایموجی، مثلِ پاپ‌آپِ Hope
-          child: Text(
-            playing ? '⏸️' : '🔊',
-            style: TextStyle(fontSize: size, height: 1.1),
+          // آیکونِ خطیِ برداری، مثلِ کادرِ ترجمه‌ی زنده: 🔊 سفید ← ⏹ طلایی (به‌جای ایموجیِ نارنجی)
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: CustomPaint(
+              painter: _LineIconPainter(
+                stop: playing,
+                color: playing ? kCardBorderGold : color,
+              ),
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// آیکونِ خطیِ 🔊 / ⏹ — همان شکل‌ها و ضخامتِ خطِ کادرِ ترجمه‌ی زنده (شبکه‌ی ۲۴×۲۴).
+class _LineIconPainter extends CustomPainter {
+  final bool stop;
+  final Color color;
+
+  const _LineIconPainter({required this.stop, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width / 24.0;
+    canvas.save();
+    canvas.scale(s, s);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = 1.7 * 24.0 / 18.0 // ≈ ضخامتِ آیکونِ ۱۸dpِ کادرِ زنده
+      ..color = color;
+    final p = Path();
+    if (stop) {
+      p.addRRect(RRect.fromRectAndRadius(
+          const Rect.fromLTRB(6.5, 6.5, 17.5, 17.5), const Radius.circular(2)));
+    } else {
+      p.moveTo(4, 10);
+      p.lineTo(8, 10);
+      p.lineTo(13, 6);
+      p.lineTo(13, 18);
+      p.lineTo(8, 14);
+      p.lineTo(4, 14);
+      p.close();
+      p.addArc(const Rect.fromLTRB(9.5, 8.5, 16.5, 15.5), -math.pi / 4, math.pi / 2);
+      p.addArc(const Rect.fromLTRB(6, 5, 20, 19), -math.pi / 4, math.pi / 2);
+    }
+    canvas.drawPath(p, paint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_LineIconPainter old) =>
+      old.stop != stop || old.color != color;
 }
 
 class _CardIconButton extends StatelessWidget {

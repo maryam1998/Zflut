@@ -15,9 +15,11 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.Icon;
 import android.hardware.display.DisplayManager;
@@ -811,8 +813,142 @@ public class MagnifierService extends Service {
         return t;
     }
 
+    // ───────── آیکون‌های خطیِ برداری (همان‌هایی که در کادرِ ترجمه‌ی زنده‌ی BubbleService هست) ─────────
+    // کدِ ایموجی با setText داده می‌شود و به آیکونِ برداری نگاشت می‌شود؛ رنگِ آیکون = رنگِ متنِ همان View.
+    private static final float ICON_STROKE_DP = 1.7f;
+
+    private final class IconText extends TextView {
+        private static final int I_PLAY = 4, I_STOP = 6, I_REPLAY = 8, I_DROP = 10,
+                I_SPEAKER = 14, I_DOC = 15, I_CLOSE = 16, I_PAUSE = 3;
+        private int icon;
+        private String suffix;
+        private float iconDp = 18f;
+        private final Paint sp = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint tp = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path p = new Path();
+        private final RectF r = new RectF();
+
+        IconText(Context c) {
+            super(c);
+            sp.setStyle(Paint.Style.STROKE);
+            sp.setStrokeCap(Paint.Cap.ROUND);
+            sp.setStrokeJoin(Paint.Join.ROUND);
+            tp.setStyle(Paint.Style.FILL);
+            tp.setTextAlign(Paint.Align.CENTER);
+            tp.setTypeface(Typeface.DEFAULT_BOLD);
+        }
+
+        void setIconDp(float v) { iconDp = v; requestLayout(); invalidate(); }
+
+        @Override public void setText(CharSequence t, BufferType type) {
+            String k = t == null ? "" : t.toString();
+            suffix = null;
+            icon = iconFor(k);
+            super.setText(icon != 0 ? "" : t, type);
+            invalidate();
+        }
+
+        private int iconFor(String k) {
+            if (k.startsWith("\u21BA")) { suffix = k.length() > 1 ? k.substring(1) : null; return I_REPLAY; }
+            switch (k) {
+                case "\u23F8": return I_PAUSE;
+                case "\u25B6": return I_PLAY;
+                case "\u23F9": return I_STOP;
+                case "\uD83C\uDF13": return I_DROP;
+                case "\uD83D\uDD0A": return I_SPEAKER;
+                case "\uD83D\uDCC4": return I_DOC;
+                case "\u2715": return I_CLOSE;
+                default: return 0;
+            }
+        }
+
+        @Override protected void onMeasure(int wSpec, int hSpec) {
+            if (icon == 0) { super.onMeasure(wSpec, hSpec); return; }
+            int box = dp(iconDp);
+            int w = Math.max(getMinWidth(), getPaddingLeft() + getPaddingRight() + box);
+            int h = Math.max(getMinHeight(), getPaddingTop() + getPaddingBottom() + box);
+            setMeasuredDimension(resolveSize(w, wSpec), resolveSize(h, hSpec));
+        }
+
+        @Override protected void onDraw(Canvas cv) {
+            if (icon == 0) { super.onDraw(cv); return; }
+            float box = dp(iconDp);
+            float s = box / 24f;
+            float cx = (getPaddingLeft() + getWidth() - getPaddingRight()) / 2f;
+            float cy = (getPaddingTop() + getHeight() - getPaddingBottom()) / 2f;
+            int col = getCurrentTextColor();
+            sp.setColor(col);
+            sp.setStrokeWidth(dp(ICON_STROKE_DP) / s);
+            tp.setColor(col);
+            cv.save();
+            cv.translate(cx - box / 2f, cy - box / 2f);
+            cv.scale(s, s);
+            p.reset();
+            switch (icon) {
+                case I_PLAY:
+                    p.moveTo(8f, 5.5f); p.lineTo(18.5f, 12f); p.lineTo(8f, 18.5f); p.close();
+                    break;
+                case I_PAUSE:
+                    p.moveTo(9f, 6f); p.lineTo(9f, 18f);
+                    p.moveTo(15f, 6f); p.lineTo(15f, 18f);
+                    break;
+                case I_STOP:
+                    r.set(6.5f, 6.5f, 17.5f, 17.5f);
+                    p.addRoundRect(r, 2f, 2f, Path.Direction.CW);
+                    break;
+                case I_REPLAY:
+                    r.set(5f, 6f, 19f, 20f);
+                    p.arcTo(r, -100f, 300f, true);
+                    p.moveTo(14.66f, 8.48f); p.lineTo(10.79f, 6.11f); p.lineTo(13.62f, 2.56f);
+                    break;
+                case I_DROP:
+                    p.moveTo(12f, 4f);
+                    p.cubicTo(9f, 7.5f, 6.5f, 10.5f, 6.5f, 14f);
+                    p.cubicTo(6.5f, 17.3f, 9f, 20f, 12f, 20f);
+                    p.cubicTo(15f, 20f, 17.5f, 17.3f, 17.5f, 14f);
+                    p.cubicTo(17.5f, 10.5f, 15f, 7.5f, 12f, 4f);
+                    p.close();
+                    p.moveTo(9.6f, 14.6f); p.quadTo(9.6f, 16.6f, 11.6f, 17.2f);
+                    break;
+                case I_SPEAKER:
+                    p.moveTo(4f, 10f); p.lineTo(8f, 10f); p.lineTo(13f, 6f); p.lineTo(13f, 18f);
+                    p.lineTo(8f, 14f); p.lineTo(4f, 14f); p.close();
+                    r.set(9.5f, 8.5f, 16.5f, 15.5f);
+                    p.arcTo(r, -45f, 90f, true);
+                    r.set(6f, 5f, 20f, 19f);
+                    p.arcTo(r, -45f, 90f, true);
+                    break;
+                case I_DOC:
+                    p.moveTo(7f, 3.5f); p.lineTo(14f, 3.5f); p.lineTo(18.5f, 8f); p.lineTo(18.5f, 20.5f);
+                    p.lineTo(7f, 20.5f); p.close();
+                    p.moveTo(14f, 3.5f); p.lineTo(14f, 8f); p.lineTo(18.5f, 8f);
+                    p.moveTo(9.5f, 12.5f); p.lineTo(16f, 12.5f);
+                    p.moveTo(9.5f, 16f); p.lineTo(16f, 16f);
+                    break;
+                case I_CLOSE:
+                    p.moveTo(6.5f, 6.5f); p.lineTo(17.5f, 17.5f);
+                    p.moveTo(17.5f, 6.5f); p.lineTo(6.5f, 17.5f);
+                    break;
+                default:
+                    break;
+            }
+            cv.drawPath(p, sp);
+            if (icon == I_REPLAY && suffix != null) {
+                tp.setTextSize("\u221E".equals(suffix) ? 10f : 8.5f);
+                cv.drawText(suffix, 12f, "\u221E".equals(suffix) ? 16.4f : 16f, tp);
+            }
+            cv.restore();
+        }
+    }
+
     private TextView headBtn(String s, View.OnClickListener l) {
-        TextView t = txt(s, Color.WHITE, 17);
+        // آیکونِ خطیِ برداری (مثلِ کادرِ ترجمه‌ی زنده) — به‌جای ایموجیِ نارنجی
+        IconText t = new IconText(this);
+        t.setText(s);
+        t.setTextColor(Color.WHITE);
+        t.setTextSize(17);
+        t.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
+        t.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG);
         t.setGravity(Gravity.CENTER);
         t.setMinWidth(dp(40));
         t.setMinHeight(dp(36));
@@ -821,8 +957,8 @@ public class MagnifierService extends Service {
     }
 
     private TextView speakBtn() {
-        TextView t = headBtn("\uD83D\uDD0A", null);
-        t.setTextSize(18);
+        IconText t = (IconText) headBtn("\uD83D\uDD0A", null);
+        t.setIconDp(20f);
         return t;
     }
 
@@ -855,7 +991,7 @@ public class MagnifierService extends Service {
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        tvRepeat = headBtn("\uD83D\uDD01", v -> cycleRepeat());
+        tvRepeat = headBtn("\u21BA", v -> cycleRepeat());
         bar.addView(tvRepeat);
         bar.addView(headBtn("\uD83C\uDF13", v -> toggleOpacityRow()));
         bar.addView(headBtn("\uD83D\uDCC4", v -> { if (selView != null) selView.selectAll(); }));
@@ -949,7 +1085,7 @@ public class MagnifierService extends Service {
     private void updateRepeatButton() {
         if (tvRepeat == null) return;
         int r = repeatSetting();
-        tvRepeat.setText(r == 0 ? "\uD83D\uDD01" : r == REPEAT_INF ? "\uD83D\uDD01\u221E" : "\uD83D\uDD01" + r);
+        tvRepeat.setText(r == 0 ? "\u21BA" : r == REPEAT_INF ? "\u21BA\u221E" : "\u21BA" + r);
         tvRepeat.setTextColor(r == 0 ? Color.WHITE : COLOR_GOLD);
         tvRepeat.setAlpha(r == 0 ? 0.6f : 1f);
     }
@@ -1039,6 +1175,7 @@ public class MagnifierService extends Service {
         wordSpeak.setOnClickListener(v -> toggleSpeak(wordSpeak, cardWord, selSrc));
         top.addView(wordSpeak);
         TextView cardX = headBtn("\u2715", v -> closeWordCard());
+        ((IconText) cardX).setIconDp(13f);
         cardX.setTextSize(12);
         cardX.setMinWidth(dp(26));
         cardX.setMinHeight(dp(26));
@@ -1129,7 +1266,7 @@ public class MagnifierService extends Service {
     // 🔊 خوانش با همان سیستمِ خوانشِ اپ (Piper اگر بسته‌ی زبان دانلود شده، وگرنه TTS گوشی) — برای هر زبانی؛ با تکرارِ 🔁
     private void stopSpeech() {
         speakTok++;
-        if (speakingBtn != null) { speakingBtn.setText("\uD83D\uDD0A"); speakingBtn = null; }
+        if (speakingBtn != null) { speakingBtn.setText("\uD83D\uDD0A"); speakingBtn.setTextColor(Color.WHITE); speakingBtn = null; }
         try { PanelTts.stop(this); } catch (Throwable ignored) {}
     }
 
@@ -1139,6 +1276,7 @@ public class MagnifierService extends Service {
         stopSpeech();
         speakingBtn = b;
         b.setText("\u23F9");
+        b.setTextColor(COLOR_GOLD);
         speakLoop(b, text, lang, ++speakTok, 0);
     }
 
@@ -1151,7 +1289,7 @@ public class MagnifierService extends Service {
             if (ok && n < cap) {
                 main.postDelayed(() -> { if (token == speakTok) speakLoop(b, text, lang, token, n); }, 700);
             } else {
-                if (speakingBtn != null) { speakingBtn.setText("\uD83D\uDD0A"); speakingBtn = null; }
+                if (speakingBtn != null) { speakingBtn.setText("\uD83D\uDD0A"); speakingBtn.setTextColor(Color.WHITE); speakingBtn = null; }
             }
         }));
     }
