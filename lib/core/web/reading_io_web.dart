@@ -12,6 +12,9 @@ import 'ocr_block.dart';
 /// وب: tesseract.js خودش اولین بار دانلود می‌کنه؛ نیازی به پیش‌دانلود نیست.
 void prefetchOcrData() {}
 
+/// وب: فایل موقتی وجود ندارد.
+Future<void> cleanOcrTemp() async {}
+
 class PickedFile {
   final String name;
   final Uint8List bytes;

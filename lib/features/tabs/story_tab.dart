@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // intl هم یک کلاسِ TextDirection (با LTR/RTL) دارد که با TextDirection فلاتر تداخل می‌کند
@@ -29,8 +30,12 @@ import '../../core/web/reading_io_stub.dart'
     if (dart.library.html) '../../core/web/reading_io_web.dart';
 import 'package:flutter/gestures.dart';
 import '../../core/audio/story_audio_controller.dart';
+import '../../core/book/book_disk.dart';
+import '../../core/book/page_translate_engine.dart';
+import '../../core/story/long_text_prep.dart';
 import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/web/ocr_block.dart';
+import '../story/book_translate_bar.dart';
 import '../story/page_translate_render.dart';
 import '../story/pdf_page_nav.dart';
 import '../story/srt_translator_tool.dart';
@@ -132,125 +137,18 @@ String _stripThink(String t) => t
 
 // ───────────── کمکی‌های وارد کردنِ متن برای خوانش (پورتِ ساده‌ی Hope) ─────────────
 const int _kSentencesPerParagraph = 5;
-const int _kMaxImportSentences = 2000;
+const int _kMaxImportSentences = 60000; // ≈ یک کتابِ بزرگ؛ پردازش در isolate انجام می‌شود
+const int _kLongTextChars = 30000; // متن‌های بلندتر از این در isolate آماده می‌شوند
 const int _kMaxWordsPerSentence = 40;
 
-List<String> _splitSentences(String text) {
-  final t = text.trim();
-  if (t.isEmpty) return const [];
-  final protectedT =
-      t.replaceAllMapped(RegExp(r'(\d)\.(?=\d)'), (m) => '${m[1]}\u0001');
-  final raw = RegExp(r'[^.!?؟。！]+[.!?؟。！]*')
-      .allMatches(protectedT)
-      .map((m) => m.group(0)!.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
-  final parts = (raw.isEmpty ? [protectedT] : raw)
-      .map((e) => e.replaceAll('\u0001', '.').replaceAll(RegExp(r'\s+'), ' ').trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
-  final out = <String>[];
-  for (final part in parts) {
-    final words = part.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-    if (words.length <= _kMaxWordsPerSentence) {
-      out.add(part);
-      continue;
-    }
-    for (var i = 0; i < words.length; i += _kMaxWordsPerSentence) {
-      final end = i + _kMaxWordsPerSentence > words.length
-          ? words.length
-          : i + _kMaxWordsPerSentence;
-      out.add(words.sublist(i, end).join(' '));
-    }
-  }
-  return out;
-}
+List<String> _splitSentences(String text) => splitSentencesText(text);
 
 /// تشخیصِ سادته‌ی زبانِ متن از روی خطِ نوشتاری.
-String _detectLang(String text, String fallback) {
-  var arabic = 0, cyr = 0, deva = 0, kana = 0, hangul = 0, cjk = 0, latin = 0;
-  var persian = 0;
-  for (final r in text.runes) {
-    if (r >= 0x0600 && r <= 0x06FF) {
-      arabic++;
-      if (r == 0x067E || r == 0x0686 || r == 0x0698 || r == 0x06AF) {
-        persian++;
-      }
-    } else if (r >= 0x0400 && r <= 0x04FF) {
-      cyr++;
-    } else if (r >= 0x0900 && r <= 0x097F) {
-      deva++;
-    } else if (r >= 0x3040 && r <= 0x30FF) {
-      kana++;
-    } else if (r >= 0xAC00 && r <= 0xD7AF) {
-      hangul++;
-    } else if (r >= 0x4E00 && r <= 0x9FFF) {
-      cjk++;
-    } else if ((r >= 0x41 && r <= 0x5A) || (r >= 0x61 && r <= 0x7A) ||
-        (r >= 0xC0 && r <= 0x24F)) {
-      latin++;
-    }
-  }
-  final max = [arabic, cyr, deva, kana, hangul, cjk, latin]
-      .reduce((a, b) => a > b ? a : b);
-  if (max == 0) return fallback;
-  if (max == arabic) return persian > 0 ? 'fa' : 'ar';
-  if (max == cyr) return 'ru';
-  if (max == deva) return 'hi';
-  if (max == kana) return 'ja';
-  if (max == hangul) return 'ko';
-  if (max == cjk) return kana > 0 ? 'ja' : 'zh';
-  // زبان‌های لاتین: شمارشِ کلماتِ خیلی پرتکرار (مثلِ Hope)
-  const stop = <String, List<String>>{
-    'de': ['der','die','das','und','ist','nicht','mit','für','ein','eine','sie','auf','was','wie','wenn','aber','auch','sich','dass','ich'],
-    'es': ['el','la','los','las','de','que','y','en','no','es','un','una','para','por','con','su','del','al','se','lo'],
-    'fr': ['le','la','les','et','est','une','des','dans','pour','que','qui','ne','pas','ce','vous','je','nous','avec','au','un'],
-    'it': ['il','la','di','che','è','un','una','per','non','con','gli','le','sono','questo','questa','del','alla','si','mi','ma'],
-    'tr': ['ve','bir','bu','için','ile','de','da','çok','ama','ne','gibi','daha','var','yok','ben','sen','biz','onun','şey','değil'],
-    'en': ['the','and','is','to','of','in','that','it','was','for','on','with','he','she','you','this','but','not','are','as'],
-  };
-  final words = RegExp(r'[a-zàâäçèéêëîïôöùûüÿñßışğî]+')
-      .allMatches(text.toLowerCase())
-      .map((m) => m.group(0)!)
-      .toSet();
-  var bestCode = fallback;
-  var bestScore = 0;
-  stop.forEach((code, list) {
-    final sc = list.where(words.contains).length;
-    if (sc > bestScore) {
-      bestScore = sc;
-      bestCode = code;
-    }
-  });
-  if (bestScore > 0) return bestCode;
-  const latinLangs = ['en', 'es', 'de', 'fr', 'it', 'tr'];
-  return latinLangs.contains(fallback) ? fallback : 'en';
-}
+String _detectLang(String text, String fallback) =>
+    detectTextLang(text, fallback);
 
 /// حدسِ سطحِ CEFR از روی خودِ متن (همان فرمولِ detectTextCEFRLevel در Hope).
-String _detectCefr(String text) {
-  final t = text.trim();
-  if (t.isEmpty) return 'A2';
-  final sentences = _splitSentences(t);
-  final words = t.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-  if (words.isEmpty || sentences.isEmpty) return 'A2';
-  final clean = words
-      .map((w) => w.replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), ''))
-      .where((w) => w.isNotEmpty)
-      .toList();
-  if (clean.isEmpty) return 'A2';
-  final avgSentence = words.length / sentences.length;
-  final avgWord = clean.fold<int>(0, (a, w) => a + w.length) / clean.length;
-  final longRatio = clean.where((w) => w.length >= 7).length / clean.length;
-  final uniqueRatio = clean.map((w) => w.toLowerCase()).toSet().length / clean.length;
-  final score = avgSentence + avgWord * 3.0 + longRatio * 40 + uniqueRatio * 15;
-  if (score < 14) return 'A1';
-  if (score < 19) return 'A2';
-  if (score < 24) return 'B1';
-  if (score < 29) return 'B2';
-  if (score < 34) return 'C1';
-  return 'C2';
-}
+String _detectCefr(String text) => detectTextCefr(text);
 
 String _decodeEntities(String s) => s
     .replaceAll('&nbsp;', ' ')
@@ -359,27 +257,33 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   bool _imgReadBusy = false;
   String _importProgress = '';
 
-  // نمایشگرِ PDF با عکسِ اصلی + ترجمه
+  // نمایشگرِ PDF با عکسِ اصلی + ترجمه (موتورِ ترجمه‌ی صفحه‌ها)
   bool _pdfViewBusy = false;
   PdfDocHandle? _pdfDoc;
   String _pdfTitle = '';
+  String _pdfDocKey = '';
   int _pdfIndex = 0;
   bool _pdfPageBusy = false;
   bool _pdfShowOrig = false;
+  // فقط چند صفحه‌ی اطرافِ صفحه‌ی فعلی در حافظه می‌مانند (بقیه حذف می‌شوند)
   final Map<int, Uint8List> _pdfImages = {};
+  static const int _kPdfKeepImages = 6;
   final Map<int, String> _pdfTexts = {};
   final Map<int, String> _pdfTrans = {};
-  // ترجمه‌ی عکسیِ صفحه‌ها (عکسِ صفحه با متنِ ترجمه‌شده، هر صفحه همین‌که آماده شد)
-  final Map<int, Uint8List> _pdfTransImgs = {};
-  // امضای زبان‌هایی که هر عکسِ ترجمه‌شده براساسشون ساخته شده؛ اگه کاربر زبانِ
-  // ترجمه رو عوض کنه امضا فرق می‌کنه و صفحه خودکار دوباره ترجمه می‌شه
-  final Map<int, String> _pdfTransSig = {};
   String? _pdfViewLang; // زبانی که کاربر برای دیدنِ عکسِ ترجمه‌شده انتخاب کرده
-  bool _pdfAutoTrans = true;
-  bool _pdfTransRunning = false;
   bool _pdfShowTransImg = true;
-  int _pdfTransRun = 0; // شماره‌ی اجرا (برای لغو)
-  String _pdfTransNote = '';
+  // موتورِ ترجمه‌ی صفحه‌ها: صف، کشِ دیسکی، تلاشِ دوباره، پیشرفتِ ماندگار
+  PageTranslateEngine? _pdfEngine;
+  int _pdfEngineToken = 0;
+  OcrSession? _pdfOcr;
+  Uint8List? _pdfCurTrans; // عکسِ ترجمه‌شده‌ی صفحه‌ی فعلی
+  int _pdfCurTransFor = -1;
+  final BookDisk _bookDisk = createBookDisk();
+  // کشِ ساده برای کارهای سنگینِ بازسازی‌شونده در هر build
+  String? _parasSrc;
+  List<String> _parasCache = const [];
+  String? _sentSrc;
+  List<String> _sentCache = const [];
   final _linkCtrl = TextEditingController();
   final _pasteCtrl = TextEditingController();
 
@@ -393,11 +297,15 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   final _libSearch = TextEditingController();
   bool _libFavOnly = false;
   String? _openStoryId;
+  // کتابِ بلندِ کتابخانه: تعدادِ پاراگرافِ نمایان (برای جلوگیری از ساختنِ کلِ متن یک‌جا)
+  static const int _kLibParaPage = 20;
+  final Map<String, int> _libVisible = {};
 
   @override
   void initState() {
     super.initState();
     BackHandlers.add(_handleBack);
+    unawaited(cleanOcrTemp());
     final d = ref.read(storyDraftProvider);
     if (d != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -435,6 +343,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     _libSearch.dispose();
     _linkCtrl.dispose();
     _pasteCtrl.dispose();
+    _disposePdfEngine();
+    final ocrToClose = _pdfOcr;
+    _pdfOcr = null;
+    if (ocrToClose != null) unawaited(ocrToClose.close());
     _pdfDoc?.dispose();
     for (final l in _tapRecs.values) {
       for (final r in l) {
@@ -656,13 +568,26 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   // ───────────── وارد کردنِ متن برای خوانش ─────────────
-  List<String> _paras(SavedStory s) => s.text
-      .split(RegExp(r'\n\s*\n'))
-      .map((p) => p.trim())
-      .where((p) => p.isNotEmpty)
-      .toList();
+  List<String> _paras(SavedStory s) {
+    // این تابع در هر build صدا زده می‌شود؛ برای متنِ بلند نتیجه کش می‌شود
+    if (identical(s.text, _parasSrc)) return _parasCache;
+    final out = s.text
+        .split(RegExp(r'\n\s*\n'))
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
+    _parasSrc = s.text;
+    _parasCache = out;
+    return out;
+  }
 
-  void _importForReading(String raw, {bool progressive = false}) {
+  void _importForReading(String raw,
+      {bool progressive = false, String preNote = ''}) {
+    // متنِ بلند (مثلاً کتابِ ۴۰۰ صفحه‌ای) در isolateِ جدا آماده می‌شود تا UI قفل نشود
+    if (!progressive && raw.length >= _kLongTextChars) {
+      unawaited(_importLongForReading(raw, preNote: preNote));
+      return;
+    }
     var sentences = _splitSentences(raw);
     if (sentences.isEmpty) {
       setState(() => _importError = 'متنی برای خوندن پیدا نشد');
@@ -692,6 +617,65 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       words: const [],
       createdAt: DateTime.now(),
     );
+    _beginReading(story, note.isEmpty ? preNote : note,
+        progressive: progressive);
+  }
+
+  /// نسخه‌ی ناهمگامِ متنِ بلند: شکستن به جمله/پاراگراف، تشخیصِ زبان و سطح
+  /// همه در یک isolate انجام می‌شود؛ ترد اصلی فقط نتیجه را می‌گیرد.
+  Future<void> _importLongForReading(String raw, {String preNote = ''}) async {
+    final fallback = _activeLang(ref.read(languageSelectionProvider).targets);
+    if (mounted) {
+      setState(() {
+        _importError = '';
+        _importProgress = 'در حال آماده‌سازیِ متنِ بزرگ...';
+      });
+    }
+    Map<String, Object?> r;
+    try {
+      r = await compute(prepareLongText, <String, Object?>{
+        'raw': raw,
+        'fallback': fallback,
+        'maxSentences': _kMaxImportSentences,
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _importProgress = '';
+          _importError =
+              'آماده‌سازیِ این متن انجام نشد — حافظه‌ی گوشی کم بود؛ متنِ کوتاه‌تری امتحان کن';
+        });
+      }
+      return;
+    }
+    if (!mounted) return;
+    final paras = ((r['paras'] as List?) ?? const []).cast<String>();
+    setState(() => _importProgress = '');
+    if (paras.isEmpty) {
+      setState(() => _importError = 'متنی برای خوندن پیدا نشد');
+      return;
+    }
+    final story = SavedStory(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      title: (r['title'] ?? '').toString(),
+      text: paras.join('\n\n'),
+      langCode: (r['lang'] ?? fallback).toString(),
+      level: (r['level'] ?? 'B1').toString(),
+      contentType: 'reading',
+      words: const [],
+      createdAt: DateTime.now(),
+    );
+    _beginReading(
+      story,
+      r['truncated'] == true
+          ? 'توجه: چون متن زیاد بود، فقط بخشی از اون آماده‌ی خوانش شد'
+          : preNote,
+      progressive: false,
+    );
+  }
+
+  void _beginReading(SavedStory story, String note, {required bool progressive}) {
+    final paras = _paras(story);
     // در حالتِ تدریجی (OCRِ چند عکس) ترجمه‌های پاراگراف‌های بدونِ تغییر حفظ می‌شن
     var keep = 0;
     if (progressive && _reading != null) {
@@ -703,7 +687,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     setState(() {
       _importError = note;
       _error = '';
-      _storyLang = lang;
+      _storyLang = story.langCode;
       _langTouched = true;
       _level = story.level;
       _result = null;
@@ -896,10 +880,16 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   // ───────────── صوتِ آپلودی ─────────────
-  List<String> _sentencesOf(String text) => [
-        for (final p in text.split(RegExp(r'\n\s*\n')))
-          if (p.trim().isNotEmpty) ..._splitSentences(p.trim()),
-      ];
+  List<String> _sentencesOf(String text) {
+    if (identical(text, _sentSrc)) return _sentCache;
+    final out = <String>[
+      for (final p in text.split(RegExp(r'\n\s*\n')))
+        if (p.trim().isNotEmpty) ..._splitSentences(p.trim()),
+    ];
+    _sentSrc = text;
+    _sentCache = out;
+    return out;
+  }
 
   StoryAudioController _ctrlFor(SavedStory s) {
     final sents = _sentencesOf(s.text);
@@ -943,30 +933,39 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     PdfDocHandle? doc;
     try {
       doc = await PdfDocHandle.open(f.bytes);
-      final sentences = <String>[];
+      // متنِ هر صفحه از isolateِ جدا می‌آید؛ اینجا فقط جمع می‌کنیم (شکستن به جمله
+      // بعداً یک‌جا و در isolate انجام می‌شود).
+      final buf = StringBuffer();
       var truncated = false;
-      for (var i = 0; i < doc.pageCount; i++) {
+      final pc = doc.pageCount;
+      for (var i = 0; i < pc; i++) {
         final t = await doc.pageText(i);
-        sentences.addAll(_splitSentences(t));
-        if (mounted) {
-          setState(() => _importProgress = 'صفحه‌ی ${i + 1} از ${doc!.pageCount}...');
+        if (!mounted) return;
+        if (t.isNotEmpty) {
+          buf.write(t);
+          buf.write(' ');
         }
-        if (sentences.length > _kMaxImportSentences) {
+        if (i % 4 == 0 || i == pc - 1) {
+          setState(() => _importProgress = 'صفحه‌ی ${i + 1} از $pc...');
+        }
+        if (buf.length > 6000000) {
           truncated = true;
           break;
         }
       }
       if (!mounted) return;
-      if (sentences.isEmpty) {
+      final all = buf.toString();
+      if (all.trim().isEmpty) {
         setState(() => _importError =
             'متنی از این PDF استخراج نشد — شاید این فایل اسکن/عکسه، نه متنِ واقعی');
         return;
       }
-      _importForReading(sentences.join(' '));
-      if (truncated) {
-        setState(() => _importError =
-            'توجه: چون فایل بزرگ بود، فقط بخشی از متنش خونده و آماده‌ی خوانش شد');
-      }
+      _importForReading(
+        all,
+        preNote: truncated
+            ? 'توجه: چون فایل بزرگ بود، فقط بخشی از متنش خونده و آماده‌ی خوانش شد'
+            : '',
+      );
     } catch (e) {
       if (mounted) {
         setState(() => _importError = _ioError(e,
@@ -1049,6 +1048,24 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     return chunks.join('\n\n');
   }
 
+  /// شناسه‌ی پایدارِ فایل (اندازه + هشِ ۶۴KB اول و آخر) تا اگر همان PDF دوباره
+  /// باز شد، ترجمه‌های قبلی از دیسک برگردند و ترجمه از اول شروع نشود.
+  String _docKeyFor(PickedFile f) {
+    final b = f.bytes;
+    final n = b.length;
+    var h = 0x811c9dc5;
+    void feed(int from, int to) {
+      for (var i = from; i < to; i++) {
+        h ^= b[i];
+        h = (h * 0x01000193) & 0xFFFFFFFF;
+      }
+    }
+
+    feed(0, n < 65536 ? n : 65536);
+    if (n > 131072) feed(n - 65536, n);
+    return 'pdf_${n}_${h.toRadixString(36)}';
+  }
+
   Future<void> _openPdfView() async {
     if (_pdfViewBusy) return;
     List<PickedFile> files;
@@ -1071,197 +1088,174 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         return;
       }
       _closePdfView(notify: false);
+      final key = _docKeyFor(f);
       setState(() {
         _pdfDoc = doc;
         _pdfTitle = f.name;
+        _pdfDocKey = key;
         _pdfIndex = 0;
         _pdfShowOrig = false;
       });
       unawaited(_loadPdfPage(0));
-      // ترجمه‌ی عکسیِ صفحه‌ها خودکار شروع می‌شه (طبقِ زبانِ ترجمه‌ی انتخابی)
-      unawaited(_startPdfImageTranslate(restart: true));
+      // ترجمه‌ی عکسی فقط برای صفحه‌ی فعلی و چند صفحه‌ی بعد شروع می‌شود.
+      // ترجمه‌ی کلِ کتاب فقط با انتخابِ صریحِ کاربر (نوارِ ترجمه) انجام می‌شود.
+      unawaited(_buildPdfEngine(activate: true));
+      unawaited(_bookDisk.trim(maxBytes: 800 * 1024 * 1024, keepDoc: key));
     } catch (_) {
       if (mounted) {
         setState(() => _importError =
-            'این PDF باز نشد — فایل ممکنه خراب یا رمزگذاری‌شده باشه، یا اینترنت قطع باشه');
+            'این PDF باز نشد — فایل ممکنه خراب یا رمزگذاری‌شده باشه، یا حافظه‌ی گوشی کم باشه');
       }
     } finally {
       if (mounted) setState(() => _pdfViewBusy = false);
     }
   }
 
+  void _disposePdfEngine() {
+    final e = _pdfEngine;
+    if (e != null) {
+      e.removeListener(_onPdfEngineChanged);
+      e.dispose();
+    }
+    _pdfEngine = null;
+    _pdfCurTrans = null;
+    _pdfCurTransFor = -1;
+  }
+
   void _closePdfView({bool notify = true}) {
+    _pdfEngineToken++;
+    _disposePdfEngine();
+    final ocr = _pdfOcr;
+    _pdfOcr = null;
+    if (ocr != null) unawaited(ocr.close());
     _pdfDoc?.dispose();
     _pdfDoc = null;
     _pdfImages.clear();
     _pdfTexts.clear();
     _pdfTrans.clear();
-    _pdfTransRun++;
-    _pdfTransImgs.clear();
-    _pdfTransSig.clear();
     _pdfViewLang = null;
-    _pdfAutoTrans = true;
-    _pdfTransRunning = false;
-    _pdfTransNote = '';
+    _pdfDocKey = '';
     _pdfIndex = 0;
     if (notify && mounted) setState(() {});
   }
 
   String _pdfTransSigNow() =>
-      '${(_effectiveTransLangs().toList()..sort()).join(',')}|${_pdfViewLang ?? ''}';
+      'v2|${(_effectiveTransLangs().toList()..sort()).join(',')}|${_pdfViewLang ?? ''}';
 
-  int _pdfReadyCount() {
-    final sig = _pdfTransSigNow();
-    return _pdfTransSig.values.where((v) => v == sig).length;
-  }
-
-  /// بعد از عوض‌شدنِ زبانِ ترجمه، عکسِ صفحه‌ها دوباره براساسِ زبانِ جدید ساخته می‌شه.
+  /// بعد از عوض‌شدنِ زبانِ ترجمه، موتورِ جدیدی با امضای جدید ساخته می‌شود
+  /// (اگر قبلاً برای همین زبان ترجمه شده بود، صفحه‌ها از دیسک فوراً برمی‌گردند).
   void _restartPdfTransIfOpen() {
     if (_pdfDoc == null) return;
-    _pdfAutoTrans = true;
     Future.microtask(() {
       if (mounted && _pdfDoc != null) {
-        unawaited(_startPdfImageTranslate(restart: true));
+        unawaited(_buildPdfEngine(activate: true));
       }
     });
   }
 
-  /// ترجمه‌ی عکسیِ PDF: از صفحه‌ی فعلی شروع می‌کنه و هر صفحه‌ای که آماده شد
-  /// همون لحظه جایگزینِ عکسِ اصلی می‌شه (منتظرِ تموم‌شدنِ کل فایل نمی‌مونه).
-  Future<void> _startPdfImageTranslate({bool restart = false}) async {
+  Future<void> _buildPdfEngine({bool activate = true}) async {
     final doc = _pdfDoc;
     if (doc == null) return;
-    if (_pdfTransRunning && !restart) {
-      setState(() {
-        _pdfTransRun++;
-        _pdfTransRunning = false;
-        _pdfAutoTrans = false;
-        _pdfTransNote = 'متوقف شد';
-      });
+    final token = ++_pdfEngineToken;
+    _disposePdfEngine();
+    final lang = _readingLang();
+    final style = Theme.of(context).textTheme.bodyMedium;
+    final eng = PageTranslateEngine(
+      docKey: _pdfDocKey,
+      sig: _pdfTransSigNow(),
+      pageCount: doc.pageCount,
+      disk: _bookDisk,
+      worker: (i) => _translatePdfPage(doc, i, lang, style),
+    );
+    await eng.init();
+    if (!mounted || _pdfDoc != doc || token != _pdfEngineToken) {
+      eng.dispose();
       return;
     }
-    final run = ++_pdfTransRun;
-    final sig = _pdfTransSigNow();
-    setState(() {
-      _pdfTransRunning = true;
-      _pdfTransNote = '';
-      _pdfShowTransImg = true;
-    });
-    bool alive() => mounted && _pdfDoc == doc && _pdfTransRun == run;
-    final lang = _readingLang();
-    final n = doc.pageCount;
-    final failed = <int>{};
-    bool pending(int i) =>
-        !(_pdfTransImgs.containsKey(i) && _pdfTransSig[i] == sig) &&
-        !failed.contains(i);
-    // اول صفحه‌ای که کاربر الان بازش کرده، بعد بقیه (به ترتیب)
-    int? nextPending() {
-      for (var k = 0; k < n; k++) {
-        final i = (_pdfIndex + k) % n;
-        if (pending(i)) return i;
-      }
-      return null;
-    }
+    eng.addListener(_onPdfEngineChanged);
+    setState(() => _pdfEngine = eng);
+    if (activate) eng.activate(page: _pdfIndex);
+    unawaited(_refreshPdfTrans());
+  }
 
-    OcrSession? ocr;
+  /// ترجمه‌ی کاملِ «یک» صفحه: رندر ← OCR ← ترجمه‌ی بلوک‌ها ← ساختنِ عکس.
+  /// null = صفحه متنی ندارد. خطای PageTranslateFatal = توقفِ کلِ موتور.
+  Future<Uint8List?> _translatePdfPage(
+      PdfDocHandle doc, int i, String lang, TextStyle? style) async {
+    if (!mounted || _pdfDoc != doc) throw StateError('closed');
+    final ocr = _pdfOcr ??= await OcrSession.open(lang);
+    final svc = ref.read(translationServiceProvider);
+    final ai = ref.read(aiSettingsProvider);
+    final base = await doc.renderPage(i, scale: 2.0);
+    List<OcrBlock> blocks;
     try {
-      ocr = await OcrSession.open(lang);
-      final svc = ref.read(translationServiceProvider);
-      final ai = ref.read(aiSettingsProvider);
-      final style = Theme.of(context).textTheme.bodyMedium;
-      while (true) {
-        if (!alive()) return;
-        final i = nextPending();
-        if (i == null) break;
-        setState(() => _pdfTransNote =
-            'در حال ترجمه‌ی صفحه‌ی ${i + 1} از $n (بار اول ممکنه کمی طول بکشه)...');
-        try {
-          final base = await doc.renderPage(i, scale: 2.0);
-          if (!alive()) return;
-          final blocks = await ocr.recognizeBlocks(base);
-          if (!alive()) return;
-          if (blocks.isEmpty) {
-            // صفحه متنی نداره (فقط عکسه) → همون عکسِ اصلی
-            setState(() {
-              _pdfTransImgs[i] = base;
-              _pdfTransSig[i] = sig;
-            });
-            continue;
-          }
-          final pageLang =
-              _detectLang(blocks.map((b) => b.text).join(' '), lang);
-          final targets =
-              _effectiveTransLangs().where((l) => l != pageLang).toList();
-          if (targets.isEmpty) {
-            setState(() => _pdfTransNote =
-                'زبانِ ترجمه با زبانِ متنِ صفحه یکیه — از تنظیماتِ ترجمه یه زبانِ دیگه انتخاب کن');
-            return;
-          }
-          final target = (_pdfViewLang != null && targets.contains(_pdfViewLang))
-              ? _pdfViewLang!
-              : targets.first;
-          final trs = await runWithConcurrencyLimit<OcrBlock, String>(
-            blocks,
-            3,
-            (b, _) async {
-              try {
-                final t = (await svc.translate(
-                  text: b.text,
-                  targetLang: target,
-                  sourceLang: pageLang,
-                  aiSettings: ai,
-                ))
-                    .trim();
-                return t == b.text.trim() ? '' : t;
-              } catch (_) {
-                return '';
-              }
-            },
-          );
-          if (!alive()) return;
-          if (trs.every((t) => t.isEmpty)) {
-            failed.add(i);
-            setState(() => _pdfTransNote =
-                'ترجمه‌ی صفحه‌ی ${i + 1} انجام نشد — اینترنت و تنظیماتِ ترجمه رو چک کن');
-            continue;
-          }
-          final out = await renderTranslatedPage(
-            pageImage: base,
-            blocks: blocks,
-            translations: trs,
-            rtl: const {'fa', 'ar', 'ur', 'he'}.contains(target),
-            baseStyle: style,
-          );
-          if (!alive()) return;
-          setState(() {
-            _pdfTransImgs[i] = out;
-            _pdfTransSig[i] = sig;
-          });
-        } catch (e) {
-          failed.add(i);
-          if (e is UnsupportedError) {
-            if (alive()) {
-              setState(() => _importError = _ioError(e, ''));
-            }
-            return;
-          }
-          // خطای یک صفحه نباید بقیه رو متوقف کنه
-        }
-      }
-      if (alive()) {
-        setState(() => _pdfTransNote = 'ترجمه‌ی عکسیِ همه‌ی صفحه‌ها تموم شد ✓');
-      }
-    } catch (e) {
-      if (mounted && _pdfTransRun == run) {
-        setState(() => _pdfTransNote =
-            _ioError(e, 'ترجمه‌ی عکسی انجام نشد — اینترنتت رو چک کن و دوباره امتحان کن'));
-      }
-    } finally {
-      await ocr?.close();
-      if (mounted && _pdfTransRun == run) {
-        setState(() => _pdfTransRunning = false);
-      }
+      blocks = await ocr.recognizeBlocks(base);
+    } on UnsupportedError catch (e) {
+      throw PageTranslateFatal(_ioError(e, 'OCR برای این زبان پشتیبانی نمی‌شه'));
     }
+    if (blocks.isEmpty) return null; // فقط عکسه → همان عکسِ اصلی
+    final pageLang = _detectLang(blocks.map((b) => b.text).join(' '), lang);
+    final targets =
+        _effectiveTransLangs().where((l) => l != pageLang).toList();
+    if (targets.isEmpty) {
+      throw const PageTranslateFatal(
+          'زبانِ ترجمه با زبانِ متنِ صفحه یکیه — از تنظیماتِ ترجمه یه زبانِ دیگه انتخاب کن');
+    }
+    final target = (_pdfViewLang != null && targets.contains(_pdfViewLang))
+        ? _pdfViewLang!
+        : targets.first;
+    final trs = await runWithConcurrencyLimit<OcrBlock, String>(
+      blocks,
+      3,
+      (b, _) async {
+        try {
+          final t = (await svc.translate(
+            text: b.text,
+            targetLang: target,
+            sourceLang: pageLang,
+            aiSettings: ai,
+          ))
+              .trim();
+          return t == b.text.trim() ? '' : t;
+        } catch (_) {
+          return '';
+        }
+      },
+    );
+    if (trs.every((t) => t.isEmpty)) {
+      throw StateError('translate-failed'); // موتور تا ۳ بار دوباره تلاش می‌کند
+    }
+    return renderTranslatedPage(
+      pageImage: base,
+      blocks: blocks,
+      translations: trs,
+      rtl: const {'fa', 'ar', 'ur', 'he'}.contains(target),
+      baseStyle: style,
+    );
+  }
+
+  void _onPdfEngineChanged() {
+    if (!mounted) return;
+    final e = _pdfEngine;
+    if (e == null) return;
+    if (_pdfCurTransFor != _pdfIndex &&
+        e.statusOf(_pdfIndex) == PageStatus.done) {
+      unawaited(_refreshPdfTrans());
+    }
+  }
+
+  /// عکسِ ترجمه‌شده‌ی صفحه‌ی فعلی را (از RAM یا دیسک) برای نمایش می‌آورد.
+  Future<void> _refreshPdfTrans() async {
+    final e = _pdfEngine;
+    final idx = _pdfIndex;
+    if (e == null) return;
+    final img = await e.imageFor(idx);
+    if (!mounted || _pdfEngine != e || _pdfIndex != idx) return;
+    if (img == null && _pdfCurTrans == null) return;
+    setState(() {
+      _pdfCurTrans = img;
+      _pdfCurTransFor = img == null ? -1 : idx;
+    });
   }
 
   Future<void> _loadPdfPage(int i) async {
@@ -1270,10 +1264,23 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     setState(() {
       _pdfIndex = i;
       _pdfPageBusy = true;
+      _pdfCurTrans = null;
+      _pdfCurTransFor = -1;
     });
+    _pdfEngine?.focusOn(i);
+    unawaited(_refreshPdfTrans());
     try {
       if (!_pdfImages.containsKey(i)) {
         _pdfImages[i] = await doc.renderPage(i);
+        // حافظه: فقط چند صفحه‌ی نزدیک به صفحه‌ی فعلی نگه داشته می‌شود
+        while (_pdfImages.length > _kPdfKeepImages) {
+          var far = _pdfImages.keys.first;
+          for (final k in _pdfImages.keys) {
+            if ((k - i).abs() > (far - i).abs()) far = k;
+          }
+          if (far == i) break;
+          _pdfImages.remove(far);
+        }
         if (mounted && _pdfDoc == doc && _pdfIndex == i) setState(() {});
       }
       if (!_pdfTexts.containsKey(i)) {
@@ -1283,13 +1290,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       _pdfTexts[i] ??= '';
     } finally {
       if (mounted && _pdfDoc == doc) setState(() => _pdfPageBusy = false);
-    }
-    if (mounted &&
-        _pdfDoc == doc &&
-        _pdfAutoTrans &&
-        !_pdfTransRunning &&
-        _pdfTransSig[i] != _pdfTransSigNow()) {
-      unawaited(_startPdfImageTranslate(restart: true));
     }
   }
 
@@ -1923,8 +1923,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final doc = _pdfDoc!;
     final i = _pdfIndex;
     final img = _pdfImages[i];
-    final tImg =
-        _pdfTransSig[i] == _pdfTransSigNow() ? _pdfTransImgs[i] : null;
+    final tImg = _pdfCurTransFor == i ? _pdfCurTrans : null;
     final showT = tImg != null && _pdfShowTransImg;
     final orig = _pdfTexts[i] ?? '';
     final lang = _readingLang();
@@ -1974,26 +1973,22 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             ),
           ),
           const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: HopeTextAction(
-                  label: _pdfTransRunning
-                      ? '⏹ توقفِ ترجمه‌ی عکسی'
-                      : '🌐 ترجمه‌ی عکسیِ صفحه‌ها (از همین صفحه)',
-                  color: _pdfTransRunning ? c.rose : c.teal,
-                  onTap: _startPdfImageTranslate,
-                ),
+          if (_pdfEngine != null)
+            BookTranslateBar(
+              key: ValueKey('bk-${identityHashCode(_pdfEngine)}'),
+              engine: _pdfEngine!,
+              currentPage: i,
+            ),
+          if (tImg != null)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: HopeTextAction(
+                label: _pdfShowTransImg ? '🖼 دیدنِ اصلی' : '🌐 دیدنِ ترجمه',
+                color: c.teal,
+                onTap: () =>
+                    setState(() => _pdfShowTransImg = !_pdfShowTransImg),
               ),
-              if (tImg != null)
-                HopeTextAction(
-                  label: _pdfShowTransImg ? '🖼 دیدنِ اصلی' : '🌐 دیدنِ ترجمه',
-                  color: c.teal,
-                  onTap: () =>
-                      setState(() => _pdfShowTransImg = !_pdfShowTransImg),
-                ),
-            ],
-          ),
+            ),
           if (viewTargets.length > 1)
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
@@ -2020,14 +2015,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                       },
                     ),
                 ],
-              ),
-            ),
-          if (_pdfTransRunning || _pdfTransNote.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                '${_pdfReadyCount() == 0 ? '' : 'آماده: ${_pdfReadyCount()} از ${doc.pageCount} صفحه — '}$_pdfTransNote',
-                style: TextStyle(color: c.inkSoft, fontSize: 11.5),
               ),
             ),
           const SizedBox(height: 4),
@@ -2290,11 +2277,20 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         .toList();
     final bar = _audioBar(s);
     final ctrl = _audioCtrls[s.id];
-    return StoryReaderPanel(
+    // کتاب‌های بلند صفحه‌صفحه نشان داده می‌شوند؛ ساختنِ هزاران پاراگراف یک‌جا UI را قفل می‌کرد
+    final allParas = _paras(s);
+    final bigBook = allParas.length > _kLibParaPage + 10;
+    final shown = bigBook
+        ? ((_libVisible[s.id] ?? _kLibParaPage) > allParas.length
+            ? allParas.length
+            : (_libVisible[s.id] ?? _kLibParaPage))
+        : allParas.length;
+    final panel = StoryReaderPanel(
       key: ValueKey('lib-${s.id}'),
       storyId: s.id,
       title: s.title,
-      text: s.text,
+      text: bigBook ? allParas.take(shown).join('\n\n') : s.text,
+      fullText: s.text,
       langCode: s.langCode,
       targetLangs: langs,
       paraTranslations: s.translations,
@@ -2308,6 +2304,21 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       onNotesChanged: (v) => _libNotes(s.id, v),
       onParagraphRetranslated: (lang, idx, t) =>
           _libParaTr(s.id, lang, idx, t),
+    );
+    if (!bigBook || shown >= allParas.length) return panel;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        panel,
+        Center(
+          child: HopeTextAction(
+            label: 'نمایش بیشتر ($shown از ${allParas.length} پاراگراف)',
+            color: c.teal,
+            onTap: () => setState(
+                () => _libVisible[s.id] = shown + _kLibParaPage),
+          ),
+        ),
+      ],
     );
   }
 

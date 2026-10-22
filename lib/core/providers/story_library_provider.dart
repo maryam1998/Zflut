@@ -3,9 +3,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../storage/big_story_store.dart';
 import '../storage/local_storage.dart';
 
 const String _kStoriesKey = 'zflut-saved-stories-v1';
+
+/// داستان‌های بلندتر از این (حرف) بدنه‌شان در BigStoryStore نگه‌داری می‌شود، نه در prefs.
+const int _kBigTextChars = 120000;
+const int _kPreviewChars = 3000;
 
 /// داستانِ ذخیره‌شده در «کتابخانه‌ی من».
 @immutable
@@ -28,6 +33,9 @@ class SavedStory {
   /// علاقه‌مندی (ستاره)
   final bool favorite;
 
+  /// بدنه (متن + ترجمه‌ها) در BigStoryStore است و در prefs فقط پیش‌نمایش مانده.
+  final bool big;
+
   const SavedStory({
     required this.id,
     required this.title,
@@ -40,6 +48,7 @@ class SavedStory {
     this.translations = const {},
     this.notes = '',
     this.favorite = false,
+    this.big = false,
   });
 
   SavedStory copyWith({
@@ -49,6 +58,7 @@ class SavedStory {
     String? langCode,
     String? notes,
     bool? favorite,
+    bool? big,
   }) =>
       SavedStory(
         id: id,
@@ -62,7 +72,26 @@ class SavedStory {
         translations: translations ?? this.translations,
         notes: notes ?? this.notes,
         favorite: favorite ?? this.favorite,
+        big: big ?? this.big,
       );
+
+  /// نسخه‌ی سبک برای prefs: بدونِ متنِ کامل و ترجمه‌ها (آن‌ها در BigStoryStore‌اند).
+  Map<String, dynamic> toLeanJson() => {
+        'id': id,
+        'title': title,
+        'text': text.length > _kPreviewChars
+            ? text.substring(0, _kPreviewChars)
+            : text,
+        'langCode': langCode,
+        'level': level,
+        'contentType': contentType,
+        'words': words,
+        'createdAt': createdAt.toIso8601String(),
+        'translations': const <String, dynamic>{},
+        'notes': notes,
+        'favorite': favorite,
+        'big': true,
+      };
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -92,6 +121,7 @@ class SavedStory {
             DateTime.tryParse((j['createdAt'] ?? '').toString()) ?? DateTime.now(),
         notes: (j['notes'] ?? '').toString(),
         favorite: j['favorite'] == true,
+        big: j['big'] == true,
         translations: {
           if (j['translations'] is Map)
             for (final e in (j['translations'] as Map).entries)
@@ -105,7 +135,21 @@ class SavedStory {
 class StoryLibraryNotifier extends StateNotifier<List<SavedStory>> {
   final LocalStorage _storage;
 
-  StoryLibraryNotifier(this._storage) : super(_read(_storage));
+  /// شناسه‌ی داستان‌های بلندی که هنوز بدنه‌شان از دیتابیس نیامده (فعلاً فقط پیش‌نمایش دارند).
+  /// تا آن موقع بدنه‌ی آن‌ها هرگز بازنویسی نمی‌شود.
+  final Set<String> _pending = <String>{};
+
+  /// امضای آخرین بدنه‌ی نوشته‌شده برای هر داستان (برای ننوشتنِ دوباره‌ی بی‌تغییرها).
+  final Map<String, int> _bodySig = <String, int>{};
+
+  Future<void> _chain = Future<void>.value();
+
+  StoryLibraryNotifier(this._storage) : super(_read(_storage)) {
+    for (final s in state) {
+      if (s.big) _pending.add(s.id);
+    }
+    if (_pending.isNotEmpty) unawaited(_hydrate());
+  }
 
   static List<SavedStory> _read(LocalStorage s) {
     final raw = s.readJson(_kStoriesKey)['items'];
@@ -121,10 +165,66 @@ class StoryLibraryNotifier extends StateNotifier<List<SavedStory>> {
     return out;
   }
 
+  static int _sigOf(SavedStory s) {
+    var n = 0;
+    for (final l in s.translations.values) {
+      for (final t in l) {
+        n += t.length + 1;
+      }
+    }
+    return Object.hash(s.text.length, s.text.hashCode, n, s.translations.length);
+  }
+
+  /// بدنه‌ی داستان‌های بلند را بعد از باز شدنِ برنامه (بدونِ مسدودکردنِ شروع) برمی‌گرداند.
+  Future<void> _hydrate() async {
+    for (final id in _pending.toList()) {
+      if (!mounted) return;
+      final body = await BigStoryStore.instance.get(id);
+      if (!mounted) return;
+      if (body == null) continue; // بدنه نیست → پیش‌نمایش می‌ماند و بازنویسی نمی‌شود
+      final text = (body['text'] ?? '').toString();
+      final tr = body['translations'];
+      final translations =
+          tr is Map<String, List<String>> ? tr : const <String, List<String>>{};
+      state = [
+        for (final e in state)
+          e.id == id ? e.copyWith(text: text, translations: translations) : e,
+      ];
+      final cur = state.where((e) => e.id == id);
+      if (cur.isNotEmpty) _bodySig[id] = _sigOf(cur.first);
+      _pending.remove(id);
+    }
+  }
+
   void _set(List<SavedStory> next) {
     state = next;
-    unawaited(_storage.writeJson(
-        _kStoriesKey, {'items': next.map((e) => e.toJson()).toList()}));
+    final snapshot = next;
+    _chain = _chain.then((_) => _persist(snapshot)).catchError((_) {});
+  }
+
+  /// ذخیره‌ی پیاپی و به‌ترتیب. داستانِ بلند اول در BigStoryStore نوشته می‌شود و
+  /// فقط اگر نوشتن موفق بود نسخه‌ی سبک در prefs می‌ماند؛ وگرنه همان روشِ قدیمی (امن).
+  Future<void> _persist(List<SavedStory> list) async {
+    final items = <Map<String, dynamic>>[];
+    for (final s in list) {
+      final offload = s.big || s.text.length > _kBigTextChars;
+      if (!offload) {
+        items.add(s.toJson());
+        continue;
+      }
+      if (_pending.contains(s.id)) {
+        items.add(s.toLeanJson()); // بدنه دست‌نخورده می‌ماند
+        continue;
+      }
+      final sig = _sigOf(s);
+      var ok = _bodySig[s.id] == sig;
+      if (!ok) {
+        ok = await BigStoryStore.instance.put(s.id, s.text, s.translations);
+        if (ok) _bodySig[s.id] = sig;
+      }
+      items.add(ok ? s.toLeanJson() : s.toJson());
+    }
+    await _storage.writeJson(_kStoriesKey, {'items': items});
   }
 
   /// جدیدترین اول.
@@ -138,7 +238,12 @@ class StoryLibraryNotifier extends StateNotifier<List<SavedStory>> {
           e.id == id ? e.copyWith(favorite: !e.favorite) : e,
       ]);
 
-  void remove(String id) => _set(state.where((s) => s.id != id).toList());
+  void remove(String id) {
+    _pending.remove(id);
+    _bodySig.remove(id);
+    unawaited(BigStoryStore.instance.delete(id));
+    _set(state.where((s) => s.id != id).toList());
+  }
 }
 
 final storyLibraryProvider =

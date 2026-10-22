@@ -7,6 +7,7 @@
 //   • OCR عکس     : google_mlkit_text_recognition (روی خودِ گوشی، بدونِ اینترنت)
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -343,38 +344,30 @@ class OcrSession {
   }
 }
 
-/// سندِ PDF: متن با Syncfusion، عکسِ صفحه با pdfx.
+/// سندِ PDF: متن با Syncfusion (در یک isolateِ جدا)، عکسِ صفحه با pdfx.
+///
+/// باز کردنِ یک PDFِ ۴۰۰ صفحه‌ای با Syncfusion روی ترد اصلی چند ثانیه UI را قفل
+/// می‌کرد (ANR). حالا تجزیه‌ی PDF و استخراجِ متنِ هر صفحه کاملاً در یک isolate
+/// جدا انجام می‌شود و UI روان می‌ماند.
 class PdfDocHandle {
-  final sf.PdfDocument _text;
+  final _PdfTextWorker _text;
   final pdfx.PdfDocument _img;
   PdfDocHandle._(this._text, this._img);
 
   int get pageCount => _img.pagesCount;
 
   static Future<PdfDocHandle> open(Uint8List bytes) async {
-    final t = sf.PdfDocument(inputBytes: bytes);
     final i = await pdfx.PdfDocument.openData(bytes);
-    return PdfDocHandle._(t, i);
+    try {
+      final t = await _PdfTextWorker.spawn(bytes);
+      return PdfDocHandle._(t, i);
+    } catch (e) {
+      await i.close();
+      rethrow;
+    }
   }
 
-  Future<String> pageText(int pageIndex) async {
-    final raw = sf.PdfTextExtractor(_text)
-        .extractText(startPageIndex: pageIndex, endPageIndex: pageIndex);
-    return _normalizePdfText(raw);
-  }
-
-  /// خط‌شکستن‌های وسطِ جمله حذف می‌شن (هر کلمه خطِ جدا نشه)؛
-  /// خط خالی = پاراگراف می‌مونه. خط‌تیره‌ی آخرِ سطر هم به کلمه وصل می‌شه.
-  static String _normalizePdfText(String raw) {
-    var t = raw.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
-    t = t.replaceAll(RegExp(r'[\u00A0\t ]+'), ' ');
-    t = t.replaceAllMapped(
-        RegExp(r'(\p{L})-\n(\p{Ll})', unicode: true), (m) => '${m[1]}${m[2]}');
-    t = t.replaceAll(RegExp(r'\n[ ]*\n+'), '\u0002');
-    t = t.replaceAll(RegExp(r'[ ]*\n[ ]*'), ' ');
-    t = t.replaceAll('\u0002', '\n\n');
-    return t.replaceAll(RegExp(r' {2,}'), ' ').trim();
-  }
+  Future<String> pageText(int pageIndex) => _text.pageText(pageIndex);
 
   Future<Uint8List> renderPage(int pageIndex, {double scale = 1.6}) async {
     final page = await _img.getPage(pageIndex + 1);
@@ -402,4 +395,164 @@ class PdfDocHandle {
       _img.close();
     } catch (_) {}
   }
+}
+
+/// خط‌شکستن‌های وسطِ جمله حذف می‌شن (هر کلمه خطِ جدا نشه)؛
+/// خط خالی = پاراگراف می‌مونه. خط‌تیره‌ی آخرِ سطر هم به کلمه وصل می‌شه.
+String _normalizePdfText(String raw) {
+  var t = raw.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+  t = t.replaceAll(RegExp(r'[\u00A0\t ]+'), ' ');
+  t = t.replaceAllMapped(
+      RegExp(r'(\p{L})-\n(\p{Ll})', unicode: true), (m) => '${m[1]}${m[2]}');
+  t = t.replaceAll(RegExp(r'\n[ ]*\n+'), '\u0002');
+  t = t.replaceAll(RegExp(r'[ ]*\n[ ]*'), ' ');
+  t = t.replaceAll('\u0002', '\n\n');
+  return t.replaceAll(RegExp(r' {2,}'), ' ').trim();
+}
+
+/// isolateِ دائمی که PDF را یک‌بار باز می‌کند و متنِ صفحه‌ها را بر حسبِ درخواست می‌دهد.
+class _PdfTextWorker {
+  final Isolate _isolate;
+  final SendPort _cmd;
+  final ReceivePort _resp;
+  final Completer<String?> _openAck = Completer<String?>();
+  final Map<int, Completer<String>> _pending = <int, Completer<String>>{};
+  int _nextId = 0;
+  bool _closed = false;
+
+  _PdfTextWorker._(this._isolate, this._cmd, this._resp) {
+    _resp.listen((dynamic m) {
+      if (m is! List || m.isEmpty) return;
+      if (m[0] == 'opened') {
+        if (!_openAck.isCompleted) {
+          _openAck.complete(m.length > 1 && m[1] != null ? m[1].toString() : null);
+        }
+        return;
+      }
+      if (m.length == 3 && m[0] is int) {
+        final c = _pending.remove(m[0] as int);
+        if (c == null || c.isCompleted) return;
+        c.complete((m[1] ?? '').toString());
+      }
+    });
+  }
+
+  static Future<_PdfTextWorker> spawn(Uint8List bytes) async {
+    final ready = ReceivePort();
+    final iso = await Isolate.spawn<SendPort>(_pdfTextMain, ready.sendPort);
+    SendPort cmd;
+    try {
+      final first = await ready.first.timeout(const Duration(seconds: 20));
+      cmd = first as SendPort;
+    } catch (e) {
+      iso.kill(priority: Isolate.immediate);
+      ready.close();
+      rethrow;
+    }
+    ready.close();
+    final w = _PdfTextWorker._(iso, cmd, ReceivePort());
+    cmd.send(<Object?>[
+      'open',
+      TransferableTypedData.fromList(<TypedData>[bytes]),
+      w._resp.sendPort,
+    ]);
+    String? err;
+    try {
+      err = await w._openAck.future.timeout(const Duration(seconds: 90));
+    } catch (e) {
+      w.dispose();
+      rethrow;
+    }
+    if (err != null) {
+      w.dispose();
+      throw StateError(err);
+    }
+    return w;
+  }
+
+  Future<String> pageText(int index) {
+    if (_closed) return Future<String>.value('');
+    final id = _nextId++;
+    final c = Completer<String>();
+    _pending[id] = c;
+    _cmd.send(<Object?>['text', id, index]);
+    return c.future.timeout(const Duration(seconds: 60), onTimeout: () {
+      _pending.remove(id);
+      return '';
+    });
+  }
+
+  void dispose() {
+    if (_closed) return;
+    _closed = true;
+    for (final c in _pending.values) {
+      if (!c.isCompleted) c.complete('');
+    }
+    _pending.clear();
+    try {
+      _cmd.send(<Object?>['close']);
+    } catch (_) {}
+    _isolate.kill(priority: Isolate.beforeNextEvent);
+    _resp.close();
+  }
+}
+
+/// نقطه‌ی ورودیِ isolate (باید top-level باشد).
+void _pdfTextMain(SendPort ready) {
+  final port = ReceivePort();
+  ready.send(port.sendPort);
+  sf.PdfDocument? doc;
+  SendPort? reply;
+  port.listen((dynamic m) {
+    if (m is! List || m.isEmpty) return;
+    final op = m[0];
+    if (op == 'open') {
+      reply = m[2] as SendPort;
+      try {
+        final data =
+            (m[1] as TransferableTypedData).materialize().asUint8List();
+        doc = sf.PdfDocument(inputBytes: data);
+        reply!.send(<Object?>['opened', null]);
+      } catch (e) {
+        reply?.send(<Object?>['opened', e.toString()]);
+      }
+    } else if (op == 'text') {
+      final id = m[1] as int;
+      final idx = m[2] as int;
+      final d = doc;
+      reply?.send(<Object?>[id, d == null ? '' : _safeExtract(d, idx), null]);
+    } else if (op == 'close') {
+      try {
+        doc?.dispose();
+      } catch (_) {}
+      port.close();
+    }
+  });
+}
+
+String _safeExtract(sf.PdfDocument d, int idx) {
+  try {
+    final raw = sf.PdfTextExtractor(d)
+        .extractText(startPageIndex: idx, endPageIndex: idx);
+    return _normalizePdfText(raw);
+  } catch (_) {
+    return '';
+  }
+}
+
+/// فایل‌های موقتِ OCR که از اجراهای قبلی (کرش/ANR) مانده‌اند پاک می‌شوند.
+Future<void> cleanOcrTemp() async {
+  try {
+    final tmp = await getTemporaryDirectory();
+    final cutoff = DateTime.now().subtract(const Duration(minutes: 30));
+    await for (final e in tmp.list(followLinks: false)) {
+      if (e is! File) continue;
+      final n = e.path.split(Platform.pathSeparator).last;
+      if (!(n.startsWith('ocr_') || n.startsWith('ocrb_'))) continue;
+      try {
+        final st = await e.stat();
+        if (st.modified.isBefore(cutoff)) await e.delete();
+      } catch (_) {}
+    }
+  } catch (_) {}
 }
