@@ -991,6 +991,18 @@ public class MagnifierService extends Service {
         wordSpeak = speakBtn();
         wordSpeak.setOnClickListener(v -> toggleSpeak(wordSpeak, cardWord, selSrc));
         top.addView(wordSpeak);
+        TextView cardX = headBtn("\u2715", v -> closeWordCard());
+        cardX.setTextSize(15);
+        cardX.setMinWidth(dp(34));
+        cardX.setMinHeight(dp(34));
+        GradientDrawable xbg = new GradientDrawable();
+        xbg.setShape(GradientDrawable.OVAL);
+        xbg.setColor(Color.parseColor("#1AFFFFFF"));
+        xbg.setStroke(dp(1), Color.parseColor("#47FFFFFF"));
+        cardX.setBackground(xbg);
+        LinearLayout.LayoutParams xlp = new LinearLayout.LayoutParams(dp(34), dp(34));
+        xlp.leftMargin = dp(4);
+        top.addView(cardX, xlp);
         wordCard.addView(top);
 
         wordRows = new LinearLayout(this);
@@ -1005,6 +1017,14 @@ public class MagnifierService extends Service {
             lp.rightMargin = dp(2);
             wordCard.addView(b, lp);
         }
+    }
+
+    /** ✕ی کادرِ لغت: فقط کادرِ «ذخیره برای داستان بعدی / گرامر / لایتنر» را می‌بندد؛ پنجره‌ی ترجمه می‌ماند. */
+    private void closeWordCard() {
+        cardSeq++;
+        stopSpeech();
+        if (wordCard != null) wordCard.setVisibility(View.GONE);
+        placePopup();
     }
 
     private void refreshCardButtons() {
@@ -1297,39 +1317,96 @@ public class MagnifierService extends Service {
         }
     }
 
-    /** ✕ی خروج (مثلِ حبابِ ترجمه‌ی زنده): ذره‌بین را رویش رها کنید. */
+    /** دایره‌ی ✕ی بستن: شیشه‌ای تیره با حلقه‌ی تپنده؛ وقتی حباب/ذره‌بین نزدیک می‌شود بزرگ و قرمز می‌شود. */
     private static final class CloseTargetView extends View {
         private final float d;
+        private final Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint pulse = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint cross = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private boolean hot;
+        private final android.animation.ArgbEvaluator argb = new android.animation.ArgbEvaluator();
+        private float hot = 0f, t = 0f;
+        private android.animation.ValueAnimator hotAnim, pulseAnim;
 
         CloseTargetView(Context c) {
             super(c);
             d = c.getResources().getDisplayMetrics().density;
             setLayerType(LAYER_TYPE_SOFTWARE, null);
             ring.setStyle(Paint.Style.STROKE);
-            ring.setStrokeWidth(1.5f * d);
-            ring.setColor(0xE6FFFFFF);
+            ring.setStrokeWidth(1.4f * d);
+            pulse.setStyle(Paint.Style.STROKE);
+            pulse.setStrokeWidth(1.6f * d);
             cross.setStyle(Paint.Style.STROKE);
             cross.setStrokeCap(Paint.Cap.ROUND);
-            cross.setStrokeWidth(2.4f * d);
+            cross.setStrokeWidth(2.5f * d);
             cross.setColor(Color.WHITE);
         }
 
-        void setHot(boolean h) { hot = h; invalidate(); }
+        void setHot(boolean h) {
+            if (hotAnim != null) hotAnim.cancel();
+            hotAnim = android.animation.ValueAnimator.ofFloat(hot, h ? 1f : 0f);
+            hotAnim.setDuration(150);
+            hotAnim.setInterpolator(new android.view.animation.OvershootInterpolator(1.6f));
+            hotAnim.addUpdateListener(a -> { hot = Math.max(0f, (Float) a.getAnimatedValue()); invalidate(); });
+            hotAnim.start();
+        }
+
+        @Override protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            pulseAnim = android.animation.ValueAnimator.ofFloat(0f, 1f);
+            pulseAnim.setDuration(1300);
+            pulseAnim.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+            pulseAnim.addUpdateListener(a -> { t = (Float) a.getAnimatedValue(); invalidate(); });
+            if (getVisibility() == VISIBLE) pulseAnim.start();
+        }
+
+        @Override protected void onVisibilityChanged(View v, int vis) {
+            super.onVisibilityChanged(v, vis);
+            if (pulseAnim == null) return;
+            if (vis == VISIBLE) { if (!pulseAnim.isStarted()) pulseAnim.start(); }
+            else pulseAnim.cancel();
+        }
+
+        @Override protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            if (hotAnim != null) { hotAnim.cancel(); hotAnim = null; }
+            if (pulseAnim != null) { pulseAnim.cancel(); pulseAnim = null; }
+        }
 
         @Override protected void onDraw(Canvas cv) {
             float cx = getWidth() / 2f, cy = getHeight() / 2f;
-            float sc = hot ? 1.22f : 1f;
+            float r = 26f * d;
+
+            // حلقه‌ی تپنده‌ی بیرونی (راهنمای «اینجا رها کن»)
+            float pr = r + (14f * d) * t;
+            pulse.setColor((Integer) argb.evaluate(hot, 0xFFFFFFFF, COLOR_REC));
+            pulse.setAlpha((int) (110 * (1f - t)));
+            cv.drawCircle(cx, cy, pr, pulse);
+
+            float sc = 1f + 0.22f * hot;
             cv.save();
             cv.scale(sc, sc, cx, cy);
-            fill.setColor(hot ? COLOR_REC : 0xE61C2541);
-            fill.setShadowLayer(8f * d, 0f, 2f * d, 0x66000000);
-            cv.drawCircle(cx, cy, 26f * d, fill);
-            cv.drawCircle(cx, cy, 25f * d, ring);
-            float k = 7.5f * d;
+
+            // هاله‌ی قرمز هنگامِ نزدیک شدن
+            if (hot > 0.02f) {
+                glow.setColor(COLOR_REC);
+                glow.setAlpha((int) (70 * hot));
+                cv.drawCircle(cx, cy, r + 6f * d, glow);
+            }
+
+            int top = (Integer) argb.evaluate(hot, 0xF0333F6E, 0xFFEF5350);
+            int bot = (Integer) argb.evaluate(hot, 0xF0141C38, 0xFFC62828);
+            fill.setShader(new android.graphics.LinearGradient(cx, cy - r, cx, cy + r, top, bot,
+                    android.graphics.Shader.TileMode.CLAMP));
+            fill.setShadowLayer(9f * d, 0f, 3f * d, 0x77000000);
+            cv.drawCircle(cx, cy, r, fill);
+
+            ring.setColor((Integer) argb.evaluate(hot, 0x66FFFFFF, 0xEEFFFFFF));
+            cv.drawCircle(cx, cy, r - 0.7f * d, ring);
+
+            cv.rotate(90f * hot, cx, cy);                    // ✕ هنگامِ نزدیک شدن نرم می‌چرخد
+            float k = 7.2f * d;
             cv.drawLine(cx - k, cy - k, cx + k, cy + k, cross);
             cv.drawLine(cx - k, cy + k, cx + k, cy - k, cross);
             cv.restore();

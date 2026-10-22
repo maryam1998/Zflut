@@ -228,13 +228,8 @@ Future<void> showSelectionCard(
     );
     return Stack(
       children: [
-        // لمسِ بیرون از کارت → بستن
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: close,
-          ),
-        ),
+        // کارت فقط با دکمه‌ی ✕ بسته می‌شود؛ لمسِ بیرون از کارت آن را نمی‌بندد
+        // (لایه‌ی خالی لمس را نمی‌گیرد، پس صفحه‌ی زیرین همچنان قابل‌لمس است).
         Positioned.fill(
           child: CustomSingleChildLayout(
             delegate: _CardLayoutDelegate(
@@ -436,13 +431,11 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                         ),
                       ),
                     ),
-                    _CardIconButton(
-                      icon: Icons.close,
-                      color: Colors.white,
-                      size: 21,
+                    _CardCloseButton(
                       tooltip: _s(ui, 'close'),
                       onTap: widget.onClose,
                     ),
+                    const SizedBox(width: 2),
                     // از راست به چپ: 🔊 ← 🧬 ← ✕
                     _CardIconButton(
                       icon: Icons.hub_outlined,
@@ -882,6 +875,42 @@ class _CardIconButton extends StatelessWidget {
               : (emoji != null
                   ? Text(emoji!, style: TextStyle(fontSize: size, height: 1.1))
                   : Icon(icon, size: size, color: color)),
+        ),
+      ),
+    );
+  }
+}
+
+/// دکمه‌ی ✕ی کارت: دایره‌ی نیمه‌شفاف با حلقه‌ی ظریف؛ تنها راهِ بستنِ کارت.
+class _CardCloseButton extends StatelessWidget {
+  final String tooltip;
+  final VoidCallback? onTap;
+
+  const _CardCloseButton({required this.tooltip, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: Material(
+          color: Colors.white.withOpacity(0.10),
+          shape: CircleBorder(
+            side: BorderSide(color: Colors.white.withOpacity(0.28), width: 1),
+          ),
+          child: InkResponse(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            highlightColor: const Color(0x55E53935),
+            splashColor: const Color(0x66E53935),
+            radius: 20,
+            child: const SizedBox(
+              width: 30,
+              height: 30,
+              child: Icon(Icons.close_rounded, size: 18, color: Colors.white),
+            ),
+          ),
         ),
       ),
     );
