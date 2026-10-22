@@ -58,10 +58,14 @@ Future<List<PickedFile>> pickFiles({
 /// لاتین (انگلیسی/آلمانی/اسپانیایی/فرانسوی/…)، چینی، ژاپنی، کره‌ای، دوناگری.
 /// عربی/فارسی را ML Kit پشتیبانی نمی‌کند — برایشان خطایِ واضح می‌دهیم.
 class OcrSession {
-  final TextRecognizer _rec;
-  OcrSession._(this._rec);
+  final TextRecognitionScript _primary;
+  final bool _unsupportedLang;
+  final String _lang;
+  final Map<TextRecognitionScript, TextRecognizer> _recs = {};
+  OcrSession._(this._primary, this._unsupportedLang, this._lang);
 
-  static TextRecognitionScript _scriptFor(String lang) {
+  /// null = ML Kit این خط را ندارد (عربی/فارسی/سیریلیک/…)
+  static TextRecognitionScript? _scriptFor(String lang) {
     switch (lang) {
       case 'zh':
         return TextRecognitionScript.chinese;
@@ -81,14 +85,27 @@ class OcrSession {
       case 'uk':
       case 'el':
       case 'th':
-        throw UnsupportedError('ocr-script:$lang');
+        return null;
       default:
         return TextRecognitionScript.latin;
     }
   }
 
-  static Future<OcrSession> open(String langCode) async =>
-      OcrSession._(TextRecognizer(script: _scriptFor(langCode)));
+  /// قبلاً برای زبانِ فارسی/عربی/روسی همان اول خطا می‌داد، حتی اگر عکس
+  /// انگلیسی بود. حالا همیشه با لاتین (و در صورتِ خالی بودن، با بقیه‌ی خط‌ها) می‌خونه.
+  static Future<OcrSession> open(String langCode) async {
+    final sc = _scriptFor(langCode);
+    return OcrSession._(
+        sc ?? TextRecognitionScript.latin, sc == null, langCode);
+  }
+
+  TextRecognizer _rec(TextRecognitionScript sc) =>
+      _recs.putIfAbsent(sc, () => TextRecognizer(script: sc));
+
+  static String _clean(String t) => t
+      .replaceAll(RegExp(r'[ \t]+'), ' ')
+      .replaceAll(RegExp(r'\s*\n\s*'), ' ')
+      .trim();
 
   Future<String> recognize(Uint8List bytes) async {
     final dir = await getTemporaryDirectory();
@@ -96,8 +113,41 @@ class OcrSession {
         '${dir.path}/ocr_${DateTime.now().microsecondsSinceEpoch}.jpg');
     await f.writeAsBytes(bytes, flush: true);
     try {
-      final r = await _rec.processImage(InputImage.fromFilePath(f.path));
-      return r.text.replaceAll(RegExp(r'[ \t]+'), ' ').trim();
+      final input = InputImage.fromFilePath(f.path);
+      final order = <TextRecognitionScript>[
+        _primary,
+        for (final s in const [
+          TextRecognitionScript.latin,
+          TextRecognitionScript.devanagiri,
+          TextRecognitionScript.chinese,
+          TextRecognitionScript.japanese,
+          TextRecognitionScript.korean,
+        ])
+          if (s != _primary) s,
+      ];
+      Object? lastErr;
+      for (final sc in order) {
+        try {
+          final r = await _rec(sc).processImage(input);
+          final t = _clean(r.text);
+          if (t.replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '').length >=
+              3) {
+            return t;
+          }
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      if (_unsupportedLang) {
+        // عکس هیچ متنِ لاتینی/چینی/… نداشت و زبانش هم از ML Kit بیرونه
+        throw UnsupportedError('ocr-script:$_lang');
+      }
+      if (lastErr != null && lastErr is! UnsupportedError) {
+        // همه‌ی تلاش‌ها خطای واقعی بودن (مثلاً مدلِ زبان دانلود نشد)
+        // ignore: only_throw_errors
+        throw lastErr;
+      }
+      return '';
     } finally {
       try {
         await f.delete();
@@ -106,9 +156,12 @@ class OcrSession {
   }
 
   Future<void> close() async {
-    try {
-      await _rec.close();
-    } catch (_) {}
+    for (final r in _recs.values) {
+      try {
+        await r.close();
+      } catch (_) {}
+    }
+    _recs.clear();
   }
 }
 
@@ -129,7 +182,20 @@ class PdfDocHandle {
   Future<String> pageText(int pageIndex) async {
     final raw = sf.PdfTextExtractor(_text)
         .extractText(startPageIndex: pageIndex, endPageIndex: pageIndex);
-    return raw.replaceAll(RegExp(r'[ \t]+'), ' ').trim();
+    return _normalizePdfText(raw);
+  }
+
+  /// خط‌شکستن‌های وسطِ جمله حذف می‌شن (هر کلمه خطِ جدا نشه)؛
+  /// خط خالی = پاراگراف می‌مونه. خط‌تیره‌ی آخرِ سطر هم به کلمه وصل می‌شه.
+  static String _normalizePdfText(String raw) {
+    var t = raw.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+    t = t.replaceAll(RegExp(r'[\u00A0\t ]+'), ' ');
+    t = t.replaceAllMapped(
+        RegExp(r'(\p{L})-\n(\p{Ll})', unicode: true), (m) => '${m[1]}${m[2]}');
+    t = t.replaceAll(RegExp(r'\n[ ]*\n+'), '\u0002');
+    t = t.replaceAll(RegExp(r'[ ]*\n[ ]*'), ' ');
+    t = t.replaceAll('\u0002', '\n\n');
+    return t.replaceAll(RegExp(r' {2,}'), ' ').trim();
   }
 
   Future<Uint8List> renderPage(int pageIndex, {double scale = 1.6}) async {

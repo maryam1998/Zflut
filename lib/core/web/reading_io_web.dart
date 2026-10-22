@@ -111,7 +111,7 @@ class OcrSession {
     await _loadScript(_tesseractUrl, 'Tesseract');
     final tess = jsu.getProperty(html.window, 'Tesseract');
     final worker = await jsu.promiseToFuture(
-        jsu.callMethod(tess, 'createWorker', [_tessLang[langCode] ?? 'eng']));
+        jsu.callMethod(tess, 'createWorker', [(_tessLang[langCode] == null || langCode == 'en') ? 'eng' : 'eng+${_tessLang[langCode]}']));
     try {
       final psm = jsu.getProperty(jsu.getProperty(tess, 'PSM'), 'SINGLE_COLUMN');
       final params = jsu.newObject();

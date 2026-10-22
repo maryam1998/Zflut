@@ -143,7 +143,8 @@ List<String> _splitSentences(String text) {
       .where((e) => e.isNotEmpty)
       .toList();
   final parts = (raw.isEmpty ? [protectedT] : raw)
-      .map((e) => e.replaceAll('\u0001', '.'))
+      .map((e) => e.replaceAll('\u0001', '.').replaceAll(RegExp(r'\s+'), ' ').trim())
+      .where((e) => e.isNotEmpty)
       .toList();
   final out = <String>[];
   for (final part in parts) {

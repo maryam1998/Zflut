@@ -852,8 +852,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Align(
-                  alignment: rtl ? Alignment.centerRight : Alignment.centerLeft,
+                child: SizedBox(
+                  width: double.infinity,
                   child: SelectableSyncText(
                     code: widget.langCode,
                     id: id,
@@ -866,7 +866,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                       fontWeight: boldText ? FontWeight.w700 : FontWeight.w400,
                     ),
                     textDirection: dir,
-                    textAlign: rtl ? TextAlign.right : TextAlign.left,
+                    textAlign: TextAlign.justify,
                   ),
                 ),
               ),
@@ -957,10 +957,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: t != null
-                      ? Align(
-                          alignment: rtl
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
+                      ? SizedBox(
+                          width: double.infinity,
                           child: SelectableSyncText(
                             code: lang,
                             id: id,
@@ -974,7 +972,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                                   boldTr ? FontWeight.w600 : FontWeight.w400,
                             ),
                             textDirection: dir,
-                            textAlign: rtl ? TextAlign.right : TextAlign.left,
+                            textAlign: TextAlign.justify,
                           ),
                         )
                       : Padding(
