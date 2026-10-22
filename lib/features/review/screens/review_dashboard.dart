@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_languages.dart';
 import '../../../core/constants/level_colors.dart';
 import '../../../core/providers/speech_provider.dart';
+import '../../../core/stats/listening_tracker.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../tabs/_hope_panel.dart';
 import '../models/review_item.dart';
@@ -15,6 +16,7 @@ import '../providers/review_provider.dart';
 import '../providers/review_session_provider.dart';
 import '../widgets/box_visualization.dart';
 import '../widgets/filter_chips.dart';
+import '../widgets/listen_chart.dart';
 import '../widgets/streak_widget.dart';
 import '../widgets/weekly_chart.dart';
 import 'review_session.dart';
@@ -41,6 +43,7 @@ class ReviewDashboard extends ConsumerWidget {
     final all = ref.watch(reviewProvider);
     final due = ref.watch(dueReviewProvider);
     final stats = ref.watch(reviewStatsProvider);
+    final listen = ref.watch(listeningStatsProvider);
     final filtered = ref.watch(filteredReviewProvider);
     final filter = ref.watch(reviewFilterProvider);
     final chipCounts = ref.watch(reviewChipCountsProvider);
@@ -66,7 +69,10 @@ class ReviewDashboard extends ConsumerWidget {
           // ── ۲. نمودار هفتگی ──
           _SectionCard(
             title: context.l10n.rv_weekly_progress,
-            child: WeeklyChart(
+            // سوئیچِ «گوش‌دادن | مرور»: پیش‌فرض نمودارِ ساعت‌های گوش‌دادن
+            child: WeeklyProgressSwitcher(
+              listen: listen,
+              reviewChart: WeeklyChart(
               stats: stats,
               // دعوت‌به‌شروع: اگر مروری موعد دارد → شروع؛ اگر جعبه خالی است → رفتن به لغات
               onEmptyAction: due.isNotEmpty
@@ -78,6 +84,7 @@ class ReviewDashboard extends ConsumerWidget {
               emptyText: all.isNotEmpty && due.isEmpty
                   ? context.l10n.rv_empty_nothing_today
                   : context.l10n.rv_empty_no_reviews,
+              ),
             ),
           ),
 

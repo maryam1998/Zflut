@@ -10,6 +10,7 @@ import '../../core/player_sync/sync_widgets.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/read_ids_provider.dart';
+import '../../core/router/back_handlers.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/widgets/level_chips.dart';
 import '../../core/widgets/range_card.dart';
@@ -31,6 +32,51 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   String _level = 'all';
   int _rangeFrom = 1;
   int _rangeTo = 60;
+
+  /// جای اسکرولِ لیستِ موضوع‌ها — وقتی موضوعی باز می‌شود ذخیره و با «بازگشت»
+  /// دقیقاً همان‌جا برگردانده می‌شود (نه بالای لیست).
+  ScrollController _gridScroll = ScrollController();
+  double _gridOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // دکمه‌ی «بازگشت» گوشی: اول از موضوعِ بازشده به لیستِ موضوع‌ها برمی‌گردد؛
+    // اگر لیست باز بود، کار را به AppShell می‌سپارد (تبِ قبلی / خروجِ دو‌مرحله‌ای).
+    BackHandlers.add(_onSystemBack);
+  }
+
+  @override
+  void dispose() {
+    BackHandlers.remove(_onSystemBack);
+    _gridScroll.dispose();
+    super.dispose();
+  }
+
+  bool _onSystemBack() {
+    if (!mounted || _activeTopic == null) return false;
+    _closeTopic();
+    return true;
+  }
+
+  void _openTopic(String topic) {
+    if (_gridScroll.hasClients) _gridOffset = _gridScroll.offset;
+    setState(() {
+      _activeTopic = topic;
+      _openScenario = 0;
+    });
+  }
+
+  void _closeTopic() {
+    final old = _gridScroll;
+    // کنترلرِ تازه با آفستِ ذخیره‌شده: لیست بدونِ پرش/چشمک در همان جا باز می‌شود
+    _gridScroll = ScrollController(initialScrollOffset: _gridOffset);
+    setState(() {
+      _activeTopic = null;
+      _openScenario = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+  }
 
   @override
   Widget build(BuildContext context) => Directionality(
@@ -140,6 +186,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final readTotal = topics.where((t) => topicRead.contains(t.topic)).length;
 
     return ListView(
+      controller: _gridScroll,
       padding: const EdgeInsets.only(bottom: 90),
       children: [
         const ShellHeader(),
@@ -186,10 +233,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
               visual: visual,
               badgeColor: kTopicBadgeColors[i % kTopicBadgeColors.length],
               isRead: topicRead.contains(topic.topic),
-              onTap: () => setState(() {
-                _activeTopic = topic.topic;
-                _openScenario = 0;
-              }),
+              onTap: () => _openTopic(topic.topic),
               onToggleRead: () => topicReadN.toggle(topic.topic),
             );
           },
@@ -238,10 +282,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
         InkWell(
-          onTap: () => setState(() {
-            _activeTopic = null;
-            _openScenario = null;
-          }),
+          onTap: _closeTopic,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(

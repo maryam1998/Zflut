@@ -76,6 +76,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
     _history.remove(loc);
     _loc = loc;
+    _lastBack = null; // تبِ جدید = هشدارِ خروجِ قبلی باطل
     _persistNav();
   }
 
@@ -89,23 +90,36 @@ class _AppShellState extends ConsumerState<AppShell> {
       _goBackTo(prev);
       return;
     }
+    // خروجِ دومرحله‌ای: بازگشتِ اول فقط هشدار می‌دهد، بازگشتِ دوم (تا ۲ ثانیه) خارج می‌شود.
     final now = DateTime.now();
     if (_lastBack != null &&
         now.difference(_lastBack!) < const Duration(seconds: 2)) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       SystemNavigator.pop();
       return;
     }
     _lastBack = now;
+    HapticFeedback.selectionClick();
     final fa = ref.read(appPrefsProvider).uiLang == 'fa';
+    final c = context.appColors;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
         duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        elevation: 0,
+        backgroundColor: c.ink.withOpacity(0.92),
+        // بالاتر از پلیر تا روی دکمه‌ها نیفتد
+        margin: EdgeInsets.fromLTRB(
+            40, 0, 40, 150 + MediaQuery.of(context).padding.bottom),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
         content: Text(
           fa
               ? 'برای خروج، یک بار دیگر «بازگشت» را بزنید'
               : 'Press back again to exit',
           textAlign: TextAlign.center,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
         ),
       ));
   }

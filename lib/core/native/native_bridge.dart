@@ -115,6 +115,9 @@ class NativeBridge {
   Future<Map<String, dynamic>> ytSeek({num? ms}) =>
       _call('ytSeek', {if (ms != null) 'ms': ms});
 
+  /// { access, playing, pkg } — پلیرِ بیرونی (یوتیوب و …) همین الان در حال پخش است؟
+  Future<Map<String, dynamic>> nowPlaying() => _call('nowPlaying');
+
   Future<Map<String, dynamic>> checkModelStatus({String? lang}) =>
       _call('checkModelStatus', {if (lang != null) 'lang': lang});
 

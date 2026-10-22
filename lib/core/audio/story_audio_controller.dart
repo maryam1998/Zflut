@@ -16,6 +16,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../bridge/linlearn_bridge.dart';
+import '../stats/listening_tracker.dart' show ListenSignals, ListenSource;
 import 'audio_sync_service.dart';
 
 enum AbState { idle, waitingB, looping }
@@ -156,6 +157,8 @@ class StoryAudioController extends ChangeNotifier {
       }
       if (playing != isPlaying) {
         isPlaying = playing;
+        // ⏱ ثبتِ زمانِ گوش‌دادن (نمودارِ هفتگیِ تبِ مرور)
+        ListenSignals.report('audio:$storyKey', ListenSource.audio, playing);
         _notify();
       }
     });
@@ -232,6 +235,7 @@ class StoryAudioController extends ChangeNotifier {
     hasAudio = false;
     _audioPath = '';
     isPlaying = false;
+    ListenSignals.report('audio:$storyKey', ListenSource.audio, false);
     fileName = '';
     duration = Duration.zero;
     position.value = Duration.zero;
@@ -519,6 +523,7 @@ class StoryAudioController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    ListenSignals.report('audio:$storyKey', ListenSource.audio, false);
     final j = _syncJob;
     _syncJob = null;
     if (j != null) unawaited(j.cancel());

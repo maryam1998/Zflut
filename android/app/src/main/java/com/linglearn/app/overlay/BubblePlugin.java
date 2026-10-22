@@ -437,6 +437,30 @@ public class BubblePlugin extends Plugin {
         call.resolve(ret);
     }
 
+    // nowPlaying() → { access, playing, pkg } — آیا الان یک پلیرِ بیرونی (یوتیوب، …) در حال پخش است؟
+    // برای «ساعت‌های گوش‌دادن» در نمودار هفتگی. اگر «دسترسی به اعلان‌ها» نباشد playing=false است.
+    @PluginMethod
+    public void nowPlaying(PluginCall call) {
+        JSObject ret = new JSObject();
+        boolean access = false;
+        boolean playing = false;
+        String pkg = "";
+        try {
+            access = YtMedia.hasAccess(getContext());
+            if (access) {
+                YtMedia.Now n = YtMedia.nowPlaying(getContext());
+                if (n != null) {
+                    playing = n.playing;
+                    pkg = n.pkg == null ? "" : n.pkg;
+                }
+            }
+        } catch (Throwable ignored) {}
+        ret.put("access", access);
+        ret.put("playing", playing);
+        ret.put("pkg", pkg);
+        call.resolve(ret);
+    }
+
     // ================================================================
     // ============ STT: بسته‌های تشخیص گفتار (Zipformer) ==============
     // ================================================================
