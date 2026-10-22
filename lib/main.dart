@@ -13,6 +13,8 @@ import 'core/storage/durable_store.dart';
 import 'core/storage/local_storage.dart' show sharedPrefsProvider;
 import 'core/sync/app_restarter.dart';
 import 'core/storage/translation_cache_db.dart';
+import 'core/web/reading_io_stub.dart'
+    if (dart.library.html) 'core/web/reading_io_web.dart' show prefetchOcrData;
 
 // مقادیر واقعی از --dart-define (در GitHub Actions از Secrets) می‌آیند.
 const String _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -84,6 +86,9 @@ Future<void> main() async {
     // کشِ دائمیِ ترجمه‌ها (IndexedDB / فایل) — در پس‌زمینه باز و پر می‌شود؛
     // تا آماده شود کش فقط در حافظه کار می‌کند و اپ منتظر نمی‌ماند.
     unawaited(TranslationCacheDb.instance.init(prefs));
+
+    // فایل‌های OCRِ فارسی/عربی/روسی بی‌صدا در پس‌زمینه دانلود می‌شن (بدونِ تنظیمات)
+    if (!kIsWeb) prefetchOcrData();
 
     // AppRestarter: بعد از بازیابیِ داده‌ی ابری درخت providerها دوباره ساخته می‌شود.
     runApp(

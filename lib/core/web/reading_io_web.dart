@@ -7,6 +7,9 @@ import 'dart:js_util' as jsu;
 import 'dart:typed_data';
 import 'dart:math' as math;
 
+/// وب: tesseract.js خودش اولین بار دانلود می‌کنه؛ نیازی به پیش‌دانلود نیست.
+void prefetchOcrData() {}
+
 class PickedFile {
   final String name;
   final Uint8List bytes;

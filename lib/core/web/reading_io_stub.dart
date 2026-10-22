@@ -5,10 +5,13 @@
 //   • متنِ PDF     : syncfusion_flutter_pdf
 //   • عکسِ صفحه    : pdfx
 //   • OCR عکس     : google_mlkit_text_recognition (روی خودِ گوشی، بدونِ اینترنت)
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
@@ -57,6 +60,64 @@ Future<List<PickedFile>> pickFiles({
 /// نشستِ OCR با ML Kit. ML Kit فقط این خط‌ها را می‌خواند:
 /// لاتین (انگلیسی/آلمانی/اسپانیایی/فرانسوی/…)، چینی، ژاپنی، کره‌ای، دوناگری.
 /// عربی/فارسی را ML Kit پشتیبانی نمی‌کند — برایشان خطایِ واضح می‌دهیم.
+/// کدِ زبان‌های بیرون از ML Kit → نامِ فایلِ Tesseract
+const Map<String, String> _tessCodes = {
+  'fa': 'fas',
+  'ar': 'ara',
+  'ur': 'urd',
+  'he': 'heb',
+  'ru': 'rus',
+  'uk': 'ukr',
+  'el': 'ell',
+  'th': 'tha',
+};
+
+bool _prefetchRunning = false;
+
+/// دانلودِ بی‌صدای فایل‌های OCR (فارسی/عربی/روسی/…) در پس‌زمینه.
+/// بدونِ هیچ تنظیم و پیامی: اگر اینترنت نبود هر ۶۰ ثانیه دوباره تلاش می‌کنه تا کامل شه.
+void prefetchOcrData() {
+  if (_prefetchRunning) return;
+  _prefetchRunning = true;
+  unawaited(() async {
+    try {
+      for (var attempt = 0; attempt < 40; attempt++) {
+        var allOk = true;
+        for (final code in _tessCodes.values) {
+          try {
+            await _ensureTessData(code);
+          } catch (_) {
+            allOk = false;
+            break;
+          }
+        }
+        if (allOk) return;
+        await Future<void>.delayed(const Duration(seconds: 60));
+      }
+    } finally {
+      _prefetchRunning = false;
+    }
+  }());
+}
+
+/// فایلِ زبان (حدودِ ۱ تا ۴ مگابایت) بار اول دانلود و برای همیشه نگه داشته می‌شه.
+Future<void> _ensureTessData(String code) async {
+  final docs = await getApplicationDocumentsDirectory();
+  final dir = Directory('${docs.path}/tessdata');
+  if (!await dir.exists()) await dir.create(recursive: true);
+  for (final c in [code, 'eng']) {
+    final f = File('${dir.path}/$c.traineddata');
+    if (await f.exists() && await f.length() > 100000) continue;
+    final tmp = File('${f.path}.part');
+    await Dio().download(
+      'https://github.com/tesseract-ocr/tessdata_fast/raw/main/$c.traineddata',
+      tmp.path,
+      options: Options(receiveTimeout: const Duration(minutes: 3)),
+    );
+    await tmp.rename(f.path);
+  }
+}
+
 class OcrSession {
   final TextRecognitionScript _primary;
   final bool _unsupportedLang;
@@ -113,6 +174,21 @@ class OcrSession {
         '${dir.path}/ocr_${DateTime.now().microsecondsSinceEpoch}.jpg');
     await f.writeAsBytes(bytes, flush: true);
     try {
+      final tess = _tessCodes[_lang];
+      if (tess != null) {
+        // فارسی/عربی/روسی/…: Tesseract (به‌همراهِ انگلیسی برای متنِ قاطی)
+        await _ensureTessData(tess);
+        final raw = await FlutterTesseractOcr.extractText(
+          f.path,
+          language: '$tess+eng',
+          args: {'psm': '6', 'preserve_interword_spaces': '1'},
+        );
+        final t = _clean(raw);
+        if (t.replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '').length >=
+            3) {
+          return t;
+        }
+      }
       final input = InputImage.fromFilePath(f.path);
       final order = <TextRecognitionScript>[
         _primary,
