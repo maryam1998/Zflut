@@ -10,7 +10,9 @@ import '../../core/constants/supported_languages.dart';
 import '../../core/mascot/mascot_pin_provider.dart';
 import '../../core/providers/app_prefs_provider.dart';
 import '../../core/providers/player_prefs_provider.dart';
+import '../../core/router/app_router.dart' show kLastTabPrefKey, kRestorableTabs;
 import '../../core/router/back_handlers.dart';
+import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/sync/cloud_sync.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../grammar/widgets/practice_sheet.dart';
@@ -40,7 +42,27 @@ class _AppShellState extends ConsumerState<AppShell> {
   bool _goingBack = false;
   DateTime? _lastBack;
 
-  static const String _home = '/story';
+  static const String _historyPrefKey = 'tab-history';
+
+  @override
+  void initState() {
+    super.initState();
+    // تاریخچه‌ی تب‌ها بعد از بازسازیِ اکتیویتی/بستنِ برنامه هم می‌ماند (بازگشت به «تبِ قبلی»، نه تبِ ثابت)
+    try {
+      final saved = ref.read(sharedPrefsProvider).getStringList(_historyPrefKey);
+      if (saved != null) {
+        _history.addAll(saved.where(kRestorableTabs.contains));
+      }
+    } catch (_) {}
+  }
+
+  void _persistNav() {
+    try {
+      final p = ref.read(sharedPrefsProvider);
+      if (kRestorableTabs.contains(_loc)) p.setString(kLastTabPrefKey, _loc);
+      p.setStringList(_historyPrefKey, List<String>.from(_history));
+    } catch (_) {}
+  }
 
   /// جابه‌جاییِ تب را ثبت می‌کند (فقط حسابداری؛ هیچ setState ای نیست).
   void _track(String loc) {
@@ -54,19 +76,17 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
     _history.remove(loc);
     _loc = loc;
+    _persistNav();
   }
 
   /// دکمه‌ی «بازگشت» گوشی (دیالوگ/شیت‌ها قبل از این به‌صورت عادی بسته می‌شوند):
-  /// ۱) حالتِ درونیِ تب (مثلاً داستانِ بازشده) ۲) تبِ قبلی ۳) صفحه‌ی اصلی ۴) دوبار بازگشت = خروج
+  /// ۱) حالتِ درونیِ تب (مثلاً داستانِ بازشده) ۲) تبِ قبلی ۳) دوبار بازگشت = خروج
+  /// (تبِ پیش‌فرضِ ثابتی وجود ندارد؛ هرگز به «داستان‌ساز» یا تبِ دیگری که کاربر از آن نیامده نمی‌پرد.)
   void _onBack() {
     if (BackHandlers.handle()) return;
     if (_history.isNotEmpty) {
       final prev = _history.removeLast();
       _goBackTo(prev);
-      return;
-    }
-    if (_loc != _home) {
-      _goBackTo(_home);
       return;
     }
     final now = DateTime.now();

@@ -5941,8 +5941,18 @@ public class BubbleService extends Service {
 
     static void resetGoogleSkip() { googleSkipped = false; }
 
-    private String speechProvider() {
-        return getSharedPreferences(PREFS, MODE_PRIVATE).getString("speechProvider", "offline");
+    private String speechProvider() { return readSpeechProvider(this); }
+
+    /**
+     * موتورِ تشخیص گفتار: پیش‌فرض «آفلاین». یک‌بار (برای همه‌ی نصب‌های قبلی) مقدارِ ذخیره‌شده روی آفلاین
+     * برمی‌گردد؛ از آن به بعد هر چه کاربر در تنظیمات انتخاب کند حفظ می‌شود.
+     */
+    static String readSpeechProvider(Context ctx) {
+        SharedPreferences sp = ctx.getSharedPreferences(PREFS, MODE_PRIVATE);
+        if (!sp.getBoolean("speechProviderOfflineDefault", false)) {
+            sp.edit().putString("speechProvider", "offline").putBoolean("speechProviderOfflineDefault", true).apply();
+        }
+        return sp.getString("speechProvider", "offline");
     }
 
     /** Google با ورودیِ صدای سیستم فقط روی اندروید ۱۳+ (EXTRA_AUDIO_SOURCE) و با زبانِ مشخص کار می‌کند. */

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/providers/auth_provider.dart';
 import '../config/app_config.dart';
+import '../storage/local_storage.dart' show sharedPrefsProvider;
 import '../../features/auth/ui/login_screen.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/tabs/conversations_tab.dart';
@@ -15,15 +16,34 @@ import '../../features/tabs/speaking_tab.dart';
 import '../../features/tabs/story_tab.dart';
 import '../../features/tabs/words_tab.dart';
 
+/// کلیدِ ذخیره‌ی آخرین تبِ بازشده (AppShell می‌نویسد، روتر می‌خواند).
+const String kLastTabPrefKey = 'last-tab-route';
+
+/// تب‌های معتبر برای بازگردانی (مسیرِ ذخیره‌شده‌ی نامعتبر نادیده گرفته می‌شود).
+const Set<String> kRestorableTabs = {
+  '/conversations', '/story', '/grammar', '/speaking',
+  '/words', '/favorites', '/review',
+};
+
+/// برنامه «تبِ پیش‌فرضِ ثابت» ندارد: همان تبی که کاربر آخر بود باز می‌شود.
+/// فقط در اولین اجرا (هنوز تبی ذخیره نشده) اولین تبِ ناوبری باز می‌شود.
+String _startLocation(Ref ref) {
+  try {
+    final saved = ref.read(sharedPrefsProvider).getString(kLastTabPrefKey);
+    if (saved != null && kRestorableTabs.contains(saved)) return saved;
+  } catch (_) {}
+  return '/conversations';
+}
+
 /// روتر — معادلِ تصمیم App.jsx بین LoginScreen و PhrasebookMain.
 /// redirect بر اساس سشن Supabase.
 final appRouterProvider = Provider<GoRouter>((ref) {
   // حالت توسعه: بدون ورود. هیچ‌چیز از Supabase خوانده نمی‌شود.
   if (kSkipLogin) {
     return GoRouter(
-      initialLocation: '/story',
+      initialLocation: _startLocation(ref),
       redirect: (context, state) =>
-          state.matchedLocation == '/login' ? '/story' : null,
+          state.matchedLocation == '/login' ? _startLocation(ref) : null,
       routes: _routes,
       errorBuilder: _errorBuilder,
     );
@@ -44,14 +64,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    initialLocation: '/story',
+    initialLocation: _startLocation(ref),
     refreshListenable: refresh,
     redirect: (context, state) {
       final loggedIn = ref.read(authRepositoryProvider).currentSession != null ||
           ref.read(guestModeProvider);
       final goingToLogin = state.matchedLocation == '/login';
       if (!loggedIn) return goingToLogin ? null : '/login';
-      if (goingToLogin) return '/story';
+      if (goingToLogin) return _startLocation(ref);
       return null;
     },
     routes: _routes,

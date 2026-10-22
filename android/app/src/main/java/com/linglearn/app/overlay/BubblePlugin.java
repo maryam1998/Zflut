@@ -556,8 +556,7 @@ public class BubblePlugin extends Plugin {
     public void getSpeechProvider(PluginCall call) {
         Context ctx = getContext();
         JSObject ret = new JSObject();
-        ret.put("provider", ctx.getSharedPreferences("bubble_prefs", Context.MODE_PRIVATE)
-                .getString("speechProvider", "offline"));
+        ret.put("provider", BubbleService.readSpeechProvider(ctx));
         boolean supported = android.os.Build.VERSION.SDK_INT >= 33;
         boolean available = false;
         if (supported) {
