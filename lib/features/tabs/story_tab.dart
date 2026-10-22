@@ -371,6 +371,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   final Map<int, String> _pdfTrans = {};
   // ترجمه‌ی عکسیِ صفحه‌ها (عکسِ صفحه با متنِ ترجمه‌شده، هر صفحه همین‌که آماده شد)
   final Map<int, Uint8List> _pdfTransImgs = {};
+  // امضای زبان‌هایی که هر عکسِ ترجمه‌شده براساسشون ساخته شده؛ اگه کاربر زبانِ
+  // ترجمه رو عوض کنه امضا فرق می‌کنه و صفحه خودکار دوباره ترجمه می‌شه
+  final Map<int, String> _pdfTransSig = {};
+  String? _pdfViewLang; // زبانی که کاربر برای دیدنِ عکسِ ترجمه‌شده انتخاب کرده
+  bool _pdfAutoTrans = true;
   bool _pdfTransRunning = false;
   bool _pdfShowTransImg = true;
   int _pdfTransRun = 0; // شماره‌ی اجرا (برای لغو)
@@ -1073,6 +1078,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         _pdfShowOrig = false;
       });
       unawaited(_loadPdfPage(0));
+      // ترجمه‌ی عکسیِ صفحه‌ها خودکار شروع می‌شه (طبقِ زبانِ ترجمه‌ی انتخابی)
+      unawaited(_startPdfImageTranslate(restart: true));
     } catch (_) {
       if (mounted) {
         setState(() => _importError =
@@ -1091,26 +1098,50 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     _pdfTrans.clear();
     _pdfTransRun++;
     _pdfTransImgs.clear();
+    _pdfTransSig.clear();
+    _pdfViewLang = null;
+    _pdfAutoTrans = true;
     _pdfTransRunning = false;
     _pdfTransNote = '';
     _pdfIndex = 0;
     if (notify && mounted) setState(() {});
   }
 
+  String _pdfTransSigNow() =>
+      '${(_effectiveTransLangs().toList()..sort()).join(',')}|${_pdfViewLang ?? ''}';
+
+  int _pdfReadyCount() {
+    final sig = _pdfTransSigNow();
+    return _pdfTransSig.values.where((v) => v == sig).length;
+  }
+
+  /// بعد از عوض‌شدنِ زبانِ ترجمه، عکسِ صفحه‌ها دوباره براساسِ زبانِ جدید ساخته می‌شه.
+  void _restartPdfTransIfOpen() {
+    if (_pdfDoc == null) return;
+    _pdfAutoTrans = true;
+    Future.microtask(() {
+      if (mounted && _pdfDoc != null) {
+        unawaited(_startPdfImageTranslate(restart: true));
+      }
+    });
+  }
+
   /// ترجمه‌ی عکسیِ PDF: از صفحه‌ی فعلی شروع می‌کنه و هر صفحه‌ای که آماده شد
   /// همون لحظه جایگزینِ عکسِ اصلی می‌شه (منتظرِ تموم‌شدنِ کل فایل نمی‌مونه).
-  Future<void> _startPdfImageTranslate() async {
+  Future<void> _startPdfImageTranslate({bool restart = false}) async {
     final doc = _pdfDoc;
     if (doc == null) return;
-    if (_pdfTransRunning) {
+    if (_pdfTransRunning && !restart) {
       setState(() {
         _pdfTransRun++;
         _pdfTransRunning = false;
+        _pdfAutoTrans = false;
         _pdfTransNote = 'متوقف شد';
       });
       return;
     }
     final run = ++_pdfTransRun;
+    final sig = _pdfTransSigNow();
     setState(() {
       _pdfTransRunning = true;
       _pdfTransNote = '';
@@ -1119,17 +1150,29 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     bool alive() => mounted && _pdfDoc == doc && _pdfTransRun == run;
     final lang = _readingLang();
     final n = doc.pageCount;
-    final start = _pdfIndex;
+    final failed = <int>{};
+    bool pending(int i) =>
+        !(_pdfTransImgs.containsKey(i) && _pdfTransSig[i] == sig) &&
+        !failed.contains(i);
+    // اول صفحه‌ای که کاربر الان بازش کرده، بعد بقیه (به ترتیب)
+    int? nextPending() {
+      for (var k = 0; k < n; k++) {
+        final i = (_pdfIndex + k) % n;
+        if (pending(i)) return i;
+      }
+      return null;
+    }
+
     OcrSession? ocr;
     try {
       ocr = await OcrSession.open(lang);
       final svc = ref.read(translationServiceProvider);
       final ai = ref.read(aiSettingsProvider);
       final style = Theme.of(context).textTheme.bodyMedium;
-      for (var k = 0; k < n; k++) {
+      while (true) {
         if (!alive()) return;
-        final i = (start + k) % n;
-        if (_pdfTransImgs.containsKey(i)) continue;
+        final i = nextPending();
+        if (i == null) break;
         setState(() => _pdfTransNote =
             'در حال ترجمه‌ی صفحه‌ی ${i + 1} از $n (بار اول ممکنه کمی طول بکشه)...');
         try {
@@ -1139,7 +1182,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           if (!alive()) return;
           if (blocks.isEmpty) {
             // صفحه متنی نداره (فقط عکسه) → همون عکسِ اصلی
-            setState(() => _pdfTransImgs[i] = base);
+            setState(() {
+              _pdfTransImgs[i] = base;
+              _pdfTransSig[i] = sig;
+            });
             continue;
           }
           final pageLang =
@@ -1151,7 +1197,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 'زبانِ ترجمه با زبانِ متنِ صفحه یکیه — از تنظیماتِ ترجمه یه زبانِ دیگه انتخاب کن');
             return;
           }
-          final target = targets.first;
+          final target = (_pdfViewLang != null && targets.contains(_pdfViewLang))
+              ? _pdfViewLang!
+              : targets.first;
           final trs = await runWithConcurrencyLimit<OcrBlock, String>(
             blocks,
             3,
@@ -1171,6 +1219,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             },
           );
           if (!alive()) return;
+          if (trs.every((t) => t.isEmpty)) {
+            failed.add(i);
+            setState(() => _pdfTransNote =
+                'ترجمه‌ی صفحه‌ی ${i + 1} انجام نشد — اینترنت و تنظیماتِ ترجمه رو چک کن');
+            continue;
+          }
           final out = await renderTranslatedPage(
             pageImage: base,
             blocks: blocks,
@@ -1179,8 +1233,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             baseStyle: style,
           );
           if (!alive()) return;
-          setState(() => _pdfTransImgs[i] = out);
+          setState(() {
+            _pdfTransImgs[i] = out;
+            _pdfTransSig[i] = sig;
+          });
         } catch (e) {
+          failed.add(i);
           if (e is UnsupportedError) {
             if (alive()) {
               setState(() => _importError = _ioError(e, ''));
@@ -1225,6 +1283,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       _pdfTexts[i] ??= '';
     } finally {
       if (mounted && _pdfDoc == doc) setState(() => _pdfPageBusy = false);
+    }
+    if (mounted &&
+        _pdfDoc == doc &&
+        _pdfAutoTrans &&
+        !_pdfTransRunning &&
+        _pdfTransSig[i] != _pdfTransSigNow()) {
+      unawaited(_startPdfImageTranslate(restart: true));
     }
   }
 
@@ -1337,6 +1402,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     // برای بازسازیِ فهرستِ نتایجِ جستجو وقتی لغات ذخیره‌شده تغییر کنند
     ref.watch(savedWordsProvider);
 
+    // اگه کاربر زبانِ مادری رو عوض کرد (و زبانِ ترجمه رو دستی انتخاب نکرده)
+    ref.listen(languageSelectionProvider, (prev, next) {
+      if (prev != null && prev.native != next.native && !_transTouched) {
+        _restartPdfTransIfOpen();
+      }
+    });
     ref.listen<StoryDraft?>(storyDraftProvider, (prev, next) {
       if (next == null) return;
       Future.microtask(() {
@@ -1720,6 +1791,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           ..addAll(v);
       });
       if (_reading != null) unawaited(_translateReading());
+      _restartPdfTransIfOpen();
     }
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1851,10 +1923,14 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final doc = _pdfDoc!;
     final i = _pdfIndex;
     final img = _pdfImages[i];
-    final tImg = _pdfTransImgs[i];
+    final tImg =
+        _pdfTransSig[i] == _pdfTransSigNow() ? _pdfTransImgs[i] : null;
     final showT = tImg != null && _pdfShowTransImg;
     final orig = _pdfTexts[i] ?? '';
     final lang = _readingLang();
+    final viewPageLang = _detectLang(orig, lang);
+    final viewTargets =
+        _effectiveTransLangs().where((l) => l != viewPageLang).toList();
     return HopeCard(
       padding: const EdgeInsets.all(10),
       radius: 14,
@@ -1918,11 +1994,39 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 ),
             ],
           ),
+          if (viewTargets.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  for (final l in viewTargets)
+                    HopeChoiceChip(
+                      label: langDisplayName(context, l),
+                      active: (_pdfViewLang != null &&
+                              viewTargets.contains(_pdfViewLang))
+                          ? _pdfViewLang == l
+                          : viewTargets.first == l,
+                      activeBorder: c.gold,
+                      activeFill: c.goldSoft,
+                      activeText: c.ink,
+                      fontSize: 12,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 5),
+                      onTap: () {
+                        setState(() => _pdfViewLang = l);
+                        _restartPdfTransIfOpen();
+                      },
+                    ),
+                ],
+              ),
+            ),
           if (_pdfTransRunning || _pdfTransNote.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(
-                '${_pdfTransImgs.isEmpty ? '' : 'آماده: ${_pdfTransImgs.length} از ${doc.pageCount} صفحه — '}$_pdfTransNote',
+                '${_pdfReadyCount() == 0 ? '' : 'آماده: ${_pdfReadyCount()} از ${doc.pageCount} صفحه — '}$_pdfTransNote',
                 style: TextStyle(color: c.inkSoft, fontSize: 11.5),
               ),
             ),

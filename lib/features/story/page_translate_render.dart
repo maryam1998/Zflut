@@ -109,7 +109,8 @@ Future<Uint8List> renderTranslatedPage({
     );
 
     // بزرگ‌ترین اندازه‌ی فونتی که ترجمه توی همین کادر جا بشه
-    var size = math.min(bh.toDouble() * 0.9, 44.0);
+    // تیترها/خطِ تکی می‌تونن بزرگ باشن؛ پاراگراف‌های بلند سقفِ کوچک‌تری دارن
+    var size = math.min(bh.toDouble() * 0.9, bh < 160 ? 110.0 : 44.0);
     TextPainter? tp;
     while (true) {
       tp = TextPainter(
