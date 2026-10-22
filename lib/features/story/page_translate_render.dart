@@ -130,7 +130,7 @@ Future<Uint8List> renderTranslatedPage({
     canvas.save();
     canvas.clipRect(ui.Rect.fromLTWH(
         x0.toDouble(), y0.toDouble(), bw.toDouble(), bh.toDouble() + 6));
-    final dy = y0 + math.max(0.0, (bh - tp.height) / 2);
+    final dy = y0.toDouble() + math.max(0.0, (bh - tp.height) / 2);
     tp.paint(canvas, ui.Offset(x0.toDouble(), dy));
     canvas.restore();
     tp.dispose();
