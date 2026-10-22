@@ -26,15 +26,13 @@ import '../../tabs/_hope_panel.dart' show uiContentDirection;
 import 'settings_packs.dart';
 
 // ═══════════════════════════════════════════════════════════════════
-// تنظیمات — شیتِ پایین‌صفحه با «صفحه‌ی اصلیِ ساده + ۴ دسته»
+// تنظیمات — شیتِ پایین‌صفحه، «یک صفحه‌ی واحد» (بدونِ پوشه)
 //
-//  صفحه‌ی اصلی : حساب، زبانِ رابط، و ۴ دسته‌ی بزرگِ قابلِ لمس
-//  هر دسته    : یک صفحه‌ی جدا (با دکمه‌ی بازگشت؛ «بازگشتِ گوشی» هم اول به صفحه‌ی
-//               اصلی برمی‌گردد و بعد شیت بسته می‌شود)
-//  بخش‌های داخلِ دسته‌ها همان ویجت‌های قبلی‌اند و بدونِ تغییر کار می‌کنند.
+//  همه‌ی تنظیمات یک‌جا و بدونِ زیرِ‌منو در دسترس‌اند؛ فقط با عنوانِ گروه
+//  مرتب شده‌اند: حباب (ذره‌بین / ترجمه‌ی زنده) ← حساب و زبان ← ظاهر ←
+//  متن و مطالعه ← صدا و پخش.
+//  بخش‌های داخلِ گروه‌ها همان ویجت‌های قبلی‌اند و بدونِ تغییر کار می‌کنند.
 // ═══════════════════════════════════════════════════════════════════
-enum _SPage { home, appearance, reading, audio, bubble }
-
 const Map<String, Map<String, String>> _kSetT = {
   'fa': {
     'title': 'تنظیمات',
@@ -149,231 +147,159 @@ class SettingsSheet extends ConsumerStatefulWidget {
 }
 
 class _SettingsSheetState extends ConsumerState<SettingsSheet> {
-  _SPage _page = _SPage.home;
-
-  void _go(_SPage p) => setState(() => _page = p);
-
-  String _titleOf(BuildContext context) {
-    switch (_page) {
-      case _SPage.home:
-        return _sT(context, 'title');
-      case _SPage.appearance:
-        return _sT(context, 'appearance');
-      case _SPage.reading:
-        return _sT(context, 'reading');
-      case _SPage.audio:
-        return _sT(context, 'audio');
-      case _SPage.bubble:
-        return _sT(context, 'bubble');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    final home = _page == _SPage.home;
-
-    return PopScope(
-      // «بازگشتِ گوشی»: از یک دسته اول به صفحه‌ی اصلیِ تنظیمات، بعد بستنِ شیت
-      canPop: home,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _go(_SPage.home);
-      },
-      child: Material(
-        color: c.paper,
-        clipBehavior: Clip.antiAlias,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-        ),
-        child: Column(
-          children: [
-            // دستگیره
-            Padding(
-              padding: const EdgeInsets.only(top: 10, bottom: 4),
-              child: Container(
-                width: 42,
-                height: 4.5,
-                decoration: BoxDecoration(
-                  color: c.cardBorder,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-            // نوارِ عنوان
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 2, 8, 6),
-              child: Row(
-                children: [
-                  if (!home)
-                    IconButton(
-                      tooltip: _sT(context, 'back'),
-                      onPressed: () => _go(_SPage.home),
-                      icon: Icon(Icons.arrow_back, color: c.ink),
-                    )
-                  else
-                    const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _titleOf(context),
-                      style: TextStyle(
-                        color: c.ink,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: _sT(context, 'close'),
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close_rounded, color: c.inkSoft),
-                  ),
-                ],
-              ),
-            ),
-            Divider(height: 1, color: c.cardBorder),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
-                child: KeyedSubtree(
-                  key: ValueKey(_page),
-                  child: _buildPage(context),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPage(BuildContext context) {
-    final c = context.appColors;
     final bottom = MediaQuery.of(context).padding.bottom;
-    final pad = EdgeInsets.fromLTRB(16, 14, 16, 24 + bottom);
+    final pad = EdgeInsets.fromLTRB(16, 6, 16, 24 + bottom);
     Widget gap() => const SizedBox(height: 12);
+    Widget bigGap() => const SizedBox(height: 22);
     Widget div() => Divider(height: 30, color: c.cardBorder);
 
-    switch (_page) {
-      case _SPage.home:
-        return ListView(
-          padding: pad,
-          children: [
-            const _SCard(child: _AccountSection()),
-            gap(),
-            const _SCard(child: _LanguageSection()),
-            const SizedBox(height: 18),
-            _CatTile(
-              icon: Icons.palette_outlined,
-              tint: c.gold,
-              title: _sT(context, 'appearance'),
-              sub: _sT(context, 'appearance_s'),
-              onTap: () => _go(_SPage.appearance),
-            ),
-            gap(),
-            _CatTile(
-              icon: Icons.text_fields_rounded,
-              tint: c.teal,
-              title: _sT(context, 'reading'),
-              sub: _sT(context, 'reading_s'),
-              onTap: () => _go(_SPage.reading),
-            ),
-            gap(),
-            _CatTile(
-              icon: Icons.graphic_eq_rounded,
-              tint: const Color(0xFF7A5BC4),
-              title: _sT(context, 'audio'),
-              sub: _sT(context, 'audio_s'),
-              onTap: () => _go(_SPage.audio),
-            ),
-            // حباب/یوتیوب فقط در اپِ اندروید معنا دارد
-            if (_isAndroidApp) ...[
-              gap(),
-              _CatTile(
-                icon: Icons.bubble_chart_rounded,
-                tint: c.rose,
-                title: _sT(context, 'bubble'),
-                sub: _sT(context, 'bubble_s'),
-                onTap: () => _go(_SPage.bubble),
+    return Material(
+      color: c.paper,
+      clipBehavior: Clip.antiAlias,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      child: Column(
+        children: [
+          // دستگیره
+          Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 4),
+            child: Container(
+              width: 42,
+              height: 4.5,
+              decoration: BoxDecoration(
+                color: c.cardBorder,
+                borderRadius: BorderRadius.circular(3),
               ),
-            ],
-          ],
-        );
-
-      case _SPage.appearance:
-        return ListView(
-          padding: pad,
-          children: [
-            _SCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _ThemeSection(),
-                  div(),
-                  const _FontSection(),
-                  div(),
-                  const _FontSizeSection(),
+            ),
+          ),
+          // نوارِ عنوان
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 2, 8, 6),
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _sT(context, 'title'),
+                    style: TextStyle(
+                      color: c.ink,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: _sT(context, 'close'),
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(Icons.close_rounded, color: c.inkSoft),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: c.cardBorder),
+          Expanded(
+            child: ListView(
+              padding: pad,
+              children: [
+                // ── حباب شناور (ذره‌بین / ترجمه‌ی زنده / یوتیوب) — بالاترین چون پرکاربرد است
+                if (_isAndroidApp) ...[
+                  _GroupHeader(
+                    icon: Icons.bubble_chart_rounded,
+                    tint: c.rose,
+                    title: _sT(context, 'bubble'),
+                    sub: _sT(context, 'bubble_s'),
+                  ),
+                  const _SCard(child: _FloatingBubbleSection()),
+                  bigGap(),
                 ],
-              ),
-            ),
-            gap(),
-            const _SCard(child: _MascotSection()),
-          ],
-        );
 
-      case _SPage.reading:
-        return ListView(
-          padding: pad,
-          children: [
-            const _SCard(child: _TargetTextSection()),
-            gap(),
-            _SCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const _CalendarSection(),
-                  div(),
-                  const _HighlightSection(),
-                ],
-              ),
-            ),
-          ],
-        );
+                // ── حساب و زبانِ رابط
+                const _SCard(child: _AccountSection()),
+                gap(),
+                const _SCard(child: _LanguageSection()),
+                bigGap(),
 
-      case _SPage.audio:
-        return ListView(
-          padding: pad,
-          children: [
-            const _SCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _VoiceEngineSection(),
-                  _OfflineTtsSection(),
-                ],
-              ),
-            ),
-            gap(),
-            const _SCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _AudioSyncSection(),
-                  SizedBox(height: 4),
-                  _OfflineWordsButton(),
-                ],
-              ),
-            ),
-          ],
-        );
+                // ── ظاهر و نمایش
+                _GroupHeader(
+                  icon: Icons.palette_outlined,
+                  tint: c.gold,
+                  title: _sT(context, 'appearance'),
+                  sub: _sT(context, 'appearance_s'),
+                ),
+                _SCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const _ThemeSection(),
+                      div(),
+                      const _FontSection(),
+                      div(),
+                      const _FontSizeSection(),
+                    ],
+                  ),
+                ),
+                gap(),
+                const _SCard(child: _MascotSection()),
+                bigGap(),
 
-      case _SPage.bubble:
-        return ListView(
-          padding: pad,
-          children: const [
-            _SCard(child: _FloatingBubbleSection()),
-          ],
-        );
-    }
+                // ── متن و مطالعه
+                _GroupHeader(
+                  icon: Icons.text_fields_rounded,
+                  tint: c.teal,
+                  title: _sT(context, 'reading'),
+                  sub: _sT(context, 'reading_s'),
+                ),
+                const _SCard(child: _TargetTextSection()),
+                gap(),
+                _SCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const _CalendarSection(),
+                      div(),
+                      const _HighlightSection(),
+                    ],
+                  ),
+                ),
+                bigGap(),
+
+                // ── صدا و پخش
+                _GroupHeader(
+                  icon: Icons.graphic_eq_rounded,
+                  tint: const Color(0xFF7A5BC4),
+                  title: _sT(context, 'audio'),
+                  sub: _sT(context, 'audio_s'),
+                ),
+                const _SCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _VoiceEngineSection(),
+                      _OfflineTtsSection(),
+                    ],
+                  ),
+                ),
+                gap(),
+                const _SCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _AudioSyncSection(),
+                      SizedBox(height: 4),
+                      _OfflineWordsButton(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -397,77 +323,60 @@ class _SCard extends StatelessWidget {
   }
 }
 
-/// ردیفِ بزرگِ دسته (آیکن + عنوان + توضیحِ یک‌خطی + فلش) — هدفِ لمسِ ≥ ۶۴px.
-class _CatTile extends StatelessWidget {
+/// عنوانِ هر گروه (آیکن + عنوان + توضیحِ یک‌خطی) — فقط برای مرتب‌بودن؛ لمسی نیست و چیزی را پنهان نمی‌کند.
+class _GroupHeader extends StatelessWidget {
   final IconData icon;
   final Color tint;
   final String title;
   final String sub;
-  final VoidCallback onTap;
 
-  const _CatTile({
+  const _GroupHeader({
     required this.icon,
     required this.tint,
     required this.title,
     required this.sub,
-    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 68),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: c.cardBorder),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: tint.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, size: 19, color: tint),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: tint.withOpacity(0.14),
-                  borderRadius: BorderRadius.circular(14),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: c.ink,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                child: Icon(icon, size: 24, color: tint),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: c.ink,
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      sub,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          TextStyle(color: c.inkSoft, fontSize: 12, height: 1.5),
-                    ),
-                  ],
+                const SizedBox(height: 1),
+                Text(
+                  sub,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.5),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: c.inkSoft),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
