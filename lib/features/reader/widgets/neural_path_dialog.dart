@@ -192,11 +192,16 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
     if (diff == 0) return _t(ui, 'today');
     if (diff == 1) return _t(ui, 'yesterday');
     final g = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-    if (ui == 'fa') {
-      final j = gregorianToJalali(d.year, d.month, d.day);
-      return faDigits('${j[0]}/${j[1].toString().padLeft(2, '0')}/${j[2].toString().padLeft(2, '0')}');
-    }
-    return g;
+    final j = gregorianToJalali(d.year, d.month, d.day);
+    final js =
+        '${j[0]}/${j[1].toString().padLeft(2, '0')}/${j[2].toString().padLeft(2, '0')}';
+    // طبقِ «تقویم» در تنظیمات (قبلاً فقط از زبانِ رابط پیروی می‌کرد)
+    final cs = ref.read(appPrefsProvider).calendarSystem;
+    final gs = ui == 'fa' ? faDigits(g) : g;
+    final jss = ui == 'fa' ? faDigits(js) : js;
+    if (cs == CalendarSystem.gregorian) return gs;
+    if (cs == CalendarSystem.both) return '$jss ($gs)';
+    return jss;
   }
 
   @override
@@ -663,21 +668,32 @@ class _NeuralCalendarState extends ConsumerState<_NeuralCalendar> {
 
   String get ui => widget.ui;
 
-  String _fmtDate(DateTime d, CalendarSystem cs) {
-    if (cs == CalendarSystem.gregorian) {
-      return '${d.day} ${kEnMonthsShort[d.month - 1]}';
-    }
+  // روز + نامِ ماه (میلادی/شمسی) به زبانِ رابط: فارسی → ارقام و ماه‌های فارسی؛
+  // بقیه → ارقام و ماه‌های لاتین.
+  String _gDay(DateTime d, {bool year = false}) {
+    final fa = ui == 'fa';
+    final m = fa ? kFaGregorianMonths[d.month - 1] : kEnMonthsShort[d.month - 1];
+    final s = '${fa ? faDigits(d.day) : d.day} $m${year ? ' ${fa ? faDigits(d.year) : d.year}' : ''}';
+    return s;
+  }
+
+  String _jDay(DateTime d, {bool year = false}) {
+    final fa = ui == 'fa';
     final j = gregorianToJalali(d.year, d.month, d.day);
-    return ui == 'fa'
-        ? '${faDigits(j[2])} ${kPersianMonths[j[1] - 1]}'
-        : '${j[2]} ${kPersianMonths[j[1] - 1]}';
+    final m = fa ? kPersianMonths[j[1] - 1] : kPersianMonthsLatin[j[1] - 1];
+    return '${fa ? faDigits(j[2]) : j[2]} $m${year ? ' ${fa ? faDigits(j[0]) : j[0]}' : ''}';
+  }
+
+  String _fmtDate(DateTime d, CalendarSystem cs) {
+    if (cs == CalendarSystem.gregorian) return _gDay(d);
+    if (cs == CalendarSystem.both) return '${_jDay(d)} (${_gDay(d)})';
+    return _jDay(d);
   }
 
   String _dayHeader(String key, CalendarSystem cs) {
     final d = parseDayKey(key);
-    final g = '${d.day} ${kEnMonthsShort[d.month - 1]} ${d.year}';
-    final j = gregorianToJalali(d.year, d.month, d.day);
-    final js = '${ui == 'fa' ? faDigits(j[2]) : j[2]} ${kPersianMonths[j[1] - 1]} ${ui == 'fa' ? faDigits(j[0]) : j[0]}';
+    final g = _gDay(d, year: true);
+    final js = _jDay(d, year: true);
     if (cs == CalendarSystem.gregorian) return g;
     if (cs == CalendarSystem.both) return '$js ($g)';
     return js;
@@ -777,9 +793,12 @@ class _NeuralCalendarState extends ConsumerState<_NeuralCalendar> {
               style: TextStyle(
                   color: c.ink, fontSize: 11.5, fontWeight: FontWeight.w800),
             ),
-            Text(
-              '${_fmtDate(d0, cs)} ${_t(ui, 'to')} ${_fmtDate(d1, cs)}',
-              style: TextStyle(color: c.inkSoft, fontSize: 10.5),
+            Flexible(
+              child: Text(
+                '${_fmtDate(d0, cs)} ${_t(ui, 'to')} ${_fmtDate(d1, cs)}',
+                textAlign: TextAlign.end,
+                style: TextStyle(color: c.inkSoft, fontSize: 10.5),
+              ),
             ),
           ],
         ),

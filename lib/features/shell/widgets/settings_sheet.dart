@@ -37,7 +37,7 @@ import 'settings_packs.dart';
 class SettingsSheet extends ConsumerStatefulWidget {
   const SettingsSheet({super.key});
 
-  /// پنلِ کوچکِ کشویی از چپ، زیرِ هدر — با لمسِ بیرونِ پنل یا بازگشتِ گوشی بسته می‌شود.
+  /// پنلِ کوچکِ کشویی از راست، زیرِ هدر — با لمسِ بیرونِ پنل یا بازگشتِ گوشی بسته می‌شود.
   static Future<void> show(BuildContext context) {
     return showGeneralDialog<void>(
       context: context,
@@ -51,7 +51,7 @@ class SettingsSheet extends ConsumerStatefulWidget {
         child: const SettingsSheet(),
       ),
       transitionBuilder: (ctx, anim, _, child) => SlideTransition(
-        position: Tween<Offset>(begin: const Offset(-1, 0), end: Offset.zero)
+        position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
             .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
         child: child,
       ),
@@ -73,9 +73,9 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
     Widget gap() => const SizedBox(height: 16);
 
     return Align(
-      alignment: Alignment.topLeft,
+      alignment: Alignment.topRight,
       child: Padding(
-        padding: EdgeInsets.only(left: 8, top: top),
+        padding: EdgeInsets.only(right: 8, top: top),
         child: SizedBox(
           width: width,
           child: ConstrainedBox(
@@ -110,7 +110,12 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   gap(),
                   const _VoiceEngineSection(),
                   // صداهای دانلودی (کیفیتِ بهتر) درست زیرِ «صدای خوانش»
-                  const _OfflineTtsSection(),
+                  Consumer(
+                    builder: (ctx, ref, _) =>
+                        ref.watch(_voiceEnginePrefProvider) == 'model'
+                            ? const _OfflineTtsSection()
+                            : const _PhoneVoiceGuide(),
+                  ),
                   // حباب/دکمه‌های شناور فقط در اپِ اندروید معنا دارد
                   if (_isAndroidApp) ...[
                     gap(),
@@ -2044,6 +2049,13 @@ class _SpeechEngineSectionState extends ConsumerState<_SpeechEngineSection> {
 bool get _isAndroidApp =>
     !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
+/// انتخابِ موتورِ صدا ('model' = صدای اپ، 'phone' = صدای گوشی) — بین
+/// «انتخابگر» و «لیستِ دانلود/راهنما» مشترک است تا با هر تغییر بلافاصله عوض شوند.
+final _voiceEnginePrefProvider = StateProvider<String>((ref) =>
+    ref.read(sharedPrefsProvider).getString('voiceEnginePref') == 'model'
+        ? 'model'
+        : 'phone');
+
 class _VoiceEngineSection extends ConsumerStatefulWidget {
   const _VoiceEngineSection();
 
@@ -2054,19 +2066,11 @@ class _VoiceEngineSection extends ConsumerStatefulWidget {
 
 class _VoiceEngineSectionState extends ConsumerState<_VoiceEngineSection> {
   static const String _key = 'voiceEnginePref';
-  late String _pref;
-
-  @override
-  void initState() {
-    super.initState();
-    // پیش‌فرض = صدای گوشی؛ فقط اگر کاربر خودش «صدای اپ» را زده باشد 'model' است.
-    _pref = ref.read(sharedPrefsProvider).getString(_key) == 'model'
-        ? 'model'
-        : 'phone';
-  }
+  // پیش‌فرض = صدای گوشی؛ فقط اگر کاربر خودش «صدای اپ» را زده باشد 'model' است.
+  String get _pref => ref.watch(_voiceEnginePrefProvider);
 
   void _set(String v) {
-    setState(() => _pref = v);
+    ref.read(_voiceEnginePrefProvider.notifier).state = v;
     ref.read(sharedPrefsProvider).setString(_key, v);
   }
 
@@ -2128,6 +2132,57 @@ class _VoiceEngineSectionState extends ConsumerState<_VoiceEngineSection> {
             style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.6),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// وقتی «صدای گوشی» انتخاب است: به‌جای لیستِ دانلود، راهنمای نصبِ صداها از تنظیماتِ گوشی.
+class _PhoneVoiceGuide extends StatelessWidget {
+  const _PhoneVoiceGuide();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isAndroidApp) return const SizedBox.shrink();
+    final c = context.appColors;
+    final L = context.l10n;
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    final steps = fa
+        ? 'تنظیمات گوشی ⟵ زبان و ورودی ⟵ تبدیل متن به گفتار ⟵ موتور گوگل ⟵ نصب داده‌ی صوتی زبان‌ها'
+        : 'Phone Settings ⟶ Language & input ⟶ Text-to-speech output ⟶ Google engine ⟶ Install voice data';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 22),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.cardBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '📲 ${L.settings_voice_install_packs}',
+              style: TextStyle(
+                  color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              L.settings_voice_install_packs_hint,
+              style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.6),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              steps,
+              style: TextStyle(
+                  color: c.ink,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.7),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -12,6 +12,17 @@ const List<String> kEnMonthsShort = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
+/// نامِ ماه‌های شمسی با حروفِ لاتین (برای رابطِ غیرفارسی)
+const List<String> kPersianMonthsLatin = [
+  'Farvardin', 'Ordibehesht', 'Khordad', 'Tir', 'Mordad', 'Shahrivar',
+  'Mehr', 'Aban', 'Azar', 'Dey', 'Bahman', 'Esfand',
+];
+/// نامِ ماه‌های میلادی به فارسی (برای رابطِ فارسی)
+const List<String> kFaGregorianMonths = [
+  'ژانویه', 'فوریه', 'مارس', 'آوریل', 'مه', 'ژوئن',
+  'ژوئیه', 'اوت', 'سپتامبر', 'اکتبر', 'نوامبر', 'دسامبر',
+];
+
 String _p2(int n) => n.toString().padLeft(2, '0');
 
 /// کلیدِ روز: yyyy-MM-dd (به وقتِ محلی)

@@ -58,8 +58,11 @@ class AccountHeader extends ConsumerWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(4, 8, 16, 8),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
+          // همبرگری همیشه سمت راست (هم فارسی هم انگلیسی)
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
             children: [
               // ═══ منوی همبرگری (تنظیمات) — بالا سمت راست ═══
               InkWell(
@@ -82,7 +85,7 @@ class AccountHeader extends ConsumerWidget {
                   child: Text(
                     fromTo,
                     textDirection: rtlUi ? TextDirection.rtl : TextDirection.ltr,
-                    textAlign: TextAlign.start,
+                    textAlign: TextAlign.right,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -96,6 +99,7 @@ class AccountHeader extends ConsumerWidget {
               ),
 
             ],
+          ),
           ),
         ),
       ),

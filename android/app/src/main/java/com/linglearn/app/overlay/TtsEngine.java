@@ -290,6 +290,11 @@ final class TtsEngine {
      * فقط ~۳۰ms اول و ~۹۰ms آخر می‌ماند، پس مکثِ طبیعی هست ولی کش نمی‌آید.
      */
     private static float[] trimSilence(float[] x, int sr) {
+        return trimSilence(x, sr, false);
+    }
+
+    /** longText=true (جمله‌ی بلند/چندجمله‌ای): مکثِ آخر و مکثِ وسطِ صدا کوتاه‌تر می‌شود. */
+    private static float[] trimSilence(float[] x, int sr, boolean longText) {
         if (x == null || x.length == 0 || sr <= 0) return x;
         final float th = 0.008f;
         int first = -1, last = -1;
@@ -299,19 +304,19 @@ final class TtsEngine {
         }
         if (first < 0) return x;                       // کاملاً سکوت: دست نزن
         int from = Math.max(0, first - sr * 30 / 1000);
-        int to = Math.min(x.length, last + 1 + sr * 90 / 1000);
+        int to = Math.min(x.length, last + 1 + sr * (longText ? 35 : 90) / 1000);
         float[] y = (from == 0 && to == x.length) ? x : java.util.Arrays.copyOfRange(x, from, to);
-        return capInnerSilence(y, sr);
+        return capInnerSilence(y, sr, longText);
     }
 
     /**
      * مکثِ «وسطِ» صدا (بعد از ویرگول/نقطه/…) را سقف می‌زند: هر سکوتِ بلندتر از ~۲۵۰ms به ~۲۵۰ms
      * (با محوِ نرم) کوتاه می‌شود. مدل‌های Piper گاهی بعد از علائمِ نگارشی مکثِ چند‌ثانیه‌ای می‌سازند.
      */
-    private static float[] capInnerSilence(float[] x, int sr) {
+    private static float[] capInnerSilence(float[] x, int sr, boolean longText) {
         final float th = 0.008f;
-        final int maxGap = sr * 250 / 1000;
-        final int minRun = maxGap + sr * 40 / 1000;   // فقط سکوتِ واقعاً بلند دست می‌خورد
+        final int maxGap = sr * (longText ? 110 : 250) / 1000;
+        final int minRun = maxGap + sr * (longText ? 30 : 40) / 1000;   // فقط سکوتِ واقعاً بلند دست می‌خورد
         final int fade = Math.max(1, sr * 8 / 1000);
         float[] out = new float[x.length];
         int o = 0, i = 0, n = x.length;
@@ -339,12 +344,14 @@ final class TtsEngine {
 
     /** تولیدِ استریم؛ sink برای هر تکه صدا زده می‌شه. اگه sink false بده، null برمی‌گرده (لغو). */
     private float[] synth(String t, float sp, boolean pl, final Sink sink) {
+        // متنِ بلند / چندجمله‌ای (نه لغتِ تکی و اسلنگ) → مکث‌های کوتاه‌تر
+        final boolean longText = t.trim().split("\\s+").length > 4;
         if (pl) {
             com.k2fsa.sherpa.onnx.GeneratedAudio ga;
             synchronized (NATIVE_LOCK) { ga = tts.generate(t, 0, sp); }
             float[] all = ga == null ? null : ga.getSamples();
             if (all == null || all.length == 0) return new float[0];
-            all = trimSilence(all, sampleRate);
+            all = trimSilence(all, sampleRate, longText);
             if (!sink.accept(all)) return null;
             return all;
         }
@@ -357,7 +364,7 @@ final class TtsEngine {
                 // و ART با exceptionِ معلق کلِ پردازه رو abort می‌کنه (SIGABRT / status=6).
                 try {
                     if (samples == null || samples.length == 0) return 1;
-                    float[] copy = trimSilence(samples.clone(), sampleRate);
+                    float[] copy = trimSilence(samples.clone(), sampleRate, longText);
                     parts.add(copy);
                     if (!sink.accept(copy)) {
                         aborted[0] = true;

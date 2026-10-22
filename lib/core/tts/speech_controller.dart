@@ -1037,6 +1037,12 @@ class SpeechController extends StateNotifier<SpeechState> {
       '…' => 260,
       _ => 180,
     };
+    // جمله‌ی بلند/چندجمله‌ای (بیش از ۴ کلمه): مکثِ بین جمله‌ها خیلی کوتاه‌تر.
+    // لغت‌های تکی و اسلنگ همان مکثِ قبلی را دارند.
+    final isLong = trimmed.split(RegExp(r'\s+')).length > 4;
+    if (isLong) {
+      return ((base * 0.4) / rate.clamp(0.5, 2.0)).round().clamp(40, 160).toInt();
+    }
     // مکثِ طبیعی: با سرعتِ بالا کمی کوتاه‌تر، با سرعتِ پایین حداکثر ۴۰۰ms
     return (base / rate.clamp(0.5, 2.0)).round().clamp(80, 400).toInt();
   }
