@@ -555,13 +555,14 @@ public class BubbleService extends Service {
             lastActiveMs = SystemClock.elapsedRealtime();
         }
         showNotice(keepOpen
-                ? msg("📌 کادر باز می‌ماند تا خودت ببندی", "📌 Panel stays open until you close it")
-                : msg("📌 بسته‌شدنِ خودکارِ کادر دوباره فعال شد", "📌 Auto-hide is back on"));
+                ? msg("کادر باز می‌ماند تا خودت ببندی", "Panel stays open until you close it")
+                : msg("بسته‌شدنِ خودکارِ کادر دوباره فعال شد", "Auto-hide is back on"));
     }
 
     private void updatePinUi() {
         if (tvPin == null) return;
         tvPin.setAlpha(keepOpen ? 1f : 0.5f);
+        tvPin.setTextColor(keepOpen ? COLOR_GOLD : Color.WHITE);
         GradientDrawable bg = new GradientDrawable();
         bg.setCornerRadius(dp(10));
         bg.setColor(keepOpen ? Color.parseColor("#55F2C14E") : Color.parseColor("#1AFFFFFF"));
@@ -1753,7 +1754,7 @@ public class BubbleService extends Service {
         pinRow.addView(tvRepeat);
         pinRow.addView(tvSave);
         pinRow.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
-        tvPin = new TextView(this);
+        tvPin = new IconText(this);
         tvPin.setText("\uD83D\uDCCC");
         tvPin.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         tvPin.setGravity(Gravity.CENTER);
@@ -1763,9 +1764,10 @@ public class BubbleService extends Service {
         LinearLayout.LayoutParams pinLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         pinLp.topMargin = dp(2);
-        TextView tvClear = new TextView(this);                      // 🗑 پاک‌کردنِ تاریخچه (از هدر آمد پایین تا هدر تنگ نشود)
+        TextView tvClear = new IconText(this);                      // 🗑 پاک‌کردنِ تاریخچه (از هدر آمد پایین تا هدر تنگ نشود)
         tvClear.setText("\uD83D\uDDD1");
         tvClear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        tvClear.setTextColor(Color.WHITE);
         tvClear.setGravity(Gravity.CENTER);
         tvClear.setPadding(dp(8), dp(3), dp(8), dp(3));
         tvClear.setAlpha(0.8f);
@@ -1909,6 +1911,197 @@ public class BubbleService extends Service {
         }
     }
 
+    // ───────── آیکون‌های خطیِ برداری (Outline) — جایگزینِ ایموجی‌ها ─────────
+    // همه با یک ضخامتِ خط و یک اندازه کشیده می‌شوند؛ رنگ = رنگِ متنِ همان View (سفید / طلایی).
+    // کدِ قبلی همچنان setText("<کدِ ایموجی>") صدا می‌زند؛ اینجا همان کد به آیکونِ برداری نگاشت می‌شود.
+    private static final float ICON_STROKE_DP = 1.7f;
+
+    private final class IconText extends TextView {
+        private static final int I_RESTART = 1, I_VLOOP = 2, I_PAUSE = 3, I_PLAY = 4, I_LOOP1 = 5, I_STOP = 6,
+                I_SAVE = 7, I_REPLAY = 8, I_FF = 9, I_DROP = 10, I_PIN = 11, I_TRASH = 12, I_MIC = 13,
+                I_SPEAKER = 14, I_DOC = 15, I_CLOSE = 16;
+        private int icon;
+        private String suffix;
+        private float iconDp = 18f;
+        private final Paint sp = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint tp = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path p = new Path();
+        private final RectF r = new RectF();
+
+        IconText(Context c) {
+            super(c);
+            sp.setStyle(Paint.Style.STROKE);
+            sp.setStrokeCap(Paint.Cap.ROUND);
+            sp.setStrokeJoin(Paint.Join.ROUND);
+            tp.setStyle(Paint.Style.FILL);
+            tp.setTextAlign(Paint.Align.CENTER);
+            tp.setTypeface(Typeface.DEFAULT_BOLD);
+        }
+
+        void setIconDp(float v) { iconDp = v; requestLayout(); invalidate(); }
+
+        @Override public void setText(CharSequence t, BufferType type) {
+            String k = t == null ? "" : t.toString();
+            suffix = null;
+            icon = iconFor(k);
+            super.setText(icon != 0 ? "" : t, type);
+            invalidate();
+        }
+
+        private int iconFor(String k) {
+            if (k.startsWith("\u21BA")) { suffix = k.length() > 1 ? k.substring(1) : null; return I_REPLAY; }
+            switch (k) {
+                case "\u23EE": return I_RESTART;
+                case "\uD83C\uDFAC\uD83D\uDD01": return I_VLOOP;
+                case "\u23F8": return I_PAUSE;
+                case "\u25B6": return I_PLAY;
+                case "\uD83D\uDD02": return I_LOOP1;
+                case "\u23F9": return I_STOP;
+                case "\uD83D\uDCBE": return I_SAVE;
+                case "\u23E9": return I_FF;
+                case "\uD83C\uDF13": return I_DROP;
+                case "\uD83D\uDCCC": return I_PIN;
+                case "\uD83D\uDDD1": return I_TRASH;
+                case "\uD83C\uDF99": return I_MIC;
+                case "\uD83D\uDD0A": return I_SPEAKER;
+                case "\uD83D\uDCC4": return I_DOC;
+                case "\u2715": return I_CLOSE;
+                default: return 0;
+            }
+        }
+
+        @Override protected void onMeasure(int wSpec, int hSpec) {
+            if (icon == 0) { super.onMeasure(wSpec, hSpec); return; }
+            int box = dp(iconDp);
+            int w = Math.max(getMinWidth(), getPaddingLeft() + getPaddingRight() + box);
+            int h = Math.max(getMinHeight(), getPaddingTop() + getPaddingBottom() + box);
+            setMeasuredDimension(resolveSize(w, wSpec), resolveSize(h, hSpec));
+        }
+
+        @Override protected void onDraw(Canvas cv) {
+            if (icon == 0) { super.onDraw(cv); return; }
+            float box = dp(iconDp);
+            float s = box / 24f;
+            float cx = (getPaddingLeft() + getWidth() - getPaddingRight()) / 2f;
+            float cy = (getPaddingTop() + getHeight() - getPaddingBottom()) / 2f;
+            int col = getCurrentTextColor();
+            sp.setColor(col);
+            sp.setStrokeWidth(dp(ICON_STROKE_DP) / s);
+            tp.setColor(col);
+            cv.save();
+            cv.translate(cx - box / 2f, cy - box / 2f);
+            cv.scale(s, s);
+            p.reset();
+            switch (icon) {
+                case I_RESTART:
+                    p.moveTo(6f, 6f); p.lineTo(6f, 18f);
+                    p.moveTo(18f, 6f); p.lineTo(9.5f, 12f); p.lineTo(18f, 18f); p.close();
+                    break;
+                case I_PLAY:
+                    p.moveTo(8f, 5.5f); p.lineTo(18.5f, 12f); p.lineTo(8f, 18.5f); p.close();
+                    break;
+                case I_PAUSE:
+                    p.moveTo(9f, 6f); p.lineTo(9f, 18f);
+                    p.moveTo(15f, 6f); p.lineTo(15f, 18f);
+                    break;
+                case I_STOP:
+                    r.set(6.5f, 6.5f, 17.5f, 17.5f);
+                    p.addRoundRect(r, 2f, 2f, Path.Direction.CW);
+                    break;
+                case I_FF:
+                    p.moveTo(4f, 6f); p.lineTo(12f, 12f); p.lineTo(4f, 18f); p.close();
+                    p.moveTo(12f, 6f); p.lineTo(20f, 12f); p.lineTo(12f, 18f); p.close();
+                    break;
+                case I_VLOOP:
+                case I_LOOP1:
+                    loopPath();
+                    if (icon == I_VLOOP) {
+                        p.moveTo(10.5f, 9.5f); p.lineTo(14f, 12f); p.lineTo(10.5f, 14.5f); p.close();
+                    } else {
+                        p.moveTo(10.8f, 10.2f); p.lineTo(12.5f, 9f); p.lineTo(12.5f, 15f);
+                    }
+                    break;
+                case I_SAVE:
+                    p.moveTo(5f, 5f); p.lineTo(16.5f, 5f); p.lineTo(19f, 7.5f); p.lineTo(19f, 19f);
+                    p.lineTo(5f, 19f); p.close();
+                    p.moveTo(8f, 5f); p.lineTo(8f, 9f); p.lineTo(15f, 9f); p.lineTo(15f, 5f);
+                    p.moveTo(8f, 19f); p.lineTo(8f, 14f); p.lineTo(16f, 14f); p.lineTo(16f, 19f);
+                    break;
+                case I_REPLAY:
+                    r.set(5f, 6f, 19f, 20f);
+                    p.arcTo(r, -100f, 300f, true);
+                    p.moveTo(14.66f, 8.48f); p.lineTo(10.79f, 6.11f); p.lineTo(13.62f, 2.56f);
+                    break;
+                case I_DROP:
+                    p.moveTo(12f, 4f);
+                    p.cubicTo(9f, 7.5f, 6.5f, 10.5f, 6.5f, 14f);
+                    p.cubicTo(6.5f, 17.3f, 9f, 20f, 12f, 20f);
+                    p.cubicTo(15f, 20f, 17.5f, 17.3f, 17.5f, 14f);
+                    p.cubicTo(17.5f, 10.5f, 15f, 7.5f, 12f, 4f);
+                    p.close();
+                    p.moveTo(9.6f, 14.6f); p.quadTo(9.6f, 16.6f, 11.6f, 17.2f);
+                    break;
+                case I_PIN:
+                    p.moveTo(9f, 4f); p.lineTo(15f, 4f);
+                    p.moveTo(10f, 4f); p.lineTo(10f, 10f); p.lineTo(7.5f, 13f); p.lineTo(16.5f, 13f);
+                    p.lineTo(14f, 10f); p.lineTo(14f, 4f);
+                    p.moveTo(12f, 13f); p.lineTo(12f, 20f);
+                    break;
+                case I_TRASH:
+                    p.moveTo(5f, 7f); p.lineTo(19f, 7f);
+                    p.moveTo(9.5f, 7f); p.lineTo(9.5f, 4.8f); p.lineTo(14.5f, 4.8f); p.lineTo(14.5f, 7f);
+                    p.moveTo(6.5f, 7f); p.lineTo(7.5f, 19f); p.lineTo(16.5f, 19f); p.lineTo(17.5f, 7f);
+                    p.moveTo(10f, 10.5f); p.lineTo(10f, 16f);
+                    p.moveTo(14f, 10.5f); p.lineTo(14f, 16f);
+                    break;
+                case I_MIC:
+                    r.set(9f, 3.5f, 15f, 14f);
+                    p.addRoundRect(r, 3f, 3f, Path.Direction.CW);
+                    r.set(6.5f, 6f, 17.5f, 17f);
+                    p.moveTo(17.5f, 11.5f);
+                    p.arcTo(r, 0f, 180f, false);
+                    p.moveTo(12f, 17f); p.lineTo(12f, 20.5f);
+                    p.moveTo(9f, 20.5f); p.lineTo(15f, 20.5f);
+                    break;
+                case I_SPEAKER:
+                    p.moveTo(4f, 10f); p.lineTo(8f, 10f); p.lineTo(13f, 6f); p.lineTo(13f, 18f);
+                    p.lineTo(8f, 14f); p.lineTo(4f, 14f); p.close();
+                    r.set(9.5f, 8.5f, 16.5f, 15.5f);
+                    p.arcTo(r, -45f, 90f, true);
+                    r.set(6f, 5f, 20f, 19f);
+                    p.arcTo(r, -45f, 90f, true);
+                    break;
+                case I_DOC:
+                    p.moveTo(7f, 3.5f); p.lineTo(14f, 3.5f); p.lineTo(18.5f, 8f); p.lineTo(18.5f, 20.5f);
+                    p.lineTo(7f, 20.5f); p.close();
+                    p.moveTo(14f, 3.5f); p.lineTo(14f, 8f); p.lineTo(18.5f, 8f);
+                    p.moveTo(9.5f, 12.5f); p.lineTo(16f, 12.5f);
+                    p.moveTo(9.5f, 16f); p.lineTo(16f, 16f);
+                    break;
+                case I_CLOSE:
+                    p.moveTo(6.5f, 6.5f); p.lineTo(17.5f, 17.5f);
+                    p.moveTo(17.5f, 6.5f); p.lineTo(6.5f, 17.5f);
+                    break;
+                default:
+                    break;
+            }
+            cv.drawPath(p, sp);
+            if (icon == I_REPLAY && suffix != null) {
+                tp.setTextSize("\u221E".equals(suffix) ? 10f : 8.5f);
+                cv.drawText(suffix, 12f, "\u221E".equals(suffix) ? 16.4f : 16f, tp);
+            }
+            cv.restore();
+        }
+
+        /** حلقه‌ی «تکرار»: دو فلشِ چرخشی (بالا-راست و پایین-چپ). */
+        private void loopPath() {
+            p.moveTo(17f, 4f); p.lineTo(20f, 7f); p.lineTo(17f, 10f);
+            p.moveTo(4f, 11f); p.lineTo(4f, 9f); p.quadTo(4f, 7f, 6f, 7f); p.lineTo(20f, 7f);
+            p.moveTo(7f, 20f); p.lineTo(4f, 17f); p.lineTo(7f, 14f);
+            p.moveTo(20f, 13f); p.lineTo(20f, 15f); p.quadTo(20f, 17f, 18f, 17f); p.lineTo(4f, 17f);
+        }
+    }
+
     // ───────── دکمه‌ی فونت (پایین-چپِ کادر) ─────────
     private TextView buildFontButton() {
         TextView t = new TextView(this);
@@ -1941,7 +2134,7 @@ public class BubbleService extends Service {
     }
 
     private TextView headerButton(String label, View.OnClickListener l) {
-        TextView t = new TextView(this);
+        TextView t = new IconText(this);
         t.setText(label);
         t.setTextColor(Color.WHITE);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
@@ -2265,7 +2458,7 @@ public class BubbleService extends Service {
     /** hl: متنی که هنگامِ خواندن جمله‌به‌جمله هایلایت می‌شود (null = بدونِ هایلایت). */
     private TextView speakerButton(final Txt text, final Txt lang, final TextView hl,
                                    final Entry ent, final String kind) {
-        final TextView b = new TextView(this);
+        final TextView b = new IconText(this);
         b.setText("\uD83D\uDD0A");
         style(b, 18, false);
         b.setTextColor(Color.WHITE);
@@ -3799,6 +3992,7 @@ public class BubbleService extends Service {
                         moved = true;
                         panelDragging = true;
                         if (!picked) main.removeCallbacks(longRun);
+                        showCloseTarget();     // مثلِ ذره‌بین: به‌محضِ شروعِ کشیدن، دایره‌ی ✕ پایینِ صفحه ظاهر می‌شود
                     }
                     if (moved) {
                         panelFree = true;
@@ -3806,18 +4000,18 @@ public class BubbleService extends Service {
                         panelFreeY = Math.round(startY + dy);
                         refreshLayout();
                     }
-                    if (picked) updateHot(e.getRawX(), e.getRawY());
+                    if (picked || moved) updateHot(e.getRawX(), e.getRawY());
                     return true;
                 }
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL: {
                     main.removeCallbacks(longRun);
                     boolean up = e.getActionMasked() == MotionEvent.ACTION_UP;
-                    boolean wasPicked = picked, wasHot = hot;
+                    boolean wasPicked = picked, wasHot = hot, wasMoved = moved;
                     picked = false; hot = false; moved = false;
                     panelDragging = false;
                     lastActiveMs = SystemClock.elapsedRealtime();
-                    if (wasPicked) {
+                    if (wasPicked || wasMoved) {
                         if (up && wasHot) { closePanelAnimated(); }
                         else {
                             panel.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(140).start();
@@ -3839,6 +4033,21 @@ public class BubbleService extends Service {
             if (h) panel.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
             panel.animate().scaleX(h ? 0.55f : 1.02f).scaleY(h ? 0.55f : 1.02f).alpha(h ? 0.6f : 1f).setDuration(140).start();
         }
+    }
+
+    private boolean gripHot = false;
+
+    /** کشیدنِ کادر با نوارِ هاشور: مثلِ ذره‌بین، ✕ نشان داده می‌شود و رها کردن روی آن سرویس را کاملاً می‌بندد. */
+    private void gripDragHot(float rx, float ry) {
+        if (panel == null) return;
+        showCloseTarget();
+        boolean h = closeView != null && Math.hypot(rx - tgtCx, ry - tgtCy) < dp(90);
+        if (h == gripHot) return;
+        gripHot = h;
+        overTarget = h;
+        if (closeView != null) closeView.setHot(h);
+        if (h) panel.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+        panel.animate().scaleX(h ? 0.55f : 1f).scaleY(h ? 0.55f : 1f).alpha(h ? 0.6f : 1f).setDuration(140).start();
     }
 
     /** کادر روی ✕ رها شد: کوچک و محو می‌شود و سرویس کاملاً بسته می‌شود. */
@@ -3881,21 +4090,23 @@ public class BubbleService extends Service {
             sh.setOrientation(LinearLayout.HORIZONTAL);
             sh.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
             sh.setGravity(Gravity.CENTER_VERTICAL);
-            tvShadowPlay = new TextView(this);
+            tvShadowPlay = new IconText(this);
             tvShadowPlay.setText("\u25B6");
             tvShadowPlay.setTextColor(Color.WHITE);
             tvShadowPlay.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
             tvShadowPlay.setGravity(Gravity.CENTER);
             tvShadowPlay.setPadding(dp(10), 0, dp(10), 0);
             tvShadowPlay.setVisibility(View.GONE);
+            ((IconText) tvShadowPlay).setIconDp(16f);
             tvShadowPlay.setOnClickListener(v -> shadowPlay());
             sh.addView(tvShadowPlay, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            tvShadowRec = new TextView(this);
+            tvShadowRec = new IconText(this);
             tvShadowRec.setTextColor(Color.WHITE);
             tvShadowRec.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             tvShadowRec.setGravity(Gravity.CENTER);
             tvShadowRec.setPadding(dp(10), 0, dp(10), 0);
+            ((IconText) tvShadowRec).setIconDp(16f);
             tvShadowRec.setOnClickListener(v -> shadowToggle());
             sh.addView(tvShadowRec, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -3938,6 +4149,7 @@ public class BubbleService extends Service {
                         panelFreeX = Math.round(d[4] + rdx);
                         panelFreeY = Math.round(d[5] + rdy);
                         refreshLayout();
+                        gripDragHot(ev.getRawX(), ev.getRawY());
                     }
                     return true;
                 }
@@ -3946,6 +4158,13 @@ public class BubbleService extends Service {
                     f.setActive(false);
                     panelDragging = false;
                     lastActiveMs = SystemClock.elapsedRealtime();
+                    if (d[3] == 2) {
+                        boolean onX = gripHot;
+                        gripHot = false;
+                        if (onX && ev.getActionMasked() == MotionEvent.ACTION_UP) { closePanelAnimated(); return true; }
+                        if (panel != null) panel.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(140).start();
+                        hideCloseTarget();
+                    }
                     if (d[3] == 0 && ev.getActionMasked() == MotionEvent.ACTION_UP) toggleChrome();
                     else saveViewPrefs();
                     return true;
@@ -4041,7 +4260,7 @@ public class BubbleService extends Service {
         srcLp.setMarginStart(dp(2));
         e.srcRow.addView(e.tvSrc, srcLp);
         e.srcRow.addView(srcSpeak, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        TextView replay = new TextView(this);
+        TextView replay = new IconText(this);
         replay.setText(replayLabel());
         style(replay, 20, true);
         replay.setTextColor(Color.WHITE);
@@ -5064,8 +5283,8 @@ public class BubbleService extends Service {
                     startActivity(ci);
                 } catch (Throwable ignored) {}
                 showNotice(pok
-                        ? msg("ذخیره شد ✓ (بدونِ لینک). برای لینک: در همان برنامه Share ← Copy link بزن و دوباره 💾",
-                              "Saved ✓ (no link). For the link: Share → Copy link in that app, then tap 💾 again")
+                        ? msg("ذخیره شد ✓ (بدونِ لینک). برای لینک: در همان برنامه Share ← Copy link بزن و دوباره دکمه‌ی ذخیره",
+                              "Saved ✓ (no link). For the link: Share → Copy link in that app, then tap Save again")
                         : msg("ذخیره نشد", "Save failed"));
                 return;
             }
@@ -5521,8 +5740,8 @@ public class BubbleService extends Service {
     }
 
     private void packDone() {
-        main.post(() -> showNotice(msg("بسته‌ی آفلاین آماده شد ✓ — دوباره روی 🎙 بزنید",
-                "Offline pack ready ✓ — tap 🎙 again")));
+        main.post(() -> showNotice(msg("بسته‌ی آفلاین آماده شد ✓ — دوباره دکمه‌ی میکروفون را بزنید",
+                "Offline pack ready ✓ — tap the mic again")));
     }
 
     private void packFailed(final Exception e) {
@@ -5665,7 +5884,7 @@ public class BubbleService extends Service {
             final AudioRecord fr = rec;
             new Thread(() -> feedLoop(fr), "bubble-feed").start();
             launchGoogleHost(src);
-            showNotice(msg("🎙 در حال اجرا…", "🎙 Running…"));
+            showNotice(msg("در حال اجرا…", "Running…"));
             return true;
         } catch (Exception e) {
             Log.w(TAG, "cannot start recognizer engine", e);
@@ -5742,7 +5961,7 @@ public class BubbleService extends Service {
             rec.startRecording();
             final AudioRecord fr = rec;
             new Thread(() -> runSherpa(fr, src, whisperModel), "bubble-feed").start();
-            showNotice(msg("🎙 در حال اجرا…", "🎙 Running…"));
+            showNotice(msg("در حال اجرا…", "Running…"));
             return true;
         } catch (Exception e) {
             Log.w(TAG, "cannot start sherpa engine", e);
@@ -5961,7 +6180,7 @@ public class BubbleService extends Service {
             record = rec;
             recording = true;
             setRecordingUi(true);
-            showNotice(msg("🎙 در حال اجرا…", "🎙 Running…"));
+            showNotice(msg("در حال اجرا…", "Running…"));
             new Thread(() -> captureLoop(rec), "bubble-capture").start();
         } catch (Exception e) {
             Log.e(TAG, "startCapture failed", e);
