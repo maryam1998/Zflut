@@ -216,6 +216,12 @@ final class YtSubtitles {
 
     void stopLoop() { loopSent = -1; loopLeft = 0; }
 
+    /** تنظیمِ 🔁 وسطِ تکرار عوض شد: همان لحظه اعمال می‌شود (times < 0 = بی‌نهایت، ۱ = همین دورِ جاری آخر است). */
+    void updateLoopTimes(int times) {
+        if (loopSent < 0) return;
+        loopLeft = times < 0 ? -1 : Math.max(0, times - 1);
+    }
+
     /** طولِ جمله‌ی آخرین ↺ (ms) — برای اینکه پلیرِ اپ تا پایانش مکث کند. */
     long loopSpanMs() { return Math.max(0L, loopEndMs - loopStartMs); }
 

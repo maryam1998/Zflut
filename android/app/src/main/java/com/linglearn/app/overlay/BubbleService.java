@@ -432,7 +432,7 @@ public class BubbleService extends Service {
     // ── نمایش/پنهان‌شدنِ خودکارِ کادر ───────────────────────────────────────
     // وقتی چیزی پخش نمی‌شه (ویدیو pause، صدا قطع، یا ضبط متوقف شد) کادر خودش جمع می‌شه و
     // با شروعِ دوباره‌ی پخش خودش برمی‌گرده. بستنِ دستی با ▾ همچنان تا لمسِ حباب پنهان می‌مونه.
-    private static final long IDLE_HIDE_MS = 0;   // ⚡ بلافاصله بعد از قطعِ صدا بسته می‌شود (مگر 📌 روشن باشد).   // بعد از قطعِ صدا/ویدیو چند ثانیه صبر می‌کنه (مکثِ بین جمله‌ها کادر را نپرانه) و بعد نرم محو می‌شه
+    private static final long IDLE_HIDE_MS = 8000;   // ⏳ بعد از ۸ ثانیه سکوت کادر نرم جمع می‌شود (مکثِ طولانیِ صدا/ویدیو کادر را نمی‌پراند)؛ 📌 = هیچ‌وقت. نوارِ شمارشِ باریکِ پایینِ کادر زمانِ باقی‌مانده را نشان می‌دهد.   // بعد از قطعِ صدا/ویدیو چند ثانیه صبر می‌کنه (مکثِ بین جمله‌ها کادر را نپرانه) و بعد نرم محو می‌شه
     private static final long IDLE_TICK_MS = 120;     // دقتِ بررسیِ وضعیتِ پخش
     private static final long REOPEN_CONFIRM_MS = 400; // صدا باید این‌قدر پیوسته باشه تا کادر باز شه (نویزِ کوتاه کادر را باز نکنه)
     private static final long PANEL_FADE_IN_MS = 180;
@@ -445,6 +445,7 @@ public class BubbleService extends Service {
     // 📌 «باز بمان»: وقتی روشن است کادر هیچ‌وقت خودکار (بی‌کاری / لمسِ بیرونِ کادر) بسته نمی‌شود؛ خاموش = رفتارِ قبلی
     private boolean keepOpen = false;
     private TextView tvPin;
+    private View idleBar;                    // نوارِ شمارشِ بسته‌شدنِ خودکار
     private boolean idlePinned = false;      // کاربر در حالِ سکوت کادر را برای خواندن باز کرده؛ تا بستنِ دستی خودکار بسته نشه
     private boolean fadingOut = false;       // کادر در حالِ محو شدنِ خودکار است
     private int fadeGen = 0;
@@ -497,6 +498,7 @@ public class BubbleService extends Service {
         long now = SystemClock.elapsedRealtime();
         boolean active = somethingPlaying(now);
         boolean busy = panelDragging || (wordCard != null && wordCard.getVisibility() == View.VISIBLE)
+                || now - lastPanelTouchMs < 2500
                 || (scroll != null && (scroll.frozen || SystemClock.uptimeMillis() - scroll.lastUserTouch < 1500))
                 // تمرینِ shadowing: وسطِ ضبط/پخشِ صدای خودت کادر نباید جمع بشه (ضبط حداکثر ۱۰ دقیقه حساب می‌شود)
                 || (shadowRecording && now - shadowStartMs < 600000) || shadowPlayer != null;
@@ -510,6 +512,7 @@ public class BubbleService extends Service {
         }
         if (!active) activeSinceMs = 0;
         else if (activeSinceMs == 0) activeSinceMs = now;
+        updateIdleBar(now, active, busy);
 
         if (fadingOut) {
             // وسطِ محو شدن صدا برگشت یا کاربر لمس کرد → منصرف شو
@@ -522,6 +525,23 @@ public class BubbleService extends Service {
             fadeOutPanelForIdle();
         }
         main.postDelayed(idleRunnable, IDLE_TICK_MS);
+    }
+
+    /** نوارِ باریکِ طلاییِ پایینِ کادر: بعد از ~۱٫۵ ثانیه سکوت شروع به کم شدن می‌کند و با بسته‌شدنِ کادر تمام می‌شود. */
+    private void updateIdleBar(long now, boolean active, boolean busy) {
+        final View bar = idleBar;
+        if (bar == null) return;
+        final long start = 1500;
+        final long el = now - lastActiveMs;
+        boolean counting = panelShown && !fadingOut && !keepOpen && !userHidden && !active && !busy
+                && IDLE_HIDE_MS > start && el > start;
+        if (!counting) { if (bar.getVisibility() != View.INVISIBLE) bar.setVisibility(View.INVISIBLE); return; }
+        float left = 1f - (el - start) / (float) (IDLE_HIDE_MS - start);
+        left = Math.max(0f, Math.min(1f, left));
+        if (bar.getVisibility() != View.VISIBLE) bar.setVisibility(View.VISIBLE);
+        bar.setPivotX(bar.getWidth() / 2f);
+        bar.setScaleX(left);
+        bar.setAlpha(0.35f + 0.65f * left);
     }
 
     /** بسته‌شدنِ خودکار: محوِ نرم و بعد برداشتنِ کادر (جای دستیِ کادر حفظ می‌شه). */
@@ -1831,6 +1851,15 @@ public class BubbleService extends Service {
         pinRowView = pinRow;
         panel.addView(pinRow, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        idleBar = new View(this);
+        GradientDrawable ibg = new GradientDrawable();
+        ibg.setColor(COLOR_GOLD);
+        ibg.setCornerRadius(dp(2));
+        idleBar.setBackground(ibg);
+        idleBar.setVisibility(View.INVISIBLE);
+        LinearLayout.LayoutParams ibLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(2));
+        ibLp.topMargin = dp(3);
+        panel.addView(idleBar, ibLp);
         LinearLayout.LayoutParams gbLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(30));
         gbLp.setMargins(-dp(12), dp(4), -dp(12), -dp(10));
@@ -2623,9 +2652,21 @@ public class BubbleService extends Service {
         repeatSetting = repeatSetting == 0 ? 2 : repeatSetting == 2 ? 3 : repeatSetting == 3 ? REPEAT_INF : 0;
         getSharedPreferences(PREFS, MODE_PRIVATE).edit().putInt("repeatSetting", repeatSetting).apply();
         updateRepeatButton();
+        applyRepeatToRunning();
         showNotice(repeatSetting == 0 ? msg("تکرار خاموش", "Repeat off")
                 : repeatSetting == REPEAT_INF ? msg("تکرار ∞ — هر جمله، بعد جمله‌ی بعدی", "Repeat ∞ — each sentence, then the next")
                 : msg("هر جمله " + repeatSetting + " بار، بعد جمله‌ی بعدی", "Each sentence " + repeatSetting + "×, then the next"));
+    }
+
+    /** تغییرِ 🔁 روی تکرارِ در حالِ اجرا (صدای ضبط‌شده / پلیرِ یوتیوب) همان لحظه اعمال شود، نه از پخشِ بعدی. */
+    private void applyRepeatToRunning() {
+        final int times = repeatSetting == 0 ? 1 : repeatSetting;   // REPEAT_INF = -1
+        if (replayingEntry != null) SentenceAudio.setTimes(times);
+        final YtSubtitles y = yt;
+        if (y != null) {
+            y.updateLoopTimes(times);
+            if (times != -1 && y.isLooping(ytHoldIdx)) ytHoldUntil = SystemClock.uptimeMillis() + y.loopSpanMs() * Math.max(1, times) + 1500;
+        }
     }
 
     /** عددِ روی دکمه‌ی ↺: ۲ / ۳ / ∞ (خاموش = فقط ↺). */
@@ -3220,8 +3261,9 @@ public class BubbleService extends Service {
         xbg.setColor(Color.parseColor("#1AFFFFFF"));
         xbg.setStroke(dp(1), Color.parseColor("#47FFFFFF"));
         cardX.setBackground(xbg);
-        cardX.setPadding(dp(7), dp(7), dp(7), dp(7));
-        LinearLayout.LayoutParams xlp = new LinearLayout.LayoutParams(dp(34), dp(34));
+        cardX.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        cardX.setPadding(dp(4), dp(4), dp(4), dp(4));
+        LinearLayout.LayoutParams xlp = new LinearLayout.LayoutParams(dp(26), dp(26));
         xlp.leftMargin = dp(4);
         top.addView(cardX, xlp);
         wordCard.addView(top);
@@ -5559,6 +5601,9 @@ public class BubbleService extends Service {
         ytEntries.clear();
         refreshHeader();
         updateYtButton();
+        ytAwayCount = 0;
+        main.removeCallbacks(ytAwayTick);
+        main.postDelayed(ytAwayTick, 3000);
     }
 
     /** ▶ بدونِ دسترسیِ اعلان / نگه‌داشتنِ ▶: توضیحِ شفاف و انتخابِ «همگام با پخش» یا «فقط متنِ کامل». */
@@ -5642,7 +5687,34 @@ public class BubbleService extends Service {
         updateYtButton();
     }
 
+    // ───────── 🔀 وقتی در حالتِ یوتیوب هستی و پلیرِ دیگری (کتابِ صوتی، پادکست، …) شروع به پخش کرد، خودکار برو روی LIVE ─────────
+    private int ytAwayCount = 0;
+    private final Runnable ytAwayTick = new Runnable() {
+        @Override public void run() {
+            if (!running || yt == null || !yt.isActive()) { ytAwayCount = 0; return; }
+            if (!ytFullMode) {
+                boolean other = false;
+                try {
+                    YtMedia.Now n = YtMedia.nowPlaying(BubbleService.this);
+                    other = n != null && n.playing && !YtMedia.YT_PKG.equals(n.pkg)
+                            && !getPackageName().equals(n.pkg);
+                } catch (Throwable ignored) {}
+                ytAwayCount = other ? ytAwayCount + 1 : 0;     // دو بررسیِ پشت‌سرهم (~۳ ثانیه) تا وضعیتِ گذرا اشتباه نشود
+                if (ytAwayCount >= 2) { ytAwayCount = 0; switchYoutubeToLive(); return; }
+            }
+            main.postDelayed(this, 1500);
+        }
+    };
+
+    private void switchYoutubeToLive() {
+        stopYoutube(false);
+        userHidden = false;
+        if (!recording) toggleRecording();
+        showNotice(msg("پخش از پلیر دیگر شناسایی شد — ترجمه‌ی زنده", "Another player detected — live translation"));
+    }
+
     private void stopYoutube(boolean notify) {
+        main.removeCallbacks(ytAwayTick);
         YtSubtitles engine = yt;
         yt = null;
         ytAutoStarted = false;

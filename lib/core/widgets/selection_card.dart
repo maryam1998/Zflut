@@ -323,10 +323,46 @@ class SelectionCard extends ConsumerStatefulWidget {
   ConsumerState<SelectionCard> createState() => _SelectionCardState();
 }
 
-class _SelectionCardState extends ConsumerState<SelectionCard> {
+class _SelectionCardState extends ConsumerState<SelectionCard>
+    with SingleTickerProviderStateMixin {
   late String _text = widget.text.trim();
   bool _whole = false;
   final Map<String, String> _results = {};
+
+  // ── بستنِ خودکار: ۶ ثانیه بعد از باز شدن؛ اگر کاربر یکی از دکمه‌های افزودن را زد، ۴ ثانیه بعد از آن.
+  //    هر لمس داخلِ کارت شمارش را از نو می‌کند. نوارِ باریکِ پایینِ کارت زمانِ باقی‌مانده را نشان می‌دهد.
+  static const _idleClose = Duration(seconds: 6);
+  static const _afterActionClose = Duration(seconds: 4);
+  late final AnimationController _bar =
+      AnimationController(vsync: this, duration: _idleClose);
+  bool _acted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bar.addStatusListener((st) {
+      if (st == AnimationStatus.dismissed && mounted) widget.onClose();
+    });
+    _arm();
+  }
+
+  @override
+  void dispose() {
+    _bar.dispose();
+    super.dispose();
+  }
+
+  void _arm() {
+    if (!mounted) return;
+    _bar.duration = _acted ? _afterActionClose : _idleClose;
+    _bar.reverse(from: 1.0);
+  }
+
+  /// یکی از دکمه‌های «ذخیره برای داستان بعدی / گرامر / لایتنر» زده شد → ۴ ثانیه تا بسته شدن.
+  void _markActed() {
+    _acted = true;
+    _arm();
+  }
 
   bool get _canExpand =>
       !_whole &&
@@ -382,7 +418,10 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
       textDirection: kAppLanguages[ui]?.dir ?? TextDirection.rtl,
       child: Material(
         color: Colors.transparent,
-        child: Container(
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => _arm(),
+          child: Container(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
           decoration: BoxDecoration(
             color: kCardBg,
@@ -435,7 +474,6 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                       tooltip: _s(ui, 'close'),
                       onTap: widget.onClose,
                     ),
-                    const SizedBox(width: 2),
                     // از راست به چپ: 🔊 ← 🧬 ← ✕
                     _CardIconButton(
                       icon: Icons.hub_outlined,
@@ -488,20 +526,24 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                 emoji: '🔖',
                 label: _s(ui, storySaved ? 'storyDone' : 'story'),
                 active: storySaved,
-                onTap: () => ref.read(savedWordsProvider.notifier).toggleSave(
-                      SavedWord(
-                        word: _text,
-                        langCode: lang,
-                        meaning: _meaning(sel),
-                        savedAt: DateTime.now(),
-                      ),
-                    ),
+                onTap: () {
+                  _markActed();
+                  ref.read(savedWordsProvider.notifier).toggleSave(
+                        SavedWord(
+                          word: _text,
+                          langCode: lang,
+                          meaning: _meaning(sel),
+                          savedAt: DateTime.now(),
+                        ),
+                      );
+                },
               ),
               _ActionButton(
                 emoji: '🧩',
                 label: _s(ui, grammarSaved ? 'grammarDone' : 'grammar'),
                 active: grammarSaved,
                 onTap: () {
+                  _markActed();
                   if (grammarSaved) return;
                   final sentence = _whole ? _text : widget.sentence.trim();
                   ref.read(grammarNotesProvider.notifier).addNote(
@@ -521,6 +563,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                 label: _s(ui, leitnerAdded ? 'leitnerDone' : 'leitner'),
                 active: leitnerAdded,
                 onTap: () {
+                  _markActed();
                   if (leitnerAdded) return;
                   ref.read(leitnerProvider.notifier).addToLeitner(
                         SavedWord(
@@ -532,8 +575,31 @@ class _SelectionCardState extends ConsumerState<SelectionCard> {
                       );
                 },
               ),
+              const SizedBox(height: 8),
+              // نوارِ شمارشِ بسته‌شدنِ خودکار
+              AnimatedBuilder(
+                animation: _bar,
+                builder: (_, __) => ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: Stack(
+                    children: [
+                      Container(
+                          height: 2.5, color: Colors.white.withOpacity(0.08)),
+                      FractionallySizedBox(
+                        widthFactor: _bar.value.clamp(0.0, 1.0),
+                        child: Container(
+                          height: 2.5,
+                          color: kCardBorderGold
+                              .withOpacity(0.55 + 0.45 * _bar.value),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -881,7 +947,7 @@ class _CardIconButton extends StatelessWidget {
   }
 }
 
-/// دکمه‌ی ✕ی کارت: دایره‌ی نیمه‌شفاف با حلقه‌ی ظریف؛ تنها راهِ بستنِ کارت.
+/// دکمه‌ی ✕ی کارت: دایره‌ی کوچکِ نیمه‌شفاف با حلقه‌ی ظریف؛ ناحیه‌ی لمس بزرگ‌تر از ظاهرش است.
 class _CardCloseButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback? onTap;
@@ -892,24 +958,23 @@ class _CardCloseButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: Padding(
-        padding: const EdgeInsets.all(3),
-        child: Material(
-          color: Colors.white.withOpacity(0.10),
-          shape: CircleBorder(
-            side: BorderSide(color: Colors.white.withOpacity(0.28), width: 1),
-          ),
-          child: InkResponse(
-            onTap: onTap,
-            customBorder: const CircleBorder(),
-            highlightColor: const Color(0x55E53935),
-            splashColor: const Color(0x66E53935),
-            radius: 20,
-            child: const SizedBox(
-              width: 30,
-              height: 30,
-              child: Icon(Icons.close_rounded, size: 18, color: Colors.white),
+      child: InkResponse(
+        onTap: onTap,
+        radius: 18,
+        highlightColor: const Color(0x55E53935),
+        splashColor: const Color(0x66E53935),
+        child: Padding(
+          padding: const EdgeInsets.all(7),
+          child: Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.10),
+              border:
+                  Border.all(color: Colors.white.withOpacity(0.30), width: 1),
             ),
+            child: const Icon(Icons.close_rounded, size: 13, color: Colors.white),
           ),
         ),
       ),

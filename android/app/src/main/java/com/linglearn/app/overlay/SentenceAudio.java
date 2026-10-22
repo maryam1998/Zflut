@@ -32,6 +32,7 @@ final class SentenceAudio {
     private static final Object PLAY = new Object();
     private static int token = 0;
     private static AudioTrack track;
+    private static volatile int playTimes = 1;          // تعدادِ تکرارِ پخشِ جاری؛ وسطِ پخش هم قابلِ تغییر است
 
     private SentenceAudio() {}
 
@@ -120,6 +121,7 @@ final class SentenceAudio {
         synchronized (PLAY) {
             stopLocked();
             my = ++token;
+            playTimes = times;
         }
         Thread th = new Thread(() -> run(pcm, times, onDone, my), "sentence-replay");
         th.setDaemon(true);
@@ -129,6 +131,9 @@ final class SentenceAudio {
     static void stop() {
         synchronized (PLAY) { stopLocked(); }
     }
+
+    /** تعدادِ تکرارِ پخشِ در حالِ اجرا را همان لحظه عوض می‌کند (times < 0 = بی‌نهایت). */
+    static void setTimes(int times) { playTimes = times; }
 
     private static void stopLocked() {
         token++;
@@ -172,7 +177,7 @@ final class SentenceAudio {
                 track = t;
             }
             int rep = 0;
-            while (alive(my) && (times < 0 || rep < times)) {
+            while (alive(my) && (playTimes < 0 || rep < playTimes)) {
                 if (rep > 0) {
                     t.stop();
                     t.reloadStaticData();
@@ -182,7 +187,7 @@ final class SentenceAudio {
                     try { Thread.sleep(20); } catch (InterruptedException e) { return; }
                 }
                 rep++;
-                if (alive(my) && (times < 0 || rep < times)) sleepWhileAlive(my, REPEAT_GAP_MS);
+                if (alive(my) && (playTimes < 0 || rep < playTimes)) sleepWhileAlive(my, REPEAT_GAP_MS);
             }
             finished = alive(my);
         } catch (Throwable ignored) {
