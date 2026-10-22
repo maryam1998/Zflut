@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../app.dart';
+import '../../core/router/back_handlers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/widgets/level_chips.dart';
 import '../../core/constants/supported_languages.dart';
@@ -381,6 +382,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   @override
   void initState() {
     super.initState();
+    BackHandlers.add(_handleBack);
     final d = ref.read(storyDraftProvider);
     if (d != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -389,8 +391,30 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     }
   }
 
+  /// دکمه‌ی «بازگشت» گوشی: اول داستانِ بازشده/خوانده‌شده و زیرصفحه‌ی کتابخانه/ذخیره‌شده‌ها بسته می‌شوند.
+  bool _handleBack() {
+    if (!mounted) return false;
+    if (_openStoryId != null) {
+      setState(() => _openStoryId = null);
+      return true;
+    }
+    if (_reading != null) {
+      _readingClose();
+      return true;
+    }
+    if (_showLibrary || _showSaved) {
+      setState(() {
+        _showLibrary = false;
+        _showSaved = false;
+      });
+      return true;
+    }
+    return false;
+  }
+
   @override
   void dispose() {
+    BackHandlers.remove(_handleBack);
     _custom.dispose();
     _query.dispose();
     _libSearch.dispose();

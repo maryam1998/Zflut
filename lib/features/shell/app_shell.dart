@@ -1,12 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app.dart';
 import '../../core/constants/supported_languages.dart';
 import '../../core/mascot/mascot_pin_provider.dart';
+import '../../core/providers/app_prefs_provider.dart';
 import '../../core/providers/player_prefs_provider.dart';
+import '../../core/router/back_handlers.dart';
 import '../../core/sync/cloud_sync.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../grammar/widgets/practice_sheet.dart';
@@ -21,13 +25,82 @@ const bool kShowPracticeSheet = false;
 /// پوستهٔ اپ. مثل Hope هدر/تب‌ها اینجا ثابت نیستند؛ هر تب آن‌ها را
 /// (ShellHeader) به‌عنوان اولین آیتمِ لیستِ خودش نشان می‌دهد تا با اسکرول
 /// بالا برود. فقط پنل تمرین و پلیر پایینِ صفحه ثابت می‌مانند.
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   final Widget child;
   const AppShell({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  /// تب‌هایی که کاربر قبلاً دیده (آخرین = همان که با «بازگشت» برمی‌گردد).
+  final List<String> _history = [];
+  String _loc = '';
+  bool _goingBack = false;
+  DateTime? _lastBack;
+
+  static const String _home = '/story';
+
+  /// جابه‌جاییِ تب را ثبت می‌کند (فقط حسابداری؛ هیچ setState ای نیست).
+  void _track(String loc) {
+    if (loc == _loc) return;
+    if (_goingBack) {
+      _goingBack = false;
+    } else if (_loc.isNotEmpty) {
+      _history.remove(_loc);
+      _history.add(_loc);
+      if (_history.length > 20) _history.removeAt(0);
+    }
+    _history.remove(loc);
+    _loc = loc;
+  }
+
+  /// دکمه‌ی «بازگشت» گوشی (دیالوگ/شیت‌ها قبل از این به‌صورت عادی بسته می‌شوند):
+  /// ۱) حالتِ درونیِ تب (مثلاً داستانِ بازشده) ۲) تبِ قبلی ۳) صفحه‌ی اصلی ۴) دوبار بازگشت = خروج
+  void _onBack() {
+    if (BackHandlers.handle()) return;
+    if (_history.isNotEmpty) {
+      final prev = _history.removeLast();
+      _goBackTo(prev);
+      return;
+    }
+    if (_loc != _home) {
+      _goBackTo(_home);
+      return;
+    }
+    final now = DateTime.now();
+    if (_lastBack != null &&
+        now.difference(_lastBack!) < const Duration(seconds: 2)) {
+      SystemNavigator.pop();
+      return;
+    }
+    _lastBack = now;
+    final fa = ref.read(appPrefsProvider).uiLang == 'fa';
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        duration: const Duration(seconds: 2),
+        content: Text(
+          fa
+              ? 'برای خروج، یک بار دیگر «بازگشت» را بزنید'
+              : 'Press back again to exit',
+          textAlign: TextAlign.center,
+        ),
+      ));
+  }
+
+  void _goBackTo(String loc) {
+    _goingBack = true;
+    context.go(loc);
+    // اگر مسیر عوض نشد، پرچم نماند
+    WidgetsBinding.instance.addPostFrameCallback((_) => _goingBack = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final c = context.appColors;
+    _track(GoRouter.of(context).routeInformationProvider.value.uri.path);
 
     // ☁️ مدل‌هایی که با حساب دانلود شده بودند ولی روی این دستگاه نیستند
     ref.listen<List<String>>(missingPacksProvider, (prev, next) {
@@ -37,7 +110,12 @@ class AppShell extends ConsumerWidget {
       });
     });
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onBack();
+      },
+      child: Scaffold(
       backgroundColor: c.paper,
       // هر لمس/اسکرول = «تعامل» (برای پیام‌های یادآوریِ آدمک)
       body: Listener(
@@ -56,7 +134,7 @@ class AppShell extends ConsumerWidget {
                 children: [
                   // جای نوارِ آدمک — همان ۴۰px که در Hope داخل هدر بود
                   const SizedBox(height: 40),
-                  Expanded(child: child),
+                  Expanded(child: widget.child),
 
                   // ═══ پنل تمرین گرامر — فعلاً مخفی (kShowPracticeSheet) ═══
                   if (kShowPracticeSheet) const PracticeSheet(),
@@ -92,6 +170,7 @@ class AppShell extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
