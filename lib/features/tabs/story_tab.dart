@@ -30,6 +30,8 @@ import '../../core/web/reading_io_stub.dart'
 import 'package:flutter/gestures.dart';
 import '../../core/audio/story_audio_controller.dart';
 import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
+import '../../core/web/ocr_block.dart';
+import '../story/page_translate_render.dart';
 import '../story/srt_translator_tool.dart';
 import '../story/story_audio_bar.dart';
 import '../story/story_reader_panel.dart';
@@ -366,6 +368,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   final Map<int, Uint8List> _pdfImages = {};
   final Map<int, String> _pdfTexts = {};
   final Map<int, String> _pdfTrans = {};
+  // ترجمه‌ی عکسیِ صفحه‌ها (عکسِ صفحه با متنِ ترجمه‌شده، هر صفحه همین‌که آماده شد)
+  final Map<int, Uint8List> _pdfTransImgs = {};
+  bool _pdfTransRunning = false;
+  bool _pdfShowTransImg = true;
+  int _pdfTransRun = 0; // شماره‌ی اجرا (برای لغو)
+  String _pdfTransNote = '';
   final _linkCtrl = TextEditingController();
   final _pasteCtrl = TextEditingController();
 
@@ -1080,8 +1088,121 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     _pdfImages.clear();
     _pdfTexts.clear();
     _pdfTrans.clear();
+    _pdfTransRun++;
+    _pdfTransImgs.clear();
+    _pdfTransRunning = false;
+    _pdfTransNote = '';
     _pdfIndex = 0;
     if (notify && mounted) setState(() {});
+  }
+
+  /// ترجمه‌ی عکسیِ PDF: از صفحه‌ی فعلی شروع می‌کنه و هر صفحه‌ای که آماده شد
+  /// همون لحظه جایگزینِ عکسِ اصلی می‌شه (منتظرِ تموم‌شدنِ کل فایل نمی‌مونه).
+  Future<void> _startPdfImageTranslate() async {
+    final doc = _pdfDoc;
+    if (doc == null) return;
+    if (_pdfTransRunning) {
+      setState(() {
+        _pdfTransRun++;
+        _pdfTransRunning = false;
+        _pdfTransNote = 'متوقف شد';
+      });
+      return;
+    }
+    final run = ++_pdfTransRun;
+    setState(() {
+      _pdfTransRunning = true;
+      _pdfTransNote = '';
+      _pdfShowTransImg = true;
+    });
+    bool alive() => mounted && _pdfDoc == doc && _pdfTransRun == run;
+    final lang = _readingLang();
+    final n = doc.pageCount;
+    final start = _pdfIndex;
+    OcrSession? ocr;
+    try {
+      ocr = await OcrSession.open(lang);
+      final svc = ref.read(translationServiceProvider);
+      final ai = ref.read(aiSettingsProvider);
+      final style = Theme.of(context).textTheme.bodyMedium;
+      for (var k = 0; k < n; k++) {
+        if (!alive()) return;
+        final i = (start + k) % n;
+        if (_pdfTransImgs.containsKey(i)) continue;
+        setState(() => _pdfTransNote =
+            'در حال ترجمه‌ی صفحه‌ی ${i + 1} از $n (بار اول ممکنه کمی طول بکشه)...');
+        try {
+          final base = await doc.renderPage(i, scale: 2.0);
+          if (!alive()) return;
+          final blocks = await ocr.recognizeBlocks(base);
+          if (!alive()) return;
+          if (blocks.isEmpty) {
+            // صفحه متنی نداره (فقط عکسه) → همون عکسِ اصلی
+            setState(() => _pdfTransImgs[i] = base);
+            continue;
+          }
+          final pageLang =
+              _detectLang(blocks.map((b) => b.text).join(' '), lang);
+          final targets =
+              _effectiveTransLangs().where((l) => l != pageLang).toList();
+          if (targets.isEmpty) {
+            setState(() => _pdfTransNote =
+                'زبانِ ترجمه با زبانِ متنِ صفحه یکیه — از تنظیماتِ ترجمه یه زبانِ دیگه انتخاب کن');
+            return;
+          }
+          final target = targets.first;
+          final trs = await runWithConcurrencyLimit<OcrBlock, String>(
+            blocks,
+            3,
+            (b, _) async {
+              try {
+                final t = (await svc.translate(
+                  text: b.text,
+                  targetLang: target,
+                  sourceLang: pageLang,
+                  aiSettings: ai,
+                ))
+                    .trim();
+                return t == b.text.trim() ? '' : t;
+              } catch (_) {
+                return '';
+              }
+            },
+          );
+          if (!alive()) return;
+          final out = await renderTranslatedPage(
+            pageImage: base,
+            blocks: blocks,
+            translations: trs,
+            rtl: const {'fa', 'ar', 'ur', 'he'}.contains(target),
+            baseStyle: style,
+          );
+          if (!alive()) return;
+          setState(() => _pdfTransImgs[i] = out);
+        } catch (e) {
+          if (e is UnsupportedError) {
+            if (alive()) {
+              setState(() => _importError = _ioError(e, ''));
+            }
+            return;
+          }
+          // خطای یک صفحه نباید بقیه رو متوقف کنه
+        }
+      }
+      if (alive()) {
+        setState(() => _pdfTransNote = 'ترجمه‌ی عکسیِ همه‌ی صفحه‌ها تموم شد ✓');
+      }
+    } catch (e) {
+      if (mounted && _pdfTransRun == run) {
+        setState(() => _pdfTransNote =
+            _ioError(e, 'ترجمه‌ی عکسی انجام نشد — اینترنتت رو چک کن و دوباره امتحان کن'));
+      }
+    } finally {
+      await ocr?.close();
+      if (mounted && _pdfTransRun == run) {
+        setState(() => _pdfTransRunning = false);
+      }
+    }
   }
 
   Future<void> _loadPdfPage(int i) async {
@@ -1729,6 +1850,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final doc = _pdfDoc!;
     final i = _pdfIndex;
     final img = _pdfImages[i];
+    final tImg = _pdfTransImgs[i];
+    final showT = tImg != null && _pdfShowTransImg;
     final orig = _pdfTexts[i] ?? '';
     final lang = _readingLang();
     return HopeCard(
@@ -1768,11 +1891,41 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                   : InteractiveViewer(
                       minScale: 1,
                       maxScale: 4,
-                      child: Image.memory(img, fit: BoxFit.fitWidth),
+                      child: Image.memory(showT ? tImg : img,
+                          fit: BoxFit.fitWidth, gaplessPlayback: true),
                     ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: HopeTextAction(
+                  label: _pdfTransRunning
+                      ? '⏹ توقفِ ترجمه‌ی عکسی'
+                      : '🌐 ترجمه‌ی عکسیِ صفحه‌ها (از همین صفحه)',
+                  color: _pdfTransRunning ? c.rose : c.teal,
+                  onTap: _startPdfImageTranslate,
+                ),
+              ),
+              if (tImg != null)
+                HopeTextAction(
+                  label: _pdfShowTransImg ? '🖼 دیدنِ اصلی' : '🌐 دیدنِ ترجمه',
+                  color: c.teal,
+                  onTap: () =>
+                      setState(() => _pdfShowTransImg = !_pdfShowTransImg),
+                ),
+            ],
+          ),
+          if (_pdfTransRunning || _pdfTransNote.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                '${_pdfTransImgs.isEmpty ? '' : 'آماده: ${_pdfTransImgs.length} از ${doc.pageCount} صفحه — '}$_pdfTransNote',
+                style: TextStyle(color: c.inkSoft, fontSize: 11.5),
+              ),
+            ),
+          const SizedBox(height: 4),
           if (!_pdfTexts.containsKey(i))
             Padding(
               padding: const EdgeInsets.all(12),
@@ -1797,7 +1950,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                'این صفحه متنِ قابل‌خواندن نداره — احتمالاً فقط عکسه.',
+                'این صفحه متنِ قابل‌خواندن نداره — احتمالاً فقط عکسه. برای دیدنِ ترجمه روی خودِ عکس، دکمه‌ی «ترجمه‌ی عکسیِ صفحه‌ها» رو بزن.',
                 style: TextStyle(color: c.inkSoft, fontSize: 12),
               ),
             )

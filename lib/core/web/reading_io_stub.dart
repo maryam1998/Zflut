@@ -8,6 +8,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,6 +17,8 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
+
+import 'ocr_block.dart';
 
 class PickedFile {
   final String name;
@@ -224,6 +227,105 @@ class OcrSession {
         throw lastErr;
       }
       return '';
+    } finally {
+      try {
+        await f.delete();
+      } catch (_) {}
+    }
+  }
+
+  // ───── بلوک‌های متن + مختصاتشون (برای ترجمه‌ی عکسیِ صفحه) ─────
+  static String _unescapeHtml(String t) => t
+      .replaceAll('&amp;', '&')
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'")
+      .replaceAll('&apos;', "'");
+
+  static bool _hasLetters(String t) =>
+      RegExp(r'\p{L}', unicode: true).allMatches(t).length >= 2;
+
+  /// فقط خطِ‌های hOCR (Tesseract) رو با مختصاتشون درمیاره
+  List<OcrBlock> _parseHocr(String hocr, int W, int H) {
+    final re = RegExp(
+        r"""<span[^>]*class=['"]ocr_(?:line|caption|textfloat|header)['"][^>]*title=['"]bbox (\d+) (\d+) (\d+) (\d+)""");
+    final ms = re.allMatches(hocr).toList();
+    final out = <OcrBlock>[];
+    for (var i = 0; i < ms.length; i++) {
+      final m = ms[i];
+      final end = i + 1 < ms.length ? ms[i + 1].start : hocr.length;
+      final seg = hocr.substring(m.end, end);
+      final text = _unescapeHtml(seg
+              .replaceFirst(RegExp(r'^[^>]*>'), '')
+              .replaceAll(RegExp(r'<[^>]*>'), ' '))
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+      if (!_hasLetters(text)) continue;
+      final x0 = int.parse(m.group(1)!), y0 = int.parse(m.group(2)!);
+      final x1 = int.parse(m.group(3)!), y1 = int.parse(m.group(4)!);
+      if (x1 <= x0 || y1 <= y0) continue;
+      out.add(OcrBlock(text, x0 / W, y0 / H, (x1 - x0) / W, (y1 - y0) / H));
+    }
+    return out;
+  }
+
+  Future<List<OcrBlock>> recognizeBlocks(Uint8List bytes) async {
+    final codec = await ui.instantiateImageCodec(bytes);
+    final fr = await codec.getNextFrame();
+    final W = fr.image.width, H = fr.image.height;
+    fr.image.dispose();
+    final dir = await getTemporaryDirectory();
+    final f = File(
+        '${dir.path}/ocrb_${DateTime.now().microsecondsSinceEpoch}.jpg');
+    await f.writeAsBytes(bytes, flush: true);
+    try {
+      final tess = _tessCodes[_lang];
+      if (tess != null) {
+        await _ensureTessData(tess);
+        final hocr = await FlutterTesseractOcr.extractHocr(
+          f.path,
+          language: '$tess+eng',
+          args: {'psm': '3', 'preserve_interword_spaces': '1'},
+        );
+        final blocks = _parseHocr(hocr, W, H);
+        if (blocks.isNotEmpty) return blocks;
+      }
+      final input = InputImage.fromFilePath(f.path);
+      final order = <TextRecognitionScript>[
+        _primary,
+        for (final s in const [
+          TextRecognitionScript.latin,
+          TextRecognitionScript.devanagiri,
+          TextRecognitionScript.chinese,
+          TextRecognitionScript.japanese,
+          TextRecognitionScript.korean,
+        ])
+          if (s != _primary) s,
+      ];
+      Object? lastErr;
+      for (final sc in order) {
+        try {
+          final r = await _rec(sc).processImage(input);
+          final out = <OcrBlock>[];
+          for (final b in r.blocks) {
+            final t = _clean(b.text);
+            if (!_hasLetters(t)) continue;
+            final rc = b.boundingBox;
+            out.add(OcrBlock(t, rc.left / W, rc.top / H, rc.width / W,
+                rc.height / H));
+          }
+          if (out.isNotEmpty) return out;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      if (_unsupportedLang) throw UnsupportedError('ocr-script:$_lang');
+      if (lastErr != null && lastErr is! UnsupportedError) {
+        // ignore: only_throw_errors
+        throw lastErr;
+      }
+      return const [];
     } finally {
       try {
         await f.delete();

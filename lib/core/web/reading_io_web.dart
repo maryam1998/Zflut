@@ -7,6 +7,8 @@ import 'dart:js_util' as jsu;
 import 'dart:typed_data';
 import 'dart:math' as math;
 
+import 'ocr_block.dart';
+
 /// وب: tesseract.js خودش اولین بار دانلود می‌کنه؛ نیازی به پیش‌دانلود نیست.
 void prefetchOcrData() {}
 
@@ -186,6 +188,61 @@ class OcrSession {
       return out.join(' ').trim();
     }
     return (jsu.getProperty(data, 'text') ?? '').toString().trim();
+  }
+
+  /// بلوک‌های متن (پاراگراف) + مختصاتِ نسبی، برای ترجمه‌ی عکسیِ صفحه.
+  Future<List<OcrBlock>> recognizeBlocks(Uint8List bytes) async {
+    dynamic source;
+    var sw = 1, sh = 1;
+    try {
+      source = await _preprocess(bytes);
+      final cv = source as html.CanvasElement;
+      sw = cv.width ?? 1;
+      sh = cv.height ?? 1;
+    } catch (_) {
+      source = html.Blob([bytes]);
+      final bitmap = await jsu.promiseToFuture(
+          jsu.callMethod(html.window, 'createImageBitmap', [source]));
+      sw = (jsu.getProperty(bitmap, 'width') as num).toInt();
+      sh = (jsu.getProperty(bitmap, 'height') as num).toInt();
+    }
+    try {
+      // صفحه‌ی کامل (چندستونه/با عکس) → تشخیصِ خودکارِ چیدمان
+      final tess = jsu.getProperty(html.window, 'Tesseract');
+      final psm = jsu.getProperty(jsu.getProperty(tess, 'PSM'), 'AUTO');
+      final params = jsu.newObject();
+      jsu.setProperty(params, 'tessedit_pageseg_mode', psm);
+      await jsu.promiseToFuture(
+          jsu.callMethod(_worker, 'setParameters', [params]));
+    } catch (_) {}
+    final res = await jsu
+        .promiseToFuture(jsu.callMethod(_worker, 'recognize', [source]));
+    final data = jsu.getProperty(res, 'data');
+    var items = jsu.getProperty(data, 'paragraphs');
+    if (items is! List || items.isEmpty) items = jsu.getProperty(data, 'lines');
+    final out = <OcrBlock>[];
+    if (items is List) {
+      for (final p in items) {
+        final text = (jsu.getProperty(p, 'text') ?? '')
+            .toString()
+            .replaceAll(RegExp(r'\s+'), ' ')
+            .trim();
+        final conf = jsu.getProperty(p, 'confidence');
+        if ((conf is num ? conf : 100) < 50) continue;
+        final letters = RegExp(r'\p{L}', unicode: true).allMatches(text).length;
+        if (letters < 2 || letters / text.length < _minLetterRatio) continue;
+        final bb = jsu.getProperty(p, 'bbox');
+        if (bb == null) continue;
+        final x0 = (jsu.getProperty(bb, 'x0') as num).toDouble();
+        final y0 = (jsu.getProperty(bb, 'y0') as num).toDouble();
+        final x1 = (jsu.getProperty(bb, 'x1') as num).toDouble();
+        final y1 = (jsu.getProperty(bb, 'y1') as num).toDouble();
+        if (x1 <= x0 || y1 <= y0) continue;
+        out.add(OcrBlock(
+            text, x0 / sw, y0 / sh, (x1 - x0) / sw, (y1 - y0) / sh));
+      }
+    }
+    return out;
   }
 
   Future<void> close() async {
