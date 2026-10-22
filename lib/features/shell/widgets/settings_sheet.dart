@@ -26,119 +26,35 @@ import '../../tabs/_hope_panel.dart' show uiContentDirection;
 import 'settings_packs.dart';
 
 // ═══════════════════════════════════════════════════════════════════
-// تنظیمات — شیتِ پایین‌صفحه، «یک صفحه‌ی واحد» (بدونِ پوشه)
+// تنظیمات — پنلِ کوچکِ کشویی از سمتِ چپ (مثل Hope)، یک صفحه‌ی واحد بدونِ پوشه
 //
-//  همه‌ی تنظیمات یک‌جا و بدونِ زیرِ‌منو در دسترس‌اند؛ فقط با عنوانِ گروه
-//  مرتب شده‌اند: حباب (ذره‌بین / ترجمه‌ی زنده) ← حساب و زبان ← ظاهر ←
-//  متن و مطالعه ← صدا و پخش.
-//  بخش‌های داخلِ گروه‌ها همان ویجت‌های قبلی‌اند و بدونِ تغییر کار می‌کنند.
+//  ترتیب: حساب ← زبانِ نرم‌افزار ← رنگ و تم ← نوعِ فونت ← اندازه‌ی فونت ←
+//  اندازه‌ی فونتِ زبان‌های مقصد (+ بولد، فاصله‌ها) ← تقویم ← رنگِ هایلایت ←
+//  آدمکِ متحرک ← صدای خوانش ← دکمه‌های شناورِ اندروید ← صدای آفلاین ←
+//  همگام‌سازی ← دانلودِ آفلاین.
+//  بخش‌های داخلی همان ویجت‌های قبلی‌اند و بدونِ تغییر کار می‌کنند.
 // ═══════════════════════════════════════════════════════════════════
-const Map<String, Map<String, String>> _kSetT = {
-  'fa': {
-    'title': 'تنظیمات',
-    'appearance': 'ظاهر و نمایش',
-    'appearance_s': 'تم، فونت، اندازه‌ی متن، آدمک',
-    'reading': 'متن و مطالعه',
-    'reading_s': 'ظاهر متنِ مقصد، تقویم، رنگِ هایلایت',
-    'audio': 'صدا و پخش',
-    'audio_s': 'موتورِ صدا، صداهای آفلاین، همگام‌سازیِ صوت',
-    'bubble': 'حبابِ شناور و یوتیوب',
-    'bubble_s': 'ترجمه‌ی زنده، زیرنویسِ یوتیوب، ذره‌بین',
-    'close': 'بستن',
-    'back': 'بازگشت',
-  },
-  'en': {
-    'title': 'Settings',
-    'appearance': 'Appearance',
-    'appearance_s': 'Theme, font, text size, mascot',
-    'reading': 'Text & reading',
-    'reading_s': 'Target text style, calendar, highlight color',
-    'audio': 'Sound & playback',
-    'audio_s': 'Voice engine, offline voices, audio sync',
-    'bubble': 'Floating bubble & YouTube',
-    'bubble_s': 'Live translation, YouTube captions, magnifier',
-    'close': 'Close',
-    'back': 'Back',
-  },
-  'ar': {
-    'title': 'الإعدادات',
-    'appearance': 'المظهر والعرض',
-    'appearance_s': 'السمة، الخط، حجم النص، الشخصية',
-    'reading': 'النص والقراءة',
-    'reading_s': 'نمط النص الهدف، التقويم، لون التمييز',
-    'audio': 'الصوت والتشغيل',
-    'audio_s': 'محرك الصوت، الأصوات دون اتصال، مزامنة الصوت',
-    'bubble': 'الفقاعة العائمة ويوتيوب',
-    'bubble_s': 'الترجمة الحية، ترجمات يوتيوب، المكبّر',
-    'close': 'إغلاق',
-    'back': 'رجوع',
-  },
-  'de': {
-    'title': 'Einstellungen',
-    'appearance': 'Darstellung',
-    'appearance_s': 'Design, Schrift, Textgröße, Maskottchen',
-    'reading': 'Text & Lesen',
-    'reading_s': 'Zieltext-Stil, Kalender, Hervorhebung',
-    'audio': 'Ton & Wiedergabe',
-    'audio_s': 'Stimm-Engine, Offline-Stimmen, Audio-Sync',
-    'bubble': 'Schwebende Blase & YouTube',
-    'bubble_s': 'Live-Übersetzung, YouTube-Untertitel, Lupe',
-    'close': 'Schließen',
-    'back': 'Zurück',
-  },
-  'es': {
-    'title': 'Ajustes',
-    'appearance': 'Apariencia',
-    'appearance_s': 'Tema, fuente, tamaño de texto, mascota',
-    'reading': 'Texto y lectura',
-    'reading_s': 'Estilo del texto, calendario, resaltado',
-    'audio': 'Sonido y reproducción',
-    'audio_s': 'Motor de voz, voces sin conexión, sincronización',
-    'bubble': 'Burbuja flotante y YouTube',
-    'bubble_s': 'Traducción en vivo, subtítulos, lupa',
-    'close': 'Cerrar',
-    'back': 'Atrás',
-  },
-  'fr': {
-    'title': 'Réglages',
-    'appearance': 'Apparence',
-    'appearance_s': 'Thème, police, taille du texte, mascotte',
-    'reading': 'Texte et lecture',
-    'reading_s': 'Style du texte cible, calendrier, surlignage',
-    'audio': 'Son et lecture',
-    'audio_s': 'Moteur vocal, voix hors ligne, synchro audio',
-    'bubble': 'Bulle flottante et YouTube',
-    'bubble_s': 'Traduction en direct, sous-titres, loupe',
-    'close': 'Fermer',
-    'back': 'Retour',
-  },
-};
-
-String _sT(BuildContext context, String key) {
-  final lang = Localizations.localeOf(context).languageCode;
-  return (_kSetT[lang] ?? _kSetT['en']!)[key] ?? _kSetT['en']![key] ?? key;
-}
-
 class SettingsSheet extends ConsumerStatefulWidget {
   const SettingsSheet({super.key});
 
-  /// شیتِ پایین‌صفحه (۸۸٪ ارتفاع) — با کشیدن به پایین یا بازگشتِ گوشی بسته می‌شود.
+  /// پنلِ کوچکِ کشویی از چپ، زیرِ هدر — با لمسِ بیرونِ پنل یا بازگشتِ گوشی بسته می‌شود.
   static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showGeneralDialog<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      barrierDismissible: true,
+      barrierLabel: 'settings',
       barrierColor: Colors.black38,
-      constraints: const BoxConstraints(maxWidth: 560),
-      builder: (ctx) {
-        final h = MediaQuery.of(ctx).size.height;
-        return Directionality(
-          // جهتِ متن‌ها طبقِ زبانِ رابط (فارسی/عربی RTL، بقیه LTR)
-          textDirection: uiContentDirection(ctx),
-          child: SizedBox(height: h * 0.88, child: const SettingsSheet()),
-        );
-      },
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (ctx, _, __) => Directionality(
+        // جهتِ متن‌ها طبقِ زبانِ رابط (فارسی/عربی RTL، بقیه LTR)
+        textDirection: uiContentDirection(ctx),
+        child: const SettingsSheet(),
+      ),
+      transitionBuilder: (ctx, anim, _, child) => SlideTransition(
+        position: Tween<Offset>(begin: const Offset(-1, 0), end: Offset.zero)
+            .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+        child: child,
+      ),
     );
   }
 
@@ -150,233 +66,64 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    final bottom = MediaQuery.of(context).padding.bottom;
-    final pad = EdgeInsets.fromLTRB(16, 6, 16, 24 + bottom);
-    Widget gap() => const SizedBox(height: 12);
-    Widget bigGap() => const SizedBox(height: 22);
-    Widget div() => Divider(height: 30, color: c.cardBorder);
+    final mq = MediaQuery.of(context);
+    final width = (mq.size.width * 0.68).clamp(270.0, 400.0).toDouble();
+    final top = mq.padding.top + 56;
+    final maxH = mq.size.height - top - mq.padding.bottom - 70;
+    Widget gap() => const SizedBox(height: 16);
 
-    return Material(
-      color: c.paper,
-      clipBehavior: Clip.antiAlias,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-      ),
-      child: Column(
-        children: [
-          // دستگیره
-          Padding(
-            padding: const EdgeInsets.only(top: 10, bottom: 4),
-            child: Container(
-              width: 42,
-              height: 4.5,
-              decoration: BoxDecoration(
-                color: c.cardBorder,
-                borderRadius: BorderRadius.circular(3),
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Padding(
+        padding: EdgeInsets.only(left: 8, top: top),
+        child: SizedBox(
+          width: width,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxH),
+            child: Material(
+              color: c.paper,
+              elevation: 10,
+              shadowColor: Colors.black54,
+              clipBehavior: Clip.antiAlias,
+              borderRadius: BorderRadius.circular(26),
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(14, 16, 14, 18),
+                children: [
+                  const _AccountSection(),
+                  gap(),
+                  const _LanguageSection(),
+                  gap(),
+                  const _ThemeSection(),
+                  gap(),
+                  const _FontSection(),
+                  gap(),
+                  const _FontSizeSection(),
+                  gap(),
+                  const _TargetTextSection(),
+                  gap(),
+                  const _CalendarSection(),
+                  gap(),
+                  const _HighlightSection(),
+                  gap(),
+                  const _MascotSection(),
+                  gap(),
+                  const _VoiceEngineSection(),
+                  // حباب/دکمه‌های شناور فقط در اپِ اندروید معنا دارد
+                  if (_isAndroidApp) ...[
+                    gap(),
+                    const _FloatingBubbleSection(),
+                  ],
+                  gap(),
+                  const _OfflineTtsSection(),
+                  const _AudioSyncSection(),
+                  const SizedBox(height: 4),
+                  const _OfflineWordsButton(),
+                ],
               ),
             ),
           ),
-          // نوارِ عنوان
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 2, 8, 6),
-            child: Row(
-              children: [
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _sT(context, 'title'),
-                    style: TextStyle(
-                      color: c.ink,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: _sT(context, 'close'),
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(Icons.close_rounded, color: c.inkSoft),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: c.cardBorder),
-          Expanded(
-            child: ListView(
-              padding: pad,
-              children: [
-                // ── حباب شناور (ذره‌بین / ترجمه‌ی زنده / یوتیوب) — بالاترین چون پرکاربرد است
-                if (_isAndroidApp) ...[
-                  _GroupHeader(
-                    icon: Icons.bubble_chart_rounded,
-                    tint: c.rose,
-                    title: _sT(context, 'bubble'),
-                    sub: _sT(context, 'bubble_s'),
-                  ),
-                  const _SCard(child: _FloatingBubbleSection()),
-                  bigGap(),
-                ],
-
-                // ── حساب و زبانِ رابط
-                const _SCard(child: _AccountSection()),
-                gap(),
-                const _SCard(child: _LanguageSection()),
-                bigGap(),
-
-                // ── ظاهر و نمایش
-                _GroupHeader(
-                  icon: Icons.palette_outlined,
-                  tint: c.gold,
-                  title: _sT(context, 'appearance'),
-                  sub: _sT(context, 'appearance_s'),
-                ),
-                _SCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const _ThemeSection(),
-                      div(),
-                      const _FontSection(),
-                      div(),
-                      const _FontSizeSection(),
-                    ],
-                  ),
-                ),
-                gap(),
-                const _SCard(child: _MascotSection()),
-                bigGap(),
-
-                // ── متن و مطالعه
-                _GroupHeader(
-                  icon: Icons.text_fields_rounded,
-                  tint: c.teal,
-                  title: _sT(context, 'reading'),
-                  sub: _sT(context, 'reading_s'),
-                ),
-                const _SCard(child: _TargetTextSection()),
-                gap(),
-                _SCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const _CalendarSection(),
-                      div(),
-                      const _HighlightSection(),
-                    ],
-                  ),
-                ),
-                bigGap(),
-
-                // ── صدا و پخش
-                _GroupHeader(
-                  icon: Icons.graphic_eq_rounded,
-                  tint: const Color(0xFF7A5BC4),
-                  title: _sT(context, 'audio'),
-                  sub: _sT(context, 'audio_s'),
-                ),
-                const _SCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _VoiceEngineSection(),
-                      _OfflineTtsSection(),
-                    ],
-                  ),
-                ),
-                gap(),
-                const _SCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _AudioSyncSection(),
-                      SizedBox(height: 4),
-                      _OfflineWordsButton(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// کارتِ سفیدِ گردِ هر گروه از تنظیمات.
-class _SCard extends StatelessWidget {
-  final Widget child;
-  const _SCard({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: c.cardBorder),
-      ),
-      child: child,
-    );
-  }
-}
-
-/// عنوانِ هر گروه (آیکن + عنوان + توضیحِ یک‌خطی) — فقط برای مرتب‌بودن؛ لمسی نیست و چیزی را پنهان نمی‌کند.
-class _GroupHeader extends StatelessWidget {
-  final IconData icon;
-  final Color tint;
-  final String title;
-  final String sub;
-
-  const _GroupHeader({
-    required this.icon,
-    required this.tint,
-    required this.title,
-    required this.sub,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: tint.withOpacity(0.14),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(icon, size: 19, color: tint),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: c.ink,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  sub,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.5),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
