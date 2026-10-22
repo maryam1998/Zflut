@@ -2376,7 +2376,6 @@ public class BubbleService extends Service {
         if (fadingOut) { fadingOut = false; fadeGen++; if (panel != null) panel.animate().cancel(); }
         if (panel != null) { panel.setAlpha(1f); panel.setScaleX(1f); panel.setScaleY(1f); }
         panelDragging = false;
-        setPanelModal(false);
         idlePinned = false;
         if (panelShown && panel != null && wm != null) {
             try { wm.removeView(panel); } catch (Exception ignored) {}
@@ -3953,20 +3952,6 @@ public class BubbleService extends Service {
     /** دستگیره‌ی «کرکره‌ای»: یک خطِ باریک؛ با یک انگشت به‌سمتِ بیرون بکش = کادر باز می‌شود، به‌سمتِ داخل = جمع می‌شود.
      *  سمتِ راستِ همان نوار یک کپسولِ کوچکِ A− | A+ برای اندازه‌ی متن است. */
     @SuppressLint("ClickableViewAccessibility")
-    private boolean panelModal = false;
-
-    /** هنگامِ کشیدنِ کادر، کلِ لمس‌ها فقط به کادر برسد (به یوتیوبِ زیرش نرسد و مینیمایز نشود). */
-    private void setPanelModal(boolean modal) {
-        if (panelModal == modal || panelLp == null) return;
-        panelModal = modal;
-        int f = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
-                | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
-        if (modal) panelLp.flags &= ~f; else panelLp.flags |= f;
-        if (panelShown && panel != null && wm != null) {
-            try { wm.updateViewLayout(panel, panelLp); } catch (Exception ignored) {}
-        }
-    }
-
     private boolean panelDragging = false;     // کاربر کادر را گرفته (کشیدن/نگه‌داشتن) → کادر خودکار بسته نشود
 
     /**
@@ -3985,7 +3970,6 @@ public class BubbleService extends Service {
             panelDragging = true;
             panel.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
             panel.animate().scaleX(1.02f).scaleY(1.02f).setDuration(120).start();
-            setPanelModal(true);
             showCloseTarget();
         };
 
@@ -4010,7 +3994,6 @@ public class BubbleService extends Service {
                         moved = true;
                         panelDragging = true;
                         if (!picked) main.removeCallbacks(longRun);
-                        setPanelModal(true);
                         showCloseTarget();     // مثلِ ذره‌بین: به‌محضِ شروعِ کشیدن، دایره‌ی ✕ پایینِ صفحه ظاهر می‌شود
                     }
                     if (moved) {
@@ -4029,7 +4012,6 @@ public class BubbleService extends Service {
                     boolean wasPicked = picked, wasHot = hot, wasMoved = moved;
                     picked = false; hot = false; moved = false;
                     panelDragging = false;
-                    setPanelModal(false);
                     lastActiveMs = SystemClock.elapsedRealtime();
                     if (wasPicked || wasMoved) {
                         if (up && wasHot) { closePanelAnimated(); }
@@ -4060,7 +4042,6 @@ public class BubbleService extends Service {
     /** کشیدنِ کادر با نوارِ هاشور: مثلِ ذره‌بین، ✕ نشان داده می‌شود و رها کردن روی آن سرویس را کاملاً می‌بندد. */
     private void gripDragHot(float rx, float ry) {
         if (panel == null) return;
-        setPanelModal(true);
         showCloseTarget();
         boolean h = closeView != null && Math.hypot(rx - tgtCx, ry - tgtCy) < dp(90);
         if (h == gripHot) return;
@@ -4178,7 +4159,6 @@ public class BubbleService extends Service {
                 case MotionEvent.ACTION_CANCEL:
                     f.setActive(false);
                     panelDragging = false;
-                    setPanelModal(false);
                     lastActiveMs = SystemClock.elapsedRealtime();
                     if (d[3] == 2) {
                         boolean onX = gripHot;
