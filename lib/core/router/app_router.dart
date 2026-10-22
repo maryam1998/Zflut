@@ -15,6 +15,8 @@ import '../../features/review/review_tab.dart';
 import '../../features/tabs/speaking_tab.dart';
 import '../../features/tabs/story_tab.dart';
 import '../../features/tabs/words_tab.dart';
+import '../../features/tabs/vocab_in_use_tab.dart';
+import '../../features/tabs/slang_tab.dart';
 
 /// کلیدِ ذخیره‌ی آخرین تبِ بازشده (AppShell می‌نویسد، روتر می‌خواند).
 const String kLastTabPrefKey = 'last-tab-route';
@@ -22,7 +24,7 @@ const String kLastTabPrefKey = 'last-tab-route';
 /// تب‌های معتبر برای بازگردانی (مسیرِ ذخیره‌شده‌ی نامعتبر نادیده گرفته می‌شود).
 const Set<String> kRestorableTabs = {
   '/conversations', '/story', '/grammar', '/speaking',
-  '/words', '/favorites', '/review',
+  '/words', '/vocab-in-use', '/slang', '/favorites', '/review',
 };
 
 /// برنامه «تبِ پیش‌فرضِ ثابت» ندارد: همان تبی که کاربر آخر بود باز می‌شود.
@@ -101,6 +103,8 @@ final List<RouteBase> _routes = [
       _tab('/grammar', () => const GrammarTab()),
       _tab('/speaking', () => const SpeakingTab()),
       _tab('/words', () => const WordsTab()),
+      _tab('/vocab-in-use', () => const VocabInUseTab()),
+      _tab('/slang', () => const SlangTab()),
       _tab('/favorites', () => const FavoritesTab()),
       _tab('/review', () => const ReviewTab()),
     ],

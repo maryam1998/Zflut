@@ -58,6 +58,18 @@ const List<TabMeta> kTabMetaList = [
     route: '/words',
   ),
   TabMeta(
+    key: 'vocabInUse',
+    labelKey: 'tab_vocab_in_use',
+    icon: Icons.layers_outlined,
+    route: '/vocab-in-use',
+  ),
+  TabMeta(
+    key: 'slang',
+    labelKey: 'tab_slang',
+    icon: Icons.format_quote,
+    route: '/slang',
+  ),
+  TabMeta(
     key: 'favorites',
     labelKey: 'tab_favorites',
     icon: Icons.favorite_outline,
