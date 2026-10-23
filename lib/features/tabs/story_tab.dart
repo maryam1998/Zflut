@@ -38,6 +38,7 @@ import '../../core/web/ocr_block.dart';
 import '../story/book_translate_bar.dart';
 import '../story/page_translate_render.dart';
 import '../story/pdf_page_nav.dart';
+import '../story/pdf_save_tools.dart';
 import '../story/pdf_zoom_image.dart';
 import '../story/srt_translator_tool.dart';
 import '../story/story_audio_bar.dart';
@@ -277,6 +278,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   String? _pdfViewLang; // زبانی که کاربر برای دیدنِ عکسِ ترجمه‌شده انتخاب کرده
   // حالتِ نمایشِ صفحه: both = اصلی بالا + ترجمه پایین، orig = فقط اصلی، trans = فقط ترجمه
   String _pdfMode = 'both';
+  bool _pdfSaving = false;
   // موتورِ ترجمه‌ی صفحه‌ها: صف، کشِ دیسکی، تلاشِ دوباره، پیشرفتِ ماندگار
   PageTranslateEngine? _pdfEngine;
   int _pdfEngineToken = 0;
@@ -1980,6 +1982,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           _pdfModeSelector(c),
           const SizedBox(height: 8),
           _pdfImagesBox(c, img, tImg, i),
+          const SizedBox(height: 6),
+          _pdfSaveRow(c, img, tImg, i),
           const SizedBox(height: 8),
           // دکمه‌های صفحه‌ی قبل/بعد درست زیرِ عکس (بدونِ نیاز به اسکرول)
           PdfPageNavBar(
@@ -2074,14 +2078,148 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     );
   }
 
+  // ───── ذخیره‌ی عکس / PDF ─────
+  void _pdfSnack(String msg) {
+    if (!mounted) return;
+    final m = ScaffoldMessenger.maybeOf(context);
+    m?.hideCurrentSnackBar();
+    m?.showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  String get _pdfBaseName {
+    var n = _pdfTitle.trim();
+    if (n.toLowerCase().endsWith('.pdf')) n = n.substring(0, n.length - 4);
+    n = n.replaceAll(RegExp(r'[\/:*?"<>|]'), '_');
+    return n.isEmpty ? 'page' : n;
+  }
+
+  Widget _pdfSaveRow(
+      AppThemeColorsExt c, Uint8List? img, Uint8List? tImg, int page) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        HopeTextAction(
+          icon: Icons.save_alt_rounded,
+          label: 'ذخیره‌ی عکس',
+          color: c.teal,
+          onTap: _pdfSaving ? null : () => _savePdfPageImage(img, tImg, page),
+        ),
+        const SizedBox(width: 18),
+        HopeTextAction(
+          icon: Icons.picture_as_pdf_rounded,
+          label: _pdfSaving ? 'در حال ساختنِ PDF…' : 'ذخیره‌ی PDF',
+          color: c.gold,
+          onTap: _pdfSaving ? null : _savePdfFile,
+        ),
+      ],
+    );
+  }
+
+  Future<String?> _askChoice(String title, Map<String, String> options) {
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(title, style: const TextStyle(fontSize: 15)),
+        children: [
+          for (final e in options.entries)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, e.key),
+              child: Text(e.value, style: const TextStyle(fontSize: 14)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// ذخیره‌ی عکسِ همین صفحه (اصلی یا ترجمه‌شده، بسته به حالتِ نمایش)
+  Future<void> _savePdfPageImage(
+      Uint8List? img, Uint8List? tImg, int page) async {
+    String which;
+    if (_pdfMode == 'orig') {
+      which = 'orig';
+    } else if (_pdfMode == 'trans') {
+      which = 'trans';
+    } else {
+      final r = await _askChoice('کدام عکس ذخیره شود؟',
+          {'orig': 'عکسِ اصلی', 'trans': 'عکسِ ترجمه‌شده'});
+      if (r == null) return;
+      which = r;
+    }
+    final bytes = which == 'trans' ? tImg : img;
+    if (bytes == null) {
+      _pdfSnack(which == 'trans'
+          ? 'ترجمه‌ی این صفحه هنوز آماده نیست'
+          : 'عکسِ این صفحه هنوز آماده نیست');
+      return;
+    }
+    try {
+      final ok = await saveBytesToDevice(
+        fileName:
+            '${_pdfBaseName}_p${page + 1}${which == 'trans' ? '_translated' : ''}.png',
+        bytes: bytes,
+        ext: 'png',
+      );
+      if (ok) _pdfSnack('عکس ذخیره شد ✓');
+    } catch (e) {
+      _pdfSnack('ذخیره‌ی عکس انجام نشد');
+    }
+  }
+
+  /// ساختن و ذخیره‌ی PDF از همه‌ی صفحه‌ها (اصلی یا ترجمه‌شده)
+  Future<void> _savePdfFile() async {
+    final doc = _pdfDoc;
+    if (doc == null || _pdfSaving) return;
+    String which;
+    if (_pdfMode == 'orig') {
+      which = 'orig';
+    } else if (_pdfMode == 'trans') {
+      which = 'trans';
+    } else {
+      final r = await _askChoice('کدام PDF ذخیره شود؟',
+          {'trans': 'PDFِ ترجمه‌شده', 'orig': 'PDFِ اصلی'});
+      if (r == null) return;
+      which = r;
+    }
+    setState(() => _pdfSaving = true);
+    try {
+      final imgs = <Uint8List>[];
+      var missing = 0;
+      for (var p = 0; p < doc.pageCount; p++) {
+        Uint8List? b;
+        if (which == 'trans') {
+          b = await _pdfEngine?.imageFor(p);
+          if (b == null) missing++;
+        }
+        b ??= await doc.renderPage(p, scale: 2.0);
+        imgs.add(b);
+        if (!mounted || _pdfDoc != doc) return;
+      }
+      final pdf = await imagesToPdf(imgs);
+      final ok = await saveBytesToDevice(
+        fileName: '$_pdfBaseName${which == 'trans' ? '_translated' : ''}.pdf',
+        bytes: pdf,
+        ext: 'pdf',
+      );
+      if (ok) {
+        _pdfSnack(missing > 0
+            ? 'PDF ذخیره شد ✓ ($missing صفحه هنوز ترجمه نشده بود و به‌صورتِ اصلی آمد)'
+            : 'PDF ذخیره شد ✓');
+      }
+    } catch (e) {
+      _pdfSnack('ساختن/ذخیره‌ی PDF انجام نشد');
+    } finally {
+      if (mounted) setState(() => _pdfSaving = false);
+    }
+  }
+
   /// انتخابِ حالتِ نمایشِ صفحه: هر دو (اصلی بالا، ترجمه پایین) · فقط ترجمه · فقط اصلی.
   Widget _pdfModeSelector(AppThemeColorsExt c) {
-    Widget seg(String mode, IconData icon, String label) {
-      final on = _pdfMode == mode;
+    Widget seg(String mode, IconData icon, String label, {bool? active, String? goTo}) {
+      final on = active ?? (_pdfMode == mode);
       return Expanded(
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => setState(() => _pdfMode = mode),
+          onTap: () => setState(() => _pdfMode = goTo ?? mode),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -2120,8 +2258,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       child: Row(
         children: [
           seg('both', Icons.view_agenda_outlined, 'اصلی + ترجمه'),
-          seg('trans', Icons.translate_rounded, 'دیدنِ ترجمه'),
-          seg('orig', Icons.image_outlined, 'دیدنِ اصلی'),
+          // یک دکمه برای دو حالت: هر کلیک بین «دیدنِ ترجمه» و «دیدنِ اصلی» جابه‌جا می‌کند
+          if (_pdfMode == 'trans')
+            seg('trans', Icons.image_outlined, 'دیدنِ اصلی',
+                active: true, goTo: 'orig')
+          else
+            seg('orig', Icons.translate_rounded, 'دیدنِ ترجمه',
+                active: _pdfMode == 'orig', goTo: 'trans'),
         ],
       ),
     );
