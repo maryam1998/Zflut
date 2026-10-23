@@ -4,5 +4,5 @@
     <string name="title_activity_main">LingoLearn</string>
     <string name="package_name">com.linglearn.app</string>
     <string name="custom_url_scheme">com.linglearn.app</string>
-    <string name="speed_a11y_desc">فقط برای تغییر سرعت پخش ویدیوی یوتیوب از داخل حباب؛ فقط وقتی دکمه‌ی سرعت رو بزنی و فقط روی اپ یوتیوب کار می‌کنه و هیچ اطلاعاتی ذخیره یا ارسال نمی‌کنه.</string>
+    <string name="speed_a11y_desc">برای دو کار: (۱) خواندنِ متنِ زیرِ ذره‌بین از روی صفحه، مخصوصاً فارسی و عربی که تشخیصِ تصویری نمی‌خواند؛ فقط وقتی ذره‌بین را رها می‌کنی. (۲) تغییرِ سرعتِ پخشِ یوتیوب از داخلِ حباب. هیچ اطلاعاتی ذخیره یا ارسال نمی‌شود.</string>
 </resources>

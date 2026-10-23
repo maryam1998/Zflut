@@ -107,10 +107,27 @@ public class SpeedAccessibilityService extends AccessibilityService {
         if (s == null) return out;
         try {
             AccessibilityNodeInfo root = s.getRootInActiveWindow();
-            if (root == null) return out;
-            CharSequence pk = root.getPackageName();
-            if (pk != null && ctx.getPackageName().contentEquals(pk)) return out;     // خودِ برنامه نه
-            collectText(root, out, new int[]{2500});
+            boolean own = false;
+            if (root != null) {
+                CharSequence pk = root.getPackageName();
+                own = pk != null && ctx.getPackageName().contentEquals(pk);
+            }
+            if (root != null && !own) {
+                collectText(root, out, new int[]{2500});
+            } else {
+                // پنجره‌ی فعال خالی/از خودِ برنامه (مثلاً پنل شناور) است: بقیه‌ی پنجره‌های دیده‌شده را بخوان
+                List<android.view.accessibility.AccessibilityWindowInfo> ws = s.getWindows();
+                if (ws != null) {
+                    for (android.view.accessibility.AccessibilityWindowInfo w : ws) {
+                        if (w == null || w.getType() != android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION) continue;
+                        AccessibilityNodeInfo wr = w.getRoot();
+                        if (wr == null) continue;
+                        CharSequence pk = wr.getPackageName();
+                        if (pk != null && ctx.getPackageName().contentEquals(pk)) continue;   // خودِ برنامه نه
+                        collectText(wr, out, new int[]{2500});
+                    }
+                }
+            }
         } catch (Throwable ignored) { }
         return out;
     }

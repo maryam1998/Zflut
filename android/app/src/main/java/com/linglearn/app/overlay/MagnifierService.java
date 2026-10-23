@@ -742,8 +742,19 @@ public class MagnifierService extends Service {
                 }
             }
         }
-        if (elems.isEmpty() || box == null || orig.isEmpty()) {
-            finish(msg("زیرِ ذره‌بین متنی پیدا نشد", "No text found under the magnifier"));
+        // OCR فقط ساعتِ پیام («19:03») را خوانده و متنِ فارسی/عربیِ کنارش را نه: ترجمه‌ی ساعت بی‌معنی است
+        boolean ocrOnlyClock = !orig.isEmpty() && TIME_TOK.matcher(orig.trim()).matches() && !hasLetterChar(orig);
+        if (elems.isEmpty() || box == null || orig.isEmpty() || (ocrOnlyClock && (a == null || !hasLetterChar(cleanScreenText(a.t))))) {
+            if (!SpeedAccessibilityService.isEnabled(this)) {
+                if (!prefs().getBoolean("a11yAsked", false)) {
+                    prefs().edit().putBoolean("a11yAsked", true).apply();
+                    SpeedAccessibilityService.openSettings(this);
+                }
+                finish(msg("برای خواندنِ متنِ فارسی/عربی، سرویسِ «دسترسی‌پذیری» این برنامه را روشن کنید",
+                        "To read Persian/Arabic text, turn on this app's Accessibility service"));
+            } else {
+                finish(msg("زیرِ ذره‌بین متنی پیدا نشد", "No text found under the magnifier"));
+            }
             return;
         }
 
@@ -787,7 +798,7 @@ public class MagnifierService extends Service {
         return t.replaceAll("\\s+", " ").trim();
     }
 
-    /** گرهٔ متنیِ کوچک‌ترِ شامل نقطه‌ی ذره‌بین؛ وگرنه نزدیک‌ترین (تا ۴۰dp). */
+    /** گرهٔ متنیِ کوچک‌ترِ شامل نقطه‌ی ذره‌بین که بعد از پاک‌کردنِ ساعت/ایموجی هنوز حرف دارد؛ وگرنه نزدیک‌ترین (تا ۴۰dp). */
     private SpeedAccessibilityService.ScreenText pickScreenText(float x, float y) {
         List<SpeedAccessibilityService.ScreenText> all;
         try { all = SpeedAccessibilityService.readScreenText(this); }
@@ -797,6 +808,7 @@ public class MagnifierService extends Service {
         double bestD = Double.MAX_VALUE;
         for (SpeedAccessibilityService.ScreenText n : all) {
             if (n.r.width() >= capW * 0.98 && n.r.height() >= capH * 0.5) continue;     // کانتینرِ کلِ صفحه
+            if (!hasLetterChar(cleanScreenText(n.t))) continue;                          // فقط ساعت/عدد (مثلاً «۱۹:۰۳») نه
             long area = (long) n.r.width() * n.r.height();
             if (n.r.contains((int) x, (int) y)) {
                 if (area < bestArea) { bestArea = area; inside = n; }
@@ -806,6 +818,12 @@ public class MagnifierService extends Service {
             }
         }
         return inside != null ? inside : near;
+    }
+
+    private static boolean hasLetterChar(String t) {
+        if (t == null) return false;
+        for (int i = 0; i < t.length(); i++) if (Character.isLetter(t.charAt(i))) return true;
+        return false;
     }
 
     private static final java.util.regex.Pattern TIME_TOK = java.util.regex.Pattern.compile("^\\d{1,2}[:.]\\d{2}(am|pm|AM|PM)?$");
