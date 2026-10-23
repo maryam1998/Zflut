@@ -1671,6 +1671,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             decoration: _fieldDeco(
               c,
               context.l10n.story_vocab_search_placeholder,
+            ).copyWith(
+              suffixIcon: _query.text.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: Icon(Icons.close, size: 16, color: c.inkSoft),
+                      onPressed: () => setState(_query.clear),
+                    ),
             ),
           ),
           if (matches.isNotEmpty) ...[

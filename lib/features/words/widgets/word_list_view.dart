@@ -74,6 +74,22 @@ class WordListView extends ConsumerStatefulWidget {
 }
 
 class _WordListViewState extends ConsumerState<WordListView> {
+  // کنترلرِ جستجو (برای دکمه‌ی ✕ پاک‌کردنِ متن)
+  late final TextEditingController _searchCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchCtrl =
+        TextEditingController(text: ref.read(wordsFilterProvider).query);
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
   // بازه‌ی دستیِ کاربر (null = خودکار)
   int? _from;
   int? _to;
@@ -275,6 +291,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                       border: Border.all(color: c.cardBorder, width: 1),
                     ),
                     child: TextField(
+                      controller: _searchCtrl,
                       onChanged: notifier.setQuery,
                       textAlign: TextAlign.start,
                       style: TextStyle(color: c.ink, fontSize: 13.5),
@@ -284,6 +301,19 @@ class _WordListViewState extends ConsumerState<WordListView> {
                             color: c.inkSoft.withOpacity(0.55), fontSize: 13.5),
                         prefixIcon:
                             Icon(Icons.search, color: c.inkSoft, size: 19),
+                        suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _searchCtrl,
+                          builder: (_, v, __) => v.text.isEmpty
+                              ? const SizedBox.shrink()
+                              : IconButton(
+                                  icon: Icon(Icons.close,
+                                      color: c.inkSoft, size: 18),
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    notifier.setQuery('');
+                                  },
+                                ),
+                        ),
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding:

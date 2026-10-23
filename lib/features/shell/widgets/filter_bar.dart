@@ -189,6 +189,18 @@ class _SearchField extends StatelessWidget {
           hintStyle:
               TextStyle(color: c.inkSoft.withOpacity(0.6), fontSize: 14),
           prefixIcon: Icon(Icons.search, color: c.inkSoft, size: 20),
+          suffixIcon: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (_, v, __) => v.text.isEmpty
+                ? const SizedBox.shrink()
+                : IconButton(
+                    icon: Icon(Icons.close, color: c.inkSoft, size: 18),
+                    onPressed: () {
+                      controller.clear();
+                      onChanged('');
+                    },
+                  ),
+          ),
           border: InputBorder.none,
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(vertical: 14),
