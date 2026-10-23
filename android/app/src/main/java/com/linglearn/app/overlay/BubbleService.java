@@ -1302,6 +1302,7 @@ public class BubbleService extends Service {
         private final Paint badge = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint badgeX = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final RectF rf = new RectF();
+        private final Path iconPath = new Path();
         private boolean rec = false, dragMode = false;
         private int side = 1;
         private float collapse = 0f, ripple = 0f, press = 0f, hot = 0f;
@@ -1426,19 +1427,30 @@ public class BubbleService extends Service {
 
             // آیکونِ میکروفون؛ هنگامِ جمع‌شدن به سمتِ نیمه‌ی دیدنی می‌رود. در حالِ ضبط به‌جای آن «■ توقف» نشان داده می‌شود.
             float ix = cx - side * collapse * (w * 0.22f);
-            float k = 0.85f * d;
-            if (rec) {
-                rf.set(ix - 7f * k, cy - 7f * k, ix + 7f * k, cy + 7f * k);
-                cv.drawRoundRect(rf, 3f * k, 3f * k, fill);
-            } else {
-                rf.set(ix - 4.2f * k, cy - 11f * k, ix + 4.2f * k, cy + 2f * k);
-                cv.drawRoundRect(rf, 4.2f * k, 4.2f * k, fill);
-                line.setStrokeWidth(1.9f * k);
-                rf.set(ix - 8f * k, cy - 8f * k, ix + 8f * k, cy + 7f * k);
-                cv.drawArc(rf, 0f, 180f, false, line);
-                cv.drawLine(ix, cy + 7f * k, ix, cy + 11f * k, line);
-                cv.drawLine(ix - 4f * k, cy + 11f * k, ix + 4f * k, cy + 11f * k, line);
+            // آیکون‌های خطیِ برداری — دقیقاً همان شکل‌ها و ضخامتِ خطِ دکمه‌های کادرِ ترجمه‌ی زنده (شبکه‌ی ۲۴×۲۴): 🎙 و ⏹
+            float box = 26f * d;
+            float is = box / 24f;
+            line.setStrokeWidth(2f * d / is);
+            line.setStrokeJoin(Paint.Join.ROUND);
+            line.setColor(Color.WHITE);
+            cv.save();
+            cv.translate(ix - box / 2f, cy - box / 2f);
+            cv.scale(is, is);
+            iconPath.reset();
+            if (rec) {                                        // ⏹
+                rf.set(6.5f, 6.5f, 17.5f, 17.5f);
+                iconPath.addRoundRect(rf, 2f, 2f, Path.Direction.CW);
+            } else {                                          // 🎙
+                rf.set(9f, 3.5f, 15f, 14f);
+                iconPath.addRoundRect(rf, 3f, 3f, Path.Direction.CW);
+                rf.set(6.5f, 6f, 17.5f, 17f);
+                iconPath.moveTo(17.5f, 11.5f);
+                iconPath.arcTo(rf, 0f, 180f, false);
+                iconPath.moveTo(12f, 17f); iconPath.lineTo(12f, 20.5f);
+                iconPath.moveTo(9f, 20.5f); iconPath.lineTo(15f, 20.5f);
             }
+            cv.drawPath(iconPath, line);
+            cv.restore();
 
             if (rec) {                                        // نقطه‌ی قرمزِ «در حال ضبط»؛ سمتِ داخلیِ صفحه تا در حالتِ نیمه‌پنهان دیده شود
                 float bx = cx - side * r * 0.72f, by = cy + r * 0.72f;
@@ -1588,7 +1600,8 @@ public class BubbleService extends Service {
         shadowStopPlayback();
         try {
             Intent i = new Intent(this, ShadowRecordActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION
+                            | Intent.FLAG_ACTIVITY_NO_USER_ACTION);   // یوتیوب/پلیر با onUserLeaveHint به حالتِ کوچک (minimize) نرود
             startActivity(i);
             shadowRecording = true;
             shadowStartMs = SystemClock.elapsedRealtime();
@@ -6186,7 +6199,8 @@ public class BubbleService extends Service {
     }
 
     private void launchProjectionDialog() {
-        Intent i = new Intent(this, ProjectionActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent i = new Intent(this, ProjectionActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_USER_ACTION);   // یوتیوب minimize نشود
         try { startActivity(i); }
         catch (Exception e) { Log.e(TAG, "cannot launch ProjectionActivity", e); showNotice("⚠ " + briefErr(e)); }
     }
