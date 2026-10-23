@@ -1244,7 +1244,7 @@ public class MagnifierService extends Service {
         popup.setClipToOutline(true);                // و گوشه‌های گردِ کادر آن را می‌برد
         popup.setElevation(dp(10));
 
-        // نوارِ ابزار: 🔁 تکرار · 🌓 شفافیت · 📄 کلِ متن · Aa فونت · 🌐 زبان‌ها · ✕ بستن
+        // نوارِ ابزار: 🔁 تکرار · 🌓 شفافیت · Aa فونت · 🌐 زبان‌ها · ✕ بستن
         // (فضای خالیِ نوار = دستگیره‌ی جابه‌جایی: بکش تا کادر هرجا خواستی برود)
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
@@ -1253,7 +1253,6 @@ public class MagnifierService extends Service {
         tvRepeat = headBtn("\u21BA", v -> cycleRepeat());
         bar.addView(tvRepeat);
         bar.addView(headBtn("\uD83C\uDF13", v -> toggleOpacityRow()));
-        bar.addView(headBtn("\uD83D\uDCC4", v -> { if (selView != null) selView.selectAll(); }));
         tvFontBtn = buildFontButton();
         LinearLayout.LayoutParams fbLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -1487,7 +1486,11 @@ public class MagnifierService extends Service {
             // وسطِ خوانشِ 🔊، یا وقتی کادرِ لغت باز است (تایمرِ خودش را دارد)، یا وسطِ کارِ ذره‌بین نبند
             if (speakingBtn != null || busy || (wordCard != null && wordCard.getVisibility() == View.VISIBLE)) {
                 popupDeadline = now + POPUP_IDLE_CLOSE_MS;
-                if (popupBar != null) { popupBar.setScaleX(1f); popupBar.setAlpha(1f); }
+                if (popupBar != null) {
+                    popupBar.setScaleX(1f); popupBar.setAlpha(1f);
+                    // وسطِ خوانش (و تکرارها) نوارِ طلایی دیده نمی‌شود؛ بعد از پایانِ تکرار ظاهر می‌شود و شمارش شروع می‌شود
+                    popupBar.setVisibility(speakingBtn != null ? View.INVISIBLE : View.VISIBLE);
+                }
                 main.postDelayed(this, 100);
                 return;
             }
@@ -1495,6 +1498,7 @@ public class MagnifierService extends Service {
             if (left <= 0f) { clearSelection(); return; }
             left = Math.min(1f, left);
             if (popupBar != null) {
+                if (popupBar.getVisibility() != View.VISIBLE) popupBar.setVisibility(View.VISIBLE);
                 popupBar.setPivotX(popupBar.getWidth() / 2f);
                 popupBar.setScaleX(left);
                 popupBar.setAlpha(0.55f + 0.45f * left);
@@ -1525,7 +1529,7 @@ public class MagnifierService extends Service {
             long now = android.os.SystemClock.uptimeMillis();
             if (speakingBtn != null) {                              // وسطِ خوانشِ 🔊 کادر نبند؛ بعد از پایانِ خوانش شمارش از نو
                 cardDeadline = now + cardSpan;
-                if (cardBar != null) { cardBar.setScaleX(1f); cardBar.setAlpha(1f); }
+                if (cardBar != null) { cardBar.setScaleX(1f); cardBar.setAlpha(1f); cardBar.setVisibility(View.INVISIBLE); }
                 main.postDelayed(this, 100);
                 return;
             }
@@ -1533,6 +1537,7 @@ public class MagnifierService extends Service {
             if (left <= 0f) { closeWordCard(); return; }
             left = Math.min(1f, left);
             if (cardBar != null) {
+                if (cardBar.getVisibility() != View.VISIBLE) cardBar.setVisibility(View.VISIBLE);
                 cardBar.setPivotX(cardBar.getWidth() / 2f);
                 cardBar.setScaleX(left);
                 cardBar.setAlpha(0.55f + 0.45f * left);
@@ -1546,7 +1551,7 @@ public class MagnifierService extends Service {
         cardSpan = cardActed ? CARD_ACTION_CLOSE_MS : CARD_IDLE_CLOSE_MS;
         cardDeadline = android.os.SystemClock.uptimeMillis() + cardSpan;
         main.removeCallbacks(cardTick);
-        if (cardBar != null) { cardBar.setScaleX(1f); cardBar.setAlpha(1f); }
+        if (cardBar != null) { cardBar.setScaleX(1f); cardBar.setAlpha(1f); cardBar.setVisibility(speakingBtn != null ? View.INVISIBLE : View.VISIBLE); }
         if (wordCard != null && wordCard.getVisibility() == View.VISIBLE) main.post(cardTick);
     }
 
@@ -1674,6 +1679,8 @@ public class MagnifierService extends Service {
         speakTok++;
         if (speakingBtn != null) { speakingBtn.setText("\uD83D\uDD0A"); speakingBtn.setTextColor(Color.WHITE); speakingBtn = null; }
         try { PanelTts.stop(this); } catch (Throwable ignored) {}
+        if (popup != null && popupBar != null) armPopupTimer();      // خوانش تمام/قطع شد → نوارِ طلاییِ بسته‌شدنِ خودکار ظاهر شود
+        if (wordCard != null && wordCard.getVisibility() == View.VISIBLE && cardBar != null) armCardTimer();
     }
 
     private void toggleSpeak(final TextView b, String text, String lang) {
@@ -1696,6 +1703,9 @@ public class MagnifierService extends Service {
                 main.postDelayed(() -> { if (token == speakTok) speakLoop(b, text, lang, token, n); }, 700);
             } else {
                 if (speakingBtn != null) { speakingBtn.setText("\uD83D\uDD0A"); speakingBtn.setTextColor(Color.WHITE); speakingBtn = null; }
+                // همه‌ی تکرارها تمام شد → نوارِ طلاییِ بسته‌شدنِ خودکار ظاهر می‌شود و شمارش شروع می‌شود
+                if (popup != null && popupBar != null) armPopupTimer();
+                if (wordCard != null && wordCard.getVisibility() == View.VISIBLE && cardBar != null) armCardTimer();
             }
         }));
     }
