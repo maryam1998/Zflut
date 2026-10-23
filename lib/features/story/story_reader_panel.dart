@@ -866,7 +866,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                       fontWeight: boldText ? FontWeight.w700 : FontWeight.w400,
                     ),
                     textDirection: dir,
-                    textAlign: TextAlign.justify,
+                    textAlign: TextAlign.start,
                   ),
                 ),
               ),
@@ -972,7 +972,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                                   boldTr ? FontWeight.w600 : FontWeight.w400,
                             ),
                             textDirection: dir,
-                            textAlign: TextAlign.justify,
+                            textAlign: TextAlign.start,
                           ),
                         )
                       : Padding(

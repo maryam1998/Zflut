@@ -78,7 +78,7 @@ class BookTranslateBar extends StatelessWidget {
         }
 
         return Container(
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
           decoration: BoxDecoration(
             color: c.goldSoft.withOpacity(0.5),
             borderRadius: BorderRadius.circular(14),
@@ -103,12 +103,12 @@ class BookTranslateBar extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
                   value: frac,
-                  minHeight: 6,
+                  minHeight: 4,
                   backgroundColor: c.cardBorder,
                   color: c.teal,
                 ),
@@ -125,27 +125,27 @@ class BookTranslateBar extends StatelessWidget {
                   child: Text('ترجمه‌ی این صفحه انجام نشد',
                       style: TextStyle(color: c.rose, fontSize: 11.5)),
                 ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Row(
                 children: [
                   _RoundBtn(
                     icon: mainIcon,
                     color: c.gold,
                     filled: true,
-                    size: 54,
+                    size: 38,
                     busy: active && !paused && engine.workingPage != null,
                     tooltip: mainLabel,
                     onTap: mainTap,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   _RoundBtn(
                     icon: Icons.stop_rounded,
                     color: c.rose,
-                    size: 44,
+                    size: 34,
                     tooltip: 'توقف ترجمه‌ی عکسی',
                     onTap: active ? engine.deactivate : null,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       mainLabel,
@@ -159,10 +159,10 @@ class BookTranslateBar extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Wrap(
                 spacing: 8,
-                runSpacing: 6,
+                runSpacing: 4,
                 children: [
                   _PillBtn(
                     icon: engine.wholeBook
@@ -272,7 +272,7 @@ class _PillBtn extends StatelessWidget {
       borderRadius: BorderRadius.circular(999),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: on ? color.withOpacity(0.16) : Colors.transparent,
           borderRadius: BorderRadius.circular(999),

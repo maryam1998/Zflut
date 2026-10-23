@@ -228,6 +228,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   final List<String> _words = [];
   final _custom = TextEditingController();
   final _query = TextEditingController();
+  // زومِ مشترکِ عکسِ اصلی و ترجمه‌ی PDF
+  final TransformationController _pdfZoom = TransformationController();
   bool _translating = false;
   String _note = '';
 
@@ -341,6 +343,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   void dispose() {
     BackHandlers.remove(_handleBack);
     _custom.dispose();
+    _pdfZoom.dispose();
     _query.dispose();
     _libSearch.dispose();
     _linkCtrl.dispose();
@@ -1265,6 +1268,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     if (doc == null || i < 0 || i >= doc.pageCount) return;
     setState(() {
       _pdfIndex = i;
+      _pdfZoom.value = Matrix4.identity();
       _pdfPageBusy = true;
       _pdfCurTrans = null;
       _pdfCurTransFor = -1;
@@ -2120,7 +2124,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     );
   }
 
-  /// عکسِ اصلیِ صفحه و/یا عکسِ ترجمه‌شده؛ هر دو قابل زوم (دو انگشت / دوبار لمس / تمام‌صفحه).
+  /// عکسِ اصلیِ صفحه و/یا عکسِ ترجمه‌شده؛ هر دو قابل زوم (دو انگشت / دوبار لمس؛ زوم هر دو همزمان).
   Widget _pdfImagesBox(
       AppThemeColorsExt c, Uint8List? img, Uint8List? tImg, int page) {
     Widget frame(Widget child) => ClipRRect(
@@ -2137,12 +2141,17 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             padding: EdgeInsets.all(30),
             child: Center(child: CircularProgressIndicator()),
           )
-        : ZoomablePageImage(bytes: img, label: 'اصلی', accent: c.gold));
+        : ZoomablePageImage(
+            bytes: img, label: 'اصلی', accent: c.gold, controller: _pdfZoom));
 
     Widget trans() {
       if (tImg != null) {
         return frame(
-            ZoomablePageImage(bytes: tImg, label: 'ترجمه', accent: c.teal));
+            ZoomablePageImage(
+                bytes: tImg,
+                label: 'ترجمه',
+                accent: c.teal,
+                controller: _pdfZoom));
       }
       final e = _pdfEngine;
       final st = e?.statusOf(page);

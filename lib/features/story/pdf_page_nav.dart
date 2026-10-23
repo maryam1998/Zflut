@@ -72,10 +72,10 @@ class PdfPageNavBar extends StatelessWidget {
     final frac = count <= 1 ? 1.0 : (index + 1) / count;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+      padding: const EdgeInsets.fromLTRB(6, 3, 6, 3),
       decoration: BoxDecoration(
         color: c.goldSoft.withOpacity(0.55),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: c.cardBorder),
       ),
       child: Column(
@@ -104,7 +104,7 @@ class PdfPageNavBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   onTap: () => _jumpDialog(context),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 2),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -114,15 +114,11 @@ class PdfPageNavBar extends StatelessWidget {
                             '${index + 1} / $count',
                             style: TextStyle(
                               color: c.ink,
-                              fontSize: 15,
+                              fontSize: 13,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.4,
                             ),
                           ),
-                        ),
-                        Text(
-                          'لمس = رفتن به صفحه',
-                          style: TextStyle(color: c.inkSoft, fontSize: 9.5),
                         ),
                       ],
                     ),
@@ -148,7 +144,7 @@ class PdfPageNavBar extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 0),
           // نوارِ پیشرفت (با لمس/کشیدن به آن نقطه می‌پرد)
           LayoutBuilder(builder: (ctx, bc) {
             void jumpTo(double dx) {
@@ -163,12 +159,12 @@ class PdfPageNavBar extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onTapUp: (d) => jumpTo(d.localPosition.dx),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 3),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(3),
                   child: LinearProgressIndicator(
                     value: frac,
-                    minHeight: 5,
+                    minHeight: 4,
                     backgroundColor: c.cardBorder.withOpacity(0.45),
                     valueColor: AlwaysStoppedAnimation(c.gold),
                   ),
@@ -206,7 +202,7 @@ class _NavCircle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    final d = small ? 34.0 : 44.0;
+    final d = small ? 28.0 : 34.0;
     final fg = filled && enabled ? Colors.white : color;
     return Tooltip(
       message: tooltip,
@@ -233,7 +229,7 @@ class _NavCircle extends StatelessWidget {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: fg),
                       )
-                    : Icon(icon, size: small ? 18 : 20, color: fg),
+                    : Icon(icon, size: small ? 16 : 18, color: fg),
               ),
             ),
           ),
