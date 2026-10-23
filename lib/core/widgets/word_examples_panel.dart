@@ -9,6 +9,7 @@ import '../providers/translation_provider.dart';
 import '../providers/example_favorites_provider.dart';
 import '../providers/speech_provider.dart';
 import '../../features/reader/widgets/neural_path_dialog.dart';
+import 'selection_card.dart' show SelectableSyncText;
 import 'sync_item_card.dart' show NeuralPathButton;
 import '../theme/app_theme_colors.dart';
 
@@ -383,8 +384,12 @@ class _ExampleRow extends ConsumerWidget {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      example.text,
+                    // لمسِ لغت یا انتخابِ محدوده → کارتِ پاپ‌آپ (ذخیره برای داستان بعدی، گرامر، …)
+                    child: SelectableSyncText(
+                      code: langCode,
+                      id: 'ai-ex-$langCode-${example.text.hashCode}',
+                      text: example.text,
+                      textDirection: TextDirection.ltr,
                       style: TextStyle(
                           color: c.ink,
                           fontSize: 13,
@@ -542,7 +547,12 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
                   : Directionality(
                       textDirection:
                           rtl ? TextDirection.rtl : TextDirection.ltr,
-                      child: Text(_text,
+                      child: SelectableSyncText(
+                          code: widget.target,
+                          id: 'ai-ex-tr-${widget.target}-${_text.hashCode}',
+                          text: _text,
+                          textDirection:
+                              rtl ? TextDirection.rtl : TextDirection.ltr,
                           style: TextStyle(
                               color: c.teal,
                               fontSize: 12,
