@@ -8,6 +8,7 @@ import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/speech_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/widgets/selection_card.dart' show SelectableSyncText;
 import '../../core/widgets/sync_item_card.dart' show NeuralPathButton;
 import '../reader/widgets/neural_path_dialog.dart';
 
@@ -85,7 +86,13 @@ class _FavCard extends ConsumerWidget {
                           child: Directionality(
                             textDirection:
                                 rtl ? TextDirection.rtl : TextDirection.ltr,
-                            child: Text(fav.text,
+                            // لمسِ لغت یا انتخابِ محدوده → کارتِ پاپ‌آپ (ذخیره برای داستان بعدی، گرامر، …)
+                            child: SelectableSyncText(
+                                code: fav.lang,
+                                id: 'fav-ex-${fav.lang}-${fav.text.hashCode}',
+                                text: fav.text,
+                                textDirection:
+                                    rtl ? TextDirection.rtl : TextDirection.ltr,
                                 style: TextStyle(
                                     color: c.ink,
                                     fontSize: 13.5,
@@ -232,7 +239,12 @@ class _FavTranslationState extends ConsumerState<_FavTranslation> {
                   : Directionality(
                       textDirection:
                           rtl ? TextDirection.rtl : TextDirection.ltr,
-                      child: Text(_text,
+                      child: SelectableSyncText(
+                          code: widget.target,
+                          id: 'fav-ex-tr-${widget.target}-${_text.hashCode}',
+                          text: _text,
+                          textDirection:
+                              rtl ? TextDirection.rtl : TextDirection.ltr,
                           style: TextStyle(
                               color: const Color(0xFF0F5C34),
                               fontSize: 12.5,

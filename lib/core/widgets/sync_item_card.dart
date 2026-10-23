@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app.dart';
+import '../ai/word_examples.dart' show wordExamplesStoreProvider;
 import '../constants/level_colors.dart';
 import '../constants/supported_languages.dart';
 import '../player_sync/sync_widgets.dart';
@@ -66,6 +67,21 @@ class SyncItemCard extends ConsumerStatefulWidget {
 
 class _SyncItemCardState extends ConsumerState<SyncItemCard> {
   bool _showAiExamples = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // مثال‌های ذخیره‌شده نباید با بازسازیِ کارت (اسکرول/تغییر تب) «ناپدید» شوند:
+    // اگر برای این لغت مثالی ذخیره است، پنل از ابتدا باز است.
+    if (widget.showActions) {
+      try {
+        _showAiExamples = ref
+            .read(wordExamplesStoreProvider)
+            .load(widget.en, 'en')
+            .isNotEmpty;
+      } catch (_) {}
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
