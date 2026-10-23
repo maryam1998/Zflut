@@ -172,7 +172,7 @@ public class MagnifierService extends Service {
     private boolean popupHot = false;                // کادر الان روی ✕ی بستن است
     private int langSeq = 0;
     private WindowManager.LayoutParams closeLp;
-    private static final float POPUP_H_MIN = 0.12f, POPUP_H_MAX = 0.85f, POPUP_H_DEFAULT = 0.5f;
+    private static final float POPUP_H_MIN = 0.12f, POPUP_H_MAX = 0.85f, POPUP_H_DEFAULT = 0.35f;
     private TextView cardTerm, termSpeak, wordTerm, wordSpeak, tvRepeat;
     private TextView cardBtnStory, cardBtnGrammar, cardBtnLeitner;
     private GradientDrawable popupBg;
@@ -967,7 +967,7 @@ public class MagnifierService extends Service {
 
         popupFree = false;
         buildPopup();
-        int w = Math.min(capW - dp(24), dp(360));
+        int w = Math.min(capW - dp(16), dp(640));
         popupLp = new WindowManager.LayoutParams(w, ViewGroup.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
