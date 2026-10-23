@@ -3,16 +3,24 @@ import 'package:flutter/material.dart';
 import '../../core/book/page_translate_engine.dart';
 import '../../core/theme/app_theme_colors.dart';
 
-/// نوارِ کنترلِ ترجمه‌ی کتاب: پیشرفتِ کل، شروع/توقف، مکث/ادامه،
-/// «ترجمه‌ی کلِ کتاب در پس‌زمینه» و تلاشِ دوباره برای صفحه‌های ناموفق.
+/// نوارِ کنترلِ ترجمه‌ی کتاب (پیشرفته): پیشرفتِ کل + دکمه‌های گردِ ▶ شروع/ادامه · ⏸ مکث · ⏹ توقف.
+///
+///  • ⏹ توقف: ترجمه‌ی خودکار می‌ایستد و محلِ توقف یادش می‌ماند؛
+///  • ▶ ادامه: از همان‌جا (اولین صفحه‌ی ناتمام) ترجمه ادامه پیدا می‌کند و نمایشگر
+///    هم به همان صفحه می‌رود ([onJump]) تا ادامه‌ی ترجمه‌ی عکسی را ببینی.
 /// فقط خودش بازسازی می‌شود (AnimatedBuilder) — کلِ تبِ داستان rebuild نمی‌شود.
 class BookTranslateBar extends StatelessWidget {
   final PageTranslateEngine engine;
   final int currentPage;
+
+  /// بعد از «ادامه»: نمایشگر را به این صفحه ببر (از صفر).
+  final ValueChanged<int>? onJump;
+
   const BookTranslateBar({
     super.key,
     required this.engine,
     required this.currentPage,
+    this.onJump,
   });
 
   @override
@@ -28,34 +36,52 @@ class BookTranslateBar extends StatelessWidget {
         final active = engine.active;
         final paused = engine.paused;
         final status = engine.statusOf(currentPage);
+        final resumeAt = engine.resumePage;
+        final canResume = engine.canResume;
+        final allDone = total > 0 && settled >= total;
+
         final title = !active
-            ? '🌐 ترجمه‌ی عکسیِ صفحه‌ها'
+            ? (canResume
+                ? '⏹ متوقف — ادامه از صفحه‌ی ${resumeAt! + 1}'
+                : allDone
+                    ? '✓ همه‌ی صفحه‌ها ترجمه شد'
+                    : '🌐 ترجمه‌ی عکسیِ صفحه‌ها')
             : paused
                 ? '⏸ متوقفِ موقت'
                 : engine.workingPage != null
                     ? '⏳ در حال ترجمه‌ی صفحه‌ی ${engine.workingPage! + 1}'
                     : '✓ آماده‌ی ترجمه‌ی صفحه‌ی بعد';
 
-        Widget btn(String label, Color color, VoidCallback? onTap) {
-          return InkWell(
-            borderRadius: BorderRadius.circular(10),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Text(label,
-                  style: TextStyle(
-                      color: onTap == null ? c.inkSoft : color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
-            ),
-          );
+        // دکمه‌ی اصلی (بزرگ): شروع / ادامه / مکث
+        late final IconData mainIcon;
+        late final String mainLabel;
+        late final VoidCallback? mainTap;
+        if (!active && canResume) {
+          mainIcon = Icons.play_arrow_rounded;
+          mainLabel = 'ادامه از صفحه‌ی ${resumeAt! + 1}';
+          mainTap = () {
+            engine.activate(page: resumeAt);
+            onJump?.call(resumeAt);
+          };
+        } else if (!active) {
+          mainIcon = Icons.play_arrow_rounded;
+          mainLabel = allDone ? 'ترجمه‌ی دوباره' : 'شروع (از همین صفحه)';
+          mainTap = allDone ? null : () => engine.activate(page: currentPage);
+        } else if (paused) {
+          mainIcon = Icons.play_arrow_rounded;
+          mainLabel = 'ادامه';
+          mainTap = engine.resume;
+        } else {
+          mainIcon = Icons.pause_rounded;
+          mainLabel = 'مکث';
+          mainTap = engine.pause;
         }
 
         return Container(
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
           decoration: BoxDecoration(
             color: c.goldSoft.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: c.cardBorder),
           ),
           child: Column(
@@ -87,7 +113,7 @@ class BookTranslateBar extends StatelessWidget {
                   color: c.teal,
                 ),
               ),
-              if (engine.note.isNotEmpty)
+              if (engine.note.isNotEmpty && active)
                 Padding(
                   padding: const EdgeInsets.only(top: 5),
                   child: Text(engine.note,
@@ -99,34 +125,170 @@ class BookTranslateBar extends StatelessWidget {
                   child: Text('ترجمه‌ی این صفحه انجام نشد',
                       style: TextStyle(color: c.rose, fontSize: 11.5)),
                 ),
-              Wrap(
-                alignment: WrapAlignment.start,
+              const SizedBox(height: 8),
+              Row(
                 children: [
-                  if (!active)
-                    btn('شروع (از همین صفحه)', c.teal,
-                        () => engine.activate(page: currentPage))
-                  else
-                    btn('⏹ توقف', c.rose, engine.deactivate),
-                  if (active && !paused)
-                    btn('⏸ مکث', c.teal, engine.pause),
-                  if (active && paused)
-                    btn('▶ ادامه', c.teal, engine.resume),
-                  btn(
-                    engine.wholeBook
-                        ? '☑ کلِ کتاب (پس‌زمینه)'
-                        : '☐ کلِ کتاب (پس‌زمینه)',
-                    c.teal,
-                    () => engine.setWholeBook(!engine.wholeBook),
+                  _RoundBtn(
+                    icon: mainIcon,
+                    color: c.gold,
+                    filled: true,
+                    size: 54,
+                    busy: active && !paused && engine.workingPage != null,
+                    tooltip: mainLabel,
+                    onTap: mainTap,
+                  ),
+                  const SizedBox(width: 10),
+                  _RoundBtn(
+                    icon: Icons.stop_rounded,
+                    color: c.rose,
+                    size: 44,
+                    tooltip: 'توقف ترجمه‌ی عکسی',
+                    onTap: active ? engine.deactivate : null,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      mainLabel,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: c.ink,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  _PillBtn(
+                    icon: engine.wholeBook
+                        ? Icons.check_box_rounded
+                        : Icons.check_box_outline_blank_rounded,
+                    label: 'کلِ کتاب (پس‌زمینه)',
+                    color: c.teal,
+                    on: engine.wholeBook,
+                    onTap: () => engine.setWholeBook(!engine.wholeBook),
                   ),
                   if (failed > 0)
-                    btn('↻ تلاشِ دوباره ($failed صفحه)', c.rose,
-                        engine.retryFailed),
+                    _PillBtn(
+                      icon: Icons.refresh_rounded,
+                      label: 'تلاشِ دوباره ($failed صفحه)',
+                      color: c.rose,
+                      on: false,
+                      onTap: engine.retryFailed,
+                    ),
                 ],
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _RoundBtn extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final bool filled;
+  final bool busy;
+  final double size;
+  final String tooltip;
+  final VoidCallback? onTap;
+
+  const _RoundBtn({
+    required this.icon,
+    required this.color,
+    required this.size,
+    required this.tooltip,
+    required this.onTap,
+    this.filled = false,
+    this.busy = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final fg = filled && enabled ? Colors.white : color;
+    return Tooltip(
+      message: tooltip,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.38,
+        child: Material(
+          color: filled && enabled ? color : color.withOpacity(0.12),
+          shape: CircleBorder(
+              side: BorderSide(color: color.withOpacity(0.6), width: 1.3)),
+          elevation: filled && enabled ? 3 : 0,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (busy)
+                    SizedBox(
+                      width: size - 8,
+                      height: size - 8,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          color: Colors.white.withOpacity(0.85)),
+                    ),
+                  Icon(icon, size: size * 0.55, color: fg),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PillBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool on;
+  final VoidCallback onTap;
+
+  const _PillBtn({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.on,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: on ? color.withOpacity(0.16) : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withOpacity(0.6)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontSize: 12, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
     );
   }
 }

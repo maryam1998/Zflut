@@ -80,6 +80,7 @@ class PageTranslateEngine extends ChangeNotifier {
   bool _loopRunning = false;
   int _consecutiveFails = 0;
   int? _working;
+  int _stoppedAt = 0; // صفحه‌ای که ترجمه موقعِ «توقف» رویش بود (برای «ادامه»)
   String _note = '';
   Timer? _metaTimer;
   bool _metaDirty = false;
@@ -92,6 +93,23 @@ class PageTranslateEngine extends ChangeNotifier {
   int? get workingPage => _working;
   String get note => _note;
   int get focus => _focus;
+
+  /// صفحه‌ای که «ادامه» باید از آن شروع کند: اولین صفحه‌ی ناتمام (در انتظار/ناموفق) از جایی که
+  /// ترجمه متوقف شد به بعد (در صورت نبودن، از اول). null = همه‌ی صفحه‌ها تمام شده‌اند.
+  int? get resumePage {
+    if (pageCount <= 0) return null;
+    for (var k = 0; k < pageCount; k++) {
+      final p = (_stoppedAt + k) % pageCount;
+      final s = statusOf(p);
+      if (s == PageStatus.pending || s == PageStatus.failed || s == PageStatus.working) {
+        return p;
+      }
+    }
+    return null;
+  }
+
+  /// آیا ترجمه قبلاً (حتی ناقص) پیش رفته و «ادامه» معنا دارد؟
+  bool get canResume => !_active && resumePage != null && (doneCount + emptyCount) > 0;
 
   int _count(PageStatus s) {
     var n = 0;
@@ -170,6 +188,7 @@ class PageTranslateEngine extends ChangeNotifier {
 
   /// توقفِ کامل (صفحه‌ای که در حالِ ترجمه است تمام می‌شود و ذخیره می‌شود).
   void deactivate() {
+    _stoppedAt = _working ?? _focus;
     _active = false;
     _paused = false;
     _note = 'متوقف شد';

@@ -38,6 +38,7 @@ import '../../core/web/ocr_block.dart';
 import '../story/book_translate_bar.dart';
 import '../story/page_translate_render.dart';
 import '../story/pdf_page_nav.dart';
+import '../story/pdf_zoom_image.dart';
 import '../story/srt_translator_tool.dart';
 import '../story/story_audio_bar.dart';
 import '../story/story_reader_panel.dart';
@@ -271,7 +272,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   final Map<int, String> _pdfTexts = {};
   final Map<int, String> _pdfTrans = {};
   String? _pdfViewLang; // زبانی که کاربر برای دیدنِ عکسِ ترجمه‌شده انتخاب کرده
-  bool _pdfShowTransImg = true;
+  // حالتِ نمایشِ صفحه: both = اصلی بالا + ترجمه پایین، orig = فقط اصلی، trans = فقط ترجمه
+  String _pdfMode = 'both';
   // موتورِ ترجمه‌ی صفحه‌ها: صف، کشِ دیسکی، تلاشِ دوباره، پیشرفتِ ماندگار
   PageTranslateEngine? _pdfEngine;
   int _pdfEngineToken = 0;
@@ -1924,7 +1926,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final i = _pdfIndex;
     final img = _pdfImages[i];
     final tImg = _pdfCurTransFor == i ? _pdfCurTrans : null;
-    final showT = tImg != null && _pdfShowTransImg;
     final orig = _pdfTexts[i] ?? '';
     final lang = _readingLang();
     final viewPageLang = _detectLang(orig, lang);
@@ -1953,42 +1954,26 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             ],
           ),
           const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 120),
-              decoration:
-                  BoxDecoration(border: Border.all(color: c.cardBorder)),
-              child: img == null
-                  ? const Padding(
-                      padding: EdgeInsets.all(30),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  : InteractiveViewer(
-                      minScale: 1,
-                      maxScale: 4,
-                      child: Image.memory(showT ? tImg : img,
-                          fit: BoxFit.fitWidth, gaplessPlayback: true),
-                    ),
-            ),
+          _pdfModeSelector(c),
+          const SizedBox(height: 8),
+          _pdfImagesBox(c, img, tImg, i),
+          const SizedBox(height: 8),
+          // دکمه‌های صفحه‌ی قبل/بعد درست زیرِ عکس (بدونِ نیاز به اسکرول)
+          PdfPageNavBar(
+            index: i,
+            count: doc.pageCount,
+            busy: _pdfPageBusy,
+            onGo: (p) => _loadPdfPage(p),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           if (_pdfEngine != null)
             BookTranslateBar(
               key: ValueKey('bk-${identityHashCode(_pdfEngine)}'),
               engine: _pdfEngine!,
               currentPage: i,
+              onJump: (p) => _loadPdfPage(p),
             ),
-          if (tImg != null)
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: HopeTextAction(
-                label: _pdfShowTransImg ? '🖼 دیدنِ اصلی' : '🌐 دیدنِ ترجمه',
-                color: c.teal,
-                onTap: () =>
-                    setState(() => _pdfShowTransImg = !_pdfShowTransImg),
-              ),
-            ),
+          const SizedBox(height: 6),
           if (viewTargets.length > 1)
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
@@ -2061,16 +2046,123 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 splitSentences: _splitSentences,
               );
             }),
-          const SizedBox(height: 6),
-          PdfPageNavBar(
-            index: i,
-            count: doc.pageCount,
-            busy: _pdfPageBusy,
-            onGo: (p) => _loadPdfPage(p),
-          ),
         ],
       ),
     );
+  }
+
+  /// انتخابِ حالتِ نمایشِ صفحه: هر دو (اصلی بالا، ترجمه پایین) · فقط ترجمه · فقط اصلی.
+  Widget _pdfModeSelector(AppThemeColorsExt c) {
+    Widget seg(String mode, IconData icon, String label) {
+      final on = _pdfMode == mode;
+      return Expanded(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => setState(() => _pdfMode = mode),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            decoration: BoxDecoration(
+              color: on ? c.teal : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 16, color: on ? Colors.white : c.teal),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: on ? Colors.white : c.ink,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: c.goldSoft.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.cardBorder),
+      ),
+      child: Row(
+        children: [
+          seg('both', Icons.view_agenda_outlined, 'اصلی + ترجمه'),
+          seg('trans', Icons.translate_rounded, 'دیدنِ ترجمه'),
+          seg('orig', Icons.image_outlined, 'دیدنِ اصلی'),
+        ],
+      ),
+    );
+  }
+
+  /// عکسِ اصلیِ صفحه و/یا عکسِ ترجمه‌شده؛ هر دو قابل زوم (دو انگشت / دوبار لمس / تمام‌صفحه).
+  Widget _pdfImagesBox(
+      AppThemeColorsExt c, Uint8List? img, Uint8List? tImg, int page) {
+    Widget frame(Widget child) => ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 120),
+            decoration: BoxDecoration(border: Border.all(color: c.cardBorder)),
+            child: child,
+          ),
+        );
+
+    final orig = frame(img == null
+        ? const Padding(
+            padding: EdgeInsets.all(30),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        : ZoomablePageImage(bytes: img, label: 'اصلی', accent: c.gold));
+
+    Widget trans() {
+      if (tImg != null) {
+        return frame(
+            ZoomablePageImage(bytes: tImg, label: 'ترجمه', accent: c.teal));
+      }
+      final e = _pdfEngine;
+      final st = e?.statusOf(page);
+      final String msg;
+      if (e == null) {
+        msg = 'برای دیدنِ ترجمه‌ی عکسی، ترجمه را با دکمه‌ی ▶ شروع کن.';
+      } else if (st == PageStatus.working || (e.active && st == PageStatus.pending)) {
+        msg = '⏳ ترجمه‌ی این صفحه در حال انجام است…';
+      } else if (st == PageStatus.failed) {
+        msg = 'ترجمه‌ی این صفحه انجام نشد — «تلاشِ دوباره» را بزن.';
+      } else if (st == PageStatus.empty) {
+        msg = 'این صفحه متنی برای ترجمه ندارد (همان عکسِ اصلی است).';
+      } else {
+        msg = 'ترجمه‌ی این صفحه هنوز آماده نیست — ▶ را بزن.';
+      }
+      return frame(Padding(
+        padding: const EdgeInsets.all(22),
+        child: Center(
+          child: Text(msg,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: c.inkSoft, fontSize: 12.5, height: 1.6)),
+        ),
+      ));
+    }
+
+    switch (_pdfMode) {
+      case 'orig':
+        return orig;
+      case 'trans':
+        return trans();
+      default:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [orig, const SizedBox(height: 8), trans()],
+        );
+    }
   }
 
   List<Widget> _importSection(AppThemeColorsExt c) {
