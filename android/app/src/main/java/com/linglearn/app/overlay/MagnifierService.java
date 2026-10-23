@@ -146,7 +146,7 @@ public class MagnifierService extends Service {
 
     // انتخابِ فعلی
     private static final class ElemInfo {
-        final Rect r; final String t;
+        final Rect r; String t;
         ElemInfo(Rect r, String t) { this.r = r; this.t = t; }
     }
     private SelView selView;
@@ -624,12 +624,12 @@ public class MagnifierService extends Service {
         if (csv != null) {
             for (String t : csv.split(",")) {
                 t = t.trim().toLowerCase(Locale.ROOT);
-                if (!t.isEmpty() && !out.contains(t) && !t.equals(src)) out.add(t);
+                if (!t.isEmpty() && !out.contains(t)) out.add(t);
             }
         }
         if (out.isEmpty()) {
             String t = prefs().getString("target", "fa");
-            if (!t.equals(src)) out.add(t);
+            if (t != null && !t.isEmpty()) out.add(t);
         }
         if (out.isEmpty()) {
             // هیچ زبانِ مقصدی (غیر از زبانِ خودِ متن) نمانده → زبانِ رابطِ اپ، وگرنه انگلیسی
@@ -667,11 +667,9 @@ public class MagnifierService extends Service {
 
     private void process(final Bitmap bmp, final float x, final float y) {
         final String src = sourceLang();
-        final TextRecognizer rec = recognizerFor(src);
-        if (rec == null) {
-            finish(msg("خواندنِ متن از تصویر برای این زبان هنوز پشتیبانی نمی‌شود", "Reading text from the screen is not supported for this language yet"));
-            return;
-        }
+        TextRecognizer rec0 = recognizerFor(src);
+        if (rec0 == null) rec0 = recognizerFor("en");   // زبانِ ذخیره‌شده OCR ندارد (مثلاً فارسی): با OCR لاتین بخوان و زبانِ واقعیِ متن را خودکار تشخیص بده
+        final TextRecognizer rec = rec0;
         rec.process(InputImage.fromBitmap(bmp, 0))
                 .addOnSuccessListener(text -> runSafe(() -> handleText(text, src, x, y)))
                 .addOnFailureListener(e -> finish(msg("خواندنِ متن ناموفق بود", "Could not read the text")));
@@ -687,13 +685,12 @@ public class MagnifierService extends Service {
             if (d < bestD) { bestD = d; best = b; }
         }
         if (best == null || bestD > dp(40)) {
-            finish(msg("زیرِ ذره‌بین متنی پیدا نشد", "No text found under the magnifier"));
+            finish(msg("زیرِ ذره‌بین متنی پیدا نشد (متنِ فارسی/عربی از تصویر خوانده نمی‌شود)", "No text found under the magnifier (Persian/Arabic can't be read from the screen)"));
             return;
         }
         Rect box = best.getBoundingBox();
         List<Text.Line> lines = best.getLines();
-        String orig = best.getText().replace('\n', ' ').trim();
-        if (orig.length() > 500) {                    // بلوکِ خیلی بلند: فقط خطِ نزدیک
+        if (best.getText().length() > 500) {          // بلوکِ خیلی بلند: فقط خطِ نزدیک
             Text.Line bl = null; double bd = Double.MAX_VALUE;
             for (Text.Line l : best.getLines()) {
                 Rect lr = l.getBoundingBox();
@@ -702,14 +699,14 @@ public class MagnifierService extends Service {
                 if (d < bd) { bd = d; bl = l; }
             }
             if (bl != null) {
-                orig = bl.getText().trim();
                 box = bl.getBoundingBox();
                 lines = new ArrayList<>();
                 lines.add(bl);
             }
         }
-        if (orig.isEmpty() || box == null) { finish(msg("متنی پیدا نشد", "No text found")); return; }
+        if (box == null) { finish(msg("متنی پیدا نشد", "No text found")); return; }
 
+        // المنت‌ها؛ ساعتِ پیام (13:22)، تیک‌ها، ایموجی و خرده‌نویسه‌های OCR حذف می‌شوند
         final ArrayList<ElemInfo> elems = new ArrayList<>();
         for (Text.Line l : lines) {
             for (Text.Element e : l.getElements()) {
@@ -717,13 +714,31 @@ public class MagnifierService extends Service {
                 if (er != null && !e.getText().trim().isEmpty()) elems.add(new ElemInfo(new Rect(er), e.getText()));
             }
         }
+        cleanElems(elems);
+        if (elems.isEmpty()) { finish(msg("متنی پیدا نشد", "No text found")); return; }
+        StringBuilder osb = new StringBuilder();
+        Rect ub = null;
+        for (ElemInfo ei : elems) {
+            if (osb.length() > 0) osb.append(' ');
+            osb.append(ei.t);
+            if (ub == null) ub = new Rect(ei.r); else ub.union(ei.r);
+        }
+        String orig = osb.toString().trim();
+        if (orig.isEmpty() || ub == null) { finish(msg("متنی پیدا نشد", "No text found")); return; }
+        box = ub;
+
+        // زبانِ واقعیِ همین متن (نه فقط زبانِ ذخیره‌شده): «Este sonido…» با مبدأ en غلط ترجمه می‌شد
+        try {
+            String det = LangDetect.detect(orig);
+            if (det != null && !det.equals(src)) src = det;
+        } catch (Throwable ignored) { }
 
         final ArrayList<String[]> results = new ArrayList<>();
         for (String tgt : targets(src)) {
             String tr;
-            try { tr = FreeTranslator.translate(http, orig, src, tgt); }
+            try { tr = translateOne(orig, src, tgt); }
             catch (Exception ex) { tr = "—"; }
-            results.add(new String[]{tgt, tr});
+            results.add(new String[]{tgt, (tr == null || tr.trim().isEmpty()) ? "—" : tr.trim()});
         }
         final String fo = orig, fsrc = src;
         final RectF rf = new RectF(box);
@@ -733,6 +748,39 @@ public class MagnifierService extends Service {
             showSelection(rf, elems, fo, fsrc, results);
             scheduleDock(2500);
         });
+    }
+
+    private static final java.util.regex.Pattern TIME_TOK = java.util.regex.Pattern.compile("^\\d{1,2}[:.]\\d{2}(am|pm|AM|PM)?$");
+    private static final java.util.regex.Pattern EMOJI_RUN = java.util.regex.Pattern.compile(
+            "[\\x{1F000}-\\x{1FAFF}\\x{2600}-\\x{27BF}\\x{FE0F}\\x{200D}\\x{2B00}-\\x{2BFF}]+");
+
+    /** ساعت/تیکِ پیام‌رسان، ایموجی و خرده‌ی بی‌معنیِ انتهای متن را از المنت‌ها پاک می‌کند. */
+    private static void cleanElems(ArrayList<ElemInfo> el) {
+        for (ElemInfo e : el) {
+            String t = EMOJI_RUN.matcher(e.t).replaceAll("").trim();
+            t = t.replaceAll("(?<=\\p{L})(\\d)\\1{2,}$", "");          // ایموجی که OCR «999» خوانده
+            e.t = t;
+        }
+        for (int i = el.size() - 1; i >= 0; i--) if (el.get(i).t.isEmpty()) el.remove(i);
+        // انتها: ساعت (13:22 یا 322)، تیک و نمادِ تنها؛ فقط وقتی پیش از آن کلمه‌ی حرف‌دار هست
+        while (el.size() > 1) {
+            String t = el.get(el.size() - 1).t;
+            boolean hasLetter = false;
+            for (int k = 0; k < t.length(); k++) if (Character.isLetter(t.charAt(k))) { hasLetter = true; break; }
+            boolean junk = !hasLetter && (TIME_TOK.matcher(t).matches() || t.matches("\\d{3,4}")
+                    || t.matches("[\\p{Punct}\\s✓✔vV/|\\\\]{1,4}"));
+            if (!junk) break;
+            el.remove(el.size() - 1);
+        }
+        // «|» تنها در ابتدا معمولاً «I» است
+        if (!el.isEmpty() && el.get(0).t.equals("|")) el.get(0).t = "I";
+    }
+
+    /** هم‌زبان (مبدأ = مقصد): همان متنِ پاک‌شده؛ وگرنه ترجمه با یک بارِ تلاشِ دوباره. */
+    private String translateOne(String text, String from, String to) throws Exception {
+        if (from != null && from.equals(to)) return text;
+        try { return FreeTranslator.translate(http, text, from, to); }
+        catch (Exception first) { return FreeTranslator.translate(http, text, from, to); }
     }
 
     private void finish(final String message) {
@@ -1438,7 +1486,7 @@ public class MagnifierService extends Service {
             final ArrayList<String[]> out = new ArrayList<>();
             for (String t : tg) {
                 String r;
-                try { r = FreeTranslator.translate(http, w2, from, t); }
+                try { r = translateOne(w2, from, t); }
                 catch (Exception ex) { r = ""; }
                 out.add(new String[]{t, (r == null || r.trim().isEmpty()) ? "—" : r.trim()});
             }
@@ -1599,14 +1647,13 @@ public class MagnifierService extends Service {
         final List<String> picked = pickedTargets();
         for (TextView c : langChips) {
             final String code = (String) c.getTag();
-            final boolean isSrc = code.equals(selSrc);
-            final boolean on = !isSrc && picked.contains(code);
+            final boolean on = picked.contains(code);
             GradientDrawable g = new GradientDrawable();
             g.setCornerRadius(dp(14));
             g.setColor(on ? COLOR_GOLD : Color.parseColor("#26FFFFFF"));
             c.setBackground(g);
             c.setTextColor(on ? COLOR_INK : Color.WHITE);
-            c.setAlpha(isSrc ? 0.35f : 1f);
+            c.setAlpha(1f);
         }
     }
 
@@ -1622,16 +1669,10 @@ public class MagnifierService extends Service {
     }
 
     private void onPickLang(String code) {
-        if (code.equals(selSrc)) {
-            toast(msg("این زبانِ خودِ متن است؛ ترجمه ندارد", "That's the text's own language — nothing to translate"));
-            return;
-        }
         final ArrayList<String> list = pickedTargets();
         if (list.contains(code)) {
             list.remove(code);
-            boolean anyActive = false;
-            for (String t : list) if (!t.equals(selSrc)) { anyActive = true; break; }
-            if (!anyActive) {
+            if (list.isEmpty()) {
                 toast(msg("حداقل یک زبان باید روشن بماند", "Keep at least one language on"));
                 return;
             }
@@ -1679,7 +1720,7 @@ public class MagnifierService extends Service {
             final ArrayList<String[]> out = new ArrayList<>();
             for (String t : tg) {
                 String r;
-                try { r = FreeTranslator.translate(http, orig, from, t); }
+                try { r = translateOne(orig, from, t); }
                 catch (Exception ex) { r = null; }
                 out.add(new String[]{t, (r == null || r.trim().isEmpty()) ? "—" : r.trim()});
             }
