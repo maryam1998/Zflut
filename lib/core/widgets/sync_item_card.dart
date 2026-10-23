@@ -788,15 +788,8 @@ class NeuralPathButton extends StatelessWidget {
         radius: 18,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.withOpacity(0.55), width: 0.8),
-            ),
-            child: const Text('پیشرفته',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, height: 1.2)),
-          ),
+          child: Icon(Icons.hub_outlined,
+              size: 18, color: context.appColors.inkSoft),
         ),
       ),
     );

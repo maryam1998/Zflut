@@ -74,7 +74,6 @@ const Map<String, Map<String, String>> _kStr = {
     'leitner': 'افزودن به جعبه‌ی لایتنر',
     'leitnerDone': 'به جعبه‌ی لایتنر اضافه شد',
     'neural': 'مسیر عصبی',
-    'advanced': 'پیشرفته',
     'loading': 'در حال ترجمه...',
     'failed': 'ترجمه پیدا نشد',
     'retry': 'تلاش دوباره',
@@ -93,7 +92,6 @@ const Map<String, Map<String, String>> _kStr = {
     'leitner': 'Add to Leitner box',
     'leitnerDone': 'Added to Leitner box',
     'neural': 'Neural path',
-    'advanced': 'Advanced',
     'loading': 'Translating…',
     'failed': 'No translation found',
     'retry': 'Retry',
@@ -112,7 +110,6 @@ const Map<String, Map<String, String>> _kStr = {
     'leitner': 'إضافة إلى صندوق لايتنر',
     'leitnerDone': 'أُضيفت إلى صندوق لايتنر',
     'neural': 'المسار العصبي',
-    'advanced': 'متقدم',
     'loading': 'جارٍ الترجمة…',
     'failed': 'لم يتم العثور على ترجمة',
     'retry': 'إعادة المحاولة',
@@ -131,7 +128,6 @@ const Map<String, Map<String, String>> _kStr = {
     'leitner': 'Zur Leitner-Box hinzufügen',
     'leitnerDone': 'Zur Leitner-Box hinzugefügt',
     'neural': 'Neuronaler Pfad',
-    'advanced': 'Erweitert',
     'loading': 'Wird übersetzt…',
     'failed': 'Keine Übersetzung gefunden',
     'retry': 'Erneut versuchen',
@@ -150,7 +146,6 @@ const Map<String, Map<String, String>> _kStr = {
     'leitner': 'Añadir a la caja Leitner',
     'leitnerDone': 'Añadido a la caja Leitner',
     'neural': 'Ruta neuronal',
-    'advanced': 'Avanzado',
     'loading': 'Traduciendo…',
     'failed': 'No se encontró traducción',
     'retry': 'Reintentar',
@@ -169,7 +164,6 @@ const Map<String, Map<String, String>> _kStr = {
     'leitner': 'Ajouter à la boîte de Leitner',
     'leitnerDone': 'Ajouté à la boîte de Leitner',
     'neural': 'Chemin neuronal',
-    'advanced': 'Avancé',
     'loading': 'Traduction en cours…',
     'failed': 'Aucune traduction trouvée',
     'retry': 'Réessayer',
@@ -483,7 +477,6 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                     // از راست به چپ: 🔊 ← 🧬 ← ✕
                     _CardIconButton(
                       icon: Icons.hub_outlined,
-                      label: _s(ui, 'advanced'),
                       color: Colors.white,
                       size: 20,
                       tooltip: _s(ui, 'neural'),
@@ -565,7 +558,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                 },
               ),
               _ActionButton(
-                emoji: '',
+                icon: Icons.style_outlined,
                 label: _s(ui, leitnerAdded ? 'leitnerDone' : 'leitner'),
                 active: leitnerAdded,
                 onTap: () {
@@ -835,7 +828,6 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
             if (res != null)
               _CardIconButton(
                 icon: Icons.hub_outlined,
-                label: _s(widget.ui, 'advanced'),
                 color: Colors.white,
                 size: 16,
                 tooltip: _s(widget.ui, 'neural'),
@@ -961,9 +953,6 @@ class _CardIconButton extends StatelessWidget {
 
   /// اگر داده شود به‌جای آیکون، این ایموجی نشان داده می‌شود
   final String? emoji;
-
-  /// اگر داده شود، به‌جای آیکون/ایموجی یک دکمه‌ی متنی کوچک (مثلاً «پیشرفته») نشان داده می‌شود
-  final String? label;
   final Color color;
   final String tooltip;
   final VoidCallback? onTap;
@@ -976,7 +965,6 @@ class _CardIconButton extends StatelessWidget {
     required this.tooltip,
     required this.onTap,
     this.emoji,
-    this.label,
     this.size = 22,
     this.busy = false,
   });
@@ -996,23 +984,7 @@ class _CardIconButton extends StatelessWidget {
                   height: size - 4,
                   child: CircularProgressIndicator(strokeWidth: 1.6, color: color),
                 )
-              : (label != null
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: kCardBtnBg,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: kCardBtnBorder, width: 0.8),
-                      ),
-                      child: Text(label!,
-                          style: TextStyle(
-                              color: color,
-                              fontSize: size >= 20 ? 11.5 : 10.5,
-                              fontWeight: FontWeight.w800,
-                              height: 1.2)),
-                    )
-                  : emoji != null
+              : (emoji != null
                   ? Text(emoji!, style: TextStyle(fontSize: size, height: 1.1))
                   : Icon(icon, size: size, color: color)),
         ),
@@ -1060,12 +1032,14 @@ class _CardCloseButton extends StatelessWidget {
 /// آبی با قابِ روشن — مثلِ پاپ‌آپِ Hope.
 class _ActionButton extends StatelessWidget {
   final String emoji;
+  final IconData? icon;
   final String label;
   final bool active;
   final VoidCallback onTap;
 
   const _ActionButton({
-    required this.emoji,
+    this.emoji = '',
+    this.icon,
     required this.label,
     required this.active,
     required this.onTap,
@@ -1107,11 +1081,11 @@ class _ActionButton extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (emoji.isNotEmpty) ...[
-                  const SizedBox(width: 6),
-                  Text(emoji,
-                      style: const TextStyle(fontSize: 15, height: 1.1)),
-                ],
+                const SizedBox(width: 6),
+                icon != null
+                    ? Icon(icon, size: 18, color: fg)
+                    : Text(emoji,
+                        style: const TextStyle(fontSize: 15, height: 1.1)),
               ],
             ),
           ),
