@@ -2207,6 +2207,7 @@ class _OfflineTtsSectionState extends State<_OfflineTtsSection> {
   bool _allCancel = false;
   String? _current;
   int _epoch = 0;
+  bool _expanded = false; // لیستِ زبان‌ها: جمع (پیش‌فرض) / باز
 
   List<String> get _all => [
         ..._downloadable,
@@ -2290,13 +2291,56 @@ class _OfflineTtsSectionState extends State<_OfflineTtsSection> {
                 : '📥 ${L.settings_tts_download_all(n)}',
             onTap: _downloadAll,
           ),
-          for (final code in _all)
-            TtsPackRow(
-              key: ValueKey('tts-$code-$_epoch'),
-              code: code,
-              label: _label(context, code),
-              phoneOnly: _phoneOnly.contains(code),
-            ),
+          // هدرِ کرکره‌ای: بزن تا لیستِ دانلودِ زبان‌ها باز/جمع شود
+          Builder(builder: (context) {
+            final c = context.appColors;
+            final fa = Localizations.localeOf(context).languageCode == 'fa';
+            return InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        fa ? 'لیست زبان‌ها' : 'Language list',
+                        style: TextStyle(
+                            color: c.ink,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(Icons.keyboard_arrow_down,
+                          size: 22, color: c.inkSoft),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _expanded
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final code in _all)
+                        TtsPackRow(
+                          key: ValueKey('tts-$code-$_epoch'),
+                          code: code,
+                          label: _label(context, code),
+                          phoneOnly: _phoneOnly.contains(code),
+                        ),
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
         ],
       ),
     );
