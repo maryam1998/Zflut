@@ -778,12 +778,16 @@ class NeuralPathButton extends StatelessWidget {
       child: InkResponse(
         onTap: onTap,
         radius: 18,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          // 🧬 مثلِ Hope: ایموجیِ کوچک و کم‌رنگ کنارِ هر بلندگو
-          child: Opacity(
-            opacity: 0.75,
-            child: Text('🧬', style: TextStyle(fontSize: 15, height: 1.1)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.withOpacity(0.55), width: 0.8),
+            ),
+            child: const Text('پیشرفته',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, height: 1.2)),
           ),
         ),
       ),

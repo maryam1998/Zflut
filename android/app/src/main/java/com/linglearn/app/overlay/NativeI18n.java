@@ -188,16 +188,16 @@ final class NativeI18n {
             "🧩 Zum Grammatiklernen hinzufügen",
             "🧩 Ajouter à l’apprentissage de la grammaire",
             "🧩 إضافة إلى تعلّم القواعد");
-        put("🔁 Added to Leitner box",
-            "🔁 Añadido a la caja de Leitner",
-            "🔁 Zur Leitner-Box hinzugefügt",
-            "🔁 Ajouté à la boîte de Leitner",
-            "🔁 أُضيف إلى صندوق لايتنر");
-        put("🔁 Add to Leitner box",
-            "🔁 Añadir a la caja de Leitner",
-            "🔁 Zur Leitner-Box hinzufügen",
-            "🔁 Ajouter à la boîte de Leitner",
-            "🔁 إضافة إلى صندوق لايتنر");
+        put("Added to Leitner box",
+            "Añadido a la caja de Leitner",
+            "Zur Leitner-Box hinzugefügt",
+            "Ajouté à la boîte de Leitner",
+            "أُضيف إلى صندوق لايتنر");
+        put("Add to Leitner box",
+            "Añadir a la caja de Leitner",
+            "Zur Leitner-Box hinzufügen",
+            "Ajouter à la boîte de Leitner",
+            "إضافة إلى صندوق لايتنر");
         put("No translation — saving still works",
             "Sin traducción — aun así se puede guardar",
             "Keine Übersetzung — Speichern funktioniert trotzdem",

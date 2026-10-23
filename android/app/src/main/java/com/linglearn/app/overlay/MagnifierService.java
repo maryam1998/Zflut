@@ -1321,8 +1321,8 @@ public class MagnifierService extends Service {
                 ? msg("\uD83E\uDDE9 ذخیره شد در گرامر", "\uD83E\uDDE9 Saved to grammar")
                 : msg("\uD83E\uDDE9 افزودن به یادگیری گرامر", "\uD83E\uDDE9 Add to grammar learning"));
         cardBtnLeitner.setText(cardLeitnerDone
-                ? msg("\uD83D\uDD01 به جعبه‌ی لایتنر اضافه شد", "\uD83D\uDD01 Added to Leitner box")
-                : msg("\uD83D\uDD01 افزودن به جعبه‌ی لایتنر", "\uD83D\uDD01 Add to Leitner box"));
+                ? msg("به جعبه‌ی لایتنر اضافه شد", "Added to Leitner box")
+                : msg("افزودن به جعبه‌ی لایتنر", "Add to Leitner box"));
         styleCardAction(cardBtnStory, cardStoryDone);
         styleCardAction(cardBtnGrammar, cardGrammarDone);
         styleCardAction(cardBtnLeitner, cardLeitnerDone);

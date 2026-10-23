@@ -300,11 +300,13 @@ class _NeuralPathDialogState extends ConsumerState<NeuralPathDialog> {
                                     _LangChip(code: _lang, c: c),
                                     const Spacer(),
                                     // از راست به چپ: 🔊 ← 🧬
-                                    const Padding(
-                                      padding: EdgeInsets.all(4),
-                                      child: Text('🧬',
+                                    Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Text('پیشرفته',
                                           style: TextStyle(
-                                              fontSize: 18, height: 1.1)),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              color: c.inkSoft)),
                                     ),
                                     InkResponse(
                                       onTap: _speak,
