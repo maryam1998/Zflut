@@ -5383,7 +5383,7 @@ public class BubbleService extends Service {
         if (asrMuted()) return;
         wakeFromIdle();
         // the server sometimes returns the same final text several times - show it once
-        if (raw.equals(lastFinalText)) {
+        if (!micEngine && raw.equals(lastFinalText)) {
             Log.d(TAG, "skipping duplicate final text");
             return;
         }
@@ -5426,7 +5426,7 @@ public class BubbleService extends Service {
         for (int i = 0; i < ts.size(); i++) {
             final String lang = ts.get(i);
             // اگر تکه‌های زنده کلِ جمله را پوشانده‌اند و ترجمه‌شان مشکوک نیست، همان‌ها نهایی می‌شوند → هیچ پرشی در پایانِ جمله نیست
-            if (fw.length > 0 && e.committedWords == fw.length) {
+            if (fw.length > 0 && e.committedWords == fw.length && !(micEngine && fw.length >= 4)) {
                 String joined = joinChunks(e, lang, true);
                 if (joined != null && !joined.isEmpty()
                         && !LiveTranslator.looksLikelyMistranslated(text, joined, lang, srcLang)) {
@@ -5483,8 +5483,49 @@ public class BubbleService extends Service {
 
     /** Free services first (Google -> MyMemory -> Lingva -> Libre); the app's AI worker is the last resort. */
     private String translateOne(String text, String srcLang, String tgt, String ctxPrev) throws Exception {
+        // 🎙 متنِ خروجیِ تشخیصِ گفتار (بدونِ نقطه‌گذاری/حروفِ بزرگ، با کلماتِ اشتباه‌شنیده‌شده) را مترجم‌های
+        // رایگان تحت‌اللفظی و بی‌معنی ترجمه می‌کنند («no miss» ← «بدون دست»، «lorry» ← «کامیون»).
+        // پس برای گفتارِ زنده اول AI با پرامپتِ «آگاه از خطای تشخیص» + جمله‌ی قبلی به‌عنوان زمینه؛ اگر نشد، رایگان.
+        boolean ytOn = false;
+        try { ytOn = yt != null && yt.isActive(); } catch (Throwable ignored) {}
+        if (micEngine && !ytOn && hasInternet() && words(text).length >= 2) {
+            try {
+                String r = translateAsr(text, srcLang, ctxPrev, tgt);
+                if (r != null) {
+                    r = r.trim().replaceAll("^[\"'«»]+|[\"'«»\\s]+$", "");
+                    if (!r.isEmpty() && !LiveTranslator.isReasoningLeak(r)
+                            && !LiveTranslator.looksLikelyMistranslated(text, r, tgt, srcLang)) return r;
+                }
+            } catch (Exception ex) { Log.d(TAG, "asr-aware translate failed: " + ex); }
+        }
         // کش → سرویس‌های رایگان → (اگر مشکوک بود) بازبینی/ترجمه با AI → کشِ نتیجه‌ی تأییدشده
         return LiveTranslator.translate(this, HTTP_FAST, text, srcLang, tgt, aiBackend);
+    }
+
+    /** ترجمه‌ی AI برای زیرنویسِ زنده‌ی حاصل از تشخیصِ گفتار: معنا را از روی زمینه بازسازی می‌کند. */
+    private String translateAsr(String text, String srcLang, String prevContext, String target) throws Exception {
+        String tName = LANG_NAMES.containsKey(target) ? LANG_NAMES.get(target) : target;
+        String sName = (srcLang != null && LANG_NAMES.containsKey(srcLang)) ? LANG_NAMES.get(srcLang) : "the source language";
+        String prompt = "You translate live subtitles from " + sName + " into " + tName + ".\n"
+                + "The source text was produced by automatic speech recognition: it has no reliable punctuation or "
+                + "capitalization, and some words or names may be misheard (for example \"no miss\" is probably "
+                + "\"No, Miss\", and \"mister lorry\" is a person's name, not a truck). First work out what the "
+                + "speaker most likely meant, then translate that meaning naturally and fluently, like a professional "
+                + "subtitler. Keep names as names. Never translate word by word if it produces nonsense.\n"
+                + "Reply with ONLY the translation in " + tName + ", no quotes, no notes.";
+        String tone = tone();
+        if ("formal".equals(tone)) prompt += " Use a formal, polite register.";
+        else if ("casual".equals(tone)) prompt += " Use a casual, spoken, everyday register.";
+        if (prevContext != null && !prevContext.isEmpty()) {
+            prompt += "\n\nPrevious sentence (context only, do NOT translate it): " + prevContext;
+        }
+        prompt += "\n\nText: " + text;
+        JSONObject body = new JSONObject();
+        body.put(GENERATE_PROMPT_KEY, prompt);
+        String resp = postBytes(HTTP_FAST, 2, WORKER_BASE + GENERATE_PATH,
+                "application/json; charset=utf-8",
+                body.toString().getBytes(StandardCharsets.UTF_8));
+        return extractText(resp);
     }
 
     // ───────── 📺 حالت یوتیوب: روشن/خاموش و اتصال به پنل ─────────
@@ -6595,6 +6636,22 @@ public class BubbleService extends Service {
     static void asrFinal(String text) {
         BubbleService s = instance;
         if (s != null && s.micEngine) { s.gotAsrText = true; s.onFinalText(text); }
+    }
+
+    /**
+     * یک نشستِ SpeechRecognizerِ گوگل بدونِ «نتیجه‌ی نهایی» تمام شد (سکوت/نامفهوم/خطا/تایم‌اوت) و نشستِ تازه
+     * از صفر شروع می‌شود. بدونِ این کار: (۱) خطِ زنده‌ی نیمه‌کاره هرگز بسته/ترجمه‌ی نهایی نمی‌شد و (۲) شمارنده‌ی
+     * consumedWords مانده بود و اولین کلماتِ نشستِ بعدی به‌اشتباه «قبلاً‌بسته‌شده» حساب و دور ریخته می‌شد —
+     * یعنی متن تشخیص داده می‌شد ولی نمایش/نگه‌داری نمی‌شد.
+     */
+    static void asrSessionEnded() {
+        BubbleService s = instance;
+        if (s == null || !s.micEngine) return;
+        final String hyp = s.pendingHyp;
+        s.cancelLivePending();
+        s.rateStartAt = 0;
+        if (hyp != null && !hyp.trim().isEmpty()) s.commitSentences(hyp);
+        s.consumedWords = 0;
     }
 
     /** نسخه‌ی نهایی چیزِ جدیدی نداشت: خطِ زنده همون‌طور که هست بسته می‌شه (و ترجمه‌ی بقیه‌اش شروع می‌شه). */

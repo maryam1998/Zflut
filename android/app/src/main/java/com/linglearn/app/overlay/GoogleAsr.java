@@ -161,6 +161,8 @@ final class GoogleAsr {
             if (t != null) {
                 consecutiveErrors = 0;
                 BubbleService.asrFinal(t);
+            } else {
+                BubbleService.asrSessionEnded();       // نشست بدونِ متنِ نهایی تمام شد
             }
             restartSoon(50);
         }
@@ -181,6 +183,7 @@ final class GoogleAsr {
                     return;
                 case SpeechRecognizer.ERROR_NO_MATCH:
                 case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
+                    BubbleService.asrSessionEnded();       // متنِ نیمه‌کاره را ببند و شمارنده را صفر کن
                     restartSoon(50);                       // سکوت/نامفهوم: عادی است
                     return;
                 case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
@@ -190,6 +193,7 @@ final class GoogleAsr {
                     return;
                 default:
                     consecutiveErrors++;
+                    BubbleService.asrSessionEnded();
                     if (consecutiveErrors > MAX_CONSECUTIVE_ERRORS) { fatal(); return; }
                     restartSoon(200);
             }
