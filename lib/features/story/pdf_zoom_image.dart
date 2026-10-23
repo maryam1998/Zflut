@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 
 /// بازیگرِ «قفل‌کننده»: وقتی عکس زوم است (یا دو انگشت روی آن آمد) بلافاصله برنده‌ی
 /// مسابقه‌ی ژست‌ها می‌شود تا اسکرولِ صفحه جلوی جابه‌جایی با یک انگشت را نگیرد.
