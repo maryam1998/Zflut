@@ -1672,7 +1672,16 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               c,
               context.l10n.story_vocab_search_placeholder,
             ).copyWith(
-              suffixIcon: _query.text.isEmpty
+              // ✕ سمتِ چپِ کادر
+              prefixIcon: _query.text.isEmpty ||
+                      Directionality.of(context) != TextDirection.ltr
+                  ? null
+                  : IconButton(
+                      icon: Icon(Icons.close, size: 16, color: c.inkSoft),
+                      onPressed: () => setState(_query.clear),
+                    ),
+              suffixIcon: _query.text.isEmpty ||
+                      Directionality.of(context) == TextDirection.ltr
                   ? null
                   : IconButton(
                       icon: Icon(Icons.close, size: 16, color: c.inkSoft),

@@ -789,7 +789,7 @@ class NeuralPathButton extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Icon(Icons.hub_outlined,
-              size: 18, color: context.appColors.inkSoft),
+              size: 16, color: context.appColors.inkSoft.withOpacity(0.4)),
         ),
       ),
     );

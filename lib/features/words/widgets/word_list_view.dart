@@ -90,6 +90,30 @@ class _WordListViewState extends ConsumerState<WordListView> {
     super.dispose();
   }
 
+  /// سمتِ چپِ فیلدِ جستجو: ✕ (وقتی متن هست). [prefix] = آیکونِ ابتدای فیلد.
+  Widget? _searchSide(dynamic c, WordsFilterNotifier notifier,
+      TextDirection dir, bool prefix) {
+    final leftIsPrefix = dir == TextDirection.ltr;
+    final search = Icon(Icons.search, color: c.inkSoft, size: 19);
+    if (prefix) {
+      if (!leftIsPrefix) return search;
+    } else if (leftIsPrefix) {
+      return null;
+    }
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: _searchCtrl,
+      builder: (_, v, __) => v.text.isEmpty
+          ? (prefix ? search : const SizedBox.shrink())
+          : IconButton(
+              icon: Icon(Icons.close, color: c.inkSoft, size: 18),
+              onPressed: () {
+                _searchCtrl.clear();
+                notifier.setQuery('');
+              },
+            ),
+    );
+  }
+
   // بازه‌ی دستیِ کاربر (null = خودکار)
   int? _from;
   int? _to;
@@ -299,21 +323,11 @@ class _WordListViewState extends ConsumerState<WordListView> {
                         hintText: L.phrasebook_search_words,
                         hintStyle: TextStyle(
                             color: c.inkSoft.withOpacity(0.55), fontSize: 13.5),
-                        prefixIcon:
-                            Icon(Icons.search, color: c.inkSoft, size: 19),
-                        suffixIcon: ValueListenableBuilder<TextEditingValue>(
-                          valueListenable: _searchCtrl,
-                          builder: (_, v, __) => v.text.isEmpty
-                              ? const SizedBox.shrink()
-                              : IconButton(
-                                  icon: Icon(Icons.close,
-                                      color: c.inkSoft, size: 18),
-                                  onPressed: () {
-                                    _searchCtrl.clear();
-                                    notifier.setQuery('');
-                                  },
-                                ),
-                        ),
+                        // ✕ همیشه سمتِ چپِ کادر (در LTR جای 🔍 می‌نشیند، در RTL کنارِ آن)
+                        prefixIcon: _searchSide(
+                            c, notifier, Directionality.of(context), true),
+                        suffixIcon: _searchSide(
+                            c, notifier, Directionality.of(context), false),
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding:

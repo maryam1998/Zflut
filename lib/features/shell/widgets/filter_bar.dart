@@ -165,6 +165,21 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final leftIsPrefix = Directionality.of(context) == TextDirection.ltr;
+    Widget clearBtn(bool prefix) => ValueListenableBuilder<TextEditingValue>(
+          valueListenable: controller,
+          builder: (_, v, __) => v.text.isEmpty
+              ? (prefix
+                  ? Icon(Icons.search, color: c.inkSoft, size: 20)
+                  : const SizedBox.shrink())
+              : IconButton(
+                  icon: Icon(Icons.close, color: c.inkSoft, size: 18),
+                  onPressed: () {
+                    controller.clear();
+                    onChanged('');
+                  },
+                ),
+        );
     return Container(
       height: 50,
       decoration: BoxDecoration(
@@ -188,19 +203,11 @@ class _SearchField extends StatelessWidget {
           hintText: hint,
           hintStyle:
               TextStyle(color: c.inkSoft.withOpacity(0.6), fontSize: 14),
-          prefixIcon: Icon(Icons.search, color: c.inkSoft, size: 20),
-          suffixIcon: ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (_, v, __) => v.text.isEmpty
-                ? const SizedBox.shrink()
-                : IconButton(
-                    icon: Icon(Icons.close, color: c.inkSoft, size: 18),
-                    onPressed: () {
-                      controller.clear();
-                      onChanged('');
-                    },
-                  ),
-          ),
+          // ✕ همیشه سمتِ چپِ کادر
+          prefixIcon: leftIsPrefix
+              ? clearBtn(true)
+              : Icon(Icons.search, color: c.inkSoft, size: 20),
+          suffixIcon: leftIsPrefix ? null : clearBtn(false),
           border: InputBorder.none,
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(vertical: 14),
