@@ -230,6 +230,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   final _query = TextEditingController();
   // زومِ مشترکِ عکسِ اصلی و ترجمه‌ی PDF
   final TransformationController _pdfZoom = TransformationController();
+  final TransformationController _pdfZoomT = TransformationController(); // زومِ مستقلِ عکسِ ترجمه
   bool _translating = false;
   String _note = '';
 
@@ -344,6 +345,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     BackHandlers.remove(_handleBack);
     _custom.dispose();
     _pdfZoom.dispose();
+    _pdfZoomT.dispose();
     _query.dispose();
     _libSearch.dispose();
     _linkCtrl.dispose();
@@ -1269,6 +1271,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     setState(() {
       _pdfIndex = i;
       _pdfZoom.value = Matrix4.identity();
+      _pdfZoomT.value = Matrix4.identity();
       _pdfPageBusy = true;
       _pdfCurTrans = null;
       _pdfCurTransFor = -1;
@@ -2124,7 +2127,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     );
   }
 
-  /// عکسِ اصلیِ صفحه و/یا عکسِ ترجمه‌شده؛ هر دو قابل زوم (دو انگشت / دوبار لمس؛ زوم هر دو همزمان).
+  /// عکسِ اصلیِ صفحه و/یا عکسِ ترجمه‌شده؛ هر دو قابل زوم و چرخش جداگانه (دو انگشت / دوبار لمس).
   Widget _pdfImagesBox(
       AppThemeColorsExt c, Uint8List? img, Uint8List? tImg, int page) {
     Widget frame(Widget child) => ClipRRect(
@@ -2151,7 +2154,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 bytes: tImg,
                 label: 'ترجمه',
                 accent: c.teal,
-                controller: _pdfZoom));
+                controller: _pdfZoomT));
       }
       final e = _pdfEngine;
       final st = e?.statusOf(page);
