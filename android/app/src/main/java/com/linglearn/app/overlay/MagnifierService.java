@@ -33,16 +33,24 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -75,6 +83,9 @@ import okhttp3.OkHttpClient;
  * هایلایت می‌شود و ترجمه‌اش به همه‌ی زبان‌های انتخابی در یک کادر می‌آید.
  * ضربه روی یک لغت (یا کشیدنِ انگشت روی چند لغت) کادرِ «ذخیره برای داستان بعدی / گرامر / لایتنر» را باز می‌کند.
  * خروج: ذره‌بین را بکش روی ✕ی پایینِ صفحه (مثلِ حبابِ ترجمه‌ی زنده) یا «بستن» در اعلان.
+ *
+ * کادرِ ترجمه مثلِ کادرِ ترجمه‌ی زنده: 🌐 تغییرِ زبان · Aa نوعِ فونت · A−/A+ اندازه‌ی متن ·
+ * نوارِ دستگیره (کشیدنِ عمودی = ارتفاع، افقی = جابه‌جایی) · کشیدنِ سربرگ = جابه‌جایی (رها روی ✕ = بستنِ کادر).
  *
  * زبان‌ها از همان SharedPreferencesِ حبابِ ترجمه‌ی زنده خوانده می‌شود
  * (source = «زبان صدا»، targets = زبان‌های مقصد).
@@ -148,6 +159,20 @@ public class MagnifierService extends Service {
     // کادرِ سورمه‌ای (هم‌سبکِ پنلِ حبابِ ترجمه‌ی زنده)
     private static final int REPEAT_INF = -1;                 // همان مقدارِ حبابِ ترجمه‌ی زنده
     private LinearLayout rowsBox, wordCard, wordRows, opacityRow;
+    private LinearLayout langRow, fontRow;
+    private TextView tvLangPill, tvFontBtn;
+    private SeekBar opacityBar;
+    private MaxHScroll bodyScroll;
+    private OverlayFonts fonts;
+    private final ArrayList<TextView> langChips = new ArrayList<>();
+    private final ArrayList<TextView> appFontChips = new ArrayList<>();
+    private float popupHFrac = POPUP_H_DEFAULT;      // ارتفاعِ بخشِ متن (کسری از ارتفاعِ صفحه)
+    private boolean popupFree = false;               // کاربر کادر را جابه‌جا کرده → دیگر چسبیده به متن نیست
+    private int popupFreeX = 0, popupFreeY = 0;
+    private boolean popupHot = false;                // کادر الان روی ✕ی بستن است
+    private int langSeq = 0;
+    private WindowManager.LayoutParams closeLp;
+    private static final float POPUP_H_MIN = 0.12f, POPUP_H_MAX = 0.85f, POPUP_H_DEFAULT = 0.5f;
     private TextView cardTerm, termSpeak, wordTerm, wordSpeak, tvRepeat;
     private TextView cardBtnStory, cardBtnGrammar, cardBtnLeitner;
     private GradientDrawable popupBg;
@@ -522,7 +547,7 @@ public class MagnifierService extends Service {
     private void createCloseTarget() {
         int sz = dp(84);
         closeView = new CloseTargetView(this);
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(sz, sz,
+        WindowManager.LayoutParams lp = closeLp = new WindowManager.LayoutParams(sz, sz,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                         | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
@@ -732,8 +757,17 @@ public class MagnifierService extends Service {
         cardSeq++;
         stopSpeech();
         if (selView != null) { try { wm.removeViewImmediate(selView); } catch (Exception ignored) {} selView = null; }
-        if (popup != null) { try { wm.removeViewImmediate(popup); } catch (Exception ignored) {} popup = null; }
+        langSeq++;
+        popupHot = false;
+        if (popup != null) {
+            popup.animate().cancel();
+            try { wm.removeViewImmediate(popup); } catch (Exception ignored) {}
+            popup = null;
+        }
+        hideCloseTarget();
         rowsBox = null; wordCard = null; wordRows = null; opacityRow = null;
+        langRow = null; fontRow = null; tvLangPill = null; tvFontBtn = null; opacityBar = null; bodyScroll = null;
+        langChips.clear(); appFontChips.clear();
         cardTerm = null; termSpeak = null; wordTerm = null; wordSpeak = null; tvRepeat = null; popupBg = null;
     }
 
@@ -759,6 +793,7 @@ public class MagnifierService extends Service {
         selLp.y = (int) box.top - pad;
         try { wm.addView(selView, selLp); } catch (Exception ex) { selView = null; }
 
+        popupFree = false;
         buildPopup();
         int w = Math.min(capW - dp(24), dp(360));
         popupLp = new WindowManager.LayoutParams(w, ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -782,10 +817,15 @@ public class MagnifierService extends Service {
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
         int h = popup.getMeasuredHeight();
         int pad = dp(6), gap = dp(8);
-        int left = Math.max(dp(12), Math.min(capW - w - dp(12), (int) (selBox.centerX() - w / 2f)));
-        int top;
-        if (selBox.bottom + pad + gap + h <= capH - dp(24)) top = (int) selBox.bottom + pad + gap;
-        else top = Math.max(dp(36), (int) selBox.top - pad - gap - h);
+        int left, top;
+        if (popupFree) {                                   // جای دلخواهِ کاربر
+            left = Math.max(0, Math.min(capW - w, popupFreeX));
+            top = Math.max(0, Math.min(capH - h, popupFreeY));
+        } else {
+            left = Math.max(dp(12), Math.min(capW - w - dp(12), (int) (selBox.centerX() - w / 2f)));
+            if (selBox.bottom + pad + gap + h <= capH - dp(24)) top = (int) selBox.bottom + pad + gap;
+            else top = Math.max(dp(36), (int) selBox.top - pad - gap - h);
+        }
         popupLp.x = left;
         popupLp.y = top;
         try { wm.updateViewLayout(popup, popupLp); } catch (Exception ignored) {}
@@ -976,7 +1016,9 @@ public class MagnifierService extends Service {
     }
 
     private void buildPopup() {
+        fonts().load();
         panelAlpha = Math.max(0f, Math.min(1f, prefs().getFloat("panelAlphaV2", 1f)));
+        popupHFrac = Math.max(POPUP_H_MIN, Math.min(POPUP_H_MAX, prefs().getFloat("magHFrac", POPUP_H_DEFAULT)));
         popup = new LinearLayout(this);
         popup.setOrientation(LinearLayout.VERTICAL);
         popupBg = new GradientDrawable();
@@ -985,37 +1027,70 @@ public class MagnifierService extends Service {
         popup.setBackground(popupBg);
         applyPopupAlpha();
         popup.setPadding(dp(12), dp(4), dp(10), dp(12));
+        popup.setClipToPadding(false);               // نوارِ دستگیره تا لبه‌ها (بیرون از padding) کشیده می‌شود
+        popup.setClipToOutline(true);                // و گوشه‌های گردِ کادر آن را می‌برد
         popup.setElevation(dp(10));
 
-        // نوارِ ابزار: 🔁 تکرار (۲× / ۳× / ∞) · 🌓 شفافیت · 📄 کلِ متن · ✕ بستن
+        // نوارِ ابزار: 🔁 تکرار · 🌓 شفافیت · 📄 کلِ متن · Aa فونت · 🌐 زبان‌ها · ✕ بستن
+        // (فضای خالیِ نوار = دستگیره‌ی جابه‌جایی: بکش تا کادر هرجا خواستی برود)
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         tvRepeat = headBtn("\u21BA", v -> cycleRepeat());
         bar.addView(tvRepeat);
         bar.addView(headBtn("\uD83C\uDF13", v -> toggleOpacityRow()));
         bar.addView(headBtn("\uD83D\uDCC4", v -> { if (selView != null) selView.selectAll(); }));
-        View sp = new View(this);
-        bar.addView(sp, new LinearLayout.LayoutParams(0, 1, 1f));
+        tvFontBtn = buildFontButton();
+        LinearLayout.LayoutParams fbLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        fbLp.setMarginStart(dp(2));
+        bar.addView(tvFontBtn, fbLp);
+
+        // 🌐 «▾ FA / ES» = دکمه‌ی انتخابِ زبان‌های ترجمه (بزن → ردیفِ زبان‌ها باز می‌شود)
+        tvLangPill = new TextView(this);
+        tvLangPill.setTextColor(COLOR_GOLD);
+        tvLangPill.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        tvLangPill.setTypeface(Typeface.DEFAULT_BOLD);
+        tvLangPill.setSingleLine(true);
+        tvLangPill.setEllipsize(TextUtils.TruncateAt.MIDDLE);
+        tvLangPill.setGravity(Gravity.CENTER);
+        tvLangPill.setPadding(dp(8), dp(8), dp(8), dp(8));
+        tvLangPill.setContentDescription(msg("زبان‌های ترجمه — برای تغییر بزنید",
+                "Translation languages — tap to change"));
+        tvLangPill.setOnClickListener(v -> toggleRow(langRow));
+        LinearLayout langWrap = new LinearLayout(this);
+        langWrap.setOrientation(LinearLayout.HORIZONTAL);
+        langWrap.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        langWrap.setGravity(Gravity.CENTER_VERTICAL);
+        langWrap.addView(tvLangPill, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams wrapLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        wrapLp.setMarginStart(dp(4));
+        bar.addView(langWrap, wrapLp);
         bar.addView(headBtn("\u2715", v -> clearSelection()));
+        bar.setOnTouchListener(new PopupMover());
         popup.addView(bar);
         updateRepeatButton();
 
-        // نوارِ شفافیت (مثلِ حبابِ ترجمه‌ی زنده)
+        // ردیف‌های بازشونده (فقط یکی باز می‌ماند): زبان‌ها · فونت · شفافیت
+        popup.addView(buildLangRow(), matchWrap(0));
+        popup.addView(buildFontRow(), matchWrap(0));
+
         opacityRow = new LinearLayout(this);
         opacityRow.setOrientation(LinearLayout.HORIZONTAL);
         opacityRow.setGravity(Gravity.CENTER_VERTICAL);
         opacityRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         opacityRow.setVisibility(View.GONE);
-        SeekBar ob = new SeekBar(this);
-        ob.setMax(100);
-        ob.setProgress(Math.round(panelAlpha * 100f));
-        ob.setProgressTintList(android.content.res.ColorStateList.valueOf(COLOR_GOLD));
-        ob.setThumbTintList(android.content.res.ColorStateList.valueOf(COLOR_GOLD));
+        opacityBar = new SeekBar(this);
+        opacityBar.setMax(100);
+        opacityBar.setProgress(Math.round(panelAlpha * 100f));
+        opacityBar.setProgressTintList(android.content.res.ColorStateList.valueOf(COLOR_GOLD));
+        opacityBar.setThumbTintList(android.content.res.ColorStateList.valueOf(COLOR_GOLD));
         final TextView pct = txt(Math.round(panelAlpha * 100f) + "%", Color.WHITE, 12);
         pct.setMinWidth(dp(44));
         pct.setGravity(Gravity.CENTER);
-        ob.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        opacityBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
                 panelAlpha = progress / 100f;
                 pct.setText(progress + "%");
@@ -1026,29 +1101,36 @@ public class MagnifierService extends Service {
                 prefs().edit().putFloat("panelAlphaV2", panelAlpha).apply();
             }
         });
-        opacityRow.addView(ob, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        opacityRow.addView(opacityBar, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         opacityRow.addView(pct);
         popup.addView(opacityRow, matchWrap(0));
 
-        // متنِ اصلی + 🔊
+        // بدنه‌ی قابلِ اسکرول (ارتفاعش با دستگیره‌ی پایین تنظیم می‌شود): متنِ اصلی + 🔊 و ترجمه‌ها
+        bodyScroll = new MaxHScroll(this);
+        bodyScroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        bodyScroll.setVerticalScrollBarEnabled(false);
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+
         LinearLayout head = new LinearLayout(this);
         head.setOrientation(LinearLayout.HORIZONTAL);
         head.setGravity(Gravity.CENTER_VERTICAL);
         cardTerm = txt(selOrig, Color.WHITE, 16);
-        cardTerm.setTypeface(cardTerm.getTypeface(), android.graphics.Typeface.BOLD);
-        cardTerm.setMaxLines(6);
-        cardTerm.setEllipsize(TextUtils.TruncateAt.END);
+        fonts().style(cardTerm, 16, true);
         head.addView(cardTerm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         termSpeak = speakBtn();
         termSpeak.setOnClickListener(v -> toggleSpeak(termSpeak, selOrig, selSrc));
         head.addView(termSpeak);
-        popup.addView(head, matchWrap(2));
+        body.addView(head, matchWrap(2));
 
         // ترجمه به همه‌ی زبان‌های انتخابی (هر ردیف 🔊 دارد)
         rowsBox = new LinearLayout(this);
         rowsBox.setOrientation(LinearLayout.VERTICAL);
-        popup.addView(rowsBox, matchWrap(0));
+        body.addView(rowsBox, matchWrap(0));
         fillRows(rowsBox, wholeResults);
+        bodyScroll.addView(body, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        popup.addView(bodyScroll, matchWrap(2));
 
         // کادرِ لغت (اول بسته): لغت/محدوده + ترجمه‌ها + «ذخیره برای داستان بعدی / گرامر / لایتنر»
         buildWordCard();
@@ -1058,13 +1140,21 @@ public class MagnifierService extends Service {
                 "Tap a word, or drag across several words in the highlighted text"),
                 Color.parseColor("#8F98B8"), 11);
         popup.addView(hint, matchWrap(8));
+
+        // نوارِ دستگیره (پایینِ کادر): کشیدنِ عمودی = ارتفاع ، افقی = جابه‌جایی ، A−/A+ = اندازه‌ی متن
+        View grip = makeGrip();
+        LinearLayout.LayoutParams gLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(30));
+        gLp.setMargins(-dp(12), dp(8), -dp(10), -dp(12));
+        popup.addView(grip, gLp);
+
+        applyScrollMax();
+        refreshLangPill();
+        refreshFontChips();
+        paintFontButton();
     }
 
-    private void toggleOpacityRow() {
-        if (opacityRow == null) return;
-        opacityRow.setVisibility(opacityRow.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
-        placePopup();
-    }
+    private void toggleOpacityRow() { toggleRow(opacityRow); }
 
     // 🔁 تکرارِ خوانش: خاموش ← ۲ ← ۳ ← ∞ (همان تنظیمِ حبابِ ترجمه‌ی زنده)
     private int repeatSetting() {
@@ -1218,6 +1308,7 @@ public class MagnifierService extends Service {
         cardSeq++;
         stopSpeech();
         if (wordCard != null) wordCard.setVisibility(View.GONE);
+        applyScrollMax();
         placePopup();
     }
 
@@ -1253,6 +1344,7 @@ public class MagnifierService extends Service {
                 row.addView(lab);
             }
             TextView t = txt(tx, Color.parseColor("#E8EAF2"), 15);
+            fonts().style(t, 15, false);
             row.addView(t, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             if (!lg.isEmpty()) {
                 final TextView sp = speakBtn();
@@ -1317,7 +1409,9 @@ public class MagnifierService extends Service {
         cardMeaningLang = "fa";
         cardStoryDone = cardGrammarDone = cardLeitnerDone = false;
         wordTerm.setText(word);
+        fonts().apply(wordTerm);
         wordCard.setVisibility(View.VISIBLE);
+        applyScrollMax();
         cardActed = false;
         armCardTimer();                        // ⏳ ۶ ثانیه تا بسته‌شدنِ خودکار (نوارِ طلایی)
         refreshCardButtons();
@@ -1333,7 +1427,12 @@ public class MagnifierService extends Service {
         fillRows(wordRows, wait);
         placePopup();
 
-        final String from = selSrc, w2 = word;
+        requestWordMeanings(my, word);
+    }
+
+    /** ترجمه‌ی لغت/محدوده به همه‌ی زبان‌های انتخابی (پس‌زمینه) ← ردیف‌های کادرِ لغت. */
+    private void requestWordMeanings(final int my, final String w2) {
+        final String from = selSrc;
         final List<String> tg = targets(from);
         runSafe(() -> {
             final ArrayList<String[]> out = new ArrayList<>();
@@ -1388,6 +1487,560 @@ public class MagnifierService extends Service {
     private void toast(String s) { Toast.makeText(getApplicationContext(), s, Toast.LENGTH_SHORT).show(); }
 
     private int dp(float v) { return Math.round(v * getResources().getDisplayMetrics().density); }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  🔎 اندازه، جابه‌جایی، فونت و زبانِ کادرِ ترجمه (مثلِ کادرِ ترجمه‌ی زنده)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private OverlayFonts fonts() {
+        if (fonts == null) fonts = new OverlayFonts(this, PREFS);
+        return fonts;
+    }
+
+    /** ScrollView با سقفِ ارتفاع (برای دستگیره‌ی تغییرِ اندازه). */
+    private static final class MaxHScroll extends ScrollView {
+        int maxH = Integer.MAX_VALUE;
+
+        MaxHScroll(Context c) { super(c); }
+
+        @Override protected void onMeasure(int wSpec, int hSpec) {
+            int mode = MeasureSpec.getMode(hSpec), size = MeasureSpec.getSize(hSpec);
+            int lim = mode == MeasureSpec.UNSPECIFIED ? maxH : Math.min(maxH, size);
+            super.onMeasure(wSpec, MeasureSpec.makeMeasureSpec(lim, MeasureSpec.AT_MOST));
+        }
+    }
+
+    private void applyScrollMax() {
+        if (bodyScroll == null) return;
+        boolean compact = wordCard != null && wordCard.getVisibility() == View.VISIBLE;
+        int base = Math.max(dp(60), (int) (capH * popupHFrac));
+        bodyScroll.maxH = compact ? Math.max(dp(90), (int) (base * 0.55f)) : base;
+        bodyScroll.requestLayout();
+    }
+
+    /** ردیفِ زبان / فونت / شفافیت: هر کدام که باز شد بقیه بسته می‌شوند. */
+    private void toggleRow(View row) {
+        if (row == null) return;
+        boolean show = row.getVisibility() != View.VISIBLE;
+        if (show) {
+            View[] all = {opacityRow, langRow, fontRow};
+            for (View r : all) if (r != null && r != row) r.setVisibility(View.GONE);
+        }
+        row.setVisibility(show ? View.VISIBLE : View.GONE);
+        refreshLangPill();
+        paintFontButton();
+        placePopup();
+    }
+
+    // ───────── 🌐 انتخابِ زبانِ ترجمه از داخلِ خودِ کادر ─────────
+    private static final String[] PICK_LANGS = {"en", "es", "de", "fr", "fa", "it", "ar", "tr", "ru", "hi", "zh", "ja", "ko"};
+    private static final String[] PICK_LANGS_FA = {"انگلیسی", "اسپانیایی", "آلمانی", "فرانسوی", "فارسی", "ایتالیایی", "عربی", "ترکی", "روسی", "هندی", "چینی", "ژاپنی", "کره‌ای"};
+    private static final String[] PICK_LANGS_EN = {"English", "Spanish", "German", "French", "Persian", "Italian", "Arabic", "Turkish", "Russian", "Hindi", "Chinese", "Japanese", "Korean"};
+
+    private View buildLangRow() {
+        langRow = new LinearLayout(this);
+        langRow.setOrientation(LinearLayout.VERTICAL);
+        langRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        langRow.setVisibility(View.GONE);
+        langRow.setPadding(0, dp(4), 0, dp(6));
+        langChips.clear();
+
+        HorizontalScrollView hs = new HorizontalScrollView(this);
+        hs.setHorizontalScrollBarEnabled(false);
+        hs.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        LinearLayout chips = new LinearLayout(this);
+        chips.setOrientation(LinearLayout.HORIZONTAL);
+        chips.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        final boolean fa = uiFa();
+        for (int i = 0; i < PICK_LANGS.length; i++) {
+            final String code = PICK_LANGS[i];
+            TextView c = new TextView(this);
+            c.setTag(code);
+            c.setText(code.toUpperCase(Locale.ROOT));
+            c.setContentDescription(fa ? PICK_LANGS_FA[i] : PICK_LANGS_EN[i]);
+            c.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            c.setTypeface(Typeface.DEFAULT_BOLD);
+            c.setGravity(Gravity.CENTER);
+            c.setSingleLine(true);
+            c.setMinWidth(dp(46));
+            c.setPadding(dp(12), dp(6), dp(12), dp(6));
+            c.setOnClickListener(v -> onPickLang(code));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMarginEnd(dp(6));
+            chips.addView(c, lp);
+            langChips.add(c);
+        }
+        hs.addView(chips, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        langRow.addView(hs, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        paintLangChips();
+        return langRow;
+    }
+
+    /** همه‌ی زبان‌های انتخابی (بدونِ حذفِ زبانِ متن) به همان ترتیبِ انتخاب. */
+    private ArrayList<String> pickedTargets() {
+        ArrayList<String> out = new ArrayList<>();
+        String csv = prefs().getString("targets", "");
+        if (csv != null) {
+            for (String t : csv.split(",")) {
+                t = t.trim().toLowerCase(Locale.ROOT);
+                if (!t.isEmpty() && !out.contains(t)) out.add(t);
+            }
+        }
+        if (out.isEmpty()) out.add(prefs().getString("target", "fa"));
+        return out;
+    }
+
+    /** روشن = طلایی؛ خاموش = شیشه‌ای؛ زبانِ خودِ متن کم‌رنگ (ترجمه‌ی هم‌زبان بی‌معنی است). */
+    private void paintLangChips() {
+        if (langChips.isEmpty()) return;
+        final List<String> picked = pickedTargets();
+        for (TextView c : langChips) {
+            final String code = (String) c.getTag();
+            final boolean isSrc = code.equals(selSrc);
+            final boolean on = !isSrc && picked.contains(code);
+            GradientDrawable g = new GradientDrawable();
+            g.setCornerRadius(dp(14));
+            g.setColor(on ? COLOR_GOLD : Color.parseColor("#26FFFFFF"));
+            c.setBackground(g);
+            c.setTextColor(on ? COLOR_INK : Color.WHITE);
+            c.setAlpha(isSrc ? 0.35f : 1f);
+        }
+    }
+
+    private void refreshLangPill() {
+        if (tvLangPill == null) return;
+        final boolean open = langRow != null && langRow.getVisibility() == View.VISIBLE;
+        StringBuilder sb = new StringBuilder(open ? "\u25B4 " : "\u25BE ");
+        List<String> ts = targets(selSrc);
+        for (int i = 0; i < ts.size(); i++) sb.append(i == 0 ? "" : " / ").append(ts.get(i).toUpperCase(Locale.ROOT));
+        tvLangPill.setText(sb.toString());
+        tvLangPill.setAlpha(open ? 1f : 0.85f);
+        paintLangChips();
+    }
+
+    private void onPickLang(String code) {
+        if (code.equals(selSrc)) {
+            toast(msg("این زبانِ خودِ متن است؛ ترجمه ندارد", "That's the text's own language — nothing to translate"));
+            return;
+        }
+        final ArrayList<String> list = pickedTargets();
+        if (list.contains(code)) {
+            list.remove(code);
+            boolean anyActive = false;
+            for (String t : list) if (!t.equals(selSrc)) { anyActive = true; break; }
+            if (!anyActive) {
+                toast(msg("حداقل یک زبان باید روشن بماند", "Keep at least one language on"));
+                return;
+            }
+        } else {
+            list.add(code);
+        }
+        StringBuilder csv = new StringBuilder();
+        for (String t : list) { if (csv.length() > 0) csv.append(','); csv.append(t); }
+        // پرچمِ dirty: اپ (حتی اگر الان بسته باشد) دفعه‌ی بعد این انتخاب را برمی‌دارد
+        prefs().edit()
+                .putString("targets", csv.toString())
+                .putBoolean("targetsDirty", true)
+                .putLong("targetsDirtyAt", System.currentTimeMillis())
+                .apply();
+        try { BubblePlugin.notifyTargetsChanged(); } catch (Throwable ignored) {}
+        refreshLangPill();
+        retranslateAll();
+    }
+
+    /** بعد از تغییرِ زبان‌ها: ترجمه‌ی کلِ متن (و لغتِ بازِ کادر) دوباره برای زبان‌های تازه ساخته می‌شود. */
+    private void retranslateAll() {
+        if (popup == null || rowsBox == null || selOrig == null || selOrig.isEmpty()) return;
+        final int my = ++langSeq;
+        final String from = selSrc, orig = selOrig;
+        final List<String> tg = targets(from);
+        ArrayList<String[]> wait = new ArrayList<>();
+        for (String t : tg) wait.add(new String[]{t, "…"});
+        wholeResults.clear();
+        wholeResults.addAll(wait);
+        fillRows(rowsBox, wholeResults);
+        boolean cardOpen = wordCard != null && wordCard.getVisibility() == View.VISIBLE && wordRows != null;
+        if (cardOpen) {
+            if (cardWord.equals(selOrig)) {
+                fillRows(wordRows, wholeResults);
+            } else {
+                ArrayList<String[]> w2 = new ArrayList<>();
+                w2.add(new String[]{"", "…"});
+                fillRows(wordRows, w2);
+                requestWordMeanings(cardSeq, cardWord);
+            }
+            armCardTimer();
+        }
+        placePopup();
+        bg(() -> {
+            final ArrayList<String[]> out = new ArrayList<>();
+            for (String t : tg) {
+                String r;
+                try { r = FreeTranslator.translate(http, orig, from, t); }
+                catch (Exception ex) { r = null; }
+                out.add(new String[]{t, (r == null || r.trim().isEmpty()) ? "—" : r.trim()});
+            }
+            main.post(() -> {
+                if (my != langSeq || popup == null || rowsBox == null) return;
+                wholeResults.clear();
+                wholeResults.addAll(out);
+                fillRows(rowsBox, wholeResults);
+                if (wordCard != null && wordCard.getVisibility() == View.VISIBLE && wordRows != null
+                        && cardWord.equals(selOrig)) {
+                    fillRows(wordRows, wholeResults);
+                    adoptMeaning(wholeResults);
+                }
+                placePopup();
+            });
+        });
+    }
+
+    /** کارِ پس‌زمینه‌ی بی‌صدا (خطا فقط لاگ می‌شود؛ ذره‌بین و حالتِ «busy» دست نمی‌خورد). */
+    private void bg(final Runnable r) {
+        try {
+            worker.execute(() -> {
+                try { r.run(); } catch (Throwable t) { Log.w(TAG, "background task failed", t); }
+            });
+        } catch (Exception ignored) { /* سرویس در حال بسته شدن است */ }
+    }
+
+    // ───────── Aa فونت + A−/A+ اندازه‌ی متن ─────────
+
+    private TextView buildFontButton() {
+        TextView t = new TextView(this);
+        SpannableString sp = new SpannableString("Aa");
+        sp.setSpan(new android.text.style.RelativeSizeSpan(0.78f), 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        t.setText(sp);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setGravity(Gravity.CENTER);
+        t.setPadding(dp(11), dp(4), dp(11), dp(4));
+        t.setContentDescription(msg("تغییرِ فونت", "Change font"));
+        t.setOnClickListener(v -> toggleRow(fontRow));
+        t.setOnLongClickListener(v -> { resetView(); return true; });
+        paintFontButton(t, false);
+        return t;
+    }
+
+    private void paintFontButton(TextView t, boolean active) {
+        GradientDrawable g = new GradientDrawable();
+        g.setCornerRadius(dp(14));
+        g.setColor(active ? COLOR_GOLD : Color.parseColor("#1AFFFFFF"));
+        g.setStroke(dp(1), active ? COLOR_GOLD : Color.parseColor("#40FFFFFF"));
+        t.setBackground(g);
+        t.setTextColor(active ? COLOR_INK : Color.WHITE);
+    }
+
+    private void paintFontButton() {
+        if (tvFontBtn == null) return;
+        paintFontButton(tvFontBtn, fontRow != null && fontRow.getVisibility() == View.VISIBLE);
+    }
+
+    private View buildFontRow() {
+        fontRow = new LinearLayout(this);
+        fontRow.setOrientation(LinearLayout.VERTICAL);
+        fontRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        fontRow.setVisibility(View.GONE);
+        fontRow.setPadding(0, dp(2), 0, dp(6));
+        appFontChips.clear();
+
+        HorizontalScrollView hs = new HorizontalScrollView(this);
+        hs.setHorizontalScrollBarEnabled(false);
+        hs.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        LinearLayout chips = new LinearLayout(this);
+        chips.setOrientation(LinearLayout.HORIZONTAL);
+        chips.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        final boolean fa = uiFa();
+        for (int i = 0; i < OverlayFonts.APP_FONT_IDS.length; i++) {
+            final String id = OverlayFonts.APP_FONT_IDS[i];
+            TextView c = new TextView(this);
+            c.setTag(id);
+            c.setText(fonts().presetChipText(id));
+            c.setContentDescription(fa ? OverlayFonts.APP_FONT_FA[i] : OverlayFonts.APP_FONT_EN[i]);
+            c.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            c.setGravity(Gravity.CENTER);
+            c.setMaxLines(1);
+            c.setMinWidth(dp(48));
+            c.setLineSpacing(0f, 1.05f);
+            c.setTextDirection(View.TEXT_DIRECTION_LTR);
+            c.setPadding(dp(12), dp(6), dp(12), dp(6));
+            c.setOnClickListener(v -> pickAppFont(id));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMarginEnd(dp(6));
+            chips.addView(c, lp);
+            appFontChips.add(c);
+        }
+        hs.addView(chips, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        fontRow.addView(hs, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        refreshFontChips();
+        return fontRow;
+    }
+
+    private void refreshFontChips() {
+        String sel = fonts().currentAppFont();
+        for (TextView c : appFontChips) {
+            boolean on = sel.equals(c.getTag());
+            GradientDrawable g = new GradientDrawable();
+            g.setCornerRadius(dp(14));
+            g.setColor(on ? COLOR_GOLD : Color.parseColor("#26FFFFFF"));
+            c.setBackground(g);
+            c.setTextColor(on ? COLOR_INK : Color.WHITE);
+        }
+    }
+
+    private void pickAppFont(String id) {
+        fonts().saveAppFont(id);
+        fonts().applyAppFont();
+        refreshFontChips();
+        relayoutAfterStyle();
+    }
+
+    private void relayoutAfterStyle() {
+        if (popup == null) return;
+        fonts().restyle(popup);
+        popup.requestLayout();
+        placePopup();
+    }
+
+    private void setFontScale(float v) {
+        OverlayFonts f = fonts();
+        float q = Math.round(Math.max(OverlayFonts.FONT_MIN, Math.min(OverlayFonts.FONT_MAX, v)) * 20f) / 20f;   // قدم‌های ۰٫۰۵
+        if (Math.abs(q - f.scale) < 0.001f) return;
+        f.scale = q;
+        relayoutAfterStyle();
+        f.saveScale();
+    }
+
+    /** نگه‌داشتنِ دکمه‌ی Aa: اندازه‌ی متن، فونت، ارتفاع و شفافیت به حالتِ اولیه برمی‌گردد. */
+    private void resetView() {
+        OverlayFonts f = fonts();
+        f.scale = 1f;
+        f.saveScale();
+        f.resetAppFont();
+        f.applyAppFont();
+        popupHFrac = POPUP_H_DEFAULT;
+        panelAlpha = 1f;
+        prefs().edit().putFloat("magHFrac", popupHFrac).putFloat("panelAlphaV2", 1f).apply();
+        if (opacityBar != null) opacityBar.setProgress(100);
+        applyPopupAlpha();
+        applyScrollMax();
+        refreshFontChips();
+        relayoutAfterStyle();
+        toast(msg("اندازه، شفافیت و فونت به حالت اولیه برگشت", "Size, opacity and font reset"));
+    }
+
+    // ───────── نوارِ دستگیره (پایینِ کادر) ─────────
+
+    private TextView fontStep(String label, int sp, final float delta) {
+        TextView t = new TextView(this);
+        t.setText(label);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        t.setTextColor(Color.parseColor("#B3FFFFFF"));
+        t.setGravity(Gravity.CENTER);
+        t.setMinWidth(dp(34));
+        t.setPadding(dp(4), 0, dp(4), 0);
+        t.setOnClickListener(v -> setFontScale(fonts().scale + delta));
+        return t;
+    }
+
+    /** نوارِ تیره با آیکنِ ↕؛ کشیدنِ عمودی = ارتفاعِ کادر ، کشیدنِ افقی = جابه‌جایی ، سمتِ چپ کپسولِ A− | A+ . */
+    private View makeGrip() {
+        final HatchBar f = new HatchBar(this);
+        f.setContentDescription(msg("بکش: تغییرِ اندازه یا جابه‌جایی", "Drag: resize or move"));
+
+        LinearLayout cap = new LinearLayout(this);
+        cap.setOrientation(LinearLayout.HORIZONTAL);
+        cap.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        cap.setGravity(Gravity.CENTER_VERTICAL);
+        GradientDrawable capBg = new GradientDrawable();
+        capBg.setColor(Color.parseColor("#59000000"));
+        capBg.setCornerRadius(dp(10));
+        cap.setBackground(capBg);
+        cap.addView(fontStep("A\u2212", 11, -0.1f));
+        View div = new View(this);
+        div.setBackgroundColor(Color.parseColor("#33FFFFFF"));
+        cap.addView(div, new LinearLayout.LayoutParams(dp(1), dp(12)));
+        cap.addView(fontStep("A+", 14, +0.1f));
+        FrameLayout.LayoutParams clp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, dp(22), Gravity.START | Gravity.CENTER_VERTICAL);
+        clp.setMarginStart(dp(12));
+        f.addView(cap, clp);
+
+        final float[] d = new float[6];      // 0 downY, 1 startH(frac), 2 downX, 3 mode(0 نامعلوم/1 اندازه/2 جابه‌جایی), 4 popupX, 5 popupY
+        final int slop = ViewConfiguration.get(this).getScaledTouchSlop();
+        f.setOnTouchListener((v, ev) -> {
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    d[0] = ev.getRawY(); d[1] = popupHFrac; d[2] = ev.getRawX(); d[3] = 0;
+                    d[4] = popupLp != null ? popupLp.x : 0;
+                    d[5] = popupLp != null ? popupLp.y : 0;
+                    f.setActive(true);
+                    return true;
+                case MotionEvent.ACTION_MOVE: {
+                    float rdx = ev.getRawX() - d[2], rdy = ev.getRawY() - d[0];
+                    if (d[3] == 0 && Math.max(Math.abs(rdx), Math.abs(rdy)) > slop) {
+                        d[3] = Math.abs(rdy) >= Math.abs(rdx) ? 1 : 2;
+                        popupFree = true;                         // بالای کادر سرِ جایش می‌ماند
+                        popupFreeX = (int) d[4]; popupFreeY = (int) d[5];
+                        if (d[3] == 2) showPopupCloseTarget();
+                    }
+                    if (d[3] == 1) {
+                        popupHFrac = Math.max(POPUP_H_MIN, Math.min(POPUP_H_MAX, d[1] + rdy / Math.max(1, capH)));
+                        applyScrollMax();
+                        placePopup();
+                    } else if (d[3] == 2) {
+                        popupFreeX = Math.round(d[4] + rdx);
+                        popupFreeY = Math.round(d[5] + rdy);
+                        placePopup();
+                        popupHotCheck(ev.getRawX(), ev.getRawY());
+                    }
+                    return true;
+                }
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    f.setActive(false);
+                    if (d[3] == 2) popupDragEnd(ev.getActionMasked() == MotionEvent.ACTION_UP);
+                    if (d[3] == 1) prefs().edit().putFloat("magHFrac", popupHFrac).apply();
+                    return true;
+            }
+            return true;
+        });
+        return f;
+    }
+
+    /** نوارِ دستگیره با آیکنِ ↕. */
+    private final class HatchBar extends FrameLayout {
+        private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint icBg = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint ic = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path arrows = new Path();
+        private boolean active;
+
+        HatchBar(Context c) {
+            super(c);
+            setWillNotDraw(false);
+            ic.setStyle(Paint.Style.STROKE);
+            ic.setStrokeWidth(dp(2));
+            ic.setStrokeCap(Paint.Cap.ROUND);
+            ic.setStrokeJoin(Paint.Join.ROUND);
+            icBg.setColor(Color.parseColor("#80000000"));
+        }
+
+        void setActive(boolean a) { active = a; invalidate(); }
+
+        @Override protected void dispatchDraw(Canvas cv) {
+            final int w = getWidth(), h = getHeight();
+            fill.setColor(active ? Color.parseColor("#40F2C14E") : Color.parseColor("#59000000"));
+            cv.drawRect(0, 0, w, h, fill);
+            final float cx = w / 2f, cy = h / 2f;
+            cv.drawRoundRect(cx - dp(18), cy - dp(11), cx + dp(18), cy + dp(11), dp(11), dp(11), icBg);
+            ic.setColor(active ? COLOR_GOLD : Color.WHITE);
+            final float a = dp(5.5f), c = dp(3.5f);
+            arrows.reset();
+            arrows.moveTo(cx, cy - a); arrows.lineTo(cx, cy + a);
+            arrows.moveTo(cx - c, cy - a + c); arrows.lineTo(cx, cy - a); arrows.lineTo(cx + c, cy - a + c);
+            arrows.moveTo(cx - c, cy + a - c); arrows.lineTo(cx, cy + a); arrows.lineTo(cx + c, cy + a - c);
+            cv.drawPath(arrows, ic);
+            super.dispatchDraw(cv);
+        }
+    }
+
+    // ───────── جابه‌جایی و بستنِ کادر (✕ی پایینِ صفحه) ─────────
+
+    /** ✕ی بستن را (که قبل از کادر ساخته شده) دوباره می‌سازد تا روی کادر دیده شود. */
+    private void showPopupCloseTarget() {
+        if (closeView == null || closeLp == null) return;
+        try {
+            wm.removeViewImmediate(closeView);
+            wm.addView(closeView, closeLp);
+        } catch (Exception ignored) {}
+        closeView.setVisibility(View.VISIBLE);
+    }
+
+    private void popupHotCheck(float rx, float ry) {
+        boolean h = closeView != null && Math.hypot(rx - capW / 2.0, ry - (capH - dp(120))) < dp(90);
+        if (h == popupHot) return;
+        popupHot = h;
+        if (closeView != null) closeView.setHot(h);
+        if (popup != null) {
+            if (h) popup.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            popup.animate().scaleX(h ? 0.55f : 1.02f).scaleY(h ? 0.55f : 1.02f).alpha(h ? 0.6f : 1f).setDuration(140).start();
+        }
+    }
+
+    /** پایانِ کشیدنِ کادر: روی ✕ رها شد → کادر کوچک و بسته می‌شود؛ وگرنه سرِ جای تازه می‌ماند. */
+    private void popupDragEnd(boolean dropped) {
+        final boolean onX = popupHot;
+        popupHot = false;
+        hideCloseTarget();
+        if (popup == null) return;
+        if (dropped && onX) {
+            popup.animate().scaleX(0f).scaleY(0f).alpha(0f).setDuration(150)
+                    .withEndAction(this::clearSelection).start();
+        } else {
+            popup.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(140).start();
+        }
+    }
+
+    /** کشیدنِ سربرگ = جابه‌جایی؛ نگه‌داشتن = «برداشتنِ» کادر؛ رها کردن روی ✕ = بستن. */
+    private final class PopupMover implements View.OnTouchListener {
+        private final int slop = ViewConfiguration.get(MagnifierService.this).getScaledTouchSlop();
+        private final long longMs = ViewConfiguration.getLongPressTimeout();
+        private float downX, downY;
+        private int startX, startY;
+        private boolean moved, picked;
+        private final Runnable longRun = () -> {
+            if (moved || popup == null) return;
+            picked = true;
+            popup.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            popup.animate().scaleX(1.02f).scaleY(1.02f).setDuration(120).start();
+            showPopupCloseTarget();
+        };
+
+        @Override public boolean onTouch(View v, MotionEvent e) {
+            if (popup == null || popupLp == null) return false;
+            switch (e.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    startX = popupLp.x; startY = popupLp.y;
+                    downX = e.getRawX(); downY = e.getRawY();
+                    moved = false; picked = false;
+                    main.removeCallbacks(longRun);
+                    main.postDelayed(longRun, longMs);
+                    return true;
+                case MotionEvent.ACTION_MOVE: {
+                    float dx = e.getRawX() - downX, dy = e.getRawY() - downY;
+                    if (!moved && (Math.abs(dx) > slop || Math.abs(dy) > slop)) {
+                        moved = true;
+                        if (!picked) main.removeCallbacks(longRun);
+                        showPopupCloseTarget();          // به‌محضِ شروعِ کشیدن، ✕ی پایینِ صفحه ظاهر می‌شود
+                    }
+                    if (moved) {
+                        popupFree = true;
+                        popupFreeX = Math.round(startX + dx);
+                        popupFreeY = Math.round(startY + dy);
+                        placePopup();
+                    }
+                    if (picked || moved) popupHotCheck(e.getRawX(), e.getRawY());
+                    return true;
+                }
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL: {
+                    main.removeCallbacks(longRun);
+                    boolean wasActive = picked || moved;
+                    picked = false; moved = false;
+                    if (wasActive) popupDragEnd(e.getActionMasked() == MotionEvent.ACTION_UP);
+                    return true;
+                }
+            }
+            return true;
+        }
+    }
 
     // ───────────────────────── نماها ─────────────────────────
 

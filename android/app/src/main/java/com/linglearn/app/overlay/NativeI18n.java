@@ -528,5 +528,30 @@ final class NativeI18n {
             "2) Nur Volltext: keine Berechtigung nötig. Kopiere den Videolink in YouTube (Teilen → Link kopieren) und tippe dann auf „Nur Volltext“; alle Untertitel werden auf einmal geladen, ohne Hervorhebung, plus eine Schaltfläche zum Wiederholen des gesamten Textes.",
             "2) Texte intégral uniquement : aucune autorisation. Copiez le lien de la vidéo dans YouTube (Partager → Copier le lien), puis touchez « Texte intégral uniquement » ; tous les sous-titres se chargent d’un coup, sans surbrillance, avec un bouton pour répéter tout le texte.",
             "٢) النص الكامل فقط: بلا أي إذن. انسخ رابط الفيديو في يوتيوب (مشاركة ← نسخ الرابط) ثم اضغط «النص الكامل فقط»؛ تُحمَّل كل الترجمات دفعة واحدة، بلا تمييز، مع زر لتكرار النص كاملًا.");
+        put("Change font",
+            "Cambiar la fuente",
+            "Schriftart ändern",
+            "Changer la police",
+            "تغيير الخط");
+        put("Translation languages — tap to change",
+            "Idiomas de traducción — toca para cambiar",
+            "Übersetzungssprachen — zum Ändern tippen",
+            "Langues de traduction — touchez pour changer",
+            "لغات الترجمة — اضغط للتغيير");
+        put("Drag: resize or move",
+            "Arrastra: cambiar el tamaño o mover",
+            "Ziehen: Größe ändern oder verschieben",
+            "Glisser : redimensionner ou déplacer",
+            "اسحب: تغيير الحجم أو النقل");
+        put("That's the text's own language — nothing to translate",
+            "Es el idioma del propio texto; no hay nada que traducir",
+            "Das ist die Sprache des Textes selbst – nichts zu übersetzen",
+            "C’est la langue du texte lui-même — rien à traduire",
+            "هذه لغة النص نفسه؛ لا شيء لترجمته");
+        put("Keep at least one language on",
+            "Deja al menos un idioma activado",
+            "Mindestens eine Sprache muss aktiviert bleiben",
+            "Gardez au moins une langue activée",
+            "أبقِ لغة واحدة على الأقل مفعّلة");
     }
 }
