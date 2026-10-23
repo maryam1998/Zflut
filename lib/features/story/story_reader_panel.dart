@@ -819,6 +819,13 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     return out;
   }
 
+  /// فاصله‌های تکراری/ناخواسته‌ی متنِ PDF (چند فاصله‌ی پشت‌سرهم، فاصله‌ی NBSP، فاصله‌ی ته/اول خط)
+  /// را یکی می‌کند تا justify فاصله‌ی اضافه بین کلمه‌ها نسازد. فقط برای نمایش.
+  static String _tidy(String t) => t
+      .replaceAll(RegExp(r'[ \t\u00A0\u2000-\u200A\u202F]+'), ' ')
+      .replaceAll(RegExp(r' *\n *'), '\n')
+      .trim();
+
   /// یک جمله (یا پاراگراف) + ترجمه‌هایش
   Widget _unit(
     AppThemeColorsExt c,
@@ -857,8 +864,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                   child: SelectableSyncText(
                     code: widget.langCode,
                     id: id,
-                    text: src,
-                    sentence: src,
+                    text: _tidy(src),
+                    sentence: _tidy(src),
                     style: TextStyle(
                       color: c.ink,
                       fontSize: 15 * tp.scaleFactor,
@@ -866,7 +873,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                       fontWeight: boldText ? FontWeight.w700 : FontWeight.w400,
                     ),
                     textDirection: dir,
-                    textAlign: TextAlign.start,
+                    textAlign: TextAlign.justify,
                   ),
                 ),
               ),
@@ -972,7 +979,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                                   boldTr ? FontWeight.w600 : FontWeight.w400,
                             ),
                             textDirection: dir,
-                            textAlign: TextAlign.start,
+                            textAlign: TextAlign.justify,
                           ),
                         )
                       : Padding(
