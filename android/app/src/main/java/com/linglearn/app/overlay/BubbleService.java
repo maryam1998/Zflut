@@ -5359,6 +5359,36 @@ public class BubbleService extends Service {
         return sb.toString();
     }
 
+    /** 🔎 بازبینیِ AI برای ذره‌بین: «OK» یا ترجمه‌ی اصلاح‌شده. */
+    static String aiVerifyStatic(String text, String from, String tgt, String draft) throws Exception {
+        String to = LANG_NAMES.containsKey(tgt) ? LANG_NAMES.get(tgt) : tgt;
+        String fr = LANG_NAMES.containsKey(from) ? LANG_NAMES.get(from) : from;
+        String prompt = "Source text (" + fr + "): \"" + text + "\"\n"
+                + "Draft translation into " + to + ": \"" + draft + "\"\n\n"
+                + "The source text may contain small OCR/typing errors; translate what it obviously means. "
+                + "Is the draft an accurate, natural, complete translation? If yes, reply with EXACTLY: OK\n"
+                + "If no, reply with ONLY the corrected translation \u2014 no quotes, no explanation, nothing else.";
+        JSONObject body = new JSONObject();
+        body.put(GENERATE_PROMPT_KEY, prompt);
+        String resp = postBytes(HTTP_FAST, 1, WORKER_BASE + GENERATE_PATH,
+                "application/json; charset=utf-8", body.toString().getBytes(StandardCharsets.UTF_8));
+        return extractText(resp);
+    }
+
+    /** ترجمه‌ی مستقیمِ AI برای ذره‌بین (وقتی سرویس‌های رایگان جواب ندادند). */
+    static String aiTranslateStatic(String text, String from, String tgt) throws Exception {
+        String to = LANG_NAMES.containsKey(tgt) ? LANG_NAMES.get(tgt) : tgt;
+        String fr = LANG_NAMES.containsKey(from) ? LANG_NAMES.get(from) : from;
+        String prompt = "Translate the following " + fr + " text to " + to
+                + ". It may contain small OCR errors; translate what it obviously means. "
+                + "Reply with ONLY the translation, no quotes, no explanations.\n\nText: " + text;
+        JSONObject body = new JSONObject();
+        body.put(GENERATE_PROMPT_KEY, prompt);
+        String resp = postBytes(HTTP_FAST, 2, WORKER_BASE + GENERATE_PATH,
+                "application/json; charset=utf-8", body.toString().getBytes(StandardCharsets.UTF_8));
+        return extractText(resp);
+    }
+
     private final LiveTranslator.Ai aiBackend = new LiveTranslator.Ai() {
         @Override public String translate(String text, String tgt) throws Exception {
             return BubbleService.this.translate(text, "", tgt);

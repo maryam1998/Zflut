@@ -672,60 +672,80 @@ public class MagnifierService extends Service {
         final TextRecognizer rec = rec0;
         rec.process(InputImage.fromBitmap(bmp, 0))
                 .addOnSuccessListener(text -> runSafe(() -> handleText(text, src, x, y)))
-                .addOnFailureListener(e -> finish(msg("خواندنِ متن ناموفق بود", "Could not read the text")));
+                .addOnFailureListener(e -> runSafe(() -> handleText(null, src, x, y)));
     }
 
     private void handleText(Text text, String src, float x, float y) {
         Text.TextBlock best = null;
         double bestD = Double.MAX_VALUE;
-        for (Text.TextBlock b : text.getTextBlocks()) {
-            Rect r = b.getBoundingBox();
-            if (r == null) continue;
-            double d = dist(r, x, y);
-            if (d < bestD) { bestD = d; best = b; }
+        if (text != null) {
+            for (Text.TextBlock b : text.getTextBlocks()) {
+                Rect r = b.getBoundingBox();
+                if (r == null) continue;
+                double d = dist(r, x, y);
+                if (d < bestD) { bestD = d; best = b; }
+            }
         }
-        if (best == null || bestD > dp(40)) {
-            finish(msg("زیرِ ذره‌بین متنی پیدا نشد (متنِ فارسی/عربی از تصویر خوانده نمی‌شود)", "No text found under the magnifier (Persian/Arabic can't be read from the screen)"));
+        final ArrayList<ElemInfo> elems = new ArrayList<>();
+        Rect box = null;
+        String orig = "";
+        if (best != null && bestD <= dp(40)) {
+            List<Text.Line> lines = best.getLines();
+            Rect bb = best.getBoundingBox();
+            if (best.getText().length() > 500) {          // بلوکِ خیلی بلند: فقط خطِ نزدیک
+                Text.Line bl = null; double bd = Double.MAX_VALUE;
+                for (Text.Line l : best.getLines()) {
+                    Rect lr = l.getBoundingBox();
+                    if (lr == null) continue;
+                    double d = dist(lr, x, y);
+                    if (d < bd) { bd = d; bl = l; }
+                }
+                if (bl != null) { lines = new ArrayList<>(); lines.add(bl); }
+            }
+            // ساعتِ پیام (13:22)، تیک‌ها، ایموجی و خرده‌نویسه‌های OCR حذف می‌شوند
+            for (Text.Line l : lines) {
+                for (Text.Element e : l.getElements()) {
+                    Rect er = e.getBoundingBox();
+                    if (er != null && !e.getText().trim().isEmpty()) elems.add(new ElemInfo(new Rect(er), e.getText()));
+                }
+            }
+            cleanElems(elems);
+            StringBuilder osb = new StringBuilder();
+            Rect ub = null;
+            for (ElemInfo ei : elems) {
+                if (osb.length() > 0) osb.append(' ');
+                osb.append(ei.t);
+                if (ub == null) ub = new Rect(ei.r); else ub.union(ei.r);
+            }
+            orig = osb.toString().trim();
+            box = ub != null ? ub : bb;
+        }
+
+        // 🔍 متنِ دقیقِ صفحه از دسترس‌پذیری: فارسی/عربی (که OCR نمی‌خواند) و اصلاحِ غلط‌خوانیِ OCR
+        final SpeedAccessibilityService.ScreenText a = pickScreenText(x, y);
+        if (a != null) {
+            String at = cleanScreenText(a.t);
+            if (!at.isEmpty() && at.length() <= 500) {
+                boolean rtl = hasArabicScript(at);
+                boolean overlap = box != null && Rect.intersects(box, a.r);
+                if (!elems.isEmpty() && overlap && !rtl) {
+                    String[] w = at.split("\\s+");
+                    if (w.length == elems.size()) {          // هم‌تعداد: هر لغتِ OCR با لغتِ دقیق عوض می‌شود
+                        for (int i = 0; i < w.length; i++) elems.get(i).t = w[i];
+                        orig = at;
+                    }
+                } else if (elems.isEmpty() || rtl || !overlap) {
+                    elems.clear();
+                    elems.add(new ElemInfo(new Rect(a.r), at));
+                    orig = at;
+                    box = new Rect(a.r);
+                }
+            }
+        }
+        if (elems.isEmpty() || box == null || orig.isEmpty()) {
+            finish(msg("زیرِ ذره‌بین متنی پیدا نشد", "No text found under the magnifier"));
             return;
         }
-        Rect box = best.getBoundingBox();
-        List<Text.Line> lines = best.getLines();
-        if (best.getText().length() > 500) {          // بلوکِ خیلی بلند: فقط خطِ نزدیک
-            Text.Line bl = null; double bd = Double.MAX_VALUE;
-            for (Text.Line l : best.getLines()) {
-                Rect lr = l.getBoundingBox();
-                if (lr == null) continue;
-                double d = dist(lr, x, y);
-                if (d < bd) { bd = d; bl = l; }
-            }
-            if (bl != null) {
-                box = bl.getBoundingBox();
-                lines = new ArrayList<>();
-                lines.add(bl);
-            }
-        }
-        if (box == null) { finish(msg("متنی پیدا نشد", "No text found")); return; }
-
-        // المنت‌ها؛ ساعتِ پیام (13:22)، تیک‌ها، ایموجی و خرده‌نویسه‌های OCR حذف می‌شوند
-        final ArrayList<ElemInfo> elems = new ArrayList<>();
-        for (Text.Line l : lines) {
-            for (Text.Element e : l.getElements()) {
-                Rect er = e.getBoundingBox();
-                if (er != null && !e.getText().trim().isEmpty()) elems.add(new ElemInfo(new Rect(er), e.getText()));
-            }
-        }
-        cleanElems(elems);
-        if (elems.isEmpty()) { finish(msg("متنی پیدا نشد", "No text found")); return; }
-        StringBuilder osb = new StringBuilder();
-        Rect ub = null;
-        for (ElemInfo ei : elems) {
-            if (osb.length() > 0) osb.append(' ');
-            osb.append(ei.t);
-            if (ub == null) ub = new Rect(ei.r); else ub.union(ei.r);
-        }
-        String orig = osb.toString().trim();
-        if (orig.isEmpty() || ub == null) { finish(msg("متنی پیدا نشد", "No text found")); return; }
-        box = ub;
 
         // زبانِ واقعیِ همین متن (نه فقط زبانِ ذخیره‌شده): «Este sonido…» با مبدأ en غلط ترجمه می‌شد
         try {
@@ -748,6 +768,44 @@ public class MagnifierService extends Service {
             showSelection(rf, elems, fo, fsrc, results);
             scheduleDock(2500);
         });
+    }
+
+    private static boolean hasArabicScript(String t) {
+        for (int i = 0; i < t.length(); ) {
+            int cp = t.codePointAt(i);
+            i += Character.charCount(cp);
+            if (Character.isLetter(cp) && (cp >= 0x0600 && cp <= 0x06FF || cp >= 0x0750 && cp <= 0x077F)) return true;
+        }
+        return false;
+    }
+
+    /** ساعت (۱۳:۲۲ / 13:22)، ایموجی و فاصله‌های اضافه از متنِ دسترس‌پذیری پاک می‌شود. */
+    private static String cleanScreenText(String t) {
+        if (t == null) return "";
+        t = EMOJI_RUN.matcher(t).replaceAll(" ");
+        t = t.replaceAll("[,،]?\\s*[\\d\\u06F0-\\u06F9\\u0660-\\u0669]{1,2}[:.][\\d\\u06F0-\\u06F9\\u0660-\\u0669]{2}\\s*([AaPp][Mm])?", " ");
+        return t.replaceAll("\\s+", " ").trim();
+    }
+
+    /** گرهٔ متنیِ کوچک‌ترِ شامل نقطه‌ی ذره‌بین؛ وگرنه نزدیک‌ترین (تا ۴۰dp). */
+    private SpeedAccessibilityService.ScreenText pickScreenText(float x, float y) {
+        List<SpeedAccessibilityService.ScreenText> all;
+        try { all = SpeedAccessibilityService.readScreenText(this); }
+        catch (Throwable e) { return null; }
+        SpeedAccessibilityService.ScreenText inside = null, near = null;
+        long bestArea = Long.MAX_VALUE;
+        double bestD = Double.MAX_VALUE;
+        for (SpeedAccessibilityService.ScreenText n : all) {
+            if (n.r.width() >= capW * 0.98 && n.r.height() >= capH * 0.5) continue;     // کانتینرِ کلِ صفحه
+            long area = (long) n.r.width() * n.r.height();
+            if (n.r.contains((int) x, (int) y)) {
+                if (area < bestArea) { bestArea = area; inside = n; }
+            } else {
+                double d = dist(n.r, x, y);
+                if (d <= dp(40) && d < bestD) { bestD = d; near = n; }
+            }
+        }
+        return inside != null ? inside : near;
     }
 
     private static final java.util.regex.Pattern TIME_TOK = java.util.regex.Pattern.compile("^\\d{1,2}[:.]\\d{2}(am|pm|AM|PM)?$");
@@ -783,6 +841,68 @@ public class MagnifierService extends Service {
         catch (Exception first) { return FreeTranslator.translate(http, text, from, to); }
     }
 
+    // ───────── 🔎 بازبینیِ AI (ترجمه‌ی رایگان فوراً نشان داده می‌شود؛ اصلاحِ AI که برسد جایش را می‌گیرد) ─────────
+    private final ExecutorService aiPool = Executors.newFixedThreadPool(3);
+    private volatile int reviewSeq;
+    private volatile int wordReviewSeq;
+
+    private interface RowFix { void apply(String lang, String text); }
+
+    private void reviewAi(final java.util.function.IntSupplier cur, final int token, final String text,
+                          final String from, final List<String[]> rows, final RowFix fix) {
+        for (final String[] r : new ArrayList<>(rows)) {
+            final String tgt = r[0], draft = r[1];
+            if (tgt == null || tgt.isEmpty() || tgt.equals(from)) continue;
+            try {
+                aiPool.execute(() -> {
+                    if (token != cur.getAsInt()) return;
+                    String better = null;
+                    try {
+                        boolean failed = draft == null || draft.isEmpty() || "—".equals(draft) || "…".equals(draft);
+                        String out = failed ? BubbleService.aiTranslateStatic(text, from, tgt)
+                                            : BubbleService.aiVerifyStatic(text, from, tgt, draft);
+                        if (out != null) {
+                            out = out.trim().replaceAll("^[\"'“”«»]+|[\"'“”«»]+$", "").trim();
+                            boolean ok = out.equalsIgnoreCase("OK") || out.equalsIgnoreCase("OK.");
+                            if (!out.isEmpty() && !ok && !out.equals(draft)
+                                    && !LiveTranslator.isReasoningLeak(out)
+                                    && !LiveTranslator.looksLikelyMistranslated(text, out, tgt, from)) better = out;
+                        }
+                    } catch (Throwable ignored) { }
+                    if (better == null) return;
+                    final String fb = better;
+                    main.post(() -> { if (token == cur.getAsInt()) fix.apply(tgt, fb); });
+                });
+            } catch (Exception ignored) { /* سرویس در حال بسته شدن است */ }
+        }
+    }
+
+    private void startWholeReview(List<String[]> rows) {
+        final int token = ++reviewSeq;
+        reviewAi(() -> reviewSeq, token, selOrig, selSrc, rows, (lang, t) -> {
+            if (popup == null || rowsBox == null) return;
+            for (String[] r : wholeResults) if (r[0].equals(lang)) r[1] = t;
+            fillRows(rowsBox, wholeResults);
+            if (wordCard != null && wordCard.getVisibility() == View.VISIBLE && wordRows != null
+                    && cardWord != null && cardWord.equals(selOrig)) {
+                fillRows(wordRows, wholeResults);
+                adoptMeaning(wholeResults);
+            }
+            placePopup();
+        });
+    }
+
+    private void startWordReview(final int cardToken, final String word, final ArrayList<String[]> rows) {
+        final int token = ++wordReviewSeq;
+        reviewAi(() -> cardSeq == cardToken ? wordReviewSeq : -1, token, word, selSrc, rows, (lang, t) -> {
+            if (wordRows == null || cardSeq != cardToken) return;
+            for (String[] r : rows) if (r[0].equals(lang)) r[1] = t;
+            fillRows(wordRows, rows);
+            adoptMeaning(rows);
+            placePopup();
+        });
+    }
+
     private void finish(final String message) {
         main.post(() -> {
             busy = false;
@@ -802,6 +922,10 @@ public class MagnifierService extends Service {
 
     private void clearSelection() {
         main.removeCallbacks(cardTick);
+        main.removeCallbacks(popupTick);
+        popupBar = null;
+        tvPin = null;
+        reviewSeq++;
         cardSeq++;
         stopSpeech();
         if (selView != null) { try { wm.removeViewImmediate(selView); } catch (Exception ignored) {} selView = null; }
@@ -855,6 +979,8 @@ public class MagnifierService extends Service {
             placePopup();
         } catch (Exception ex) { popup = null; }
         bringLensToFront();
+        armPopupTimer();
+        startWholeReview(results);
         // کادرِ «ذخیره برای داستان بعدی / گرامر / لایتنر» فقط وقتی باز می‌شود که کاربر روی لغت یا محدوده بزند (یا 📄)
     }
 
@@ -907,7 +1033,7 @@ public class MagnifierService extends Service {
 
     private final class IconText extends TextView {
         private static final int I_PLAY = 4, I_STOP = 6, I_REPLAY = 8, I_DROP = 10,
-                I_SPEAKER = 14, I_DOC = 15, I_CLOSE = 16, I_PAUSE = 3;
+                I_SPEAKER = 14, I_DOC = 15, I_CLOSE = 16, I_PAUSE = 3, I_PIN = 11, I_TRASH = 12;
         private int icon;
         private String suffix;
         private float iconDp = 18f;
@@ -946,6 +1072,8 @@ public class MagnifierService extends Service {
                 case "\uD83D\uDD0A": return I_SPEAKER;
                 case "\uD83D\uDCC4": return I_DOC;
                 case "\u2715": return I_CLOSE;
+                case "\uD83D\uDCCC": return I_PIN;
+                case "\uD83D\uDDD1": return I_TRASH;
                 default: return 0;
             }
         }
@@ -1013,6 +1141,19 @@ public class MagnifierService extends Service {
                     p.moveTo(9.5f, 12.5f); p.lineTo(16f, 12.5f);
                     p.moveTo(9.5f, 16f); p.lineTo(16f, 16f);
                     break;
+                case I_PIN:
+                    p.moveTo(9f, 4f); p.lineTo(15f, 4f);
+                    p.moveTo(10f, 4f); p.lineTo(10f, 10f); p.lineTo(7.5f, 13f); p.lineTo(16.5f, 13f);
+                    p.lineTo(14f, 10f); p.lineTo(14f, 4f);
+                    p.moveTo(12f, 13f); p.lineTo(12f, 20f);
+                    break;
+                case I_TRASH:
+                    p.moveTo(5f, 7f); p.lineTo(19f, 7f);
+                    p.moveTo(9.5f, 7f); p.lineTo(9.5f, 4.8f); p.lineTo(14.5f, 4.8f); p.lineTo(14.5f, 7f);
+                    p.moveTo(6.5f, 7f); p.lineTo(7.5f, 19f); p.lineTo(16.5f, 19f); p.lineTo(17.5f, 7f);
+                    p.moveTo(10f, 10.5f); p.lineTo(10f, 16f);
+                    p.moveTo(14f, 10.5f); p.lineTo(14f, 16f);
+                    break;
                 case I_CLOSE:
                     p.moveTo(6.5f, 6.5f); p.lineTo(17.5f, 17.5f);
                     p.moveTo(17.5f, 6.5f); p.lineTo(6.5f, 17.5f);
@@ -1067,7 +1208,13 @@ public class MagnifierService extends Service {
         fonts().load();
         panelAlpha = Math.max(0f, Math.min(1f, prefs().getFloat("panelAlphaV2", 1f)));
         popupHFrac = Math.max(POPUP_H_MIN, Math.min(POPUP_H_MAX, prefs().getFloat("magHFrac", POPUP_H_DEFAULT)));
-        popup = new LinearLayout(this);
+        popup = new LinearLayout(this) {
+            @Override public boolean dispatchTouchEvent(MotionEvent ev) {
+                int a = ev.getActionMasked();
+                if (a == MotionEvent.ACTION_DOWN || a == MotionEvent.ACTION_UP) armPopupTimer();   // هر لمس شمارش را از نو می‌کند
+                return super.dispatchTouchEvent(ev);
+            }
+        };
         popup.setOrientation(LinearLayout.VERTICAL);
         popupBg = new GradientDrawable();
         popupBg.setCornerRadius(dp(16));
@@ -1189,6 +1336,44 @@ public class MagnifierService extends Service {
                 Color.parseColor("#8F98B8"), 11);
         popup.addView(hint, matchWrap(8));
 
+        // 🗑 بستن/پاک‌کردنِ کادر و 📌 «باز بمان» — پایین-راستِ کادر (مثلِ کادرِ ترجمه‌ی زنده)
+        magKeepOpen = prefs().getBoolean("magKeepOpen", false);
+        LinearLayout pinRow = new LinearLayout(this);
+        pinRow.setOrientation(LinearLayout.HORIZONTAL);
+        pinRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        pinRow.setGravity(Gravity.CENTER_VERTICAL);
+        pinRow.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+        TextView tvClear = new IconText(this);
+        tvClear.setText("\uD83D\uDDD1");
+        tvClear.setTextColor(Color.WHITE);
+        tvClear.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        tvClear.setGravity(Gravity.CENTER);
+        tvClear.setPadding(dp(8), dp(3), dp(8), dp(3));
+        tvClear.setAlpha(0.8f);
+        tvClear.setContentDescription(msg("بستنِ کادر", "Close"));
+        tvClear.setOnClickListener(v -> clearSelection());
+        pinRow.addView(tvClear);
+        tvPin = new IconText(this);
+        tvPin.setText("\uD83D\uDCCC");
+        tvPin.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        tvPin.setGravity(Gravity.CENTER);
+        tvPin.setPadding(dp(8), dp(3), dp(8), dp(3));
+        tvPin.setContentDescription(msg("باز بماند", "Keep open"));
+        tvPin.setOnClickListener(v -> toggleKeepOpen());
+        updatePinUi();
+        pinRow.addView(tvPin);
+        popup.addView(pinRow, matchWrap(2));
+
+        // نوارِ باریکِ طلاییِ شمارشِ بسته‌شدنِ خودکارِ کادر
+        popupBar = new View(this);
+        GradientDrawable pbg = new GradientDrawable();
+        pbg.setColor(COLOR_GOLD);
+        pbg.setCornerRadius(dp(2));
+        popupBar.setBackground(pbg);
+        LinearLayout.LayoutParams pbLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(2));
+        pbLp.topMargin = dp(6);
+        popup.addView(popupBar, pbLp);
+
         // نوارِ دستگیره (پایینِ کادر): کشیدنِ عمودی = ارتفاع ، افقی = جابه‌جایی ، A−/A+ = اندازه‌ی متن
         View grip = makeGrip();
         LinearLayout.LayoutParams gLp = new LinearLayout.LayoutParams(
@@ -1247,6 +1432,69 @@ public class MagnifierService extends Service {
 
     // ── ⏳ بستنِ خودکارِ کادرِ لغت: ۶ ثانیه بعد از باز شدن؛ اگر یکی از دکمه‌های افزودن زده شد، ۴ ثانیه بعد از آن.
     //    هر لمس داخلِ کادر شمارش را از نو می‌کند. نوارِ باریکِ طلاییِ پایینِ کادر زمانِ باقی‌مانده را نشان می‌دهد.
+    private static final long POPUP_IDLE_CLOSE_MS = 10000;
+    private View popupBar;
+    private TextView tvPin;
+    private boolean magKeepOpen = false;
+    private long popupDeadline = 0;
+
+    private void toggleKeepOpen() {
+        magKeepOpen = !magKeepOpen;
+        prefs().edit().putBoolean("magKeepOpen", magKeepOpen).apply();
+        updatePinUi();
+        armPopupTimer();
+        toast(magKeepOpen ? msg("کادر باز می‌ماند تا خودت ببندی", "Panel stays open until you close it")
+                          : msg("بسته‌شدنِ خودکارِ کادر دوباره فعال شد", "Auto-close is back on"));
+    }
+
+    private void updatePinUi() {
+        if (tvPin == null) return;
+        tvPin.setAlpha(magKeepOpen ? 1f : 0.5f);
+        tvPin.setTextColor(magKeepOpen ? COLOR_GOLD : Color.WHITE);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(dp(10));
+        bg.setColor(magKeepOpen ? Color.parseColor("#55F2C14E") : Color.parseColor("#1AFFFFFF"));
+        if (magKeepOpen) bg.setStroke(dp(1), COLOR_GOLD);
+        tvPin.setBackground(bg);
+    }
+    private final Runnable popupTick = new Runnable() {
+        @Override public void run() {
+            main.removeCallbacks(this);
+            if (popup == null) return;
+            if (magKeepOpen) {                                      // 📌 سنجاق: بسته نشود
+                if (popupBar != null) popupBar.setVisibility(View.INVISIBLE);
+                return;
+            }
+            long now = android.os.SystemClock.uptimeMillis();
+            // وسطِ خوانشِ 🔊، یا وقتی کادرِ لغت باز است (تایمرِ خودش را دارد)، یا وسطِ کارِ ذره‌بین نبند
+            if (speakingBtn != null || busy || (wordCard != null && wordCard.getVisibility() == View.VISIBLE)) {
+                popupDeadline = now + POPUP_IDLE_CLOSE_MS;
+                if (popupBar != null) { popupBar.setScaleX(1f); popupBar.setAlpha(1f); }
+                main.postDelayed(this, 100);
+                return;
+            }
+            float left = (popupDeadline - now) / (float) POPUP_IDLE_CLOSE_MS;
+            if (left <= 0f) { clearSelection(); return; }
+            left = Math.min(1f, left);
+            if (popupBar != null) {
+                popupBar.setPivotX(popupBar.getWidth() / 2f);
+                popupBar.setScaleX(left);
+                popupBar.setAlpha(0.55f + 0.45f * left);
+            }
+            main.postDelayed(this, 33);
+        }
+    };
+
+    private void armPopupTimer() {
+        popupDeadline = android.os.SystemClock.uptimeMillis() + POPUP_IDLE_CLOSE_MS;
+        main.removeCallbacks(popupTick);
+        if (popupBar != null) {
+            popupBar.setVisibility(magKeepOpen ? View.INVISIBLE : View.VISIBLE);
+            popupBar.setScaleX(1f); popupBar.setAlpha(1f);
+        }
+        if (popup != null) main.post(popupTick);
+    }
+
     private static final long CARD_IDLE_CLOSE_MS = 6000;
     private static final long CARD_ACTION_CLOSE_MS = 4000;
     private View cardBar;
@@ -1450,6 +1698,7 @@ public class MagnifierService extends Service {
             word = sb.toString().trim().replaceAll("^[\\p{Punct}\\u2018\\u2019\\u201C\\u201D]+|[\\p{Punct}\\u2018\\u2019\\u201C\\u201D]+$", "");
         }
         if (word.isEmpty()) return;
+        armPopupTimer();
         stopSpeech();
         final int my = ++cardSeq;
         cardWord = word;
@@ -1507,6 +1756,7 @@ public class MagnifierService extends Service {
         if (cardStoryDone) queueWord("story");
         if (cardLeitnerDone) queueWord("leitner");
         placePopup();
+        startWordReview(token, cardWord, new ArrayList<>(rows));
     }
 
     private void queueWord(String action) {
@@ -1735,6 +1985,7 @@ public class MagnifierService extends Service {
                     adoptMeaning(wholeResults);
                 }
                 placePopup();
+                startWholeReview(out);
             });
         });
     }

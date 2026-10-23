@@ -93,6 +93,45 @@ public class SpeedAccessibilityService extends AccessibilityService {
         return true;
     }
 
+    // ───────── 🔍 خواندنِ متنِ صفحه برای ذره‌بین (فقط وقتی ذره‌بین رها شود؛ چیزی ذخیره یا ارسال نمی‌شود) ─────────
+
+    public static final class ScreenText {
+        public final Rect r; public final String t;
+        ScreenText(Rect r, String t) { this.r = r; this.t = t; }
+    }
+
+    /** متنِ گره‌های دیده‌شده‌ی پنجره‌ی فعال (با مختصاتِ صفحه). اگر سرویس وصل نباشد لیستِ خالی. */
+    public static List<ScreenText> readScreenText(Context ctx) {
+        ArrayList<ScreenText> out = new ArrayList<>();
+        SpeedAccessibilityService s = inst;
+        if (s == null) return out;
+        try {
+            AccessibilityNodeInfo root = s.getRootInActiveWindow();
+            if (root == null) return out;
+            CharSequence pk = root.getPackageName();
+            if (pk != null && ctx.getPackageName().contentEquals(pk)) return out;     // خودِ برنامه نه
+            collectText(root, out, new int[]{2500});
+        } catch (Throwable ignored) { }
+        return out;
+    }
+
+    private static void collectText(AccessibilityNodeInfo n, List<ScreenText> out, int[] budget) {
+        if (n == null || budget[0]-- <= 0) return;
+        if (n.isVisibleToUser()) {
+            CharSequence cs = n.getText();
+            if (cs == null || cs.length() == 0) cs = n.getContentDescription();
+            if (cs != null && cs.toString().trim().length() > 0) {
+                Rect r = new Rect();
+                n.getBoundsInScreen(r);
+                if (r.width() > 0 && r.height() > 0) out.add(new ScreenText(r, cs.toString()));
+            }
+        }
+        for (int i = 0; i < n.getChildCount(); i++) {
+            AccessibilityNodeInfo c = n.getChild(i);
+            if (c != null) collectText(c, out, budget);
+        }
+    }
+
     // ───────── lifecycle ─────────
 
     @Override protected void onServiceConnected() { inst = this; }
