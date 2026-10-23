@@ -42,7 +42,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   void initState() {
     super.initState();
     // دکمه‌ی «بازگشت» گوشی: اول از موضوعِ بازشده به لیستِ موضوع‌ها برمی‌گردد؛
-    // اگر لیست باز بود، کار را به AppShell می‌سپارد (تبِ قبلی / خروجِ دو‌مرحله‌ای).
+    // اگر لیست باز بود، کار را به AppShell می‌سپارد (خروج از برنامه).
     BackHandlers.add(_onSystemBack);
   }
 

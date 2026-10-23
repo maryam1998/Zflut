@@ -1014,7 +1014,7 @@
   "tts_fail": "Audio playback failed — check your internet connection",
   "tts_need_model": "No internet — download the voice pack from Settings to read aloud offline",
   "word_examples_btn_another": "Another example",
-  "word_examples_btn_generate": "Example (with AI)",
+  "word_examples_btn_generate": "AI Example",
   "words_none_for_search": "Nothing found for this search.",
   "words_nothing_to_show": "Nothing to show.",
   "words_personal_badge": "Custom",

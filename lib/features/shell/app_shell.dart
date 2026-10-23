@@ -81,54 +81,13 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   /// دکمه‌ی «بازگشت» گوشی (دیالوگ/شیت‌ها قبل از این به‌صورت عادی بسته می‌شوند):
-  /// ۱) حالتِ درونیِ تب (مثلاً داستانِ بازشده) ۲) تبِ قبلی ۳) دوبار بازگشت = خروج
-  /// (تبِ پیش‌فرضِ ثابتی وجود ندارد؛ هرگز به «داستان‌ساز» یا تبِ دیگری که کاربر از آن نیامده نمی‌پرد.)
+  /// ۱) اگر تب حالتِ درونی دارد (موضوعِ بازشده، داستانِ بازشده/خوانده‌شده، کتابخانه…)
+  ///    فقط یک قدم به مرحله‌ی قبلِ همان تب برمی‌گردد (مثلاً موضوع ← لیست موضوع‌ها)؛
+  /// ۲) در غیر این صورت (مثلاً روی لیست موضوع‌ها یا لیست داستان‌ها) برنامه بسته می‌شود.
+  /// بین تب‌ها جابه‌جا نمی‌شود (دیگر «دور خودش نمی‌چرخد»).
   void _onBack() {
     if (BackHandlers.handle()) return;
-    if (_history.isNotEmpty) {
-      final prev = _history.removeLast();
-      _goBackTo(prev);
-      return;
-    }
-    // خروجِ دومرحله‌ای: بازگشتِ اول فقط هشدار می‌دهد، بازگشتِ دوم (تا ۲ ثانیه) خارج می‌شود.
-    final now = DateTime.now();
-    if (_lastBack != null &&
-        now.difference(_lastBack!) < const Duration(seconds: 2)) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      SystemNavigator.pop();
-      return;
-    }
-    _lastBack = now;
-    HapticFeedback.selectionClick();
-    final fa = ref.read(appPrefsProvider).uiLang == 'fa';
-    final c = context.appColors;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        elevation: 0,
-        backgroundColor: c.ink.withOpacity(0.92),
-        // بالاتر از پلیر تا روی دکمه‌ها نیفتد
-        margin: EdgeInsets.fromLTRB(
-            40, 0, 40, 150 + MediaQuery.of(context).padding.bottom),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        content: Text(
-          fa
-              ? 'برای خروج، یک بار دیگر «بازگشت» را بزنید'
-              : 'Press back again to exit',
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-              color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-      ));
-  }
-
-  void _goBackTo(String loc) {
-    _goingBack = true;
-    context.go(loc);
-    // اگر مسیر عوض نشد، پرچم نماند
-    WidgetsBinding.instance.addPostFrameCallback((_) => _goingBack = false);
+    SystemNavigator.pop();
   }
 
   @override
