@@ -218,6 +218,10 @@ class SpeechController extends StateNotifier<SpeechState> {
     unawaited(_playFrom(startIdx));
   }
 
+  /// متنِ جمله/لغتی که الان در حال پخش (یا آماده‌ی پخش) است — برای نوتیفیکیشنِ مدیا
+  String get currentChunkText =>
+      _chunkIndex >= 0 && _chunkIndex < _chunks.length ? _chunks[_chunkIndex].text : '';
+
   bool _hasPrev(int chunkIdx) => chunkIdx > 0 || _queueIndex > 0;
 
   bool _hasNext(int chunkIdx) =>

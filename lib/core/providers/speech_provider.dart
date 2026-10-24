@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../neural/neural_store.dart';
 import '../player_sync/player_sync_provider.dart';
+import '../tts/media_notification.dart';
 import '../tts/speech_controller.dart';
 import '../tts/speech_state.dart';
 import '../storage/local_storage.dart';
@@ -9,7 +10,7 @@ import 'voice_prefs_provider.dart';
 
 final speechControllerProvider =
     StateNotifierProvider<SpeechController, SpeechState>((ref) {
-  return SpeechController(
+  final ctl = SpeechController(
     // صدای انتخاب‌شده‌ی کاربر برای هر زبان (در صورت وجود)
     voicePref: (lang) => ref.read(voicePrefsProvider)[lang],
     // پیش‌فرض = صدای خودِ گوشی؛ فقط اگر کاربر خودش «صدای اپ» را انتخاب کرده باشد.
@@ -18,6 +19,10 @@ final speechControllerProvider =
     // 🧬 هر بار که یک لغت/جمله با پلیر کامل خوانده شد → یک تکرار در «مسیر عصبی»
     onChunkPlayed: (e) => _recordNeuralFromPlayback(ref, e),
   );
+  // 🎧 کنترلِ پلیر روی نوتیفیکیشن (قبلی / پخش‌وتوقف / بعدی) وقتی از برنامه بیرون هستی
+  final media = MediaNotificationSync(ctl)..attach();
+  ref.onDispose(media.dispose);
+  return ctl;
 });
 
 /// تشخیصِ اینکه این خوانش مالِ کدام «مورد» است و ثبتش:

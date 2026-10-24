@@ -214,4 +214,22 @@ class NativeBridge {
 
   Future<Map<String, dynamic>> mlkitSetEnabled({bool? enabled}) =>
       _call('mlkitSetEnabled', {if (enabled != null) 'enabled': enabled});
+
+  /// 🎧 نوتیفیکیشنِ کنترلِ پلیر (قبلی / پخش‌وتوقف / بعدی) — فرمان‌ها با رویدادِ `mediaCmd` برمی‌گردند.
+  Future<Map<String, dynamic>> mediaNotifUpdate({
+    required String title,
+    String sub = '',
+    required bool playing,
+    bool prev = false,
+    bool next = false,
+  }) =>
+      _call('mediaNotifUpdate', {
+        'title': title,
+        'sub': sub,
+        'playing': playing,
+        'prev': prev,
+        'next': next,
+      });
+
+  Future<Map<String, dynamic>> mediaNotifHide() => _call('mediaNotifHide');
 }

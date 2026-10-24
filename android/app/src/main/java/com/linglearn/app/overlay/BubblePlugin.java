@@ -82,6 +82,45 @@ public class BubblePlugin extends Plugin {
         try { p.notifyListeners("panelReplay", new JSObject().put("active", active)); } catch (Throwable ignored) {}
     }
 
+    /** از نوتیفیکیشنِ مدیا (قبلی/بعدی/پخش‌وتوقف): فرمان را به Dart می‌فرستد. */
+    static void notifyMediaCmd(String cmd) {
+        BubblePlugin p = inst;
+        if (p == null) return;
+        try { p.notifyListeners("mediaCmd", new JSObject().put("cmd", cmd)); } catch (Throwable ignored) {}
+    }
+
+    private static volatile boolean notifPermAsked = false;
+
+    // mediaNotifUpdate({ title, sub, playing, prev, next }) — نوتیفیکیشنِ کنترلِ پلیر (قبلی/پخش/بعدی)
+    @PluginMethod
+    public void mediaNotifUpdate(PluginCall call) {
+        final Context ctx = getContext();
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 33 && !notifPermAsked
+                    && ctx.checkSelfPermission("android.permission.POST_NOTIFICATIONS")
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    && getActivity() != null) {
+                notifPermAsked = true;
+                final android.app.Activity act = getActivity();
+                act.runOnUiThread(() -> {
+                    try { act.requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 9911); }
+                    catch (Throwable ignored) {}
+                });
+            }
+        } catch (Throwable ignored) {}
+        MediaNotifService.show(ctx, call.getString("title", ""), call.getString("sub", ""),
+                Boolean.TRUE.equals(call.getBoolean("playing", false)),
+                Boolean.TRUE.equals(call.getBoolean("prev", false)),
+                Boolean.TRUE.equals(call.getBoolean("next", false)));
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void mediaNotifHide(PluginCall call) {
+        MediaNotifService.hide(getContext());
+        call.resolve();
+    }
+
     @Override
     public void load() {
         super.load();
