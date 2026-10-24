@@ -475,6 +475,8 @@ public class BubbleService extends Service {
     private volatile long lastTextMs = 0;    // آخرین لحظه‌ای که متنِ تشخیص‌داده‌شده رسید
     private volatile long lastActiveMs = 0;  // آخرین لحظه‌ای که «چیزی در حالِ پخش» یا کاربر مشغول بود
     private boolean idleHidden = false;      // کادر را خودکار (نه کاربر) بسته‌ایم
+    // ⌄ کاربر کادر را کوچک کرده: بعد از یک سکوتِ کوتاه، با شنیده‌شدنِ دوباره‌ی صدا خودش برمی‌گردد
+    private boolean minimizedByUser = false;
     // 📌 «باز بمان»: وقتی روشن است کادر هیچ‌وقت خودکار (بی‌کاری / لمسِ بیرونِ کادر) بسته نمی‌شود؛ خاموش = رفتارِ قبلی
     private boolean keepOpen = false;
     private TextView tvPin;
@@ -539,6 +541,8 @@ public class BubbleService extends Service {
                 // تمرینِ shadowing: وسطِ ضبط/پخشِ صدای خودت کادر نباید جمع بشه (ضبط حداکثر ۱۰ دقیقه حساب می‌شود)
                 || (shadowRecording && now - shadowStartMs < 600000) || shadowPlayer != null;
         if (active || busy) lastActiveMs = now;
+        // بعد از ⌄: وقتی صدا قطع شد (≥۲ ثانیه سکوت) از آن به بعد با شنیدنِ صدا کادر برمی‌گردد
+        if (minimizedByUser && !active && now - lastActiveMs >= 2000) minimizedByUser = false;
         if (panelShown && !fadingOut) {
             final boolean cardOpen = wordCard != null && wordCard.getVisibility() == View.VISIBLE;
             // کنترل‌ها (سربرگ، انتخابِ زبان، دکمه‌های پایین) همیشه نمایش داده می‌شوند؛ جمع‌شدنِ خودکار حذف شد
@@ -553,7 +557,7 @@ public class BubbleService extends Service {
         if (fadingOut) {
             // وسطِ محو شدن صدا برگشت یا کاربر لمس کرد → منصرف شو
             if (active || busy) { cancelPanelFade(); idleHidden = false; userHidden = false; }
-        } else if (active && idleHidden) {
+        } else if (active && idleHidden && !minimizedByUser) {
             boolean ytNow = yt != null && yt.isPlaying();
             if (ytNow || now - activeSinceMs >= REOPEN_CONFIRM_MS) reopenFromIdle();
         } else if (!active && !busy && panelShown && !userHidden && !keepOpen
@@ -670,7 +674,7 @@ public class BubbleService extends Service {
     /** متنِ تازه رسید: اگه کادر را خودکار بسته بودیم، دوباره اجازه‌ی نمایش می‌دیم. */
     private void wakeFromIdle() {
         lastTextMs = SystemClock.elapsedRealtime();
-        if (idleHidden) { idleHidden = false; userHidden = false; }
+        if (idleHidden && !minimizedByUser) { idleHidden = false; userHidden = false; }
     }
 
     private ObjectAnimator pulse;
@@ -1113,6 +1117,19 @@ public class BubbleService extends Service {
         try { wm.addView(bubble, bubbleLp); }
         catch (Exception e) { Log.e(TAG, "addView failed", e); shutdown(); }
         scheduleIdleDock();
+    }
+
+    /** ⌄ : کادر کوچک می‌شود، ولی مثلِ بسته‌شدنِ خودکار، با شنیده‌شدنِ صدا (بعد از کمی سکوت) خودش برمی‌گردد. */
+    private void minimizePanelAutoReturn() {
+        try {
+            YtMedia.Now np = YtMedia.nowPlaying(this);
+            lastSourceKey = (np != null && np.title != null && !np.title.isEmpty()) ? np.pkg + "|" + np.title : "";
+        } catch (Throwable ignored) {}
+        idleHidden = true;
+        userHidden = true;
+        minimizedByUser = true;
+        idleHiddenAtMs = SystemClock.elapsedRealtime();
+        removePanel();
     }
 
     private void toggleHistoryFromBubble() {
@@ -1695,7 +1712,7 @@ public class BubbleService extends Service {
         try {
             final MediaPlayer mp = new MediaPlayer();
             mp.setDataSource(shadowPath);
-            mp.setOnCompletionListener(m -> { try { m.release(); } catch (Exception ignored) {} if (shadowPlayer == m) shadowPlayer = null; lastActiveMs = SystemClock.elapsedRealtime(); });
+            mp.setOnCompletionListener(m -> { try { m.release(); } catch (Exception ignored) {} if (shadowPlayer == m) shadowPlayer = null; panelQuietUntil = SystemClock.uptimeMillis() + 800; lastActiveMs = SystemClock.elapsedRealtime(); });
             mp.setOnErrorListener((m, w, e) -> { try { m.release(); } catch (Exception ignored) {} if (shadowPlayer == m) shadowPlayer = null; return true; });
             mp.prepare();
             mp.start();
@@ -1802,7 +1819,7 @@ public class BubbleService extends Service {
         header.addView(tvOpacity);
         ChevronButton minimize = new ChevronButton(this);   // ⌄ = فقط کادرِ تاریخچه را پنهان می‌کند (بستنِ حباب: ✕ روی خودِ حباب)
         minimize.setContentDescription(msg("کوچک‌کردنِ کادر", "Minimize panel"));
-        minimize.setOnClickListener(v -> { idleHidden = false; userHidden = true; removePanel(); });
+        minimize.setOnClickListener(v -> minimizePanelAutoReturn());
         LinearLayout.LayoutParams minLp = new LinearLayout.LayoutParams(dp(32), dp(32));
         minLp.setMarginStart(dp(4));
         header.addView(minimize, minLp);
@@ -2504,6 +2521,7 @@ public class BubbleService extends Service {
         computePanelPos();
         try {
             if (!panelShown) {
+                minimizedByUser = false;
                 lastPanelTouchMs = SystemClock.elapsedRealtime();
                 if (chromeHidden) { chromeHidden = false; applyChrome(); }
                 panel.animate().cancel();
@@ -2590,7 +2608,8 @@ public class BubbleService extends Service {
 
     /** وقتی خودِ پنل دارد می‌خواند، صدای آن نباید دوباره به متنِ زنده تبدیل شود. */
     private boolean asrMuted() {
-        return panelSpeaking || SystemClock.uptimeMillis() < panelQuietUntil;
+        return panelSpeaking || replayingEntry != null || shadowPlayer != null
+                || SystemClock.uptimeMillis() < panelQuietUntil;
     }
 
     private String currentSrcLang() {
@@ -2960,7 +2979,7 @@ public class BubbleService extends Service {
         final Runnable startPlay = () -> {
             if (replayingEntry != e) return;                 // وسطِ صبر متوقف/عوض شد
             SentenceAudio.play(e.pcm, times, () -> main.post(() -> {
-                if (replayingEntry == e) { replayingEntry = null; setReplayActive(e, false); setReplayHold(false); }
+                if (replayingEntry == e) { replayingEntry = null; panelQuietUntil = SystemClock.uptimeMillis() + 800; setReplayActive(e, false); setReplayHold(false); }
             }));
         };
         if (pausedExt) main.postDelayed(startPlay, 220);     // چند لحظه تا پلیرِ بیرونی واقعاً بایستد
@@ -3061,6 +3080,7 @@ public class BubbleService extends Service {
         SentenceAudio.stop();
         Entry r = replayingEntry;
         replayingEntry = null;
+        panelQuietUntil = SystemClock.uptimeMillis() + 800;
         if (r != null) setReplayActive(r, false);
         if (release) setReplayHold(false);
     }
@@ -6481,8 +6501,7 @@ public class BubbleService extends Service {
                 .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
                 .addMatchingUsage(AudioAttributes.USAGE_GAME)
                 .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN)
-                .excludeUid(android.os.Process.myUid())
-                .build();
+                .build();   // صدای خودِ برنامه هم ضبط می‌شود؛ پخشِ خودِ کادر با asrMuted() از تشخیص کنار گذاشته می‌شود
         int[] rates = {48000, 44100, SAMPLE_RATE};
         for (int rate : rates) {
             AudioRecord r = null;
@@ -6621,7 +6640,6 @@ public class BubbleService extends Service {
                     .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
                     .addMatchingUsage(AudioAttributes.USAGE_GAME)
                     .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN)
-                    .excludeUid(android.os.Process.myUid())
                     .build();
             AudioFormat fmt = new AudioFormat.Builder()
                     .setEncoding(AudioFormat.ENCODING_PCM_16BIT)

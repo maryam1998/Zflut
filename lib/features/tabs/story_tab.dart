@@ -1300,13 +1300,58 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         if (mounted && _pdfDoc == doc && _pdfIndex == i) setState(() {});
       }
       if (!_pdfTexts.containsKey(i)) {
-        _pdfTexts[i] = await doc.pageText(i);
+        final t = await _pdfPageTextSmart(doc, i);
+        if (!mounted || _pdfDoc != doc) return;
+        _pdfTexts[i] = t;
       }
     } catch (_) {
       _pdfTexts[i] ??= '';
     } finally {
       if (mounted && _pdfDoc == doc) setState(() => _pdfPageBusy = false);
     }
+  }
+
+  /// متنِ صفحه‌ی PDF: اول لایه‌ی متنیِ خودِ فایل. اگر آن لایه خراب باشد (کلمه‌ها بدونِ فاصله به هم
+  /// چسبیده‌اند) یا خیلی کم‌متن باشد (بقیه‌ی صفحه عکس است — مثلاً فقط پانویس/حقوقِ نشر لایه‌ی متنی دارد)،
+  /// صفحه رندر می‌شود و با OCR خوانده می‌شود تا متن و ترجمه‌ی کلِ صفحه بیاید، نه فقط همان تکه.
+  Future<String> _pdfPageTextSmart(PdfDocHandle doc, int i) async {
+    final layer = await doc.pageText(i);
+    final trimmed = layer.trim();
+    final spaceless = _pdfTextLooksSpaceless(trimmed);
+    final sparse = trimmed.length < 400;
+    if (!spaceless && !sparse) return layer;
+    if (!spaceless && trimmed.isNotEmpty) {
+      // لایه‌ی متنیِ غیرلاتین (فارسی/عربی/…) سالم است؛ OCRِ لاتین آن را خراب می‌کرد
+      final lt = RegExp(r'\p{L}', unicode: true).allMatches(trimmed).length;
+      final la = RegExp(r'[A-Za-z]').allMatches(trimmed).length;
+      if (lt > 0 && la < lt * 0.5) return layer;
+    }
+    try {
+      final ocr = _pdfOcr ??= await OcrSession.open(_readingLang());
+      final base = await doc.renderPage(i, scale: 2.0);
+      if (!mounted || _pdfDoc != doc) return layer;
+      final o = (await ocr.recognize(base)).trim();
+      if (o.isEmpty) return layer;
+      if (spaceless) return o;
+      return o.length > trimmed.length * 1.3 ? o : layer;
+    } catch (_) {
+      return layer;
+    }
+  }
+
+  /// آیا متنِ لاتینِ استخراج‌شده «بدونِ فاصله» است؟ (میانگینِ طولِ کلمه‌ها غیرعادی بلند)
+  bool _pdfTextLooksSpaceless(String t) {
+    if (t.isEmpty) return false;
+    final letters = RegExp(r'\p{L}', unicode: true).allMatches(t).length;
+    if (letters < 30) return false;
+    final latin = RegExp(r'[A-Za-z]').allMatches(t).length;
+    if (latin < letters * 0.7) return false; // چینی/ژاپنی/فارسی… به‌طورِ طبیعی فاصله‌ی کم دارند
+    var words = 0;
+    for (final w in t.split(RegExp(r'\s+'))) {
+      if (RegExp(r'[A-Za-z]').hasMatch(w)) words++;
+    }
+    if (words == 0) return false;
+    return latin / words > 11.5;
   }
 
   Future<void> _importLink() async {
