@@ -3254,7 +3254,7 @@ public class BubbleService extends Service {
 
     // ── ⏳ بستنِ خودکارِ کادرِ لغت: ۶ ثانیه بعد از باز شدن؛ اگر یکی از دکمه‌های افزودن زده شد، ۴ ثانیه بعد از آن.
     //    هر لمس داخلِ کادر شمارش را از نو می‌کند. نوارِ باریکِ طلاییِ پایینِ کادر (مثلِ نوارِ بسته‌شدنِ کادرِ ترجمه‌ی زنده) زمانِ باقی‌مانده را نشان می‌دهد.
-    private static final long CARD_IDLE_CLOSE_MS = 6000;
+    private static final long CARD_IDLE_CLOSE_MS = 15000;
     private static final long CARD_ACTION_CLOSE_MS = 4000;
     private View cardBar;
     private boolean cardActed = false;

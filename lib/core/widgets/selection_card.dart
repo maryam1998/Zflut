@@ -329,9 +329,9 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
   bool _whole = false;
   final Map<String, String> _results = {};
 
-  // ── بستنِ خودکار: ۶ ثانیه بعد از باز شدن؛ اگر کاربر یکی از دکمه‌های افزودن را زد، ۴ ثانیه بعد از آن.
+  // ── بستنِ خودکار: ۱۵ ثانیه بعد از باز شدن؛ اگر کاربر یکی از دکمه‌های افزودن را زد، ۴ ثانیه بعد از آن.
   //    هر لمس داخلِ کارت شمارش را از نو می‌کند. نوارِ باریکِ پایینِ کارت زمانِ باقی‌مانده را نشان می‌دهد.
-  static const _idleClose = Duration(seconds: 6);
+  static const _idleClose = Duration(seconds: 15);
   static const _afterActionClose = Duration(seconds: 4);
   late final AnimationController _bar =
       AnimationController(vsync: this, duration: _idleClose);

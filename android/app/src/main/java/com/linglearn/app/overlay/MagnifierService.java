@@ -736,7 +736,16 @@ public class MagnifierService extends Service {
                     }
                 } else if (elems.isEmpty() || rtl || !overlap) {
                     elems.clear();
-                    elems.add(new ElemInfo(new Rect(a.r), at));
+                    // متنِ دسترس‌پذیری یک تکه است؛ برای انتخابِ لغت/محدوده آن را روی خط‌های OCR به لغت‌ها تقسیم می‌کنیم
+                    ArrayList<Rect> lns = new ArrayList<>();
+                    if (best != null) {
+                        for (Text.Line l : best.getLines()) {
+                            Rect lr = l.getBoundingBox();
+                            if (lr != null && Rect.intersects(lr, a.r)) lns.add(lr);
+                        }
+                    }
+                    elems.addAll(splitWords(at, lns, rtl, a.r));
+                    if (elems.isEmpty()) elems.add(new ElemInfo(new Rect(a.r), at));
                     orig = at;
                     box = new Rect(a.r);
                 }
@@ -781,6 +790,49 @@ public class MagnifierService extends Service {
             showSelection(rf, elems, fo, fsrc, results);
             scheduleDock(2500);
         });
+    }
+
+    /** متنِ یک‌تکه را روی خط‌ها پخش می‌کند تا هر لغت مستطیلِ خودش را داشته باشد (RTL: از راست به چپ). */
+    private ArrayList<ElemInfo> splitWords(String text, List<Rect> lines, boolean rtl, Rect whole) {
+        ArrayList<ElemInfo> out = new ArrayList<>();
+        String[] w = text.trim().split("\\s+");
+        if (w.length == 0 || w[0].isEmpty() || whole.width() <= 0 || whole.height() <= 0) return out;
+        ArrayList<Rect> ls = new ArrayList<>();
+        for (Rect r : lines) ls.add(new Rect(r));
+        if (ls.isEmpty()) {
+            int n = Math.max(1, Math.round(whole.height() / (float) dp(24)));
+            int h = Math.max(1, whole.height() / n);
+            for (int i = 0; i < n; i++) ls.add(new Rect(whole.left, whole.top + i * h, whole.right, whole.top + (i + 1) * h));
+        } else {
+            java.util.Collections.sort(ls, (p1, p2) -> Integer.compare(p1.top, p2.top));
+        }
+        double totalW = 0; int totalC = 0;
+        for (Rect r : ls) totalW += Math.max(1, r.width());
+        for (String x : w) totalC += x.length() + 1;
+        int wi = 0, cumC = 0; double cumW = 0;
+        for (int li = 0; li < ls.size() && wi < w.length; li++) {
+            Rect lr = ls.get(li);
+            cumW += Math.max(1, lr.width());
+            boolean last = li == ls.size() - 1;
+            double quota = totalC * (cumW / totalW);
+            int start = wi, lineC = 0;
+            while (wi < w.length && (last || cumC + (w[wi].length() + 1) / 2.0 <= quota)) {
+                lineC += w[wi].length() + 1; cumC += w[wi].length() + 1; wi++;
+            }
+            if (wi == start) continue;
+            int acc = 0;
+            for (int k = start; k < wi; k++) {
+                int c = w[k].length() + 1;
+                float f0 = acc / (float) lineC, f1 = (acc + c - 1) / (float) lineC;
+                acc += c;
+                int x0, x1;
+                if (rtl) { x1 = Math.round(lr.right - lr.width() * f0); x0 = Math.round(lr.right - lr.width() * f1); }
+                else { x0 = Math.round(lr.left + lr.width() * f0); x1 = Math.round(lr.left + lr.width() * f1); }
+                if (x1 <= x0) x1 = x0 + 1;
+                out.add(new ElemInfo(new Rect(x0, lr.top, x1, lr.bottom), w[k]));
+            }
+        }
+        return out;
     }
 
     private static final java.util.regex.Pattern CAMEL_JUNK = java.util.regex.Pattern.compile("^\\p{Ll}{2,}\\p{Lu}");
@@ -1462,9 +1514,9 @@ public class MagnifierService extends Service {
         b.setTextColor(done ? COLOR_GOLD : Color.WHITE);
     }
 
-    // ── ⏳ بستنِ خودکارِ کادرِ لغت: ۶ ثانیه بعد از باز شدن؛ اگر یکی از دکمه‌های افزودن زده شد، ۴ ثانیه بعد از آن.
+    // ── ⏳ بستنِ خودکارِ کادرِ لغت: ۱۵ ثانیه بعد از باز شدن؛ اگر یکی از دکمه‌های افزودن زده شد، ۴ ثانیه بعد از آن.
     //    هر لمس داخلِ کادر شمارش را از نو می‌کند. نوارِ باریکِ طلاییِ پایینِ کادر زمانِ باقی‌مانده را نشان می‌دهد.
-    private static final long POPUP_IDLE_CLOSE_MS = 10000;
+    private static final long POPUP_IDLE_CLOSE_MS = 15000;
     private View popupBar;
     private TextView tvPin;
     private boolean magKeepOpen = true;
@@ -1532,7 +1584,7 @@ public class MagnifierService extends Service {
         if (popup != null) main.post(popupTick);
     }
 
-    private static final long CARD_IDLE_CLOSE_MS = 6000;
+    private static final long CARD_IDLE_CLOSE_MS = 15000;
     private static final long CARD_ACTION_CLOSE_MS = 4000;
     private View cardBar;
     private boolean cardActed = false;
@@ -1754,7 +1806,7 @@ public class MagnifierService extends Service {
         wordCard.setVisibility(View.VISIBLE);
         applyScrollMax();
         cardActed = false;
-        armCardTimer();                        // ⏳ ۶ ثانیه تا بسته‌شدنِ خودکار (نوارِ طلایی)
+        armCardTimer();                        // ⏳ ۱۵ ثانیه تا بسته‌شدنِ خودکار (نوارِ طلایی)
         refreshCardButtons();
 
         if (whole && !wholeResults.isEmpty()) {           // ترجمه‌ی کلِ متن را از قبل داریم
