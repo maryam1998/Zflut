@@ -83,10 +83,17 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// دکمه‌ی «بازگشت» گوشی (دیالوگ/شیت‌ها قبل از این به‌صورت عادی بسته می‌شوند):
   /// ۱) اگر تب حالتِ درونی دارد (موضوعِ بازشده، داستانِ بازشده/خوانده‌شده، کتابخانه…)
   ///    فقط یک قدم به مرحله‌ی قبلِ همان تب برمی‌گردد (مثلاً موضوع ← لیست موضوع‌ها)؛
-  /// ۲) در غیر این صورت (مثلاً روی لیست موضوع‌ها یا لیست داستان‌ها) برنامه بسته می‌شود.
-  /// بین تب‌ها جابه‌جا نمی‌شود (دیگر «دور خودش نمی‌چرخد»).
+  /// ۲) اگر تب مرحله‌ی درونی ندارد و تبِ اول (Talk) نیست ← برمی‌گردد به تبِ اول؛
+  /// ۳) روی تبِ اول و بدون مرحله‌ی درونی، برنامه بی‌صدا بسته می‌شود.
   void _onBack() {
     if (BackHandlers.handle()) return;
+    final loc = _loc.isNotEmpty
+        ? _loc
+        : GoRouter.of(context).routeInformationProvider.value.uri.path;
+    if (loc != '/conversations') {
+      context.go('/conversations');
+      return;
+    }
     SystemNavigator.pop();
   }
 

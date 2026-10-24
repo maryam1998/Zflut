@@ -337,6 +337,10 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
       AnimationController(vsync: this, duration: _idleClose);
   bool _acted = false;
 
+  /// true = همین الان یکی از 🔊های خودِ کارت (لغت/ترجمه‌ها) در حال خواندن است
+  /// (با تکرارهای پلیر)؛ تا پایان تکرارها نوار نگه داشته می‌شود و شمارش شروع نمی‌شود.
+  bool _speaking = false;
+
   @override
   void initState() {
     super.initState();
@@ -354,8 +358,33 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
 
   void _arm() {
     if (!mounted) return;
+    if (_speaking) {
+      _bar.stop();
+      _bar.value = 1.0;
+      return;
+    }
     _bar.duration = _acted ? _afterActionClose : _idleClose;
     _bar.reverse(from: 1.0);
+  }
+
+  bool _isOwnKey(String? key) {
+    if (key == null) return false;
+    String k(String code, String t) =>
+        '${TtsConfig.locale[code] ?? 'en-US'}::$t';
+    if (key == k(widget.langCode, _text)) return true;
+    for (final e in _results.entries) {
+      if (key == k(e.key, e.value)) return true;
+    }
+    return false;
+  }
+
+  /// پخشِ کارت شروع شد ← شمارش متوقف؛ تمام شد (همه‌ی تکرارها) ← شمارش از نو.
+  void _onSpeech(SpeechState st) {
+    if (!mounted) return;
+    final mine = st.status == SpeechStatus.playing && _isOwnKey(st.key);
+    if (mine == _speaking) return;
+    _speaking = mine;
+    _arm();
   }
 
   /// یکی از دکمه‌های «ذخیره برای داستان بعدی / گرامر / لایتنر» زده شد → ۴ ثانیه تا بسته شدن.
@@ -403,6 +432,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<SpeechState>(speechControllerProvider, (_, next) => _onSpeech(next));
     final ui = ref.watch(localeProvider).languageCode;
     final sel = ref.watch(languageSelectionProvider);
     final lang = widget.langCode;
