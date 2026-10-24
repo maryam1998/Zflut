@@ -14,12 +14,24 @@ int _median(List<int> v) {
   return v[v.length ~/ 2];
 }
 
+class _Slot {
+  final int k;
+  final int x0, y0, x1, y1;
+  final Color bg;
+  final Color fg;
+  const _Slot(this.k, this.x0, this.y0, this.x1, this.y1, this.bg, this.fg);
+}
+
+/// [mirror] = true: چیدمانِ افقیِ بلوک‌ها آینه می‌شود (ستونِ چپ می‌رود راست و برعکس) —
+/// برای ترجمه‌ی متنِ چپ‌به‌راست (انگلیسی) به راست‌به‌چپ (فارسی/عربی) و برعکس.
+/// آینه‌کردن حولِ محدوده‌ی واقعیِ متن‌ها انجام می‌شود (نه کلِ صفحه) تا حاشیه‌ها درست بمانند.
 Future<Uint8List> renderTranslatedPage({
   required Uint8List pageImage,
   required List<OcrBlock> blocks,
   required List<String> translations,
   required bool rtl,
   TextStyle? baseStyle,
+  bool mirror = false,
 }) async {
   final codec = await ui.instantiateImageCodec(pageImage);
   final frame = await codec.getNextFrame();
@@ -33,6 +45,8 @@ Future<Uint8List> renderTranslatedPage({
   final canvas = ui.Canvas(rec, ui.Rect.fromLTWH(0, 0, W.toDouble(), H.toDouble()));
   canvas.drawImage(img, ui.Offset.zero, ui.Paint());
 
+  // ── مرحله‌ی ۱: هر بلوک → کادر + رنگِ پس‌زمینه + رنگِ متن؛ متنِ اصلی پاک می‌شود ──
+  final slots = <_Slot>[];
   for (var k = 0; k < blocks.length && k < translations.length; k++) {
     final tr = translations[k].trim();
     if (tr.isEmpty) continue;
@@ -103,10 +117,45 @@ Future<Uint8List> renderTranslatedPage({
           : Color.fromARGB(255, sr ~/ n, sg ~/ n, sb ~/ n);
     }
 
+    final bg = Color.fromARGB(255, br, bgc, bb);
     canvas.drawRect(
       ui.Rect.fromLTRB(x0.toDouble(), y0.toDouble(), x1.toDouble(), y1.toDouble()),
-      ui.Paint()..color = Color.fromARGB(255, br, bgc, bb),
+      ui.Paint()..color = bg,
     );
+    slots.add(_Slot(k, x0, y0, x1, y1, bg, textColor));
+  }
+
+  // ── آینه‌کردنِ افقی (فقط وقتی جهتِ مبدأ و مقصد فرق دارند) ──
+  var minX = W, maxX = 0;
+  for (final sl in slots) {
+    if (sl.x0 < minX) minX = sl.x0;
+    if (sl.x1 > maxX) maxX = sl.x1;
+  }
+  (int, int) destX(_Slot sl) {
+    if (!mirror || slots.isEmpty) return (sl.x0, sl.x1);
+    var nx0 = minX + maxX - sl.x1;
+    var nx1 = minX + maxX - sl.x0;
+    nx0 = nx0.clamp(0, W - 1);
+    nx1 = nx1.clamp(nx0 + 1, W);
+    return (nx0, nx1);
+  }
+
+  // ── مرحله‌ی ۲: اول زمینه‌ی مقصد (فقط در حالتِ آینه)، بعد متن‌ها ──
+  if (mirror) {
+    for (final sl in slots) {
+      final d = destX(sl);
+      canvas.drawRect(
+        ui.Rect.fromLTRB(
+            d.$1.toDouble(), sl.y0.toDouble(), d.$2.toDouble(), sl.y1.toDouble()),
+        ui.Paint()..color = sl.bg,
+      );
+    }
+  }
+  for (final sl in slots) {
+    final tr = translations[sl.k].trim();
+    final d = destX(sl);
+    final x0 = d.$1, x1 = d.$2, y0 = sl.y0, y1 = sl.y1;
+    final bw = x1 - x0, bh = y1 - y0;
 
     // بزرگ‌ترین اندازه‌ی فونتی که ترجمه توی همین کادر جا بشه
     // تیترها/خطِ تکی می‌تونن بزرگ باشن؛ پاراگراف‌های بلند سقفِ کوچک‌تری دارن
@@ -117,7 +166,7 @@ Future<Uint8List> renderTranslatedPage({
         text: TextSpan(
           text: tr,
           style: (baseStyle ?? const TextStyle()).copyWith(
-            color: textColor,
+            color: sl.fg,
             fontSize: size,
             height: 1.15,
           ),

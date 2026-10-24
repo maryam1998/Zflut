@@ -37,6 +37,7 @@ import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/web/ocr_block.dart';
 import '../story/book_translate_bar.dart';
 import '../story/page_translate_render.dart';
+import '../story/pdf_combined_image.dart';
 import '../story/pdf_fullscreen_viewer.dart';
 import '../story/pdf_page_nav.dart';
 import '../story/pdf_save_tools.dart';
@@ -1150,7 +1151,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   String _pdfTransSigNow() =>
-      'v2|${(_effectiveTransLangs().toList()..sort()).join(',')}|${_pdfViewLang ?? ''}';
+      'v3|${(_effectiveTransLangs().toList()..sort()).join(',')}|${_pdfViewLang ?? ''}';
 
   /// بعد از عوض‌شدنِ زبانِ ترجمه، موتورِ جدیدی با امضای جدید ساخته می‌شود
   /// (اگر قبلاً برای همین زبان ترجمه شده بود، صفحه‌ها از دیسک فوراً برمی‌گردند).
@@ -1240,6 +1241,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       blocks: blocks,
       translations: trs,
       rtl: const {'fa', 'ar', 'ur', 'he'}.contains(target),
+      // جهتِ مبدأ و مقصد فرق دارد (مثلاً انگلیسی ← فارسی): ستون‌ها هم آینه می‌شوند
+      mirror: const {'fa', 'ar', 'ur', 'he'}.contains(target) !=
+          const {'fa', 'ar', 'ur', 'he'}.contains(pageLang),
       baseStyle: style,
     );
   }
@@ -2099,18 +2103,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        HopeTextAction(
-          icon: Icons.save_alt_rounded,
-          label: 'ذخیره‌ی عکس',
-          color: c.teal,
-          onTap: _pdfSaving ? null : () => _savePdfPageImage(img, tImg, page),
-        ),
-        const SizedBox(width: 18),
+        // یک دکمه‌ی «ذخیره»: عکسِ اصلی + عکسِ ترجمه + متنِ زیرش (و ترجمه‌اش) با هم
         HopeTextAction(
           icon: Icons.bookmark_add_rounded,
-          label: 'ذخیره‌ی متن',
+          label: _pdfSaving ? 'در حال ذخیره…' : 'ذخیره',
           color: c.rose,
-          onTap: () => _savePdfTextToStories(page),
+          onTap: _pdfSaving ? null : () => _savePdfPageAll(img, tImg, page),
         ),
         const SizedBox(width: 18),
         HopeTextAction(
@@ -2121,6 +2119,82 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         ),
       ],
     );
+  }
+
+  /// «ذخیره»: عکسِ اصلیِ صفحه + عکسِ ترجمه‌شده + متنِ استخراج‌شده و ترجمه‌اش، همه در «یک» عکس؛
+  /// و همان متن (با ترجمه) در کتابخانه‌ی داستان‌ساز.
+  Future<void> _savePdfPageAll(
+      Uint8List? img, Uint8List? tImg, int page) async {
+    final doc = _pdfDoc;
+    if (doc == null || _pdfSaving) return;
+    setState(() => _pdfSaving = true);
+    try {
+      final base = img ?? await doc.renderPage(page, scale: 2.0);
+      final trans = tImg ?? await _pdfEngine?.imageFor(page);
+      var text = _pdfTexts[page];
+      text ??= await doc.pageText(page);
+      final lang = _readingLang();
+      final pageLang = _detectLang(text, lang);
+      final targets =
+          _effectiveTransLangs().where((l) => l != pageLang).toList();
+      final target = targets.isEmpty
+          ? null
+          : ((_pdfViewLang != null && targets.contains(_pdfViewLang))
+              ? _pdfViewLang!
+              : targets.first);
+      const rtlLangs = {'fa', 'ar', 'ur', 'he'};
+      final paras = _chunkParas(text)
+          .split(RegExp(r'\n\s*\n'))
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      var trs = List<String>.filled(paras.length, '');
+      if (target != null && paras.isNotEmpty) {
+        final svc = ref.read(translationServiceProvider);
+        final ai = ref.read(aiSettingsProvider);
+        trs = await runWithConcurrencyLimit<String, String>(
+          paras,
+          3,
+          (p, _) async {
+            try {
+              return (await svc.translate(
+                text: p,
+                targetLang: target,
+                sourceLang: pageLang,
+                aiSettings: ai,
+              ))
+                  .trim();
+            } catch (_) {
+              return '';
+            }
+          },
+        );
+      }
+      if (!mounted || _pdfDoc != doc) return;
+      final png = await buildCombinedPageImage(
+        orig: base,
+        trans: trans,
+        paragraphs: paras,
+        translations: trs,
+        srcRtl: rtlLangs.contains(pageLang),
+        dstRtl: target != null && rtlLangs.contains(target),
+        baseStyle: Theme.of(context).textTheme.bodyMedium,
+      );
+      final ok = await saveBytesToDevice(
+        fileName: '${_pdfBaseName}_p${page + 1}.png',
+        bytes: png,
+        ext: 'png',
+      );
+      if (ok) {
+        await _saveTextAsStory(text,
+            title: '$_pdfBaseName — صفحه‌ی ${page + 1}', translate: true);
+        _pdfSnack('ذخیره شد ✓');
+      }
+    } catch (e) {
+      _pdfSnack('ذخیره انجام نشد');
+    } finally {
+      if (mounted) setState(() => _pdfSaving = false);
+    }
   }
 
   /// نمایشگرِ تمام‌صفحه (زومِ آزاد) با حالت‌های اصلی / ترجمه / متن
