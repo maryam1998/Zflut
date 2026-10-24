@@ -13,6 +13,7 @@ import '../../../core/constants/app_themes.dart';
 import '../../../core/constants/supported_languages.dart';
 import '../../../core/mascot/mascot_pin_provider.dart';
 import '../../../core/models/text_prefs.dart';
+import '../../../core/native/native_bridge.dart';
 import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/providers/linlearn_provider.dart';
 import '../../../core/providers/native_sync_provider.dart';
@@ -108,6 +109,11 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   gap(),
                   const _MascotSection(),
                   gap(),
+                  // 🔔 یادآورِ روزانه‌ی مرورِ لغات (فقط اپِ اندروید)
+                  if (_isAndroidApp) ...[
+                    const _ReminderSection(),
+                    gap(),
+                  ],
                   const _VoiceEngineSection(),
                   // صداهای دانلودی (کیفیتِ بهتر) درست زیرِ «صدای خوانش»
                   Consumer(
@@ -2514,3 +2520,141 @@ class _OfflineWordsButton extends StatelessWidget {
 /// دیالوگ‌های تنظیمات هم طبقِ زبانِ رابط جهت می‌گیرند.
 Widget _dirDialog(BuildContext ctx, Widget child) =>
     Directionality(textDirection: uiContentDirection(ctx), child: child);
+
+// ═══════════════════════════════════════════════════════════════════
+// 🔔 یادآورِ روزانه: هر روز سرِ ساعتِ انتخابی یک نوتیفیکیشنِ «وقتِ مرورِ لغات» می‌آید
+// (مثلِ Duolingo/Anki). ساعت پیش‌فرض ۲۰:۰۰؛ بعد از ریستارتِ گوشی هم برقرار می‌ماند.
+// ═══════════════════════════════════════════════════════════════════
+const String _kRemOn = 'reminderOn';
+const String _kRemH = 'reminderHour';
+const String _kRemM = 'reminderMinute';
+
+const Map<String, List<String>> _kRemText = {
+  // کد زبان: [عنوانِ بخش, روشن, خاموش, توضیح, عنوانِ نوتیفیکیشن, متنِ نوتیفیکیشن, ساعت]
+  'fa': ['یادآورِ روزانه', 'روشن', 'خاموش', 'هر روز در ساعتِ انتخابی یادآوریِ مرورِ لغات می‌آید.', 'وقتِ مرورِ لغاته 📚', 'چند دقیقه مرور کن تا لغاتی که یاد گرفتی از یادت نره.', 'ساعت'],
+  'en': ['Daily reminder', 'On', 'Off', 'Get a reminder to review your words every day at this time.', 'Time to review your words 📚', 'A few minutes of review keeps new words from fading.', 'Time'],
+  'ar': ['تذكير يومي', 'تشغيل', 'إيقاف', 'سيصلك كل يوم تذكير لمراجعة كلماتك في هذا الوقت.', 'حان وقت مراجعة الكلمات 📚', 'بضع دقائق من المراجعة تحفظ لك الكلمات الجديدة.', 'الوقت'],
+  'de': ['Tägliche Erinnerung', 'An', 'Aus', 'Täglich zu dieser Uhrzeit an die Wortwiederholung erinnert werden.', 'Zeit, deine Wörter zu wiederholen 📚', 'Ein paar Minuten Wiederholung, damit neue Wörter bleiben.', 'Uhrzeit'],
+  'es': ['Recordatorio diario', 'Sí', 'No', 'Recibe cada día a esta hora un aviso para repasar tus palabras.', 'Hora de repasar tus palabras 📚', 'Unos minutos de repaso evitan que olvides lo aprendido.', 'Hora'],
+  'fr': ['Rappel quotidien', 'Oui', 'Non', 'Reçois chaque jour à cette heure un rappel pour réviser tes mots.', 'C’est l’heure de réviser tes mots 📚', 'Quelques minutes de révision évitent d’oublier.', 'Heure'],
+};
+
+class _ReminderSection extends ConsumerStatefulWidget {
+  const _ReminderSection();
+
+  @override
+  ConsumerState<_ReminderSection> createState() => _ReminderSectionState();
+}
+
+class _ReminderSectionState extends ConsumerState<_ReminderSection> {
+  late bool _on;
+  late TimeOfDay _t;
+
+  @override
+  void initState() {
+    super.initState();
+    final sp = ref.read(sharedPrefsProvider);
+    _on = sp.getBool(_kRemOn) ?? false;
+    _t = TimeOfDay(hour: sp.getInt(_kRemH) ?? 20, minute: sp.getInt(_kRemM) ?? 0);
+  }
+
+  List<String> _tx(BuildContext context) =>
+      _kRemText[Localizations.localeOf(context).languageCode] ?? _kRemText['en']!;
+
+  Future<void> _apply(BuildContext context) async {
+    final sp = ref.read(sharedPrefsProvider);
+    final tx = _tx(context);
+    await sp.setBool(_kRemOn, _on);
+    await sp.setInt(_kRemH, _t.hour);
+    await sp.setInt(_kRemM, _t.minute);
+    try {
+      await NativeBridge.instance.reminderSet(
+        enabled: _on,
+        hour: _t.hour,
+        minute: _t.minute,
+        title: tx[4],
+        body: tx[5],
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _pick(BuildContext context) async {
+    final r = await showTimePicker(context: context, initialTime: _t);
+    if (r == null || !mounted) return;
+    setState(() {
+      _t = r;
+      _on = true;
+    });
+    // ignore: use_build_context_synchronously
+    await _apply(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final tx = _tx(context);
+    final hh = _t.hour.toString().padLeft(2, '0');
+    final mm = _t.minute.toString().padLeft(2, '0');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(emoji: '🔔', label: tx[0]),
+        const SizedBox(height: _kGapAfterTitle),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _ChoiceChip(
+              label: tx[1],
+              selected: _on,
+              hPad: 14,
+              weight: FontWeight.w700,
+              onTap: () {
+                setState(() => _on = true);
+                _apply(context);
+              },
+            ),
+            _ChoiceChip(
+              label: tx[2],
+              selected: !_on,
+              hPad: 14,
+              weight: FontWeight.w700,
+              onTap: () {
+                setState(() => _on = false);
+                _apply(context);
+              },
+            ),
+            GestureDetector(
+              onTap: () => _pick(context),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _on ? c.gold : c.cardBorder),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.access_time_rounded, size: 14, color: c.ink),
+                    const SizedBox(width: 5),
+                    Text('$hh:$mm',
+                        textDirection: TextDirection.ltr,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: c.ink,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(tx[3], style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.5)),
+      ],
+    );
+  }
+}

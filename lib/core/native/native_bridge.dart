@@ -232,4 +232,20 @@ class NativeBridge {
       });
 
   Future<Map<String, dynamic>> mediaNotifHide() => _call('mediaNotifHide');
+
+  /// 🔔 یادآورِ روزانه‌ی مرورِ لغات (نوتیفیکیشنِ محلی، حتی وقتی اپ بسته است).
+  Future<Map<String, dynamic>> reminderSet({
+    required bool enabled,
+    int hour = 20,
+    int minute = 0,
+    String title = '',
+    String body = '',
+  }) =>
+      _call('reminderSet', {
+        'enabled': enabled,
+        'hour': hour,
+        'minute': minute,
+        'title': title,
+        'body': body,
+      });
 }

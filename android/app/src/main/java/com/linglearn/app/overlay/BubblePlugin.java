@@ -115,6 +115,30 @@ public class BubblePlugin extends Plugin {
         call.resolve();
     }
 
+    // reminderSet({ enabled, hour, minute, title, body }) — یادآورِ روزانه‌ی مرورِ لغات
+    @PluginMethod
+    public void reminderSet(PluginCall call) {
+        final Context ctx = getContext();
+        boolean on = Boolean.TRUE.equals(call.getBoolean("enabled", false));
+        try {
+            if (on && android.os.Build.VERSION.SDK_INT >= 33 && !notifPermAsked
+                    && ctx.checkSelfPermission("android.permission.POST_NOTIFICATIONS")
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    && getActivity() != null) {
+                notifPermAsked = true;
+                final android.app.Activity act = getActivity();
+                act.runOnUiThread(() -> {
+                    try { act.requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 9911); }
+                    catch (Throwable ignored) {}
+                });
+            }
+        } catch (Throwable ignored) {}
+        ReminderReceiver.configure(ctx, on,
+                call.getInt("hour", 20), call.getInt("minute", 0),
+                call.getString("title", ""), call.getString("body", ""));
+        call.resolve();
+    }
+
     @PluginMethod
     public void mediaNotifHide(PluginCall call) {
         MediaNotifService.hide(getContext());

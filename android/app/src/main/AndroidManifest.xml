@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- اندروید ۱۱+: برای دیدنِ موتورهای TTS گوشی -->
     <queries>
@@ -104,6 +105,16 @@
             android:name=".overlay.MediaNotifService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <!-- 🔔 یادآورِ روزانه‌ی مرورِ لغات (بعد از ریستارت دوباره برپا می‌شود) -->
+        <receiver
+            android:name=".overlay.ReminderReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".overlay.ModelDownloadService"
