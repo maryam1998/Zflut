@@ -2146,25 +2146,100 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
   Widget _pdfSaveRow(
       AppThemeColorsExt c, Uint8List? img, Uint8List? tImg, int page) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    final busy = _pdfSaving;
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 16,
+      runSpacing: 6,
       children: [
-        // یک دکمه‌ی «ذخیره»: عکسِ اصلی + عکسِ ترجمه + متنِ زیرش (و ترجمه‌اش) با هم
+        // فقط عکسِ ترجمه‌شده‌ی همین صفحه → گوشی
+        HopeTextAction(
+          icon: Icons.translate_rounded,
+          label: busy ? stTr(context, 'saving') : stTr(context, 'saveTrans'),
+          color: c.teal,
+          onTap: busy ? null : () => _savePdfTranslatedImage(tImg, page),
+        ),
+        // عکسِ اصلی + عکسِ ترجمه + متنِ زیرش (و ترجمه‌اش) با هم، در یک عکس → گوشی
         HopeTextAction(
           icon: Icons.bookmark_add_rounded,
-          label: _pdfSaving ? stTr(context, 'saving') : stTr(context, 'save'),
+          label: busy ? stTr(context, 'saving') : stTr(context, 'saveBoth'),
           color: c.rose,
-          onTap: _pdfSaving ? null : () => _savePdfPageAll(img, tImg, page),
+          onTap: busy ? null : () => _savePdfPageAll(img, tImg, page),
         ),
-        const SizedBox(width: 18),
         HopeTextAction(
           icon: Icons.picture_as_pdf_rounded,
-          label: _pdfSaving ? stTr(context, 'savingPdf') : stTr(context, 'savePdf'),
+          label: busy ? stTr(context, 'savingPdf') : stTr(context, 'savePdf'),
           color: c.gold,
-          onTap: _pdfSaving ? null : _savePdfFile,
+          onTap: busy ? null : _savePdfFile,
+        ),
+        // کلِ PDF: متنِ همه‌ی صفحه‌ها + ترجمه‌اش → کتابخانه‌ی داستان‌ساز (بخشِ ذخیره‌شده‌ها)
+        HopeTextAction(
+          icon: Icons.auto_stories_rounded,
+          label: busy
+              ? stTr(context, 'saving')
+              : stTr(context, 'saveToStory'),
+          color: c.ink,
+          onTap: busy ? null : _savePdfWholeToStories,
         ),
       ],
     );
+  }
+
+  /// «ذخیره‌ی ترجمه»: عکسِ ترجمه‌شده‌ی همین صفحه در گوشی.
+  Future<void> _savePdfTranslatedImage(Uint8List? tImg, int page) async {
+    if (_pdfDoc == null || _pdfSaving) return;
+    setState(() => _pdfSaving = true);
+    try {
+      final bytes = tImg ?? await _pdfEngine?.imageFor(page);
+      if (bytes == null) {
+        _pdfSnack(stTr(context, 'transNotReady'));
+        return;
+      }
+      final ok = await saveBytesToDevice(
+        fileName: '${_pdfBaseName}_p${page + 1}_translated.png',
+        bytes: bytes,
+        ext: 'png',
+      );
+      if (ok) _pdfSnack(stTr(context, 'imgSaved'));
+    } catch (_) {
+      _pdfSnack(stTr(context, 'imgSaveFail'));
+    } finally {
+      if (mounted) setState(() => _pdfSaving = false);
+    }
+  }
+
+  /// «ذخیره در داستان‌ساز»: متنِ همه‌ی صفحه‌های این PDFِ عکس‌دار (با OCR برای صفحه‌های عکسی) یک‌جا
+  /// در «ذخیره‌شده‌ها» ذخیره می‌شود و ترجمه‌ی هر پاراگراف زیرِ آن می‌آید (مثلِ کپی/پیستِ متن).
+  Future<void> _savePdfWholeToStories() async {
+    final doc = _pdfDoc;
+    if (doc == null || _pdfSaving) return;
+    setState(() => _pdfSaving = true);
+    _pdfSnack(stTr(context, 'readingAllPages'));
+    try {
+      final buf = StringBuffer();
+      for (var p = 0; p < doc.pageCount; p++) {
+        var t = _pdfTexts[p];
+        if (t == null) {
+          t = await _pdfPageTextSmart(doc, p);
+          if (!mounted || _pdfDoc != doc) return;
+          _pdfTexts[p] = t;
+        }
+        if (t.trim().isNotEmpty) {
+          buf.write(t.trim());
+          buf.write('\n\n');
+        }
+      }
+      final ok = await _saveTextAsStory(buf.toString(),
+          title: _pdfBaseName, translate: true);
+      _pdfSnack(ok
+          ? stTr(context, 'textSavedAll')
+          : stTr(context, 'noTextFound'));
+    } catch (_) {
+      _pdfSnack(stTr(context, 'saveTextFail'));
+    } finally {
+      if (mounted) setState(() => _pdfSaving = false);
+    }
   }
 
   /// «ذخیره»: عکسِ اصلیِ صفحه + عکسِ ترجمه‌شده + متنِ استخراج‌شده و ترجمه‌اش، همه در «یک» عکس؛
@@ -2231,11 +2306,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         bytes: png,
         ext: 'png',
       );
-      if (ok) {
-        await _saveTextAsStory(text,
-            title: '$_pdfBaseName — صفحه‌ی ${page + 1}', translate: true);
-        _pdfSnack(stTr(context, 'savedOk'));
-      }
+      if (ok) _pdfSnack(stTr(context, 'savedOk'));
     } catch (e) {
       _pdfSnack(stTr(context, 'saveFail'));
     } finally {
