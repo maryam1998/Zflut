@@ -743,8 +743,10 @@ public class MagnifierService extends Service {
             }
         }
         // OCR فقط ساعتِ پیام («19:03») را خوانده و متنِ فارسی/عربیِ کنارش را نه: ترجمه‌ی ساعت بی‌معنی است
+        // Latin-OCR روی متنِ فارسی/عربی خرده‌نویسه‌ی بی‌معنی می‌دهد («jyoJoai ög»)؛ اگر دسترس‌پذیری متنِ دقیق را نداد، آن را ترجمه نکن
+        boolean ocrGarbage = a == null && best != null && ocrLooksGarbage(best, orig);
         boolean ocrOnlyClock = !orig.isEmpty() && TIME_TOK.matcher(orig.trim()).matches() && !hasLetterChar(orig);
-        if (elems.isEmpty() || box == null || orig.isEmpty() || (ocrOnlyClock && (a == null || !hasLetterChar(cleanScreenText(a.t))))) {
+        if (elems.isEmpty() || box == null || orig.isEmpty() || ocrGarbage || (ocrOnlyClock && (a == null || !hasLetterChar(cleanScreenText(a.t))))) {
             if (!SpeedAccessibilityService.isEnabled(this)) {
                 if (!prefs().getBoolean("a11yAsked", false)) {
                     prefs().edit().putBoolean("a11yAsked", true).apply();
@@ -779,6 +781,23 @@ public class MagnifierService extends Service {
             showSelection(rf, elems, fo, fsrc, results);
             scheduleDock(2500);
         });
+    }
+
+    private static final java.util.regex.Pattern CAMEL_JUNK = java.util.regex.Pattern.compile("^\\p{Ll}{2,}\\p{Lu}");
+
+    /** نشانه‌های خوانشِ اشتباهِ OCR لاتین از اسکریپتِ دیگر: زبانِ «und» یا لغتِ نیمه‌کوچک/نیمه‌بزرگ مثلِ jyoJoai. */
+    private static boolean ocrLooksGarbage(Text.TextBlock b, String orig) {
+        int letters = 0;
+        for (int i = 0; i < orig.length(); i++) if (Character.isLetter(orig.charAt(i))) letters++;
+        if (letters < 6) return false;
+        String lang = null;
+        try { lang = b.getRecognizedLanguage(); } catch (Throwable ignored) { }
+        boolean und = lang == null || lang.isEmpty() || "und".equals(lang);
+        boolean camel = false;
+        for (String tok : orig.split("\\s+")) if (CAMEL_JUNK.matcher(tok).find()) { camel = true; break; }
+        boolean odd = false;                                   // حرفِ لاتینِ دارای نشانه (ö, ğ …) در متنی که زبانش شناخته نشد
+        for (int i = 0; i < orig.length(); i++) { char c = orig.charAt(i); if (Character.isLetter(c) && c > 0x7F) { odd = true; break; } }
+        return camel || (und && letters >= 10 && odd);
     }
 
     private static boolean hasArabicScript(String t) {
@@ -1250,14 +1269,10 @@ public class MagnifierService extends Service {
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        // 🔁 تکرار و Aa فونت به نوارِ پایینِ کادر (کنار A−/A+) رفتند — makeGrip()
         tvRepeat = headBtn("\u21BA", v -> cycleRepeat());
-        bar.addView(tvRepeat);
-        bar.addView(headBtn("\uD83C\uDF13", v -> toggleOpacityRow()));
         tvFontBtn = buildFontButton();
-        LinearLayout.LayoutParams fbLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        fbLp.setMarginStart(dp(2));
-        bar.addView(tvFontBtn, fbLp);
+        bar.addView(headBtn("\uD83C\uDF13", v -> toggleOpacityRow()));
 
         // 🌐 «▾ FA / ES» = دکمه‌ی انتخابِ زبان‌های ترجمه (بزن → ردیفِ زبان‌ها باز می‌شود)
         tvLangPill = new TextView(this);
@@ -1354,7 +1369,7 @@ public class MagnifierService extends Service {
         popup.addView(hint, matchWrap(8));
 
         // 🗑 بستن/پاک‌کردنِ کادر و 📌 «باز بمان» — پایین-راستِ کادر (مثلِ کادرِ ترجمه‌ی زنده)
-        magKeepOpen = prefs().getBoolean("magKeepOpen", false);
+        magKeepOpen = prefs().getBoolean("magKeepOpen2", true);
         LinearLayout pinRow = new LinearLayout(this);
         pinRow.setOrientation(LinearLayout.HORIZONTAL);
         pinRow.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -1452,12 +1467,12 @@ public class MagnifierService extends Service {
     private static final long POPUP_IDLE_CLOSE_MS = 10000;
     private View popupBar;
     private TextView tvPin;
-    private boolean magKeepOpen = false;
+    private boolean magKeepOpen = true;
     private long popupDeadline = 0;
 
     private void toggleKeepOpen() {
         magKeepOpen = !magKeepOpen;
-        prefs().edit().putBoolean("magKeepOpen", magKeepOpen).apply();
+        prefs().edit().putBoolean("magKeepOpen2", magKeepOpen).apply();
         updatePinUi();
         armPopupTimer();
         toast(magKeepOpen ? msg("کادر باز می‌ماند تا خودت ببندی", "Panel stays open until you close it")
@@ -1652,6 +1667,7 @@ public class MagnifierService extends Service {
         if (box == null) return;
         box.removeAllViews();
         for (String[] r : rows) {
+            if (!r[0].isEmpty() && r[0].equalsIgnoreCase(selSrc)) continue;   // مبدأ = مقصد: ترجمه‌ی هم‌زبان نشان داده نمی‌شود
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER_VERTICAL);
@@ -2191,6 +2207,30 @@ public class MagnifierService extends Service {
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(22), Gravity.START | Gravity.CENTER_VERTICAL);
         clp.setMarginStart(dp(12));
         f.addView(cap, clp);
+
+        // سمتِ راستِ نوارِ پایین: 🔁 تکرار + Aa فونت
+        LinearLayout tools = new LinearLayout(this);
+        tools.setOrientation(LinearLayout.HORIZONTAL);
+        tools.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        tools.setGravity(Gravity.CENTER_VERTICAL);
+        if (tvRepeat != null) {
+            tvRepeat.setMinHeight(dp(26));
+            tvRepeat.setMinWidth(dp(36));
+            tvRepeat.setTextSize(15);
+            tools.addView(tvRepeat, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
+        if (tvFontBtn != null) {
+            tvFontBtn.setPadding(dp(10), dp(2), dp(10), dp(2));
+            LinearLayout.LayoutParams fbLp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(24));
+            fbLp.setMarginStart(dp(4));
+            tools.addView(tvFontBtn, fbLp);
+        }
+        FrameLayout.LayoutParams tlp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, dp(28), Gravity.END | Gravity.CENTER_VERTICAL);
+        tlp.setMarginEnd(dp(22));
+        f.addView(tools, tlp);
 
         final float[] d = new float[6];      // 0 downY, 1 startH(frac), 2 downX, 3 mode(0 نامعلوم/1 اندازه/2 جابه‌جایی), 4 popupX, 5 popupY
         final int slop = ViewConfiguration.get(this).getScaledTouchSlop();
