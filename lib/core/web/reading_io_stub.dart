@@ -8,6 +8,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -247,26 +248,79 @@ class OcrSession {
   static bool _hasLetters(String t) =>
       RegExp(r'\p{L}', unicode: true).allMatches(t).length >= 2;
 
-  /// فقط خطِ‌های hOCR (Tesseract) رو با مختصاتشون درمیاره
+  /// فقط خطِ‌های hOCR (Tesseract) رو با مختصاتشون درمیاره.
+  /// اگر یک خط دو ستونِ کنارِ هم را شامل شود (مثلاً تیترِ «Introduction» در ستونِ چپ با اولین خطِ ستونِ راست
+  /// هم‌تراز است)، با کمکِ فاصله‌ی بینِ کلمه‌ها به چند تکه شکسته می‌شود تا ترجمه‌ی هر ستون سرِ جای خودش بیاید.
   List<OcrBlock> _parseHocr(String hocr, int W, int H) {
     final re = RegExp(
         r"""<span[^>]*class=['"]ocr_(?:line|caption|textfloat|header)['"][^>]*title=['"]bbox (\d+) (\d+) (\d+) (\d+)""");
+    final wre = RegExp(
+        r"""<span[^>]*class=['"]ocrx_word['"][^>]*title=['"]bbox (\d+) (\d+) (\d+) (\d+)[^'"]*['"][^>]*>(.*?)</span>""",
+        dotAll: true);
     final ms = re.allMatches(hocr).toList();
     final out = <OcrBlock>[];
+    String clean(String raw) => _unescapeHtml(raw
+            .replaceAll(RegExp(r'<[^>]*>'), ' '))
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
     for (var i = 0; i < ms.length; i++) {
       final m = ms[i];
       final end = i + 1 < ms.length ? ms[i + 1].start : hocr.length;
       final seg = hocr.substring(m.end, end);
+      final lx0 = int.parse(m.group(1)!), ly0 = int.parse(m.group(2)!);
+      final lx1 = int.parse(m.group(3)!), ly1 = int.parse(m.group(4)!);
+      if (lx1 <= lx0 || ly1 <= ly0) continue;
+
+      // کلمه‌ها (با مختصات) → اگر فاصله‌ی بزرگی بینشان بود، ستونِ جدا
+      final words = <List<Object>>[]; // [x0,y0,x1,y1,text]
+      for (final w in wre.allMatches(seg)) {
+        final t = clean(w.group(5)!);
+        if (t.isEmpty) continue;
+        words.add([
+          int.parse(w.group(1)!),
+          int.parse(w.group(2)!),
+          int.parse(w.group(3)!),
+          int.parse(w.group(4)!),
+          t,
+        ]);
+      }
+      if (words.length >= 2) {
+        words.sort((a, b) => (a[0] as int).compareTo(b[0] as int));
+        final lineH = ly1 - ly0;
+        final gapThr = math.max(lineH * 1.1, W * 0.016);
+        final groups = <List<List<Object>>>[<List<Object>>[]];
+        for (var k = 0; k < words.length; k++) {
+          if (k > 0) {
+            final gap = (words[k][0] as int) - (words[k - 1][2] as int);
+            if (gap > gapThr) groups.add(<List<Object>>[]);
+          }
+          groups.last.add(words[k]);
+        }
+        if (groups.length > 1) {
+          for (final g in groups) {
+            final text = g.map((w) => w[4] as String).join(' ').trim();
+            if (!_hasLetters(text)) continue;
+            var x0 = W, y0 = H, x1 = 0, y1 = 0;
+            for (final w in g) {
+              x0 = math.min(x0, w[0] as int);
+              y0 = math.min(y0, w[1] as int);
+              x1 = math.max(x1, w[2] as int);
+              y1 = math.max(y1, w[3] as int);
+            }
+            if (x1 <= x0 || y1 <= y0) continue;
+            out.add(OcrBlock(text, x0 / W, y0 / H, (x1 - x0) / W, (y1 - y0) / H));
+          }
+          continue;
+        }
+      }
+
       final text = _unescapeHtml(seg
               .replaceFirst(RegExp(r'^[^>]*>'), '')
               .replaceAll(RegExp(r'<[^>]*>'), ' '))
           .replaceAll(RegExp(r'\s+'), ' ')
           .trim();
       if (!_hasLetters(text)) continue;
-      final x0 = int.parse(m.group(1)!), y0 = int.parse(m.group(2)!);
-      final x1 = int.parse(m.group(3)!), y1 = int.parse(m.group(4)!);
-      if (x1 <= x0 || y1 <= y0) continue;
-      out.add(OcrBlock(text, x0 / W, y0 / H, (x1 - x0) / W, (y1 - y0) / H));
+      out.add(OcrBlock(text, lx0 / W, ly0 / H, (lx1 - lx0) / W, (ly1 - ly0) / H));
     }
     return out;
   }

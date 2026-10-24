@@ -6104,7 +6104,26 @@ public class BubbleService extends Service {
 
     private void scrollToYtEntry(final Entry e) {
         if (scroll == null || e == null || e.box == null) return;
-        scroll.post(() -> scroll.smoothScrollTo(0, Math.max(0, e.box.getTop() - scroll.getHeight() / 3)));
+        scroll.post(() -> ytAlignEntry(e));
+        // ارتفاعِ جمله بعد از چیدمانِ متن/ترجمه ممکن است عوض شود → یک بارِ دیگر تراز می‌کنیم (اگر کاربر دست نزده باشد)
+        scroll.postDelayed(() -> {
+            if (scroll == null || ytCur != e.ytIdx) return;
+            if (SystemClock.uptimeMillis() - scroll.lastUserTouch < 1500) return;
+            ytAlignEntry(e);
+        }, 180);
+    }
+
+    /** جمله‌ی جاری را طوری می‌چیند که متن + همه‌ی ترجمه‌هایش کامل در کادر دیده شوند (جمله‌ی بلند از بالا شروع می‌شود). */
+    private void ytAlignEntry(Entry e) {
+        if (scroll == null || e == null || e.box == null) return;
+        int h = scroll.getHeight();
+        int eh = e.box.getHeight();
+        int pad = dp(4);
+        int off;
+        if (h <= 0) off = 0;
+        else if (eh + pad * 2 <= h) off = Math.min(h / 3, h - eh - pad);   // جا می‌شود → هرچه جا بود از بالا فاصله بگیر
+        else off = pad;                                                    // بلندتر از کادر → از بالای جمله شروع کن
+        scroll.smoothScrollTo(0, Math.max(0, e.box.getTop() - off));
     }
 
     /** چند به‌روزرسانیِ پشتِ‌سرهم (ترجمه‌ی یک chunk) فقط یک بار layout پنل را تازه می‌کنند. */

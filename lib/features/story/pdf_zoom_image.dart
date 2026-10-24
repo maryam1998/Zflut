@@ -3,28 +3,65 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 
-/// بازیگرِ «قفل‌کننده»: وقتی عکس زوم است (یا دو انگشت روی آن آمد) بلافاصله برنده‌ی
-/// مسابقه‌ی ژست‌ها می‌شود تا اسکرولِ صفحه جلوی جابه‌جایی با یک انگشت را نگیرد.
+/// بازیگرِ «قفل‌کننده»: وقتی عکس زوم است، با یک انگشت فقط وقتی برنده‌ی مسابقه‌ی ژست‌ها می‌شود که
+/// عکس واقعاً بتواند در همان جهت جابه‌جا شود؛ اگر عکس به لبه‌ی بالا/پایینش رسیده، می‌بازد تا اسکرولِ
+/// صفحه کار کند (هم در حالتِ زوم). با دو انگشت همیشه برنده است (زوم).
 class _ClaimRecognizer extends OneSequenceGestureRecognizer {
-  bool Function()? eager;
+  bool Function()? eager; // آیا الان زوم است؟
+  bool Function(Offset delta)? canPan; // آیا عکس می‌تواند به این سمت جابه‌جا شود؟
+  VoidCallback? onRejected; // این لمس را به اسکرولِ صفحه دادیم
+  final Set<int> _active = <int>{};
+  Offset? _start;
+  bool _decided = false;
 
   @override
   void addAllowedPointer(PointerDownEvent event) {
     startTrackingPointer(event.pointer);
-    if (eager?.call() ?? false) resolve(GestureDisposition.accepted);
+    _active.add(event.pointer);
+    if (_active.length == 1) {
+      _start = event.position;
+      _decided = false;
+    } else {
+      _decided = true;
+      resolve(GestureDisposition.accepted);
+    }
   }
 
-  void claim() => resolve(GestureDisposition.accepted);
+  void claim() {
+    _decided = true;
+    resolve(GestureDisposition.accepted);
+  }
 
   @override
   void handleEvent(PointerEvent event) {
+    if (event is PointerMoveEvent &&
+        !_decided &&
+        _active.length == 1 &&
+        _start != null &&
+        (eager?.call() ?? false)) {
+      final d = event.position - _start!;
+      if (d.distance > 8) {
+        _decided = true;
+        if (canPan?.call(d) ?? true) {
+          resolve(GestureDisposition.accepted);
+        } else {
+          onRejected?.call();
+          resolve(GestureDisposition.rejected);
+        }
+      }
+    }
     if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _active.remove(event.pointer);
       stopTrackingPointer(event.pointer);
     }
   }
 
   @override
-  void didStopTrackingLastPointer(int pointer) {}
+  void didStopTrackingLastPointer(int pointer) {
+    _active.clear();
+    _start = null;
+    _decided = false;
+  }
 
   @override
   String get debugDescription => 'pdfZoomClaim';
@@ -66,6 +103,7 @@ class _ZoomablePageImageState extends State<ZoomablePageImage> {
   Offset _downPos = Offset.zero;
   Duration _downAt = Duration.zero;
   bool _moved = false;
+  bool _passToScroll = false; // این لمس به اسکرولِ صفحه داده شد؛ عکس را حرکت نده
   Duration _lastTapAt = const Duration(days: -1);
   Offset _lastTapPos = Offset.zero;
 
@@ -125,9 +163,21 @@ class _ZoomablePageImageState extends State<ZoomablePageImage> {
     _set(s, -p.dx * (s - 1), -p.dy * (s - 1));
   }
 
+  /// با یک انگشت: افقی همیشه جابه‌جایی‌ست؛ عمودی فقط اگر عکس هنوز در آن سو جا دارد (وگرنه اسکرولِ صفحه).
+  bool _canPan(Offset d) {
+    if (d.dx.abs() > d.dy.abs()) return true;
+    final sz = _size;
+    if (sz == null) return true;
+    final s = _scale;
+    final ty = _tc.value.entry(1, 3);
+    if (d.dy > 0) return ty < -0.5; // انگشت پایین می‌رود → عکس به پایین می‌آید؛ باید بالایش پنهان باشد
+    return ty > sz.height * (1 - s) + 0.5; // انگشت بالا می‌رود → پایینِ عکس باید پنهان باشد
+  }
+
   void _down(PointerDownEvent e) {
     _pts[e.pointer] = e.localPosition;
     if (_pts.length == 1) {
+      _passToScroll = false;
       _downPos = e.localPosition;
       _downAt = e.timeStamp;
       _moved = false;
@@ -143,7 +193,7 @@ class _ZoomablePageImageState extends State<ZoomablePageImage> {
     final cur = e.localPosition;
     if ((cur - _downPos).distance > 18) _moved = true;
     if (_pts.length == 1) {
-      if (_scale > 1.01) _apply(1, old, cur);
+      if (_scale > 1.01 && !_passToScroll) _apply(1, old, cur);
       _pts[e.pointer] = cur;
     } else {
       final ids = _pts.keys.take(2).toList();
@@ -190,6 +240,8 @@ class _ZoomablePageImageState extends State<ZoomablePageImage> {
                 () => _ClaimRecognizer(),
                 (r) {
                   r.eager = () => _scale > 1.01;
+                  r.canPan = _canPan;
+                  r.onRejected = () => _passToScroll = true;
                   _claim = r;
                 },
               ),
