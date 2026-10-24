@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/book/page_translate_engine.dart';
 import '../../core/theme/app_theme_colors.dart';
+import 'story_i18n.dart';
 
 /// نوارِ کنترلِ ترجمه‌ی کتاب (پیشرفته): پیشرفتِ کل + دکمه‌های گردِ ▶ شروع/ادامه · ⏸ مکث · ⏹ توقف.
 ///
@@ -42,15 +43,27 @@ class BookTranslateBar extends StatelessWidget {
 
         final title = !active
             ? (canResume
-                ? '⏹ متوقف — ادامه از صفحه‌ی ${resumeAt! + 1}'
+                ? stTr(ctx, 'barStopped', n: resumeAt! + 1)
                 : allDone
-                    ? '✓ همه‌ی صفحه‌ها ترجمه شد'
-                    : '🌐 ترجمه‌ی عکسیِ صفحه‌ها')
+                    ? stTr(ctx, 'barAllDone')
+                    : stTr(ctx, 'barIdle'))
             : paused
-                ? '⏸ متوقفِ موقت'
+                ? stTr(ctx, 'barPaused')
                 : engine.workingPage != null
-                    ? '⏳ در حال ترجمه‌ی صفحه‌ی ${engine.workingPage! + 1}'
-                    : '✓ آماده‌ی ترجمه‌ی صفحه‌ی بعد';
+                    ? stTr(ctx, 'barWorking', n: engine.workingPage! + 1)
+                    : stTr(ctx, 'barReady');
+
+        // یادداشتِ موتور (فارسیِ ثابت) → زبانِ رابط؛ «در حال ترجمه…» تکراریِ عنوان است
+        String noteText() {
+          final n = engine.note;
+          if (n.startsWith('در حال ترجمه')) return '';
+          if (n.startsWith('ترجمه‌ی همه‌ی صفحه‌ها')) return stTr(ctx, 'noteAllDone');
+          if (n.startsWith('چند صفحه‌ی پشت‌سرهم')) return stTr(ctx, 'noteNet');
+          if (n == 'متوقف شد') return stTr(ctx, 'noteStopped');
+          return n;
+        }
+
+        final noteStr = noteText();
 
         // دکمه‌ی اصلی (بزرگ): شروع / ادامه / مکث
         late final IconData mainIcon;
@@ -58,22 +71,22 @@ class BookTranslateBar extends StatelessWidget {
         late final VoidCallback? mainTap;
         if (!active && canResume) {
           mainIcon = Icons.play_arrow_rounded;
-          mainLabel = 'ادامه از صفحه‌ی ${resumeAt! + 1}';
+          mainLabel = stTr(ctx, 'resumeFrom', n: resumeAt! + 1);
           mainTap = () {
             engine.activate(page: resumeAt);
             onJump?.call(resumeAt);
           };
         } else if (!active) {
           mainIcon = Icons.play_arrow_rounded;
-          mainLabel = allDone ? 'ترجمه‌ی دوباره' : 'شروع (از همین صفحه)';
+          mainLabel = allDone ? stTr(ctx, 'retranslate') : stTr(ctx, 'startHere');
           mainTap = allDone ? null : () => engine.activate(page: currentPage);
         } else if (paused) {
           mainIcon = Icons.play_arrow_rounded;
-          mainLabel = 'ادامه';
+          mainLabel = stTr(ctx, 'resume');
           mainTap = engine.resume;
         } else {
           mainIcon = Icons.pause_rounded;
-          mainLabel = 'مکث';
+          mainLabel = stTr(ctx, 'pause');
           mainTap = engine.pause;
         }
 
@@ -113,16 +126,16 @@ class BookTranslateBar extends StatelessWidget {
                   color: c.teal,
                 ),
               ),
-              if (engine.note.isNotEmpty && active)
+              if (noteStr.isNotEmpty && active)
                 Padding(
                   padding: const EdgeInsets.only(top: 5),
-                  child: Text(engine.note,
+                  child: Text(noteStr,
                       style: TextStyle(color: c.inkSoft, fontSize: 11.5)),
                 ),
               if (status == PageStatus.failed)
                 Padding(
                   padding: const EdgeInsets.only(top: 5),
-                  child: Text('ترجمه‌ی این صفحه انجام نشد',
+                  child: Text(stTr(ctx, 'pageFailed'),
                       style: TextStyle(color: c.rose, fontSize: 11.5)),
                 ),
               const SizedBox(height: 6),
@@ -142,7 +155,7 @@ class BookTranslateBar extends StatelessWidget {
                     icon: Icons.stop_rounded,
                     color: c.rose,
                     size: 34,
-                    tooltip: 'توقف ترجمه‌ی عکسی',
+                    tooltip: stTr(ctx, 'stopTip'),
                     onTap: active ? engine.deactivate : null,
                   ),
                   const SizedBox(width: 8),
@@ -168,7 +181,7 @@ class BookTranslateBar extends StatelessWidget {
                     icon: engine.wholeBook
                         ? Icons.check_box_rounded
                         : Icons.check_box_outline_blank_rounded,
-                    label: 'کلِ کتاب (پس‌زمینه)',
+                    label: stTr(ctx, 'wholeBook'),
                     color: c.teal,
                     on: engine.wholeBook,
                     onTap: () => engine.setWholeBook(!engine.wholeBook),
@@ -176,7 +189,7 @@ class BookTranslateBar extends StatelessWidget {
                   if (failed > 0)
                     _PillBtn(
                       icon: Icons.refresh_rounded,
-                      label: 'تلاشِ دوباره ($failed صفحه)',
+                      label: stTr(ctx, 'retry', n: failed),
                       color: c.rose,
                       on: false,
                       onTap: engine.retryFailed,

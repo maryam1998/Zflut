@@ -35,6 +35,7 @@ import '../../core/book/page_translate_engine.dart';
 import '../../core/story/long_text_prep.dart';
 import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/web/ocr_block.dart';
+import '../story/story_i18n.dart';
 import '../story/book_translate_bar.dart';
 import '../story/page_translate_render.dart';
 import '../story/pdf_combined_image.dart';
@@ -2016,7 +2017,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             children: [
               Expanded(
                 child: Text(
-                  '$_pdfTitle — صفحه‌ی ${i + 1} از ${doc.pageCount}',
+                  '$_pdfTitle — ${stTr(context, 'pageOf', n: i + 1, m: doc.pageCount)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textDirection: TextDirection.ltr,
@@ -2025,7 +2026,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 ),
               ),
               HopeTextAction(
-                  label: 'بستن', color: c.rose, onTap: _closePdfView),
+                  label: stTr(context, 'close'), color: c.rose, onTap: _closePdfView),
             ],
           ),
           const SizedBox(height: 6),
@@ -2091,7 +2092,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                   const SizedBox(width: 8),
-                  Text('در حال خواندنِ متنِ این صفحه...',
+                  Text(stTr(context, 'reading'),
                       style: TextStyle(color: c.inkSoft, fontSize: 12)),
                 ],
               ),
@@ -2104,7 +2105,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                'این صفحه متنِ قابل‌خواندن نداره — احتمالاً فقط عکسه. برای دیدنِ ترجمه روی خودِ عکس، دکمه‌ی «ترجمه‌ی عکسیِ صفحه‌ها» رو بزن.',
+                stTr(context, 'noText'),
                 style: TextStyle(color: c.inkSoft, fontSize: 12),
               ),
             )
@@ -2114,7 +2115,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               return StoryReaderPanel(
                 key: ValueKey('pdf-${_pdfTitle.hashCode}-$i'),
                 storyId: 'pdf${_pdfTitle.hashCode}-$i',
-                title: 'متنِ صفحه‌ی ${i + 1}',
+                title: stTr(context, 'pageText', n: i + 1),
                 text: _chunkParas(orig),
                 langCode: pageLang,
                 targetLangs: _effectiveTransLangs()
@@ -2151,14 +2152,14 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         // یک دکمه‌ی «ذخیره»: عکسِ اصلی + عکسِ ترجمه + متنِ زیرش (و ترجمه‌اش) با هم
         HopeTextAction(
           icon: Icons.bookmark_add_rounded,
-          label: _pdfSaving ? 'در حال ذخیره…' : 'ذخیره',
+          label: _pdfSaving ? stTr(context, 'saving') : stTr(context, 'save'),
           color: c.rose,
           onTap: _pdfSaving ? null : () => _savePdfPageAll(img, tImg, page),
         ),
         const SizedBox(width: 18),
         HopeTextAction(
           icon: Icons.picture_as_pdf_rounded,
-          label: _pdfSaving ? 'در حال ساختنِ PDF…' : 'ذخیره‌ی PDF',
+          label: _pdfSaving ? stTr(context, 'savingPdf') : stTr(context, 'savePdf'),
           color: c.gold,
           onTap: _pdfSaving ? null : _savePdfFile,
         ),
@@ -2233,10 +2234,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       if (ok) {
         await _saveTextAsStory(text,
             title: '$_pdfBaseName — صفحه‌ی ${page + 1}', translate: true);
-        _pdfSnack('ذخیره شد ✓');
+        _pdfSnack(stTr(context, 'savedOk'));
       }
     } catch (e) {
-      _pdfSnack('ذخیره انجام نشد');
+      _pdfSnack(stTr(context, 'saveFail'));
     } finally {
       if (mounted) setState(() => _pdfSaving = false);
     }
@@ -2262,9 +2263,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     if (doc == null) return;
     var scope = 'page';
     if (doc.pageCount > 1) {
-      final r = await _askChoice('کدام متن ذخیره شود؟', {
-        'page': 'فقط همین صفحه',
-        'all': 'همه‌ی صفحه‌ها',
+      final r = await _askChoice(stTr(context, 'whichText'), {
+        'page': stTr(context, 'onlyThisPage'),
+        'all': stTr(context, 'allPages'),
       });
       if (r == null) return;
       scope = r;
@@ -2275,8 +2276,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       final ok = await _saveTextAsStory(t,
           title: '$_pdfBaseName — صفحه‌ی ${page + 1}', translate: true);
       _pdfSnack(ok
-          ? 'متنِ صفحه در داستان‌ساز ذخیره شد ✓'
-          : 'این صفحه متنی برای ذخیره ندارد');
+          ? stTr(context, 'textSavedPage')
+          : stTr(context, 'noTextPage'));
       return;
     }
     setState(() => _pdfSaving = true);
@@ -2292,10 +2293,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       }
       final ok = await _saveTextAsStory(buf.toString(), title: _pdfBaseName);
       _pdfSnack(ok
-          ? 'متنِ همه‌ی صفحه‌ها در داستان‌ساز ذخیره شد ✓'
-          : 'متنی برای ذخیره پیدا نشد');
+          ? stTr(context, 'textSavedAll')
+          : stTr(context, 'noTextFound'));
     } catch (e) {
-      _pdfSnack('ذخیره‌ی متن انجام نشد');
+      _pdfSnack(stTr(context, 'saveTextFail'));
     } finally {
       if (mounted) setState(() => _pdfSaving = false);
     }
@@ -2345,16 +2346,16 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     } else if (_pdfMode == 'trans') {
       which = 'trans';
     } else {
-      final r = await _askChoice('کدام عکس ذخیره شود؟',
-          {'orig': 'عکسِ اصلی', 'trans': 'عکسِ ترجمه‌شده'});
+      final r = await _askChoice(stTr(context, 'whichImage'),
+          {'orig': stTr(context, 'imgOrig'), 'trans': stTr(context, 'imgTrans')});
       if (r == null) return;
       which = r;
     }
     final bytes = which == 'trans' ? tImg : img;
     if (bytes == null) {
       _pdfSnack(which == 'trans'
-          ? 'ترجمه‌ی این صفحه هنوز آماده نیست'
-          : 'عکسِ این صفحه هنوز آماده نیست');
+          ? stTr(context, 'transNotReady')
+          : stTr(context, 'imgNotReady'));
       return;
     }
     try {
@@ -2364,9 +2365,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         bytes: bytes,
         ext: 'png',
       );
-      if (ok) _pdfSnack('عکس ذخیره شد ✓');
+      if (ok) _pdfSnack(stTr(context, 'imgSaved'));
     } catch (e) {
-      _pdfSnack('ذخیره‌ی عکس انجام نشد');
+      _pdfSnack(stTr(context, 'imgSaveFail'));
     }
   }
 
@@ -2380,8 +2381,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     } else if (_pdfMode == 'trans') {
       which = 'trans';
     } else {
-      final r = await _askChoice('کدام PDF ذخیره شود؟',
-          {'trans': 'PDFِ ترجمه‌شده', 'orig': 'PDFِ اصلی'});
+      final r = await _askChoice(stTr(context, 'whichPdf'),
+          {'trans': stTr(context, 'pdfTrans'), 'orig': stTr(context, 'pdfOrig')});
       if (r == null) return;
       which = r;
     }
@@ -2407,11 +2408,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       );
       if (ok) {
         _pdfSnack(missing > 0
-            ? 'PDF ذخیره شد ✓ ($missing صفحه هنوز ترجمه نشده بود و به‌صورتِ اصلی آمد)'
-            : 'PDF ذخیره شد ✓');
+            ? stTr(context, 'pdfSavedMissing', n: missing)
+            : stTr(context, 'pdfSaved'));
       }
     } catch (e) {
-      _pdfSnack('ساختن/ذخیره‌ی PDF انجام نشد');
+      _pdfSnack(stTr(context, 'pdfFail'));
     } finally {
       if (mounted) setState(() => _pdfSaving = false);
     }
@@ -2462,13 +2463,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       ),
       child: Row(
         children: [
-          seg('both', Icons.view_agenda_outlined, 'اصلی + ترجمه'),
+          seg('both', Icons.view_agenda_outlined, stTr(context, 'segBoth')),
           // یک دکمه برای دو حالت: هر کلیک بین «دیدنِ ترجمه» و «دیدنِ اصلی» جابه‌جا می‌کند
           if (_pdfMode == 'trans')
-            seg('trans', Icons.image_outlined, 'دیدنِ اصلی',
+            seg('trans', Icons.image_outlined, stTr(context, 'segSeeOrig'),
                 active: true, goTo: 'orig')
           else
-            seg('orig', Icons.translate_rounded, 'دیدنِ ترجمه',
+            seg('orig', Icons.translate_rounded, stTr(context, 'segSeeTrans'),
                 active: _pdfMode == 'orig', goTo: 'trans'),
         ],
       ),
@@ -2494,7 +2495,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           )
         : ZoomablePageImage(
             bytes: img,
-            label: 'اصلی',
+            label: stTr(context, 'segOrig'),
             accent: c.gold,
             controller: _pdfZoom,
             onExpand: () => _openPdfFullscreen('orig', page)));
@@ -2504,7 +2505,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         return frame(
             ZoomablePageImage(
                 bytes: tImg,
-                label: 'ترجمه',
+                label: stTr(context, 'segTrans'),
                 accent: c.teal,
                 controller: _pdfZoomT,
                 onExpand: () => _openPdfFullscreen('trans', page)));
@@ -2513,15 +2514,15 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       final st = e?.statusOf(page);
       final String msg;
       if (e == null) {
-        msg = 'برای دیدنِ ترجمه‌ی عکسی، ترجمه را با دکمه‌ی ▶ شروع کن.';
+        msg = stTr(context, 'msgStart');
       } else if (st == PageStatus.working || (e.active && st == PageStatus.pending)) {
-        msg = '⏳ ترجمه‌ی این صفحه در حال انجام است…';
+        msg = stTr(context, 'msgWorking');
       } else if (st == PageStatus.failed) {
-        msg = 'ترجمه‌ی این صفحه انجام نشد — «تلاشِ دوباره» را بزن.';
+        msg = stTr(context, 'msgFailed');
       } else if (st == PageStatus.empty) {
-        msg = 'این صفحه متنی برای ترجمه ندارد (همان عکسِ اصلی است).';
+        msg = stTr(context, 'msgEmpty');
       } else {
-        msg = 'ترجمه‌ی این صفحه هنوز آماده نیست — ▶ را بزن.';
+        msg = stTr(context, 'msgNotReady');
       }
       return frame(Padding(
         padding: const EdgeInsets.all(22),

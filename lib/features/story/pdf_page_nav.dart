@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme_colors.dart';
+import 'story_i18n.dart';
 
 /// نوارِ پیشرفته‌ی «صفحه‌ی قبل / بعد» برای نمایشگرِ PDFِ ساخت‌داستان.
 ///
@@ -37,7 +38,7 @@ class PdfPageNavBar extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.paper,
-        title: Text('رفتن به صفحه (۱ تا $count)',
+        title: Text(stTr(ctx, 'gotoTitle', n: count),
             style: TextStyle(color: c.ink, fontSize: 15)),
         content: TextField(
           controller: ctrl,
@@ -51,12 +52,12 @@ class PdfPageNavBar extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('لغو', style: TextStyle(color: c.inkSoft)),
+            child: Text(stTr(ctx, 'cancel'), style: TextStyle(color: c.inkSoft)),
           ),
           TextButton(
             onPressed: () =>
                 Navigator.pop(ctx, int.tryParse(ctrl.text.trim())),
-            child: Text('برو', style: TextStyle(color: c.teal)),
+            child: Text(stTr(ctx, 'go'), style: TextStyle(color: c.teal)),
           ),
         ],
       ),
@@ -87,7 +88,7 @@ class PdfPageNavBar extends StatelessWidget {
                 icon: Icons.first_page_rounded,
                 color: c.teal,
                 small: true,
-                tooltip: 'صفحه‌ی اول',
+                tooltip: stTr(context, 'firstTip'),
                 onTap: atFirst || busy ? null : () => _go(0),
               ),
               const SizedBox(width: 6),
@@ -95,7 +96,7 @@ class PdfPageNavBar extends StatelessWidget {
                 icon: Icons.arrow_back_ios_new_rounded,
                 color: c.teal,
                 busy: busy,
-                tooltip: 'صفحه‌ی قبل (نگه‌دار: ۵ صفحه)',
+                tooltip: stTr(context, 'prevTip'),
                 onTap: atFirst || busy ? null : () => _go(index - 1),
                 onLong: atFirst || busy ? null : () => _go(index - 5),
               ),
@@ -130,7 +131,7 @@ class PdfPageNavBar extends StatelessWidget {
                 color: c.teal,
                 filled: true,
                 busy: busy,
-                tooltip: 'صفحه‌ی بعد (نگه‌دار: ۵ صفحه)',
+                tooltip: stTr(context, 'nextTip'),
                 onTap: atLast || busy ? null : () => _go(index + 1),
                 onLong: atLast || busy ? null : () => _go(index + 5),
               ),
@@ -139,7 +140,7 @@ class PdfPageNavBar extends StatelessWidget {
                 icon: Icons.last_page_rounded,
                 color: c.teal,
                 small: true,
-                tooltip: 'صفحه‌ی آخر',
+                tooltip: stTr(context, 'lastTip'),
                 onTap: atLast || busy ? null : () => _go(count - 1),
               ),
             ],

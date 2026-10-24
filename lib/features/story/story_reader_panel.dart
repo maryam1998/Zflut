@@ -19,7 +19,9 @@ import '../../core/theme/app_theme_colors.dart';
 import '../../core/widgets/selection_card.dart' show SelectableSyncText;
 import '../../core/widgets/sync_item_card.dart' show NeuralPathButton;
 import '../reader/widgets/neural_path_dialog.dart' show showNeuralPath;
-import '../tabs/_hope_panel.dart' show HopeChoiceChip, autoDir;
+import '../tabs/_hope_panel.dart'
+    show HopeChoiceChip, autoDir, uiContentDirection;
+import 'story_i18n.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // پنل خواندنِ داستان — هم‌شکل StoryReaderPanel.jsx در Hope
@@ -621,33 +623,52 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
               const SizedBox(height: 12),
 
               // ── نمایشِ ترجمه ──
-              Text(context.l10n.reader_translation_display,
-                  style: TextStyle(color: c.inkSoft, fontSize: 13)),
-              const SizedBox(height: 6),
-              // از راست به چپ: جمله به جمله ← پاراگراف به پاراگراف ← هیچ
-              // (جهتِ فیزیکی ثابت، مستقل از زبانِ برنامه)
-              Directionality(
-                textDirection: TextDirection.rtl,
-                child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final m in [
-                    [2, context.l10n.reader_sentence_by_sentence],
-                    [1, context.l10n.reader_paragraph_by_paragraph],
-                    [0, context.l10n.reader_none],
-                  ])
-                    HopeChoiceChip(
-                      label: m[1] as String,
-                      active: _mode == m[0],
-                      activeBorder: c.teal,
-                      activeFill: c.teal,
-                      activeText: Colors.white,
-                      onTap: () => _setMode(m[0] as int),
+              // زبانِ رابطِ چپ‌به‌راست (انگلیسی/آلمانی/…) ← عنوان و دکمه‌ها چپ‌چین؛ فارسی/عربی ← راست‌چین.
+              // سه دکمه همیشه در «یک» ردیف (اگر جا نشد کوچک می‌شوند).
+              Builder(builder: (ctx) {
+                final dir = uiContentDirection(ctx);
+                final left = dir == TextDirection.ltr;
+                return Directionality(
+                  textDirection: dir,
+                  child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(ctx.l10n.reader_translation_display,
+                        textDirection: dir,
+                        style: TextStyle(color: c.inkSoft, fontSize: 13)),
+                    const SizedBox(height: 6),
+                    Directionality(
+                      textDirection: dir,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment:
+                            left ? Alignment.centerLeft : Alignment.centerRight,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (final m in [
+                              [2, stTr(ctx, 'modeSentence')],
+                              [1, stTr(ctx, 'modeParagraph')],
+                              [0, stTr(ctx, 'modeNone')],
+                            ]) ...[
+                              HopeChoiceChip(
+                                label: m[1] as String,
+                                active: _mode == m[0],
+                                activeBorder: c.teal,
+                                activeFill: c.teal,
+                                activeText: Colors.white,
+                                onTap: () => _setMode(m[0] as int),
+                              ),
+                              if (m[0] != 0) const SizedBox(width: 8),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
-                ],
-              ),
-              ),
+                  ],
+                  ),
+                );
+              }),
               if (widget.audioBar != null) ...[
                 const SizedBox(height: 12),
                 widget.audioBar!,
