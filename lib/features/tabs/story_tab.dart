@@ -37,6 +37,7 @@ import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/web/ocr_block.dart';
 import '../story/book_translate_bar.dart';
 import '../story/page_translate_render.dart';
+import '../story/pdf_fullscreen_viewer.dart';
 import '../story/pdf_page_nav.dart';
 import '../story/pdf_save_tools.dart';
 import '../story/pdf_zoom_image.dart';
@@ -1957,7 +1958,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final viewTargets =
         _effectiveTransLangs().where((l) => l != viewPageLang).toList();
     return HopeCard(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(3, 10, 3, 10), // کناره‌ی کم‌تر = صفحه‌ی بزرگ‌تر
       radius: 14,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2106,6 +2107,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         ),
         const SizedBox(width: 18),
         HopeTextAction(
+          icon: Icons.bookmark_add_rounded,
+          label: 'ذخیره‌ی متن',
+          color: c.rose,
+          onTap: () => _savePdfTextToStories(page),
+        ),
+        const SizedBox(width: 18),
+        HopeTextAction(
           icon: Icons.picture_as_pdf_rounded,
           label: _pdfSaving ? 'در حال ساختنِ PDF…' : 'ذخیره‌ی PDF',
           color: c.gold,
@@ -2113,6 +2121,84 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         ),
       ],
     );
+  }
+
+  /// نمایشگرِ تمام‌صفحه (زومِ آزاد) با حالت‌های اصلی / ترجمه / متن
+  void _openPdfFullscreen(String mode, int page) {
+    showPdfFullscreen(
+      context,
+      orig: _pdfImages[page],
+      trans: _pdfCurTransFor == page ? _pdfCurTrans : null,
+      text: _pdfTexts[page] ?? '',
+      title: '$_pdfTitle — صفحه‌ی ${page + 1}',
+      initial: mode,
+      onSaveText: () => _saveTextAsStory(_pdfTexts[page] ?? '',
+          title: '$_pdfBaseName — صفحه‌ی ${page + 1}', translate: true),
+    );
+  }
+
+  /// «ذخیره‌ی متن»: متنِ استخراج‌شده‌ی همین صفحه (یا همه‌ی صفحه‌ها) در کتابخانه‌ی داستان‌ساز ذخیره می‌شود.
+  Future<void> _savePdfTextToStories(int page) async {
+    final doc = _pdfDoc;
+    if (doc == null) return;
+    var scope = 'page';
+    if (doc.pageCount > 1) {
+      final r = await _askChoice('کدام متن ذخیره شود؟', {
+        'page': 'فقط همین صفحه',
+        'all': 'همه‌ی صفحه‌ها',
+      });
+      if (r == null) return;
+      scope = r;
+    }
+    if (scope == 'page') {
+      var t = _pdfTexts[page];
+      t ??= await doc.pageText(page);
+      final ok = await _saveTextAsStory(t,
+          title: '$_pdfBaseName — صفحه‌ی ${page + 1}', translate: true);
+      _pdfSnack(ok
+          ? 'متنِ صفحه در داستان‌ساز ذخیره شد ✓'
+          : 'این صفحه متنی برای ذخیره ندارد');
+      return;
+    }
+    setState(() => _pdfSaving = true);
+    try {
+      final buf = StringBuffer();
+      for (var p = 0; p < doc.pageCount; p++) {
+        final t = _pdfTexts[p] ?? await doc.pageText(p);
+        if (!mounted || _pdfDoc != doc) return;
+        if (t.trim().isNotEmpty) {
+          buf.write(t.trim());
+          buf.write('\n\n');
+        }
+      }
+      final ok = await _saveTextAsStory(buf.toString(), title: _pdfBaseName);
+      _pdfSnack(ok
+          ? 'متنِ همه‌ی صفحه‌ها در داستان‌ساز ذخیره شد ✓'
+          : 'متنی برای ذخیره پیدا نشد');
+    } catch (e) {
+      _pdfSnack('ذخیره‌ی متن انجام نشد');
+    } finally {
+      if (mounted) setState(() => _pdfSaving = false);
+    }
+  }
+
+  Future<bool> _saveTextAsStory(String raw,
+      {required String title, bool translate = false}) async {
+    if (raw.trim().isEmpty) return false;
+    final lang = _detectLang(raw, _readingLang());
+    final story = SavedStory(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      title: title,
+      text: _chunkParas(raw),
+      langCode: lang,
+      level: _detectCefr(raw),
+      contentType: 'reading',
+      words: const [],
+      createdAt: DateTime.now(),
+    );
+    ref.read(storyLibraryProvider.notifier).add(story);
+    if (translate) unawaited(_translateStory(story));
+    return true;
   }
 
   Future<String?> _askChoice(String title, Map<String, String> options) {
@@ -2288,7 +2374,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             child: Center(child: CircularProgressIndicator()),
           )
         : ZoomablePageImage(
-            bytes: img, label: 'اصلی', accent: c.gold, controller: _pdfZoom));
+            bytes: img,
+            label: 'اصلی',
+            accent: c.gold,
+            controller: _pdfZoom,
+            onExpand: () => _openPdfFullscreen('orig', page)));
 
     Widget trans() {
       if (tImg != null) {
@@ -2297,7 +2387,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                 bytes: tImg,
                 label: 'ترجمه',
                 accent: c.teal,
-                controller: _pdfZoomT));
+                controller: _pdfZoomT,
+                onExpand: () => _openPdfFullscreen('trans', page)));
       }
       final e = _pdfEngine;
       final st = e?.statusOf(page);

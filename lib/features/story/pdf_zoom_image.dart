@@ -41,12 +41,16 @@ class ZoomablePageImage extends StatefulWidget {
 
   /// کنترلرِ زوم (اختیاری): برای ریست از بیرون. برای اصلی و ترجمه کنترلرِ جدا بدهید.
   final TransformationController? controller;
+
+  /// اگر داده شود، دکمه‌ی «تمام‌صفحه» گوشه‌ی عکس نشان داده می‌شود.
+  final VoidCallback? onExpand;
   const ZoomablePageImage({
     super.key,
     required this.bytes,
     required this.label,
     required this.accent,
     this.controller,
+    this.onExpand,
   });
 
   @override
@@ -214,6 +218,24 @@ class _ZoomablePageImageState extends State<ZoomablePageImage> {
             ),
           ),
         ),
+        if (widget.onExpand != null)
+          PositionedDirectional(
+            top: 6,
+            end: 6,
+            child: Material(
+              color: Colors.black.withOpacity(0.55),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: widget.onExpand,
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.fullscreen_rounded,
+                      size: 22, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
         PositionedDirectional(
           top: 6,
           start: 6,
