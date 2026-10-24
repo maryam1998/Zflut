@@ -282,6 +282,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   // حالتِ نمایشِ صفحه: both = اصلی بالا + ترجمه پایین، orig = فقط اصلی، trans = فقط ترجمه
   String _pdfMode = 'both';
   bool _pdfSaving = false;
+  PdfDocHandle? _pdfStorySavedDoc; // PDFی که با دکمه‌ی 🔖 در داستان‌ساز ذخیره شده
   // موتورِ ترجمه‌ی صفحه‌ها: صف، کشِ دیسکی، تلاشِ دوباره، پیشرفتِ ماندگار
   PageTranslateEngine? _pdfEngine;
   int _pdfEngineToken = 0;
@@ -2122,6 +2123,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                     .where((l) => l != pageLang)
                     .toList(),
                 splitSentences: _splitSentences,
+                // 🔖 همان دکمه‌ی ذخیره‌ی داستان‌ساز: کلِ PDF (متنِ همه‌ی صفحه‌ها + ترجمه) را در ذخیره‌شده‌ها می‌گذارد
+                saved: _pdfStorySavedDoc == doc,
+                onSave: _pdfSaving || _pdfStorySavedDoc == doc
+                    ? null
+                    : _savePdfWholeToStories,
               );
             }),
         ],
@@ -2173,15 +2179,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           color: c.gold,
           onTap: busy ? null : _savePdfFile,
         ),
-        // کلِ PDF: متنِ همه‌ی صفحه‌ها + ترجمه‌اش → کتابخانه‌ی داستان‌ساز (بخشِ ذخیره‌شده‌ها)
-        HopeTextAction(
-          icon: Icons.auto_stories_rounded,
-          label: busy
-              ? stTr(context, 'saving')
-              : stTr(context, 'saveToStory'),
-          color: c.ink,
-          onTap: busy ? null : _savePdfWholeToStories,
-        ),
       ],
     );
   }
@@ -2232,6 +2229,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       }
       final ok = await _saveTextAsStory(buf.toString(),
           title: _pdfBaseName, translate: true);
+      if (ok && mounted) setState(() => _pdfStorySavedDoc = doc);
       _pdfSnack(ok
           ? stTr(context, 'textSavedAll')
           : stTr(context, 'noTextFound'));
