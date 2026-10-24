@@ -216,8 +216,41 @@ public class BubbleService extends Service {
         e.apply();
         // زبانِ صدا عوض شد (مثلاً از «خودکار» به یک زبانِ مشخص): تشخیصِ قبلی را کنار بگذار
         final BubbleService live = instance;
-        if (live != null && source != null && !source.isEmpty() && !source.equals(oldSource)) live.resetDetected();
+        if (live != null && source != null && !source.isEmpty() && !source.equals(oldSource)) {
+            live.resetDetected();
+            sourceChanged();          // 🎙 زبانِ صدا وسطِ ضبط عوض شد → STT فوری با زبانِ جدید دوباره راه می‌افتد
+        }
     }
+
+    /** ✅ «تشخیص خودکارِ زبان» (تیکِ تنظیمات). زبانِ انتخابیِ لیست سر جایش می‌ماند (ذره‌بین و ...). */
+    public static void saveSttAuto(Context ctx, Boolean on) {
+        if (on == null) return;
+        final SharedPreferences sp = ctx.getSharedPreferences(PREFS, MODE_PRIVATE);
+        if (sp.getBoolean("sttAuto", false) == on) return;
+        sp.edit().putBoolean("sttAuto", on).apply();
+        final BubbleService live = instance;
+        if (live != null) {
+            live.resetDetected();
+            sourceChanged();
+        }
+    }
+
+    /** ضبطِ در حالِ اجرا (موتورِ آفلاین یا Google) را با زبانِ تازه از نو شروع می‌کند؛ هیچ صفحه/لایه‌ای باز نمی‌شود. */
+    static void sourceChanged() {
+        final BubbleService s = instance;
+        if (s == null) return;
+        s.main.removeCallbacks(s.srcRestart);
+        s.main.postDelayed(s.srcRestart, 150);
+    }
+
+    private final Runnable srcRestart = new Runnable() {
+        @Override public void run() {
+            if (!recording || !micEngine || mediaProjection == null) return;
+            if (yt != null && yt.isActive()) return;           // یوتیوب: زیرنویسِ خودِ ویدیو، به STT ربطی ندارد
+            stopRecording();
+            main.postDelayed(() -> { if (!recording) startCapture(); }, 300);
+        }
+    };
 
     /** Comma-separated list of ALL translation target languages the user picked in the app (e.g. "fa,fr,ar"). */
     public static void saveTargets(Context ctx, String csv) {
@@ -815,8 +848,14 @@ public class BubbleService extends Service {
 
     /** True when the app explicitly told us the spoken language (not "auto"). */
     private boolean srcExplicit() {
+        if (sttAuto()) return false;
         String s = sourceLang();
         return s != null && !s.isEmpty() && !"auto".equals(s);
+    }
+
+    /** تیکِ «تشخیص خودکار» روشن است؟ */
+    private boolean sttAuto() {
+        return LangDetect.ENABLED && getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean("sttAuto", false);
     }
 
     /**
@@ -862,6 +901,7 @@ public class BubbleService extends Service {
             if (detectStreak >= 2) applyDetected(d);
             return;
         }
+        if (dw.length >= 6) { applyDetected(d); return; }                       // جمله‌ی بلند با زبانِ دیگر: تغییرِ فوری
         if (d.equals(detectCand)) detectStreak++; else { detectCand = d; detectStreak = 1; }
         if (detectStreak >= 2) applyDetected(d);
     }
@@ -6291,7 +6331,7 @@ public class BubbleService extends Service {
         // 🌐 موتورِ «Google» (SpeechRecognizerِ خودِ اندروید) اگر کاربر در تنظیمات انتخاب کرده باشد
         if ("google".equals(speechProvider()) && !googleSkipped) {
             if (googleUsable(src) && startMicEngine(src)) return;
-            showNotice(msg("تشخیص گفتارِ گوگل در دسترس نیست؛ موتورِ آفلاین استفاده شد",
+            if (!"auto".equals(src)) showNotice(msg("تشخیص گفتارِ گوگل در دسترس نیست؛ موتورِ آفلاین استفاده شد",
                     "Google speech unavailable — using the offline engine"));
         }
         // 📦 موتورِ آفلاین (Sherpa یا Whisper). بدونِ بسته: پیامِ تأییدِ دانلود، نه سرور و نه تشخیص‌دهنده‌ی آنلاین.

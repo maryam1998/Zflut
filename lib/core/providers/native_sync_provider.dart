@@ -118,6 +118,7 @@ class NativeSync with WidgetsBindingObserver {
       final sel = _ref.read(languageSelectionProvider);
       // 🌐 مثل Hope: زبانِ مبدأ همیشه صریح فرستاده می‌شود (پیش‌فرض en) تا مسیر سریعِ Sherpa فعال شود
       var src = 'en';
+      var sttAuto = false;
       try {
         final sp = _ref.read(sharedPrefsProvider);
         const key = 'phrasebook-live-src-lang';
@@ -131,6 +132,8 @@ class NativeSync with WidgetsBindingObserver {
           }
         }
         if (s != null && s.isNotEmpty) src = s;
+        // ✅ تیکِ «تشخیص خودکار» (جدا از زبانِ لیست؛ فقط STT را عوض می‌کند)
+        sttAuto = sp.getBool('phrasebook-live-src-auto') == true;
       } catch (_) {}
       final targets = sel.targets.isNotEmpty
           ? List<String>.from(sel.targets)
@@ -145,7 +148,10 @@ class NativeSync with WidgetsBindingObserver {
           (Object _) => <String, dynamic>{});
       await NativeBridge.instance
           .setLanguages(
-              targetLang: prefs.uiLang, sourceLang: src, targetLangs: targets)
+              targetLang: prefs.uiLang,
+              sourceLang: src,
+              targetLangs: targets,
+              sttAuto: sttAuto)
           .catchError((Object _) => <String, dynamic>{});
     } catch (_) {}
   }

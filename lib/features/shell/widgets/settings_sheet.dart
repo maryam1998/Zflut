@@ -1036,6 +1036,11 @@ class _FloatingBubbleSectionState
 
   late String _kind;
   late String _src;
+  bool _auto = false; // ✅ تیکِ «تشخیص خودکار»؛ زبانِ لیست (_src) سر جایش می‌ماند
+  static const String _kAutoKey = 'phrasebook-live-src-auto';
+
+  /// زبانی که واقعاً به STT می‌رسد
+  String get _effSrc => _auto ? 'auto' : _src;
   late String _disp;
   late String _color;
   bool _busy = false;
@@ -1064,6 +1069,7 @@ class _FloatingBubbleSectionState
       src = 'en';
       sp.setString(_kSrcKey, 'en');
     }
+    _auto = sp.getBool(_kAutoKey) == true;
     final disp = sp.getString(_kDispKey);
     final color = sp.getString(_kColorKey);
     _kind = _kinds.contains(kind) ? kind! : 'both';
@@ -1074,6 +1080,16 @@ class _FloatingBubbleSectionState
     _color = (color != null && RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(color))
         ? color.toUpperCase()
         : _defaultColor;
+  }
+
+  Future<void> _toggleAuto() async {
+    final v = !_auto;
+    setState(() {
+      _auto = v;
+      _packEpoch++;
+    });
+    await ref.read(sharedPrefsProvider).setBool(_kAutoKey, v);
+    Future<void>.microtask(() => ref.read(nativeSyncProvider).pushLangs());
   }
 
   Future<void> _save(String key, String value) async {
@@ -1255,14 +1271,14 @@ class _FloatingBubbleSectionState
   Future<bool> _ensureSpeechPack({required String afterDownload}) async {
     // موتورِ Google انتخاب شده: بسته‌ی آفلاین شرطِ شروع نیست (فقط پشتیبان است)
     if (ref.read(sharedPrefsProvider).getString(_kSpeechProviderKey) == 'google' &&
-        _src != 'auto') {
+        !_auto) {
       return true;
     }
     // زبان‌های بدونِ بسته‌ی اختصاصی (و «خودکار») از بسته‌ی چندزبانه استفاده می‌کنند (هر کیفیتی کافی است)
-    if (_src == 'auto' || !kDedicatedPackLangs.contains(_src)) {
+    if (_auto || !kDedicatedPackLangs.contains(_src)) {
       return _ensureAutoPack(
           afterDownload: afterDownload,
-          langName: _src == 'auto' ? null : _srcLangs[_src]);
+          langName: _auto ? null : _srcLangs[_src]);
     }
     final pack = await LinLearnBridge.packStatus('speech', _src);
     if (pack == null || pack['downloaded'] == true) return true;
@@ -1608,25 +1624,64 @@ class _FloatingBubbleSectionState
                     child: Text('🎙 ${L.settings_live_audio_title}',
                         style: small),
                   ),
-                  _LabeledDrop(
-                    label: L.settings_audio_language,
-                    value: _src,
-                    items: <String, String>{
-                      if (_kAutoLangUi) 'auto': L.settings_lang_auto,
-                      ..._srcLangs,
-                    },
-                    onChanged: (v) {
-                      setState(() => _src = v);
-                      _save(_kSrcKey, v);
-                      // مثل Hope: به حبابِ در حال اجرا هم خبر بده (setLanguages)
-                      Future<void>.microtask(
-                          () => ref.read(nativeSyncProvider).pushLangs());
-                    },
+                  Opacity(
+                    opacity: _auto ? 0.45 : 1,
+                    child: IgnorePointer(
+                      ignoring: _auto,
+                      child: _LabeledDrop(
+                        label: L.settings_audio_language,
+                        value: _src,
+                        items: <String, String>{
+                          if (_kAutoLangUi) 'auto': L.settings_lang_auto,
+                          ..._srcLangs,
+                        },
+                        onChanged: (v) {
+                          setState(() => _src = v);
+                          _save(_kSrcKey, v);
+                          // مثل Hope: به حبابِ در حال اجرا هم خبر بده (setLanguages)
+                          Future<void>.microtask(
+                              () => ref.read(nativeSyncProvider).pushLangs());
+                        },
+                      ),
+                    ),
+                  ),
+                  // ✅ تشخیص خودکارِ زبان: تیک (نه آیتمِ لیست)
+                  InkWell(
+                    onTap: _toggleAuto,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: _auto,
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              activeColor: context.appColors.gold,
+                              onChanged: (_) => _toggleAuto(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              L.settings_lang_auto.replaceFirst('🌐 ', ''),
+                              style: TextStyle(
+                                  color: context.appColors.inkSoft,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   _SpeechEngineSection(
                     offlinePack: LangPackTile(
-                      key: ValueKey('speech-$_src-$_packEpoch'),
-                      lang: _src,
+                      key: ValueKey('speech-$_effSrc-$_packEpoch'),
+                      lang: _effSrc,
                     ),
                   ),
                   Padding(

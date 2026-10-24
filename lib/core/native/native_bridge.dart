@@ -66,8 +66,8 @@ class NativeBridge {
 
   Future<Map<String, dynamic>> hideBubble() => _call('hideBubble');
 
-  Future<Map<String, dynamic>> setLanguages({String? targetLang, String? sourceLang, String? translationTone, List<dynamic>? targetLangs}) =>
-      _call('setLanguages', {if (targetLang != null) 'targetLang': targetLang, if (sourceLang != null) 'sourceLang': sourceLang, if (translationTone != null) 'translationTone': translationTone, if (targetLangs != null) 'targetLangs': targetLangs});
+  Future<Map<String, dynamic>> setLanguages({String? targetLang, String? sourceLang, String? translationTone, List<dynamic>? targetLangs, bool? sttAuto}) =>
+      _call('setLanguages', {if (sttAuto != null) 'sttAuto': sttAuto, if (targetLang != null) 'targetLang': targetLang, if (sourceLang != null) 'sourceLang': sourceLang, if (translationTone != null) 'translationTone': translationTone, if (targetLangs != null) 'targetLangs': targetLangs});
 
   /// اگر کاربر زبان‌های مقصد را از داخلِ کادرِ شناور عوض کرده باشد → { dirty: true, targets: [...] } (و پرچم پاک می‌شود).
   Future<Map<String, dynamic>> takePanelTargets() => _call('takePanelTargets');

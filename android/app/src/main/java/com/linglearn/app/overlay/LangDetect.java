@@ -27,7 +27,7 @@ final class LangDetect {
      * کدِ تشخیص (این فایل، resolveAuto در WhisperEngine، noteDetected در BubbleService) نگه داشته شده
      * و فقط با true کردنِ این مقدار دوباره فعال می‌شود.
      */
-    static final boolean ENABLED = false;
+    static final boolean ENABLED = true;
 
     private static final Map<String, Set<String>> STOP = new HashMap<>();
 

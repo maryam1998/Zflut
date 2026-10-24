@@ -233,6 +233,7 @@ public class BubblePlugin extends Plugin {
     //   targetLang  = UI language (messages), targetLangs = every translation language the user picked
     @PluginMethod
     public void setLanguages(PluginCall call) {
+        BubbleService.saveSttAuto(getContext(), call.getBoolean("sttAuto"));
         BubbleService.saveLangs(getContext(), call.getString("targetLang"), call.getString("sourceLang"));
         BubbleService.saveTargets(getContext(), targetsCsv(call));
         BubbleService.saveTone(getContext(), call.getString("translationTone"));
