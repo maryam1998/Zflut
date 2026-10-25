@@ -757,12 +757,19 @@ public class MagnifierService extends Service {
         boolean ocrOnlyClock = !orig.isEmpty() && TIME_TOK.matcher(orig.trim()).matches() && !hasLetterChar(orig);
         if (elems.isEmpty() || box == null || orig.isEmpty() || ocrGarbage || (ocrOnlyClock && (a == null || !hasLetterChar(cleanScreenText(a.t))))) {
             if (!SpeedAccessibilityService.isEnabled(this)) {
-                if (!prefs().getBoolean("a11yAsked", false)) {
-                    prefs().edit().putBoolean("a11yAsked", true).apply();
-                    SpeedAccessibilityService.openSettings(this);
+                if (ocrGarbage) {
+                    // OCR چیزِ بی‌معنی خواند → احتمالاً فارسی/عربی است
+                    if (!prefs().getBoolean("a11yAsked", false)) {
+                        prefs().edit().putBoolean("a11yAsked", true).apply();
+                        SpeedAccessibilityService.openSettings(this);
+                    }
+                    finish(msg("برای خواندنِ متنِ فارسی/عربی، سرویسِ «دسترسی‌پذیری» این برنامه را روشن کنید",
+                            "To read Persian/Arabic text, turn on this app's Accessibility service"));
+                } else {
+                    // OCR متنی پیدا نکرد (ذره‌بین روی متن نیست، یا متن خیلی کوچک/کم‌رنگ است)
+                    finish(msg("زیرِ ذره‌بین متنی پیدا نشد؛ ذره‌بین را دقیقاً روی متن رها کنید (برای فارسی/عربی «دسترسی‌پذیری» لازم است)",
+                            "No text found under the magnifier — release it right on the text (Persian/Arabic need the Accessibility service)"));
                 }
-                finish(msg("برای خواندنِ متنِ فارسی/عربی، سرویسِ «دسترسی‌پذیری» این برنامه را روشن کنید",
-                        "To read Persian/Arabic text, turn on this app's Accessibility service"));
             } else {
                 finish(msg("زیرِ ذره‌بین متنی پیدا نشد", "No text found under the magnifier"));
             }
@@ -858,6 +865,13 @@ public class MagnifierService extends Service {
         for (String tok : orig.split("\\s+")) if (CAMEL_JUNK.matcher(tok).find()) { camel = true; break; }
         boolean odd = false;                                   // حرفِ لاتینِ دارای نشانه (ö, ğ …) در متنی که زبانش شناخته نشد
         for (int i = 0; i < orig.length(); i++) { char c = orig.charAt(i); if (Character.isLetter(c) && c > 0x7F) { odd = true; break; } }
+        if (odd) {
+            // حرف‌های دارای نشانه (á é ñ ü ç …) در اسپانیایی/فرانسوی/آلمانی/… عادی‌اند؛ اگر تشخیصِ آفلاین متن را لاتین دید، خرده‌نویسه نیست
+            try {
+                String det = LangDetect.detect(orig);
+                if (det != null && !"fa".equals(det) && !"ar".equals(det) && !"ur".equals(det)) odd = false;
+            } catch (Throwable ignored) { }
+        }
         return camel || (und && letters >= 10 && odd);
     }
 
