@@ -875,14 +875,23 @@ public class MagnifierService extends Service {
         boolean ocrOnlyClock = !orig.isEmpty() && TIME_TOK.matcher(orig.trim()).matches() && !hasLetterChar(orig);
         if (elems.isEmpty() || box == null || orig.isEmpty() || ocrGarbage || (ocrOnlyClock && (a == null || !hasLetterChar(cleanScreenText(a.t))))) {
             if (!SpeedAccessibilityService.isEnabled(this)) {
+                final boolean noA11y = !SpeedAccessibilityService.isAvailable(this);   // این نسخه سرویسِ دسترسی‌پذیری ندارد
                 if (ocrGarbage) {
                     // OCR چیزِ بی‌معنی خواند → احتمالاً فارسی/عربی است
-                    if (!prefs().getBoolean("a11yAsked", false)) {
-                        prefs().edit().putBoolean("a11yAsked", true).apply();
-                        SpeedAccessibilityService.openSettings(this);
+                    if (noA11y) {
+                        finish(msg("متنِ فارسی/عربی را انتخاب کنید و از منوی انتخاب «ترجمه با LingoLearn» را بزنید",
+                                "For Persian/Arabic: select the text and tap “Translate with LingoLearn” in the selection menu"));
+                    } else {
+                        if (!prefs().getBoolean("a11yAsked", false)) {
+                            prefs().edit().putBoolean("a11yAsked", true).apply();
+                            SpeedAccessibilityService.openSettings(this);
+                        }
+                        finish(msg("برای خواندنِ متنِ فارسی/عربی، سرویسِ «دسترسی‌پذیری» این برنامه را روشن کنید",
+                                "To read Persian/Arabic text, turn on this app's Accessibility service"));
                     }
-                    finish(msg("برای خواندنِ متنِ فارسی/عربی، سرویسِ «دسترسی‌پذیری» این برنامه را روشن کنید",
-                            "To read Persian/Arabic text, turn on this app's Accessibility service"));
+                } else if (noA11y) {
+                    finish(msg("زیرِ ذره‌بین متنی پیدا نشد؛ ذره‌بین را دقیقاً روی متن رها کنید (برای فارسی/عربی متن را انتخاب و «ترجمه با LingoLearn» را بزنید)",
+                            "No text found under the magnifier — release it right on the text (for Persian/Arabic select the text and tap “Translate with LingoLearn”)"));
                 } else {
                     // OCR متنی پیدا نکرد (ذره‌بین روی متن نیست، یا متن خیلی کوچک/کم‌رنگ است)
                     finish(msg("زیرِ ذره‌بین متنی پیدا نشد؛ ذره‌بین را دقیقاً روی متن رها کنید (برای فارسی/عربی «دسترسی‌پذیری» لازم است)",
@@ -1002,7 +1011,7 @@ public class MagnifierService extends Service {
      * اگر بخشِ قابلِ‌توجهی از متن عربی‌خط است (فارسی/عربی/اردو) زبانِ آن را برمی‌گرداند، وگرنه null.
      * متنِ قاطی (فارسی + انگلیسی، مثلِ «روزت مبارک … Sent at») قبلاً «en» تشخیص داده می‌شد و ترجمه نمی‌شد.
      */
-    private static String arabicScriptLang(String t, String saved) {
+    static String arabicScriptLang(String t, String saved) {
         int ar = 0, other = 0;
         StringBuilder arOnly = new StringBuilder();
         for (int i = 0; i < t.length(); ) {

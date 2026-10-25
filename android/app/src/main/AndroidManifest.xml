@@ -79,6 +79,23 @@
             </intent-filter>
         </activity>
 
+        <!-- ✂️ «ترجمه با LingoLearn» در منوی انتخابِ متنِ اندروید (بدونِ هیچ مجوزِ ویژه؛ فقط متنی که کاربر خودش انتخاب کرده) -->
+        <activity
+            android:name=".overlay.ProcessTextActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="ترجمه با LingoLearn"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".overlay.SpeechHostActivity"
             android:excludeFromRecents="true"
@@ -138,19 +155,8 @@
             </intent-filter>
         </service>
 
-        <!-- ♿ خواندنِ متنِ دقیقِ صفحه برای ذره‌بین (فارسی/عربی که OCR نمی‌خواند) + سرعتِ یوتیوب؛ کاربر باید دستی روشنش کند -->
-        <service
-            android:name=".overlay.SpeedAccessibilityService"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_config" />
-        </service>
+        <!-- ♿ سرویسِ دسترسی‌پذیری (SpeedAccessibilityService) عمداً از این نسخه حذف شده تا Play Protect حساس نشود.
+             فارسی/عربی در ذره‌بین از راهِ «ترجمه با LingoLearn» (منوی انتخابِ متن) کار می‌کند. -->
 
         <!-- 🔍 حبابِ ذره‌بین: ضربه روی متن ← ترجمه (عکسِ صفحه فقط به‌درخواستِ کاربر و فقط برای خواندنِ متنِ کنارِ انگشت؛ ذخیره یا ارسال نمی‌شود) -->
         <service
