@@ -1264,6 +1264,7 @@ class _FloatingBubbleSectionState
           sourceLang: _src,
           targetLang: ref.read(appPrefsProvider).uiLang,
         );
+        await _maybeStartMagnifier();
       }
     } catch (e) {
       _toast(context.l10n.st_error('$e'));
@@ -1396,6 +1397,17 @@ class _FloatingBubbleSectionState
     return false;
   }
 
+  /// وقتی نوعِ حباب «هر دو» است، با شروعِ ترجمه‌ی زنده / زیرنویس یوتیوب، ذره‌بین هم خودکار روشن می‌شود.
+  /// (اگر ذره‌بین از قبل روشن باشد، اندروید فقط آن را نگه می‌دارد.) خطا یا نپذیرفتنِ مجوز مانعِ ترجمه نمی‌شود.
+  Future<void> _maybeStartMagnifier() async {
+    if (_kind != 'both') return;
+    try {
+      if (!await _ensureScreenRecordInfo()) return;
+      await LinLearnBridge.startBubble(mode: 'magnifier');
+      await ref.read(bubbleProvider.notifier).syncFromNative();
+    } catch (_) {}
+  }
+
   /// ▶ زیرنویس زنده‌ی یوتیوب: مجوزِ نمایش روی برنامه‌ها ← دسترسی به اعلان‌ها ← حباب ← ytSetEnabled.
   /// زیرنویسِ یوتیوب به بسته‌ی تشخیصِ گفتار (STT) نیازی ندارد؛ پس هیچ پرسش/دانلودی جلوی آن گرفته نمی‌شود
   /// و دانلودِ بسته‌ها (در تنظیمات) هم‌زمان با پخشِ یوتیوب آزادانه ادامه دارد.
@@ -1413,6 +1425,7 @@ class _FloatingBubbleSectionState
       }
       await _pushOptions();
       await LinLearnBridge.ytSetEnabled(true);
+      await _maybeStartMagnifier();
     } catch (e) {
       _toast(context.l10n.st_error('$e'));
     } finally {

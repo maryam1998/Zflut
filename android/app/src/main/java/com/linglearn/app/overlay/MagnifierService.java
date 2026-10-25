@@ -778,17 +778,22 @@ public class MagnifierService extends Service {
 
         // زبانِ واقعیِ همین متن (نه فقط زبانِ ذخیره‌شده): «Este sonido…» با مبدأ en غلط ترجمه می‌شد
         try {
-            String det = LangDetect.detect(orig);
-            if (det == null && best != null) {
-                // متنِ کوتاه («Me alegro que te haya gustado.»): تشخیصِ آفلاین نامطمئن بود → زبانی که خودِ ML Kit برای بلوک داده
-                try {
-                    String rl = best.getRecognizedLanguage();
-                    if (rl != null && !rl.isEmpty() && !"und".equals(rl)) {
-                        det = rl.split("-")[0].toLowerCase(Locale.ROOT);
-                    }
-                } catch (Throwable ignored) { }
+            String arSrc = arabicScriptLang(orig, src);          // فارسی/عربی/اردو (حتی وقتی با لاتین قاطی است)
+            if (arSrc != null) {
+                src = arSrc;
+            } else {
+                String det = LangDetect.detect(orig);
+                if (det == null && best != null) {
+                    // متنِ کوتاه («Me alegro que te haya gustado.»): تشخیصِ آفلاین نامطمئن بود → زبانی که خودِ ML Kit برای بلوک داده
+                    try {
+                        String rl = best.getRecognizedLanguage();
+                        if (rl != null && !rl.isEmpty() && !"und".equals(rl)) {
+                            det = rl.split("-")[0].toLowerCase(Locale.ROOT);
+                        }
+                    } catch (Throwable ignored) { }
+                }
+                if (det != null && !det.equals(src)) src = det;
             }
-            if (det != null && !det.equals(src)) src = det;
         } catch (Throwable ignored) { }
 
         final ArrayList<String[]> results = new ArrayList<>();
@@ -873,6 +878,28 @@ public class MagnifierService extends Service {
             } catch (Throwable ignored) { }
         }
         return camel || (und && letters >= 10 && odd);
+    }
+
+    /**
+     * اگر بخشِ قابلِ‌توجهی از متن عربی‌خط است (فارسی/عربی/اردو) زبانِ آن را برمی‌گرداند، وگرنه null.
+     * متنِ قاطی (فارسی + انگلیسی، مثلِ «روزت مبارک … Sent at») قبلاً «en» تشخیص داده می‌شد و ترجمه نمی‌شد.
+     */
+    private static String arabicScriptLang(String t, String saved) {
+        int ar = 0, other = 0;
+        StringBuilder arOnly = new StringBuilder();
+        for (int i = 0; i < t.length(); ) {
+            int cp = t.codePointAt(i);
+            i += Character.charCount(cp);
+            if (!Character.isLetter(cp)) { if (arOnly.length() > 0 && arOnly.charAt(arOnly.length() - 1) != ' ') arOnly.append(' '); continue; }
+            if (cp >= 0x0600 && cp <= 0x06FF || cp >= 0x0750 && cp <= 0x077F || cp >= 0xFB50 && cp <= 0xFDFF || cp >= 0xFE70 && cp <= 0xFEFF) {
+                ar++; arOnly.appendCodePoint(cp);
+            } else other++;
+        }
+        if (ar == 0 || ar * 10 < (ar + other) * 3) return null;   // کمتر از ۳۰٪ عربی‌خط
+        String d = LangDetect.detect(arOnly.toString().trim());
+        if ("fa".equals(d) || "ar".equals(d) || "ur".equals(d)) return d;
+        if ("fa".equals(saved) || "ar".equals(saved) || "ur".equals(saved)) return saved;
+        return "fa";
     }
 
     private static boolean hasArabicScript(String t) {
