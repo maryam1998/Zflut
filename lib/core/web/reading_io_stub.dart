@@ -12,9 +12,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
@@ -65,63 +63,9 @@ Future<List<PickedFile>> pickFiles({
 /// نشستِ OCR با ML Kit. ML Kit فقط این خط‌ها را می‌خواند:
 /// لاتین (انگلیسی/آلمانی/اسپانیایی/فرانسوی/…)، چینی، ژاپنی، کره‌ای، دوناگری.
 /// عربی/فارسی را ML Kit پشتیبانی نمی‌کند — برایشان خطایِ واضح می‌دهیم.
-/// کدِ زبان‌های بیرون از ML Kit → نامِ فایلِ Tesseract
-const Map<String, String> _tessCodes = {
-  'fa': 'fas',
-  'ar': 'ara',
-  'ur': 'urd',
-  'he': 'heb',
-  'ru': 'rus',
-  'uk': 'ukr',
-  'el': 'ell',
-  'th': 'tha',
-};
-
-bool _prefetchRunning = false;
-
-/// دانلودِ بی‌صدای فایل‌های OCR (فارسی/عربی/روسی/…) در پس‌زمینه.
-/// بدونِ هیچ تنظیم و پیامی: اگر اینترنت نبود هر ۶۰ ثانیه دوباره تلاش می‌کنه تا کامل شه.
-void prefetchOcrData() {
-  if (_prefetchRunning) return;
-  _prefetchRunning = true;
-  unawaited(() async {
-    try {
-      for (var attempt = 0; attempt < 40; attempt++) {
-        var allOk = true;
-        for (final code in _tessCodes.values) {
-          try {
-            await _ensureTessData(code);
-          } catch (_) {
-            allOk = false;
-            break;
-          }
-        }
-        if (allOk) return;
-        await Future<void>.delayed(const Duration(seconds: 60));
-      }
-    } finally {
-      _prefetchRunning = false;
-    }
-  }());
-}
-
-/// فایلِ زبان (حدودِ ۱ تا ۴ مگابایت) بار اول دانلود و برای همیشه نگه داشته می‌شه.
-Future<void> _ensureTessData(String code) async {
-  final docs = await getApplicationDocumentsDirectory();
-  final dir = Directory('${docs.path}/tessdata');
-  if (!await dir.exists()) await dir.create(recursive: true);
-  for (final c in [code, 'eng']) {
-    final f = File('${dir.path}/$c.traineddata');
-    if (await f.exists() && await f.length() > 100000) continue;
-    final tmp = File('${f.path}.part');
-    await Dio().download(
-      'https://github.com/tesseract-ocr/tessdata_fast/raw/main/$c.traineddata',
-      tmp.path,
-      options: Options(receiveTimeout: const Duration(minutes: 3)),
-    );
-    await tmp.rename(f.path);
-  }
-}
+/// (Tesseract از اپ حذف شد تا حجمِ برنامه کم شود؛ OCR فقط با ML Kit انجام می‌شود.)
+/// این تابع برای سازگاری با main.dart می‌ماند و دیگر چیزی دانلود نمی‌کند.
+void prefetchOcrData() {}
 
 class OcrSession {
   final TextRecognitionScript _primary;
@@ -179,21 +123,6 @@ class OcrSession {
         '${dir.path}/ocr_${DateTime.now().microsecondsSinceEpoch}.jpg');
     await f.writeAsBytes(bytes, flush: true);
     try {
-      final tess = _tessCodes[_lang];
-      if (tess != null) {
-        // فارسی/عربی/روسی/…: Tesseract (به‌همراهِ انگلیسی برای متنِ قاطی)
-        await _ensureTessData(tess);
-        final raw = await FlutterTesseractOcr.extractText(
-          f.path,
-          language: '$tess+eng',
-          args: {'psm': '6', 'preserve_interword_spaces': '1'},
-        );
-        final t = _clean(raw);
-        if (t.replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '').length >=
-            3) {
-          return t;
-        }
-      }
       final input = InputImage.fromFilePath(f.path);
       final order = <TextRecognitionScript>[
         _primary,
@@ -248,81 +177,88 @@ class OcrSession {
   static bool _hasLetters(String t) =>
       RegExp(r'\p{L}', unicode: true).allMatches(t).length >= 2;
 
-  /// فقط خطِ‌های hOCR (Tesseract) رو با مختصاتشون درمیاره.
-  /// اگر یک خط دو ستونِ کنارِ هم را شامل شود (مثلاً تیترِ «Introduction» در ستونِ چپ با اولین خطِ ستونِ راست
-  /// هم‌تراز است)، با کمکِ فاصله‌ی بینِ کلمه‌ها به چند تکه شکسته می‌شود تا ترجمه‌ی هر ستون سرِ جای خودش بیاید.
-  List<OcrBlock> _parseHocr(String hocr, int W, int H) {
-    final re = RegExp(
-        r"""<span[^>]*class=['"]ocr_(?:line|caption|textfloat|header)['"][^>]*title=['"]bbox (\d+) (\d+) (\d+) (\d+)""");
-    final wre = RegExp(
-        r"""<span[^>]*class=['"]ocrx_word['"][^>]*title=['"]bbox (\d+) (\d+) (\d+) (\d+)[^'"]*['"][^>]*>(.*?)</span>""",
-        dotAll: true);
-    final ms = re.allMatches(hocr).toList();
-    final out = <OcrBlock>[];
-    String clean(String raw) => _unescapeHtml(raw
-            .replaceAll(RegExp(r'<[^>]*>'), ' '))
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-    for (var i = 0; i < ms.length; i++) {
-      final m = ms[i];
-      final end = i + 1 < ms.length ? ms[i + 1].start : hocr.length;
-      final seg = hocr.substring(m.end, end);
-      final lx0 = int.parse(m.group(1)!), ly0 = int.parse(m.group(2)!);
-      final lx1 = int.parse(m.group(3)!), ly1 = int.parse(m.group(4)!);
-      if (lx1 <= lx0 || ly1 <= ly0) continue;
-
-      // کلمه‌ها (با مختصات) → اگر فاصله‌ی بزرگی بینشان بود، ستونِ جدا
-      final words = <List<Object>>[]; // [x0,y0,x1,y1,text]
-      for (final w in wre.allMatches(seg)) {
-        final t = clean(w.group(5)!);
-        if (t.isEmpty) continue;
-        words.add([
-          int.parse(w.group(1)!),
-          int.parse(w.group(2)!),
-          int.parse(w.group(3)!),
-          int.parse(w.group(4)!),
-          t,
+  /// بلوکِ ML Kit را بر اساسِ ستون‌ها دوباره می‌چیند: اگر یک خط از دو ستونِ کنارِ هم تشکیل شده باشد
+  /// (مثلاً تیترِ «Introduction» با اولین خطِ ستونِ دوم هم‌تراز است)، با کمکِ فاصله‌ی بینِ کلمه‌ها
+  /// هر ستون جدا می‌شود تا ترجمه‌ی هر ستون سرِ جای خودش بیاید. بلوکی که ستونِ مشترک ندارد دست‌نخورده می‌ماند.
+  List<OcrBlock> _blocksOf(TextBlock b, int W, int H) {
+    final single = () {
+      final t = _clean(b.text);
+      if (!_hasLetters(t)) return <OcrBlock>[];
+      final rc = b.boundingBox;
+      return [OcrBlock(t, rc.left / W, rc.top / H, rc.width / W, rc.height / H)];
+    };
+    // هر خط → تکه‌ها (جداشده در فاصله‌های بزرگ)
+    final segs = <List<List<Object>>>[]; // هر تکه: [left,top,right,bottom,text]
+    var anySplit = false;
+    for (final ln in b.lines) {
+      final els = [...ln.elements]
+        ..sort((a, c) => a.boundingBox.left.compareTo(c.boundingBox.left));
+      if (els.length < 2) {
+        final r = ln.boundingBox;
+        segs.add([
+          [r.left, r.top, r.right, r.bottom, ln.text]
         ]);
+        continue;
       }
-      if (words.length >= 2) {
-        words.sort((a, b) => (a[0] as int).compareTo(b[0] as int));
-        final lineH = ly1 - ly0;
-        final gapThr = math.max(lineH * 1.1, W * 0.016);
-        final groups = <List<List<Object>>>[<List<Object>>[]];
-        for (var k = 0; k < words.length; k++) {
-          if (k > 0) {
-            final gap = (words[k][0] as int) - (words[k - 1][2] as int);
-            if (gap > gapThr) groups.add(<List<Object>>[]);
-          }
-          groups.last.add(words[k]);
+      final lineH = ln.boundingBox.height;
+      final thr = math.max(lineH * 1.1, W * 0.016);
+      final parts = <List<TextElement>>[<TextElement>[]];
+      for (var k = 0; k < els.length; k++) {
+        if (k > 0 &&
+            els[k].boundingBox.left - els[k - 1].boundingBox.right > thr) {
+          parts.add(<TextElement>[]);
         }
-        if (groups.length > 1) {
-          for (final g in groups) {
-            final text = g.map((w) => w[4] as String).join(' ').trim();
-            if (!_hasLetters(text)) continue;
-            var x0 = W, y0 = H, x1 = 0, y1 = 0;
-            for (final w in g) {
-              x0 = math.min(x0, w[0] as int);
-              y0 = math.min(y0, w[1] as int);
-              x1 = math.max(x1, w[2] as int);
-              y1 = math.max(y1, w[3] as int);
-            }
-            if (x1 <= x0 || y1 <= y0) continue;
-            out.add(OcrBlock(text, x0 / W, y0 / H, (x1 - x0) / W, (y1 - y0) / H));
-          }
-          continue;
-        }
+        parts.last.add(els[k]);
       }
-
-      final text = _unescapeHtml(seg
-              .replaceFirst(RegExp(r'^[^>]*>'), '')
-              .replaceAll(RegExp(r'<[^>]*>'), ' '))
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim();
-      if (!_hasLetters(text)) continue;
-      out.add(OcrBlock(text, lx0 / W, ly0 / H, (lx1 - lx0) / W, (ly1 - ly0) / H));
+      if (parts.length > 1) anySplit = true;
+      segs.add([
+        for (final pt in parts)
+          [
+            pt.map((e) => e.boundingBox.left).reduce(math.min),
+            pt.map((e) => e.boundingBox.top).reduce(math.min),
+            pt.map((e) => e.boundingBox.right).reduce(math.max),
+            pt.map((e) => e.boundingBox.bottom).reduce(math.max),
+            pt.map((e) => e.text).join(' '),
+          ]
+      ]);
     }
-    return out;
+    if (!anySplit) return single();
+
+    // تکه‌ها را به ستون‌ها نسبت بده (هم‌پوشانیِ افقی)، به ترتیبِ خوانش
+    final cols = <List<List<Object>>>[];
+    final colX = <List<double>>[]; // [x0, x1] هر ستون
+    for (final line in segs) {
+      for (final sg in line) {
+        final l = sg[0] as double, r = sg[2] as double;
+        var hit = -1;
+        for (var i = 0; i < colX.length; i++) {
+          final ov = math.min(r, colX[i][1]) - math.max(l, colX[i][0]);
+          if (ov > 0.5 * (r - l)) {
+            hit = i;
+            break;
+          }
+        }
+        if (hit < 0) {
+          cols.add([sg]);
+          colX.add([l, r]);
+        } else {
+          cols[hit].add(sg);
+          colX[hit][0] = math.min(colX[hit][0], l);
+          colX[hit][1] = math.max(colX[hit][1], r);
+        }
+      }
+    }
+    final out = <OcrBlock>[];
+    for (final col in cols) {
+      final t = _clean(col.map((e) => e[4] as String).join(' '));
+      if (!_hasLetters(t)) continue;
+      final x0 = col.map((e) => e[0] as double).reduce(math.min);
+      final y0 = col.map((e) => e[1] as double).reduce(math.min);
+      final x1 = col.map((e) => e[2] as double).reduce(math.max);
+      final y1 = col.map((e) => e[3] as double).reduce(math.max);
+      out.add(OcrBlock(t, x0 / W, y0 / H, (x1 - x0) / W, (y1 - y0) / H));
+    }
+    return out.isEmpty ? single() : out;
   }
 
   Future<List<OcrBlock>> recognizeBlocks(Uint8List bytes) async {
@@ -335,17 +271,6 @@ class OcrSession {
         '${dir.path}/ocrb_${DateTime.now().microsecondsSinceEpoch}.jpg');
     await f.writeAsBytes(bytes, flush: true);
     try {
-      final tess = _tessCodes[_lang];
-      if (tess != null) {
-        await _ensureTessData(tess);
-        final hocr = await FlutterTesseractOcr.extractHocr(
-          f.path,
-          language: '$tess+eng',
-          args: {'psm': '3', 'preserve_interword_spaces': '1'},
-        );
-        final blocks = _parseHocr(hocr, W, H);
-        if (blocks.isNotEmpty) return blocks;
-      }
       final input = InputImage.fromFilePath(f.path);
       final order = <TextRecognitionScript>[
         _primary,
@@ -364,11 +289,7 @@ class OcrSession {
           final r = await _rec(sc).processImage(input);
           final out = <OcrBlock>[];
           for (final b in r.blocks) {
-            final t = _clean(b.text);
-            if (!_hasLetters(t)) continue;
-            final rc = b.boundingBox;
-            out.add(OcrBlock(t, rc.left / W, rc.top / H, rc.width / W,
-                rc.height / H));
+            out.addAll(_blocksOf(b, W, H));
           }
           if (out.isNotEmpty) return out;
         } catch (e) {

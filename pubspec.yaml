@@ -35,8 +35,6 @@ dependencies:
   pdfx: ^2.9.0
   syncfusion_flutter_pdf: ^33.2.13
   google_mlkit_text_recognition: ^0.13.1
-  # OCRِ فارسی/عربی/روسی/… (ML Kit این خط‌ها را ندارد)
-  flutter_tesseract_ocr: ^0.4.27
 
   # ═══ ضبطِ صدای کاربر (shadowing) ═══
   record: ^5.1.2
@@ -56,4 +54,3 @@ flutter:
   uses-material-design: true
   assets:
     - assets/data/
-    - assets/tessdata_config.json
