@@ -244,6 +244,7 @@ public class MagnifierService extends Service {
         main.removeCallbacksAndMessages(null);
         if (dockAnim != null) dockAnim.cancel();
         clearSelection();
+        hideHilite();
         try { if (closeView != null) wm.removeViewImmediate(closeView); } catch (Exception ignored) {}
         closeView = null;
         try { if (lens != null) wm.removeViewImmediate(lens); } catch (Exception ignored) {}
@@ -467,6 +468,8 @@ public class MagnifierService extends Service {
                             lensLp.y = (int) (e.getRawY() + dy);
                             clampLens();
                             updateOverTarget();
+                            dragging = true;
+                            maybePreview();
                         }
                         return true;
                     case MotionEvent.ACTION_UP:
@@ -474,6 +477,9 @@ public class MagnifierService extends Service {
                         boolean up = e.getActionMasked() == MotionEvent.ACTION_UP;
                         boolean onX = overTarget;
                         hideCloseTarget();
+                        dragging = false;
+                        previewSeq++;                                 // نتیجه‌های نیمه‌راهِ پیش‌نمایش نادیده گرفته شوند
+                        if (!(up && moved && !onX)) hideHilite();     // رها شدن روی متن: هایلایت تا آمدنِ ترجمه می‌ماند
                         if (!up) { scheduleDock(600); return true; }
                         if (moved && onX) {
                             toast(msg("ذره‌بین بسته شد", "Magnifier closed"));
@@ -578,6 +584,118 @@ public class MagnifierService extends Service {
         double tx = capW / 2.0, ty = capH - dp(120);
         boolean hot = Math.hypot(cx - tx, cy - ty) < dp(60);
         if (hot != overTarget) { overTarget = hot; closeView.setHot(hot); }
+    }
+
+    // ───────────────────────── 🟨 هایلایتِ زنده هنگامِ کشیدنِ ذره‌بین ─────────────────────────
+    // وقتی ذره‌بین را می‌کشی، همان قسمتی از متن که با رها کردن ترجمه می‌شود از همان لحظه هایلایت می‌شود.
+
+    private HiliteView hiView;
+    private WindowManager.LayoutParams hiLp;
+    private long lastPreviewAt = 0;
+    private boolean previewBusy = false, dragging = false;
+    private int previewSeq = 0;
+
+    private final class HiliteView extends View {
+        private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        HiliteView(Context c) {
+            super(c);
+            fill.setColor(Color.parseColor("#40C9A227"));
+            stroke.setStyle(Paint.Style.STROKE);
+            stroke.setStrokeWidth(dp(2));
+            stroke.setColor(COLOR_GOLD);
+        }
+        @Override protected void onDraw(Canvas cv) {
+            RectF r = new RectF(dp(1), dp(1), getWidth() - dp(1), getHeight() - dp(1));
+            cv.drawRoundRect(r, dp(8), dp(8), fill);
+            cv.drawRoundRect(r, dp(8), dp(8), stroke);
+        }
+    }
+
+    private void showHilite(Rect r) {
+        if (r == null || r.width() <= 0 || r.height() <= 0) { hideHilite(); return; }
+        int pad = dp(4);
+        try {
+            if (hiView == null) {
+                hiView = new HiliteView(this);
+                hiLp = new WindowManager.LayoutParams(r.width() + 2 * pad, r.height() + 2 * pad,
+                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                                | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                        PixelFormat.TRANSLUCENT);
+                hiLp.gravity = Gravity.TOP | Gravity.START;
+                hiLp.x = r.left - pad;
+                hiLp.y = r.top - pad;
+                wm.addView(hiView, hiLp);
+            } else {
+                hiLp.width = r.width() + 2 * pad;
+                hiLp.height = r.height() + 2 * pad;
+                hiLp.x = r.left - pad;
+                hiLp.y = r.top - pad;
+                wm.updateViewLayout(hiView, hiLp);
+                hiView.invalidate();
+            }
+        } catch (Exception e) {
+            hiView = null;
+        }
+    }
+
+    private void hideHilite() {
+        if (hiView == null) return;
+        try { wm.removeViewImmediate(hiView); } catch (Exception ignored) {}
+        hiView = null;
+    }
+
+    private void endPreview(final int tok, final Rect r) {
+        main.post(() -> {
+            previewBusy = false;
+            if (tok != previewSeq || !dragging || busy) return;
+            showHilite(r);
+        });
+    }
+
+    /** هر ~۳۰۰ms یک‌بار متنِ زیرِ ذره‌بین را (با همان منطقِ رها کردن) پیدا می‌کند و هایلایت می‌کند. */
+    private void maybePreview() {
+        if (busy || reader == null || projectionLost || lens == null || lensLp == null) return;
+        final long now = android.os.SystemClock.uptimeMillis();
+        if (previewBusy || now - lastPreviewAt < 300) return;
+        lastPreviewAt = now;
+        previewBusy = true;
+        final int tok = previewSeq;
+        final float cx = lensLp.x + dp(LENS_C), cy = lensLp.y + dp(LENS_C);
+        try {
+            worker.execute(() -> {
+                try {
+                    final SpeedAccessibilityService.ScreenText a = pickScreenText(cx, cy);
+                    final Rect ar = a != null ? new Rect(a.r) : null;
+                    final boolean aRtl = a != null && hasArabicScript(cleanScreenText(a.t));
+                    Bitmap bmp = frameBitmap();
+                    if (bmp == null) { endPreview(tok, ar); return; }
+                    TextRecognizer rec = recognizerFor(sourceLang());
+                    if (rec == null) rec = recognizerFor("en");
+                    rec.process(InputImage.fromBitmap(bmp, 0))
+                            .addOnSuccessListener(text -> {
+                                Rect box = null; double bd = Double.MAX_VALUE;
+                                for (Text.TextBlock b : text.getTextBlocks()) {
+                                    Rect r = b.getBoundingBox();
+                                    if (r == null) continue;
+                                    double d = dist(r, cx, cy);
+                                    if (d < bd) { bd = d; box = r; }
+                                }
+                                if (box != null && bd > dp(40)) box = null;
+                                Rect pick;
+                                if (ar != null && (box == null || aRtl || !Rect.intersects(box, ar))) pick = ar;
+                                else pick = box != null ? new Rect(box) : null;
+                                endPreview(tok, pick);
+                            })
+                            .addOnFailureListener(e -> endPreview(tok, ar));
+                } catch (Throwable t) {
+                    endPreview(tok, null);
+                }
+            });
+        } catch (Exception e) {
+            previewBusy = false;
+        }
     }
 
     // ───────────────────────── رها شدنِ ذره‌بین روی متن ─────────────────────────
@@ -1044,6 +1162,7 @@ public class MagnifierService extends Service {
 
     private void finish(final String message) {
         main.post(() -> {
+            hideHilite();
             busy = false;
             if (lens != null) lens.setBusy(false);
             toast(message);
@@ -1083,6 +1202,7 @@ public class MagnifierService extends Service {
     }
 
     private void showSelection(RectF box, ArrayList<ElemInfo> elems, String orig, String src, List<String[]> results) {
+        hideHilite();
         clearSelection();
         selBox = box;
         selSrc = src;
@@ -1126,18 +1246,43 @@ public class MagnifierService extends Service {
     private void placePopup() {
         if (popup == null || popupLp == null || selBox == null) return;
         int w = popupLp.width;
+        int pad = dp(6), gap = dp(8);
+        applyScrollMax();                                  // سقفِ ارتفاعِ بدنه را به پیش‌فرض برگردان؛ پایین‌تر در صورتِ نیاز کم می‌شود
         popup.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
         int h = popup.getMeasuredHeight();
-        int pad = dp(6), gap = dp(8);
         int left, top;
         if (popupFree) {                                   // جای دلخواهِ کاربر
             left = Math.max(0, Math.min(capW - w, popupFreeX));
             top = Math.max(0, Math.min(capH - h, popupFreeY));
         } else {
             left = Math.max(dp(12), Math.min(capW - w - dp(12), (int) (selBox.centerX() - w / 2f)));
-            if (selBox.bottom + pad + gap + h <= capH - dp(24)) top = (int) selBox.bottom + pad + gap;
-            else top = Math.max(dp(36), (int) selBox.top - pad - gap - h);
+            final int topMin = dp(36), botMax = capH - dp(24);
+            final int belowStart = (int) selBox.bottom + pad + gap;
+            final int aboveEnd = (int) selBox.top - pad - gap;
+            final int spaceBelow = botMax - belowStart;
+            final int spaceAbove = aboveEnd - topMin;
+            if (h <= spaceBelow) {
+                top = belowStart;
+            } else if (h <= spaceAbove) {
+                top = aboveEnd - h;
+            } else {
+                // جا برای کلِ کادر نیست: کادر نباید روی متنِ هایلایت‌شده بیفتد (وگرنه نمی‌شود روی لغت زد)
+                // و نباید از صفحه بیرون بزند (وگرنه دکمه‌های «افزودن به داستان / گرامر» دیده نمی‌شوند) ← بدنه‌ی اسکرولی کوتاه می‌شود.
+                final boolean useBelow = spaceBelow >= spaceAbove;
+                final int room = Math.max(useBelow ? spaceBelow : spaceAbove, dp(120));
+                final int extra = h - room;
+                if (extra > 0 && bodyScroll != null) {
+                    int cur = bodyScroll.getMeasuredHeight();
+                    bodyScroll.maxH = Math.max(dp(36), cur - extra);
+                    bodyScroll.requestLayout();
+                    popup.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                    h = popup.getMeasuredHeight();
+                }
+                if (useBelow) top = Math.min(belowStart, Math.max(topMin, capH - dp(8) - h));
+                else top = Math.max(topMin, aboveEnd - h);
+            }
         }
         popupLp.x = left;
         popupLp.y = top;
