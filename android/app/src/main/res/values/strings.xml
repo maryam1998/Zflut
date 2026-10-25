@@ -4,5 +4,5 @@
     <string name="title_activity_main">LingoLearn</string>
     <string name="package_name">com.linglearn.app</string>
     <string name="custom_url_scheme">com.linglearn.app</string>
-    <string name="speed_a11y_desc">برای دو کار: (۱) خواندنِ متنِ زیرِ ذره‌بین از روی صفحه، مخصوصاً فارسی و عربی که تشخیصِ تصویری نمی‌خواند؛ فقط وقتی ذره‌بین را رها می‌کنی. (۲) تغییرِ سرعتِ پخشِ یوتیوب از داخلِ حباب. هیچ اطلاعاتی ذخیره یا ارسال نمی‌شود.</string>
+    <string name="speed_a11y_desc">Used by the magnifier only: it reads the text under the magnifier directly from the screen, which is needed for Persian and Arabic because image recognition cannot read them. It runs only when you release the magnifier. No information is stored or sent.</string>
 </resources>

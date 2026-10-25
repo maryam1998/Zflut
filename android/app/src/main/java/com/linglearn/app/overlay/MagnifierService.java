@@ -772,6 +772,15 @@ public class MagnifierService extends Service {
         // زبانِ واقعیِ همین متن (نه فقط زبانِ ذخیره‌شده): «Este sonido…» با مبدأ en غلط ترجمه می‌شد
         try {
             String det = LangDetect.detect(orig);
+            if (det == null && best != null) {
+                // متنِ کوتاه («Me alegro que te haya gustado.»): تشخیصِ آفلاین نامطمئن بود → زبانی که خودِ ML Kit برای بلوک داده
+                try {
+                    String rl = best.getRecognizedLanguage();
+                    if (rl != null && !rl.isEmpty() && !"und".equals(rl)) {
+                        det = rl.split("-")[0].toLowerCase(Locale.ROOT);
+                    }
+                } catch (Throwable ignored) { }
+            }
             if (det != null && !det.equals(src)) src = det;
         } catch (Throwable ignored) { }
 
