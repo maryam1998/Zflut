@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../storage/big_story_store.dart';
 import '../storage/local_storage.dart';
+import '../storage/story_page_store.dart';
 
 const String _kStoriesKey = 'zflut-saved-stories-v1';
 
@@ -36,6 +37,10 @@ class SavedStory {
   /// بدنه (متن + ترجمه‌ها) در BigStoryStore است و در prefs فقط پیش‌نمایش مانده.
   final bool big;
 
+  /// عکسِ صفحه‌های PDF این داستان: نام‌هایی مثل «o3» (اصلیِ صفحه‌ی ۴) و «t3» (ترجمه‌شده‌ی آن).
+  /// خودِ عکس‌ها روی دیسک‌اند (StoryPageStore)، نه در prefs.
+  final List<String> images;
+
   const SavedStory({
     required this.id,
     required this.title,
@@ -49,6 +54,7 @@ class SavedStory {
     this.notes = '',
     this.favorite = false,
     this.big = false,
+    this.images = const [],
   });
 
   SavedStory copyWith({
@@ -59,6 +65,7 @@ class SavedStory {
     String? notes,
     bool? favorite,
     bool? big,
+    List<String>? images,
   }) =>
       SavedStory(
         id: id,
@@ -73,6 +80,7 @@ class SavedStory {
         notes: notes ?? this.notes,
         favorite: favorite ?? this.favorite,
         big: big ?? this.big,
+        images: images ?? this.images,
       );
 
   /// نسخه‌ی سبک برای prefs: بدونِ متنِ کامل و ترجمه‌ها (آن‌ها در BigStoryStore‌اند).
@@ -91,6 +99,7 @@ class SavedStory {
         'notes': notes,
         'favorite': favorite,
         'big': true,
+        if (images.isNotEmpty) 'images': images,
       };
 
   Map<String, dynamic> toJson() => {
@@ -105,6 +114,7 @@ class SavedStory {
         'translations': translations,
         'notes': notes,
         'favorite': favorite,
+        if (images.isNotEmpty) 'images': images,
       };
 
   factory SavedStory.fromJson(Map<String, dynamic> j) => SavedStory(
@@ -122,6 +132,9 @@ class SavedStory {
         notes: (j['notes'] ?? '').toString(),
         favorite: j['favorite'] == true,
         big: j['big'] == true,
+        images: [
+          for (final w in (j['images'] as List? ?? const [])) w.toString(),
+        ],
         translations: {
           if (j['translations'] is Map)
             for (final e in (j['translations'] as Map).entries)
@@ -242,6 +255,7 @@ class StoryLibraryNotifier extends StateNotifier<List<SavedStory>> {
     _pending.remove(id);
     _bodySig.remove(id);
     unawaited(BigStoryStore.instance.delete(id));
+    unawaited(StoryPageStore.deleteStory(id));
     _set(state.where((s) => s.id != id).toList());
   }
 }

@@ -43,6 +43,8 @@ import '../story/pdf_fullscreen_viewer.dart';
 import '../story/pdf_page_nav.dart';
 import '../story/pdf_save_tools.dart';
 import '../story/pdf_zoom_image.dart';
+import '../story/story_page_images.dart';
+import '../../core/storage/story_page_store.dart';
 import '../story/srt_translator_tool.dart';
 import '../story/story_audio_bar.dart';
 import '../story/story_reader_panel.dart';
@@ -2227,8 +2229,11 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           buf.write('\n\n');
         }
       }
+      _pdfSnack('در حال ذخیره‌ی عکسِ صفحه‌ها…');
       final ok = await _saveTextAsStory(buf.toString(),
-          title: _pdfBaseName, translate: true);
+          title: _pdfBaseName,
+          translate: true,
+          imagePages: [for (var p = 0; p < doc.pageCount; p++) p]);
       if (ok && mounted) setState(() => _pdfStorySavedDoc = doc);
       _pdfSnack(ok
           ? stTr(context, 'textSavedAll')
@@ -2304,6 +2309,14 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         bytes: png,
         ext: 'png',
       );
+      // همین صفحه (عکسِ اصلی + ترجمه + متن و ترجمه‌اش) در کتابخانه‌ی داستان‌ساز هم ذخیره می‌شود
+      if (ok && (text.trim().isNotEmpty || trans != null)) {
+        await _saveTextAsStory(
+            text.trim().isNotEmpty ? text : '$_pdfBaseName — ${page + 1}',
+            title: '$_pdfBaseName — صفحه‌ی ${page + 1}',
+            translate: text.trim().isNotEmpty,
+            imagePages: [page]);
+      }
       if (ok) _pdfSnack(stTr(context, 'savedOk'));
     } catch (e) {
       _pdfSnack(stTr(context, 'saveFail'));
@@ -2322,7 +2335,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       title: '$_pdfTitle — صفحه‌ی ${page + 1}',
       initial: mode,
       onSaveText: () => _saveTextAsStory(_pdfTexts[page] ?? '',
-          title: '$_pdfBaseName — صفحه‌ی ${page + 1}', translate: true),
+          title: '$_pdfBaseName — صفحه‌ی ${page + 1}',
+          translate: true,
+          imagePages: [page]),
     );
   }
 
@@ -2343,7 +2358,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       var t = _pdfTexts[page];
       t ??= await doc.pageText(page);
       final ok = await _saveTextAsStory(t,
-          title: '$_pdfBaseName — صفحه‌ی ${page + 1}', translate: true);
+          title: '$_pdfBaseName — صفحه‌ی ${page + 1}',
+          translate: true,
+          imagePages: [page]);
       _pdfSnack(ok
           ? stTr(context, 'textSavedPage')
           : stTr(context, 'noTextPage'));
@@ -2360,7 +2377,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           buf.write('\n\n');
         }
       }
-      final ok = await _saveTextAsStory(buf.toString(), title: _pdfBaseName);
+      final ok = await _saveTextAsStory(buf.toString(),
+          title: _pdfBaseName,
+          imagePages: [for (var p = 0; p < doc.pageCount; p++) p]);
       _pdfSnack(ok
           ? stTr(context, 'textSavedAll')
           : stTr(context, 'noTextFound'));
@@ -2372,11 +2391,18 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   Future<bool> _saveTextAsStory(String raw,
-      {required String title, bool translate = false}) async {
+      {required String title,
+      bool translate = false,
+      List<int> imagePages = const []}) async {
     if (raw.trim().isEmpty) return false;
     final lang = _detectLang(raw, _readingLang());
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    // 🖼 عکسِ صفحه‌ها (اصلی + ترجمه‌شده) کنارِ متنِ داستان ذخیره می‌شود
+    final images = imagePages.isEmpty
+        ? const <String>[]
+        : await _persistPdfPageImages(id, imagePages);
     final story = SavedStory(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      id: id,
       title: title,
       text: _chunkParas(raw),
       langCode: lang,
@@ -2384,10 +2410,36 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       contentType: 'reading',
       words: const [],
       createdAt: DateTime.now(),
+      images: images,
     );
     ref.read(storyLibraryProvider.notifier).add(story);
     if (translate) unawaited(_translateStory(story));
     return true;
+  }
+
+  /// عکسِ اصلیِ صفحه‌ها (+ عکسِ ترجمه‌شده‌ی آن‌هایی که ترجمه‌شان آماده است) را روی دیسک می‌نویسد.
+  /// نام‌های ذخیره‌شده را برمی‌گرداند (مثل o0, t0, o1 …).
+  Future<List<String>> _persistPdfPageImages(String id, List<int> pages) async {
+    final doc = _pdfDoc;
+    if (doc == null) return const [];
+    final out = <String>[];
+    for (final p in pages) {
+      if (p < 0 || p >= doc.pageCount) continue;
+      try {
+        final o = _pdfImages[p] ?? await doc.renderPage(p, scale: 2.0);
+        if (!mounted || _pdfDoc != doc) break;
+        if (await StoryPageStore.put(id, StoryPageStore.origName(p), o)) {
+          out.add(StoryPageStore.origName(p));
+        }
+        final t = (_pdfCurTransFor == p ? _pdfCurTrans : null) ??
+            await _pdfEngine?.imageFor(p);
+        if (t != null &&
+            await StoryPageStore.put(id, StoryPageStore.transName(p), t)) {
+          out.add(StoryPageStore.transName(p));
+        }
+      } catch (_) {}
+    }
+    return out;
   }
 
   Future<String?> _askChoice(String title, Map<String, String> options) {
@@ -2848,11 +2900,27 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       onParagraphRetranslated: (lang, idx, t) =>
           _libParaTr(s.id, lang, idx, t),
     );
-    if (!bigBook || shown >= allParas.length) return panel;
+    final pagePics = s.images.isEmpty
+        ? null
+        : StoryPageImages(
+            key: ValueKey('pics-${s.id}'),
+            storyId: s.id,
+            title: s.title,
+            images: s.images,
+            colors: c,
+          );
+    if (!bigBook || shown >= allParas.length) {
+      if (pagePics == null) return panel;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [panel, pagePics],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         panel,
+        if (pagePics != null) pagePics,
         Center(
           child: HopeTextAction(
             label: 'نمایش بیشتر ($shown از ${allParas.length} پاراگراف)',
