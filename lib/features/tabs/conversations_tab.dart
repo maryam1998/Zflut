@@ -29,7 +29,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   String? _activeTopic;
   int? _openScenario;
   String _query = '';
-  String _level = 'all';
+  Set<String> _levels = <String>{};
+
+  bool _lvOk(String l) => _levels.isEmpty || _levels.contains(l);
   int _rangeFrom = 1;
   int _rangeTo = 60;
 
@@ -114,10 +116,10 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 
     final filtered = topics.where((t) {
       // فیلتر سطح: موضوعی که دست‌کم یک جمله‌ی هم‌سطح دارد
-      if (_level != 'all' &&
+      if (_levels.isNotEmpty &&
           !t.scenarios.any((s) =>
-              s.speakerA.any((l) => l.level == _level) ||
-              s.speakerB.any((l) => l.level == _level))) {
+              s.speakerA.any((l) => _lvOk(l.level)) ||
+              s.speakerB.any((l) => _lvOk(l.level)))) {
         return false;
       }
       if (_query.trim().isEmpty) return true;
@@ -145,10 +147,10 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   /// ردیف فیلتر سطح (A1–C2) بالای لیست موضوع‌ها.
   Widget _levelBar() => Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-        child: LevelChips(
-          selected: _level,
-          onSelect: (l) => setState(() {
-            _level = l;
+        child: LevelChipsMulti(
+          selected: _levels,
+          onChanged: (v) => setState(() {
+            _levels = v;
             _rangeFrom = 1;
             _rangeTo = 60;
           }),
@@ -266,10 +268,10 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           ? const <SyncItem>[]
           : [
               for (var i = 0; i < openSc.speakerA.length; i++)
-                if (_level == 'all' || openSc.speakerA[i].level == _level)
+                if (_lvOk(openSc.speakerA[i].level))
                   SyncItem('a$i', openSc.speakerA[i].en),
               for (var i = 0; i < openSc.speakerB.length; i++)
-                if (_level == 'all' || openSc.speakerB[i].level == _level)
+                if (_lvOk(openSc.speakerB[i].level))
                   SyncItem('b$i', openSc.speakerB[i].en),
             ],
       child: SingleChildScrollView(
@@ -319,9 +321,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         const SizedBox(height: 12),
         ...List.generate(topic.scenarios.length, (i) {
           final sc = topic.scenarios[i];
-          if (_level != 'all' &&
-              !(sc.speakerA.any((l) => l.level == _level) ||
-                  sc.speakerB.any((l) => l.level == _level))) {
+          if (_levels.isNotEmpty &&
+              !(sc.speakerA.any((l) => _lvOk(l.level)) ||
+                  sc.speakerB.any((l) => _lvOk(l.level)))) {
             return const SizedBox.shrink();
           }
           final isOpen = _openScenario == i;
@@ -329,7 +331,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           final isRead = scenarioRead.contains(readKey);
           return _ScenarioCard(
             scenario: sc,
-            levelFilter: _level,
+            levelFilter: _levels,
             isOpen: isOpen,
             isRead: isRead,
             onToggle: () =>
@@ -469,7 +471,7 @@ class _TopicCard extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 class _ScenarioCard extends StatelessWidget {
   final ConversationScenario scenario;
-  final String levelFilter;
+  final Set<String> levelFilter;
   final bool isOpen, isRead;
   final VoidCallback onToggle, onToggleRead;
 
@@ -585,7 +587,7 @@ class _SpeakerBox extends ConsumerWidget {
   /// 'a' (می‌شنوی) یا 'b' (می‌گی) — شناسه‌ی هر خط = '$idPrefix$index'
   final String idPrefix;
   final Color color;
-  final String levelFilter;
+  final Set<String> levelFilter;
   final List<ConversationLine> lines;
 
   const _SpeakerBox({
@@ -603,7 +605,7 @@ class _SpeakerBox extends ConsumerWidget {
     // فقط جمله‌های سطحِ انتخاب‌شده (شناسه‌ها همان ایندکسِ اصلی می‌مانند)
     final shown = <int>[
       for (var i = 0; i < lines.length; i++)
-        if (levelFilter == 'all' || lines[i].level == levelFilter) i
+        if (levelFilter.isEmpty || levelFilter.contains(lines[i].level)) i
     ];
     if (shown.isEmpty) return const SizedBox.shrink();
 

@@ -145,7 +145,7 @@ class ReviewDashboard extends ConsumerWidget {
                   langs: langs,
                   onLevel: (v) => ref
                       .read(reviewFilterProvider.notifier)
-                      .update((s) => s.withLevel(v)),
+                      .update((s) => s.withLevels(v)),
                   onLang: (v) => ref
                       .read(reviewFilterProvider.notifier)
                       .update((s) => s.withLang(v)),

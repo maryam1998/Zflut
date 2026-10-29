@@ -34,8 +34,8 @@ extension SortModeL10n on SortMode {
 
 @immutable
 class WordsFilterState {
-  /// سطح انتخاب‌شده — 'all' یا 'A1'..'C2'
-  final String level;
+  /// سطح‌های انتخاب‌شده — خالی = «همه سطوح»؛ وگرنه هر تعداد از A1..C2
+  final Set<String> levels;
 
   /// متن جستجو (خالی = بدون فیلتر)
   final String query;
@@ -44,18 +44,24 @@ class WordsFilterState {
   final SortMode sort;
 
   const WordsFilterState({
-    this.level = 'all',
+    this.levels = const <String>{},
     this.query = '',
     this.sort = SortMode.defaultOrder,
   });
 
+  /// آیا سطحِ [l] با فیلترِ فعلی می‌خواند؟ (فیلتر خالی = همه)
+  bool matchesLevel(String l) => levels.isEmpty || levels.contains(l);
+
+  /// امضای متنیِ سطح‌ها (برای تشخیصِ تغییر)
+  String get levelsSig => (levels.toList()..sort()).join(',');
+
   WordsFilterState copyWith({
-    String? level,
+    Set<String>? levels,
     String? query,
     SortMode? sort,
   }) {
     return WordsFilterState(
-      level: level ?? this.level,
+      levels: levels ?? this.levels,
       query: query ?? this.query,
       sort: sort ?? this.sort,
     );

@@ -48,8 +48,8 @@ class DataRepository {
     var list = [..._words];
 
     // ۱. فیلتر سطح
-    if (filter.level != 'all') {
-      list = list.where((w) => w.level == filter.level).toList();
+    if (filter.levels.isNotEmpty) {
+      list = list.where((w) => filter.levels.contains(w.level)).toList();
     }
 
     // ۲. جستجو در انگلیسی، فارسی، و همه‌ی ترجمه‌ها

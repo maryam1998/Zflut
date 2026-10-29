@@ -52,7 +52,7 @@ class ReviewSubFilters extends StatelessWidget {
 
   /// زبان‌هایی که در جعبه لغت دارند
   final List<String> langs;
-  final ValueChanged<String?> onLevel;
+  final ValueChanged<Set<String>> onLevel;
   final ValueChanged<String?> onLang;
   final ValueChanged<ReviewSource> onSource;
 
@@ -120,11 +120,11 @@ class ReviewSubFilters extends StatelessWidget {
           row(
             context.l10n.rv_level,
             const [],
-            custom: LevelChips(
-              selected: filter.level ?? 'all',
+            custom: LevelChipsMulti(
+              selected: filter.levels,
               allLabel: context.l10n.review_filter_all,
               height: 34,
-              onSelect: (l) => onLevel(l == 'all' ? null : l),
+              onChanged: onLevel,
             ),
           ),
           const SizedBox(height: 8),

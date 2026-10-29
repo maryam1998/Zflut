@@ -143,8 +143,8 @@ enum ReviewSource { any, story, words }
 class ReviewFilterState {
   final ReviewFilter chip;
 
-  /// 'A1'..'C2' یا null = همه
-  final String? level;
+  /// هر تعداد از 'A1'..'C2'؛ خالی = همه
+  final Set<String> levels;
 
   /// کد زبان یا null = همه
   final String? lang;
@@ -152,19 +152,19 @@ class ReviewFilterState {
 
   const ReviewFilterState({
     this.chip = ReviewFilter.today,
-    this.level,
+    this.levels = const <String>{},
     this.lang,
     this.source = ReviewSource.any,
   });
 
   ReviewFilterState withChip(ReviewFilter v) =>
-      ReviewFilterState(chip: v, level: level, lang: lang, source: source);
-  ReviewFilterState withLevel(String? v) =>
-      ReviewFilterState(chip: chip, level: v, lang: lang, source: source);
+      ReviewFilterState(chip: v, levels: levels, lang: lang, source: source);
+  ReviewFilterState withLevels(Set<String> v) =>
+      ReviewFilterState(chip: chip, levels: v, lang: lang, source: source);
   ReviewFilterState withLang(String? v) =>
-      ReviewFilterState(chip: chip, level: level, lang: v, source: source);
+      ReviewFilterState(chip: chip, levels: levels, lang: v, source: source);
   ReviewFilterState withSource(ReviewSource v) =>
-      ReviewFilterState(chip: chip, level: level, lang: lang, source: v);
+      ReviewFilterState(chip: chip, levels: levels, lang: lang, source: v);
 }
 
 final reviewFilterProvider =
@@ -225,7 +225,10 @@ final filteredReviewProvider = Provider<List<ReviewItem>>((ref) {
     if (f.lang != null && e.langCode != f.lang) return false;
     if (f.source == ReviewSource.story && e.storyId == null) return false;
     if (f.source == ReviewSource.words && e.storyId != null) return false;
-    if (f.level != null && info[e.key]?.level != f.level) return false;
+    if (f.levels.isNotEmpty) {
+      final lv = info[e.key]?.level;
+      if (lv == null || !f.levels.contains(lv)) return false;
+    }
     return true;
   }).toList();
   out.sort(_byDue);

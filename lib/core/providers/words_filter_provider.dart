@@ -7,7 +7,8 @@ import 'conversation_provider.dart';
 class WordsFilterNotifier extends StateNotifier<WordsFilterState> {
   WordsFilterNotifier() : super(const WordsFilterState());
 
-  void setLevel(String level) => state = state.copyWith(level: level);
+  void setLevels(Set<String> levels) =>
+      state = state.copyWith(levels: Set<String>.unmodifiable(levels));
   void setQuery(String q) => state = state.copyWith(query: q);
   void setSort(SortMode sort) => state = state.copyWith(sort: sort);
   void reset() => state = const WordsFilterState();
@@ -25,13 +26,13 @@ final filteredDailyWordsProvider = Provider<List<DailyWord>>((ref) {
   final filter = ref.watch(wordsFilterProvider);
 
   // Fast path — بدون فیلتر
-  if (filter.level == 'all' && filter.query.trim().isEmpty) {
+  if (filter.levels.isEmpty && filter.query.trim().isEmpty) {
     return all;
   }
 
   final q = filter.query.trim().toLowerCase();
   return all.where((w) {
-    if (filter.level != 'all' && w.level != filter.level) return false;
+    if (!filter.matchesLevel(w.level)) return false;
     if (q.isNotEmpty) {
       if (!w.en.toLowerCase().contains(q) && !w.fa.contains(q)) return false;
     }

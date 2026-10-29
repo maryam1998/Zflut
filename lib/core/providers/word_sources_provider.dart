@@ -18,9 +18,9 @@ final vocabInUseWordsProvider = FutureProvider<List<DailyWord>>(
 
 List<DailyWord> _applyFilter(List<DailyWord> all, WordsFilterState f) {
   final q = f.query.trim().toLowerCase();
-  if (f.level == 'all' && q.isEmpty) return all;
+  if (f.levels.isEmpty && q.isEmpty) return all;
   return all.where((w) {
-    if (f.level != 'all' && w.level != f.level) return false;
+    if (!f.matchesLevel(w.level)) return false;
     if (q.isNotEmpty &&
         !w.en.toLowerCase().contains(q) &&
         !w.fa.contains(q)) {

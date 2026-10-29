@@ -148,7 +148,7 @@ final myDictionaryWordsProvider = Provider<List<DailyWord>>((ref) {
 });
 
 bool _matches(DailyWord w, WordsFilterState f) {
-  if (f.level != 'all' && w.level != f.level) return false;
+  if (!f.matchesLevel(w.level)) return false;
   final q = f.query.trim().toLowerCase();
   if (q.isEmpty) return true;
   return w.en.toLowerCase().contains(q) ||

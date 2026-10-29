@@ -57,7 +57,7 @@ final favoritedWordsProvider = Provider<List<DailyWord>>((ref) {
     for (final w in list) {
       final id = w.sid;
       if (!favs.contains(id) || !seen.add(id)) continue;
-      if (filter.level != 'all' && w.level != filter.level) continue;
+      if (!filter.matchesLevel(w.level)) continue;
       if (q.isNotEmpty &&
           !w.en.toLowerCase().contains(q) &&
           !w.fa.contains(q) &&

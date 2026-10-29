@@ -53,9 +53,9 @@ class _FilterBarState extends ConsumerState<FilterBar> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (widget.showLevels) ...[
-            LevelChips(
-              selected: filter.level,
-              onSelect: notifier.setLevel,
+            LevelChipsMulti(
+              selected: filter.levels,
+              onChanged: notifier.setLevels,
             ),
             const SizedBox(height: 10),
           ],

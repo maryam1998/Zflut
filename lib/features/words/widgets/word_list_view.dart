@@ -170,7 +170,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
     }
   }
 
-  String _sigLevel = 'all';
+  String _sigLevel = '';
   String _sigQuery = '';
 
   // برای ثابت‌ماندنِ revision پلیر (identical) تا هر build دوباره ثبت نشود
@@ -197,8 +197,8 @@ class _WordListViewState extends ConsumerState<WordListView> {
     final readNotifier = ref.read(readIdsProvider(widget.listId).notifier);
 
     // با عوض‌شدنِ سطح/جستجو، بازه به ابتدای لیست برمی‌گردد (مثل Hope)
-    if (filter.level != _sigLevel || filter.query != _sigQuery) {
-      _sigLevel = filter.level;
+    if (filter.levelsSig != _sigLevel || filter.query != _sigQuery) {
+      _sigLevel = filter.levelsSig;
       _sigQuery = filter.query;
       _resetRange();
     }
@@ -245,9 +245,9 @@ class _WordListViewState extends ConsumerState<WordListView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  LevelChips(
-                    selected: filter.level,
-                    onSelect: notifier.setLevel,
+                  LevelChipsMulti(
+                    selected: filter.levels,
+                    onChanged: notifier.setLevels,
                   ),
                   const SizedBox(height: 8),
                   Align(
