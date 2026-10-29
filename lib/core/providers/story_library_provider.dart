@@ -9,6 +9,15 @@ import '../storage/story_page_store.dart';
 
 const String _kStoriesKey = 'zflut-saved-stories-v1';
 
+/// نسخه‌ی پشتیبانِ سبک (هم در دستگاه و هم در حساب ابری می‌ماند) و فهرست شناسه‌ی
+/// داستان‌هایی که کاربر عمداً حذف کرده — تا داستانی بی‌صدا گم نشود.
+const String _kStoriesBackupKey = 'zflut-saved-stories-bak-v1';
+const String _kStoriesDeletedKey = 'zflut-saved-stories-del-v1';
+const int _kBackupFullLimit = 20000;
+
+List<String> _strList(dynamic v) =>
+    v is List ? [for (final w in v) w.toString()] : <String>[];
+
 /// داستان‌های بلندتر از این (حرف) بدنه‌شان در BigStoryStore نگه‌داری می‌شود، نه در prefs.
 const int _kBigTextChars = 120000;
 const int _kPreviewChars = 3000;
@@ -124,23 +133,17 @@ class SavedStory {
         langCode: (j['langCode'] ?? 'en').toString(),
         level: (j['level'] ?? 'B1').toString(),
         contentType: (j['contentType'] ?? 'general').toString(),
-        words: [
-          for (final w in (j['words'] as List? ?? const [])) w.toString(),
-        ],
+        words: _strList(j['words']),
         createdAt:
             DateTime.tryParse((j['createdAt'] ?? '').toString()) ?? DateTime.now(),
         notes: (j['notes'] ?? '').toString(),
         favorite: j['favorite'] == true,
         big: j['big'] == true,
-        images: [
-          for (final w in (j['images'] as List? ?? const [])) w.toString(),
-        ],
+        images: _strList(j['images']),
         translations: {
           if (j['translations'] is Map)
             for (final e in (j['translations'] as Map).entries)
-              e.key.toString(): [
-                for (final v in (e.value as List? ?? const [])) v.toString(),
-              ],
+              e.key.toString(): _strList(e.value),
         },
       );
 }
@@ -155,26 +158,56 @@ class StoryLibraryNotifier extends StateNotifier<List<SavedStory>> {
   /// امضای آخرین بدنه‌ی نوشته‌شده برای هر داستان (برای ننوشتنِ دوباره‌ی بی‌تغییرها).
   final Map<String, int> _bodySig = <String, int>{};
 
+  /// شناسه‌ی داستان‌هایی که کاربر خودش حذف کرده (برای بازیابیِ نسخه‌ی پشتیبان).
+  final Set<String> _deleted = <String>{};
+
   Future<void> _chain = Future<void>.value();
 
   StoryLibraryNotifier(this._storage) : super(_read(_storage)) {
     for (final s in state) {
       if (s.big) _pending.add(s.id);
     }
+    _deleted.addAll(_readDeleted(_storage));
     if (_pending.isNotEmpty) unawaited(_hydrate());
+    // داستانی از نسخه‌ی پشتیبان برگشته که در فهرست اصلی نبود → دوباره در اصلی نوشته شود
+    final mainIds = _rawItems(_storage, _kStoriesKey)
+        .map((e) => (e['id'] ?? '').toString())
+        .toSet();
+    if (state.any((e) => !mainIds.contains(e.id))) _set(state);
+  }
+
+  static List<Map<String, dynamic>> _rawItems(LocalStorage s, String key) {
+    final raw = s.readJson(key)['items'];
+    if (raw is! List) return const [];
+    return [
+      for (final e in raw)
+        if (e is Map) Map<String, dynamic>.from(e),
+    ];
+  }
+
+  static Set<String> _readDeleted(LocalStorage s) {
+    final raw = s.readJson(_kStoriesDeletedKey)['ids'];
+    return raw is List ? {for (final e in raw) e.toString()} : <String>{};
   }
 
   static List<SavedStory> _read(LocalStorage s) {
-    final raw = s.readJson(_kStoriesKey)['items'];
-    if (raw is! List) return const [];
     final out = <SavedStory>[];
-    for (final e in raw) {
-      if (e is Map) {
+    final seen = <String>{};
+    final deleted = _readDeleted(s);
+    void take(List<Map<String, dynamic>> raws, {required bool fromBackup}) {
+      for (final e in raws) {
         try {
-          out.add(SavedStory.fromJson(Map<String, dynamic>.from(e)));
+          final st = SavedStory.fromJson(e);
+          if (st.id.isNotEmpty && seen.contains(st.id)) continue;
+          if (fromBackup && deleted.contains(st.id)) continue;
+          seen.add(st.id);
+          out.add(st);
         } catch (_) {}
       }
     }
+
+    take(_rawItems(s, _kStoriesKey), fromBackup: false);
+    take(_rawItems(s, _kStoriesBackupKey), fromBackup: true);
     return out;
   }
 
@@ -210,6 +243,7 @@ class StoryLibraryNotifier extends StateNotifier<List<SavedStory>> {
   }
 
   void _set(List<SavedStory> next) {
+    _deleted.removeAll(next.map((e) => e.id)); // دوباره ذخیره شد → دیگر «حذف‌شده» نیست
     state = next;
     final snapshot = next;
     _chain = _chain.then((_) => _persist(snapshot)).catchError((_) {});
@@ -238,6 +272,16 @@ class StoryLibraryNotifier extends StateNotifier<List<SavedStory>> {
       items.add(ok ? s.toLeanJson() : s.toJson());
     }
     await _storage.writeJson(_kStoriesKey, {'items': items});
+    // نسخه‌ی پشتیبانِ سبک
+    final bak = <Map<String, dynamic>>[
+      for (final s in list)
+        (s.text.length <= _kBackupFullLimit && !_pending.contains(s.id))
+            ? s.toJson()
+            : s.toLeanJson(),
+    ];
+    await _storage.writeJson(_kStoriesBackupKey, {'items': bak});
+    await _storage.writeJson(
+        _kStoriesDeletedKey, {'ids': _deleted.toList()});
   }
 
   /// جدیدترین اول.
@@ -252,6 +296,7 @@ class StoryLibraryNotifier extends StateNotifier<List<SavedStory>> {
       ]);
 
   void remove(String id) {
+    _deleted.add(id);
     _pending.remove(id);
     _bodySig.remove(id);
     unawaited(BigStoryStore.instance.delete(id));

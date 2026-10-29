@@ -60,6 +60,56 @@ class LevelChips extends StatelessWidget {
   }
 }
 
+/// انتخابِ چندتاییِ سطح‌ها (مثلاً A1 و B1 و C2 با هم).
+/// [selected] خالی = «همه سطوح». زدنِ یک سطح آن را اضافه/برمی‌دارد.
+class LevelChipsMulti extends StatelessWidget {
+  final Set<String> selected;
+  final ValueChanged<Set<String>> onChanged;
+  final double height;
+  final String? allLabel;
+
+  const LevelChipsMulti({
+    super.key,
+    required this.selected,
+    required this.onChanged,
+    this.height = 38,
+    this.allLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final levels = <String>['all', ...kCefrLevels];
+    return SizedBox(
+      height: height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: levels.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 7),
+        itemBuilder: (_, i) {
+          final lvl = levels[i];
+          final isAll = lvl == 'all';
+          return Center(
+            child: LevelChip(
+              level: lvl,
+              active: isAll ? selected.isEmpty : selected.contains(lvl),
+              allLabel: allLabel,
+              onTap: () {
+                if (isAll) {
+                  onChanged(<String>{});
+                } else {
+                  final next = <String>{...selected};
+                  if (!next.remove(lvl)) next.add(lvl);
+                  onChanged(next);
+                }
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class LevelChip extends StatelessWidget {
   final String level; // 'all' یا A1..C2
   final bool active;

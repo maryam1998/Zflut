@@ -306,7 +306,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   final Map<String, int> _lastScrolled = {};
   final Map<String, List<GlobalKey>> _paraKeys = {};
 
-  String _libLevel = 'all';
+  Set<String> _libLevels = <String>{}; // خالی = همه سطوح
   final _libSearch = TextEditingController();
   bool _libFavOnly = false;
   String? _openStoryId;
@@ -3083,7 +3083,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final q = _libSearch.text.trim().toLowerCase();
     final shown = stories.where((s) {
       if (_libFavOnly && stories.length > 1 && !s.favorite) return false;
-      if (_libLevel != 'all' && s.level != _libLevel) return false;
+      if (_libLevels.isNotEmpty && !_libLevels.contains(s.level)) return false;
       if (q.isEmpty) return true;
       return s.title.toLowerCase().contains(q) ||
           s.text.toLowerCase().contains(q) ||
@@ -3156,9 +3156,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           ],
         ),
       // سطح‌ها همیشه نشان داده می‌شوند (مثل LevelFilterRow در Hope)
-      LevelChips(
-        selected: _libLevel,
-        onSelect: (lv) => setState(() => _libLevel = lv),
+      LevelChipsMulti(
+        selected: _libLevels,
+        onChanged: (v) => setState(() => _libLevels = v),
       ),
       if (stories.isEmpty)
         HopeEmptyText(context.l10n.library_empty)
