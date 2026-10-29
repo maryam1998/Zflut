@@ -33,6 +33,11 @@ const String _kDeleted = 'zflut-cloud-deleted-packs-v1';
 const String _kDismissed = 'zflut-cloud-dismissed-packs-v1';
 const String _kTable = 'user_sync';
 
+/// داده‌های کاربر (داستان‌ها، لغات، مثال‌های هوش مصنوعی و ...) فقط روی خودِ گوشی
+/// می‌مانند و به Supabase نمی‌روند / از آن برنمی‌گردند. (Supabase فقط برای ورود
+/// با حساب است.) اگر روزی سرور داشتی، این را true کن.
+const bool _kSyncUserData = false;
+
 /// مدل‌هایی که در حساب هستند ولی روی این دستگاه دانلود نشده‌اند (برای دیالوگِ بازیابی).
 final missingPacksProvider = StateProvider<List<String>>((ref) => const <String>[]);
 
@@ -301,21 +306,16 @@ class CloudSync with WidgetsBindingObserver {
     _deviceId(meta);
     var applied = false;
 
-    if (dataRow != null) {
+    if (_kSyncUserData && dataRow != null) {
       final cloudAt = DateTime.tryParse('${dataRow['updated_at']}');
       final lastSync = DateTime.tryParse('${meta['lastSyncAt']}');
       final sameUser = meta['userId'] == uid;
       final cloudNewer = _cloudIsNewer(cloudAt, lastSync);
 
       if (!sameUser || cloudNewer) {
-        // حسابِ دیگری قبلاً روی این دستگاه بوده: دادهٔ او با حساب جدید قاطی نشود.
-        if (meta['userId'] != null && !sameUser) {
-          final old = _sp.getKeys().where(_syncable).toList();
-          for (final k in old) {
-            await _sp.remove(k);
-          }
-          await DurableStore.instance.removeKeys(old);
-        }
+        // ⚠️ قبلاً اینجا با عوض شدنِ حساب، همه‌ی داده‌ی محلی پاک می‌شد (و نسخه‌ی
+        // دائمی‌اش هم). این دقیقاً باعثِ گم شدنِ داستان‌ها و مثال‌ها بود؛ حالا
+        // هیچ‌وقت چیزی پاک نمی‌شود و فقط ادغام می‌شود.
         applied = await _applyData(dataRow['value']);
         meta['lastSyncAt'] = cloudAt?.toUtc().toIso8601String();
         // بعد از ادغام، نسخه‌ی محلی ممکن است از ابر کامل‌تر باشد ← یک‌بار ارسال شود
@@ -397,9 +397,9 @@ class CloudSync with WidgetsBindingObserver {
       final deviceId = _deviceId(meta);
       final now = DateTime.now().toUtc().toIso8601String();
 
-      var data = _collectData();
-      var h = _fnv1a(jsonEncode(data)).toString();
-      if (force || meta['lastHash'] != h) {
+      var data = _kSyncUserData ? _collectData() : <String, String>{};
+      var h = _kSyncUserData ? _fnv1a(jsonEncode(data)).toString() : '';
+      if (_kSyncUserData && (force || meta['lastHash'] != h)) {
         // ۱) اگر بعد از آخرین همگام‌سازیِ ما چیزی در ابر عوض شده (دستگاهِ دیگر یا
         //    بکاپِ قدیمیِ همین دستگاه)، اول ادغام کن؛ بازنویسی نکن.
         final heads = await c
