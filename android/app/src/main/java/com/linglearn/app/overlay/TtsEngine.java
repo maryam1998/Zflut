@@ -296,7 +296,7 @@ final class TtsEngine {
     /** longText=true (جمله‌ی بلند/چندجمله‌ای): مکثِ آخر و مکثِ وسطِ صدا کوتاه‌تر می‌شود. */
     private static float[] trimSilence(float[] x, int sr, boolean longText) {
         if (x == null || x.length == 0 || sr <= 0) return x;
-        final float th = 0.008f;
+        final float th = 0.02f;
         int first = -1, last = -1;
         for (int i = 0; i < x.length; i++) {
             float v = x[i] < 0 ? -x[i] : x[i];
@@ -304,7 +304,7 @@ final class TtsEngine {
         }
         if (first < 0) return x;                       // کاملاً سکوت: دست نزن
         int from = Math.max(0, first - sr * 30 / 1000);
-        int to = Math.min(x.length, last + 1 + sr * (longText ? 35 : 90) / 1000);
+        int to = Math.min(x.length, last + 1 + sr * (longText ? 30 : 60) / 1000);
         float[] y = (from == 0 && to == x.length) ? x : java.util.Arrays.copyOfRange(x, from, to);
         return capInnerSilence(y, sr, longText);
     }
@@ -314,8 +314,8 @@ final class TtsEngine {
      * (با محوِ نرم) کوتاه می‌شود. مدل‌های Piper گاهی بعد از علائمِ نگارشی مکثِ چند‌ثانیه‌ای می‌سازند.
      */
     private static float[] capInnerSilence(float[] x, int sr, boolean longText) {
-        final float th = 0.008f;
-        final int maxGap = sr * (longText ? 110 : 250) / 1000;
+        final float th = 0.02f;
+        final int maxGap = sr * (longText ? 80 : 150) / 1000;
         final int minRun = maxGap + sr * (longText ? 30 : 40) / 1000;   // فقط سکوتِ واقعاً بلند دست می‌خورد
         final int fade = Math.max(1, sr * 8 / 1000);
         float[] out = new float[x.length];
@@ -579,7 +579,7 @@ final class TtsEngine {
             // توی حالتِ STREAM یعنی «هرچی تو بافره تا آخر پخش بشه» (drain).
             if (!cancelled && ok && started) {
                 try { track.stop(); } catch (Throwable ignored) {}
-                long deadline = SystemClock.uptimeMillis() + (frames * 1000L / sampleRate) + 1500;
+                long deadline = SystemClock.uptimeMillis() + (frames * 1000L / sampleRate) + 400;
                 while (SystemClock.uptimeMillis() < deadline) {
                     if (epoch.get() != myEpoch || released) { cancelled = true; break; }
                     long head = track.getPlaybackHeadPosition() & 0xFFFFFFFFL;

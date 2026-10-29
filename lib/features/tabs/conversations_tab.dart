@@ -266,9 +266,11 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           ? const <SyncItem>[]
           : [
               for (var i = 0; i < openSc.speakerA.length; i++)
-                SyncItem('a$i', openSc.speakerA[i].en),
+                if (_level == 'all' || openSc.speakerA[i].level == _level)
+                  SyncItem('a$i', openSc.speakerA[i].en),
               for (var i = 0; i < openSc.speakerB.length; i++)
-                SyncItem('b$i', openSc.speakerB[i].en),
+                if (_level == 'all' || openSc.speakerB[i].level == _level)
+                  SyncItem('b$i', openSc.speakerB[i].en),
             ],
       child: SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 90),
@@ -317,11 +319,17 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         const SizedBox(height: 12),
         ...List.generate(topic.scenarios.length, (i) {
           final sc = topic.scenarios[i];
+          if (_level != 'all' &&
+              !(sc.speakerA.any((l) => l.level == _level) ||
+                  sc.speakerB.any((l) => l.level == _level))) {
+            return const SizedBox.shrink();
+          }
           final isOpen = _openScenario == i;
           final readKey = '${topic.topic}::$i';
           final isRead = scenarioRead.contains(readKey);
           return _ScenarioCard(
             scenario: sc,
+            levelFilter: _level,
             isOpen: isOpen,
             isRead: isRead,
             onToggle: () =>
@@ -461,11 +469,13 @@ class _TopicCard extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 class _ScenarioCard extends StatelessWidget {
   final ConversationScenario scenario;
+  final String levelFilter;
   final bool isOpen, isRead;
   final VoidCallback onToggle, onToggleRead;
 
   const _ScenarioCard({
     required this.scenario,
+    required this.levelFilter,
     required this.isOpen,
     required this.isRead,
     required this.onToggle,
@@ -551,12 +561,14 @@ class _ScenarioCard extends StatelessWidget {
                   title: context.l10n.dialogs_you_hear,
                   idPrefix: 'a',
                   color: c.teal,
+                  levelFilter: levelFilter,
                   lines: scenario.speakerA),
             if (scenario.speakerB.isNotEmpty)
               _SpeakerBox(
                   title: context.l10n.dialogs_you_say,
                   idPrefix: 'b',
                   color: c.gold,
+                  levelFilter: levelFilter,
                   lines: scenario.speakerB),
             const SizedBox(height: 10),
           ],
@@ -573,18 +585,27 @@ class _SpeakerBox extends ConsumerWidget {
   /// 'a' (می‌شنوی) یا 'b' (می‌گی) — شناسه‌ی هر خط = '$idPrefix$index'
   final String idPrefix;
   final Color color;
+  final String levelFilter;
   final List<ConversationLine> lines;
 
   const _SpeakerBox({
     required this.title,
     required this.idPrefix,
     required this.color,
+    required this.levelFilter,
     required this.lines,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
+
+    // فقط جمله‌های سطحِ انتخاب‌شده (شناسه‌ها همان ایندکسِ اصلی می‌مانند)
+    final shown = <int>[
+      for (var i = 0; i < lines.length; i++)
+        if (levelFilter == 'all' || lines[i].level == levelFilter) i
+    ];
+    if (shown.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
@@ -608,10 +629,8 @@ class _SpeakerBox extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          ...List.generate(
-            lines.length,
-            (i) => _LineRow(line: lines[i], id: '$idPrefix$i'),
-          ),
+          for (final i in shown)
+            _LineRow(line: lines[i], id: '$idPrefix$i'),
         ],
       ),
     );
