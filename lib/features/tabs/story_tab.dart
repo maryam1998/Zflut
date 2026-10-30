@@ -402,13 +402,43 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     });
     var word = raw;
     try {
-      final t = (await ref.read(translationServiceProvider).translate(
-                text: raw,
-                targetLang: lang,
-                sourceLang: 'auto',
-                aiSettings: ref.read(aiSettingsProvider),
-              ))
+      final svc = ref.read(translationServiceProvider);
+      final ai = ref.read(aiSettingsProvider);
+      String norm(String x) => x
+          .replaceAll(RegExp(r'[\s\u200c\u200f\u200e?؟!¡¿.,،;؛:"«»]+'), ' ')
+          .trim()
+          .toLowerCase();
+      // حدسِ زبانِ مبدأ از روی رسم‌الخط (فارسی/عربی). «auto» گوگل برای جمله‌های
+      // محاوره‌ای فارسی گاهی همان متن را برمی‌گرداند.
+      final hasArabicScript = RegExp(r'[\u0600-\u06FF]').hasMatch(raw);
+      final guessedSrc =
+          (hasArabicScript && lang != 'ar' && lang != 'fa') ? 'fa' : 'auto';
+      var t = (await svc.translate(
+        text: raw,
+        targetLang: lang,
+        sourceLang: guessedSrc,
+        aiSettings: ai,
+      ))
           .trim();
+      // ترجمه نشده (خروجی ≈ ورودی) → کش را دور بزن و با AI هم تلاش کن
+      if (guessedSrc != lang && (t.isEmpty || norm(t) == norm(raw))) {
+        try {
+          final r = (await svc.retranslate(
+            text: raw,
+            targetLang: lang,
+            sourceLang: guessedSrc == 'auto' ? 'en' : guessedSrc,
+            aiSettings: ai,
+          ))
+              .trim();
+          if (r.isNotEmpty && norm(r) != norm(raw)) t = r;
+        } catch (_) {}
+      }
+      if (t.isNotEmpty && norm(t) == norm(raw)) {
+        try {
+          final r = (await svc.translateViaAI(raw, lang, guessedSrc, ai)).trim();
+          if (r.isNotEmpty) t = r;
+        } catch (_) {}
+      }
       if (t.isNotEmpty) word = t;
     } catch (_) {}
     if (!mounted) return;
