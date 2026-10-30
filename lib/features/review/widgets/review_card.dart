@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_languages.dart';
 import '../../../core/constants/level_colors.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/widgets/word_translations.dart';
 import '../models/review_item.dart';
 import '../review_i18n.dart';
 
@@ -192,13 +193,14 @@ class _ReviewCardState extends State<ReviewCard>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    it.meaning.isEmpty ? '—' : it.meaning,
-                    textAlign: TextAlign.center,
-                    textDirection: textDirOf(it.meaning),
+                  WordTranslations(
+                    word: it.word,
+                    langCode: it.langCode,
+                    fallback: it.meaning.isEmpty ? '—' : it.meaning,
+                    centered: true,
                     style: TextStyle(
                       color: c.ink,
-                      fontSize: 30,
+                      fontSize: 26,
                       fontWeight: FontWeight.w800,
                       height: 1.35,
                     ),

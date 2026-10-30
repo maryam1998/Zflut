@@ -9,6 +9,7 @@ import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
 import '../../core/providers/story_library_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/widgets/word_translations.dart';
 import '_hope_panel.dart';
 
 /// تب «لغات ذخیره‌شده» (زیرتبِ گروه «داستان») — هم‌شکل SavedWordsPanel در Hope.
@@ -361,12 +362,12 @@ class _SavedTabState extends ConsumerState<SavedTab> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            if (w.meaning.trim().isNotEmpty)
-              Text(
-                w.meaning,
-                textDirection: autoDir(w.meaning),
-                style: TextStyle(color: c.inkSoft, fontSize: 11),
-              ),
+            WordTranslations(
+              word: w.word,
+              langCode: w.langCode,
+              fallback: w.meaning,
+              style: TextStyle(color: c.inkSoft, fontSize: 11),
+            ),
           ],
         ),
       ),
