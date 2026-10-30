@@ -512,6 +512,10 @@ class SpeechController extends StateNotifier<SpeechState> {
           ? false
           : await NativeTtsBridge.isModelReady(code);
       if (myGen != _generation) return;
+      // 📥 صدای اپ برای این زبان نصب نیست → خودکار دانلود شود (تا آماده شدن با صدای گوشی)
+      if (!ready && !(_preferPhoneVoice?.call() ?? false)) {
+        unawaited(NativeTtsBridge.ensureModelDownload(code));
+      }
       if (ready) {
         final ok = await _playNative(idx, cleanText, code, myGen);
         // ✅ اگر وسط کار pause/stop/seek شد، هرگز سراغ موتور بعدی نرو

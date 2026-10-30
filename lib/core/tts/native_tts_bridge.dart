@@ -75,6 +75,24 @@ class NativeTtsBridge {
     } catch (_) {}
   }
 
+  /// زبان‌هایی که در همین اجرا درخواستِ دانلودِ خودکارشان فرستاده شده (تکراری نشود).
+  static final Set<String> _autoDlRequested = {};
+
+  /// اگر بسته‌ی «صدای اپ» این زبان نصب نیست و در حال دانلود هم نیست، دانلودش را
+  /// شروع می‌کند (فقط یک‌بار برای هر زبان در هر اجرا). تا آماده شدن، خوانش با
+  /// صدای گوشی ادامه پیدا می‌کند. پیشرفت در تنظیمات → «صدای برنامه» دیده می‌شود.
+  static Future<void> ensureModelDownload(String lang) async {
+    if (!isAvailable || lang.isEmpty || _autoDlRequested.contains(lang)) return;
+    _autoDlRequested.add(lang);
+    try {
+      final r = await _b.checkTtsStatus(lang: lang);
+      if (r['downloaded'] == true || r['downloading'] == true) return;
+      await _b.downloadTtsModel(lang: lang);
+    } catch (e) {
+      debugPrint('auto tts download error: $e');
+    }
+  }
+
   /// TTS نیتیو (Piper) — true یعنی خوانش شروع شد (پایانش با [onDone] می‌رسد).
   static Future<bool> speak(
     String text,
