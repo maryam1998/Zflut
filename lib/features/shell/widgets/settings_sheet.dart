@@ -2272,7 +2272,7 @@ class _OfflineTtsSection extends StatefulWidget {
 class _OfflineTtsSectionState extends State<_OfflineTtsSection> {
   /// زبان‌هایی که بسته‌ی صدای آفلاین دارند (ترتیب مثل Hope).
   static const List<String> _downloadable = [
-    'fa', 'en', 'it', 'hi', 'tr', 'ar', 'es', 'de', 'fr', 'zh',
+    'en', 'es', 'de', 'fa', 'fr', 'it', 'hi', 'tr', 'ar', 'zh',
   ];
   static const List<String> _extraDownloadable = ['ru'];
   static const List<String> _phoneOnly = ['ko'];

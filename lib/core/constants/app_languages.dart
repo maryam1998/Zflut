@@ -16,12 +16,12 @@ class AppLanguage {
 }
 
 const Map<String, AppLanguage> kAppLanguages = {
-  'fa': AppLanguage(code: 'fa', label: 'فارسی', dir: TextDirection.rtl),
   'en': AppLanguage(code: 'en', label: 'English', dir: TextDirection.ltr),
-  'de': AppLanguage(code: 'de', label: 'Deutsch', dir: TextDirection.ltr),
   'es': AppLanguage(code: 'es', label: 'Español', dir: TextDirection.ltr),
+  'de': AppLanguage(code: 'de', label: 'Deutsch', dir: TextDirection.ltr),
+  'fa': AppLanguage(code: 'fa', label: 'فارسی', dir: TextDirection.rtl),
   'fr': AppLanguage(code: 'fr', label: 'Français', dir: TextDirection.ltr),
-  'ar': AppLanguage(code: 'ar', label: 'العربية', dir: TextDirection.rtl),
+  'ar': AppLanguage(code: 'ar', label: 'Arabic', dir: TextDirection.rtl),
 };
 
 /// تاریخ‌های قابل‌انتخاب در تنظیمات.
