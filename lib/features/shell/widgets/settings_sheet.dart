@@ -24,6 +24,7 @@ import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/widgets/color_palette_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../tabs/_hope_panel.dart' show uiContentDirection;
+import 'help_center.dart';
 import 'settings_packs.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -131,6 +132,8 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   const _AudioSyncSection(),
                   const SizedBox(height: 4),
                   const _OfflineWordsButton(),
+                  gap(),
+                  const HelpCenterButton(),
                 ],
               ),
             ),

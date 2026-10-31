@@ -113,6 +113,11 @@ const Map<String, Map<String, String>> _ui = {
 class IntroOverlay extends ConsumerStatefulWidget {
   const IntroOverlay({super.key});
 
+  static final ValueNotifier<int> _replayTick = ValueNotifier<int>(0);
+
+  /// «نمایش دوباره» (از مرکز راهنما).
+  static void replay() => _replayTick.value++;
+
   /// برای «نمایش دوباره» از تنظیمات.
   static void reset(WidgetRef ref) {
     try {
@@ -137,10 +142,21 @@ class _IntroOverlayState extends ConsumerState<IntroOverlay> {
       seen = ref.read(sharedPrefsProvider).getBool(_kIntroSeenKey) ?? false;
     } catch (_) {}
     _visible = !seen;
+    IntroOverlay._replayTick.addListener(_onReplay);
+  }
+
+  void _onReplay() {
+    if (!mounted) return;
+    setState(() {
+      _visible = true;
+      _page = 0;
+    });
+    if (_ctrl.hasClients) _ctrl.jumpToPage(0);
   }
 
   @override
   void dispose() {
+    IntroOverlay._replayTick.removeListener(_onReplay);
     _ctrl.dispose();
     super.dispose();
   }
