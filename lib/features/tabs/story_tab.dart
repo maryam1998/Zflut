@@ -2895,10 +2895,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   Widget _libPanel(AppThemeColorsExt c, SavedStory s) {
-    final langs = (s.translations.isNotEmpty
-            ? s.translations.keys.toList()
-            : _effectiveTransLangs().toList())
-        .where((l) => l != s.langCode)
+    // زبان‌های ترجمه = انتخابِ فعلیِ کاربر (زبانِ مادری/کارتِ زبان‌های ترجمه)؛
+    // قبلاً اگر داستان ترجمه‌ی ذخیره‌شده داشت، فقط همان زبان‌های قدیمی نشان داده می‌شد
+    // و زبانِ جدید هیچ‌وقت نمی‌آمد. اگر انتخابی نبود، به زبان‌های ذخیره‌شده برمی‌گردد.
+    final effLangs = _effectiveTransLangs().where((l) => l != s.langCode);
+    final langs = (effLangs.isNotEmpty
+            ? effLangs.toList()
+            : s.translations.keys.where((l) => l != s.langCode).toList())
         .toList();
     final bar = _audioBar(s);
     final ctrl = _audioCtrls[s.id];
