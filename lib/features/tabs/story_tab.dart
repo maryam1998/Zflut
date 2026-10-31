@@ -869,6 +869,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           targetLangs: langs,
           paraTranslations: trans,
           splitSentences: _splitSentences,
+          onReorderLangs: _moveTransLang,
           audio: ctrl,
           audioBar: bar,
           saved: _readSaved,
@@ -1956,9 +1957,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             ],
           ),
           const SizedBox(height: 6),
-          // ترتیبِ ترجمه‌ها — با نگه‌داشتن و کشیدن جابه‌جا می‌شود (همان ترتیبِ هدر)
-          _transOrderRow(c, srcLang: _activeLang(sel.targets)),
-          const SizedBox(height: 4),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -1985,108 +1983,15 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     );
   }
 
-  /// ردیفِ چیپ‌های قابلِ جابه‌جایی با انگشت؛ مستقیم به ترتیبِ زبان‌های مقصدِ هدر وصل است.
-  /// هم در داستان‌ساز و هم برای داستان‌های ذخیره‌شده استفاده می‌شود.
-  Widget _transOrderRow(AppThemeColorsExt c, {String? srcLang}) {
-    final sel = ref.watch(languageSelectionProvider);
-    final notifier = ref.read(languageSelectionProvider.notifier);
-    final targets = sel.targets;
-    final nativeExtra =
-        sel.native.isNotEmpty && !targets.contains(sel.native) ? sel.native : null;
-    if (targets.length < 2 && nativeExtra == null) return const SizedBox.shrink();
-
-    Widget chip(String code,
-        {int? index, bool removable = true, bool fixed = false}) {
-      final dim = srcLang != null && code == srcLang;
-      final body = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          color: dim ? c.paperDark : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: fixed ? c.gold : c.cardBorder, width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (removable) ...[
-              GestureDetector(
-                onTap: () {
-                  unawaited(notifier.removeTarget(code));
-                  if (_reading != null) unawaited(_translateReading());
-                  _restartPdfTransIfOpen();
-                },
-                child: Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: c.rose.withOpacity(0.15),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(Icons.close, size: 11, color: c.rose),
-                ),
-              ),
-              const SizedBox(width: 5),
-            ],
-            Text(
-              langDisplayName(context, code),
-              style: TextStyle(
-                color: dim ? c.inkSoft : c.ink,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (!fixed) ...[
-              const SizedBox(width: 5),
-              Icon(Icons.drag_indicator,
-                  size: 14, color: c.inkSoft.withOpacity(0.5)),
-            ],
-          ],
-        ),
-      );
-      if (index == null) return body;
-      return ReorderableDelayedDragStartListener(index: index, child: body);
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: SizedBox(
-        height: 38,
-        child: Row(
-          children: [
-            if (nativeExtra != null)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 7),
-                child: chip(nativeExtra, removable: false, fixed: true),
-              ),
-            Expanded(
-              child: ReorderableListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: targets.length,
-                buildDefaultDragHandles: false,
-                onReorder: (o, n) {
-                  unawaited(notifier.reorderTargets(o, n));
-                },
-                proxyDecorator: (child, index, animation) => Material(
-                  color: Colors.transparent,
-                  elevation: 4,
-                  borderRadius: BorderRadius.circular(999),
-                  child: child,
-                ),
-                itemBuilder: (context, i) {
-                  final code = targets[i];
-                  return Padding(
-                    key: ValueKey('story-order-$code'),
-                    padding: const EdgeInsetsDirectional.only(end: 7),
-                    child: chip(code, index: i),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  /// جابه‌جایی ترتیبِ ترجمه‌ها (با کشیدنِ برچسبِ زبان در متنِ داستان) — همان ترتیبِ هدر
+  void _moveTransLang(String from, String to) {
+    final t = ref.read(languageSelectionProvider).targets;
+    final fi = t.indexOf(from);
+    final ti = t.indexOf(to);
+    if (fi < 0 || ti < 0 || fi == ti) return;
+    unawaited(ref
+        .read(languageSelectionProvider.notifier)
+        .reorderTargets(fi, ti > fi ? ti + 1 : ti));
   }
 
   // ───────────── وارد کردنِ لینک / متن برای خوانش ─────────────
@@ -2282,6 +2187,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                     .where((l) => l != pageLang)
                     .toList(),
                 splitSentences: _splitSentences,
+          onReorderLangs: _moveTransLang,
                 // 🔖 همان دکمه‌ی ذخیره‌ی داستان‌ساز: کلِ PDF (متنِ همه‌ی صفحه‌ها + ترجمه) را در ذخیره‌شده‌ها می‌گذارد
                 saved: _pdfStorySavedDoc == doc,
                 onSave: _pdfSaving || _pdfStorySavedDoc == doc
@@ -3022,16 +2928,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   Widget _libPanel(AppThemeColorsExt c, SavedStory s) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _transOrderRow(c, srcLang: s.langCode),
-        _libPanelInner(c, s),
-      ],
-    );
-  }
-
-  Widget _libPanelInner(AppThemeColorsExt c, SavedStory s) {
     // زبان‌های ترجمه = انتخابِ فعلیِ کاربر (زبانِ مادری/کارتِ زبان‌های ترجمه)؛
     // قبلاً اگر داستان ترجمه‌ی ذخیره‌شده داشت، فقط همان زبان‌های قدیمی نشان داده می‌شد
     // و زبانِ جدید هیچ‌وقت نمی‌آمد. اگر انتخابی نبود، به زبان‌های ذخیره‌شده برمی‌گردد.
@@ -3060,6 +2956,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       targetLangs: langs,
       paraTranslations: s.translations,
       splitSentences: _splitSentences,
+      onReorderLangs: _moveTransLang,
       audio: ctrl,
       audioBar: bar,
       saved: true,

@@ -93,6 +93,9 @@ class StoryReaderPanel extends ConsumerStatefulWidget {
   final void Function(String lang, int paraIdx, String text)?
       onParagraphRetranslated;
 
+  /// کشیدنِ برچسبِ زبانِ یک ترجمه روی ترجمه‌ی دیگر → جابه‌جایی (from به جای to)
+  final void Function(String from, String to)? onReorderLangs;
+
   const StoryReaderPanel({
     super.key,
     required this.storyId,
@@ -111,6 +114,7 @@ class StoryReaderPanel extends ConsumerStatefulWidget {
     this.onNotesChanged,
     this.notes = '',
     this.onParagraphRetranslated,
+    this.onReorderLangs,
   });
 
   @override
@@ -943,31 +947,50 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     final boldTr =
         tp.bold == TargetBoldMode.both || tp.bold == TargetBoldMode.translation;
 
-    final tag = Padding(
-      padding: const EdgeInsets.only(top: 3),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: c.paperDark,
-          borderRadius: BorderRadius.circular(5),
-          border: Border.all(color: c.cardBorder, width: 0.6),
-        ),
-        child: Text(
-          lang.toUpperCase(),
-          style: TextStyle(
-            color: c.gold,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.4,
+    Widget tagBox({bool lifted = false}) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: c.paperDark,
+            borderRadius: BorderRadius.circular(5),
+            border: Border.all(color: c.cardBorder, width: 0.6),
+            boxShadow: lifted
+                ? [BoxShadow(color: Colors.black26, blurRadius: 6)]
+                : null,
           ),
-        ),
-      ),
-    );
+          child: Text(
+            lang.toUpperCase(),
+            style: TextStyle(
+              color: c.gold,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.4,
+            ),
+          ),
+        );
+
+    final tag = widget.onReorderLangs == null
+        ? Padding(padding: const EdgeInsets.only(top: 3), child: tagBox())
+        : LongPressDraggable<String>(
+            data: lang,
+            feedback: Material(
+              color: Colors.transparent,
+              child: tagBox(lifted: true),
+            ),
+            childWhenDragging: Opacity(
+              opacity: 0.3,
+              child: Padding(
+                  padding: const EdgeInsets.only(top: 3), child: tagBox()),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(6, 3, 6, 6),
+              child: tagBox(),
+            ),
+          );
 
     // Builder: contextِ زیرِ SyncPlayScope لازم است (گزارشِ ترجمه به پلیر)
     return Builder(builder: (bctx) {
       if (t != null) syncReportTranslation(bctx, ref, lang, id, t);
-      return SyncAnchor(
+      final row = SyncAnchor(
         code: lang,
         id: id,
         child: Padding(
@@ -1060,6 +1083,22 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
             ),
         ],
       ),
+        ),
+      );
+      if (widget.onReorderLangs == null) return row;
+      return DragTarget<String>(
+        onWillAcceptWithDetails: (d) => d.data != lang,
+        onAcceptWithDetails: (d) => widget.onReorderLangs!(d.data, lang),
+        builder: (context, cand, _) => DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: cand.isNotEmpty ? c.gold : Colors.transparent,
+                width: 2,
+              ),
+            ),
+          ),
+          child: row,
         ),
       );
     });
