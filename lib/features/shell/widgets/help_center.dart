@@ -388,7 +388,8 @@ class _HelpCenterPageState extends ConsumerState<HelpCenterPage> {
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                      padding: EdgeInsets.fromLTRB(
+                          16, 4, 16, 16 + MediaQuery.of(context).padding.bottom),
                       itemCount: list.length,
                       itemBuilder: (_, i) {
                         final a = list[i];
