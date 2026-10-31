@@ -13,12 +13,16 @@ import '../../app.dart';
 import '../../core/router/back_handlers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/widgets/level_chips.dart';
+import '../../core/constants/app_languages.dart' show CalendarSystem;
 import '../../core/constants/supported_languages.dart';
+import '../../core/neural/neural_dates.dart';
+import '../../core/providers/app_prefs_provider.dart';
 import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
 import '../../core/models/language_selection.dart';
+import '../../core/models/saved_word.dart';
 import '../../core/models/text_prefs.dart';
 import '../../core/native/native_bridge.dart';
 import '../../core/providers/story_library_provider.dart';
@@ -441,6 +445,16 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       if (t.isNotEmpty) word = t;
     } catch (_) {}
     if (!mounted) return;
+    // لغت/جمله‌ی واردشده در «ذخیره برای داستان بعدی» هم ذخیره می‌شود
+    final savedNotifier = ref.read(savedWordsProvider.notifier);
+    if (!savedNotifier.isSaved(word, lang)) {
+      savedNotifier.toggleSave(SavedWord(
+        word: word,
+        langCode: lang,
+        meaning: word != raw ? raw : '',
+        savedAt: DateTime.now(),
+      ));
+    }
     setState(() {
       _translating = false;
       if (!_words.contains(word)) _words.add(word);
@@ -3288,15 +3302,35 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         : _contentLabel(context.l10n, s.contentType);
   }
 
-  /// تاریخ و ساعتِ ذخیره، بر اساس زبانِ رابط
+  /// تاریخ و ساعتِ ذخیره، بر اساس زبانِ رابط و «تقویم» در تنظیمات (شمسی / میلادی / هر دو)
   String _savedAtLabel(DateTime d) {
+    final ui = Localizations.localeOf(context).languageCode;
     final loc = Localizations.localeOf(context).toString();
-    try {
-      return DateFormat.yMMMd(loc).add_Hm().format(d);
-    } catch (_) {
-      String two(int n) => n.toString().padLeft(2, '0');
-      return '${d.year}/${two(d.month)}/${two(d.day)} ${two(d.hour)}:${two(d.minute)}';
+    final cs = ref.read(appPrefsProvider).calendarSystem;
+    final faUi = ui == 'fa' || ui == 'ar';
+    String two(int n) => n.toString().padLeft(2, '0');
+    String nm(Object n) => faUi ? faDigits(n) : n.toString();
+
+    final j = gregorianToJalali(d.year, d.month, d.day);
+    final jal = faUi
+        ? '${nm(j[2])} ${kPersianMonths[j[1] - 1]} ${nm(j[0])}'
+        : '${j[2]} ${kPersianMonthsLatin[j[1] - 1]} ${j[0]}';
+
+    String greg;
+    if (ui == 'fa') {
+      greg = '${nm(d.day)} ${kFaGregorianMonths[d.month - 1]} ${nm(d.year)}';
+    } else {
+      try {
+        greg = DateFormat.yMMMd(loc).format(d);
+      } catch (_) {
+        greg = '${d.year}/${two(d.month)}/${two(d.day)}';
+      }
     }
+    final time = nm('${two(d.hour)}:${two(d.minute)}');
+    final date = cs == CalendarSystem.gregorian
+        ? greg
+        : (cs == CalendarSystem.both ? '$jal ($greg)' : jal);
+    return '$date  $time';
   }
 
   Future<void> _openLink(String url) async {
