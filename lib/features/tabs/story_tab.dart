@@ -18,6 +18,7 @@ import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
+import '../../core/models/language_selection.dart';
 import '../../core/models/text_prefs.dart';
 import '../../core/native/native_bridge.dart';
 import '../../core/providers/story_library_provider.dart';
@@ -245,8 +246,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   SavedStory? _result;
 
   // زبان‌های ترجمه‌ی همزمانِ داستان
-  final Set<String> _transLangs = {};
-  bool _transTouched = false;
   bool _storyTranslating = false;
 
   // وارد کردنِ لینک / متن برای خوانش
@@ -551,10 +550,20 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
 
   // ───────────── ذخیره + ترجمه‌ی همزمانِ داستان ─────────────
+  /// زبان‌های ترجمه = «وصل به هدرِ زبان»: زبانِ مادری (اگر جزو مقصدها نباشد) اول،
+  /// بعد زبان‌های مقصد به همان ترتیبی که در هدر (ترتیب نمایش ترجمه‌ها) چیده شده.
   Set<String> _effectiveTransLangs() {
-    if (_transTouched) return _transLangs;
-    final native = ref.read(languageSelectionProvider).native;
-    return {native};
+    final sel = ref.read(languageSelectionProvider);
+    return _orderedTransLangs(sel);
+  }
+
+  Set<String> _orderedTransLangs(LanguageSelection sel) {
+    final out = <String>{};
+    if (sel.native.isNotEmpty && !sel.targets.contains(sel.native)) {
+      out.add(sel.native);
+    }
+    out.addAll(sel.targets);
+    return out;
   }
 
   void _finishStory(SavedStory story) {
@@ -1499,7 +1508,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
     // اگه کاربر زبانِ مادری رو عوض کرد (و زبانِ ترجمه رو دستی انتخاب نکرده)
     ref.listen(languageSelectionProvider, (prev, next) {
-      if (prev != null && prev.native != next.native && !_transTouched) {
+      if (prev != null &&
+          (prev.native != next.native ||
+              prev.targets.join(',') != next.targets.join(','))) {
         _restartPdfTransIfOpen();
       }
     });
@@ -1891,19 +1902,16 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
 
-  // ───────────── کارتِ زبان‌های ترجمه‌ی همزمان ─────────────
+  // ───────────── کارتِ زبان‌های ترجمه‌ی همزمان (وصل به هدرِ زبان) ─────────────
   Widget _translationLangsCard(AppThemeColorsExt c) {
-    final selected = _effectiveTransLangs();
-    void setAll(Set<String> v) {
-      setState(() {
-        _transTouched = true;
-        _transLangs
-          ..clear()
-          ..addAll(v);
-      });
+    final sel = ref.watch(languageSelectionProvider);
+    final notifier = ref.read(languageSelectionProvider.notifier);
+    final selected = sel.targets.toSet();
+    void afterChange() {
       if (_reading != null) unawaited(_translateReading());
       _restartPdfTransIfOpen();
     }
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1923,18 +1931,34 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               HopeTextAction(
                 label: context.l10n.select_all,
                 color: c.teal,
-                onTap: () =>
-                    setAll({for (final l in kSupportedLanguages) l.code}),
+                onTap: () {
+                  final all = <String>[
+                    ...sel.targets,
+                    for (final l in kSupportedLanguages)
+                      if (!sel.targets.contains(l.code)) l.code,
+                  ];
+                  unawaited(notifier.setTargets(all));
+                  afterChange();
+                },
               ),
               const SizedBox(width: 14),
               HopeTextAction(
                 label: context.l10n.clear_all_words,
                 color: c.rose,
-                onTap: () => setAll({}),
+                onTap: () {
+                  // حداقل یک زبانِ مقصد باید بماند (مثلِ هدر)
+                  if (sel.targets.isNotEmpty) {
+                    unawaited(notifier.setTargets([sel.targets.first]));
+                  }
+                  afterChange();
+                },
               ),
             ],
           ),
           const SizedBox(height: 6),
+          // ترتیبِ ترجمه‌ها — با نگه‌داشتن و کشیدن جابه‌جا می‌شود (همان ترتیبِ هدر)
+          _transOrderRow(c, srcLang: _activeLang(sel.targets)),
+          const SizedBox(height: 4),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -1950,14 +1974,117 @@ class _StoryTabState extends ConsumerState<StoryTab> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   onTap: () {
-                    final next = {...selected};
-                    if (!next.remove(l.code)) next.add(l.code);
-                    setAll(next);
+                    unawaited(notifier.toggleTarget(l.code));
+                    afterChange();
                   },
                 ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// ردیفِ چیپ‌های قابلِ جابه‌جایی با انگشت؛ مستقیم به ترتیبِ زبان‌های مقصدِ هدر وصل است.
+  /// هم در داستان‌ساز و هم برای داستان‌های ذخیره‌شده استفاده می‌شود.
+  Widget _transOrderRow(AppThemeColorsExt c, {String? srcLang}) {
+    final sel = ref.watch(languageSelectionProvider);
+    final notifier = ref.read(languageSelectionProvider.notifier);
+    final targets = sel.targets;
+    final nativeExtra =
+        sel.native.isNotEmpty && !targets.contains(sel.native) ? sel.native : null;
+    if (targets.length < 2 && nativeExtra == null) return const SizedBox.shrink();
+
+    Widget chip(String code,
+        {int? index, bool removable = true, bool fixed = false}) {
+      final dim = srcLang != null && code == srcLang;
+      final body = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        decoration: BoxDecoration(
+          color: dim ? c.paperDark : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: fixed ? c.gold : c.cardBorder, width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (removable) ...[
+              GestureDetector(
+                onTap: () {
+                  unawaited(notifier.removeTarget(code));
+                  if (_reading != null) unawaited(_translateReading());
+                  _restartPdfTransIfOpen();
+                },
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: c.rose.withOpacity(0.15),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(Icons.close, size: 11, color: c.rose),
+                ),
+              ),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              langDisplayName(context, code),
+              style: TextStyle(
+                color: dim ? c.inkSoft : c.ink,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (!fixed) ...[
+              const SizedBox(width: 5),
+              Icon(Icons.drag_indicator,
+                  size: 14, color: c.inkSoft.withOpacity(0.5)),
+            ],
+          ],
+        ),
+      );
+      if (index == null) return body;
+      return ReorderableDelayedDragStartListener(index: index, child: body);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: SizedBox(
+        height: 38,
+        child: Row(
+          children: [
+            if (nativeExtra != null)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 7),
+                child: chip(nativeExtra, removable: false, fixed: true),
+              ),
+            Expanded(
+              child: ReorderableListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: targets.length,
+                buildDefaultDragHandles: false,
+                onReorder: (o, n) {
+                  unawaited(notifier.reorderTargets(o, n));
+                },
+                proxyDecorator: (child, index, animation) => Material(
+                  color: Colors.transparent,
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(999),
+                  child: child,
+                ),
+                itemBuilder: (context, i) {
+                  final code = targets[i];
+                  return Padding(
+                    key: ValueKey('story-order-$code'),
+                    padding: const EdgeInsetsDirectional.only(end: 7),
+                    child: chip(code, index: i),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2895,6 +3022,16 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   Widget _libPanel(AppThemeColorsExt c, SavedStory s) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _transOrderRow(c, srcLang: s.langCode),
+        _libPanelInner(c, s),
+      ],
+    );
+  }
+
+  Widget _libPanelInner(AppThemeColorsExt c, SavedStory s) {
     // زبان‌های ترجمه = انتخابِ فعلیِ کاربر (زبانِ مادری/کارتِ زبان‌های ترجمه)؛
     // قبلاً اگر داستان ترجمه‌ی ذخیره‌شده داشت، فقط همان زبان‌های قدیمی نشان داده می‌شد
     // و زبانِ جدید هیچ‌وقت نمی‌آمد. اگر انتخابی نبود، به زبان‌های ذخیره‌شده برمی‌گردد.
