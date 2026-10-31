@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
-import 'intro_overlay.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // مرکز راهنما — دسته‌بندی + جستجو. متن‌ها فارسی/انگلیسی‌اند؛
@@ -37,6 +36,8 @@ const List<_Cat> _cats = [
       {'en': 'Voice & audio', 'fa': 'صدا و تلفظ'}),
   _Cat('lang', Icons.translate_rounded,
       {'en': 'Languages & translation', 'fa': 'زبان‌ها و ترجمه'}),
+  _Cat('data', Icons.storage_rounded,
+      {'en': 'Storage & offline', 'fa': 'ذخیره‌سازی و آفلاین'}),
   _Cat('fix', Icons.build_rounded,
       {'en': 'Troubleshooting', 'fa': 'حل مشکل'}),
 ];
@@ -60,15 +61,6 @@ const List<_Article> _articles = [
       'fa': 'روی هر کلمه یا جمله بزن تا کارتش باز شود: ترجمه، گوش‌دادن، و دکمه‌هایی برای ذخیره برای داستان بعدی یا افزودن یادداشت گرامر.',
     },
     'translate selection card save bookmark ترجمه ذخیره کارت',
-  ),
-  _Article(
-    'start',
-    {'en': 'Replay the intro', 'fa': 'نمایش دوباره‌ی معرفی'},
-    {
-      'en': 'Use the “Show intro again” button at the bottom of this page to replay the short welcome tour.',
-      'fa': 'از دکمه‌ی «نمایش دوباره‌ی معرفی» پایین همین صفحه می‌توانی تور کوتاه خوش‌آمدگویی را دوباره ببینی.',
-    },
-    'intro tour welcome معرفی راهنما',
   ),
 
   // ── داستان‌ساز ──
@@ -167,6 +159,44 @@ const List<_Article> _articles = [
       'fa': 'تنظیمات را باز کن (گوشه‌ی بالا) و از بخش زبان نرم‌افزار زبان را انتخاب کن. این فقط منوها و متن‌ها را عوض می‌کند، نه زبان‌هایی که یاد می‌گیری.',
     },
     'interface ui language settings زبان نرم افزار رابط تنظیمات',
+  ),
+
+
+  _Article(
+    'lang',
+    {'en': 'Translation is not good? Refresh it', 'fa': 'ترجمه خوب نبود؟ رفرشش کن'},
+    {
+      'en': 'If a translation looks wrong, press the refresh (translate again) button next to it. The app ignores the saved result and asks again for a new, better translation, then shows the new one. You can repeat it if the first retry is still not right. This is available on translation cards and on story paragraphs.',
+      'fa': 'اگر ترجمه‌ای درست به نظر نرسید، دکمه‌ی رفرش (ترجمه‌ی دوباره) کنار آن را بزن. برنامه نتیجه‌ی ذخیره‌شده را کنار می‌گذارد، دوباره یک ترجمه‌ی جدید و بهتر می‌گیرد و همان را نشان می‌دهد. اگر بار اول هم خوب نشد می‌توانی دوباره بزنی. این دکمه در کارت‌های ترجمه و پاراگراف‌های داستان هست.',
+    },
+    'refresh retranslate translate again wrong bad translation رفرش ترجمه دوباره غلط بد بهتر',
+  ),
+  // ── ذخیره‌سازی و آفلاین ──
+  _Article(
+    'data',
+    {'en': 'Where are my saved stories kept?', 'fa': 'داستان‌های ذخیره‌شده کجا نگه‌داری می‌شوند؟'},
+    {
+      'en': 'Saved stories, words, notes and review progress are stored on your phone, inside the app’s own storage (no internet needed to open them). The app also keeps a second local backup copy, and if you are signed in they are backed up to your account too. Very long stories and PDF page images are kept in separate files on the phone. Note: uninstalling the app or clearing its data removes the local copy, so sign in if you want a safe backup.',
+      'fa': 'داستان‌ها، لغات ذخیره‌شده، یادداشت‌ها و پیشرفت مرور روی خود گوشی و در حافظه‌ی اختصاصی برنامه نگه‌داری می‌شوند (برای باز کردنشان اینترنت لازم نیست). برنامه یک نسخه‌ی پشتیبان محلی دوم هم نگه می‌دارد و اگر وارد حساب شده باشی، روی حسابت هم پشتیبان‌گیری می‌شود. داستان‌های خیلی بلند و عکس صفحه‌های PDF در فایل‌های جداگانه روی گوشی هستند. توجه: حذف برنامه یا پاک کردن اطلاعات آن، نسخه‌ی محلی را پاک می‌کند؛ برای امنیت بیشتر وارد حساب شو.',
+    },
+    'storage saved stories library local database indexeddb backup phone ذخیره کجا حافظه دیتابیس پشتیبان کتابخانه گوشی',
+  ),
+  _Article(
+    'data',
+    {'en': 'Offline models: what can I download?', 'fa': 'مدل‌های آفلاین: چه چیزهایی دانلود می‌شود؟'},
+    {
+      'en': 'Settings has three optional downloads:
+• Offline voices (App voice): high-quality reading voices, one pack per language.
+• Offline words: vocabulary lists you can search without internet.
+• Text ↔ audio sync pack: lets the “Sync” button on a story’s audio bar work offline on your phone (one-time download; if it fails, check your connection/VPN and resume — finished files are kept).
+Downloads can be deleted any time to free space.',
+      'fa': 'در تنظیمات سه دانلود اختیاری وجود دارد:
+• صداهای آفلاین (صدای برنامه): صدای خوانش باکیفیت، برای هر زبان یک بسته.
+• لغات آفلاین: لیست‌های لغت که بدون اینترنت قابل جستجو هستند.
+• بسته‌ی همگام‌سازی متن و صدا: باعث می‌شود دکمه‌ی «همگام‌سازی» نوار صدای داستان روی گوشی و آفلاین کار کند (دانلود یک‌باره؛ اگر قطع شد، اتصال/VPN را چک کن و ادامه بده — فایل‌های کامل‌شده حفظ می‌شوند).
+هر زمان بخواهی می‌توانی دانلودها را برای آزاد شدن فضا پاک کنی.',
+    },
+    'offline download model voice words sync pack space آفلاین دانلود مدل صدا لغات همگام فضا حجم',
   ),
 
   // ── حل مشکل ──
@@ -429,33 +459,6 @@ class _HelpCenterPageState extends ConsumerState<HelpCenterPage> {
                         );
                       },
                     ),
-            ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: c.ink,
-                      side: BorderSide(color: c.cardBorder),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                    icon: Icon(Icons.slideshow_rounded, color: c.gold),
-                    label: Text(fa
-                        ? 'نمایش دوباره‌ی معرفی'
-                        : 'Show intro again'),
-                    onPressed: () {
-                      Navigator.of(context, rootNavigator: true)
-                          .popUntil((r) => r.isFirst);
-                      IntroOverlay.replay();
-                    },
-                  ),
-                ),
-              ),
             ),
           ],
         ),

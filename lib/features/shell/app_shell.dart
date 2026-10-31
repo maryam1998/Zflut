@@ -16,7 +16,6 @@ import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/sync/cloud_sync.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../grammar/widgets/practice_sheet.dart';
-import 'widgets/intro_overlay.dart';
 import 'widgets/lingova_mascot.dart';
 import 'widgets/player_bar.dart';
 
@@ -168,8 +167,6 @@ class _AppShellState extends ConsumerState<AppShell> {
                 ),
               // ═══ آدمکِ Lingova (نوار بالا + حباب‌ها) ═══
               const Positioned.fill(child: LingovaMascotLayer()),
-              // ═══ معرفیِ کوتاهِ بار اول (قابل رد کردن) ═══
-              const IntroOverlay(),
             ],
           ),
         ),
