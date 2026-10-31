@@ -185,16 +185,8 @@ const List<_Article> _articles = [
     'data',
     {'en': 'Offline models: what can I download?', 'fa': 'مدل‌های آفلاین: چه چیزهایی دانلود می‌شود؟'},
     {
-      'en': 'Settings has three optional downloads:
-• Offline voices (App voice): high-quality reading voices, one pack per language.
-• Offline words: vocabulary lists you can search without internet.
-• Text ↔ audio sync pack: lets the “Sync” button on a story’s audio bar work offline on your phone (one-time download; if it fails, check your connection/VPN and resume — finished files are kept).
-Downloads can be deleted any time to free space.',
-      'fa': 'در تنظیمات سه دانلود اختیاری وجود دارد:
-• صداهای آفلاین (صدای برنامه): صدای خوانش باکیفیت، برای هر زبان یک بسته.
-• لغات آفلاین: لیست‌های لغت که بدون اینترنت قابل جستجو هستند.
-• بسته‌ی همگام‌سازی متن و صدا: باعث می‌شود دکمه‌ی «همگام‌سازی» نوار صدای داستان روی گوشی و آفلاین کار کند (دانلود یک‌باره؛ اگر قطع شد، اتصال/VPN را چک کن و ادامه بده — فایل‌های کامل‌شده حفظ می‌شوند).
-هر زمان بخواهی می‌توانی دانلودها را برای آزاد شدن فضا پاک کنی.',
+      'en': 'Settings has three optional downloads:\n• Offline voices (App voice): high-quality reading voices, one pack per language.\n• Offline words: vocabulary lists you can search without internet.\n• Text ↔ audio sync pack: lets the “Sync” button on a story’s audio bar work offline on your phone (one-time download; if it fails, check your connection/VPN and resume — finished files are kept).\nDownloads can be deleted any time to free space.',
+      'fa': 'در تنظیمات سه دانلود اختیاری وجود دارد:\n• صداهای آفلاین (صدای برنامه): صدای خوانش باکیفیت، برای هر زبان یک بسته.\n• لغات آفلاین: لیست‌های لغت که بدون اینترنت قابل جستجو هستند.\n• بسته‌ی همگام‌سازی متن و صدا: باعث می‌شود دکمه‌ی «همگام‌سازی» نوار صدای داستان روی گوشی و آفلاین کار کند (دانلود یک‌باره؛ اگر قطع شد، اتصال/VPN را چک کن و ادامه بده — فایل‌های کامل‌شده حفظ می‌شوند).\nهر زمان بخواهی می‌توانی دانلودها را برای آزاد شدن فضا پاک کنی.',
     },
     'offline download model voice words sync pack space آفلاین دانلود مدل صدا لغات همگام فضا حجم',
   ),
