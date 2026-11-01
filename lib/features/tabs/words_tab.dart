@@ -12,8 +12,8 @@ import '_hope_panel.dart' show HopeChoiceChip;
 /// تبِ «دیکشنری من»: لغات روزمره + لغات/عبارت‌های شخصی‌ای که کاربر با
 /// «ذخیره برای داستان بعدی» نشان کرده (با برچسب «شخصی» و ✕).
 /// بالای لیست، موارد (حتی لغاتِ جدیدی که خودت اضافه می‌کنی) بر اساسِ موضوع
-/// (غذا، سفر، سلامت، ...) و بعد بر اساسِ نوع (لغت / عبارت / اسلنگ / جمله / شخصی)
-/// دسته‌بندی می‌شوند.
+/// (غذا، سفر، سلامت، ...) دسته‌بندی می‌شوند؛ لغت، عبارت و اسلنگ هرکدام داخلِ
+/// موضوعِ خودشان قرار می‌گیرند (ردیفِ جداگانه‌ای برای نوع نیست).
 class WordsTab extends ConsumerWidget {
   const WordsTab({super.key});
 
@@ -23,39 +23,22 @@ class WordsTab extends ConsumerWidget {
     final base = ref.watch(wordsTabBaseItemsProvider);
     final all = ref.watch(allDailyWordsProvider);
     final personal = ref.watch(myDictionaryWordsProvider);
-    final kind = ref.watch(wordsKindProvider);
     final topic = ref.watch(wordsTopicProvider);
     return WordListView(
       // با عوض‌شدنِ دسته، لیست از اول (و اسکرول از بالا) شروع می‌شود
-      key: ValueKey('words-${topic ?? '_'}-${kind ?? '_'}'),
+      key: ValueKey('words-${topic ?? '_'}'),
       listId: 'words',
       words: words,
       hasAnyData: all.isNotEmpty || personal.isNotEmpty,
       loading: ref.watch(dailyWordsLoaderProvider).isLoading,
-      afterHeading: _KindFilter(all: base),
+      afterHeading: _TopicFilter(all: base),
     );
   }
 }
 
-class _KindFilter extends ConsumerWidget {
+class _TopicFilter extends ConsumerWidget {
   final List<DailyWord> all;
-  const _KindFilter({required this.all});
-
-  static String _kindLabel(String k, bool fa) {
-    switch (k) {
-      case kKindWord:
-        return fa ? 'لغات' : 'Words';
-      case kKindPhrase:
-        return fa ? 'عبارات' : 'Phrases';
-      case kKindSlang:
-        return fa ? 'اسلنگ' : 'Slang';
-      case kKindSentence:
-        return fa ? 'جملات' : 'Sentences';
-      case kKindPersonal:
-        return fa ? 'شخصی' : 'Personal';
-    }
-    return k;
-  }
+  const _TopicFilter({required this.all});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -64,7 +47,6 @@ class _KindFilter extends ConsumerWidget {
     final ui = Localizations.localeOf(context).languageCode;
     final fa = ui == 'fa' || ui == 'ar';
     final topicSel = ref.watch(wordsTopicProvider);
-    final kind = ref.watch(wordsKindProvider);
     final topics = ref.watch(wordsTabTopicsProvider);
 
     // شمارش‌ها از لیستِ پایه (بعد از فیلترِ سطح/جستجو)
@@ -73,19 +55,6 @@ class _KindFilter extends ConsumerWidget {
       final t = topics[w.sid] ?? kTopicOther;
       perTopic[t] = (perTopic[t] ?? 0) + 1;
     }
-    // شمارشِ نوع‌ها داخلِ موضوعِ انتخاب‌شده
-    final perKind = <String, int>{};
-    var inTopic = 0;
-    for (final w in all) {
-      if (topicSel != null && topics[w.sid] != topicSel) continue;
-      inTopic++;
-      final k = wordKindOf(w);
-      perKind[k] = (perKind[k] ?? 0) + 1;
-      if (w.isPersonal) {
-        perKind[kKindPersonal] = (perKind[kKindPersonal] ?? 0) + 1;
-      }
-    }
-
     Widget chip(String label, bool active, VoidCallback onTap,
         {double fs = 12.5}) {
       return Padding(
@@ -123,18 +92,6 @@ class _KindFilter extends ConsumerWidget {
               if ((perTopic[t.key] ?? 0) > 0)
                 chip('${t.label(ui)} (${perTopic[t.key]})', topicSel == t.key,
                     () => ref.read(wordsTopicProvider.notifier).state = t.key),
-          ]),
-          const SizedBox(height: 6),
-          // ردیفِ نوع‌ها (داخلِ موضوعِ انتخاب‌شده)
-          row([
-            chip('$allLabel ($inTopic)', kind == null,
-                () => ref.read(wordsKindProvider.notifier).state = null,
-                fs: 11.5),
-            for (final k in kWordKinds)
-              if ((perKind[k] ?? 0) > 0)
-                chip('${_kindLabel(k, fa)} (${perKind[k]})', kind == k,
-                    () => ref.read(wordsKindProvider.notifier).state = k,
-                    fs: 11.5),
           ]),
         ],
       ),
