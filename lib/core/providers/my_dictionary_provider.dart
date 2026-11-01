@@ -164,8 +164,8 @@ bool _matches(DailyWord w, WordsFilterState f) {
 // اسلنگ همه داخلِ همان موضوعِ مربوط به خودشان قرار می‌گیرند.
 // ═══════════════════════════════════════════════════════════════════
 
-/// موضوعِ انتخاب‌شده (null = همه)
-final wordsTopicProvider = StateProvider<String?>((ref) => null);
+/// موضوع‌های انتخاب‌شده — خالی = همه؛ وگرنه هر ترکیبی از موضوع‌ها
+final wordsTopicProvider = StateProvider<Set<String>>((ref) => const <String>{});
 
 // ───────────── موضوع‌یابی ─────────────
 
@@ -281,7 +281,9 @@ final wordsTabTopicsProvider = Provider<Map<String, String>>((ref) {
 final wordsTabItemsProvider = Provider<List<DailyWord>>((ref) {
   final base = ref.watch(wordsTabBaseItemsProvider);
   final topic = ref.watch(wordsTopicProvider);
-  if (topic == null) return base;
+  if (topic.isEmpty) return base;
   final topics = ref.watch(wordsTabTopicsProvider);
-  return base.where((w) => topics[w.sid] == topic).toList(growable: false);
+  return base
+      .where((w) => topic.contains(topics[w.sid] ?? kTopicOther))
+      .toList(growable: false);
 });

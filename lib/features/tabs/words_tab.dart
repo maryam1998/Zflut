@@ -26,7 +26,7 @@ class WordsTab extends ConsumerWidget {
     final topic = ref.watch(wordsTopicProvider);
     return WordListView(
       // با عوض‌شدنِ دسته، لیست از اول (و اسکرول از بالا) شروع می‌شود
-      key: ValueKey('words-${topic ?? '_'}'),
+      key: ValueKey('words-${(topic.toList()..sort()).join(',')}'),
       listId: 'words',
       words: words,
       hasAnyData: all.isNotEmpty || personal.isNotEmpty,
@@ -86,12 +86,16 @@ class _TopicFilter extends ConsumerWidget {
         children: [
           // ردیفِ موضوع‌ها
           row([
-            chip('$allLabel (${all.length})', topicSel == null,
-                () => ref.read(wordsTopicProvider.notifier).state = null),
+            chip('$allLabel (${all.length})', topicSel.isEmpty,
+                () => ref.read(wordsTopicProvider.notifier).state = const <String>{}),
             for (final t in kDictTopics)
               if ((perTopic[t.key] ?? 0) > 0)
-                chip('${t.label(ui)} (${perTopic[t.key]})', topicSel == t.key,
-                    () => ref.read(wordsTopicProvider.notifier).state = t.key),
+                chip('${t.label(ui)} (${perTopic[t.key]})',
+                    topicSel.contains(t.key), () {
+                  final n = Set<String>.of(topicSel);
+                  if (!n.remove(t.key)) n.add(t.key);
+                  ref.read(wordsTopicProvider.notifier).state = n;
+                }),
           ]),
         ],
       ),

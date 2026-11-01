@@ -22,7 +22,7 @@ class VocabInUseTab extends ConsumerWidget {
     final cat = ref.watch(vocabCategoryProvider);
     return WordListView(
       // با عوض‌شدنِ موضوع/دسته، لیست از اول (و اسکرول از بالا) شروع می‌شود
-      key: ValueKey('vocab-${topicKey ?? '_'}-${cat ?? '_'}'),
+      key: ValueKey('vocab-${(topicKey.toList()..sort()).join(',')}-${cat ?? '_'}'),
       listId: 'vocab-in-use',
       words: words,
       hasAnyData: src.valueOrNull?.isNotEmpty ?? false,
@@ -42,9 +42,10 @@ class _TopicFilter extends ConsumerWidget {
     final c = context.appColors;
     final ui = Localizations.localeOf(context).languageCode;
     final fa = ui == 'fa' || ui == 'ar';
-    final topicKey = ref.watch(vocabTopicProvider);
+    final topicSel = ref.watch(vocabTopicProvider);
     final catSel = ref.watch(vocabCategoryProvider);
-    final topic = vocabTopicByKey(topicKey);
+    // ردیفِ دسته‌های ریز فقط وقتی دقیقاً یک موضوع انتخاب شده
+    final topic = topicSel.length == 1 ? vocabTopicByKey(topicSel.first) : null;
 
     // شمارش‌ها از کلِ لیست (قبل از فیلترِ سطح/جستجو) تا ثابت بمانند
     final perCat = <String, int>{};
@@ -89,15 +90,17 @@ class _TopicFilter extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           row([
-            chip('$allLabel (${all.length})', topic == null, () {
-              ref.read(vocabTopicProvider.notifier).state = null;
+            chip('$allLabel (${all.length})', topicSel.isEmpty, () {
+              ref.read(vocabTopicProvider.notifier).state = const <String>{};
               ref.read(vocabCategoryProvider.notifier).state = null;
             }),
             for (final t in kVocabTopics)
               if (topicCount(t) > 0)
-                chip('${t.label(ui)} (${topicCount(t)})', topic?.key == t.key,
-                    () {
-                  ref.read(vocabTopicProvider.notifier).state = t.key;
+                chip('${t.label(ui)} (${topicCount(t)})',
+                    topicSel.contains(t.key), () {
+                  final n = Set<String>.of(topicSel);
+                  if (!n.remove(t.key)) n.add(t.key);
+                  ref.read(vocabTopicProvider.notifier).state = n;
                   ref.read(vocabCategoryProvider.notifier).state = null;
                 }),
           ]),

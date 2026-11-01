@@ -32,19 +32,19 @@ List<DailyWord> _applyFilter(List<DailyWord> all, WordsFilterState f) {
   }).toList(growable: false);
 }
 
-/// موضوعِ انتخاب‌شده در «Slang» (null = همه)
-final slangTopicProvider = StateProvider<String?>((ref) => null);
+/// موضوع‌های انتخاب‌شده در «Slang» (خالی = همه)
+final slangTopicProvider = StateProvider<Set<String>>((ref) => const <String>{});
 
 final filteredSlangWordsProvider = Provider<List<DailyWord>>((ref) {
   final all = ref.watch(slangWordsProvider).valueOrNull ?? const <DailyWord>[];
   final base = _applyFilter(all, ref.watch(wordsFilterProvider));
-  final topic = slangTopicByKey(ref.watch(slangTopicProvider));
-  if (topic == null) return base;
-  return base.where((w) => w.category == topic.key).toList(growable: false);
+  final sel = ref.watch(slangTopicProvider);
+  if (sel.isEmpty) return base;
+  return base.where((w) => sel.contains(w.category)).toList(growable: false);
 });
 
-/// موضوعِ اصلیِ انتخاب‌شده در «Vocabulary in Use» (null = همه)
-final vocabTopicProvider = StateProvider<String?>((ref) => null);
+/// موضوع‌های اصلیِ انتخاب‌شده در «Vocabulary in Use» (خالی = همه)
+final vocabTopicProvider = StateProvider<Set<String>>((ref) => const <String>{});
 
 /// دسته‌ی ریزِ انتخاب‌شده داخلِ موضوع (null = همه‌ی دسته‌های آن موضوع)
 final vocabCategoryProvider = StateProvider<String?>((ref) => null);
@@ -53,12 +53,20 @@ final filteredVocabInUseWordsProvider = Provider<List<DailyWord>>((ref) {
   final all =
       ref.watch(vocabInUseWordsProvider).valueOrNull ?? const <DailyWord>[];
   var base = _applyFilter(all, ref.watch(wordsFilterProvider));
-  final topic = vocabTopicByKey(ref.watch(vocabTopicProvider));
-  if (topic == null) return base;
+  final sel = ref.watch(vocabTopicProvider);
+  if (sel.isEmpty) return base;
   final cat = ref.watch(vocabCategoryProvider);
-  if (cat != null && topic.categories.contains(cat)) {
-    return base.where((w) => w.category == cat).toList(growable: false);
+  // دسته‌ی ریز فقط وقتی دقیقاً یک موضوع انتخاب شده معنی دارد
+  if (sel.length == 1 && cat != null) {
+    final t = vocabTopicByKey(sel.first);
+    if (t != null && t.categories.contains(cat)) {
+      return base.where((w) => w.category == cat).toList(growable: false);
+    }
   }
-  final set = topic.categories.toSet();
+  final set = <String>{};
+  for (final k in sel) {
+    final t = vocabTopicByKey(k);
+    if (t != null) set.addAll(t.categories);
+  }
   return base.where((w) => set.contains(w.category)).toList(growable: false);
 });

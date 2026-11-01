@@ -20,7 +20,7 @@ class SlangTab extends ConsumerWidget {
     final topicKey = ref.watch(slangTopicProvider);
     return WordListView(
       // با عوض‌شدنِ موضوع، لیست از اول (و اسکرول از بالا) شروع می‌شود
-      key: ValueKey('slang-${topicKey ?? '_'}'),
+      key: ValueKey('slang-${(topicKey.toList()..sort()).join(',')}'),
       listId: 'slang',
       words: words,
       hasAnyData: src.valueOrNull?.isNotEmpty ?? false,
@@ -71,12 +71,16 @@ class _SlangTopicFilter extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Row(
           children: [
-            chip('${fa ? 'همه' : 'All'} (${all.length})', sel == null,
-                () => ref.read(slangTopicProvider.notifier).state = null),
+            chip('${fa ? 'همه' : 'All'} (${all.length})', sel.isEmpty,
+                () => ref.read(slangTopicProvider.notifier).state = const <String>{}),
             for (final t in kSlangTopics)
               if ((perTopic[t.key] ?? 0) > 0)
-                chip('${t.label(ui)} (${perTopic[t.key]})', sel == t.key,
-                    () => ref.read(slangTopicProvider.notifier).state = t.key),
+                chip('${t.label(ui)} (${perTopic[t.key]})', sel.contains(t.key),
+                    () {
+                  final n = Set<String>.of(sel);
+                  if (!n.remove(t.key)) n.add(t.key);
+                  ref.read(slangTopicProvider.notifier).state = n;
+                }),
           ],
         ),
       ),
