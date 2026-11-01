@@ -18,6 +18,9 @@ class DailyWord {
   /// ترجمه‌هایی که از قبل معلوم‌اند (کد زبان ← متن) — برای لغات شخصی.
   final Map<String, String> translations;
 
+  /// دسته‌ی موضوعیِ لغت (فقط در Vocabulary in Use پر است؛ مثل «سلامت و پزشکی»)
+  final String category;
+
   const DailyWord({
     required this.id,
     required this.level,
@@ -27,6 +30,7 @@ class DailyWord {
     this.key,
     this.isPersonal = false,
     this.translations = const <String, String>{},
+    this.category = '',
   });
 
   /// شناسه‌ی رشته‌ای که برای ⭐ / پلیر / کارت استفاده می‌شود.
@@ -39,6 +43,7 @@ class DailyWord {
       pos: j['pos']?.toString() ?? 'other',
       en: j['en']?.toString() ?? '',
       fa: j['fa']?.toString() ?? '',
+      category: j['category']?.toString() ?? '',
     );
   }
 }
