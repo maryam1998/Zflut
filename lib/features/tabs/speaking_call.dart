@@ -1,9 +1,14 @@
 import 'dart:async';
+import 'dart:convert' show base64Decode, base64Encode;
 import 'dart:io' show File;
 import 'dart:math' as math;
+import 'dart:typed_data' show Uint8List;
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -47,6 +52,9 @@ class AiPersona {
   final String id;
   final String name;
   final String emoji;
+
+  /// عکسِ دلخواه (برش‌خورده، base64 PNG)؛ خالی = از ایموجی استفاده می‌شود
+  final String image;
   final int color;
   final String role;
   final String roleFa;
@@ -61,6 +69,7 @@ class AiPersona {
     required this.id,
     required this.name,
     required this.emoji,
+    this.image = '',
     required this.color,
     this.role = '',
     this.roleFa = '',
@@ -115,6 +124,7 @@ class AiPersona {
     String? id,
     String? name,
     String? emoji,
+    String? image,
     int? color,
     String? role,
     String? personality,
@@ -126,6 +136,7 @@ class AiPersona {
         id: id ?? this.id,
         name: name ?? this.name,
         emoji: emoji ?? this.emoji,
+        image: image ?? this.image,
         color: color ?? this.color,
         role: role ?? this.role,
         roleFa: '',
@@ -139,6 +150,7 @@ class AiPersona {
         'id': id,
         'name': name,
         'emoji': emoji,
+        if (image.isNotEmpty) 'image': image,
         'color': color,
         'role': role,
         'personality': personality,
@@ -154,6 +166,7 @@ class AiPersona {
       id: id,
       name: name,
       emoji: (j['emoji'] ?? '🙂').toString(),
+      image: (j['image'] ?? '').toString(),
       color: (j['color'] as num?)?.toInt() ?? 0xFF0F766E,
       role: (j['role'] ?? '').toString(),
       personality: (j['personality'] ?? '').toString(),
@@ -179,7 +192,7 @@ class PersonaStore {
     AiPersona(
       id: 'emma',
       name: 'Emma',
-      emoji: '☕',
+      emoji: '👩‍🍳',
       color: 0xFF9A3412,
       role: 'a cheerful barista in a busy coffee shop',
       roleFa: 'باریستای شاد کافه',
@@ -190,7 +203,7 @@ class PersonaStore {
     AiPersona(
       id: 'daniel',
       name: 'Daniel',
-      emoji: '💼',
+      emoji: '👨‍💼',
       color: 0xFF1E3A8A,
       role: 'a professional but friendly job interviewer',
       roleFa: 'مصاحبه‌گر شغلی',
@@ -201,7 +214,7 @@ class PersonaStore {
     AiPersona(
       id: 'sofia',
       name: 'Sofia',
-      emoji: '🏨',
+      emoji: '👩‍💼',
       color: 0xFF7C3AED,
       role: 'a hotel receptionist',
       roleFa: 'مسئول پذیرش هتل',
@@ -223,7 +236,7 @@ class PersonaStore {
     AiPersona(
       id: 'drlee',
       name: 'Dr. Lee',
-      emoji: '🩺',
+      emoji: '👨‍⚕️',
       color: 0xFFBE123C,
       role: 'a kind family doctor',
       roleFa: 'پزشکِ مهربان',
@@ -451,6 +464,22 @@ class SpeakingPersonaBar extends StatelessWidget {
   }
 }
 
+final Map<String, Uint8List> _avatarBytesCache = {};
+
+Uint8List? _avatarBytes(String b64) {
+  if (b64.isEmpty) return null;
+  final hit = _avatarBytesCache[b64];
+  if (hit != null) return hit;
+  try {
+    final b = base64Decode(b64);
+    if (_avatarBytesCache.length > 24) _avatarBytesCache.clear();
+    _avatarBytesCache[b64] = b;
+    return b;
+  } catch (_) {
+    return null;
+  }
+}
+
 class _EmojiAvatar extends StatelessWidget {
   final AiPersona persona;
   final double size;
@@ -459,10 +488,12 @@ class _EmojiAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final base = persona.colorValue;
+    final img = _avatarBytes(persona.image);
     return Container(
       width: size,
       height: size,
       alignment: Alignment.center,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
@@ -471,9 +502,268 @@ class _EmojiAvatar extends StatelessWidget {
           colors: [base, Color.lerp(base, Colors.black, 0.45)!],
         ),
       ),
-      child: Text(persona.emoji, style: TextStyle(fontSize: size * 0.52)),
+      child: img != null
+          ? Image.memory(img,
+              width: size, height: size, fit: BoxFit.cover, gaplessPlayback: true)
+          : Text(persona.emoji, style: TextStyle(fontSize: size * 0.52)),
     );
   }
+}
+
+/// دهانِ متحرک: بخشِ پایینِ صورت (فک) موقعِ حرف‌زدن کمی پایین می‌آید و پشتش دهانِ تیره دیده می‌شود.
+/// برای هر ایموجیِ صورت‌دار و هر عکسی کار می‌کند.
+class _TalkingJaw extends StatelessWidget {
+  final Widget child;
+  final double size;
+  final double mouth; // 0..1
+  final double split; // محلِ دهان (نسبت از بالا)
+  const _TalkingJaw({
+    required this.child,
+    required this.size,
+    required this.mouth,
+    this.split = 0.64,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final d = size * 0.09 * mouth;
+    if (d < 0.6) return SizedBox(width: size, height: size, child: child);
+    final sy = size * split;
+    final mw = size * 0.30;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
+        children: [
+          Positioned.fill(child: child),
+          Positioned(
+            left: (size - mw) / 2,
+            top: sy - 1,
+            width: mw,
+            height: d + 2,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: const Color(0xFF3B0F12),
+                borderRadius: BorderRadius.circular(d),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            top: d,
+            width: size,
+            height: size,
+            child: ClipRect(clipper: _FromYClipper(sy), child: child),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FromYClipper extends CustomClipper<Rect> {
+  final double y;
+  const _FromYClipper(this.y);
+  @override
+  Rect getClip(Size size) => Rect.fromLTWH(0, y, size.width, size.height - y);
+  @override
+  bool shouldReclip(_FromYClipper o) => o.y != y;
+}
+
+/// انتخابِ عکس از گالری + برشِ دایره‌ای (جابه‌جا و زوم کن). خروجی: PNG با فرمتِ base64 یا null.
+Future<String?> _pickPersonaPhoto(BuildContext context) async {
+  Uint8List? bytes;
+  try {
+    final res = await FilePicker.platform
+        .pickFiles(type: FileType.image, withData: true);
+    bytes = res?.files.isEmpty ?? true ? null : res!.files.first.bytes;
+  } catch (_) {
+    bytes = null;
+  }
+  if (bytes == null || !context.mounted) return null;
+  return showDialog<String>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _AvatarCropDialog(bytes: bytes!),
+  );
+}
+
+class _AvatarCropDialog extends StatefulWidget {
+  final Uint8List bytes;
+  const _AvatarCropDialog({required this.bytes});
+
+  @override
+  State<_AvatarCropDialog> createState() => _AvatarCropDialogState();
+}
+
+class _AvatarCropDialogState extends State<_AvatarCropDialog> {
+  static const double _vp = 280;
+  static const int _out = 192;
+  final GlobalKey _key = GlobalKey();
+  final TransformationController _tc = TransformationController();
+  double? _w, _h;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final im = await decodeImageFromList(widget.bytes);
+      final w = im.width.toDouble(), h = im.height.toDouble();
+      im.dispose();
+      final k = _vp / math.min(w, h);
+      _tc.value = Matrix4.translationValues(
+          -(w * k - _vp) / 2, -(h * k - _vp) / 2, 0);
+      if (mounted) setState(() {
+            _w = w;
+            _h = h;
+          });
+    } catch (_) {
+      if (mounted) Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _tc.dispose();
+    super.dispose();
+  }
+
+  Future<void> _done() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final b = _key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      final im = await b.toImage(pixelRatio: _out / _vp);
+      final bd = await im.toByteData(format: ui.ImageByteFormat.png);
+      im.dispose();
+      if (!mounted) return;
+      Navigator.of(context)
+          .pop(bd == null ? null : base64Encode(bd.buffer.asUint8List()));
+    } catch (_) {
+      if (mounted) Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final w = _w, h = _h;
+    Widget body;
+    if (w == null || h == null) {
+      body = const SizedBox(
+          width: _vp,
+          height: _vp,
+          child: Center(child: CircularProgressIndicator()));
+    } else {
+      final k = _vp / math.min(w, h);
+      final cw = w * k, ch = h * k;
+      body = SizedBox(
+        width: _vp,
+        height: _vp,
+        child: Stack(
+          children: [
+            RepaintBoundary(
+              key: _key,
+              child: ClipRect(
+                child: SizedBox(
+                  width: _vp,
+                  height: _vp,
+                  child: InteractiveViewer(
+                    transformationController: _tc,
+                    constrained: false,
+                    minScale: 1,
+                    maxScale: 6,
+                    boundaryMargin: EdgeInsets.zero,
+                    child: SizedBox(
+                      width: cw,
+                      height: ch,
+                      child: Image.memory(
+                        widget.bytes,
+                        fit: BoxFit.fill,
+                        cacheWidth: w <= h
+                            ? math.min(w, 1200).round()
+                            : null,
+                        cacheHeight: h < w
+                            ? math.min(h, 1200).round()
+                            : null,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const IgnorePointer(
+              child: CustomPaint(
+                size: Size(_vp, _vp),
+                painter: _CropMaskPainter(),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Dialog(
+      backgroundColor: c.paper,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_tr(context, 'عکس را جابه‌جا و زوم کن', 'Move and zoom the photo'),
+                style: TextStyle(
+                    color: c.ink, fontSize: 14, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            body,
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _busy ? null : () => Navigator.of(context).pop(),
+                    child: Text(_tr(context, 'لغو', 'Cancel')),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: (w == null || _busy) ? null : _done,
+                    child: Text(_tr(context, 'تأیید', 'OK')),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CropMaskPainter extends CustomPainter {
+  const _CropMaskPainter();
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final circle = Path()..addOval(rect.deflate(2));
+    final mask = Path.combine(
+        PathOperation.difference, Path()..addRect(rect), circle);
+    canvas.drawPath(mask, Paint()..color = const Color(0x99000000));
+    canvas.drawPath(
+        circle,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2);
+  }
+
+  @override
+  bool shouldRepaint(_CropMaskPainter o) => false;
 }
 
 // ───────────────────────────── انتخاب / ساخت شخصیت ─────────────────────────────
@@ -681,10 +971,10 @@ class _PersonaEditor extends StatefulWidget {
 
 class _PersonaEditorState extends State<_PersonaEditor> {
   static const _emojis = [
-    '🧑‍🏫', '☕', '💼', '🏨', '😎', '🩺', '👩‍🍳', '🧑‍✈️', '🛍️', '🎓', '🧙', '🤖', '🐱', '🎤',
+    '🧑‍🏫', '👩‍🍳', '👨‍💼', '👩‍💼', '😎', '👨‍⚕️', '👩‍⚕️', '🧑‍✈️', '👩‍🎤', '🎓', '🧙', '🤖', '🐱', '🎤',
     '🙂', '😀', '😄', '🥰', '🤓', '🧐', '🤠', '🥳', '😇', '🤩', '👩‍💼', '👨‍💼', '👩‍🏫', '👨‍🍳',
     '👮', '👷', '🧑‍🚀', '🧑‍🎨', '🧑‍🔧', '🧑‍⚕️', '🦸', '🧛', '🧚', '🧞', '👽', '👻', '🐶', '🦊',
-    '🐼', '🦁', '🐯', '🐸', '🐵', '🦄', '🐧', '🦉', '🐰', '🐻', '🌟', '🔥',
+    '🐼', '🦁', '🐯', '🐸', '🐵', '🦄', '🐧', '🦉', '🐰', '🐻', '👨‍🎓', '👩‍🎓',
   ];
   static const _colors = [
     0xFF0F766E, 0xFF9A3412, 0xFF1E3A8A, 0xFF7C3AED, 0xFF0E7490, 0xFFBE123C,
@@ -697,6 +987,7 @@ class _PersonaEditorState extends State<_PersonaEditor> {
   late final TextEditingController _personality;
   late final TextEditingController _scenario;
   late String _emoji;
+  String _image = '';
   late final TextEditingController _emojiCtl;
   late int _color;
   late String _level;
@@ -710,6 +1001,7 @@ class _PersonaEditorState extends State<_PersonaEditor> {
     _personality = TextEditingController(text: p?.personality ?? '');
     _scenario = TextEditingController(text: p?.scenario ?? '');
     _emoji = p?.emoji ?? '🙂';
+    _image = p?.image ?? '';
     _emojiCtl = TextEditingController(text: _emoji);
     _color = p?.color ?? _colors.first;
     _level = p?.level ?? 'auto';
@@ -754,6 +1046,7 @@ class _PersonaEditorState extends State<_PersonaEditor> {
           : 'p${DateTime.now().microsecondsSinceEpoch}',
       name: name,
       emoji: _emoji,
+      image: _image,
       color: _color,
       role: _role.text.trim(),
       personality: _personality.text.trim(),
@@ -793,7 +1086,7 @@ class _PersonaEditorState extends State<_PersonaEditor> {
   Widget build(BuildContext context) {
     final c = context.appColors;
     final preview = AiPersona(
-        id: 'x', name: _name.text, emoji: _emoji, color: _color);
+        id: 'x', name: _name.text, emoji: _emoji, image: _image, color: _color);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
@@ -849,6 +1142,29 @@ class _PersonaEditorState extends State<_PersonaEditor> {
                 'I am a tourist ordering dinner',
                 lines: 2,
               ),
+              Text(_tr(context, 'عکس (اختیاری)', 'Photo (optional)'),
+                  style: TextStyle(color: c.inkSoft, fontSize: 12)),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final r = await _pickPersonaPhoto(context);
+                      if (r != null && mounted) setState(() => _image = r);
+                    },
+                    icon: const Icon(Icons.photo_library_outlined, size: 18),
+                    label: Text(_tr(context, 'انتخاب از گالری', 'Pick from gallery')),
+                  ),
+                  if (_image.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () => setState(() => _image = ''),
+                      child: Text(_tr(context, 'حذف عکس', 'Remove')),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 10),
               Text(_tr(context, 'ایموجی', 'Avatar'),
                   style: TextStyle(color: c.inkSoft, fontSize: 12)),
               const SizedBox(height: 6),
@@ -1610,6 +1926,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         final speaking = _phase == _Phase.speaking;
         final ringing = _phase == _Phase.ringing;
         final wave = (math.sin(_pulse.value * math.pi * 2)).abs();
+        final mouth = _mouthOpen(speaking, listening);
+        final photo = _avatarBytes(p.image);
         final lv = listening
             ? _level.value
             : speaking
@@ -1646,13 +1964,31 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   ],
                 ),
               ),
+              clipBehavior: Clip.antiAlias,
               child: Transform.scale(
                 scale: 1 + 0.07 * lv,
-                child: Text(
-                  p.emoji,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 58, height: 1.1),
-                ),
+                child: photo != null
+                    ? _TalkingJaw(
+                        size: 104,
+                        mouth: mouth,
+                        split: 0.68,
+                        child: Image.memory(photo,
+                            width: 104,
+                            height: 104,
+                            fit: BoxFit.cover,
+                            gaplessPlayback: true),
+                      )
+                    : _TalkingJaw(
+                        size: 70,
+                        mouth: mouth,
+                        child: Center(
+                          child: Text(
+                            p.emoji,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 58, height: 1.0),
+                          ),
+                        ),
+                      ),
               ),
             ),
           ],
