@@ -13,6 +13,7 @@ import '../../core/models/grammar_note.dart';
 import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
+import '../../core/providers/speech_provider.dart' show speechControllerProvider;
 import '../../core/providers/translation_provider.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
@@ -983,15 +984,38 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     return options.contains(_chatLang) ? _chatLang : options.first;
   }
 
+  /// نشانگرِ ابتدای آخرین پیام — صفحه (نه یک لیستِ تودرتو) تا اینجا اسکرول می‌شود
+  final GlobalKey _lastMsgKey = GlobalKey();
+
   void _scrollDown() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scroll.hasClients) return;
-      _scroll.animateTo(
-        _scroll.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 200),
+      if (!mounted) return;
+      final ctx = _lastMsgKey.currentContext;
+      if (ctx == null || !ctx.mounted) return;
+      // تبِ پنهان (Offstage) → اسکرول نکن
+      if (!TickerMode.of(ctx)) return;
+      Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.08,
+        duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
       );
     });
+  }
+
+  /// خوانشِ خودکارِ جوابِ AI؛ همان متنِ دکمه‌ی 🔊 (در حالتِ تماس، پنلِ تماس خودش می‌خواند).
+  void _autoRead(String text) {
+    if (_callMode || !mounted) return;
+    final t = decodeHtmlEntities(text)
+        .replaceAll(RegExp('[\u2066-\u2069]'), '')
+        .replaceAll(RegExp(r'\*\*|__|`'), '')
+        .replaceAll(RegExp(r'^\s{0,3}#{1,6}\s*', multiLine: true), '')
+        .replaceAll(RegExp(r'^\s*[-*•]\s+', multiLine: true), '')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+        .trim();
+    if (t.isEmpty) return;
+    unawaited(
+        ref.read(speechControllerProvider.notifier).toggle(t, _activeLang()));
   }
 
   // ───────────── انتخاب/حذفِ پیام‌ها ─────────────
@@ -1216,6 +1240,7 @@ Now respond to: "$sentence"
         _failedText = null;
         _failedHistory = null;
       });
+      _autoRead(r.text);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -1673,7 +1698,7 @@ Now respond to: "$sentence"
 
   Widget _chatArea(AppThemeColorsExt c) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 200, maxHeight: 420),
+      constraints: const BoxConstraints(minHeight: 200),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: c.cardBorder),
@@ -1682,16 +1707,21 @@ Now respond to: "$sentence"
       child: LayoutBuilder(
         builder: (context, bc) {
           final maxW = bc.maxWidth * 0.88;
-          return ListView(
-            controller: _scroll,
-            shrinkWrap: true,
+          // بدونِ اسکرولِ تودرتو: کلِ صفحه با هر جای لمس اسکرول می‌شود
+          return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (var i = 0; i < _messages.length; i++)
+              for (var i = 0; i < _messages.length; i++) ...[
+                if (i == _messages.length - 1)
+                  SizedBox.shrink(key: _lastMsgKey),
                 Padding(
+                  key: ValueKey('chat-msg-$i'),
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _messageRow(i, _messages[i], maxW, c),
                 ),
+              ],
               if (_loading)
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
@@ -1754,6 +1784,7 @@ Now respond to: "$sentence"
                   ),
                 ),
             ],
+            ),
           );
         },
       ),
