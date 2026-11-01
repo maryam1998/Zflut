@@ -1171,11 +1171,18 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         return;
       }
       _stopSpeaking();
+      // بعد از حرفِ AI کمی صبر کن تا فوکوسِ صدا/میکروفون آزاد شود
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      if (!mounted || _closed) return;
+      try {
+        if (await _rec.isRecording()) await _rec.stop();
+      } catch (_) {}
       final dir = await getTemporaryDirectory();
       final path =
           '${dir.path}/call_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      await _rec.start(
-        const RecordConfig(
+      // اگر تنظیماتِ پیشرفته (حذفِ اکو/نویز) روی این گوشی جواب نداد، ساده‌تر امتحان کن
+      const configs = <RecordConfig>[
+        RecordConfig(
           encoder: AudioEncoder.aacLc,
           bitRate: 64000,
           sampleRate: 16000,
@@ -1184,8 +1191,34 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           noiseSuppress: true,
           autoGain: false,
         ),
-        path: path,
-      );
+        RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 64000,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+        RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          numChannels: 1,
+        ),
+      ];
+      Object? lastErr;
+      var started = false;
+      for (final cfg in configs) {
+        try {
+          await _rec.start(cfg, path: path);
+          started = true;
+          break;
+        } catch (e) {
+          lastErr = e;
+          try {
+            await _rec.stop();
+          } catch (_) {}
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          if (!mounted || _closed) return;
+        }
+      }
+      if (!started) throw lastErr ?? StateError('record start failed');
       _recPath = path;
       _speechFrames = 0;
       _silentFrames = 0;
@@ -1202,10 +1235,14 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           _info = '';
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _error = _tr(context, 'شروعِ ضبط ممکن نشد.',
-            'Could not start recording.'));
+        var d = e.toString().replaceAll('\n', ' ');
+        if (d.length > 90) d = '${d.substring(0, 90)}…';
+        setState(() => _error = _tr(
+            context,
+            'شروعِ ضبط ممکن نشد. (میکروفون شاید دستِ برنامه‌ی دیگری باشد)\n$d',
+            'Could not start recording.\n$d'));
       }
     }
   }
@@ -1544,12 +1581,60 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   ],
                 ),
               ),
-              child: Text(p.emoji, style: const TextStyle(fontSize: 52)),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  ClipOval(
+                    child: CustomPaint(
+                      size: const Size(98, 98),
+                      painter: _TalkingFacePainter(
+                        hair: Color.lerp(p.colorValue, Colors.black, 0.55)!,
+                        mouth: _mouthOpen(speaking, listening),
+                        blink: _blinkAmount(),
+                        smile: ringing || _phase == _Phase.ready,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: -6,
+                    bottom: -6,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(color: p.colorValue, width: 2),
+                      ),
+                      child: Text(p.emoji, style: const TextStyle(fontSize: 15)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         );
       },
     );
+  }
+
+  /// بازشدنِ دهان (۰..۱): موقعِ حرف‌زدنِ AI با ریتمِ هجا باز و بسته می‌شود.
+  double _mouthOpen(bool speaking, bool listening) {
+    if (!speaking) return 0;
+    final t = DateTime.now().millisecondsSinceEpoch / 1000.0;
+    final syl = (math.sin(t * 2 * math.pi * 5.3)).abs(); // هجا
+    final word = 0.55 + 0.45 * math.sin(t * 2 * math.pi * 1.3 + 1.2); // تکیه
+    final pause = math.sin(t * 2 * math.pi * 0.45) > 0.82 ? 0.15 : 1.0; // مکث
+    return (syl * word * pause).clamp(0.0, 1.0);
+  }
+
+  /// پلک‌زدن: هر ~۳٫۵ ثانیه برای ~۱۲۰ میلی‌ثانیه
+  double _blinkAmount() {
+    final ms = DateTime.now().millisecondsSinceEpoch % 3600;
+    if (ms > 120) return 0;
+    return math.sin(ms / 120 * math.pi);
   }
 
   Widget _bars() {
@@ -2030,6 +2115,132 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       ],
     );
   }
+}
+
+/// صورتِ کارتونیِ آواتار: چشم، ابرو و دهانی که موقعِ حرف‌زدن تکان می‌خورد.
+class _TalkingFacePainter extends CustomPainter {
+  final Color hair;
+  final double mouth; // 0 = بسته .. 1 = کاملاً باز
+  final double blink; // 0 = باز .. 1 = بسته
+  final bool smile;
+  const _TalkingFacePainter({
+    required this.hair,
+    required this.mouth,
+    required this.blink,
+    required this.smile,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    // پوست
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF6D3AE), Color(0xFFE8B98C)],
+        ).createShader(Offset.zero & size),
+    );
+    // مو
+    final hairPath = Path()
+      ..moveTo(0, h * 0.40)
+      ..quadraticBezierTo(w * 0.05, h * 0.02, w * 0.5, h * 0.0)
+      ..quadraticBezierTo(w * 0.95, h * 0.02, w, h * 0.40)
+      ..quadraticBezierTo(w * 0.80, h * 0.20, w * 0.5, h * 0.22)
+      ..quadraticBezierTo(w * 0.20, h * 0.20, 0, h * 0.40)
+      ..close();
+    canvas.drawPath(hairPath, Paint()..color = hair);
+    // گونه‌ها
+    final cheek = Paint()..color = const Color(0x33E57373);
+    canvas.drawCircle(Offset(w * 0.22, h * 0.62), w * 0.07, cheek);
+    canvas.drawCircle(Offset(w * 0.78, h * 0.62), w * 0.07, cheek);
+    // ابرو
+    final brow = Paint()
+      ..color = hair
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w * 0.03
+      ..strokeCap = StrokeCap.round;
+    final browUp = h * 0.012 * mouth;
+    canvas.drawLine(Offset(w * 0.24, h * 0.32 - browUp),
+        Offset(w * 0.40, h * 0.31 - browUp), brow);
+    canvas.drawLine(Offset(w * 0.60, h * 0.31 - browUp),
+        Offset(w * 0.76, h * 0.32 - browUp), brow);
+    // چشم‌ها
+    final eyeH = h * 0.085 * (1 - blink * 0.92);
+    final eye = Paint()..color = const Color(0xFF2B2118);
+    for (final cx in [w * 0.32, w * 0.68]) {
+      canvas.drawOval(
+          Rect.fromCenter(
+              center: Offset(cx, h * 0.45),
+              width: w * 0.085,
+              height: eyeH.clamp(1.0, h)),
+          eye);
+      if (blink < 0.5) {
+        canvas.drawCircle(Offset(cx + w * 0.012, h * 0.435), w * 0.013,
+            Paint()..color = Colors.white);
+      }
+    }
+    // بینی
+    canvas.drawLine(
+        Offset(w * 0.5, h * 0.50),
+        Offset(w * 0.5, h * 0.58),
+        Paint()
+          ..color = const Color(0x33000000)
+          ..strokeWidth = w * 0.015
+          ..strokeCap = StrokeCap.round);
+    // دهان
+    final cx = w * 0.5;
+    final cy = h * 0.74;
+    if (mouth < 0.08) {
+      final lip = Paint()
+        ..color = const Color(0xFF8E3B2F)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.028
+        ..strokeCap = StrokeCap.round;
+      final curve = smile ? h * 0.05 : h * 0.012;
+      final path = Path()
+        ..moveTo(cx - w * 0.12, cy)
+        ..quadraticBezierTo(cx, cy + curve * 2, cx + w * 0.12, cy);
+      canvas.drawPath(path, lip);
+    } else {
+      final mw = w * (0.20 + 0.06 * mouth);
+      final mh = h * (0.03 + 0.17 * mouth);
+      final rect =
+          Rect.fromCenter(center: Offset(cx, cy + mh * 0.2), width: mw, height: mh);
+      final rr = RRect.fromRectAndRadius(rect, Radius.circular(mh * 0.8));
+      canvas.drawRRect(rr, Paint()..color = const Color(0xFF5A1A17));
+      // دندان‌های بالا
+      canvas.save();
+      canvas.clipRRect(rr);
+      canvas.drawRect(
+          Rect.fromLTWH(rect.left, rect.top, rect.width, mh * 0.28),
+          Paint()..color = Colors.white);
+      // زبان
+      canvas.drawOval(
+          Rect.fromCenter(
+              center: Offset(cx, rect.bottom - mh * 0.12),
+              width: mw * 0.6,
+              height: mh * 0.45),
+          Paint()..color = const Color(0xFFE0707A));
+      canvas.restore();
+      canvas.drawRRect(
+          rr,
+          Paint()
+            ..color = const Color(0xFF8E3B2F)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = w * 0.02);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_TalkingFacePainter o) =>
+      o.mouth != mouth ||
+      o.blink != blink ||
+      o.smile != smile ||
+      o.hair != hair;
 }
 
 class _NoModel implements Exception {}
