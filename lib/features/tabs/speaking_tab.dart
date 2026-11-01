@@ -19,6 +19,7 @@ import '../../core/widgets/ai_answer_tools.dart';
 import '../../core/widgets/selection_card.dart'
     show SelectableSyncText, SelectableRun;
 import '_hope_panel.dart';
+import 'speaking_call.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // تب «تمرین مکالمه» — هم‌شکل SpeakingPractice.jsx در Hope
@@ -381,6 +382,7 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
 
   void _go(int i) {
     if (i == _sub) return;
+    if (i != 0) _mainKey.currentState?.endCall();
     setState(() => _sub = i);
     if (i == 0) _mainKey.currentState?.reloadFromHistory();
   }
@@ -802,6 +804,10 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   String? _failedText;
   List<_Msg>? _failedHistory;
 
+  // شخصیتِ هوش مصنوعی + حالتِ ویدیو کال
+  AiPersona _persona = PersonaStore.builtIns.first;
+  bool _callMode = false;
+
   // تاریخچه
   String _sessionId = '';
   bool _inHistory = false;
@@ -824,6 +830,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
       _messages = s?.messages ?? [];
       _inHistory = s != null;
       _syncedAt = s?.updatedAt;
+      _persona = PersonaStore.byId(ls, PersonaStore.forSession(ls, _sessionId));
       return;
     }
     final sel = ref.read(languageSelectionProvider);
@@ -834,6 +841,8 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     final raw = ls.readJson(_kChatKey);
     _sessionId = (raw['sessionId'] ?? '').toString();
     if (_sessionId.isEmpty) _sessionId = _newId();
+    _persona = PersonaStore.byId(
+        ls, PersonaStore.forSession(ls, _sessionId) ?? PersonaStore.activeId(ls));
     _messages = _load();
     final hs = _HistoryStore.find(ls, _sessionId);
     _inHistory = hs != null;
@@ -914,6 +923,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     );
     _inHistory = true;
     _syncedAt = now;
+    PersonaStore.setForSession(ls, _sessionId, _persona.id);
   }
 
   bool get _hasUserMsg => _messages.any((m) => m.role == 'user');
@@ -948,7 +958,13 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     _persist(history: false);
   }
 
-  _Msg _welcome(String lang) => _Msg(
+  _Msg _welcome(String lang) => !_persona.isDefault
+      ? _Msg(
+          role: 'ai',
+          welcome: true,
+          text: _persona.welcomeText(_enName(lang)),
+        )
+      : _Msg(
         role: 'ai',
         welcome: true,
         text: "Hey there! I'm Jimmy, your conversation coach. Let's practice "
@@ -1043,7 +1059,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     final langLabel = _enName(lang);
     final nativeLabel = _enName(native);
     final prompt = '''
-You are Jimmy, a friendly patient $langLabel coach. Learner's native language: $nativeLabel.
+${_persona.coachIntro(langLabel)} Learner's native language: $nativeLabel.
 They just wrote${writtenInNative ? ' (in $nativeLabel, not $langLabel)' : ''}: "$sentence"
 
 Rules:
@@ -1053,6 +1069,7 @@ FIX: <what they wrote> => <the correct version>
 - If they wrote in $nativeLabel instead of $langLabel (not a mistake, just the wrong language), use ONE such line: FIX: <what they wrote in $nativeLabel> => <$langLabel equivalent>
 - After the FIX line(s) — or immediately if there were no mistakes — leave a blank line, then continue the chat: reply ENTIRELY in $langLabel, plain text only (no markdown/asterisks), naturally and briefly — react, ask a follow-up, like a real conversation, not a report. Do NOT explain the mistakes yourself in prose; the FIX lines above are enough.
 
+${_callMode ? kCallRules : ''}
 Recent conversation:
 ${_historyText(history)}
 
@@ -1070,11 +1087,12 @@ Now respond to: "$sentence"
   }) async {
     final langLabel = _enName(lang);
     final prompt =
-        'You are Jimmy, a friendly $langLabel conversation partner. The learner '
+        '${_persona.partnerIntro(langLabel)} The learner '
         '(native language: ${_enName(native)}) just said, in $langLabel: "$translated"\n\n'
         'Reply ENTIRELY in $langLabel, briefly and naturally (1-3 short sentences) — '
         'react to what they said and/or ask a short follow-up question, like a real '
-        'chat message. Plain text only, no markdown, no numbered lists.\n\n'
+        'chat message. Plain text only, no markdown, no numbered lists.\n'
+        '${_callMode ? kCallRules : ''}\n'
         'Recent conversation:\n${_historyText(history)}\n';
     final result = await _callAi(prompt, 180);
     return _normalizeAiText(result);
@@ -1285,6 +1303,89 @@ Now respond to: "$sentence"
         ));
   }
 
+  // ───────────── شخصیت + ویدیو کال ─────────────
+  Future<void> _pickPersona() async {
+    if (_loading || _embedded) return;
+    final ls = ref.read(localStorageProvider);
+    final picked = await showPersonaSheet(context, ls, _persona.id);
+    if (!mounted) return;
+    // همان شخصیت ممکن است داخلِ شیت ویرایش یا حذف شده باشد
+    final p = PersonaStore.byId(ls, picked ?? _persona.id);
+    PersonaStore.setActive(ls, p.id);
+    if (_inHistory) PersonaStore.setForSession(ls, _sessionId, p.id);
+    setState(() {
+      _persona = p;
+      if (_messages.length <= 1) _messages = [_welcome(_activeLang())];
+    });
+    _persist(history: false);
+  }
+
+  void _setCallMode(bool v) {
+    if (v == _callMode || _embedded) return;
+    setState(() {
+      _callMode = v;
+      _editIdx = null;
+      _selectMode = false;
+      _sel.clear();
+    });
+  }
+
+  /// از بیرون (تعویضِ زیرتب) تماس را قطع می‌کند.
+  void endCall() {
+    if (_callMode && mounted) setState(() => _callMode = false);
+  }
+
+  /// سلامِ شخصیت وقتی تماس وصل شد (به چت هم اضافه می‌شود).
+  Future<String?> _callGreeting() async {
+    final lang = _activeLang();
+    final langLabel = _enName(lang);
+    final native = _enName(ref.read(languageSelectionProvider).native);
+    final fallback = _persona.welcomeText(langLabel);
+    try {
+      final r = await _callAi(
+          '${_persona.partnerIntro(langLabel)}\n'
+          'A live video call with a $langLabel learner (native language: $native) '
+          'has just connected. Greet them warmly in $langLabel in 1-2 short spoken '
+          'sentences, say your name, and ask one simple question to start the '
+          'conversation. Plain text only, no markdown, no emojis.',
+          140);
+      final t = _normalizeAiText(r).trim();
+      if (!mounted) return null;
+      if (t.isEmpty) return fallback;
+      setState(() => _messages = [..._messages, _Msg(role: 'ai', text: t)]);
+      _persist();
+      _scrollDown();
+      return t;
+    } catch (_) {
+      return mounted ? fallback : null;
+    }
+  }
+
+  /// یک نوبتِ تماس: همان مسیرِ چت (تصحیح‌ها + ذخیره در تاریخچه) و برگرداندنِ
+  /// متنی که شخصیت باید با صدا بگوید.
+  Future<CallTurn?> _callTurn(String text, bool retry) async {
+    if (_loading) return null;
+    final ft = _failedText;
+    final fh = _failedHistory;
+    if (retry && ft != null && fh != null) {
+      await _ask(ft, fh);
+    } else {
+      await _ask(text, _messages);
+    }
+    if (!mounted || _error.isNotEmpty || _messages.isEmpty) return null;
+    final last = _messages.last;
+    if (last.role != 'ai') return null;
+    final fixes = [
+      for (final c in last.corrections) CallFix(c.original, c.corrected),
+    ];
+    var spoken = callSpokenBody(last.text);
+    if (fixes.isNotEmpty &&
+        !spoken.toLowerCase().contains(fixes.first.corrected.toLowerCase())) {
+      spoken = '${fixes.first.corrected}. $spoken';
+    }
+    return CallTurn(spoken, fixes);
+  }
+
   // ───────────── UI ─────────────
   @override
   Widget build(BuildContext context) {
@@ -1361,6 +1462,28 @@ Now respond to: "$sentence"
         ],
       ),
 
+      // ── شخصیتِ هوش مصنوعی + حالتِ چت/ویدیو کال ──
+      if (!_embedded)
+        SpeakingPersonaBar(
+          persona: _persona,
+          callMode: _callMode,
+          busy: _loading,
+          onPickPersona: _pickPersona,
+          onModeChanged: _setCallMode,
+        ),
+
+      // ── ویدیو کال (در همان صفحه‌ی چت) ──
+      if (_callMode && !_embedded)
+        SpeakingCallPanel(
+          key: ValueKey('call-$_sessionId-${_persona.id}'),
+          persona: _persona,
+          langCode: lang,
+          langName: _enName(lang),
+          onConnected: _callGreeting,
+          onUserSaid: _callTurn,
+          onEnd: endCall,
+        ),
+
       // ── نوارِ انتخابِ پیام‌ها ──
       if (_selectMode) _selectBar(c),
 
@@ -1370,8 +1493,8 @@ Now respond to: "$sentence"
       // ── منطقه‌ی چت ──
       _chatArea(c),
 
-      // ── نوار ورودی ──
-      _inputBar(c),
+      // ── نوار ورودی (در تماس، ورودیِ خودش را دارد) ──
+      if (!_callMode || _embedded) _inputBar(c),
     ];
 
     return Column(
