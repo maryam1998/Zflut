@@ -682,6 +682,9 @@ class _PersonaEditor extends StatefulWidget {
 class _PersonaEditorState extends State<_PersonaEditor> {
   static const _emojis = [
     '🧑‍🏫', '☕', '💼', '🏨', '😎', '🩺', '👩‍🍳', '🧑‍✈️', '🛍️', '🎓', '🧙', '🤖', '🐱', '🎤',
+    '🙂', '😀', '😄', '🥰', '🤓', '🧐', '🤠', '🥳', '😇', '🤩', '👩‍💼', '👨‍💼', '👩‍🏫', '👨‍🍳',
+    '👮', '👷', '🧑‍🚀', '🧑‍🎨', '🧑‍🔧', '🧑‍⚕️', '🦸', '🧛', '🧚', '🧞', '👽', '👻', '🐶', '🦊',
+    '🐼', '🦁', '🐯', '🐸', '🐵', '🦄', '🐧', '🦉', '🐰', '🐻', '🌟', '🔥',
   ];
   static const _colors = [
     0xFF0F766E, 0xFF9A3412, 0xFF1E3A8A, 0xFF7C3AED, 0xFF0E7490, 0xFFBE123C,
@@ -694,6 +697,7 @@ class _PersonaEditorState extends State<_PersonaEditor> {
   late final TextEditingController _personality;
   late final TextEditingController _scenario;
   late String _emoji;
+  late final TextEditingController _emojiCtl;
   late int _color;
   late String _level;
 
@@ -706,6 +710,7 @@ class _PersonaEditorState extends State<_PersonaEditor> {
     _personality = TextEditingController(text: p?.personality ?? '');
     _scenario = TextEditingController(text: p?.scenario ?? '');
     _emoji = p?.emoji ?? '🙂';
+    _emojiCtl = TextEditingController(text: _emoji);
     _color = p?.color ?? _colors.first;
     _level = p?.level ?? 'auto';
   }
@@ -716,7 +721,27 @@ class _PersonaEditorState extends State<_PersonaEditor> {
     _role.dispose();
     _personality.dispose();
     _scenario.dispose();
+    _emojiCtl.dispose();
     super.dispose();
+  }
+
+  void _setEmoji(String e) {
+    _emoji = e;
+    _emojiCtl.value = TextEditingValue(
+      text: e,
+      selection: TextSelection.collapsed(offset: e.length),
+    );
+  }
+
+  /// هر ایموجیِ دلخواه از کیبورد: همیشه آخرین ایموجیِ تایپ‌شده می‌ماند
+  void _onEmojiTyped(String v) {
+    if (v.isEmpty) return;
+    final last = v.characters.last.toString();
+    if (RegExp(r'^[A-Za-z0-9\s]').hasMatch(last)) {
+      setState(() => _setEmoji(_emoji));
+      return;
+    }
+    setState(() => _setEmoji(last));
   }
 
   void _save() {
@@ -827,13 +852,40 @@ class _PersonaEditorState extends State<_PersonaEditor> {
               Text(_tr(context, 'ایموجی', 'Avatar'),
                   style: TextStyle(color: c.inkSoft, fontSize: 12)),
               const SizedBox(height: 6),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: SizedBox(
+                  width: 84,
+                  child: TextField(
+                    controller: _emojiCtl,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 30),
+                    onChanged: _onEmojiTyped,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: c.gold, width: 2),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: c.gold, width: 2),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
                   for (final e in _emojis)
                     GestureDetector(
-                      onTap: () => setState(() => _emoji = e),
+                      onTap: () => setState(() => _setEmoji(e)),
                       child: Container(
                         width: 38,
                         height: 38,
@@ -1594,37 +1646,13 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   ],
                 ),
               ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                alignment: Alignment.center,
-                children: [
-                  ClipOval(
-                    child: CustomPaint(
-                      size: const Size(98, 98),
-                      painter: _TalkingFacePainter(
-                        hair: Color.lerp(p.colorValue, Colors.black, 0.55)!,
-                        mouth: _mouthOpen(speaking, listening),
-                        blink: _blinkAmount(),
-                        smile: ringing || _phase == _Phase.ready,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: -6,
-                    bottom: -6,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        border: Border.all(color: p.colorValue, width: 2),
-                      ),
-                      child: Text(p.emoji, style: const TextStyle(fontSize: 15)),
-                    ),
-                  ),
-                ],
+              child: Transform.scale(
+                scale: 1 + 0.07 * lv,
+                child: Text(
+                  p.emoji,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 58, height: 1.1),
+                ),
               ),
             ),
           ],
