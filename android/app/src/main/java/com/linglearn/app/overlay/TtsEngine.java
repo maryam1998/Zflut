@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 final class TtsEngine {
 
     private static final String TAG = "TtsEngine";
-    private static final int CACHE_MAX = 8;
+    private static final int CACHE_MAX = 16;
     private static final short[] END = new short[0];
 
     /** نتیجه‌ی پخش: ok=false یعنی شکستِ واقعی (برای fallback)؛ لغو شدن ok=true حساب می‌شه. */
@@ -79,6 +79,16 @@ final class TtsEngine {
         // جداکننده‌ی هزارگان (75,000 → 75000): ویرگول مکث حساب می‌شد و عدد درهم خوانده می‌شد
         r = r.replaceAll("(?<=\\d),(?=\\d{3}(?!\\d))", "");
         return r;
+    }
+
+    // پارامترهای VITS: کمتر از پیش‌فرض (0.667 / 0.8) → صدای تمیزتر، کمتر خش‌دار/دماغی و ریتمِ یکنواخت‌تر
+    private static final float NOISE_SCALE = 0.55f;
+    private static final float NOISE_SCALE_W = 0.70f;
+
+    private static void setVitsFloat(Object cfg, String setter, float v) {
+        try {
+            cfg.getClass().getMethod(setter, float.class).invoke(cfg, v);
+        } catch (Throwable ignored) {}
     }
 
     private final OfflineTts tts;
@@ -197,6 +207,10 @@ final class TtsEngine {
             vitsConfig.setTokens(new File(dir, "tokens.txt").getAbsolutePath());
             // espeak-ng-dataِ مشترکِ همه‌ی بسته‌ها (یک بار دانلود می‌شه)
             vitsConfig.setDataDir(SherpaModelManager.getEspeakDataDir(ctx).getAbsolutePath());
+            // 🎙 صدای پایدارتر و کم‌خش‌تر: نویز کمتر = لحنِ یکنواخت‌تر و مکثِ کمتر پرش‌دار.
+            // با reflection تا اگه نسخه‌ی کتابخانه این setter را نداشت build/اجرا خراب نشه.
+            setVitsFloat(vitsConfig, "setNoiseScale", NOISE_SCALE);
+            setVitsFloat(vitsConfig, "setNoiseScaleW", NOISE_SCALE_W);
 
             int cores = Runtime.getRuntime().availableProcessors();
             int threads = Math.max(2, Math.min(4, cores / 2));
@@ -286,38 +300,51 @@ final class TtsEngine {
     }
 
     /**
-     * سکوتِ زیادِ اول/آخرِ هر جمله (مکثِ بعد از نقطه و بینِ دو زبان) را کوتاه می‌کند:
-     * فقط ~۳۰ms اول و ~۹۰ms آخر می‌ماند، پس مکثِ طبیعی هست ولی کش نمی‌آید.
+     * سکوتِ زیادِ اول/آخرِ هر تکه را کوتاه می‌کند ولی نه آن‌قدر که صدا «بریده‌بریده و تند» شود:
+     * ~۴۰ms اول و ~۱۰۰ms آخر می‌ماند + محوِ نرمِ لبه‌ها (بدون تَق‌تَق).
      */
     private static float[] trimSilence(float[] x, int sr) {
         return trimSilence(x, sr, false);
     }
 
-    /** longText=true (جمله‌ی بلند/چندجمله‌ای): مکثِ آخر و مکثِ وسطِ صدا کوتاه‌تر می‌شود. */
+    /** longText=true (جمله‌ی بلند/چندجمله‌ای): مکثِ آخر و مکثِ وسطِ صدا کمی کوتاه‌تر می‌شود. */
     private static float[] trimSilence(float[] x, int sr, boolean longText) {
         if (x == null || x.length == 0 || sr <= 0) return x;
-        final float th = 0.02f;
+        final float th = 0.015f;
         int first = -1, last = -1;
         for (int i = 0; i < x.length; i++) {
             float v = x[i] < 0 ? -x[i] : x[i];
             if (v > th) { if (first < 0) first = i; last = i; }
         }
         if (first < 0) return x;                       // کاملاً سکوت: دست نزن
-        int from = Math.max(0, first - sr * 30 / 1000);
-        int to = Math.min(x.length, last + 1 + sr * (longText ? 30 : 60) / 1000);
+        int from = Math.max(0, first - sr * 40 / 1000);
+        int to = Math.min(x.length, last + 1 + sr * (longText ? 80 : 100) / 1000);
         float[] y = (from == 0 && to == x.length) ? x : java.util.Arrays.copyOfRange(x, from, to);
-        return capInnerSilence(y, sr, longText);
+        y = capInnerSilence(y, sr, longText);
+        edgeFade(y, sr);
+        return y;
+    }
+
+    /** محوِ بسیار کوتاه (۶ms اول / ۱۲ms آخر) تا اتصالِ تکه‌ها صدای «تِق» نده. */
+    private static void edgeFade(float[] y, int sr) {
+        if (y == null || y.length < 8) return;
+        int fin = Math.min(y.length / 2, Math.max(1, sr * 6 / 1000));
+        int fout = Math.min(y.length / 2, Math.max(1, sr * 12 / 1000));
+        for (int i = 0; i < fin; i++) y[i] *= (float) i / fin;
+        for (int i = 0; i < fout; i++) y[y.length - 1 - i] *= (float) i / fout;
     }
 
     /**
-     * مکثِ «وسطِ» صدا (بعد از ویرگول/نقطه/…) را سقف می‌زند: هر سکوتِ بلندتر از ~۲۵۰ms به ~۲۵۰ms
-     * (با محوِ نرم) کوتاه می‌شود. مدل‌های Piper گاهی بعد از علائمِ نگارشی مکثِ چند‌ثانیه‌ای می‌سازند.
+     * مکثِ «وسطِ» صدا (بعد از ویرگول/نقطه/…) را سقف می‌زند، ولی به اندازه‌ی طبیعی:
+     * سکوتِ بلندتر از ~۳۰۰ms (جمله‌ی بلند: ~۲۲۰ms) کوتاه می‌شود (با محوِ نرم در دو سرِ برش).
+     * مدل‌های Piper گاهی بعد از علائمِ نگارشی مکثِ چند‌ثانیه‌ای می‌سازند؛ قبلاً سقف فقط ۸۰–۱۵۰ms بود
+     * و همین باعث می‌شد صدا «تند و بدون نفس» به‌نظر برسد.
      */
     private static float[] capInnerSilence(float[] x, int sr, boolean longText) {
-        final float th = 0.02f;
-        final int maxGap = sr * (longText ? 80 : 150) / 1000;
-        final int minRun = maxGap + sr * (longText ? 30 : 40) / 1000;   // فقط سکوتِ واقعاً بلند دست می‌خورد
-        final int fade = Math.max(1, sr * 8 / 1000);
+        final float th = 0.015f;
+        final int maxGap = sr * (longText ? 220 : 300) / 1000;
+        final int minRun = maxGap + sr * 60 / 1000;   // فقط سکوتِ واقعاً بلند دست می‌خورد
+        final int fade = Math.max(1, sr * 10 / 1000);
         float[] out = new float[x.length];
         int o = 0, i = 0, n = x.length;
         while (i < n) {
@@ -332,8 +359,16 @@ final class TtsEngine {
             int run = j - i;
             if (run >= minRun) {
                 int half = maxGap / 2;
-                for (int k = 0; k < half; k++) out[o++] = x[i + k];
-                for (int k = run - half; k < run; k++) out[o++] = x[i + k];
+                int f = Math.min(fade, half);
+                for (int k = 0; k < half; k++) {
+                    float g = k >= half - f ? (float) (half - k) / f : 1f;      // محوِ خروجی
+                    out[o++] = x[i + k] * g;
+                }
+                for (int k = run - half; k < run; k++) {
+                    int kk = k - (run - half);
+                    float g = kk < f ? (float) kk / f : 1f;                      // محوِ ورودی
+                    out[o++] = x[i + k] * g;
+                }
             } else {
                 for (int k = 0; k < run; k++) out[o++] = x[i + k];
             }
@@ -342,11 +377,11 @@ final class TtsEngine {
         return o == n ? x : java.util.Arrays.copyOf(out, o);
     }
 
-    // سرعتِ پایه‌ی صداهای Piper: در سرعتِ ۱× کمی کندتر از پیش‌فرضِ مدل بخون (مدل‌های high/medium تند می‌خونن).
-    // اگه هنوز تنده عدد رو کمتر کن (مثلاً 0.85)، اگه خیلی کنده بیشتر (مثلاً 0.95).
-    private static final float BASE_SPEED = 0.90f;
-    // زیرِ ۱× اثرِ کم‌کردنِ سرعت قوی‌تر حس بشه (توانِ بیشتر از ۱ = کاهشِ محسوس‌تر)
-    private static final float SLOW_CURVE = 1.25f;
+    // سرعتِ پایه‌ی صداهای Piper: در سرعتِ ۱× کمی کندتر از پیش‌فرضِ مدل بخون (مدل‌ها تند می‌خونن).
+    // اگه هنوز تنده عدد رو کمتر کن (مثلاً 0.80)، اگه خیلی کنده بیشتر (مثلاً 0.92).
+    private static final float BASE_SPEED = 0.86f;
+    // زیرِ ۱× اثرِ کم‌کردنِ سرعت کمی قوی‌تر حس بشه
+    private static final float SLOW_CURVE = 1.15f;
 
     private static float effectiveSpeed(float sp) {
         if (sp <= 0f) sp = 1.0f;
@@ -355,17 +390,143 @@ final class TtsEngine {
         return Math.max(0.2f, Math.min(3.0f, e));
     }
 
-    /** تولیدِ استریم؛ sink برای هر تکه صدا زده می‌شه. اگه sink false بده، null برمی‌گرده (لغو). */
-    private float[] synth(String t, float spUser, boolean pl, final Sink sink) {
-        final float sp = effectiveSpeed(spUser);
-        // متنِ بلند / چندجمله‌ای (نه لغتِ تکی و اسلنگ) → مکث‌های کوتاه‌تر
-        final boolean longText = t.trim().split("\\s+").length > 4;
+    // ================= پردازشِ صدا (کاهشِ حالتِ دماغی/تو‌دماغی + نرم‌کردن) =================
+    /**
+     * فیلترِ ملایم (biquad) روی خروجیِ مدل:
+     *  - کمی تقویتِ بَم (~۱۸۰Hz) → صدا پُرتر و گرم‌تر
+     *  - کمی کاهشِ ناحیه‌ی دماغی (~۱.۲kHz)
+     *  - کمی کاهشِ زیرِ بسیار بالا (~۷kHz) → کمتر «سیس/خش»
+     * وضعیتِ فیلتر بینِ تکه‌های یک جمله حفظ می‌شود (بدون ناپیوستگی).
+     */
+    private static final class VoiceEq {
+        private static final float LOW_SHELF_DB = 1.5f;     // ~180Hz
+        private static final float NASAL_CUT_DB = -3.0f;    // ~1200Hz
+        private static final float AIR_CUT_DB = -1.5f;      // ~7000Hz
+
+        private final double[][] c = new double[3][5];      // b0 b1 b2 a1 a2 (نرمال‌شده)
+        private final double[][] z = new double[3][2];
+        private final boolean on;
+
+        VoiceEq(int sr) {
+            on = sr >= 16000;
+            if (!on) return;
+            lowShelf(c[0], sr, 180.0, LOW_SHELF_DB, 0.8);
+            peaking(c[1], sr, 1200.0, 0.8, NASAL_CUT_DB);
+            highShelf(c[2], sr, Math.min(7000.0, sr * 0.42), AIR_CUT_DB, 0.8);
+        }
+
+        private static void put(double[] o, double b0, double b1, double b2, double a0, double a1, double a2) {
+            o[0] = b0 / a0; o[1] = b1 / a0; o[2] = b2 / a0; o[3] = a1 / a0; o[4] = a2 / a0;
+        }
+
+        private static void peaking(double[] o, int sr, double f0, double q, double db) {
+            double A = Math.pow(10, db / 40.0);
+            double w = 2 * Math.PI * f0 / sr, cs = Math.cos(w), al = Math.sin(w) / (2 * q);
+            put(o, 1 + al * A, -2 * cs, 1 - al * A, 1 + al / A, -2 * cs, 1 - al / A);
+        }
+
+        private static void lowShelf(double[] o, int sr, double f0, double db, double s) {
+            double A = Math.pow(10, db / 40.0);
+            double w = 2 * Math.PI * f0 / sr, cs = Math.cos(w), sn = Math.sin(w);
+            double al = sn / 2 * Math.sqrt((A + 1 / A) * (1 / s - 1) + 2);
+            double sq = 2 * Math.sqrt(A) * al;
+            put(o, A * ((A + 1) - (A - 1) * cs + sq), 2 * A * ((A - 1) - (A + 1) * cs),
+                    A * ((A + 1) - (A - 1) * cs - sq),
+                    (A + 1) + (A - 1) * cs + sq, -2 * ((A - 1) + (A + 1) * cs), (A + 1) + (A - 1) * cs - sq);
+        }
+
+        private static void highShelf(double[] o, int sr, double f0, double db, double s) {
+            double A = Math.pow(10, db / 40.0);
+            double w = 2 * Math.PI * f0 / sr, cs = Math.cos(w), sn = Math.sin(w);
+            double al = sn / 2 * Math.sqrt((A + 1 / A) * (1 / s - 1) + 2);
+            double sq = 2 * Math.sqrt(A) * al;
+            put(o, A * ((A + 1) + (A - 1) * cs + sq), -2 * A * ((A - 1) + (A + 1) * cs),
+                    A * ((A + 1) + (A - 1) * cs - sq),
+                    (A + 1) - (A - 1) * cs + sq, 2 * ((A - 1) - (A + 1) * cs), (A + 1) - (A - 1) * cs - sq);
+        }
+
+        /** درجا روی x اعمال می‌شود (و یک محدودکننده‌ی نرم برای جلوگیری از clip). */
+        void process(float[] x) {
+            if (!on || x == null) return;
+            for (int n = 0; n < x.length; n++) {
+                double v = x[n];
+                for (int s = 0; s < 3; s++) {
+                    double[] k = c[s];
+                    double[] st = z[s];
+                    double y = k[0] * v + st[0];
+                    st[0] = k[1] * v - k[3] * y + st[1];
+                    st[1] = k[2] * v - k[4] * y;
+                    v = y;
+                }
+                // محدودکننده‌ی نرم: زیرِ ۰.۸ دست‌نخورده، بالاتر به‌آرامی به ۱ نزدیک می‌شود
+                double a = v < 0 ? -v : v;
+                if (a > 0.8) {
+                    double t = 0.8 + 0.2 * Math.tanh((a - 0.8) / 0.2);
+                    v = v < 0 ? -t : t;
+                }
+                x[n] = (float) v;
+            }
+        }
+    }
+
+    // ================= تکه‌تکه‌کردنِ جمله (شروعِ سریع‌تر + مکثِ طبیعی) =================
+    private static final class Clause {
+        final String text;
+        final int pauseMs;     // مکثِ بعد از این تکه
+        Clause(String text, int pauseMs) { this.text = text; this.pauseMs = pauseMs; }
+    }
+
+    private static int wordCount(CharSequence s) {
+        int n = 0;
+        boolean in = false;
+        for (int i = 0; i < s.length(); i++) {
+            boolean w = !Character.isWhitespace(s.charAt(i));
+            if (w && !in) n++;
+            in = w;
+        }
+        return n;
+    }
+
+    /**
+     * جمله را سرِ ویرگول / نقطه‌ویرگول / دونقطه / خط‌تیره به تکه‌های ≥۴ کلمه‌ای می‌شکند.
+     * مزیت: پخش بعد از ساختنِ «تکه‌ی اول» شروع می‌شود (نه کلِ جمله) و مکثِ بینِ تکه‌ها دقیقاً کنترل می‌شود.
+     * اعداد مثل 1,5 (بدون فاصله بعد از ویرگول) شکسته نمی‌شوند.
+     */
+    private static java.util.List<Clause> splitClauses(String t) {
+        java.util.ArrayList<Clause> out = new java.util.ArrayList<>();
+        if (t == null) return out;
+        int start = 0;
+        final int n = t.length();
+        for (int i = 0; i < n - 1; i++) {
+            char c = t.charAt(i);
+            int pause;
+            if (c == ',') pause = 170;
+            else if (c == ';') pause = 230;
+            else if (c == ':') pause = 230;
+            else if (c == '\u2014' || c == '\u2013') pause = 190;
+            else continue;
+            if (!Character.isWhitespace(t.charAt(i + 1))) continue;
+            String head = t.substring(start, i + 1).trim();
+            String rest = t.substring(i + 1).trim();
+            if (wordCount(head) < 4 || wordCount(rest) < 3) continue;
+            out.add(new Clause(head, pause));
+            start = i + 1;
+        }
+        String tail = t.substring(start).trim();
+        if (!tail.isEmpty()) out.add(new Clause(tail, 0));
+        if (out.isEmpty()) out.add(new Clause(t, 0));
+        return out;
+    }
+
+    /** تولیدِ یک تکه؛ sink برای هر بخشِ صدا زده می‌شود. false = لغو. */
+    private float[] synthClause(String t, float sp, boolean pl, boolean longText, VoiceEq eq, final Sink sink) {
         if (pl) {
             com.k2fsa.sherpa.onnx.GeneratedAudio ga;
             synchronized (NATIVE_LOCK) { ga = tts.generate(t, 0, sp); }
             float[] all = ga == null ? null : ga.getSamples();
             if (all == null || all.length == 0) return new float[0];
             all = trimSilence(all, sampleRate, longText);
+            eq.process(all);
             if (!sink.accept(all)) return null;
             return all;
         }
@@ -379,6 +540,7 @@ final class TtsEngine {
                 try {
                     if (samples == null || samples.length == 0) return 1;
                     float[] copy = trimSilence(samples.clone(), sampleRate, longText);
+                    eq.process(copy);
                     parts.add(copy);
                     if (!sink.accept(copy)) {
                         aborted[0] = true;
@@ -399,6 +561,38 @@ final class TtsEngine {
         float[] merged = new float[total];
         int off = 0;
         for (float[] p : parts) {
+            System.arraycopy(p, 0, merged, off, p.length);
+            off += p.length;
+        }
+        return merged;
+    }
+
+    /** تولیدِ استریم؛ sink برای هر تکه صدا زده می‌شه. اگه sink false بده، null برمی‌گرده (لغو). */
+    private float[] synth(String t, float spUser, boolean pl, final Sink sink) {
+        final float sp = effectiveSpeed(spUser);
+        // متنِ بلند / چندجمله‌ای (نه لغتِ تکی و اسلنگ) → مکث‌های کمی کوتاه‌تر
+        final boolean longText = wordCount(t) > 4;
+        final VoiceEq eq = new VoiceEq(sampleRate);
+        final java.util.List<Clause> clauses = splitClauses(t);
+        final ArrayList<float[]> all = new ArrayList<>();
+        int total = 0;
+        for (int ci = 0; ci < clauses.size(); ci++) {
+            Clause cl = clauses.get(ci);
+            float[] a = synthClause(cl.text, sp, pl, longText, eq, sink);
+            if (a == null) return null;
+            all.add(a);
+            total += a.length;
+            if (cl.pauseMs > 0 && ci < clauses.size() - 1 && a.length > 0) {
+                float[] gap = new float[sampleRate * cl.pauseMs / 1000];
+                if (!sink.accept(gap)) return null;
+                all.add(gap);
+                total += gap.length;
+            }
+        }
+        if (all.size() == 1) return all.get(0);
+        float[] merged = new float[total];
+        int off = 0;
+        for (float[] p : all) {
             System.arraycopy(p, 0, merged, off, p.length);
             off += p.length;
         }
@@ -456,8 +650,9 @@ final class TtsEngine {
         final String key = keyOf(t, sp);
         touch();
 
-        // اگه prefetchِ در حالِ اجرا مالِ همین متن نیست، کنسلش کن تا این پخش معطل نشه
-        if (!key.equals(inflightPrefetchKey)) pfAbort.incrementAndGet();
+        // اگه prefetchِ در حالِ اجرا مالِ همین متن نیست (و خودِ این متن هم از قبل ساخته نشده)، کنسلش کن
+        // تا این پخش معطل نشه. اگه کش شده باشه لازم نیست prefetchِ جمله‌های بعدی هدر بره.
+        if (!key.equals(inflightPrefetchKey) && !cacheHas(key)) pfAbort.incrementAndGet();
         haltPlayback();
         final int myEpoch = epoch.get();
 
@@ -473,6 +668,15 @@ final class TtsEngine {
         Thread player = new Thread(() -> runPlayer(q, myEpoch, genFailed, gotAudio, once), "tts-play");
         player.setDaemon(true);
         player.start();
+
+        // 🚀 جمله از قبل ساخته شده: مستقیم و بدونِ انتظار برای صفِ تولید (که ممکنه مشغولِ prefetchِ بعدی باشه)
+        final float[] hit = cacheGet(key);
+        if (hit != null && hit.length > 0) {
+            gotAudio.set(true);
+            q.add(toPcm16(hit));
+            q.add(END);
+            return;
+        }
 
         try {
             genExec.execute(() -> runGenerate(t, sp, key, myEpoch, q, genFailed, gotAudio));
@@ -546,7 +750,9 @@ final class TtsEngine {
                 .setBufferSizeInBytes(bufSize)
                 .setTransferMode(AudioTrack.MODE_STREAM);
         if (Build.VERSION.SDK_INT >= 26) {
-            b.setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY);
+            // ⚠️ LOW_LATENCY مسیرِ «fast mixer» را باز می‌کند که صدای ۲۲٫۰۵kHz را با ریسمپلرِ ضعیف
+            // به ۴۸kHz می‌برد (صدای نازک/دماغی). برای گفتار تأخیرِ کم لازم نیست؛ مسیرِ عادیِ باکیفیت.
+            b.setPerformanceMode(AudioTrack.PERFORMANCE_MODE_NONE);
         }
         return b.build();
     }

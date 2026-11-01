@@ -597,11 +597,15 @@ class SpeechController extends StateNotifier<SpeechState> {
   }
 
   void _prefetchNext(int idx, String code) {
-    final n = idx + 1;
-    if (n >= _chunks.length) return;
-    final t = SentenceSplitter.sanitize(_chunks[n].text);
-    if (t.isEmpty || !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(t)) return;
-    unawaited(NativeTtsBridge.prefetch(t, code, state.rate));
+    // دو جمله‌ی بعدی پیش‌پیش ساخته می‌شوند (نه فقط یکی) تا بین جمله‌ها سکوتِ طولانی نیفتد.
+    for (var n = idx + 1; n <= idx + 2; n++) {
+      if (n >= _chunks.length) return;
+      final t = SentenceSplitter.sanitize(_chunks[n].text);
+      if (t.isEmpty || !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(t)) {
+        continue;
+      }
+      unawaited(NativeTtsBridge.prefetch(t, code, state.rate));
+    }
   }
 
   Future<bool> _playSystemTts(int idx, String text, String code, int myGen) {
