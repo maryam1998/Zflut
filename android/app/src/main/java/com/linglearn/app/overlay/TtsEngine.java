@@ -342,8 +342,22 @@ final class TtsEngine {
         return o == n ? x : java.util.Arrays.copyOf(out, o);
     }
 
+    // سرعتِ پایه‌ی صداهای Piper: در سرعتِ ۱× کمی کندتر از پیش‌فرضِ مدل بخون (مدل‌های high/medium تند می‌خونن).
+    // اگه هنوز تنده عدد رو کمتر کن (مثلاً 0.85)، اگه خیلی کنده بیشتر (مثلاً 0.95).
+    private static final float BASE_SPEED = 0.90f;
+    // زیرِ ۱× اثرِ کم‌کردنِ سرعت قوی‌تر حس بشه (توانِ بیشتر از ۱ = کاهشِ محسوس‌تر)
+    private static final float SLOW_CURVE = 1.25f;
+
+    private static float effectiveSpeed(float sp) {
+        if (sp <= 0f) sp = 1.0f;
+        float e = sp < 1f ? (float) Math.pow(sp, SLOW_CURVE) : sp;
+        e *= BASE_SPEED;
+        return Math.max(0.2f, Math.min(3.0f, e));
+    }
+
     /** تولیدِ استریم؛ sink برای هر تکه صدا زده می‌شه. اگه sink false بده، null برمی‌گرده (لغو). */
-    private float[] synth(String t, float sp, boolean pl, final Sink sink) {
+    private float[] synth(String t, float spUser, boolean pl, final Sink sink) {
+        final float sp = effectiveSpeed(spUser);
         // متنِ بلند / چندجمله‌ای (نه لغتِ تکی و اسلنگ) → مکث‌های کوتاه‌تر
         final boolean longText = t.trim().split("\\s+").length > 4;
         if (pl) {
