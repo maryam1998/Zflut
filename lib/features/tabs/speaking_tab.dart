@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../app.dart';
+import '../../core/ai/ai_gateway.dart'
+    show aiOutputProblem, cleanAiText;
 import '../../core/constants/supported_languages.dart';
 import '../../core/models/grammar_note.dart';
 import '../../core/providers/ai_settings_provider.dart';
@@ -1038,15 +1040,35 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   Future<String> _callAi(String prompt, int maxTokens) async {
     final svc = ref.read(translationServiceProvider);
     final ai = ref.read(aiSettingsProvider);
-    final r = await svc.callAI(
-      prompt: prompt,
-      maxTokens: maxTokens,
-      retries: 1,
-      settings: ai,
-    );
-    final cleaned = _stripThink(r);
-    if (cleaned.isEmpty) throw Exception('empty');
-    return cleaned;
+
+    Future<String> once(String p, int tokens, int retries) async {
+      final r = await svc.callAI(
+        prompt: p,
+        maxTokens: tokens,
+        retries: retries,
+        settings: ai,
+      );
+      return cleanAiText(_stripThink(r));
+    }
+
+    var text = await once(prompt, maxTokens, 1);
+    // بعضی مدل‌ها به‌جای جواب، «فکر کردن/تحلیلِ پرامپت» را می‌نویسند (مثل
+    // «The user wants me to roleplay as Jimmy…») و توکن‌ها تمام می‌شود.
+    // چنین متنی هرگز نباید در تماس/چت نشان داده یا خوانده شود: یک بار با
+    // دستورِ سخت‌گیرانه و سقفِ توکنِ بیشتر دوباره می‌پرسیم.
+    if (aiOutputProblem(text) != null) {
+      text = await once(
+        '$prompt\n\nIMPORTANT: Output ONLY the final reply itself, exactly in '
+        'the requested format. No analysis, no thinking aloud, no restating '
+        'or quoting these instructions.',
+        math.max(maxTokens * 3, 420),
+        0,
+      );
+    }
+    if (text.isEmpty || aiOutputProblem(text) != null) {
+      throw Exception('bad ai output');
+    }
+    return text;
   }
 
   Future<_Reply> _askTeacher({

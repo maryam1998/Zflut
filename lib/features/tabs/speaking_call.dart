@@ -974,7 +974,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       ref.read(speechControllerProvider.notifier);
 
   _Phase _phase = _Phase.ringing;
-  StreamSubscription<Amplitude>? _ampSub;
+  // سطحِ صدا را خودمان با تایمر می‌خوانیم (onAmplitudeChanged در بعضی نسخه‌ها
+  // استریمِ تک‌مشترک می‌دهد و بار دوم «Stream has already been listened to» می‌داد)
+  Timer? _ampSub;
   StreamSubscription<NativeEvent>? _dlSub;
   Timer? _clock;
   int _secs = 0;
@@ -1225,9 +1227,20 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _recFrames = 0;
       _stopping = false;
       _ampSub?.cancel();
-      _ampSub = _rec
-          .onAmplitudeChanged(const Duration(milliseconds: 100))
-          .listen(_onAmp);
+      var ampBusy = false;
+      _ampSub = Timer.periodic(const Duration(milliseconds: 100), (_) async {
+        if (ampBusy || _closed || !mounted || _phase != _Phase.recording) {
+          return;
+        }
+        ampBusy = true;
+        try {
+          _onAmp(await _rec.getAmplitude());
+        } catch (_) {
+          // یک نمونه‌ی ناموفق مهم نیست؛ نمونه‌ی بعدی دوباره خوانده می‌شود
+        } finally {
+          ampBusy = false;
+        }
+      });
       if (mounted) {
         setState(() {
           _phase = _Phase.recording;

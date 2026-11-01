@@ -156,8 +156,65 @@ bool _matches(DailyWord w, WordsFilterState f) {
       w.translations.values.any((t) => t.toLowerCase().contains(q));
 }
 
-/// لیستِ نهایی تبِ «دیکشنری من»: اول لغاتِ شخصی، بعد لغاتِ روزمره.
-final wordsTabItemsProvider = Provider<List<DailyWord>>((ref) {
+// ═══════════════════════════════════════════════════════════════════
+// دسته‌بندیِ تبِ «دیکشنری من»: نوع (لغت / عبارت و اصطلاح / اسلنگ / جمله /
+// شخصی) و برای لغت‌های تک‌کلمه‌ای، نقشِ دستوری (اسم / فعل / صفت / قید / سایر).
+// ═══════════════════════════════════════════════════════════════════
+
+const String kKindWord = 'word';
+const String kKindPhrase = 'phrase';
+const String kKindSlang = 'slang';
+const String kKindSentence = 'sentence';
+const String kKindPersonal = 'personal';
+
+/// ترتیبِ نمایشِ چیپ‌های نوع
+const List<String> kWordKinds = [
+  kKindWord,
+  kKindPhrase,
+  kKindSlang,
+  kKindSentence,
+  kKindPersonal,
+];
+
+/// ترتیبِ نمایشِ چیپ‌های نقشِ دستوری (برای لغات تک‌کلمه‌ای)
+const List<String> kWordPosGroups = [
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'other',
+];
+
+/// نوعِ «محتوایی» یک مورد (بدون در نظر گرفتنِ شخصی‌بودن).
+String wordKindOf(DailyWord w) {
+  final t = w.en.trim();
+  final tokens = t.split(RegExp(r'\s+')).where((x) => x.isNotEmpty).length;
+  if (w.pos == 'slang') return kKindSlang;
+  if (w.pos == 'idiom') return kKindPhrase;
+  final endsLikeSentence = RegExp(r'[.?!]$').hasMatch(t);
+  if (tokens >= 6 || (endsLikeSentence && tokens >= 3)) return kKindSentence;
+  if (tokens > 1) return kKindPhrase;
+  return kKindWord;
+}
+
+/// گروهِ نقشِ دستوری (هرچه در لیستِ بالا نبود = other)
+String wordPosGroupOf(DailyWord w) =>
+    kWordPosGroups.contains(w.pos) && w.pos != 'other' ? w.pos : 'other';
+
+/// نوعِ انتخاب‌شده (null = همه)
+final wordsKindProvider = StateProvider<String?>((ref) => null);
+
+/// نقشِ دستوریِ انتخاب‌شده — فقط وقتی نوع = «لغت» (null = همه)
+final wordsPosProvider = StateProvider<String?>((ref) => null);
+
+bool wordMatchesKind(DailyWord w, String? kind) {
+  if (kind == null) return true;
+  if (kind == kKindPersonal) return w.isPersonal;
+  return wordKindOf(w) == kind;
+}
+
+/// لیستِ تبِ «دیکشنری من» (قبل از فیلترِ نوع/نقش): اول لغاتِ شخصی، بعد روزمره.
+final wordsTabBaseItemsProvider = Provider<List<DailyWord>>((ref) {
   final daily = ref.watch(filteredDailyWordsProvider);
   final personal = ref.watch(myDictionaryWordsProvider);
   if (personal.isEmpty) return daily;
@@ -165,4 +222,17 @@ final wordsTabItemsProvider = Provider<List<DailyWord>>((ref) {
   final mine = personal.where((w) => _matches(w, f)).toList(growable: false);
   if (mine.isEmpty) return daily;
   return [...mine, ...daily];
+});
+
+/// لیستِ نهایی تبِ «دیکشنری من» بعد از فیلترِ نوع/نقشِ دستوری.
+final wordsTabItemsProvider = Provider<List<DailyWord>>((ref) {
+  final base = ref.watch(wordsTabBaseItemsProvider);
+  final kind = ref.watch(wordsKindProvider);
+  if (kind == null) return base;
+  final pos = kind == kKindWord ? ref.watch(wordsPosProvider) : null;
+  return base.where((w) {
+    if (!wordMatchesKind(w, kind)) return false;
+    if (pos != null && wordPosGroupOf(w) != pos) return false;
+    return true;
+  }).toList(growable: false);
 });
