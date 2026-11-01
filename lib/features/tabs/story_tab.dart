@@ -493,6 +493,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   // ───────────── ساخت داستان ─────────────
   Future<void> _generate(String lang) async {
     if (_words.isEmpty || _generating) return;
+    _clearCreateView();
     setState(() {
       _generating = true;
       _error = '';
@@ -849,6 +850,23 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             if (langs.contains(e.key)) e.key: List<String>.from(e.value),
         }));
     setState(() => _readSaved = true);
+  }
+
+  /// پاک‌کردنِ نمایشِ داستانِ قبلی در بخشِ «ساخت داستان» (داستان‌ها در
+  /// «ذخیره‌شده‌ها» خوانده می‌شوند؛ بخشِ ساخت هر بار خالی شروع می‌شود).
+  void _clearCreateView() {
+    final r = _result?.id ?? _reading?.id;
+    if (r != null) {
+      unawaited(_audioCtrls[r]?.pause() ?? Future<void>.value());
+      _lastScrolled.remove(r);
+    }
+    _result = null;
+    _reading = null;
+    _readTrans.clear();
+    _readSaved = false;
+    _readNotes = '';
+    _importError = '';
+    _error = '';
   }
 
   void _readingClose() => setState(() {
@@ -1577,6 +1595,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           onTap: () => setState(() {
             _showLibrary = mode == 1;
             _showSaved = mode == 2;
+            // هر بار که به «ساخت داستان» می‌آییم یا از آن می‌رویم، داستانِ قبلی پاک می‌شود
+            _clearCreateView();
           }),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 5),
