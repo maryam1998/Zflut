@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../constants/slang_topics.dart';
 import '../constants/vocab_topics.dart';
 import '../data/word_asset_loader.dart';
 import '../models/daily_word.dart';
@@ -31,9 +32,15 @@ List<DailyWord> _applyFilter(List<DailyWord> all, WordsFilterState f) {
   }).toList(growable: false);
 }
 
+/// موضوعِ انتخاب‌شده در «Slang» (null = همه)
+final slangTopicProvider = StateProvider<String?>((ref) => null);
+
 final filteredSlangWordsProvider = Provider<List<DailyWord>>((ref) {
   final all = ref.watch(slangWordsProvider).valueOrNull ?? const <DailyWord>[];
-  return _applyFilter(all, ref.watch(wordsFilterProvider));
+  final base = _applyFilter(all, ref.watch(wordsFilterProvider));
+  final topic = slangTopicByKey(ref.watch(slangTopicProvider));
+  if (topic == null) return base;
+  return base.where((w) => w.category == topic.key).toList(growable: false);
 });
 
 /// موضوعِ اصلیِ انتخاب‌شده در «Vocabulary in Use» (null = همه)
