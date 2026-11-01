@@ -82,8 +82,8 @@ final class TtsEngine {
     }
 
     // پارامترهای VITS: کمتر از پیش‌فرض (0.667 / 0.8) → صدای تمیزتر، کمتر خش‌دار/دماغی و ریتمِ یکنواخت‌تر
-    private static final float NOISE_SCALE = 0.55f;
-    private static final float NOISE_SCALE_W = 0.70f;
+    private static final float NOISE_SCALE = 0.60f;
+    private static final float NOISE_SCALE_W = 0.80f;
 
     private static void setVitsFloat(Object cfg, String setter, float v) {
         try {
@@ -120,7 +120,7 @@ final class TtsEngine {
     // باعث می‌شد با هر جمله، تولیدِ صدا CPU رو از UI/WebView بگیره و هایلایت و اسکرول لگ کنن.
     // پخشِ صدا (tts-play) همچنان با اولویتِ AUDIO اجرا می‌شه. اگه صدا قطع‌وصل شد، این رو
     // به Process.THREAD_PRIORITY_FOREGROUND (یا بالاتر) برگردون.
-    private static final int GEN_PRIORITY = Process.THREAD_PRIORITY_DEFAULT;
+    private static final int GEN_PRIORITY = Process.THREAD_PRIORITY_FOREGROUND;
     private static final ExecutorService genExec = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(() -> {
             try { Process.setThreadPriority(GEN_PRIORITY); } catch (Throwable ignored) {}
@@ -276,7 +276,10 @@ final class TtsEngine {
     }
 
     // ================= کش =================
-    private static String keyOf(String t, float sp) { return sp + "|" + t; }
+    // سرعتِ کاربر با time-stretch موقعِ پخش اعمال می‌شود (نه با ساختنِ دوباره‌ی صدا)؛ پس کش به سرعت وابسته نیست
+    // و تغییرِ سرعت فوری و بدون پرش/تأخیر است. فقط اگر دستگاه setPlaybackParams را نپذیرفت کلید سرعت دارد.
+    private volatile boolean stretchOk = true;
+    private String keyOf(String t, float sp) { return (stretchOk ? 1.0f : sp) + "|" + t; }
 
     private float[] cacheGet(String key) {
         synchronized (cache) { return cache.get(key); }
@@ -379,13 +382,13 @@ final class TtsEngine {
 
     // سرعتِ پایه‌ی صداهای Piper: در سرعتِ ۱× کمی کندتر از پیش‌فرضِ مدل بخون (مدل‌ها تند می‌خونن).
     // اگه هنوز تنده عدد رو کمتر کن (مثلاً 0.80)، اگه خیلی کنده بیشتر (مثلاً 0.92).
-    private static final float BASE_SPEED = 0.86f;
-    // زیرِ ۱× اثرِ کم‌کردنِ سرعت کمی قوی‌تر حس بشه
-    private static final float SLOW_CURVE = 1.15f;
+    // (کشیدنِ زیادِ طولِ واجها در VITS باعثِ «لرزش» می‌شد؛ پایه نزدیک به طبیعی نگه داشته شد)
+    private static final float BASE_SPEED = 0.94f;
 
-    private static float effectiveSpeed(float sp) {
+    /** سرعتِ ساختِ صدا در مدل: وقتی time-stretch فعاله ثابت است، وگرنه مثلِ قبل به سرعتِ کاربر وابسته. */
+    private float effectiveSpeed(float sp) {
         if (sp <= 0f) sp = 1.0f;
-        float e = sp < 1f ? (float) Math.pow(sp, SLOW_CURVE) : sp;
+        float e = stretchOk ? 1.0f : sp;
         e *= BASE_SPEED;
         return Math.max(0.2f, Math.min(3.0f, e));
     }
@@ -399,9 +402,9 @@ final class TtsEngine {
      * وضعیتِ فیلتر بینِ تکه‌های یک جمله حفظ می‌شود (بدون ناپیوستگی).
      */
     private static final class VoiceEq {
-        private static final float LOW_SHELF_DB = 1.5f;     // ~180Hz
-        private static final float NASAL_CUT_DB = -3.0f;    // ~1200Hz
-        private static final float AIR_CUT_DB = -1.5f;      // ~7000Hz
+        private static final float LOW_SHELF_DB = 0.5f;     // ~150Hz (قبلاً ۱.۵؛ صدا را گرفته می‌کرد)
+        private static final float NASAL_CUT_DB = 2.0f;     // ~2800Hz: تقویتِ وضوحِ کلمات (قبلاً ۳- در ۱.۲kHz)
+        private static final float AIR_CUT_DB = -6.0f;      // ~6500Hz: کاهشِ خشِ مدل‌های Piper
 
         private final double[][] c = new double[3][5];      // b0 b1 b2 a1 a2 (نرمال‌شده)
         private final double[][] z = new double[3][2];
@@ -410,9 +413,9 @@ final class TtsEngine {
         VoiceEq(int sr) {
             on = sr >= 16000;
             if (!on) return;
-            lowShelf(c[0], sr, 180.0, LOW_SHELF_DB, 0.8);
-            peaking(c[1], sr, 1200.0, 0.8, NASAL_CUT_DB);
-            highShelf(c[2], sr, Math.min(7000.0, sr * 0.42), AIR_CUT_DB, 0.8);
+            lowShelf(c[0], sr, 150.0, LOW_SHELF_DB, 0.8);
+            peaking(c[1], sr, 2800.0, 0.9, NASAL_CUT_DB);
+            highShelf(c[2], sr, Math.min(6500.0, sr * 0.42), AIR_CUT_DB, 0.8);
         }
 
         private static void put(double[] o, double b0, double b1, double b2, double a0, double a1, double a2) {
@@ -664,8 +667,9 @@ final class TtsEngine {
             if (fired.compareAndSet(false, true) && cb != null) cb.onDone(ok);
         };
 
+        final float rateF = Math.max(0.25f, Math.min(2.0f, sp));
         // پلیر اول شروع می‌شه: ساختنِ AudioTrack هم‌زمان با تولیدِ صدا انجام می‌شه
-        Thread player = new Thread(() -> runPlayer(q, myEpoch, genFailed, gotAudio, once), "tts-play");
+        Thread player = new Thread(() -> runPlayer(q, myEpoch, rateF, genFailed, gotAudio, once), "tts-play");
         player.setDaemon(true);
         player.start();
 
@@ -757,7 +761,22 @@ final class TtsEngine {
         return b.build();
     }
 
-    private void runPlayer(LinkedBlockingQueue<short[]> q, int myEpoch,
+    /** سرعتِ کاربر را با time-stretch (حفظِ زیر و بمی) روی AudioTrack اعمال می‌کند. */
+    private void applyRate(AudioTrack track, float rate) {
+        if (!stretchOk || track == null) return;
+        try {
+            android.media.PlaybackParams pp = new android.media.PlaybackParams();
+            pp.setSpeed(rate);
+            pp.setPitch(1.0f);
+            pp.setAudioFallbackMode(android.media.PlaybackParams.AUDIO_FALLBACK_MODE_DEFAULT);
+            track.setPlaybackParams(pp);
+        } catch (Throwable e) {
+            Log.w(TAG, "setPlaybackParams failed; falling back to model speed", e);
+            stretchOk = false;
+        }
+    }
+
+    private void runPlayer(LinkedBlockingQueue<short[]> q, int myEpoch, final float rateNow,
                            AtomicBoolean genFailed, AtomicBoolean gotAudio, DoneCallback once) {
         try { Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO); } catch (Throwable ignored) {}
         AudioTrack track = null;
@@ -778,10 +797,6 @@ final class TtsEngine {
                 short[] c = q.poll(40, TimeUnit.MILLISECONDS);
                 if (c == null) continue;
                 if (c == END) break;
-                if (!started) {
-                    track.play();
-                    started = true;
-                }
                 int off = 0;
                 while (off < c.length) {
                     if (epoch.get() != myEpoch || released) { cancelled = true; break loop; }
@@ -790,6 +805,17 @@ final class TtsEngine {
                     off += n;
                 }
                 frames += c.length;
+                // کمی صدا جمع می‌شود (~۲۵۰ms) و بعد پخش شروع می‌شود تا بینِ تکه‌ها underrun/لرزش نباشد
+                if (!started && frames >= sampleRate / 4) {
+                    applyRate(track, rateNow);
+                    track.play();
+                    started = true;
+                }
+            }
+            if (!started && frames > 0 && !cancelled && ok) {
+                applyRate(track, rateNow);
+                track.play();
+                started = true;
             }
             // رفعِ باگِ «لغات و جمله‌های کوتاه خونده نمی‌شن»:
             // توی AudioTrack حالتِ MODE_STREAM، پخش تا وقتی بافر کاملاً پر نشده شروع نمی‌شه
@@ -799,7 +825,7 @@ final class TtsEngine {
             // توی حالتِ STREAM یعنی «هرچی تو بافره تا آخر پخش بشه» (drain).
             if (!cancelled && ok && started) {
                 try { track.stop(); } catch (Throwable ignored) {}
-                long deadline = SystemClock.uptimeMillis() + (frames * 1000L / sampleRate) + 400;
+                long deadline = SystemClock.uptimeMillis() + (long) (frames * 1000L / sampleRate / Math.max(0.25f, rateNow)) + 400;
                 while (SystemClock.uptimeMillis() < deadline) {
                     if (epoch.get() != myEpoch || released) { cancelled = true; break; }
                     long head = track.getPlaybackHeadPosition() & 0xFFFFFFFFL;
