@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../constants/dictionary_topics.dart';
+import '../constants/vocab_topics.dart';
 import '../models/daily_word.dart';
 import '../models/filter_state.dart';
 import '../storage/local_storage.dart';
@@ -157,8 +159,9 @@ bool _matches(DailyWord w, WordsFilterState f) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// دسته‌بندیِ تبِ «دیکشنری من»: نوع (لغت / عبارت و اصطلاح / اسلنگ / جمله /
-// شخصی) و برای لغت‌های تک‌کلمه‌ای، نقشِ دستوری (اسم / فعل / صفت / قید / سایر).
+// دسته‌بندیِ تبِ «دیکشنری من»:
+//   • موضوع (غذا، سفر، سلامت، ...) — برای همه‌ی موارد، حتی لغاتِ شخصیِ جدید
+//   • نوع (لغت / عبارت و اصطلاح / اسلنگ / جمله / شخصی)
 // ═══════════════════════════════════════════════════════════════════
 
 const String kKindWord = 'word';
@@ -176,15 +179,6 @@ const List<String> kWordKinds = [
   kKindPersonal,
 ];
 
-/// ترتیبِ نمایشِ چیپ‌های نقشِ دستوری (برای لغات تک‌کلمه‌ای)
-const List<String> kWordPosGroups = [
-  'noun',
-  'verb',
-  'adjective',
-  'adverb',
-  'other',
-];
-
 /// نوعِ «محتوایی» یک مورد (بدون در نظر گرفتنِ شخصی‌بودن).
 String wordKindOf(DailyWord w) {
   final t = w.en.trim();
@@ -197,15 +191,11 @@ String wordKindOf(DailyWord w) {
   return kKindWord;
 }
 
-/// گروهِ نقشِ دستوری (هرچه در لیستِ بالا نبود = other)
-String wordPosGroupOf(DailyWord w) =>
-    kWordPosGroups.contains(w.pos) && w.pos != 'other' ? w.pos : 'other';
-
 /// نوعِ انتخاب‌شده (null = همه)
 final wordsKindProvider = StateProvider<String?>((ref) => null);
 
-/// نقشِ دستوریِ انتخاب‌شده — فقط وقتی نوع = «لغت» (null = همه)
-final wordsPosProvider = StateProvider<String?>((ref) => null);
+/// موضوعِ انتخاب‌شده (null = همه)
+final wordsTopicProvider = StateProvider<String?>((ref) => null);
 
 bool wordMatchesKind(DailyWord w, String? kind) {
   if (kind == null) return true;
@@ -213,7 +203,100 @@ bool wordMatchesKind(DailyWord w, String? kind) {
   return wordKindOf(w) == kind;
 }
 
-/// لیستِ تبِ «دیکشنری من» (قبل از فیلترِ نوع/نقش): اول لغاتِ شخصی، بعد روزمره.
+// ───────────── موضوع‌یابی ─────────────
+
+/// ایندکسِ «لغت ← موضوع» از روی Vocabulary in Use و Slang
+/// (دسته‌ی هر لغت در فایل‌های داده).
+final _topicIndexProvider = Provider<Map<String, String>>((ref) {
+  final idx = <String, String>{};
+  final vocab =
+      ref.watch(vocabInUseWordsProvider).valueOrNull ?? const <DailyWord>[];
+  for (final w in vocab) {
+    final vt = vocabTopicOfCategory(w.category);
+    final t = vt == null ? null : kVocabToDictTopic[vt.key];
+    if (t == null) continue;
+    final k = _cleanToken(w.en);
+    if (k.isNotEmpty) idx.putIfAbsent(k, () => t);
+  }
+  final slang =
+      ref.watch(slangWordsProvider).valueOrNull ?? const <DailyWord>[];
+  for (final w in slang) {
+    final t = kSlangToDictTopic[w.category];
+    if (t == null) continue;
+    final k = _cleanToken(w.en);
+    if (k.isNotEmpty) idx.putIfAbsent(k, () => t);
+  }
+  return idx;
+});
+
+String? _keywordTopic(String token) {
+  final direct = kDictKeywordTopic[token];
+  if (direct != null) return direct;
+  // ریشه‌یابیِ ساده: s / es / ies / ed / d / ing / ly
+  final cands = <String>[];
+  if (token.endsWith('ies') && token.length > 4) {
+    cands.add('${token.substring(0, token.length - 3)}y');
+  }
+  if (token.endsWith('es') && token.length > 3) {
+    cands.add(token.substring(0, token.length - 2));
+  }
+  if (token.endsWith('s') && token.length > 3) {
+    cands.add(token.substring(0, token.length - 1));
+  }
+  if (token.endsWith('ed') && token.length > 4) {
+    cands.add(token.substring(0, token.length - 2));
+    cands.add(token.substring(0, token.length - 1));
+  }
+  if (token.endsWith('ing') && token.length > 5) {
+    final b = token.substring(0, token.length - 3);
+    cands.add(b);
+    cands.add('${b}e');
+  }
+  if (token.endsWith('ly') && token.length > 4) {
+    cands.add(token.substring(0, token.length - 2));
+  }
+  for (final c in cands) {
+    final t = kDictKeywordTopic[c];
+    if (t != null) return t;
+  }
+  return null;
+}
+
+/// موضوعِ یک مورد (کلیدِ kDictTopics).
+String dictTopicOf(DailyWord w, Map<String, String> idx) {
+  final k = _cleanToken(w.en);
+  final isExpr = w.pos == 'idiom' || w.pos == 'slang';
+  // ۱) واژه‌نامه‌ی دستی (فقط برای لغتِ تک‌کلمه‌ای)
+  if (!isExpr) {
+    final direct = kDictKeywordTopic[k];
+    if (direct != null) return direct;
+  }
+  // ۲) دسته‌ی همان لغت/عبارت در Vocabulary in Use / Slang
+  final fromIdx = idx[k];
+  if (fromIdx != null) return fromIdx;
+  if (isExpr) return kTopicExpressions;
+  // ۳) تطبیقِ کلمه‌به‌کلمه
+  final toks = k
+      .split(RegExp(r'\s+'))
+      .map(_cleanToken)
+      .where((t) => t.length > 2)
+      .toList();
+  final votes = <String, int>{};
+  for (final t in toks) {
+    final tp = _keywordTopic(t) ?? idx[t];
+    if (tp != null) votes[tp] = (votes[tp] ?? 0) + 1;
+  }
+  if (votes.isNotEmpty) {
+    String best = votes.keys.first;
+    for (final e in votes.entries) {
+      if (e.value > votes[best]!) best = e.key;
+    }
+    return best;
+  }
+  return kTopicOther;
+}
+
+/// لیستِ تبِ «دیکشنری من» (قبل از فیلترِ موضوع/نوع): اول لغاتِ شخصی، بعد روزمره.
 final wordsTabBaseItemsProvider = Provider<List<DailyWord>>((ref) {
   final daily = ref.watch(filteredDailyWordsProvider);
   final personal = ref.watch(myDictionaryWordsProvider);
@@ -224,15 +307,22 @@ final wordsTabBaseItemsProvider = Provider<List<DailyWord>>((ref) {
   return [...mine, ...daily];
 });
 
-/// لیستِ نهایی تبِ «دیکشنری من» بعد از فیلترِ نوع/نقشِ دستوری.
+/// موضوعِ هر مورد (sid ← کلیدِ موضوع) برای لیستِ پایه
+final wordsTabTopicsProvider = Provider<Map<String, String>>((ref) {
+  final base = ref.watch(wordsTabBaseItemsProvider);
+  final idx = ref.watch(_topicIndexProvider);
+  return {for (final w in base) w.sid: dictTopicOf(w, idx)};
+});
+
+/// لیستِ نهایی تبِ «دیکشنری من» بعد از فیلترِ موضوع و نوع.
 final wordsTabItemsProvider = Provider<List<DailyWord>>((ref) {
   final base = ref.watch(wordsTabBaseItemsProvider);
+  final topic = ref.watch(wordsTopicProvider);
   final kind = ref.watch(wordsKindProvider);
-  if (kind == null) return base;
-  final pos = kind == kKindWord ? ref.watch(wordsPosProvider) : null;
+  if (topic == null && kind == null) return base;
+  final topics = ref.watch(wordsTabTopicsProvider);
   return base.where((w) {
-    if (!wordMatchesKind(w, kind)) return false;
-    if (pos != null && wordPosGroupOf(w) != pos) return false;
-    return true;
+    if (topic != null && topics[w.sid] != topic) return false;
+    return wordMatchesKind(w, kind);
   }).toList(growable: false);
 });

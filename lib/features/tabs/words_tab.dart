@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/dictionary_topics.dart';
 import '../../core/models/daily_word.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/my_dictionary_provider.dart';
@@ -10,8 +11,9 @@ import '_hope_panel.dart' show HopeChoiceChip;
 
 /// تبِ «دیکشنری من»: لغات روزمره + لغات/عبارت‌های شخصی‌ای که کاربر با
 /// «ذخیره برای داستان بعدی» نشان کرده (با برچسب «شخصی» و ✕).
-/// بالای لیست، موارد بر اساسِ نوع (لغت / عبارت و اصطلاح / اسلنگ / جمله / شخصی)
-/// و برای لغت‌ها بر اساسِ نقشِ دستوری (اسم / فعل / صفت / ...) دسته‌بندی می‌شوند.
+/// بالای لیست، موارد (حتی لغاتِ جدیدی که خودت اضافه می‌کنی) بر اساسِ موضوع
+/// (غذا، سفر، سلامت، ...) و بعد بر اساسِ نوع (لغت / عبارت / اسلنگ / جمله / شخصی)
+/// دسته‌بندی می‌شوند.
 class WordsTab extends ConsumerWidget {
   const WordsTab({super.key});
 
@@ -22,10 +24,10 @@ class WordsTab extends ConsumerWidget {
     final all = ref.watch(allDailyWordsProvider);
     final personal = ref.watch(myDictionaryWordsProvider);
     final kind = ref.watch(wordsKindProvider);
-    final pos = ref.watch(wordsPosProvider);
+    final topic = ref.watch(wordsTopicProvider);
     return WordListView(
       // با عوض‌شدنِ دسته، لیست از اول (و اسکرول از بالا) شروع می‌شود
-      key: ValueKey('words-${kind ?? '_'}-${pos ?? '_'}'),
+      key: ValueKey('words-${topic ?? '_'}-${kind ?? '_'}'),
       listId: 'words',
       words: words,
       hasAnyData: all.isNotEmpty || personal.isNotEmpty,
@@ -44,7 +46,7 @@ class _KindFilter extends ConsumerWidget {
       case kKindWord:
         return fa ? 'لغات' : 'Words';
       case kKindPhrase:
-        return fa ? 'عبارات و اصطلاحات' : 'Phrases & idioms';
+        return fa ? 'عبارات' : 'Phrases';
       case kKindSlang:
         return fa ? 'اسلنگ' : 'Slang';
       case kKindSentence:
@@ -55,41 +57,30 @@ class _KindFilter extends ConsumerWidget {
     return k;
   }
 
-  static String _posLabel(String p, bool fa) {
-    switch (p) {
-      case 'noun':
-        return fa ? 'اسم' : 'Nouns';
-      case 'verb':
-        return fa ? 'فعل' : 'Verbs';
-      case 'adjective':
-        return fa ? 'صفت' : 'Adjectives';
-      case 'adverb':
-        return fa ? 'قید' : 'Adverbs';
-      case 'other':
-        return fa ? 'سایر' : 'Other';
-    }
-    return p;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (all.isEmpty) return const SizedBox.shrink();
     final c = context.appColors;
     final ui = Localizations.localeOf(context).languageCode;
     final fa = ui == 'fa' || ui == 'ar';
+    final topicSel = ref.watch(wordsTopicProvider);
     final kind = ref.watch(wordsKindProvider);
-    final posSel = ref.watch(wordsPosProvider);
+    final topics = ref.watch(wordsTabTopicsProvider);
 
     // شمارش‌ها از لیستِ پایه (بعد از فیلترِ سطح/جستجو)
-    final perKind = <String, int>{};
-    final perPos = <String, int>{};
+    final perTopic = <String, int>{};
     for (final w in all) {
+      final t = topics[w.sid] ?? kTopicOther;
+      perTopic[t] = (perTopic[t] ?? 0) + 1;
+    }
+    // شمارشِ نوع‌ها داخلِ موضوعِ انتخاب‌شده
+    final perKind = <String, int>{};
+    var inTopic = 0;
+    for (final w in all) {
+      if (topicSel != null && topics[w.sid] != topicSel) continue;
+      inTopic++;
       final k = wordKindOf(w);
       perKind[k] = (perKind[k] ?? 0) + 1;
-      if (k == kKindWord) {
-        final p = wordPosGroupOf(w);
-        perPos[p] = (perPos[p] ?? 0) + 1;
-      }
       if (w.isPersonal) {
         perKind[kKindPersonal] = (perKind[kKindPersonal] ?? 0) + 1;
       }
@@ -124,31 +115,27 @@ class _KindFilter extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ردیفِ موضوع‌ها
           row([
-            chip('$allLabel (${all.length})', kind == null, () {
-              ref.read(wordsKindProvider.notifier).state = null;
-              ref.read(wordsPosProvider.notifier).state = null;
-            }),
+            chip('$allLabel (${all.length})', topicSel == null,
+                () => ref.read(wordsTopicProvider.notifier).state = null),
+            for (final t in kDictTopics)
+              if ((perTopic[t.key] ?? 0) > 0)
+                chip('${t.label(ui)} (${perTopic[t.key]})', topicSel == t.key,
+                    () => ref.read(wordsTopicProvider.notifier).state = t.key),
+          ]),
+          const SizedBox(height: 6),
+          // ردیفِ نوع‌ها (داخلِ موضوعِ انتخاب‌شده)
+          row([
+            chip('$allLabel ($inTopic)', kind == null,
+                () => ref.read(wordsKindProvider.notifier).state = null,
+                fs: 11.5),
             for (final k in kWordKinds)
               if ((perKind[k] ?? 0) > 0)
-                chip('${_kindLabel(k, fa)} (${perKind[k]})', kind == k, () {
-                  ref.read(wordsKindProvider.notifier).state = k;
-                  ref.read(wordsPosProvider.notifier).state = null;
-                }),
+                chip('${_kindLabel(k, fa)} (${perKind[k]})', kind == k,
+                    () => ref.read(wordsKindProvider.notifier).state = k,
+                    fs: 11.5),
           ]),
-          if (kind == kKindWord && perPos.length > 1) ...[
-            const SizedBox(height: 6),
-            row([
-              chip('$allLabel (${perKind[kKindWord] ?? 0})', posSel == null,
-                  () => ref.read(wordsPosProvider.notifier).state = null,
-                  fs: 11.5),
-              for (final p in kWordPosGroups)
-                if ((perPos[p] ?? 0) > 0)
-                  chip('${_posLabel(p, fa)} (${perPos[p]})', posSel == p,
-                      () => ref.read(wordsPosProvider.notifier).state = p,
-                      fs: 11.5),
-            ]),
-          ],
         ],
       ),
     );
