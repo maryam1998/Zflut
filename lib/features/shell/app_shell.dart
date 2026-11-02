@@ -194,7 +194,7 @@ String _packLabel(String id) {
     case 'speech':
       return 'تشخیص گفتار — ${lang(pid)}';
     case 'song':
-      return 'مدل آهنگ (Whisper) — $pid';
+      return 'بسته‌ی آهنگ — $pid';
     default:
       return id;
   }

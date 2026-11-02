@@ -2469,8 +2469,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 Text(
                   _tr(
                     context,
-                    'برای این‌که صدات رو بفهمم، مدلِ تشخیصِ گفتار (Whisper) باید روی گوشی باشه${_approxMb > 0 ? ' (حدود $_approxMb مگابایت)' : ''}. فقط یک بار دانلود می‌شه و بعدش بدونِ اینترنت کار می‌کنه.',
-                    'To understand your voice I need the on-device speech model (Whisper)${_approxMb > 0 ? ' (about $_approxMb MB)' : ''}. It downloads once and then works offline.',
+                    'برای این‌که صدات رو بفهمم، یک بسته‌ی صوتی باید روی گوشی باشه${_approxMb > 0 ? ' (حدود $_approxMb مگابایت)' : ''}. فقط یک بار دانلود می‌شه و بعدش بدونِ اینترنت کار می‌کنه.',
+                    'To understand your voice I need a voice pack on your device${_approxMb > 0 ? ' (about $_approxMb MB)' : ''}. It downloads once and then works offline.',
                   ),
                   style: TextStyle(color: c.ink, fontSize: 12.5, height: 1.5),
                 ),
@@ -2489,7 +2489,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                     ),
                     onPressed: _downloadModel,
                     icon: const Icon(Icons.download, size: 18),
-                    label: Text(_tr(context, 'دانلودِ مدل', 'Download model')),
+                    label: Text(_tr(context, 'دانلودِ بسته', 'Download pack')),
                   ),
               ],
             ),
