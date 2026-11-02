@@ -993,6 +993,8 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   final GlobalKey _lastMsgKey = GlobalKey();
 
   void _scrollDown() {
+    // ویدیو کال: صفحه باید ثابت بماند (اسکرولِ خودکار نداریم)
+    if (_callMode && !_embedded) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final ctx = _lastMsgKey.currentContext;

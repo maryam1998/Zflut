@@ -2199,7 +2199,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       children: [
         // ── «ویدیو» ──
         Container(
-          height: 330,
+          height: 380,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
@@ -2214,7 +2214,15 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           ),
           child: Stack(
             children: [
-              Align(alignment: const Alignment(0, -0.18), child: _avatar()),
+              // پس‌زمینه‌ی مخصوصِ هر شخصیت
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    painter: _CallBackdropPainter(p.id, base),
+                  ),
+                ),
+              ),
+              Align(alignment: const Alignment(0, -0.28), child: _avatar()),
               // بالا: اسم + وضعیت + زمان
               Positioned(
                 left: 14,
@@ -2267,11 +2275,11 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   ],
                 ),
               ),
-              Align(alignment: const Alignment(0, 0.5), child: _bars()),
+              Align(alignment: const Alignment(0, 0.3), child: _bars()),
               // پایین: زیرنویس
               Positioned(
                 left: 10,
-                right: 92,
+                right: 10,
                 bottom: 10,
                 child: Container(
                   padding:
@@ -2345,10 +2353,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               // تصویرِ «خودت»
               PositionedDirectional(
                 end: 10,
-                bottom: 10,
+                top: 58,
                 child: Container(
-                  width: 70,
-                  height: 92,
+                  width: 62,
+                  height: 82,
                   decoration: BoxDecoration(
                     color: const Color(0xFF111827),
                     borderRadius: BorderRadius.circular(12),
@@ -2726,3 +2734,286 @@ class _TalkingFacePainter extends CustomPainter {
 }
 
 class _NoModel implements Exception {}
+
+
+/// پس‌زمینه‌ی ویدیو کال؛ برای هر شخصیت یک صحنه‌ی جدا (کلاس، آشپزخانه، دفتر، لابیِ هتل، نئون، کلینیک).
+class _CallBackdropPainter extends CustomPainter {
+  final String id;
+  final Color base;
+  const _CallBackdropPainter(this.id, this.base);
+
+  Color _l(double t) => Color.lerp(base, Colors.white, t)!;
+  Color _d(double t) => Color.lerp(base, Colors.black, t)!;
+
+  Paint _fill(Color c) => Paint()..color = c;
+  Paint _line(Color c, double w) => Paint()
+    ..color = c
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = w
+    ..strokeCap = StrokeCap.round;
+
+  void _glow(Canvas c, Offset o, double r, Color col, double op) {
+    c.drawCircle(
+      o,
+      r,
+      Paint()
+        ..shader = ui.Gradient.radial(o, r, [
+          col.withOpacity(op),
+          col.withOpacity(0),
+        ]),
+    );
+  }
+
+  void _bokeh(Canvas c, Size s, int n, int seed, double opMax) {
+    final r = math.Random(seed);
+    for (var i = 0; i < n; i++) {
+      final o = Offset(r.nextDouble() * s.width, r.nextDouble() * s.height);
+      final rad = 6 + r.nextDouble() * 22;
+      c.drawCircle(o, rad,
+          _fill(Colors.white.withOpacity(0.03 + r.nextDouble() * opMax)));
+    }
+  }
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    final w = s.width, h = s.height;
+    switch (id) {
+      case 'jimmy': // کلاسِ درس
+        _glow(canvas, Offset(w * 0.85, h * 0.2), h * 0.55, Colors.white, 0.22);
+        // تخته
+        final board = RRect.fromRectAndRadius(
+            Rect.fromLTWH(w * 0.12, h * 0.17, w * 0.62, h * 0.34),
+            const Radius.circular(8));
+        canvas.drawRRect(board, _fill(_d(0.55).withOpacity(0.55)));
+        canvas.drawRRect(board, _line(const Color(0xFFD6B98C).withOpacity(0.55), 4));
+        final ch = _line(Colors.white.withOpacity(0.28), 2);
+        canvas.drawLine(Offset(w * 0.17, h * 0.24), Offset(w * 0.42, h * 0.24), ch);
+        canvas.drawLine(Offset(w * 0.17, h * 0.30), Offset(w * 0.56, h * 0.30), ch);
+        canvas.drawLine(Offset(w * 0.17, h * 0.36), Offset(w * 0.34, h * 0.36), ch);
+        final sq = Path()
+          ..moveTo(w * 0.52, h * 0.38)
+          ..quadraticBezierTo(w * 0.58, h * 0.30, w * 0.64, h * 0.38)
+          ..quadraticBezierTo(w * 0.68, h * 0.45, w * 0.60, h * 0.45);
+        canvas.drawPath(sq, ch);
+        // پنجره + پرتوِ نور
+        final win = Rect.fromLTWH(w * 0.80, h * 0.10, w * 0.15, h * 0.28);
+        canvas.drawRRect(RRect.fromRectAndRadius(win, const Radius.circular(6)),
+            _fill(Colors.white.withOpacity(0.18)));
+        canvas.drawLine(win.topCenter, win.bottomCenter, _line(Colors.white38, 2));
+        canvas.drawLine(win.centerLeft, win.centerRight, _line(Colors.white38, 2));
+        final beam = Path()
+          ..moveTo(win.left, win.bottom)
+          ..lineTo(win.right, win.bottom)
+          ..lineTo(w * 0.55, h * 0.95)
+          ..lineTo(w * 0.25, h * 0.95)
+          ..close();
+        canvas.drawPath(beam, _fill(Colors.white.withOpacity(0.05)));
+        // قفسه‌ی کتاب
+        final r = math.Random(3);
+        var x = 0.0;
+        while (x < w * 0.22) {
+          final bw = 7 + r.nextDouble() * 7, bh = 26 + r.nextDouble() * 22;
+          canvas.drawRRect(
+              RRect.fromRectAndRadius(
+                  Rect.fromLTWH(w * 0.04 + x, h * 0.62 - bh, bw, bh),
+                  const Radius.circular(2)),
+              _fill(_l(0.2 + r.nextDouble() * 0.3).withOpacity(0.35)));
+          x += bw + 2;
+        }
+        canvas.drawLine(Offset(w * 0.03, h * 0.62), Offset(w * 0.28, h * 0.62),
+            _line(Colors.white24, 3));
+        break;
+
+      case 'emma': // آشپزخانه
+        final tile = _line(Colors.white.withOpacity(0.07), 1);
+        for (var x = 0.0; x < w; x += 34) {
+          canvas.drawLine(Offset(x, h * 0.34), Offset(x, h), tile);
+        }
+        for (var y = h * 0.34; y < h; y += 34) {
+          canvas.drawLine(Offset(0, y), Offset(w, y), tile);
+        }
+        canvas.drawRect(Rect.fromLTWH(0, 0, w, h * 0.34),
+            _fill(_d(0.35).withOpacity(0.35)));
+        // قفسه و شیشه‌های ادویه
+        canvas.drawRect(Rect.fromLTWH(w * 0.05, h * 0.20, w * 0.38, 5),
+            _fill(const Color(0xFFD6A86B).withOpacity(0.6)));
+        final jars = [0.07, 0.15, 0.23, 0.31, 0.37];
+        for (var i = 0; i < jars.length; i++) {
+          final jh = 20 + (i % 3) * 7.0;
+          canvas.drawRRect(
+              RRect.fromRectAndRadius(
+                  Rect.fromLTWH(w * jars[i], h * 0.20 - jh, 16, jh),
+                  const Radius.circular(4)),
+              _fill(Colors.white.withOpacity(0.16 + 0.04 * (i % 2))));
+        }
+        // لامپ‌های آویز
+        for (final lx in [0.70, 0.88]) {
+          canvas.drawLine(Offset(w * lx, 0), Offset(w * lx, h * 0.12),
+              _line(Colors.white38, 1.5));
+          final lamp = Path()
+            ..moveTo(w * lx - 16, h * 0.17)
+            ..quadraticBezierTo(w * lx, h * 0.07, w * lx + 16, h * 0.17)
+            ..close();
+          canvas.drawPath(lamp, _fill(const Color(0xFFFFD27A).withOpacity(0.85)));
+          _glow(canvas, Offset(w * lx, h * 0.19), 70, const Color(0xFFFFD27A), 0.35);
+        }
+        // پیشخوان
+        canvas.drawRect(Rect.fromLTWH(0, h * 0.86, w, h * 0.14),
+            _fill(_d(0.45).withOpacity(0.55)));
+        canvas.drawLine(Offset(0, h * 0.86), Offset(w, h * 0.86),
+            _line(Colors.white.withOpacity(0.25), 2));
+        break;
+
+      case 'daniel': // دفتر کار با منظره‌ی شهر
+        _glow(canvas, Offset(w * 0.2, h * 0.18), h * 0.5,
+            const Color(0xFFFFB86B), 0.28);
+        final r = math.Random(11);
+        var x = -10.0;
+        while (x < w) {
+          final bw = 28 + r.nextDouble() * 34;
+          final bh = h * (0.22 + r.nextDouble() * 0.30);
+          final top = h * 0.74 - bh;
+          canvas.drawRect(Rect.fromLTWH(x, top, bw, h), _fill(_d(0.5).withOpacity(0.7)));
+          for (var wy = top + 8; wy < h * 0.72; wy += 12) {
+            for (var wx = x + 5; wx < x + bw - 6; wx += 9) {
+              if (r.nextDouble() > 0.55) {
+                canvas.drawRect(Rect.fromLTWH(wx, wy, 4, 6),
+                    _fill(const Color(0xFFFFE29A).withOpacity(0.55)));
+              }
+            }
+          }
+          x += bw + 3;
+        }
+        // قابِ پنجره‌ی شیشه‌ای
+        final f = _line(Colors.white.withOpacity(0.22), 3);
+        canvas.drawRect(Rect.fromLTWH(6, 6, w - 12, h * 0.74), f);
+        canvas.drawLine(Offset(w * 0.33, 6), Offset(w * 0.33, h * 0.74 + 6), f);
+        canvas.drawLine(Offset(w * 0.66, 6), Offset(w * 0.66, h * 0.74 + 6), f);
+        // میز
+        canvas.drawRect(Rect.fromLTWH(0, h * 0.88, w, h * 0.12),
+            _fill(Colors.black.withOpacity(0.35)));
+        break;
+
+      case 'sofia': // لابیِ هتل
+        _glow(canvas, Offset(w * 0.5, h * 0.05), h * 0.6,
+            const Color(0xFFFFD98A), 0.30);
+        final arch = _line(const Color(0xFFE9C46A).withOpacity(0.45), 3);
+        for (var i = 0; i < 3; i++) {
+          final cx = w * (0.17 + i * 0.33);
+          final aw = w * 0.26;
+          final p = Path()
+            ..moveTo(cx - aw / 2, h * 0.80)
+            ..lineTo(cx - aw / 2, h * 0.38)
+            ..arcToPoint(Offset(cx + aw / 2, h * 0.38),
+                radius: Radius.circular(aw / 2))
+            ..lineTo(cx + aw / 2, h * 0.80);
+          canvas.drawPath(p, _fill(Colors.white.withOpacity(0.05)));
+          canvas.drawPath(p, arch);
+        }
+        // لوستر
+        canvas.drawLine(Offset(w * 0.5, 0), Offset(w * 0.5, h * 0.08),
+            _line(const Color(0xFFE9C46A), 1.5));
+        for (var i = -3; i <= 3; i++) {
+          canvas.drawCircle(Offset(w * 0.5 + i * 11, h * 0.10 + (i.abs()) * 5),
+              3.2, _fill(const Color(0xFFFFE9A8)));
+        }
+        // کف مرمر
+        final floor = Rect.fromLTWH(0, h * 0.80, w, h * 0.20);
+        canvas.drawRect(
+            floor,
+            Paint()
+              ..shader = ui.Gradient.linear(floor.topCenter, floor.bottomCenter, [
+                Colors.white.withOpacity(0.16),
+                Colors.black.withOpacity(0.25),
+              ]));
+        for (var i = 1; i < 6; i++) {
+          canvas.drawLine(Offset(w * i / 6, h * 0.80), Offset(w * (i - 3) / 3 + w * 0.5, h),
+              _line(Colors.white.withOpacity(0.06), 1));
+        }
+        _bokeh(canvas, s, 14, 5, 0.07);
+        break;
+
+      case 'alex': // نئون و موسیقی
+        final r = math.Random(21);
+        for (var i = 0; i < 4; i++) {
+          final y = h * (0.12 + i * 0.16);
+          canvas.drawLine(Offset(-10, y + 40), Offset(w + 10, y - 40),
+              _line(Colors.white.withOpacity(0.05), 14));
+        }
+        final neon = [const Color(0xFFFF4FD8), const Color(0xFF38E8FF), const Color(0xFFB6FF3B)];
+        for (var i = 0; i < 3; i++) {
+          final o = Offset(w * (0.18 + i * 0.32), h * (0.26 + (i % 2) * 0.18));
+          _glow(canvas, o, 70, neon[i], 0.25);
+          canvas.drawCircle(o, 38 + i * 8.0, _line(neon[i].withOpacity(0.7), 3));
+        }
+        // اکولایزر
+        final bw = w / 28;
+        for (var i = 0; i < 26; i++) {
+          final bh = 14 + r.nextDouble() * 60;
+          canvas.drawRRect(
+              RRect.fromRectAndRadius(
+                  Rect.fromLTWH(6 + i * bw, h - bh, bw - 3, bh),
+                  const Radius.circular(3)),
+              _fill(neon[i % 3].withOpacity(0.38)));
+        }
+        break;
+
+      case 'drlee': // کلینیک
+        _glow(canvas, Offset(w * 0.5, h * 0.35), h * 0.7, Colors.white, 0.14);
+        // پنجره‌ی کرکره‌ای
+        final win = Rect.fromLTWH(w * 0.06, h * 0.12, w * 0.30, h * 0.34);
+        canvas.drawRRect(RRect.fromRectAndRadius(win, const Radius.circular(6)),
+            _fill(Colors.white.withOpacity(0.14)));
+        for (var y = win.top + 6; y < win.bottom; y += 9) {
+          canvas.drawLine(Offset(win.left + 4, y), Offset(win.right - 4, y),
+              _line(Colors.white.withOpacity(0.22), 3));
+        }
+        // صلیبِ پزشکی
+        final cc = Offset(w * 0.84, h * 0.22);
+        final cp = _fill(Colors.white.withOpacity(0.18));
+        canvas.drawRRect(
+            RRect.fromRectAndRadius(
+                Rect.fromCenter(center: cc, width: 16, height: 54),
+                const Radius.circular(4)),
+            cp);
+        canvas.drawRRect(
+            RRect.fromRectAndRadius(
+                Rect.fromCenter(center: cc, width: 54, height: 16),
+                const Radius.circular(4)),
+            cp);
+        // ضربان قلب
+        final y0 = h * 0.62;
+        final ecg = Path()..moveTo(0, y0);
+        for (var x = 0.0; x < w; x += 120) {
+          ecg
+            ..lineTo(x + 30, y0)
+            ..lineTo(x + 40, y0 - 10)
+            ..lineTo(x + 50, y0 + 6)
+            ..lineTo(x + 60, y0 - 34)
+            ..lineTo(x + 70, y0 + 20)
+            ..lineTo(x + 80, y0)
+            ..lineTo(x + 120, y0);
+        }
+        canvas.drawPath(ecg, _line(Colors.white.withOpacity(0.16), 2.5));
+        _bokeh(canvas, s, 8, 9, 0.05);
+        break;
+
+      default: // شخصیت‌های ساخته‌شده توسط کاربر
+        _glow(canvas, Offset(w * 0.25, h * 0.2), h * 0.6, _l(0.5), 0.28);
+        _glow(canvas, Offset(w * 0.8, h * 0.75), h * 0.55, _l(0.3), 0.22);
+        _bokeh(canvas, s, 22, id.hashCode & 0xFFFF, 0.08);
+    }
+    // سایه‌ی پایین برای خوانایی زیرنویس
+    canvas.drawRect(
+        Offset.zero & s,
+        Paint()
+          ..shader = ui.Gradient.linear(Offset(0, h * 0.5), Offset(0, h), [
+            Colors.black.withOpacity(0),
+            Colors.black.withOpacity(0.38),
+          ]));
+  }
+
+  @override
+  bool shouldRepaint(covariant _CallBackdropPainter old) =>
+      old.id != id || old.base != base;
+}
