@@ -33,6 +33,7 @@ import 'speaking_call.dart';
 const String _kChatKey = 'zflut-speaking-chat-v1';
 const String _kLangKey = 'zflut-speaking-lang-v1';
 const String _kHistKey = 'zflut-speaking-history-v1';
+const String _kAutoReadKey = 'zflut-speaking-autoread-v1';
 const Color _kMistake = Color(0xFFC81E1E);
 const Color _kCorrection = Color(0xFF166534);
 
@@ -811,6 +812,9 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   AiPersona _persona = PersonaStore.builtIns.first;
   bool _callMode = false;
 
+  // خوانشِ خودکارِ جوابِ AI در چت (با تیک؛ ذخیره می‌شود)
+  bool _autoReadOn = false;
+
   // تاریخچه
   String _sessionId = '';
   bool _inHistory = false;
@@ -836,6 +840,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
       _persona = PersonaStore.byId(ls, PersonaStore.forSession(ls, _sessionId));
       return;
     }
+    _autoReadOn = ls.readJson(_kAutoReadKey)['on'] == true;
     final sel = ref.read(languageSelectionProvider);
     final options = sel.targets.isNotEmpty ? sel.targets : const ['en'];
     // زبانِ تمرینِ انتخاب‌شده‌ی قبلی حفظ می‌شود (با جابجایی بین تب‌ها ریست نشود)
@@ -1005,7 +1010,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
 
   /// خوانشِ خودکارِ جوابِ AI؛ همان متنِ دکمه‌ی 🔊 (در حالتِ تماس، پنلِ تماس خودش می‌خواند).
   void _autoRead(String text) {
-    if (_callMode || !mounted) return;
+    if (_callMode || !mounted || !_autoReadOn) return;
     final t = decodeHtmlEntities(text)
         .replaceAll(RegExp('[\u2066-\u2069]'), '')
         .replaceAll(RegExp(r'\*\*|__|`'), '')
@@ -1016,6 +1021,14 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     if (t.isEmpty) return;
     unawaited(
         ref.read(speechControllerProvider.notifier).toggle(t, _activeLang()));
+  }
+
+  void _setAutoRead(bool v) {
+    setState(() => _autoReadOn = v);
+    unawaited(
+        ref.read(localStorageProvider).writeJson(_kAutoReadKey, {'on': v}));
+    // با خاموش‌کردن، خوانشِ در حال پخش هم قطع شود
+    if (!v) unawaited(ref.read(speechControllerProvider.notifier).stop());
   }
 
   // ───────────── انتخاب/حذفِ پیام‌ها ─────────────
@@ -1496,6 +1509,17 @@ Now respond to: "$sentence"
                   label: context.l10n.grammar_select_delete,
                   color: c.rose,
                   onTap: () => _enterSelect(),
+                ),
+              if (!_embedded && !_callMode)
+                HopeTextAction(
+                  icon: _autoReadOn
+                      ? Icons.check_box_rounded
+                      : Icons.check_box_outline_blank_rounded,
+                  label: Localizations.localeOf(context).languageCode == 'fa'
+                      ? 'خوانش خودکار'
+                      : 'Auto-read',
+                  color: _autoReadOn ? c.gold : c.inkSoft,
+                  onTap: () => _setAutoRead(!_autoReadOn),
                 ),
               if (!_embedded && _messages.isNotEmpty)
                 HopeTextAction(
