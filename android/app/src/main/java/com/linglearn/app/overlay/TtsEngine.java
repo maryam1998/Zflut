@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -121,14 +124,39 @@ final class TtsEngine {
     // پخشِ صدا (tts-play) همچنان با اولویتِ AUDIO اجرا می‌شه. اگه صدا قطع‌وصل شد، این رو
     // به Process.THREAD_PRIORITY_FOREGROUND (یا بالاتر) برگردون.
     private static final int GEN_PRIORITY = Process.THREAD_PRIORITY_FOREGROUND;
-    private static final ExecutorService genExec = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(() -> {
-            try { Process.setThreadPriority(GEN_PRIORITY); } catch (Throwable ignored) {}
-            r.run();
-        }, "tts-gen");
-        t.setDaemon(true);
-        return t;
-    });
+    // ⚡ صفِ تولیدِ صدا «اولویت‌دار» است: خوانشِ جمله‌ی فعلی (PRIO_SPEAK) همیشه جلوتر از prefetch (PRIO_PREFETCH)
+    // اجرا می‌شود. قبلاً صف FIFO بود و اگر prefetchِ جمله‌ی بعد در حالِ ساخت بود، دو prefetchِ بعدی هم
+    // قبل از خوانشِ جمله‌ی فعلی اجرا می‌شدند → بینِ جمله‌ها چند ثانیه سکوتِ غیرطبیعی می‌افتاد.
+    private static final int PRIO_PREFETCH = 0;
+    private static final int PRIO_SPEAK = 10;
+
+    private static final class GenTask implements Runnable, Comparable<GenTask> {
+        private static final AtomicLong SEQ = new AtomicLong();
+        final Runnable r;
+        final int prio;
+        final long seq = SEQ.incrementAndGet();
+        GenTask(Runnable r, int prio) { this.r = r; this.prio = prio; }
+        @Override public void run() { r.run(); }
+        @Override public int compareTo(GenTask o) {
+            if (prio != o.prio) return prio > o.prio ? -1 : 1;
+            return Long.compare(seq, o.seq);
+        }
+    }
+
+    private static final ThreadPoolExecutor genPool = new ThreadPoolExecutor(
+            1, 1, 0L, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<Runnable>(),
+            r -> {
+                Thread t = new Thread(() -> {
+                    try { Process.setThreadPriority(GEN_PRIORITY); } catch (Throwable ignored) {}
+                    r.run();
+                }, "tts-gen");
+                t.setDaemon(true);
+                return t;
+            });
+
+    private static void gen(Runnable r, int prio) {
+        genPool.execute(new GenTask(r, prio));
+    }
 
     private TtsEngine(OfflineTts tts, int sampleRate, String lang) {
         this.tts = tts;
@@ -260,7 +288,7 @@ final class TtsEngine {
             default:   w = "Hello."; break;
         }
         try {
-            genExec.execute(() -> {
+            gen(() -> {
                 if (released) return;
                 try {
                     long t0 = SystemClock.uptimeMillis();
@@ -271,7 +299,7 @@ final class TtsEngine {
                 } catch (Throwable e) {
                     Log.w(TAG, "warmUp failed", e);
                 }
-            });
+            }, PRIO_SPEAK);
         } catch (Throwable ignored) {}
     }
 
@@ -320,8 +348,8 @@ final class TtsEngine {
             if (v > th) { if (first < 0) first = i; last = i; }
         }
         if (first < 0) return x;                       // کاملاً سکوت: دست نزن
-        int from = Math.max(0, first - sr * 40 / 1000);
-        int to = Math.min(x.length, last + 1 + sr * (longText ? 80 : 100) / 1000);
+        int from = Math.max(0, first - sr * 20 / 1000);
+        int to = Math.min(x.length, last + 1 + sr * (longText ? 50 : 70) / 1000);
         float[] y = (from == 0 && to == x.length) ? x : java.util.Arrays.copyOfRange(x, from, to);
         y = capInnerSilence(y, sr, longText);
         edgeFade(y, sr);
@@ -613,7 +641,7 @@ final class TtsEngine {
         if (cacheHas(key)) return;
         final int g = pfAbort.get();
         try {
-            genExec.execute(() -> {
+            gen(() -> {
                 if (released || pfAbort.get() != g || cacheHas(key)) return;
                 inflightPrefetchKey = key;
                 final boolean pl = plain; // یک‌بار بخون تا بینِ crumb و synth عوض نشه
@@ -627,7 +655,7 @@ final class TtsEngine {
                 } finally {
                     inflightPrefetchKey = null;
                 }
-            });
+            }, PRIO_PREFETCH);
         } catch (Throwable ignored) {}
     }
 
@@ -683,7 +711,7 @@ final class TtsEngine {
         }
 
         try {
-            genExec.execute(() -> runGenerate(t, sp, key, myEpoch, q, genFailed, gotAudio));
+            gen(() -> runGenerate(t, sp, key, myEpoch, q, genFailed, gotAudio), PRIO_SPEAK);
         } catch (Throwable e) {
             genFailed.set(true);
             q.add(END);
@@ -791,6 +819,11 @@ final class TtsEngine {
             } else {
                 currentTrack = track;
             }
+            // ⚠️ نوشتنِ تکه‌ی بلند (مثلاً جمله‌ی کش‌شده‌ی چندثانیه‌ای) یک‌جا قبل از play() در حالتِ STREAM
+            // وقتی از بافرِ ~۱ثانیه‌ای بزرگ‌تر بود می‌توانست write() را برای همیشه بلاک کند (جمله «خوانده نمی‌شد»).
+            // حالا تکه‌ها ریز ریز نوشته می‌شوند و به‌محضِ جمع‌شدنِ مقدارِ کمی صدا play() زده می‌شود.
+            final int slice = Math.max(512, sampleRate / 10);          // ~۱۰۰ms
+            final long startFrames = Math.max(1, sampleRate * 12L / 100); // ~۱۲۰ms پیش‌بافر
             loop:
             while (!cancelled) {
                 if (epoch.get() != myEpoch || released) { cancelled = true; break; }
@@ -800,16 +833,21 @@ final class TtsEngine {
                 int off = 0;
                 while (off < c.length) {
                     if (epoch.get() != myEpoch || released) { cancelled = true; break loop; }
-                    int n = track.write(c, off, c.length - off);
+                    int n = track.write(c, off, Math.min(slice, c.length - off));
                     if (n < 0) { ok = false; break loop; }
+                    if (n == 0) {
+                        // بافر پر است: اگر هنوز play نشده، همین حالا شروع کن تا خالی شود
+                        if (!started) { applyRate(track, rateNow); track.play(); started = true; }
+                        else Thread.sleep(5);
+                        continue;
+                    }
                     off += n;
-                }
-                frames += c.length;
-                // کمی صدا جمع می‌شود (~۲۵۰ms) و بعد پخش شروع می‌شود تا بینِ تکه‌ها underrun/لرزش نباشد
-                if (!started && frames >= sampleRate / 4) {
-                    applyRate(track, rateNow);
-                    track.play();
-                    started = true;
+                    frames += n;
+                    if (!started && frames >= startFrames) {
+                        applyRate(track, rateNow);
+                        track.play();
+                        started = true;
+                    }
                 }
             }
             if (!started && frames > 0 && !cancelled && ok) {
@@ -835,7 +873,7 @@ final class TtsEngine {
                 // head یعنی «به mixer رسید»، نه «از بلندگو درآمد»؛ چند ده میلی‌ثانیه صبر می‌کنیم
                 // تا ته‌ِ صدا با pause()/flush() آخرِ finally بریده نشه.
                 if (!cancelled) {
-                    long until = SystemClock.uptimeMillis() + 70;
+                    long until = SystemClock.uptimeMillis() + 45;
                     while (SystemClock.uptimeMillis() < until) {
                         if (epoch.get() != myEpoch || released) { cancelled = true; break; }
                         Thread.sleep(10);
@@ -881,7 +919,7 @@ final class TtsEngine {
         haltPlayback();
         try {
             // release رو بعد از تولیدِ در حالِ اجرا انجام بده (وگرنه کرشِ native)
-            genExec.execute(() -> { try { synchronized (NATIVE_LOCK) { tts.release(); } } catch (Throwable ignored) {} });
+            gen(() -> { try { synchronized (NATIVE_LOCK) { tts.release(); } } catch (Throwable ignored) {} }, PRIO_SPEAK);
         } catch (Throwable e) {
             try { tts.release(); } catch (Throwable ignored) {}
         }

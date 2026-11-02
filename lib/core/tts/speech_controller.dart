@@ -664,6 +664,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     required int myGen,
     void Function()? onStarted,
     bool detectSilent = false,
+    double gapScale = 1.0,
   }) async {
     try {
       final id = 'f${++_utteranceSeq}';
@@ -712,7 +713,7 @@ class SpeechController extends StateNotifier<SpeechState> {
         }
       }
 
-      await _gapThenNext(idx, text, myGen);
+      await _gapThenNext(idx, text, myGen, gapScale: gapScale);
       return true;
     } catch (e) {
       debugPrint('native speak error: $e');
@@ -726,6 +727,8 @@ class SpeechController extends StateNotifier<SpeechState> {
       idx: idx,
       text: text,
       myGen: myGen,
+      // صدای Piper خودش مکثِ آخرِ جمله را دارد؛ مکثِ اضافه‌ی اپ نصف می‌شود تا بینِ جمله‌ها سکوتِ طولانی نیفتد
+      gapScale: 0.5,
       // جمله‌ی بعدی را همین حین که این یکی پخش می‌شود آماده کن (بعد از شروعِ پخش، تا خوانشِ فعلی کند نشود)
       onStarted: () => _prefetchNext(idx, _currentCode ?? code),
     );
@@ -1115,7 +1118,8 @@ class SpeechController extends StateNotifier<SpeechState> {
   //   • تنظیم N یعنی «کلاً N بار» (خوانش اول هم حساب است).
   //   • ∞ یعنی همین جمله دوباره و دوباره، تا کاربر «بعدی» بزند.
   // ═══════════════════════════════════════════════════════════════
-  Future<void> _gapThenNext(int idx, String text, int myGen) async {
+  Future<void> _gapThenNext(int idx, String text, int myGen,
+      {double gapScale = 1.0}) async {
     if (myGen == _generation) _failStreak = 0;
     // 🧬 این جمله همین الان کامل خوانده شد (خوانش اول یا یکی از تکرارها) →
     // به «مسیر عصبی» خبر بده. قبل از مکثِ بینِ جمله‌ها، تا اگر کاربر وسطِ
@@ -1133,8 +1137,8 @@ class SpeechController extends StateNotifier<SpeechState> {
         debugPrint('onChunkPlayed error: $e');
       }
     }
-    final gap = _gapMs(chunk: text, rate: state.rate);
-    await Future.delayed(Duration(milliseconds: gap));
+    final gap = (_gapMs(chunk: text, rate: state.rate) * gapScale).round();
+    if (gap > 0) await Future.delayed(Duration(milliseconds: gap));
     if (myGen != _generation || _disposed) return;
 
     // A-B looping
