@@ -241,11 +241,11 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
             ),
           ),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Icon(Icons.language, size: 22, color: c.inkSoft),
+              Icon(Icons.language, size: 18, color: c.inkSoft),
               for (final l in langs)
                 _Pill(
                   active: _open.contains(l),
@@ -386,7 +386,7 @@ class _Pill extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
           color: active ? c.teal : Colors.white,
           borderRadius: BorderRadius.circular(999),
@@ -396,7 +396,7 @@ class _Pill extends StatelessWidget {
           label,
           style: TextStyle(
             color: active ? Colors.white : c.ink.withOpacity(0.85),
-            fontSize: 13,
+            fontSize: 11.5,
             fontWeight: FontWeight.w700,
           ),
         ),

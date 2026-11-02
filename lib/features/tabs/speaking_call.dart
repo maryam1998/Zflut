@@ -510,6 +510,24 @@ class _EmojiAvatar extends StatelessWidget {
   }
 }
 
+/// آیا ایموجی صورت/آدمِ زردرنگ (بدونِ رنگِ پوستِ دیگر) است؟ فقط برای این‌ها دهانِ ثابت پوشانده می‌شود.
+bool _yellowFaceEmoji(String e) {
+  final r = e.runes.toList();
+  if (r.isEmpty) return false;
+  for (final c in r) {
+    if (c >= 0x1F3FB && c <= 0x1F3FF) return false; // رنگِ پوستِ دیگر
+  }
+  final c = r.first;
+  return (c >= 0x1F600 && c <= 0x1F64F) ||
+      (c >= 0x1F910 && c <= 0x1F92F) ||
+      (c >= 0x1F466 && c <= 0x1F469) ||
+      (c >= 0x1F470 && c <= 0x1F478) ||
+      (c >= 0x1F9D1 && c <= 0x1F9DD) ||
+      c == 0x1F575 ||
+      c == 0x1F9B8 ||
+      c == 0x1F9B9;
+}
+
 /// شکلِ دهان در یک لحظه: عرض و بازشدگی نسبت به اندازه‌ی آواتار، و میزانِ لبخند (بالا رفتنِ گوشه‌ها).
 class _Viseme {
   final double w; // عرض (نسبت از size)
@@ -532,11 +550,17 @@ class _TalkingJaw extends StatelessWidget {
   final double size;
   final _Viseme? viseme; // null = ساکت (دهانی کشیده نمی‌شود)
   final double split; // محلِ دهان (نسبت از بالا)
+  final double scale; // اندازه‌ی دهان نسبت به پیش‌فرض
+  // رنگِ پوستِ ایموجی: وقتی داده شود، دهانِ خودِ ایموجی با این رنگ پوشانده می‌شود
+  // و فقط دهانِ متحرک دیده می‌شود (لبِ ثابتِ ایموجی زیرش پیدا نباشد)
+  final Color? skin;
   const _TalkingJaw({
     required this.child,
     required this.size,
     required this.viseme,
     this.split = 0.64,
+    this.scale = 1.0,
+    this.skin,
   });
 
   @override
@@ -553,7 +577,7 @@ class _TalkingJaw extends StatelessWidget {
           Positioned.fill(
             child: IgnorePointer(
               child: CustomPaint(
-                painter: _MouthPainter(v, split),
+                painter: _MouthPainter(v, split, scale, skin),
               ),
             ),
           ),
@@ -566,13 +590,25 @@ class _TalkingJaw extends StatelessWidget {
 class _MouthPainter extends CustomPainter {
   final _Viseme v;
   final double split;
-  const _MouthPainter(this.v, this.split);
+  final double scale;
+  final Color? skin;
+  const _MouthPainter(this.v, this.split, this.scale, this.skin);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final s = size.width;
-    final cx = s / 2;
-    final cy = s * split;
+    final box = size.width;
+    final cx = box / 2;
+    final cy = box * split;
+    // پوشاندنِ دهانِ ثابتِ ایموجی با رنگ پوست (لبه‌ی نرم تا لکه دیده نشود)
+    if (skin != null) {
+      canvas.drawOval(
+          Rect.fromCenter(
+              center: Offset(cx, cy), width: box * 0.31, height: box * 0.125),
+          Paint()
+            ..color = skin!
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, box * 0.008));
+    }
+    final s = box * scale;
     final hw = s * v.w / 2;
     final oh = s * v.open;
     // گوشه‌ها در لبخند بالاتر می‌روند
@@ -606,7 +642,12 @@ class _MouthPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_MouthPainter o) =>
-      o.v.w != v.w || o.v.open != v.open || o.v.smile != v.smile || o.split != split;
+      o.v.w != v.w ||
+      o.v.open != v.open ||
+      o.v.smile != v.smile ||
+      o.split != split ||
+      o.scale != scale ||
+      o.skin != skin;
 }
 
 /// انتخابِ عکس از گالری + برشِ دایره‌ای (جابه‌جا و زوم کن). خروجی: PNG با فرمتِ base64 یا null.
@@ -2010,6 +2051,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                         size: 104,
                         viseme: mouth,
                         split: 0.68,
+                        scale: 0.8,
                         child: Image.memory(photo,
                             width: 104,
                             height: 104,
@@ -2019,6 +2061,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                     : _TalkingJaw(
                         size: 70,
                         viseme: mouth,
+                        split: 0.655,
+                        scale: 0.6,
+                        skin: _yellowFaceEmoji(p.emoji) ? const Color(0xFFFFCA28) : null,
                         child: Center(
                           child: Text(
                             p.emoji,
