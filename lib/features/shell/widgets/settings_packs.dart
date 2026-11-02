@@ -330,6 +330,10 @@ class _TtsPackRowState extends State<TtsPackRow> {
   List<Map<String, dynamic>> _voices = const [];
   String _dlVoice = '';
   Timer? _voiceTimer;
+  // صفِ دانلود: چند صدا را پشت‌سرهم انتخاب کن؛ یکی‌یکی (خودکار) دانلود می‌شوند
+  final List<String> _queue = [];
+  String? _restoreVoice; // صدای فعالِ قبل از شروعِ دانلودِ گروهی
+  int _batch = 0;
 
   bool get _hasVoices => widget.kind == 'tts' && !widget.phoneOnly;
 
@@ -364,8 +368,28 @@ class _TtsPackRowState extends State<TtsPackRow> {
       return;
     }
     _voiceTimer?.cancel();
-    if (_open && _dlVoice.isNotEmpty) {
-      // تا وقتی دانلود در جریان است پیشرفت و وضعیت هر ثانیه به‌روز شود
+    // نوبتِ بعدیِ صف
+    if (_dlVoice.isEmpty && _queue.isNotEmpty) {
+      final next = _queue.removeAt(0);
+      await _startVoiceDownload(next);
+      return;
+    }
+    // صف تمام شد: صدای فعالِ قبلی دوباره فعال شود (دانلودِ هر صدا آن را فعال می‌کرد)
+    if (_dlVoice.isEmpty && _queue.isEmpty && _batch > 1) {
+      final r = _restoreVoice;
+      _batch = 0;
+      _restoreVoice = null;
+      if (r != null && r.isNotEmpty) {
+        try {
+          await NativeBridge.instance.setTtsVoice(lang: widget.code, voice: r);
+        } catch (_) {}
+        if (mounted) await _loadVoices();
+        return;
+      }
+    }
+    if (_dlVoice.isEmpty && _queue.isEmpty) _batch = 0;
+    if (mounted && (_dlVoice.isNotEmpty || _queue.isNotEmpty)) {
+      // تا وقتی دانلود/صف در جریان است پیشرفت و وضعیت هر ثانیه به‌روز شود
       _voiceTimer = Timer(const Duration(seconds: 1), () {
         _loadVoices();
         _refresh();
@@ -377,12 +401,33 @@ class _TtsPackRowState extends State<TtsPackRow> {
     setState(() => _open = !_open);
     if (_open) {
       _loadVoices();
-    } else {
+    } else if (_dlVoice.isEmpty && _queue.isEmpty) {
       _voiceTimer?.cancel();
     }
   }
 
   Future<void> _voiceDownload(String id) async {
+    // اگر دانلودِ دیگری در جریان است، این صدا در صف می‌رود
+    if (_dlVoice.isNotEmpty || _queue.isNotEmpty) {
+      if (_dlVoice == id || _queue.contains(id)) return;
+      setState(() {
+        _queue.add(id);
+        _batch++;
+      });
+      _voiceTimer?.cancel();
+      _voiceTimer = Timer(const Duration(seconds: 1), _loadVoices);
+      return;
+    }
+    _batch = 1;
+    for (final v in _voices) {
+      if (v['active'] == true && v['downloaded'] == true) {
+        _restoreVoice = '${v['id']}';
+      }
+    }
+    await _startVoiceDownload(id);
+  }
+
+  Future<void> _startVoiceDownload(String id) async {
     try {
       await NativeBridge.instance.downloadTtsModel(lang: widget.code, voice: id);
     } catch (_) {
@@ -443,6 +488,13 @@ class _TtsPackRowState extends State<TtsPackRow> {
       final total = (_st?['total'] as num?) ?? 0;
       final pct = total > 0 ? (bytes / total * 100).clamp(0, 100).round() : null;
       action = _pill(context, '⏹ ${pct != null ? '$pct%' : 'توقف'}', _cancel);
+    } else if (_queue.contains(id)) {
+      action = _pill(context, '⏳ در صف', () {
+        setState(() {
+          _queue.remove(id);
+          if (_batch > 0) _batch--;
+        });
+      });
     } else if (downloaded && active) {
       action = _pill(context, '✅ فعال', null);
     } else if (downloaded) {
@@ -504,6 +556,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
   }
 
   Future<void> _cancel() async {
+    if (_queue.isNotEmpty) setState(_queue.clear); // توقف = کلِ صف هم لغو شود
     await LinLearnBridge.packCancel(widget.kind, widget.code);
     await _refresh();
   }
@@ -617,7 +670,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
               children: [
                 head,
                 const SizedBox(height: 4),
-                Text('صداهای بیشتر (هر کدام را جدا دانلود و انتخاب کن)',
+                Text('صداهای بیشتر (چند صدا را پشت‌سرهم بزن؛ در صف قرار می‌گیرند و یکی‌یکی دانلود می‌شوند)',
                     style: TextStyle(color: c.inkSoft, fontSize: 11.5)),
                 if (_voices.isEmpty)
                   Padding(
