@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert' show base64Decode, base64Encode;
 import 'dart:io' show File;
 import 'dart:math' as math;
-import 'dart:typed_data' show Uint8List;
+import 'dart:typed_data' show Int32List, Uint8List;
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -648,6 +648,432 @@ class _MouthPainter extends CustomPainter {
       o.split != split ||
       o.scale != scale ||
       o.skin != skin;
+}
+
+// ═══════════════ دهانِ دقیقِ ایموجی (تحلیلِ پیکسلی) ═══════════════
+// ایموجی یک‌بار در یک تصویر رسم می‌شود؛ جای واقعیِ دهانش از روی پیکسل‌ها پیدا و پاک
+// می‌شود و دهانِ متحرک دقیقاً همان‌جا، هم‌اندازه و هم‌رنگِ دهانِ اصلی کشیده می‌شود.
+// اگر تحلیل ممکن نبود (ایموجیِ غیرانسانی و …) همان روشِ قبلی استفاده می‌شود.
+
+bool _humanFaceEmoji(String e) {
+  final r = e.runes.toList();
+  if (r.isEmpty) return false;
+  final c = r.first;
+  return (c >= 0x1F600 && c <= 0x1F64F) ||
+      (c >= 0x1F910 && c <= 0x1F92F) ||
+      (c >= 0x1F466 && c <= 0x1F469) ||
+      (c >= 0x1F470 && c <= 0x1F478) ||
+      (c >= 0x1F481 && c <= 0x1F487) ||
+      (c >= 0x1F9D1 && c <= 0x1F9DD) ||
+      c == 0x1F46E ||
+      c == 0x1F575 ||
+      c == 0x1F9B8 ||
+      c == 0x1F9B9;
+}
+
+/// حالتِ دهان در یک لحظه: بازشدگیِ فک، گردیِ لب («او») و لبخند؛ همه ۰..۱
+class _Talk {
+  final double open;
+  final double round;
+  final double smile;
+  const _Talk(this.open, this.round, this.smile);
+  static const _Talk rest = _Talk(0, 0, 0.5);
+}
+
+class _EmojiFace {
+  final ui.Image image; // ایموجی بدونِ دهان
+  final double cx, cy; // مرکزِ دهانِ اصلی (نسبت از ۰ تا ۱)
+  final double w; // عرضِ دهانِ اصلی
+  final double stroke; // ضخامتِ خطِ لب
+  final double depth; // عمقِ خمِ لبخند
+  final Color lip;
+  const _EmojiFace({
+    required this.image,
+    required this.cx,
+    required this.cy,
+    required this.w,
+    required this.stroke,
+    required this.depth,
+    required this.lip,
+  });
+}
+
+final Map<String, Future<_EmojiFace?>> _emojiFaceCache = {};
+
+Future<_EmojiFace?> _emojiFaceFor(String emoji) =>
+    _emojiFaceCache.putIfAbsent(emoji, () => _buildEmojiFace(emoji));
+
+/// برچسب‌گذاریِ اجزای هم‌بندِ یک ماسکِ n×n؛ اندازه‌ی هر جزء (به ترتیبِ برچسب از ۱) در sizes می‌آید.
+int _labelCells(Uint8List mask, int n, Int32List lab, List<int> sizes) {
+  final stack = Int32List(n * n);
+  var id = 0;
+  for (var s0 = 0; s0 < n * n; s0++) {
+    if (mask[s0] == 0 || lab[s0] != 0) continue;
+    id++;
+    var sp = 0;
+    var size = 0;
+    stack[sp++] = s0;
+    lab[s0] = id;
+    while (sp > 0) {
+      final c = stack[--sp];
+      size++;
+      final x = c % n;
+      if (x > 0 && mask[c - 1] != 0 && lab[c - 1] == 0) {
+        lab[c - 1] = id;
+        stack[sp++] = c - 1;
+      }
+      if (x < n - 1 && mask[c + 1] != 0 && lab[c + 1] == 0) {
+        lab[c + 1] = id;
+        stack[sp++] = c + 1;
+      }
+      if (c >= n && mask[c - n] != 0 && lab[c - n] == 0) {
+        lab[c - n] = id;
+        stack[sp++] = c - n;
+      }
+      if (c < n * (n - 1) && mask[c + n] != 0 && lab[c + n] == 0) {
+        lab[c + n] = id;
+        stack[sp++] = c + n;
+      }
+    }
+    sizes.add(size);
+  }
+  return id;
+}
+
+Future<_EmojiFace?> _buildEmojiFace(String emoji) async {
+  try {
+    const px = 256; // اندازه‌ی تصویر
+    const n = 128; // شبکه‌ی تحلیل (هر خانه ۲×۲ پیکسل)
+    const st = 2;
+
+    // ۱) رسمِ ایموجی با همان فونتِ سیستم
+    final rec = ui.PictureRecorder();
+    final cv = Canvas(rec, Rect.fromLTWH(0, 0, px.toDouble(), px.toDouble()));
+    final tp = TextPainter(
+      text: TextSpan(
+          text: emoji,
+          style: const TextStyle(fontSize: px * 0.83, height: 1.0)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(cv, Offset((px - tp.width) / 2, (px - tp.height) / 2));
+    final img = await rec.endRecording().toImage(px, px);
+    final bd = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+    if (bd == null) return null;
+    final src = bd.buffer.asUint8List(bd.offsetInBytes, bd.lengthInBytes);
+    int off(int c) => (((c ~/ n) * st) * px + (c % n) * st) * 4;
+
+    // ۲) رنگِ پوست = پرتکرارترین رنگِ گرم و سیر
+    final acc = <int, List<int>>{};
+    for (var c = 0; c < n * n; c++) {
+      final o = off(c);
+      if (src[o + 3] < 250) continue;
+      final r = src[o], g = src[o + 1], b = src[o + 2];
+      final mx = math.max(r, math.max(g, b));
+      final mn = math.min(r, math.min(g, b));
+      if (mx < 140 || r != mx || g < b) continue;
+      final d = mx - mn;
+      final sat = d / mx;
+      if (sat < 0.25 || sat > 0.85) continue;
+      if ((g - b) / d >= 0.84) continue;
+      final key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+      final e = acc.putIfAbsent(key, () => [0, 0, 0, 0]);
+      e[0]++;
+      e[1] += r;
+      e[2] += g;
+      e[3] += b;
+    }
+    List<int>? top;
+    for (final e in acc.values) {
+      if (top == null || e[0] > top[0]) top = e;
+    }
+    if (top == null || top[0] < 300) return null;
+    final sr = top[1] ~/ top[0], sg = top[2] ~/ top[0], sb = top[3] ~/ top[0];
+
+    // ۳) بزرگ‌ترین ناحیه‌ی هم‌رنگِ پوست = صورت
+    final skin = Uint8List(n * n);
+    for (var c = 0; c < n * n; c++) {
+      final o = off(c);
+      if (src[o + 3] < 250) continue;
+      final dr = src[o] - sr, dg = src[o + 1] - sg, db = src[o + 2] - sb;
+      if (dr * dr + dg * dg + db * db < 3600) skin[c] = 1;
+    }
+    final lab = Int32List(n * n);
+    final sizes = <int>[];
+    final cn = _labelCells(skin, n, lab, sizes);
+    if (cn == 0) return null;
+    var bestId = 1;
+    for (var k = 1; k <= cn; k++) {
+      if (sizes[k - 1] > sizes[bestId - 1]) bestId = k;
+    }
+    var fx0 = n, fx1 = -1, fy0 = n, fy1 = -1;
+    final nonBig = Uint8List(n * n);
+    for (var c = 0; c < n * n; c++) {
+      if (lab[c] == bestId) {
+        final x = c % n, y = c ~/ n;
+        if (x < fx0) fx0 = x;
+        if (x > fx1) fx1 = x;
+        if (y < fy0) fy0 = y;
+        if (y > fy1) fy1 = y;
+      } else {
+        nonBig[c] = 1;
+      }
+    }
+    if (fx1 < 0) return null;
+    final fw = fx1 - fx0 + 1, fh = fy1 - fy0 + 1;
+    final fcx = (fx0 + fx1) / 2;
+
+    // ۴) حفره‌های داخلِ صورت (چشم، بینی، دهان) = اجزای غیرپوست که به لبه‌ی تصویر نمی‌رسند
+    final hl = Int32List(n * n);
+    final hs = <int>[];
+    final hn = _labelCells(nonBig, n, hl, hs);
+    final border = <int>{};
+    for (var i = 0; i < n; i++) {
+      border.add(hl[i]);
+      border.add(hl[(n - 1) * n + i]);
+      border.add(hl[i * n]);
+      border.add(hl[i * n + n - 1]);
+    }
+    final area = List<int>.filled(hn + 1, 0);
+    final x0s = List<int>.filled(hn + 1, n);
+    final x1s = List<int>.filled(hn + 1, -1);
+    final y0s = List<int>.filled(hn + 1, n);
+    final y1s = List<int>.filled(hn + 1, -1);
+    for (var c = 0; c < n * n; c++) {
+      final k = hl[c];
+      if (k == 0) continue;
+      final x = c % n, y = c ~/ n;
+      area[k]++;
+      if (x < x0s[k]) x0s[k] = x;
+      if (x > x1s[k]) x1s[k] = x;
+      if (y < y0s[k]) y0s[k] = y;
+      if (y > y1s[k]) y1s[k] = y;
+    }
+
+    // ۵) دهان = پایین‌ترین حفره‌ی پهن که وسطِ صورت و در نیمه‌ی پایینِ آن است
+    var mid = 0;
+    var bestY = -1.0;
+    for (var k = 1; k <= hn; k++) {
+      if (border.contains(k)) continue;
+      final cw = x1s[k] - x0s[k] + 1;
+      final ccx = (x0s[k] + x1s[k]) / 2;
+      final ccy = (y0s[k] + y1s[k]) / 2;
+      if (area[k] < 40 || cw < 12) continue;
+      if ((ccx - fcx).abs() > fw * 0.18) continue;
+      if (ccy < fy0 + fh * 0.45) continue;
+      if (ccy > bestY) {
+        bestY = ccy;
+        mid = k;
+      }
+    }
+    if (mid == 0) return null;
+    final mx0 = x0s[mid], mx1 = x1s[mid], my0 = y0s[mid], my1 = y1s[mid];
+    final mcw = mx1 - mx0 + 1, mch = my1 - my0 + 1;
+
+    // رنگِ لب: میانگینِ پیکسل‌های تیره‌ی دهان
+    var lr = 0, lg = 0, lb = 0, lc = 0;
+    for (var c = 0; c < n * n; c++) {
+      if (hl[c] != mid) continue;
+      final o = off(c);
+      if (src[o] + src[o + 1] + src[o + 2] < 450) {
+        lr += src[o];
+        lg += src[o + 1];
+        lb += src[o + 2];
+        lc++;
+      }
+    }
+    final lip = lc >= 5
+        ? Color.fromARGB(255, lr ~/ lc, lg ~/ lc, lb ~/ lc)
+        : const Color(0xFF7A5048);
+
+    // ۶) پاک‌کردنِ دهانِ اصلی (با کمی حاشیه برای لبه‌های نرم)
+    final er = Uint8List(n * n);
+    for (var y = math.max(0, my0 - 2); y <= math.min(n - 1, my1 + 2); y++) {
+      for (var x = math.max(0, mx0 - 2); x <= math.min(n - 1, mx1 + 2); x++) {
+        var hit = false;
+        for (var dy = -2; dy <= 2 && !hit; dy++) {
+          for (var dx = -2; dx <= 2; dx++) {
+            final yy = y + dy, xx = x + dx;
+            if (yy < 0 || yy >= n || xx < 0 || xx >= n) continue;
+            if (hl[yy * n + xx] == mid) {
+              hit = true;
+              break;
+            }
+          }
+        }
+        if (hit) er[y * n + x] = 1;
+      }
+    }
+    final outPx = Uint8List.fromList(src);
+    for (var y = 0; y < px; y++) {
+      for (var x = 0; x < px; x++) {
+        if (er[(y >> 1) * n + (x >> 1)] == 0) continue;
+        final o = (y * px + x) * 4;
+        outPx[o] = sr;
+        outPx[o + 1] = sg;
+        outPx[o + 2] = sb;
+        outPx[o + 3] = 255;
+      }
+    }
+    final comp = Completer<ui.Image>();
+    ui.decodeImageFromPixels(outPx, px, px, ui.PixelFormat.rgba8888, comp.complete);
+    final clean = await comp.future;
+
+    final wRatio = mcw / n;
+    final stroke = ((area[mid] / (mcw * 1.15)) / n).clamp(0.025, 0.045).toDouble();
+    final depth = math.max(0.0, math.min(mch / n - stroke, wRatio * 0.3));
+    return _EmojiFace(
+      image: clean,
+      cx: (mx0 + mx1 + 1) / 2 / n,
+      cy: (my0 + my1 + 1) / 2 / n,
+      w: wRatio,
+      stroke: stroke,
+      depth: depth,
+      lip: lip,
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+/// ایموجی (بدونِ دهان) + دهانِ متحرکِ لبخند/«او»/باز/«ای» دقیقاً روی جای دهانِ اصلی.
+class _EmojiFacePainter extends CustomPainter {
+  final _EmojiFace f;
+  final _Talk t;
+  const _EmojiFacePainter(this.f, this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final W = size.width, H = size.height;
+    canvas.save();
+    // تکانِ خیلی ظریفِ سر هم‌زمان با بازشدنِ دهان
+    canvas.translate(0, t.open * W * 0.008);
+    canvas.drawImageRect(
+      f.image,
+      Rect.fromLTWH(0, 0, f.image.width.toDouble(), f.image.height.toDouble()),
+      Offset.zero & size,
+      Paint()..filterQuality = FilterQuality.high,
+    );
+
+    final cx = f.cx * W, cy = f.cy * H;
+    final mw = f.w * W;
+    final sw = f.stroke * W;
+    final wf = 1 + 0.18 * (t.smile - 0.5) - 0.40 * t.round + 0.08 * t.open;
+    final hw = mw * wf / 2;
+    final depth = f.depth * W * (0.45 + 1.1 * t.smile) * (1 - 0.7 * t.round);
+    final cornerY = cy - depth / 2;
+    final upperMid = cy + depth / 2 - t.open * mw * 0.04;
+    final openH = mw * 0.62 * t.open;
+    final lowerMid = upperMid + openH;
+
+    final lipPaint = Paint()
+      ..color = f.lip
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sw
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final upper = Path()
+      ..moveTo(cx - hw, cornerY)
+      ..quadraticBezierTo(cx, 2 * upperMid - cornerY, cx + hw, cornerY);
+
+    if (openH < 0.6) {
+      // بسته: فقط یک خطِ لبخند، مثلِ خودِ ایموجی
+      canvas.drawPath(upper, lipPaint);
+      canvas.restore();
+      return;
+    }
+
+    final mouth = Path()
+      ..moveTo(cx - hw, cornerY)
+      ..quadraticBezierTo(cx, 2 * upperMid - cornerY, cx + hw, cornerY)
+      ..quadraticBezierTo(cx, 2 * lowerMid - cornerY, cx - hw, cornerY)
+      ..close();
+
+    canvas.save();
+    canvas.clipPath(mouth);
+    canvas.drawPath(
+        mouth, Paint()..color = Color.lerp(f.lip, const Color(0xFF1E0A0A), 0.55)!);
+    // دندانِ بالا
+    if (t.round < 0.7 && openH > mw * 0.10) {
+      canvas.drawRect(
+          Rect.fromLTRB(cx - hw, cornerY - 2, cx + hw, upperMid + openH * 0.30),
+          Paint()..color = Colors.white.withOpacity(0.95));
+    }
+    // زبان
+    if (openH > mw * 0.22) {
+      canvas.drawOval(
+          Rect.fromCenter(
+              center: Offset(cx, lowerMid - openH * 0.18),
+              width: hw * 1.2,
+              height: openH * 0.55),
+          Paint()..color = const Color(0xFFE0675D));
+    }
+    canvas.restore();
+    canvas.drawPath(mouth, lipPaint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_EmojiFacePainter o) =>
+      o.f != f ||
+      o.t.open != t.open ||
+      o.t.round != t.round ||
+      o.t.smile != t.smile;
+}
+
+class _EmojiTalkingFace extends StatefulWidget {
+  final String emoji;
+  final double size;
+  final _Talk? talk; // null = ساکت
+  final Widget fallback; // روشِ قبلی؛ وقتی تحلیلِ ایموجی ممکن نبود
+  const _EmojiTalkingFace({
+    required this.emoji,
+    required this.size,
+    required this.talk,
+    required this.fallback,
+  });
+
+  @override
+  State<_EmojiTalkingFace> createState() => _EmojiTalkingFaceState();
+}
+
+class _EmojiTalkingFaceState extends State<_EmojiTalkingFace> {
+  _EmojiFace? _face;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(_EmojiTalkingFace old) {
+    super.didUpdateWidget(old);
+    if (old.emoji != widget.emoji) {
+      _face = null;
+      _load();
+    }
+  }
+
+  Future<void> _load() async {
+    final e = widget.emoji;
+    final f = _humanFaceEmoji(e) ? await _emojiFaceFor(e) : null;
+    if (!mounted || e != widget.emoji) return;
+    setState(() => _face = f);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final f = _face;
+    if (f == null) return widget.fallback;
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: CustomPaint(
+        painter: _EmojiFacePainter(f, widget.talk ?? _Talk.rest),
+      ),
+    );
+  }
 }
 
 /// انتخابِ عکس از گالری + برشِ دایره‌ای (جابه‌جا و زوم کن). خروجی: PNG با فرمتِ base64 یا null.
@@ -2058,17 +2484,23 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                             fit: BoxFit.cover,
                             gaplessPlayback: true),
                       )
-                    : _TalkingJaw(
+                    : _EmojiTalkingFace(
+                        emoji: p.emoji,
                         size: 70,
-                        viseme: mouth,
-                        split: 0.655,
-                        scale: 0.6,
-                        skin: _yellowFaceEmoji(p.emoji) ? const Color(0xFFFFCA28) : null,
-                        child: Center(
-                          child: Text(
-                            p.emoji,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 58, height: 1.0),
+                        talk: _talkShape(speaking),
+                        // اگر تحلیلِ پیکسلیِ ایموجی ممکن نبود، همان روشِ قبلی
+                        fallback: _TalkingJaw(
+                          size: 70,
+                          viseme: mouth,
+                          split: 0.655,
+                          scale: 0.6,
+                          skin: _yellowFaceEmoji(p.emoji) ? const Color(0xFFFFCA28) : null,
+                          child: Center(
+                            child: Text(
+                              p.emoji,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontSize: 58, height: 1.0),
+                            ),
                           ),
                         ),
                       ),
@@ -2110,6 +2542,25 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     var bi = _visemeHash(i + 1) % _visemes.length;
     if (_visemes[bi] == a) bi = (bi + 1) % _visemes.length;
     return _Viseme.lerp(a, _visemes[bi], f);
+  }
+
+  /// حالتِ دهانِ ایموجی: هجا‌به‌هجا (~۵.۵ هجا در ثانیه) باز و بسته می‌شود؛ هر هجا یک واکه‌ی
+  /// متفاوت (آ، ای، ایی، او، اوو) و شدتِ متفاوت دارد و هر چند هجا یک مکثِ کوتاه می‌آید. null = ساکت.
+  _Talk? _talkShape(bool speaking) {
+    if (!speaking) return null;
+    final ms = DateTime.now().millisecondsSinceEpoch;
+    const syl = 180;
+    final i = ms ~/ syl;
+    final ph = (ms % syl) / syl;
+    if (i % 7 == 6 && _visemeHash(i ~/ 7 + 91) % 3 != 0) return _Talk.rest;
+    final h = _visemeHash(i);
+    const opens = [0.95, 0.55, 0.30, 0.70, 0.40];
+    const rounds = [0.0, 0.10, 0.0, 0.85, 1.0];
+    const smiles = [0.30, 0.65, 1.0, 0.10, 0.0];
+    final v = h % 5;
+    final stress = 0.7 + 0.3 * ((h >> 5) % 4) / 3;
+    final e = math.pow(math.sin(ph * math.pi), 0.8).toDouble();
+    return _Talk(opens[v] * e * stress, rounds[v] * e, smiles[v] * e + 0.5 * (1 - e));
   }
 
   /// پلک‌زدن: هر ~۳٫۵ ثانیه برای ~۱۲۰ میلی‌ثانیه
@@ -2218,7 +2669,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               Positioned.fill(
                 child: RepaintBoundary(
                   child: CustomPaint(
-                    painter: _CallBackdropPainter(p.id, base),
+                    painter: _CallBackdropPainter(p.id, base,
+                        hint: '${p.role} ${p.scenario} ${p.personality} ${p.name} ${p.emoji}'),
                   ),
                 ),
               ),
@@ -2740,7 +3192,8 @@ class _NoModel implements Exception {}
 class _CallBackdropPainter extends CustomPainter {
   final String id;
   final Color base;
-  const _CallBackdropPainter(this.id, this.base);
+  final String hint; // نقش/سناریو/ایموجیِ شخصیت؛ برای انتخابِ صحنه‌ی شخصیت‌های ساخته‌شده
+  const _CallBackdropPainter(this.id, this.base, {this.hint = ''});
 
   Color _l(double t) => Color.lerp(base, Colors.white, t)!;
   Color _d(double t) => Color.lerp(base, Colors.black, t)!;
@@ -2751,6 +3204,97 @@ class _CallBackdropPainter extends CustomPainter {
     ..style = PaintingStyle.stroke
     ..strokeWidth = w
     ..strokeCap = StrokeCap.round;
+
+  /// موضوعِ صحنه: برای شخصیت‌های آماده همان id؛ برای شخصیت‌های ساخته‌شده از روی نقش/سناریو/ایموجی حدس زده می‌شود.
+  String get _scene {
+    switch (id) {
+      case 'jimmy':
+      case 'emma':
+      case 'daniel':
+      case 'sofia':
+      case 'alex':
+      case 'drlee':
+        return id;
+    }
+    final t = hint.toLowerCase();
+    bool has(List<String> k) => k.any((e) => t.contains(e));
+    if (has(['doctor', 'nurse', 'clinic', 'hospital', 'pharmac', 'medical', 'دکتر', 'پزشک', 'پرستار', 'بیمارستان', 'کلینیک', 'داروخانه', '⚕', '🩺', '💊'])) return 'drlee';
+    if (has(['barista', 'coffee', 'cafe', 'café', 'chef', 'restaurant', 'waiter', 'waitress', 'baker', 'kitchen', 'کافه', 'قهوه', 'آشپز', 'رستوران', 'گارسون', '🍳', '☕', '🍕', '🍰'])) return 'emma';
+    if (has(['airport', 'flight', 'tour guide', 'traveler', 'traveller', 'passport', 'airline', 'سفر', 'فرودگاه', 'پرواز', 'مسافر', 'گردشگر', '✈', '🧳', '🛫', '🗺'])) return 'travel';
+    if (has(['beach', 'ocean', 'seaside', 'surf', 'island', 'sailor', 'دریا', 'ساحل', 'جزیره', '🏖', '🌊', '🏄', '⛵'])) return 'beach';
+    if (has(['hiking', 'hiker', 'mountain', 'nature', 'forest', 'camping', 'garden', 'farm', 'کوه', 'طبیعت', 'باغ', 'جنگل', 'کمپ', '🌲', '🏔', '🌳', '🏕', '🌿'])) return 'nature';
+    if (has(['developer', 'programmer', 'software', 'engineer', 'computer', 'hacker', 'startup', 'scientist', 'laborator', 'technolog', 'برنامه', 'مهندس', 'کامپیوتر', 'فناوری', 'دانشمند', 'آزمایشگاه', '💻', '🔬', '🧪'])) return 'tech';
+    if (has(['library', 'librarian', 'writer', 'author', 'poet', 'novel', 'کتابخانه', 'کتاب', 'نویسنده', 'شاعر', '📚', '📖', '✍'])) return 'library';
+    if (has(['music', 'singer', 'concert', 'party', 'gamer', 'موسیقی', 'خواننده', 'پارتی', 'گیم', '🎵', '🎸', '🎤', '🎧', '🎮'])) return 'alex';
+    if (has(['hotel', 'reception', 'concierge', 'resort', 'هتل', 'پذیرش', '🏨', '🛎'])) return 'sofia';
+    if (has(['interview', 'manager', 'boss', 'office', 'business', 'company', 'recruit', 'مصاحبه', 'مدیر', 'شرکت', 'دفتر', '💼', '👔'])) return 'daniel';
+    if (has(['teacher', 'tutor', 'professor', 'school', 'lecturer', 'classroom', 'معلم', 'استاد', 'مدرس', 'کلاس', 'مدرسه', 'دانشگاه', '🏫', '🎓'])) return 'jimmy';
+    return 'room';
+  }
+
+  void _cloud(Canvas c, Offset o, double sc, double op) {
+    final p = _fill(Colors.white.withOpacity(op));
+    c.drawCircle(o + Offset(-18 * sc, 4 * sc), 12 * sc, p);
+    c.drawCircle(o + Offset(0, -4 * sc), 17 * sc, p);
+    c.drawCircle(o + Offset(20 * sc, 3 * sc), 13 * sc, p);
+    c.drawRRect(
+        RRect.fromRectAndRadius(
+            Rect.fromLTWH(o.dx - 30 * sc, o.dy + 2 * sc, 62 * sc, 14 * sc),
+            Radius.circular(7 * sc)),
+        p);
+  }
+
+  void _plant(Canvas c, Offset b, double sc) {
+    final leaf = _fill(const Color(0xFF3E8E5A).withOpacity(0.78));
+    final leaf2 = _fill(const Color(0xFF2F7048).withOpacity(0.78));
+    for (var i = 0; i < 7; i++) {
+      c.save();
+      c.translate(b.dx, b.dy - 26 * sc);
+      c.rotate(-1.25 + i * 0.42);
+      c.drawOval(Rect.fromLTWH(-7 * sc, -62 * sc, 14 * sc, 62 * sc),
+          i.isEven ? leaf : leaf2);
+      c.restore();
+    }
+    c.drawPath(
+        Path()
+          ..moveTo(b.dx - 22 * sc, b.dy - 28 * sc)
+          ..lineTo(b.dx + 22 * sc, b.dy - 28 * sc)
+          ..lineTo(b.dx + 16 * sc, b.dy)
+          ..lineTo(b.dx - 16 * sc, b.dy)
+          ..close(),
+        _fill(const Color(0xFFC9784A).withOpacity(0.88)));
+    c.drawRect(Rect.fromLTWH(b.dx - 24 * sc, b.dy - 32 * sc, 48 * sc, 6 * sc),
+        _fill(const Color(0xFFD98A5B).withOpacity(0.92)));
+  }
+
+  void _pine(Canvas c, Offset b, double sc) {
+    c.drawRect(Rect.fromLTWH(b.dx - 3 * sc, b.dy - 10 * sc, 6 * sc, 14 * sc),
+        _fill(const Color(0xFF5A3A24).withOpacity(0.85)));
+    for (var i = 0; i < 3; i++) {
+      final y = b.dy - 10 * sc - i * 18 * sc;
+      final wd = (26 - i * 6) * sc;
+      c.drawPath(
+          Path()
+            ..moveTo(b.dx - wd, y)
+            ..lineTo(b.dx, y - 28 * sc)
+            ..lineTo(b.dx + wd, y)
+            ..close(),
+          _fill(const Color(0xFF1F5D3C).withOpacity(0.88)));
+    }
+  }
+
+  Path _ridge(Size s, double base, double amp, double phase, double freq) {
+    final p = Path()..moveTo(0, s.height);
+    for (var x = 0.0; x <= s.width + 6; x += 6) {
+      final y = base +
+          amp * math.sin(x / s.width * freq * math.pi + phase) +
+          amp * 0.45 * math.sin(x / s.width * freq * 2.3 * math.pi + phase * 1.7);
+      p.lineTo(x, y);
+    }
+    p.lineTo(s.width, s.height);
+    p.close();
+    return p;
+  }
 
   void _glow(Canvas c, Offset o, double r, Color col, double op) {
     c.drawCircle(
@@ -2777,7 +3321,7 @@ class _CallBackdropPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size s) {
     final w = s.width, h = s.height;
-    switch (id) {
+    switch (_scene) {
       case 'jimmy': // کلاسِ درس
         _glow(canvas, Offset(w * 0.85, h * 0.2), h * 0.55, Colors.white, 0.22);
         // تخته
@@ -2998,10 +3542,373 @@ class _CallBackdropPainter extends CustomPainter {
         _bokeh(canvas, s, 8, 9, 0.05);
         break;
 
-      default: // شخصیت‌های ساخته‌شده توسط کاربر
-        _glow(canvas, Offset(w * 0.25, h * 0.2), h * 0.6, _l(0.5), 0.28);
-        _glow(canvas, Offset(w * 0.8, h * 0.75), h * 0.55, _l(0.3), 0.22);
-        _bokeh(canvas, s, 22, id.hashCode & 0xFFFF, 0.08);
+      case 'nature': // کوه و دشت
+        final sky = Rect.fromLTWH(0, 0, w, h);
+        canvas.drawRect(
+            sky,
+            Paint()
+              ..shader = ui.Gradient.linear(sky.topCenter, sky.bottomCenter, [
+                const Color(0xFF9FD8FF).withOpacity(0.45),
+                const Color(0xFFFFE9C2).withOpacity(0.18),
+              ]));
+        _glow(canvas, Offset(w * 0.82, h * 0.16), h * 0.45,
+            const Color(0xFFFFF1B8), 0.55);
+        canvas.drawCircle(Offset(w * 0.82, h * 0.16), 22,
+            _fill(const Color(0xFFFFF4C2).withOpacity(0.9)));
+        _cloud(canvas, Offset(w * 0.22, h * 0.13), 1.0, 0.45);
+        _cloud(canvas, Offset(w * 0.55, h * 0.24), 0.7, 0.32);
+        canvas.drawPath(_ridge(s, h * 0.58, 26, 0.4, 2.0),
+            _fill(const Color(0xFF6C8FB0).withOpacity(0.45)));
+        canvas.drawPath(_ridge(s, h * 0.68, 20, 2.1, 2.6),
+            _fill(const Color(0xFF3E8E5A).withOpacity(0.50)));
+        canvas.drawPath(_ridge(s, h * 0.80, 14, 4.0, 3.2),
+            _fill(const Color(0xFF2F7048).withOpacity(0.70)));
+        for (final t in [
+          [0.07, 0.80, 1.2],
+          [0.16, 0.84, 0.9],
+          [0.90, 0.78, 1.3],
+          [0.80, 0.84, 0.85],
+        ]) {
+          _pine(canvas, Offset(w * t[0], h * t[1]), t[2]);
+        }
+        break;
+
+      case 'beach': // ساحل
+        final bsky = Rect.fromLTWH(0, 0, w, h * 0.52);
+        canvas.drawRect(
+            bsky,
+            Paint()
+              ..shader = ui.Gradient.linear(bsky.topCenter, bsky.bottomCenter, [
+                const Color(0xFF7CC8FF).withOpacity(0.45),
+                const Color(0xFFFFE1B0).withOpacity(0.30),
+              ]));
+        _glow(canvas, Offset(w * 0.2, h * 0.2), h * 0.5,
+            const Color(0xFFFFF1B8), 0.55);
+        canvas.drawCircle(Offset(w * 0.2, h * 0.2), 20,
+            _fill(const Color(0xFFFFF4C2).withOpacity(0.92)));
+        _cloud(canvas, Offset(w * 0.62, h * 0.14), 0.9, 0.40);
+        final sea = Rect.fromLTWH(0, h * 0.50, w, h * 0.30);
+        canvas.drawRect(
+            sea,
+            Paint()
+              ..shader = ui.Gradient.linear(sea.topCenter, sea.bottomCenter, [
+                const Color(0xFF2FA4D8).withOpacity(0.55),
+                const Color(0xFF14708F).withOpacity(0.70),
+              ]));
+        for (var k = 0; k < 6; k++) {
+          final wy = h * (0.54 + k * 0.042);
+          final wp = Path()..moveTo(0, wy);
+          for (var x = 0.0; x <= w; x += 8) {
+            wp.lineTo(x, wy + 3 * math.sin(x / 22 + k * 1.3));
+          }
+          canvas.drawPath(wp, _line(Colors.white.withOpacity(0.16), 1.6));
+        }
+        // قایق بادبانی
+        canvas.drawPath(
+            Path()
+              ..moveTo(w * 0.72, h * 0.50)
+              ..lineTo(w * 0.72, h * 0.40)
+              ..lineTo(w * 0.78, h * 0.50)
+              ..close(),
+            _fill(Colors.white.withOpacity(0.85)));
+        canvas.drawLine(Offset(w * 0.69, h * 0.505), Offset(w * 0.79, h * 0.505),
+            _line(Colors.white.withOpacity(0.8), 3));
+        final sand = Rect.fromLTWH(0, h * 0.78, w, h * 0.22);
+        canvas.drawRect(
+            sand,
+            Paint()
+              ..shader = ui.Gradient.linear(sand.topCenter, sand.bottomCenter, [
+                const Color(0xFFF1D7A0).withOpacity(0.55),
+                const Color(0xFFC9A66B).withOpacity(0.65),
+              ]));
+        // نخل
+        final trunk = Path()
+          ..moveTo(w * 0.90, h * 0.92)
+          ..quadraticBezierTo(w * 0.95, h * 0.70, w * 0.88, h * 0.50);
+        canvas.drawPath(trunk, _line(const Color(0xFF8A5A3B).withOpacity(0.85), 7));
+        for (var i = -3; i <= 3; i++) {
+          final leaf = Path()
+            ..moveTo(w * 0.88, h * 0.50)
+            ..quadraticBezierTo(w * 0.88 + i * 12, h * 0.50 - 26,
+                w * 0.88 + i * 24, h * 0.52 + i.abs() * 7);
+          canvas.drawPath(leaf, _line(const Color(0xFF2F8A55).withOpacity(0.85), 5));
+        }
+        break;
+
+      case 'travel': // سالنِ فرودگاه
+        final tw = Rect.fromLTWH(6, 6, w - 12, h * 0.62);
+        canvas.drawRect(
+            tw,
+            Paint()
+              ..shader = ui.Gradient.linear(tw.topCenter, tw.bottomCenter, [
+                const Color(0xFF6DB8F2).withOpacity(0.50),
+                const Color(0xFFFFE6B8).withOpacity(0.30),
+              ]));
+        canvas.save();
+        canvas.clipRect(tw);
+        _cloud(canvas, Offset(w * 0.20, h * 0.30), 1.3, 0.35);
+        _cloud(canvas, Offset(w * 0.55, h * 0.50), 1.0, 0.28);
+        canvas.drawLine(Offset(w * 0.30, h * 0.40), Offset(w * 0.70, h * 0.22),
+            _line(Colors.white.withOpacity(0.22), 3));
+        canvas.save();
+        canvas.translate(w * 0.74, h * 0.20);
+        canvas.rotate(-0.34);
+        final pf = _fill(Colors.white.withOpacity(0.88));
+        canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: 76, height: 13), pf);
+        canvas.drawPath(
+            Path()
+              ..moveTo(-6, 0)
+              ..lineTo(8, -24)
+              ..lineTo(17, -24)
+              ..lineTo(10, 0)
+              ..close(),
+            pf);
+        canvas.drawPath(
+            Path()
+              ..moveTo(-6, 0)
+              ..lineTo(8, 24)
+              ..lineTo(17, 24)
+              ..lineTo(10, 0)
+              ..close(),
+            pf);
+        canvas.drawPath(
+            Path()
+              ..moveTo(-32, 0)
+              ..lineTo(-40, -15)
+              ..lineTo(-31, -15)
+              ..lineTo(-22, 0)
+              ..close(),
+            pf);
+        canvas.restore();
+        canvas.restore();
+        final tf = _line(Colors.white.withOpacity(0.30), 3);
+        canvas.drawRect(tw, tf);
+        canvas.drawLine(Offset(w * 0.33, 6), Offset(w * 0.33, tw.bottom), tf);
+        canvas.drawLine(Offset(w * 0.66, 6), Offset(w * 0.66, tw.bottom), tf);
+        final tfl = Rect.fromLTWH(0, h * 0.68, w, h * 0.32);
+        canvas.drawRect(
+            tfl,
+            Paint()
+              ..shader = ui.Gradient.linear(tfl.topCenter, tfl.bottomCenter, [
+                Colors.white.withOpacity(0.16),
+                Colors.black.withOpacity(0.30),
+              ]));
+        // چمدان‌ها
+        void suitcase(double x, double y, double sw, double sh, Color c) {
+          canvas.drawRRect(
+              RRect.fromRectAndRadius(
+                  Rect.fromLTWH(x, y - sh, sw, sh), const Radius.circular(6)),
+              _fill(c.withOpacity(0.80)));
+          canvas.drawLine(Offset(x + sw * 0.5, y - sh), Offset(x + sw * 0.5, y - sh - 12),
+              _line(Colors.white.withOpacity(0.6), 3));
+          canvas.drawLine(Offset(x + sw * 0.3, y - sh * 0.9), Offset(x + sw * 0.3, y - sh * 0.1),
+              _line(Colors.black.withOpacity(0.18), 2));
+          canvas.drawLine(Offset(x + sw * 0.7, y - sh * 0.9), Offset(x + sw * 0.7, y - sh * 0.1),
+              _line(Colors.black.withOpacity(0.18), 2));
+        }
+        suitcase(w * 0.05, h * 0.94, 46, 62, const Color(0xFFE76F51));
+        suitcase(w * 0.17, h * 0.94, 36, 46, const Color(0xFF2A9D8F));
+        suitcase(w * 0.82, h * 0.94, 44, 56, const Color(0xFFE9C46A));
+        break;
+
+      case 'tech': // محیطِ فناوری و کد
+        final gl = _line(Colors.white.withOpacity(0.05), 1);
+        for (var x = 0.0; x < w; x += 28) {
+          canvas.drawLine(Offset(x, 0), Offset(x, h), gl);
+        }
+        for (var y = 0.0; y < h; y += 28) {
+          canvas.drawLine(Offset(0, y), Offset(w, y), gl);
+        }
+        _glow(canvas, Offset(w * 0.15, h * 0.3), h * 0.5, const Color(0xFF38E8FF), 0.22);
+        _glow(canvas, Offset(w * 0.88, h * 0.25), h * 0.5, const Color(0xFFB57BFF), 0.22);
+        final tr = math.Random(17);
+        final neonT = [const Color(0xFF38E8FF), const Color(0xFF7CFFB2), const Color(0xFFFF7AD9)];
+        for (final m in [
+          Rect.fromLTWH(w * 0.04, h * 0.13, w * 0.24, h * 0.22),
+          Rect.fromLTWH(w * 0.72, h * 0.11, w * 0.24, h * 0.24),
+        ]) {
+          canvas.drawRRect(RRect.fromRectAndRadius(m, const Radius.circular(8)),
+              _fill(Colors.black.withOpacity(0.45)));
+          canvas.drawRRect(RRect.fromRectAndRadius(m, const Radius.circular(8)),
+              _line(const Color(0xFF38E8FF).withOpacity(0.50), 2));
+          var ly = m.top + 12;
+          while (ly < m.bottom - 8) {
+            final ind = (tr.nextInt(3)) * 10.0;
+            final lw = 14 + tr.nextDouble() * math.max(4.0, m.width - 40 - ind);
+            canvas.drawLine(Offset(m.left + 12 + ind, ly),
+                Offset(m.left + 12 + ind + lw, ly),
+                _line(neonT[tr.nextInt(3)].withOpacity(0.65), 3));
+            ly += 12;
+          }
+        }
+        // ردِ مدار
+        final cp = _line(const Color(0xFF38E8FF).withOpacity(0.20), 2);
+        canvas.drawPath(
+            Path()
+              ..moveTo(0, h * 0.58)
+              ..lineTo(w * 0.22, h * 0.58)
+              ..lineTo(w * 0.28, h * 0.66)
+              ..lineTo(w * 0.40, h * 0.66),
+            cp);
+        canvas.drawPath(
+            Path()
+              ..moveTo(w, h * 0.62)
+              ..lineTo(w * 0.80, h * 0.62)
+              ..lineTo(w * 0.74, h * 0.70)
+              ..lineTo(w * 0.62, h * 0.70),
+            cp);
+        canvas.drawCircle(Offset(w * 0.40, h * 0.66), 4, _fill(const Color(0xFF38E8FF).withOpacity(0.8)));
+        canvas.drawCircle(Offset(w * 0.62, h * 0.70), 4, _fill(const Color(0xFFB57BFF).withOpacity(0.8)));
+        canvas.drawRect(Rect.fromLTWH(0, h * 0.88, w, h * 0.12),
+            _fill(Colors.black.withOpacity(0.35)));
+        break;
+
+      case 'library': // کتابخانه
+        _glow(canvas, Offset(w * 0.5, h * 0.04), h * 0.65, const Color(0xFFFFD98A), 0.30);
+        final lr = math.Random(29);
+        for (final x0 in [8.0, w * 0.74]) {
+          final sw0 = w * 0.26 - 8;
+          canvas.drawRRect(
+              RRect.fromRectAndRadius(
+                  Rect.fromLTWH(x0 - 4, h * 0.06, sw0 + 8, h * 0.80),
+                  const Radius.circular(6)),
+              _fill(const Color(0xFF5A3A24).withOpacity(0.45)));
+          for (var row = 0; row < 4; row++) {
+            final by = h * (0.22 + row * 0.19);
+            var bx = x0;
+            while (bx < x0 + sw0 - 8) {
+              final bw = 7 + lr.nextDouble() * 7;
+              final bh = 24 + lr.nextDouble() * 22;
+              canvas.drawRRect(
+                  RRect.fromRectAndRadius(
+                      Rect.fromLTWH(bx, by - bh, bw, bh), const Radius.circular(2)),
+                  _fill(_l(0.15 + lr.nextDouble() * 0.55).withOpacity(0.55)));
+              bx += bw + 1.5;
+            }
+            canvas.drawRect(Rect.fromLTWH(x0 - 2, by, sw0 + 4, 5),
+                _fill(const Color(0xFFD6A86B).withOpacity(0.75)));
+          }
+        }
+        // لامپِ مطالعه
+        canvas.drawLine(Offset(w * 0.5, 0), Offset(w * 0.5, h * 0.07),
+            _line(const Color(0xFFE9C46A), 1.5));
+        canvas.drawPath(
+            Path()
+              ..moveTo(w * 0.5 - 22, h * 0.12)
+              ..quadraticBezierTo(w * 0.5, h * 0.04, w * 0.5 + 22, h * 0.12)
+              ..close(),
+            _fill(const Color(0xFF2A9D8F).withOpacity(0.85)));
+        canvas.drawRect(Rect.fromLTWH(0, h * 0.88, w, h * 0.12),
+            _fill(const Color(0xFF3B2616).withOpacity(0.45)));
+        break;
+
+      default: // اتاقِ دنج؛ شخصیت‌های ساخته‌شده توسط کاربر (وقتی موضوعِ دیگری تشخیص داده نشود)
+        final wall = Rect.fromLTWH(0, 0, w, h * 0.74);
+        canvas.drawRect(
+            wall,
+            Paint()
+              ..shader = ui.Gradient.linear(wall.topCenter, wall.bottomCenter, [
+                _l(0.16).withOpacity(0.30),
+                _d(0.10).withOpacity(0.0),
+              ]));
+        _glow(canvas, Offset(w * 0.74, h * 0.24), h * 0.55,
+            const Color(0xFFFFE9B8), 0.30);
+        // پنجره
+        final win = Rect.fromLTWH(w * 0.62, h * 0.09, w * 0.26, h * 0.34);
+        final wr = RRect.fromRectAndRadius(win, const Radius.circular(8));
+        canvas.drawRRect(
+            wr,
+            Paint()
+              ..shader = ui.Gradient.linear(win.topCenter, win.bottomCenter, [
+                const Color(0xFF9FD3FF).withOpacity(0.55),
+                const Color(0xFFFFE2A8).withOpacity(0.45),
+              ]));
+        canvas.save();
+        canvas.clipRRect(wr);
+        _cloud(canvas, Offset(win.left + win.width * 0.35, win.top + win.height * 0.38), 0.8, 0.50);
+        canvas.restore();
+        canvas.drawRRect(wr, _line(Colors.white.withOpacity(0.55), 4));
+        canvas.drawLine(win.topCenter, win.bottomCenter, _line(Colors.white.withOpacity(0.50), 3));
+        canvas.drawLine(win.centerLeft, win.centerRight, _line(Colors.white.withOpacity(0.50), 3));
+        for (final cx0 in [win.left - 20, win.right - 4]) {
+          canvas.drawRRect(
+              RRect.fromRectAndRadius(
+                  Rect.fromLTWH(cx0, win.top - 10, 24, win.height + 28),
+                  const Radius.circular(6)),
+              _fill(_d(0.30).withOpacity(0.50)));
+        }
+        canvas.drawLine(Offset(win.left - 26, win.top - 10), Offset(win.right + 26, win.top - 10),
+            _line(const Color(0xFFD6B98C).withOpacity(0.75), 3));
+        // قاب عکس
+        final fr = Rect.fromLTWH(w * 0.07, h * 0.09, 50, 38);
+        canvas.drawRRect(RRect.fromRectAndRadius(fr, const Radius.circular(3)),
+            _fill(Colors.white.withOpacity(0.14)));
+        canvas.drawRRect(RRect.fromRectAndRadius(fr, const Radius.circular(3)),
+            _line(const Color(0xFFD6B98C).withOpacity(0.75), 3));
+        canvas.drawPath(
+            Path()
+              ..moveTo(fr.left + 6, fr.bottom - 6)
+              ..lineTo(fr.left + 20, fr.top + 16)
+              ..lineTo(fr.left + 30, fr.bottom - 12)
+              ..lineTo(fr.left + 36, fr.top + 22)
+              ..lineTo(fr.right - 6, fr.bottom - 6)
+              ..close(),
+            _fill(Colors.white.withOpacity(0.28)));
+        // قفسه‌ی شناور با کتاب و گلدان
+        final shelfY = h * 0.33;
+        final rb = math.Random(id.hashCode & 0xFFFF);
+        var bx = w * 0.06;
+        while (bx < w * 0.20) {
+          final bw = 8 + rb.nextDouble() * 6;
+          final bh = 22 + rb.nextDouble() * 16;
+          canvas.drawRRect(
+              RRect.fromRectAndRadius(
+                  Rect.fromLTWH(bx, shelfY - bh, bw, bh), const Radius.circular(2)),
+              _fill(_l(0.25 + rb.nextDouble() * 0.45).withOpacity(0.55)));
+          bx += bw + 2;
+        }
+        canvas.drawRRect(
+            RRect.fromRectAndRadius(
+                Rect.fromLTWH(w * 0.24, shelfY - 16, 15, 16), const Radius.circular(4)),
+            _fill(const Color(0xFFC9784A).withOpacity(0.85)));
+        canvas.drawCircle(Offset(w * 0.24 + 7.5, shelfY - 22), 8,
+            _fill(const Color(0xFF3E8E5A).withOpacity(0.80)));
+        canvas.drawRRect(
+            RRect.fromRectAndRadius(
+                Rect.fromLTWH(w * 0.045, shelfY, w * 0.26, 6), const Radius.circular(3)),
+            _fill(const Color(0xFFD6A86B).withOpacity(0.75)));
+        // کفِ چوبی
+        final floor = Rect.fromLTWH(0, h * 0.74, w, h * 0.26);
+        canvas.drawRect(
+            floor,
+            Paint()
+              ..shader = ui.Gradient.linear(floor.topCenter, floor.bottomCenter, [
+                const Color(0xFF8A5A3B).withOpacity(0.45),
+                const Color(0xFF4A2E1E).withOpacity(0.65),
+              ]));
+        for (final fy in [0.80, 0.87, 0.95]) {
+          canvas.drawLine(Offset(0, h * fy), Offset(w, h * fy),
+              _line(Colors.black.withOpacity(0.10), 1.5));
+        }
+        canvas.drawLine(Offset(0, h * 0.74), Offset(w, h * 0.74),
+            _line(Colors.white.withOpacity(0.20), 3));
+        canvas.drawOval(
+            Rect.fromCenter(center: Offset(w * 0.5, h * 0.93), width: w * 0.72, height: 34),
+            _fill(_l(0.30).withOpacity(0.25)));
+        // گیاه و چراغِ ایستاده
+        _plant(canvas, Offset(w * 0.10, h * 0.93), 1.3);
+        canvas.drawLine(Offset(w * 0.93, h * 0.94), Offset(w * 0.93, h * 0.52),
+            _line(const Color(0xFFD6B98C).withOpacity(0.75), 3));
+        canvas.drawPath(
+            Path()
+              ..moveTo(w * 0.93 - 20, h * 0.54)
+              ..lineTo(w * 0.93 + 20, h * 0.54)
+              ..lineTo(w * 0.93 + 12, h * 0.46)
+              ..lineTo(w * 0.93 - 12, h * 0.46)
+              ..close(),
+            _fill(const Color(0xFFFFD27A).withOpacity(0.90)));
+        _glow(canvas, Offset(w * 0.93, h * 0.54), 80, const Color(0xFFFFD27A), 0.30);
+        _bokeh(canvas, s, 8, id.hashCode & 0xFFFF, 0.05);
     }
     // سایه‌ی پایین برای خوانایی زیرنویس
     canvas.drawRect(
@@ -3015,5 +3922,5 @@ class _CallBackdropPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CallBackdropPainter old) =>
-      old.id != id || old.base != base;
+      old.id != id || old.base != base || old.hint != hint;
 }
