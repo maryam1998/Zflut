@@ -510,26 +510,39 @@ class _EmojiAvatar extends StatelessWidget {
   }
 }
 
-/// دهانِ متحرک: بخشِ پایینِ صورت (فک) موقعِ حرف‌زدن کمی پایین می‌آید و پشتش دهانِ تیره دیده می‌شود.
+/// شکلِ دهان در یک لحظه: عرض و بازشدگی نسبت به اندازه‌ی آواتار، و میزانِ لبخند (بالا رفتنِ گوشه‌ها).
+class _Viseme {
+  final double w; // عرض (نسبت از size)
+  final double open; // بازشدگی عمودی (نسبت از size)
+  final double smile; // لبخند ۰..۱
+  const _Viseme(this.w, this.open, this.smile);
+
+  static _Viseme lerp(_Viseme a, _Viseme b, double t) => _Viseme(
+        a.w + (b.w - a.w) * t,
+        a.open + (b.open - a.open) * t,
+        a.smile + (b.smile - a.smile) * t,
+      );
+}
+
+/// دهانِ متحرک: صورت «ثابت» می‌ماند و فقط یک شکلِ تو‌پُر (دهان) روی محلِ لب‌ها
+/// بین حالت‌های لبخند، «او» گرد، باز و «ای» عوض می‌شود تا حالتِ حرف‌زدن بگیرد.
 /// برای هر ایموجیِ صورت‌دار و هر عکسی کار می‌کند.
 class _TalkingJaw extends StatelessWidget {
   final Widget child;
   final double size;
-  final double mouth; // 0..1
+  final _Viseme? viseme; // null = ساکت (دهانی کشیده نمی‌شود)
   final double split; // محلِ دهان (نسبت از بالا)
   const _TalkingJaw({
     required this.child,
     required this.size,
-    required this.mouth,
+    required this.viseme,
     this.split = 0.64,
   });
 
   @override
   Widget build(BuildContext context) {
-    final d = size * 0.09 * mouth;
-    if (d < 0.6) return SizedBox(width: size, height: size, child: child);
-    final sy = size * split;
-    final mw = size * 0.30;
+    final v = viseme;
+    if (v == null) return SizedBox(width: size, height: size, child: child);
     return SizedBox(
       width: size,
       height: size,
@@ -537,24 +550,12 @@ class _TalkingJaw extends StatelessWidget {
         clipBehavior: Clip.hardEdge,
         children: [
           Positioned.fill(child: child),
-          Positioned(
-            left: (size - mw) / 2,
-            top: sy - 1,
-            width: mw,
-            height: d + 2,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xFF3B0F12),
-                borderRadius: BorderRadius.circular(d),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _MouthPainter(v, split),
               ),
             ),
-          ),
-          Positioned(
-            left: 0,
-            top: d,
-            width: size,
-            height: size,
-            child: ClipRect(clipper: _FromYClipper(sy), child: child),
           ),
         ],
       ),
@@ -562,13 +563,50 @@ class _TalkingJaw extends StatelessWidget {
   }
 }
 
-class _FromYClipper extends CustomClipper<Rect> {
-  final double y;
-  const _FromYClipper(this.y);
+class _MouthPainter extends CustomPainter {
+  final _Viseme v;
+  final double split;
+  const _MouthPainter(this.v, this.split);
+
   @override
-  Rect getClip(Size size) => Rect.fromLTWH(0, y, size.width, size.height - y);
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    final cx = s / 2;
+    final cy = s * split;
+    final hw = s * v.w / 2;
+    final oh = s * v.open;
+    // گوشه‌ها در لبخند بالاتر می‌روند
+    final cornerY = cy - s * 0.030 * v.smile;
+    final sd = s * 0.020 + s * 0.030 * v.smile; // عمقِ خمِ لب‌ها
+    final topCtrl = cornerY + 2 * sd;
+    final botCtrl = topCtrl + 2 * oh + s * 0.012;
+    final path = Path()
+      ..moveTo(cx - hw, cornerY)
+      ..quadraticBezierTo(cx, topCtrl, cx + hw, cornerY)
+      ..quadraticBezierTo(cx, botCtrl, cx - hw, cornerY)
+      ..close();
+    canvas.drawPath(path, Paint()..color = const Color(0xFF4A1414));
+    // دندانِ بالا فقط وقتی دهان کمی بازتر است
+    if (oh > s * 0.035) {
+      canvas.save();
+      canvas.clipPath(path);
+      canvas.drawRect(
+          Rect.fromLTWH(cx - hw, cornerY, hw * 2, (topCtrl - cornerY) / 2 + oh * 0.28),
+          Paint()..color = Colors.white.withOpacity(0.92));
+      canvas.restore();
+    }
+    canvas.drawPath(
+        path,
+        Paint()
+          ..color = const Color(0xFF9C3F38)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.012
+          ..strokeJoin = StrokeJoin.round);
+  }
+
   @override
-  bool shouldReclip(_FromYClipper o) => o.y != y;
+  bool shouldRepaint(_MouthPainter o) =>
+      o.v.w != v.w || o.v.open != v.open || o.v.smile != v.smile || o.split != split;
 }
 
 /// انتخابِ عکس از گالری + برشِ دایره‌ای (جابه‌جا و زوم کن). خروجی: PNG با فرمتِ base64 یا null.
@@ -1926,7 +1964,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         final speaking = _phase == _Phase.speaking;
         final ringing = _phase == _Phase.ringing;
         final wave = (math.sin(_pulse.value * math.pi * 2)).abs();
-        final mouth = _mouthOpen(speaking, listening);
+        final mouth = _mouthViseme(speaking);
         final photo = _avatarBytes(p.image);
         final lv = listening
             ? _level.value
@@ -1966,11 +2004,11 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               ),
               clipBehavior: Clip.antiAlias,
               child: Transform.scale(
-                scale: 1 + 0.07 * lv,
+                scale: 1.0, // صورت ثابت می‌ماند؛ فقط دهان حرکت می‌کند
                 child: photo != null
                     ? _TalkingJaw(
                         size: 104,
-                        mouth: mouth,
+                        viseme: mouth,
                         split: 0.68,
                         child: Image.memory(photo,
                             width: 104,
@@ -1980,7 +2018,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                       )
                     : _TalkingJaw(
                         size: 70,
-                        mouth: mouth,
+                        viseme: mouth,
                         child: Center(
                           child: Text(
                             p.emoji,
@@ -1997,14 +2035,36 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     );
   }
 
-  /// بازشدنِ دهان (۰..۱): موقعِ حرف‌زدنِ AI با ریتمِ هجا باز و بسته می‌شود.
-  double _mouthOpen(bool speaking, bool listening) {
-    if (!speaking) return 0;
-    final t = DateTime.now().millisecondsSinceEpoch / 1000.0;
-    final syl = (math.sin(t * 2 * math.pi * 5.3)).abs(); // هجا
-    final word = 0.55 + 0.45 * math.sin(t * 2 * math.pi * 1.3 + 1.2); // تکیه
-    final pause = math.sin(t * 2 * math.pi * 0.45) > 0.82 ? 0.15 : 1.0; // مکث
-    return (syl * word * pause).clamp(0.0, 1.0);
+  static const List<_Viseme> _visemes = [
+    _Viseme(0.30, 0.012, 1.0), // لبخندِ بسته
+    _Viseme(0.13, 0.115, 0.0), // «او» گرد (دایره‌ی تو‌پُر)
+    _Viseme(0.26, 0.105, 0.5), // باز
+    _Viseme(0.34, 0.050, 1.0), // «ای» / لبخندِ پهن
+    _Viseme(0.18, 0.090, 0.2), // «آ» کوچک
+    _Viseme(0.22, 0.020, 0.7), // نیمه‌بسته
+  ];
+
+  int _visemeHash(int n) {
+    var x = (n * 2654435761) & 0x7fffffff;
+    x ^= x >> 13;
+    return (x * 1274126177) & 0x7fffffff;
+  }
+
+  /// شکلِ دهان: هر ~۱۴۰ms به یکی از حالت‌ها (لبخند، گرد، باز، …) نرم عوض می‌شود.
+  /// گاهی هم مکث می‌کند و روی لبخندِ بسته می‌ماند. null = ساکت.
+  _Viseme? _mouthViseme(bool speaking) {
+    if (!speaking) return null;
+    final ms = DateTime.now().millisecondsSinceEpoch;
+    final t = ms / 1000.0;
+    if (math.sin(t * 2 * math.pi * 0.45) > 0.85) return _visemes[0]; // مکث
+    const seg = 140;
+    final i = ms ~/ seg;
+    var f = (ms % seg) / seg;
+    f = f * f * (3 - 2 * f);
+    final a = _visemes[_visemeHash(i) % _visemes.length];
+    var bi = _visemeHash(i + 1) % _visemes.length;
+    if (_visemes[bi] == a) bi = (bi + 1) % _visemes.length;
+    return _Viseme.lerp(a, _visemes[bi], f);
   }
 
   /// پلک‌زدن: هر ~۳٫۵ ثانیه برای ~۱۲۰ میلی‌ثانیه
