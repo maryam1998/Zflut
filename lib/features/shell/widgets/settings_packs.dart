@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app.dart';
 import '../../../core/bridge/linlearn_bridge.dart';
+import '../../../core/native/native_bridge.dart';
 import '../../../core/constants/supported_languages.dart';
 import '../../../core/data/data_repository.dart';
 import '../../../core/models/filter_state.dart';
@@ -324,6 +325,14 @@ class _TtsPackRowState extends State<TtsPackRow> {
   Map<String, dynamic>? _st;
   Timer? _timer;
 
+  // ── چند صدا برای هر زبان (فقط kind == 'tts') ──
+  bool _open = false;
+  List<Map<String, dynamic>> _voices = const [];
+  String _dlVoice = '';
+  Timer? _voiceTimer;
+
+  bool get _hasVoices => widget.kind == 'tts' && !widget.phoneOnly;
+
   @override
   void initState() {
     super.initState();
@@ -333,7 +342,142 @@ class _TtsPackRowState extends State<TtsPackRow> {
   @override
   void dispose() {
     _timer?.cancel();
+    _voiceTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadVoices() async {
+    try {
+      final r = await NativeBridge.instance.getTtsVoices(lang: widget.code);
+      if (!mounted) return;
+      final v = r['voices'];
+      setState(() {
+        _voices = v is List
+            ? [
+                for (final e in v)
+                  if (e is Map) Map<String, dynamic>.from(e),
+              ]
+            : const [];
+        _dlVoice = '${r['downloadingVoice'] ?? ''}';
+      });
+    } catch (_) {
+      return;
+    }
+    _voiceTimer?.cancel();
+    if (_open && _dlVoice.isNotEmpty) {
+      // تا وقتی دانلود در جریان است پیشرفت و وضعیت هر ثانیه به‌روز شود
+      _voiceTimer = Timer(const Duration(seconds: 1), () {
+        _loadVoices();
+        _refresh();
+      });
+    }
+  }
+
+  void _toggleOpen() {
+    setState(() => _open = !_open);
+    if (_open) {
+      _loadVoices();
+    } else {
+      _voiceTimer?.cancel();
+    }
+  }
+
+  Future<void> _voiceDownload(String id) async {
+    try {
+      await NativeBridge.instance.downloadTtsModel(lang: widget.code, voice: id);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.settings_sync_download_failed)),
+        );
+      }
+    }
+    await _loadVoices();
+    await _refresh();
+  }
+
+  Future<void> _voiceSelect(String id) async {
+    try {
+      await NativeBridge.instance.setTtsVoice(lang: widget.code, voice: id);
+    } catch (_) {}
+    await _loadVoices();
+    await _refresh();
+  }
+
+  Future<void> _voiceDelete(String id) async {
+    final ml = MaterialLocalizations.of(context);
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => _dirDialog(ctx, AlertDialog(
+        content: Text(context.l10n.settings_tts_delete_confirm),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(ml.cancelButtonLabel)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(ml.deleteButtonTooltip)),
+        ],
+      )),
+    );
+    if (yes != true) return;
+    try {
+      await NativeBridge.instance.deleteTtsModel(lang: widget.code, voice: id);
+    } catch (_) {}
+    await _loadVoices();
+    await _refresh();
+  }
+
+  Widget _voiceRow(BuildContext context, Map<String, dynamic> v) {
+    final c = context.appColors;
+    final id = '${v['id']}';
+    final downloaded = v['downloaded'] == true;
+    final active = v['active'] == true;
+    final downloading = v['downloading'] == true;
+    final isDefault = v['isDefault'] == true;
+    final label = '${v['label'] ?? id}${isDefault ? ' (پیش‌فرض)' : ''}';
+
+    Widget action;
+    if (downloading) {
+      final bytes = (_st?['bytes'] as num?) ?? 0;
+      final total = (_st?['total'] as num?) ?? 0;
+      final pct = total > 0 ? (bytes / total * 100).clamp(0, 100).round() : null;
+      action = _pill(context, '⏹ ${pct != null ? '$pct%' : 'توقف'}', _cancel);
+    } else if (downloaded && active) {
+      action = _pill(context, '✅ فعال', null);
+    } else if (downloaded) {
+      action = _pill(context, 'انتخاب', () => _voiceSelect(id));
+    } else {
+      action = _pill(context, '📥 دانلود', () => _voiceDownload(id));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label,
+                textDirection: TextDirection.ltr,
+                textAlign: TextAlign.start,
+                style: TextStyle(
+                    color: c.ink,
+                    fontSize: 12.5,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w500)),
+          ),
+          const SizedBox(width: 6),
+          action,
+          if (downloaded && !downloading)
+            InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => _voiceDelete(id),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(Icons.delete_outline, size: 18, color: c.inkSoft),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   bool get _downloading => _st?['downloading'] == true;
@@ -430,6 +574,35 @@ class _TtsPackRowState extends State<TtsPackRow> {
       trailing = _pill(context, '📥 ${L.settings_download}', _download);
     }
 
+    final head = Row(
+      children: [
+        Expanded(
+          child: _hasVoices
+              ? InkWell(
+                  onTap: _toggleOpen,
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(widget.label,
+                            style: TextStyle(
+                                color: c.ink,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                      Icon(_open ? Icons.expand_less : Icons.expand_more,
+                          size: 20, color: c.inkSoft),
+                    ],
+                  ),
+                )
+              : Text(widget.label,
+                  style: TextStyle(
+                      color: c.ink, fontSize: 13, fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(width: 8),
+        trailing,
+      ],
+    );
+
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
@@ -438,17 +611,25 @@ class _TtsPackRowState extends State<TtsPackRow> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: c.cardBorder),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(widget.label,
-                style: TextStyle(
-                    color: c.ink, fontSize: 13, fontWeight: FontWeight.w700)),
-          ),
-          const SizedBox(width: 8),
-          trailing,
-        ],
-      ),
+      child: _hasVoices && _open
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                head,
+                const SizedBox(height: 4),
+                Text('صداهای بیشتر (هر کدام را جدا دانلود و انتخاب کن)',
+                    style: TextStyle(color: c.inkSoft, fontSize: 11.5)),
+                if (_voices.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text('...',
+                        style: TextStyle(color: c.inkSoft, fontSize: 12)),
+                  )
+                else
+                  for (final v in _voices) _voiceRow(context, v),
+              ],
+            )
+          : head,
     );
   }
 }

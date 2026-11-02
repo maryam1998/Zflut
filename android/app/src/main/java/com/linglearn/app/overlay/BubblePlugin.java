@@ -822,6 +822,8 @@ public class BubblePlugin extends Plugin {
             o.put("lang", l);
             o.put("downloaded", SherpaModelManager.getTtsModelDir(ctx, l) != null);
             o.put("partialBytes", SherpaModelManager.getTtsPartialBytes(ctx, l));
+            SherpaModelManager.TtsVoice av = SherpaModelManager.activeVoice(ctx, l);
+            if (av != null) o.put("voice", av.id);
             arr.put(o);
         }
         JSObject ret = new JSObject();
@@ -833,17 +835,77 @@ public class BubblePlugin extends Plugin {
         call.resolve(ret);
     }
 
-    // downloadTtsModel({ lang: "fa" })
+    // getTtsVoices({ lang: "en" }) → { voices: [{id,label,isDefault,downloaded,active,downloading,partialBytes}], downloadingVoice }
+    @PluginMethod
+    public void getTtsVoices(PluginCall call) {
+        Context ctx = getContext();
+        String lang = SherpaModelManager.normalize(call.getString("lang", "en"));
+        JSArray arr = new JSArray();
+        SherpaModelManager.TtsVoice av = lang == null ? null : SherpaModelManager.activeVoice(ctx, lang);
+        String dl = lang == null ? null : SherpaModelManager.downloadingVoiceId(lang);
+        if (lang != null) {
+            for (SherpaModelManager.TtsVoice v : SherpaModelManager.ttsVoices(lang)) {
+                JSObject o = new JSObject();
+                o.put("id", v.id);
+                o.put("label", v.label);
+                o.put("isDefault", v.isDefault);
+                o.put("downloaded", SherpaModelManager.isTtsVoiceInstalled(ctx, lang, v.id));
+                o.put("active", av != null && av.id.equals(v.id));
+                o.put("downloading", dl != null && dl.equals(v.id));
+                o.put("partialBytes", SherpaModelManager.getTtsPartialBytes(ctx, lang, v.id));
+                arr.put(o);
+            }
+        }
+        JSObject ret = new JSObject();
+        ret.put("voices", arr);
+        ret.put("downloadingVoice", dl == null ? "" : dl);
+        call.resolve(ret);
+    }
+
+    // setTtsVoice({ lang, voice }) — صدای فعالِ یک زبان (باید قبلاً دانلود شده باشد)
+    @PluginMethod
+    public void setTtsVoice(PluginCall call) {
+        Context ctx = getContext();
+        String lang = SherpaModelManager.normalize(call.getString("lang", "en"));
+        String voice = call.getString("voice", "");
+        if (lang == null || !SherpaModelManager.isTtsVoiceInstalled(ctx, lang, voice)) {
+            call.reject("voice not downloaded");
+            return;
+        }
+        SherpaModelManager.setActiveVoice(ctx, lang, voice);
+        TtsClient.releaseLang(lang);      // موتورِ قدیمیِ این زبان آزاد شود
+        TtsClient.resetCrash(lang);
+        TtsClient.preload(lang);          // صدای تازه فوراً لود و گرم شود
+        call.resolve();
+    }
+
+    // downloadTtsModel({ lang: "fa", voice?: "fa_IR-amir-medium" })
     @PluginMethod
     public void downloadTtsModel(PluginCall call) {
         final Context ctx = getContext();
         final String lang = call.getString("lang", "en");
+        final String voice = call.getString("voice", "");
 
         if (!SherpaModelManager.isTtsAvailable(lang)) {
             call.reject("TTS not supported for language: " + lang);
             return;
         }
-        if (SherpaModelManager.getTtsModelDir(ctx, lang) != null) {
+        if (voice != null && !voice.isEmpty()) {
+            if (SherpaModelManager.isTtsVoiceInstalled(ctx, lang, voice)) {
+                // قبلاً دانلود شده → فقط فعالش کن
+                String nl = SherpaModelManager.normalize(lang);
+                SherpaModelManager.setActiveVoice(ctx, lang, voice);
+                if (nl != null) {
+                    TtsClient.releaseLang(nl);
+                    TtsClient.resetCrash(nl);
+                    TtsClient.preload(nl);
+                }
+                JSObject ret = new JSObject();
+                ret.put("alreadyDownloaded", true);
+                call.resolve(ret);
+                return;
+            }
+        } else if (SherpaModelManager.getTtsModelDir(ctx, lang) != null) {
             JSObject ret = new JSObject();
             ret.put("alreadyDownloaded", true);
             call.resolve(ret);
@@ -853,7 +915,7 @@ public class BubblePlugin extends Plugin {
         // سرویس پیش‌زمینه: دانلود حتی بعد از بیرون‌رفتن از اپ ادامه پیدا می‌کنه
         ModelDownloadService.start(ctx);
 
-        SherpaModelManager.downloadTtsModel(ctx.getApplicationContext(), lang,
+        SherpaModelManager.downloadTtsModel(ctx.getApplicationContext(), lang, voice,
                 new SherpaModelManager.ProgressCallback() {
                     @Override
                     public void onProgress(String l, long done, long total) {
@@ -867,6 +929,7 @@ public class BubblePlugin extends Plugin {
                     @Override
                     public void onDone(String l) {
                         TtsClient.resetCrash(l);
+                        TtsClient.releaseLang(l);   // اگر صدای دیگری از این زبان لود بود، آزاد شود
                         TtsClient.preload(l);   // ⚡ مدلِ تازه دانلودشده فوراً لود و گرم بشه
                         JSObject ret = new JSObject();
                         ret.put("lang", l);
@@ -908,13 +971,15 @@ public class BubblePlugin extends Plugin {
     public void deleteTtsModel(PluginCall call) {
         Context ctx = getContext();
         String lang = call.getString("lang", "en");
+        String voice = call.getString("voice", "");
         // اگه همین زبان الان توی حافظه لوده، اول آزادش کن (وگرنه فایلِ بسته درگیره)
         String n = SherpaModelManager.normalize(lang);
         if (n != null) {
             TtsClient.releaseLang(n);
             TtsClient.resetCrash(n);
         }
-        SherpaModelManager.deleteTtsModel(ctx, lang);
+        SherpaModelManager.deleteTtsModel(ctx, lang, voice);
+        if (n != null) TtsClient.preload(n);   // اگر صدای دیگری (پیش‌فرض) مانده، لود شود
         call.resolve();
     }
 

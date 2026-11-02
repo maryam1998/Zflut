@@ -107,6 +107,124 @@ class SpeechController extends StateNotifier<SpeechState> {
   // شمارنده‌ی «چندبار این جمله تا الان خونده شده» (شامل خوانش اول)
   final Map<int, int> _chunkRepeatsDone = {};
 
+  // تعداد تکه‌های پشت‌سرهمی که با هیچ موتوری خوانده نشدند (رد می‌شوند؛ ۳ تا که شد خطا)
+  int _failStreak = 0;
+
+  /// این تکه با هیچ موتوری خوانده نشد. به‌جای متوقف‌کردنِ کلِ خوانش (که داستان/ترجمه
+  /// «اصلاً نمی‌خواند» به‌نظر می‌رسید) تکه رد می‌شود؛ فقط اگر چند تکه‌ی پشت‌سرهم
+  /// شکست خورد یا تکه‌ی آخر بود، خطا نشان داده می‌شود. true = رد شد و ادامه می‌دهیم.
+  bool _skipFailedChunk(int idx, int myGen) {
+    if (myGen != _generation || _disposed) return true;
+    _failStreak++;
+    if (_failStreak < 3 && idx + 1 < _chunks.length) {
+      unawaited(_playFrom(idx + 1));
+      return true;
+    }
+    _failStreak = 0;
+    return false;
+  }
+
+  /// زبانِ واقعیِ یک تکه برای موتور. اگر خطِ غالبِ تکه با خطِ زبانِ درخواستی نمی‌خواند
+  /// (مثلاً جمله‌ی انگلیسی داخل متن/ترجمه‌ی فارسی، یا برعکس) موتورِ آن زبان آن را
+  /// بی‌صدا رد می‌کرد؛ این‌جا با زبانِ هم‌خط خوانده می‌شود. متنِ مخلوط (چند کلمه‌ی
+  /// خارجی وسط جمله) دست‌نخورده می‌ماند.
+  static String _speakCode(String text, String code) {
+    var arabic = 0, persian = 0, latin = 0, cyr = 0, deva = 0;
+    var han = 0, kana = 0, hangul = 0;
+    for (final r in text.runes) {
+      if ((r >= 0x0600 && r <= 0x06FF) ||
+          (r >= 0x0750 && r <= 0x077F) ||
+          (r >= 0xFB50 && r <= 0xFDFF) ||
+          (r >= 0xFE70 && r <= 0xFEFF)) {
+        if (r >= 0x0621 && r <= 0x064A || r >= 0x066E && r <= 0x06D3) {
+          arabic++;
+        }
+        if (r == 0x067E || r == 0x0686 || r == 0x0698 || r == 0x06AF) {
+          persian++;
+        }
+      } else if ((r >= 0x41 && r <= 0x5A) ||
+          (r >= 0x61 && r <= 0x7A) ||
+          (r >= 0xC0 && r <= 0x24F)) {
+        latin++;
+      } else if (r >= 0x0400 && r <= 0x04FF) {
+        cyr++;
+      } else if (r >= 0x0900 && r <= 0x097F) {
+        deva++;
+      } else if (r >= 0x3040 && r <= 0x30FF) {
+        kana++;
+      } else if (r >= 0xAC00 && r <= 0xD7AF) {
+        hangul++;
+      } else if (r >= 0x4E00 && r <= 0x9FFF) {
+        han++;
+      }
+    }
+    final total = arabic + latin + cyr + deva + han + kana + hangul;
+    if (total < 4) return code;
+
+    int mine;
+    switch (code) {
+      case 'fa':
+      case 'ar':
+        mine = arabic;
+        break;
+      case 'ru':
+      case 'uk':
+        mine = cyr;
+        break;
+      case 'hi':
+        mine = deva;
+        break;
+      case 'zh':
+        mine = han;
+        break;
+      case 'ja':
+        mine = han + kana;
+        break;
+      case 'ko':
+        mine = hangul;
+        break;
+      default:
+        mine = latin;
+    }
+    if (mine / total >= 0.3) return code;
+
+    final cands = <String, int>{
+      'arabic': arabic,
+      'latin': latin,
+      'cyr': cyr,
+      'deva': deva,
+      'han': han,
+      'kana': kana,
+      'hangul': hangul,
+    };
+    var best = '';
+    var bestN = 0;
+    cands.forEach((k, v) {
+      if (v > bestN) {
+        best = k;
+        bestN = v;
+      }
+    });
+    if (bestN / total < 0.6) return code;
+    switch (best) {
+      case 'arabic':
+        return persian > 0 ? 'fa' : 'ar';
+      case 'latin':
+        return 'en';
+      case 'cyr':
+        return 'ru';
+      case 'deva':
+        return 'hi';
+      case 'kana':
+        return 'ja';
+      case 'hangul':
+        return 'ko';
+      case 'han':
+        return 'zh';
+    }
+    return code;
+  }
+
   Future<void> _initLocalTts() async {
     // ⚠️ هر فراخوانی جداگانه try/catch دارد: قبلاً اگر setSharedInstance
     // (فقط iOS) روی وب خطا می‌داد، بقیه‌ی تنظیمات هم نادیده می‌ماند.
@@ -188,6 +306,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     _boundaries = sentenceBoundaries;
     _chunks = SentenceSplitter.split(text, boundaries: sentenceBoundaries);
     _chunkRepeatsDone.clear();
+    _failStreak = 0;
     _currentKey = newKey;
     _currentCode = code;
     _queue = queue ?? const [];
@@ -311,6 +430,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     await _stopAll();
     // با جابجایی دستی، شمارنده‌ی تکرار از صفر شروع شود
     _chunkRepeatsDone.clear();
+    _failStreak = 0;
     _chunkIndex = clamped;
     state = state.copyWith(
       chunkIndex: clamped,
@@ -504,7 +624,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       return;
     }
 
-    final code = _currentCode ?? 'en';
+    final code = _speakCode(cleanText, _currentCode ?? 'en');
 
     if (NativeTtsBridge.isAvailable) {
       // ۱. Piper نیتیو
@@ -543,6 +663,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     required String text,
     required int myGen,
     void Function()? onStarted,
+    bool detectSilent = false,
   }) async {
     try {
       final id = 'f${++_utteranceSeq}';
@@ -577,6 +698,20 @@ class SpeechController extends StateNotifier<SpeechState> {
       if (myGen != _generation) return false;
       if (!finished) return false;
 
+      // موتورِ گوشی گاهی (مثلاً وقتی زبان/خطِ جمله را نمی‌شناسد) «تمام شد» را تقریباً
+      // فوری می‌فرستد بی‌آنکه صدایی پخش شود؛ قبلاً همین جمله بی‌صدا رد می‌شد.
+      // این‌جا شکست حساب می‌شود تا موتورِ بعدی (آنلاین) همان جمله را بخواند.
+      if (detectSilent && text.length >= 12) {
+        final ms = DateTime.now().difference(startedAt).inMilliseconds;
+        final minMs = (text.length * 10 / state.rate.clamp(0.25, 3.0))
+            .clamp(120, 1500)
+            .round();
+        if (ms < minMs) {
+          debugPrint('silent system utterance detected (${ms}ms)');
+          return false;
+        }
+      }
+
       await _gapThenNext(idx, text, myGen);
       return true;
     } catch (e) {
@@ -592,7 +727,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       text: text,
       myGen: myGen,
       // جمله‌ی بعدی را همین حین که این یکی پخش می‌شود آماده کن (بعد از شروعِ پخش، تا خوانشِ فعلی کند نشود)
-      onStarted: () => _prefetchNext(idx, code),
+      onStarted: () => _prefetchNext(idx, _currentCode ?? code),
     );
   }
 
@@ -604,7 +739,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       if (t.isEmpty || !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(t)) {
         continue;
       }
-      unawaited(NativeTtsBridge.prefetch(t, code, state.rate));
+      unawaited(NativeTtsBridge.prefetch(t, _speakCode(t, code), state.rate));
     }
   }
 
@@ -615,6 +750,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       idx: idx,
       text: text,
       myGen: myGen,
+      detectSilent: true,
     );
   }
 
@@ -915,6 +1051,7 @@ class SpeechController extends StateNotifier<SpeechState> {
         return;
       case _WebResult.noVoice:
         if (!TtsConfig.onlineOnly.contains(code)) {
+          if (_skipFailedChunk(idx, myGen)) return;
           state = state.copyWith(
             status: SpeechStatus.idle,
             error: 'برای این زبان صدایی روی دستگاه نصب نیست؛ '
@@ -962,6 +1099,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     } catch (e) {
       debugPrint('Online TTS error: $e');
       if (myGen != _generation) return;
+      if (_skipFailedChunk(idx, myGen)) return;
       state = state.copyWith(
         status: SpeechStatus.idle,
         error: 'خطا در پخش صدا',
@@ -978,6 +1116,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   //   • ∞ یعنی همین جمله دوباره و دوباره، تا کاربر «بعدی» بزند.
   // ═══════════════════════════════════════════════════════════════
   Future<void> _gapThenNext(int idx, String text, int myGen) async {
+    if (myGen == _generation) _failStreak = 0;
     // 🧬 این جمله همین الان کامل خوانده شد (خوانش اول یا یکی از تکرارها) →
     // به «مسیر عصبی» خبر بده. قبل از مکثِ بینِ جمله‌ها، تا اگر کاربر وسطِ
     // مکث pause کرد، تکرار از دست نرود.

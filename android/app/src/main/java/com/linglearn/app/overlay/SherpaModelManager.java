@@ -153,6 +153,188 @@ final class SherpaModelManager {
         TTS_SPECS = Collections.unmodifiableMap(m);
     }
 
+    // ============ چند صدا برای هر زبان ============
+    // هر زبان یک صدای پیش‌فرض (همان TTS_SPECS) + چند صدای اضافه‌ی Piper (تک‌گوینده) دارد.
+    // کاربر از تنظیمات هر کدام را دانلود/انتخاب می‌کند. شناسه‌ی صدا = نام Piper (مثلاً en_US-amy-medium).
+    // صدای پیش‌فرض همان پوشه‌ی قدیمی tts/<lang> را نگه می‌دارد (بسته‌های قبلاً دانلودشده سالم می‌مانند)؛
+    // بقیه در tts/<lang>__<id> ذخیره می‌شوند و صدای فعال در فایل tts/<lang>.active ثبت می‌شود
+    // (فایل، چون TtsService در پردازه‌ی جدا اجرا می‌شود و SharedPreferences بین پردازه‌ها مطمئن نیست).
+    static final class TtsVoice {
+        final String id;
+        final String label;
+        final TtsSpec spec;
+        final boolean isDefault;
+        TtsVoice(String id, String label, TtsSpec spec, boolean isDefault) {
+            this.id = id; this.label = label; this.spec = spec; this.isDefault = isDefault;
+        }
+    }
+
+    private static final Map<String, List<TtsVoice>> TTS_VOICES;
+    static {
+        Map<String, List<TtsVoice>> vm = new LinkedHashMap<>();
+        for (Map.Entry<String, TtsSpec> e : TTS_SPECS.entrySet()) {
+            List<TtsVoice> list = new ArrayList<>();
+            String pid = piperIdOf(e.getValue());
+            list.add(new TtsVoice(pid, voiceLabel(pid), e.getValue(), true));
+            vm.put(e.getKey(), list);
+        }
+        String[][] extra = {
+            {"en", "en_US-amy-medium", "en_US-lessac-high", "en_US-hfc_female-medium", "en_US-hfc_male-medium",
+                    "en_US-joe-medium", "en_US-kristin-medium", "en_US-norman-medium", "en_US-ryan-high",
+                    "en_GB-alba-medium", "en_GB-alan-medium", "en_GB-jenny_dioco-medium",
+                    "en_GB-northern_english_male-medium", "en_GB-cori-high"},
+            {"de", "de_DE-thorsten-high", "de_DE-thorsten-medium", "de_DE-eva_k-x_low", "de_DE-ramona-low",
+                    "de_DE-kerstin-low"},
+            {"fr", "fr_FR-siwis-medium", "fr_FR-tom-medium", "fr_FR-gilles-low"},
+            {"es", "es_ES-davefx-medium", "es_ES-carlfm-x_low", "es_MX-ald-medium", "es_MX-claude-high"},
+            {"it", "it_IT-paola-medium", "it_IT-riccardo-x_low"},
+            {"ru", "ru_RU-denis-medium", "ru_RU-dmitri-medium", "ru_RU-ruslan-medium"},
+            {"tr", "tr_TR-dfki-medium", "tr_TR-fettah-medium"},
+            {"ar", "ar_JO-kareem-low"},
+            {"fa", "fa_IR-amir-medium", "fa_IR-ganji-medium", "fa_IR-ganji_adabi-medium",
+                    "fa_IR-reza_ibrahim-medium"},
+            {"hi", "hi_IN-pratham-medium", "hi_IN-priyamvada-medium"},
+            {"zh", "zh_CN-xiao_ya-medium", "zh_CN-chaowen-medium", "zh_CN-huayan-x_low"},
+        };
+        for (String[] row : extra) {
+            List<TtsVoice> list = vm.get(row[0]);
+            if (list == null) continue;
+            for (int i = 1; i < row.length; i++) {
+                final String pid = row[i];
+                boolean dup = false;
+                for (TtsVoice v : list) if (v.id.equals(pid)) { dup = true; break; }
+                if (dup) continue;
+                list.add(new TtsVoice(pid, voiceLabel(pid), new TtsSpec(
+                        "csukuangfj/vits-piper-" + pid, pid + ".onnx", "tokens.txt", "espeak-ng-data"), false));
+            }
+        }
+        for (Map.Entry<String, List<TtsVoice>> e : vm.entrySet()) {
+            e.setValue(Collections.unmodifiableList(e.getValue()));
+        }
+        TTS_VOICES = Collections.unmodifiableMap(vm);
+    }
+
+    private static String piperIdOf(TtsSpec s) {
+        String f = s.modelFile;
+        return f.endsWith(".onnx") ? f.substring(0, f.length() - 5) : f;
+    }
+
+    /** en_US-amy-medium → «amy · US · medium» */
+    private static String voiceLabel(String pid) {
+        try {
+            String[] p = pid.split("-");
+            if (p.length < 3) return pid;
+            String loc = p[0];
+            int u = loc.indexOf('_');
+            String region = u >= 0 ? loc.substring(u + 1) : loc;
+            StringBuilder name = new StringBuilder();
+            for (int i = 1; i < p.length - 1; i++) {
+                if (name.length() > 0) name.append('-');
+                name.append(p[i]);
+            }
+            return name.toString().replace('_', ' ') + " · " + region + " · " + p[p.length - 1].replace('_', ' ');
+        } catch (Throwable t) {
+            return pid;
+        }
+    }
+
+    static List<TtsVoice> ttsVoices(String lang) {
+        String l = normalize(lang);
+        List<TtsVoice> v = l == null ? null : TTS_VOICES.get(l);
+        return v == null ? Collections.<TtsVoice>emptyList() : v;
+    }
+
+    private static TtsVoice findVoice(String l, String vid) {
+        List<TtsVoice> list = TTS_VOICES.get(l);
+        if (list == null || list.isEmpty()) return null;
+        if (vid != null && !vid.isEmpty()) {
+            for (TtsVoice v : list) if (v.id.equals(vid)) return v;
+        }
+        return null;
+    }
+
+    private static File ttsRoot(Context ctx) {
+        return new File(ctx.getFilesDir(), "tts");
+    }
+
+    private static File ttsDirFor(Context ctx, String l, TtsVoice v) {
+        return v == null || v.isDefault
+                ? new File(ttsRoot(ctx), l)
+                : new File(ttsRoot(ctx), l + "__" + v.id);
+    }
+
+    /** صدای فعالِ این زبان (اگر انتخابی ثبت نشده یا نامعتبر باشد = صدای پیش‌فرض). */
+    static TtsVoice activeVoice(Context ctx, String lang) {
+        String l = normalize(lang);
+        List<TtsVoice> list = l == null ? null : TTS_VOICES.get(l);
+        if (list == null || list.isEmpty()) return null;
+        try {
+            File f = new File(ttsRoot(ctx), l + ".active");
+            if (f.isFile() && f.length() > 0 && f.length() < 200) {
+                byte[] b = new byte[(int) f.length()];
+                try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
+                    int off = 0, n;
+                    while (off < b.length && (n = in.read(b, off, b.length - off)) > 0) off += n;
+                }
+                TtsVoice v = findVoice(l, new String(b, "UTF-8").trim());
+                if (v != null) return v;
+            }
+        } catch (Throwable ignored) {}
+        return list.get(0);
+    }
+
+    static void setActiveVoice(Context ctx, String lang, String vid) {
+        String l = normalize(lang);
+        if (l == null || !TTS_VOICES.containsKey(l)) return;
+        try {
+            File root = ttsRoot(ctx);
+            if (!root.isDirectory()) root.mkdirs();
+            File f = new File(root, l + ".active");
+            TtsVoice v = findVoice(l, vid);
+            if (v == null || v.isDefault) { f.delete(); return; }   // پیش‌فرض = بدون فایل
+            try (FileOutputStream out = new FileOutputStream(f, false)) {
+                out.write(v.id.getBytes("UTF-8"));
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "setActiveVoice failed", t);
+        }
+    }
+
+    private static boolean voiceFilesReady(Context ctx, String l, TtsVoice v) {
+        if (v == null) return false;
+        File dir = ttsDirFor(ctx, l, v);
+        File model = new File(dir, "model.onnx");
+        File tokens = new File(dir, "tokens.txt");
+        if (!model.isFile() || model.length() == 0) return false;
+        if (!tokens.isFile() || tokens.length() == 0) return false;
+        return isEspeakReady(ctx);
+    }
+
+    /** این صدا (نه لزوماً فعال) کامل دانلود شده؟ */
+    static boolean isTtsVoiceInstalled(Context ctx, String lang, String vid) {
+        String l = normalize(lang);
+        if (l == null) return false;
+        TtsVoice v = vid == null || vid.isEmpty() ? activeVoice(ctx, l) : findVoice(l, vid);
+        return voiceFilesReady(ctx, l, v);
+    }
+
+    /** صدایی که الان برای این زبان در حال دانلود است (null = هیچ). */
+    private static final Map<String, String> TTS_DL_VOICE = new ConcurrentHashMap<>();
+
+    static String downloadingVoiceId(String lang) {
+        String l = normalize(lang);
+        return l == null ? null : TTS_DL_VOICE.get(l);
+    }
+
+    static long getTtsPartialBytes(Context ctx, String lang, String vid) {
+        String l = normalize(lang);
+        if (l == null) return 0;
+        TtsVoice v = vid == null || vid.isEmpty() ? activeVoice(ctx, l) : findVoice(l, vid);
+        if (v == null) return 0;
+        File part = new File(ttsDirFor(ctx, l, v), "model.onnx.part");
+        return part.isFile() ? part.length() : 0;
+    }
+
     private static final OkHttpClient HTTP = new OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(25, TimeUnit.SECONDS)
@@ -186,10 +368,7 @@ final class SherpaModelManager {
 
     /** حجمِ بخشِ دانلودشده‌ی ناتمامِ بسته‌ی یه زبان (برای دکمه‌ی «ادامه»). */
     static long getTtsPartialBytes(Context ctx, String lang) {
-        String l = normalize(lang);
-        if (l == null) return 0;
-        File part = new File(ttsDirFor(ctx, l), "model.onnx.part");
-        return part.isFile() ? part.length() : 0;
+        return getTtsPartialBytes(ctx, lang, null);
     }
     // آخرین مقدارِ پیشرفتِ هر زبان (بایت) — برای نوتیفیکیشنِ سرویسِ دانلود
     private static final Map<String, Long> TTS_BYTES = new ConcurrentHashMap<>();
@@ -245,10 +424,6 @@ final class SherpaModelManager {
         return l != null && TTS_SPECS.containsKey(l);
     }
 
-    private static File ttsDirFor(Context ctx, String l) {
-        return new File(new File(ctx.getFilesDir(), "tts"), l);
-    }
-
     /** زبان‌هایی که بسته TTS آفلاین دارن (به ترتیب تعریف). */
     static List<String> ttsLanguages() {
         return new ArrayList<>(TTS_SPECS.keySet());
@@ -288,13 +463,14 @@ final class SherpaModelManager {
         String l = normalize(lang);
         TtsSpec s = l == null ? null : TTS_SPECS.get(l);
         if (s == null) return null;
-        File dir = ttsDirFor(ctx, l);
-        File model = new File(dir, "model.onnx");
-        File tokens = new File(dir, "tokens.txt");
-        if (!model.isFile() || model.length() == 0) return null;
-        if (!tokens.isFile() || tokens.length() == 0) return null;
-        if (!isEspeakReady(ctx)) return null;
-        return dir;
+        TtsVoice v = activeVoice(ctx, l);
+        if (voiceFilesReady(ctx, l, v)) return ttsDirFor(ctx, l, v);
+        // صدای انتخاب‌شده سالم نیست (مثلاً ناقص/حذف‌شده) → به صدای پیش‌فرض برگرد تا خوانش قطع نشود
+        List<TtsVoice> all = TTS_VOICES.get(l);
+        if (all != null && !all.isEmpty() && all.get(0) != v && voiceFilesReady(ctx, l, all.get(0))) {
+            return ttsDirFor(ctx, l, all.get(0));
+        }
+        return null;
     }
 
     // ============ دانلود STT ============
@@ -418,9 +594,16 @@ final class SherpaModelManager {
     // ============ دانلود TTS ============
     // هر زبان توی نخِ خودش دانلود می‌شه، پس می‌شه همه‌ی زبان‌ها رو هم‌زمان زد.
     static void downloadTtsModel(final Context ctx, final String lang, final ProgressCallback cb) {
+        downloadTtsModel(ctx, lang, null, cb);
+    }
+
+    /** vid = شناسه‌ی صدا (null = صدای فعالِ همین زبان). بعد از دانلودِ کامل، همین صدا فعال می‌شود. */
+    static void downloadTtsModel(final Context ctx, final String lang, final String vid, final ProgressCallback cb) {
         final Context app = ctx.getApplicationContext();
         final String l = normalize(lang);
-        final TtsSpec s = l == null ? null : TTS_SPECS.get(l);
+        final TtsVoice voice = l == null ? null
+                : (vid == null || vid.isEmpty() ? activeVoice(app, l) : findVoice(l, vid));
+        final TtsSpec s = voice == null ? null : voice.spec;
         if (s == null) {
             if (cb != null) cb.onError(String.valueOf(lang), new IllegalArgumentException("no TTS for " + lang));
             return;
@@ -429,13 +612,14 @@ final class SherpaModelManager {
             // همین زبان همین الان در حال دانلوده؛ دوباره شروعش نمی‌کنیم
             return;
         }
+        TTS_DL_VOICE.put(l, voice.id);
         TTS_CANCEL.remove(l);
         Thread t = new Thread(() -> {
             try {
                 Exception last = null;
                 for (int attempt = 1; attempt <= 3; attempt++) {
                     try {
-                        downloadTtsOnce(app, l, s, new ProgressCallback() {
+                        downloadTtsOnce(app, l, s, ttsDirFor(app, l, voice), new ProgressCallback() {
                             @Override public void onProgress(String lg, long done, long total) {
                                 TTS_BYTES.put(l, done);
                                 if (cb != null) cb.onProgress(lg, done, total);
@@ -461,9 +645,12 @@ final class SherpaModelManager {
                         else cb.onError(l, new Exception(last.getClass().getSimpleName() + ": " + last.getMessage(), last));
                     }
                 } else {
+                    // دانلودِ کامل شد → همین صدا صدای فعالِ زبان می‌شود
+                    setActiveVoice(app, l, voice.id);
                     if (cb != null) cb.onDone(l);
                 }
             } finally {
+                TTS_DL_VOICE.remove(l);
                 TTS_BYTES.remove(l);
                 TTS_CANCEL.remove(l);
                 TTS_ACTIVE.remove(l);
@@ -473,8 +660,7 @@ final class SherpaModelManager {
         t.start();
     }
 
-    private static void downloadTtsOnce(Context app, String l, TtsSpec s, ProgressCallback cb) throws Exception {
-        File dir = ttsDirFor(app, l);
+    private static void downloadTtsOnce(Context app, String l, TtsSpec s, File dir, ProgressCallback cb) throws Exception {
         if (!dir.isDirectory() && !dir.mkdirs()) throw new java.io.IOException("cannot create " + dir);
 
         // ۱. tokens.txt (کوچیکه)
@@ -679,10 +865,18 @@ final class SherpaModelManager {
     }
 
     static void deleteTtsModel(Context ctx, String lang) {
+        deleteTtsModel(ctx, lang, null);
+    }
+
+    /** vid = null → صدای فعالِ این زبان. اگر صدای فعال پاک شود، انتخاب به صدای پیش‌فرض برمی‌گردد. */
+    static void deleteTtsModel(Context ctx, String lang, String vid) {
         String l = normalize(lang);
         if (l == null) return;
-        File dir = ttsDirFor(ctx, l);
-        deleteRecursive(dir);
+        TtsVoice active = activeVoice(ctx, l);
+        TtsVoice v = vid == null || vid.isEmpty() ? active : findVoice(l, vid);
+        if (v == null) return;
+        deleteRecursive(ttsDirFor(ctx, l, v));
+        if (active != null && active.id.equals(v.id) && !v.isDefault) setActiveVoice(ctx, l, null);
     }
 
     private static void deleteRecursive(File f) {

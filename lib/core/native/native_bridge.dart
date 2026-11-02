@@ -170,16 +170,33 @@ class NativeBridge {
 
   Future<Map<String, dynamic>> getTtsCatalog() => _call('getTtsCatalog');
 
-  Future<Map<String, dynamic>> downloadTtsModel({String? lang}) =>
-      _call('downloadTtsModel', {if (lang != null) 'lang': lang});
+  Future<Map<String, dynamic>> downloadTtsModel({String? lang, String? voice}) =>
+      _call('downloadTtsModel', {
+        if (lang != null) 'lang': lang,
+        if (voice != null && voice.isNotEmpty) 'voice': voice,
+      });
+
+  /// فهرست صداهای دانلودیِ یک زبان: { voices: [{id,label,isDefault,downloaded,active,downloading,partialBytes}] }
+  Future<Map<String, dynamic>> getTtsVoices({String? lang}) =>
+      _call('getTtsVoices', {if (lang != null) 'lang': lang});
+
+  /// انتخابِ صدای فعالِ یک زبان (باید قبلاً دانلود شده باشد)
+  Future<Map<String, dynamic>> setTtsVoice({String? lang, String? voice}) =>
+      _call('setTtsVoice', {
+        if (lang != null) 'lang': lang,
+        if (voice != null) 'voice': voice,
+      });
 
   Future<Map<String, dynamic>> cancelTtsDownload({String? lang}) =>
       _call('cancelTtsDownload', {if (lang != null) 'lang': lang});
 
   Future<Map<String, dynamic>> cancelAllTtsDownloads() => _call('cancelAllTtsDownloads');
 
-  Future<Map<String, dynamic>> deleteTtsModel({String? lang}) =>
-      _call('deleteTtsModel', {if (lang != null) 'lang': lang});
+  Future<Map<String, dynamic>> deleteTtsModel({String? lang, String? voice}) =>
+      _call('deleteTtsModel', {
+        if (lang != null) 'lang': lang,
+        if (voice != null && voice.isNotEmpty) 'voice': voice,
+      });
 
   Future<Map<String, dynamic>> speak({String? text, String? lang, String? id, num? speed}) =>
       _call('speak', {if (text != null) 'text': text, if (lang != null) 'lang': lang, if (id != null) 'id': id, if (speed != null) 'speed': speed});
