@@ -69,6 +69,59 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
   int _gen = 0;
   bool _refreshing = false;
 
+  /// زبان‌هایی که رفرشِ تکی‌شان در جریان است.
+  final Set<String> _busyLangs = <String>{};
+
+  /// رفرشِ تکی: فقط ترجمه‌ی همین یک زبان دوباره (بدون کش) گرفته می‌شود.
+  Future<void> _refreshOne(String l) async {
+    if (_busyLangs.contains(l)) return;
+    final sigAtStart = _sig;
+    final word = widget.word;
+    setState(() => _busyLangs.add(l));
+    final svc = ref.read(translationServiceProvider);
+    final ai = ref.read(aiSettingsProvider);
+    var r = '';
+    try {
+      r = (await svc.retranslate(
+        text: word,
+        targetLang: l,
+        sourceLang: widget.langCode,
+        aiSettings: ai,
+        previous: _res[l],
+      ))
+          .trim();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _busyLangs.remove(l);
+      if (sigAtStart == _sig &&
+          r.isNotEmpty &&
+          r.toLowerCase() != word.trim().toLowerCase()) {
+        _trCache['${widget.langCode}|$l|$word'] = r;
+        _res = {..._res, l: r};
+      }
+    });
+  }
+
+  Widget _rowRefreshButton(String l) {
+    final busy = _busyLangs.contains(l);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: busy ? null : () => _refreshOne(l),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: busy
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Color(0xFFC9972B)),
+              )
+            : const Icon(Icons.refresh, size: 16, color: Color(0xFFC9972B)),
+      ),
+    );
+  }
+
   /// رفرش: ترجمه‌ی دوباره‌ی همه‌ی زبان‌ها بدون کش.
   Future<void> _refresh(List<String> langs) async {
     if (_refreshing || langs.isEmpty) return;
@@ -198,7 +251,24 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
     final lines = <Widget>[];
     for (final l in langs) {
       final t = _res[l];
-      if (t == null) continue;
+      if (t == null) {
+        // ترجمه‌ی این زبان نیامده/شکست خورده → فقط دکمه‌ی رفرشِ همین زبان
+        if (widget.refreshable) {
+          lines.add(Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l.toUpperCase(),
+                  style: widget.style.copyWith(
+                      fontSize: (widget.style.fontSize ?? 12) * 0.6,
+                      fontWeight: FontWeight.w700,
+                      color: widget.style.color?.withOpacity(0.6))),
+              const SizedBox(width: 6),
+              _rowRefreshButton(l),
+            ],
+          ));
+        }
+        continue;
+      }
       final txt = Text(t,
           textAlign: widget.centered ? TextAlign.center : TextAlign.start,
           textDirection: _dirOf(t),
@@ -219,17 +289,21 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
               ],
             )
           : txt;
-      lines.add(widget.speakable
+      lines.add(widget.speakable || widget.refreshable
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Flexible(child: line),
-                const SizedBox(width: 4),
-                _MiniSpeak(
-                  text: t,
-                  code: l,
-                  size: (widget.style.fontSize ?? 12) + 4,
-                ),
+                if (widget.speakable) ...[
+                  const SizedBox(width: 4),
+                  _MiniSpeak(
+                    text: t,
+                    code: l,
+                    size: (widget.style.fontSize ?? 12) + 4,
+                  ),
+                ],
+                // رفرشِ مخصوصِ همین ترجمه
+                if (widget.refreshable) _rowRefreshButton(l),
               ],
             )
           : line);
@@ -238,10 +312,7 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment:
           widget.centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-      children: [
-        ...lines,
-        if (canRefresh) _refreshButton(langs),
-      ],
+      children: lines,
     );
   }
 }
