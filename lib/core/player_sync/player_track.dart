@@ -4,7 +4,12 @@ import '../tts/tts_config.dart';
 class SyncItem {
   final String id;
   final String text;
-  const SyncItem(this.id, this.text);
+
+  /// زبانِ متنِ این آیتم. null (یا برابر mainCode اسکوپ) = جزو تراکِ اصلی؛
+  /// وگرنه (مثلاً لغتِ شخصیِ اسپانیایی در دیکشنری من) در تراکِ زبانِ خودش
+  /// می‌نشیند تا پخش، هایلایت و اسکرول با همان زبان کار کند.
+  final String? lang;
+  const SyncItem(this.id, this.text, {this.lang});
 }
 
 /// شکل ساختنِ متنِ کامل از آیتم‌ها — دقیقاً مثل Hope:

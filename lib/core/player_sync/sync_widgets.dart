@@ -413,11 +413,22 @@ Future<void> syncSpeak(WidgetRef ref, String code, String id, String text) async
 /// را از اول می‌خواند (onFullTextChange → دکمه‌ی پخش در Hope).
 Future<bool> syncPlayMainTrack(WidgetRef ref) async {
   final sync = ref.read(playerSyncProvider);
-  final track = sync.tracks[sync.mainCode];
-  if (track == null || track.fullText.isEmpty) return false;
+  var track = sync.tracks[sync.mainCode];
+  if (track == null || track.fullText.isEmpty) {
+    // تراکِ اصلی خالی است (مثلاً فهرست فقط لغاتِ غیرانگلیسی دارد) → اولین
+    // تراکِ دارای متن
+    track = null;
+    for (final t in sync.tracks.values) {
+      if (t.fullText.isNotEmpty) {
+        track = t;
+        break;
+      }
+    }
+    if (track == null) return false;
+  }
   await ref.read(speechControllerProvider.notifier).toggle(
         track.fullText,
-        sync.mainCode,
+        track.code,
         loop: true,
         sentenceBoundaries: track.boundaries,
       );

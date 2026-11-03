@@ -344,7 +344,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
       revision: visible,
       mode: TrackMode.words,
       itemsBuilder: () => [
-        for (final w in visible) SyncItem(w.sid, w.en),
+        for (final w in visible) SyncItem(w.sid, w.en, lang: w.lang),
       ],
       // محتوا طبقِ زبانِ رابط (فارسی/عربی RTL، بقیه LTR)؛ ShellHeader خودش RTL می‌ماند
       child: Directionality(

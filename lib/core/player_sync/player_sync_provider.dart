@@ -73,10 +73,35 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
     _mainCode = mainCode;
     _trans.clear();
     _pending.clear();
+
+    // آیتم‌های هم‌زبانِ اصلی → تراکِ اصلی؛ بقیه (لغاتِ شخصیِ زبان‌های دیگر)
+    // → تراکِ زبانِ خودشان، تا با صدا/کلیدِ همان زبان خوانده شوند و
+    // هایلایت و اسکرولِ خودکار برایشان کار کند.
+    final mainItems = <SyncItem>[];
+    for (final it in items) {
+      final l = it.lang;
+      if (l == null || l.isEmpty || l == mainCode) {
+        mainItems.add(it);
+      } else {
+        (_trans[l] ??= {})[it.id] = it.text;
+      }
+    }
+    final tracks = <String, PlayerTrack>{
+      mainCode: PlayerTrack.build(mainCode, mainItems, mode),
+    };
+    for (final code in _trans.keys) {
+      final map = _trans[code]!;
+      final entries = <SyncItem>[
+        for (final it in items)
+          if (map[it.id] != null && map[it.id]!.isNotEmpty)
+            SyncItem(it.id, map[it.id]!),
+      ];
+      tracks[code] = PlayerTrack.build(code, entries, mode);
+    }
     state = PlayerSyncState(
       scopeId: scopeId,
       mainCode: mainCode,
-      tracks: {mainCode: PlayerTrack.build(mainCode, items, mode)},
+      tracks: tracks,
     );
   }
 

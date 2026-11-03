@@ -119,7 +119,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
     final sideInHeader = side != null;
 
     return SyncAnchor(
-      code: 'en',
+      code: widget.lang,
       id: widget.id,
       child: Padding(
         padding: EdgeInsets.only(bottom: tp.sentenceGap.toDouble()),
