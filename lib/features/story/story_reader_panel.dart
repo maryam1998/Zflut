@@ -251,6 +251,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
       for (var i = 0; i < paras.length && i < list.length; i++) {
         final t = list[i].trim();
         if (t.isEmpty) continue;
+        // ترجمه‌ی قدیمیِ ناموفق (همان متن مبدأ) ترجمه حساب نمی‌شود → دوباره ترجمه می‌شود
+        if (t.toLowerCase() == paras[i].text.trim().toLowerCase()) continue;
         _tr.putIfAbsent(_k(lang, paras[i].text), () => t);
         final ts = widget.splitSentences(t);
         if (paras[i].sents.length > 1 && ts.length == paras[i].sents.length) {

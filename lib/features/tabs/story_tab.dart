@@ -30,7 +30,7 @@ import '../../core/providers/text_prefs_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/translate/translation_service.dart'
-    show runWithConcurrencyLimit, kLastAiError;
+    show runWithConcurrencyLimit, kLastAiError, looksLikelyMistranslated;
 import '../../core/web/reading_io_stub.dart'
     if (dart.library.html) '../../core/web/reading_io_web.dart';
 import 'package:flutter/gestures.dart';
@@ -581,6 +581,15 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     return out;
   }
 
+  /// ترجمه‌ی ناموفق (خالی / عیناً همان متن مبدأ / مشکوک) را «ترجمه» حساب نمی‌کند:
+  /// رشته‌ی خالی برمی‌گردد تا متنِ انگلیسی به‌جای ترجمه ذخیره نشود و بعداً دوباره ترجمه شود.
+  String _okTr(String src, String out, String lang, String srcLang) {
+    final t = out.trim();
+    if (t.isEmpty || t.toLowerCase() == src.trim().toLowerCase()) return '';
+    if (looksLikelyMistranslated(src, t, lang, sourceLang: srcLang)) return '';
+    return t;
+  }
+
   void _finishStory(SavedStory story) {
     ref.read(storyLibraryProvider.notifier).add(story);
     setState(() {
@@ -612,13 +621,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           3,
           (p, _) async {
             try {
-              return (await svc.translate(
+              final r = await svc.translate(
                 text: p,
                 targetLang: code,
                 sourceLang: story.langCode,
                 aiSettings: ai,
-              ))
-                  .trim();
+              );
+              return _okTr(p, r, code, story.langCode);
             } catch (_) {
               return '';
             }
@@ -803,13 +812,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           3,
           (p, _) async {
             try {
-              return (await svc.translate(
+              final r = await svc.translate(
                 text: p,
                 targetLang: code,
                 sourceLang: s.langCode,
                 aiSettings: ai,
-              ))
-                  .trim();
+              );
+              return _okTr(p, r, code, s.langCode);
             } catch (_) {
               return '';
             }
