@@ -76,7 +76,12 @@ const List<_Opt> _kContentTypes = [
       'a short piece exploring a psychology or self-understanding theme'),
   _Opt('children', 'کودکانه', "a simple, gentle children's story"),
   _Opt('funny', 'خنده‌دار',
-      'a lighthearted, funny, comedic story with a humorous twist'),
+      'a genuinely hilarious comedy story that makes the reader laugh out loud. '
+      'Build it on an absurd but relatable situation, a character with a ridiculous '
+      'obsession or flaw, escalating mishaps, snappy deadpan dialogue, one running '
+      'gag that comes back at the end, and a surprising punchline twist. '
+      'Show the humor through events and dialogue, never say that something is funny, '
+      'no moral lesson, no cliches; keep the jokes understandable at the given level'),
   _Opt('mystery', 'رازآلود و ترسناک',
       'a suspenseful, mysterious, slightly scary story with an eerie atmosphere'),
   _Opt('crime', 'جنایی',

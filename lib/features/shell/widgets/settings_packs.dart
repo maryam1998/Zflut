@@ -19,6 +19,7 @@ import '../../../core/providers/ai_settings_provider.dart';
 import '../../../core/providers/translation_provider.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/tts/native_tts_bridge.dart';
 import '../../../core/translate/translation_service.dart'
     show looksLikelyMistranslated;
 
@@ -295,6 +296,21 @@ class _PackTileState extends State<PackTile> {
   }
 }
 
+/// جمله‌ی کوتاهِ «تست صدا» برای هر زبان
+const Map<String, String> _kVoiceSample = {
+  'en': 'Hello! This is how this voice sounds when it reads your text.',
+  'de': 'Hallo! So klingt diese Stimme, wenn sie deinen Text vorliest.',
+  'fr': 'Bonjour ! Voici comment cette voix sonne quand elle lit ton texte.',
+  'es': '¡Hola! Así suena esta voz cuando lee tu texto.',
+  'it': 'Ciao! Ecco come suona questa voce quando legge il tuo testo.',
+  'ru': 'Привет! Вот так звучит этот голос, когда он читает твой текст.',
+  'tr': 'Merhaba! Bu ses, metnini okurken böyle duyuluyor.',
+  'ar': 'مرحبًا! هكذا يبدو هذا الصوت عندما يقرأ نصك.',
+  'fa': 'سلام! صدای من موقع خواندنِ متنِ تو این‌طوری است.',
+  'hi': 'नमस्ते! जब यह आवाज़ आपका टेक्स्ट पढ़ती है तो ऐसी सुनाई देती है।',
+  'zh': '你好！这个声音朗读你的文字时就是这样的。',
+};
+
 // ═══════════════════════════════════════════════════════════════════
 // یک ردیف از «صدای آفلاینِ باکیفیت» — [نام زبان]  ........  [📥 دانلود]
 // دانلود فقط وقتی شروع می‌شود که کاربر خودش دکمه را بزند.
@@ -335,6 +351,13 @@ class _TtsPackRowState extends State<TtsPackRow> {
   String? _restoreVoice; // صدای فعالِ قبل از شروعِ دانلودِ گروهی
   int _batch = 0;
 
+  // ── تست صدا ──
+  String _testing = ''; // شناسه‌ی صدایی که الان در حال تست است
+  String? _testRestore; // صدای فعالِ قبل از تست (بعد از تست برمی‌گردد)
+  StreamSubscription<Map<String, dynamic>>? _testSub;
+  Timer? _testTimer;
+  bool _testBusy = false;
+
   bool get _hasVoices => widget.kind == 'tts' && !widget.phoneOnly;
 
   @override
@@ -347,6 +370,17 @@ class _TtsPackRowState extends State<TtsPackRow> {
   void dispose() {
     _timer?.cancel();
     _voiceTimer?.cancel();
+    _testSub?.cancel();
+    _testTimer?.cancel();
+    if (_testing.isNotEmpty) {
+      NativeTtsBridge.stop();
+      final r = _testRestore;
+      if (r != null && r.isNotEmpty) {
+        NativeBridge.instance
+            .setTtsVoice(lang: widget.code, voice: r)
+            .then((_) {}, onError: (_) {});
+      }
+    }
     super.dispose();
   }
 
@@ -473,6 +507,63 @@ class _TtsPackRowState extends State<TtsPackRow> {
     await _refresh();
   }
 
+  Future<void> _endTest() async {
+    _testSub?.cancel();
+    _testSub = null;
+    _testTimer?.cancel();
+    _testTimer = null;
+    final r = _testRestore;
+    _testRestore = null;
+    if (r != null && r.isNotEmpty) {
+      try {
+        await NativeBridge.instance.setTtsVoice(lang: widget.code, voice: r);
+      } catch (_) {}
+    }
+    if (mounted) {
+      setState(() => _testing = '');
+    } else {
+      _testing = '';
+    }
+  }
+
+  /// پخشِ یک جمله‌ی نمونه با همین صدا؛ بعد از تست صدای فعالِ قبلی دست‌نخورده برمی‌گردد.
+  Future<void> _voiceTest(String id, bool active) async {
+    if (_testBusy) return;
+    _testBusy = true;
+    try {
+      if (_testing.isNotEmpty) {
+        await NativeTtsBridge.stop();
+        await _endTest();
+        return;
+      }
+      setState(() => _testing = id);
+      if (!active) {
+        for (final v in _voices) {
+          if (v['active'] == true && v['downloaded'] == true) {
+            _testRestore = '${v['id']}';
+          }
+        }
+        await NativeBridge.instance.setTtsVoice(lang: widget.code, voice: id);
+      }
+      final tid = 'voice-test-${DateTime.now().microsecondsSinceEpoch}';
+      _testSub = NativeBridge.instance.on('ttsSpeakDone').listen((d) {
+        if ('${d['id'] ?? ''}' == tid) _endTest();
+      });
+      _testTimer = Timer(const Duration(seconds: 40), _endTest);
+      final ok = await NativeTtsBridge.speak(
+        _kVoiceSample[widget.code] ?? _kVoiceSample['en']!,
+        widget.code,
+        1.0,
+        id: tid,
+      );
+      if (!ok) await _endTest();
+    } catch (_) {
+      await _endTest();
+    } finally {
+      _testBusy = false;
+    }
+  }
+
   Widget _voiceRow(BuildContext context, Map<String, dynamic> v) {
     final c = context.appColors;
     final id = '${v['id']}';
@@ -517,6 +608,20 @@ class _TtsPackRowState extends State<TtsPackRow> {
                     fontWeight: active ? FontWeight.w800 : FontWeight.w500)),
           ),
           const SizedBox(width: 6),
+          if (downloaded && !downloading)
+            InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => _voiceTest(id, active),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                    _testing == id
+                        ? Icons.stop_circle_outlined
+                        : Icons.play_circle_outline,
+                    size: 22,
+                    color: c.ink),
+              ),
+            ),
           action,
           if (downloaded && !downloading)
             InkWell(
