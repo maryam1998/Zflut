@@ -7,6 +7,7 @@ import '../../core/constants/supported_languages.dart' show langDisplayName;
 import '../../core/models/saved_word.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
+import '../../core/providers/speech_provider.dart';
 import '../../core/providers/story_library_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/widgets/word_translations.dart';
@@ -353,19 +354,39 @@ class _SavedTabState extends ConsumerState<SavedTab> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              w.word,
-              textDirection: autoDir(w.word),
-              style: TextStyle(
-                color: c.ink,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    w.word,
+                    textDirection: autoDir(w.word),
+                    style: TextStyle(
+                      color: c.ink,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => ref
+                      .read(speechControllerProvider.notifier)
+                      .toggle(w.word, w.langCode),
+                  child: Padding(
+                    padding: const EdgeInsets.all(3),
+                    child: Icon(Icons.volume_up_outlined,
+                        size: 17, color: c.gold),
+                  ),
+                ),
+              ],
             ),
             WordTranslations(
               word: w.word,
               langCode: w.langCode,
               fallback: w.meaning,
+              speakable: true,
               style: TextStyle(color: c.inkSoft, fontSize: 11),
             ),
           ],

@@ -21,6 +21,10 @@ class DailyWord {
   /// دسته‌ی موضوعیِ لغت (فقط در Vocabulary in Use پر است؛ مثل «سلامت و پزشکی»)
   final String category;
 
+  /// زبانِ لغت (پیش‌فرض انگلیسی). لغاتِ شخصیِ زبان‌های دیگر (مثل اسپانیایی) هم
+  /// در «دیکشنری من» می‌آیند؛ فیلد [en] در این حالت متنِ همان زبان را نگه می‌دارد.
+  final String lang;
+
   const DailyWord({
     required this.id,
     required this.level,
@@ -31,6 +35,7 @@ class DailyWord {
     this.isPersonal = false,
     this.translations = const <String, String>{},
     this.category = '',
+    this.lang = 'en',
   });
 
   /// شناسه‌ی رشته‌ای که برای ⭐ / پلیر / کارت استفاده می‌شود.

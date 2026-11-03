@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/ai_settings_provider.dart';
 import '../providers/language_selection_provider.dart';
+import '../providers/speech_provider.dart';
 import '../providers/translation_provider.dart';
 
 /// زبان‌هایی که ترجمه‌ی یک لغت باید به آن‌ها نشان داده شود:
@@ -39,6 +40,9 @@ class WordTranslations extends ConsumerStatefulWidget {
   /// برچسب کوچک کدِ زبان (EN / FA ...) کنار هر ترجمه — فقط وقتی بیش از یک زبان باشد.
   final bool showLabels;
 
+  /// true = کنارِ هر ترجمه یک دکمه‌ی 🔊 برای خواندنِ همان ترجمه (به زبانِ خودش).
+  final bool speakable;
+
   const WordTranslations({
     super.key,
     required this.word,
@@ -47,6 +51,7 @@ class WordTranslations extends ConsumerStatefulWidget {
     required this.style,
     this.centered = false,
     this.showLabels = true,
+    this.speakable = false,
   });
 
   @override
@@ -126,7 +131,7 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
           textAlign: widget.centered ? TextAlign.center : TextAlign.start,
           textDirection: _dirOf(t),
           style: widget.style);
-      lines.add(labels
+      final Widget line = labels
           ? Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -141,13 +146,48 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
                 Flexible(child: txt),
               ],
             )
-          : txt);
+          : txt;
+      lines.add(widget.speakable
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(child: line),
+                const SizedBox(width: 4),
+                _MiniSpeak(
+                  text: t,
+                  code: l,
+                  size: (widget.style.fontSize ?? 12) + 4,
+                ),
+              ],
+            )
+          : line);
     }
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment:
           widget.centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: lines,
+    );
+  }
+}
+
+/// دکمه‌ی کوچکِ 🔊 برای خواندنِ یک متن به زبانِ [code].
+class _MiniSpeak extends ConsumerWidget {
+  final String text;
+  final String code;
+  final double size;
+  const _MiniSpeak({required this.text, required this.code, this.size = 16});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => ref.read(speechControllerProvider.notifier).toggle(text, code),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: Icon(Icons.volume_up_outlined,
+            size: size, color: const Color(0xFFC9972B)),
+      ),
     );
   }
 }

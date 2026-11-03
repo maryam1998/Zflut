@@ -45,6 +45,9 @@ class SyncItemCard extends ConsumerStatefulWidget {
   final bool isRead;
   final VoidCallback? onToggleRead;
 
+  /// زبانِ متنِ اصلیِ کارت (پیش‌فرض انگلیسی؛ لغاتِ شخصیِ زبان‌های دیگر هم می‌توانند باشند).
+  final String lang;
+
   const SyncItemCard({
     super.key,
     required this.id,
@@ -59,6 +62,7 @@ class SyncItemCard extends ConsumerStatefulWidget {
     this.onRemove,
     this.isRead = false,
     this.onToggleRead,
+    this.lang = 'en',
   });
 
   @override
@@ -77,7 +81,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
       try {
         _showAiExamples = ref
             .read(wordExamplesStoreProvider)
-            .load(widget.en, 'en')
+            .load(widget.en, widget.lang)
             .isNotEmpty;
       } catch (_) {}
     }
@@ -165,7 +169,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: SelectableSyncText(
-                        code: 'en',
+                        code: widget.lang,
                         id: widget.id,
                         text: widget.en,
                         sentence: widget.en,
@@ -208,12 +212,12 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                     onTap: () => showNeuralPath(
                       context,
                       word: widget.en,
-                      langCode: 'en',
+                      langCode: widget.lang,
                       baseText: widget.en,
                     ),
                   ),
                   SyncSpeakButton(
-                    code: 'en',
+                    code: widget.lang,
                     id: widget.id,
                     text: widget.en,
                     color: c.gold,
@@ -244,6 +248,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                 knownText: widget.knownTranslations[langs[li]] ?? '',
                 compact: compact,
                 gutter: gutter,
+                sourceLang: widget.lang,
               ),
 
             if (widget.showActions) ...[
@@ -269,7 +274,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                 const SizedBox(height: 8),
                 WordExamplesPanel(
                   word: widget.en,
-                  langCode: 'en',
+                  langCode: widget.lang,
                   nativeCode: ref.read(languageSelectionProvider).native,
                   meaningNative: widget.knownTranslations[
                           ref.read(languageSelectionProvider).native] ??
@@ -408,6 +413,9 @@ class SyncTranslationRow extends ConsumerStatefulWidget {
   /// ⭐ + ○ ؛ فقط در اولین ردیف و وقتی مثال باز نیست داده می‌شود
   final Widget? sideActions;
 
+  /// زبانِ متنِ مبدأ (پیش‌فرض انگلیسی)
+  final String sourceLang;
+
   const SyncTranslationRow({
     super.key,
     required this.itemId,
@@ -417,6 +425,7 @@ class SyncTranslationRow extends ConsumerStatefulWidget {
     this.compact = false,
     this.gutter = 0,
     this.sideActions,
+    this.sourceLang = 'en',
   });
 
   @override
@@ -442,6 +451,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
   void didUpdateWidget(covariant SyncTranslationRow old) {
     super.didUpdateWidget(old);
     if (old.en != widget.en ||
+        old.sourceLang != widget.sourceLang ||
         old.langCode != widget.langCode ||
         old.knownText != widget.knownText) {
       _text = null;
@@ -468,7 +478,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
     final s = t.trim();
     if (s.isEmpty) return false;
     return !looksLikelyMistranslated(widget.en, s, widget.langCode,
-        sourceLang: 'en');
+        sourceLang: widget.sourceLang);
   }
 
   void _resolve() {
@@ -480,14 +490,14 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       if (widget.langCode == 'fa') {
         final saved = ref
             .read(translationServiceProvider)
-            .peekCached(widget.en, 'en', widget.langCode);
+            .peekCached(widget.en, widget.sourceLang, widget.langCode);
         if (saved != null && _usable(saved)) _text = saved;
       }
       return;
     }
 
     final service = ref.read(translationServiceProvider);
-    final hit = service.peekCached(widget.en, 'en', widget.langCode);
+    final hit = service.peekCached(widget.en, widget.sourceLang, widget.langCode);
     if (hit != null && _usable(hit)) {
       _text = hit;
       return;
@@ -510,7 +520,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       result = await service.translate(
         text: en,
         targetLang: code,
-        sourceLang: 'en',
+        sourceLang: widget.sourceLang,
         aiSettings: ai,
       );
     } catch (_) {
@@ -555,7 +565,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       result = await service.retranslate(
         text: en,
         targetLang: code,
-        sourceLang: 'en',
+        sourceLang: widget.sourceLang,
         aiSettings: ai,
         previous: _text,
       );
@@ -566,7 +576,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
 
     final r = result;
     if (r != null && _usable(r)) {
-      await service.cachePut(en, 'en', code, r.trim());
+      await service.cachePut(en, widget.sourceLang, code, r.trim());
       if (!mounted || gen != _gen) return;
       setState(() {
         _text = r.trim();

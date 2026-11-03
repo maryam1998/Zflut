@@ -125,22 +125,27 @@ final myDictionaryWordsProvider = Provider<List<DailyWord>>((ref) {
   final seen = <String>{};
   final out = <DailyWord>[];
   for (final e in sorted) {
-    if (e.langCode != 'en') continue;
     final k = normWord(e.word);
-    if (k.isEmpty || existing.contains(k) || !seen.add(k)) continue;
+    if (k.isEmpty) continue;
+    final isEn = e.langCode == 'en';
+    // لغاتِ روزمره‌ی انگلیسی دوباره اضافه نمی‌شوند؛ زبان‌های دیگر محدودیتی ندارند.
+    if ((isEn && existing.contains(k)) || !seen.add('${e.langCode}::$k')) {
+      continue;
+    }
     final hiddenAt = hidden[k];
     if (hiddenAt != null && !e.savedAt.isAfter(hiddenAt)) continue;
     final meaning = e.meaning.trim();
     out.add(DailyWord(
       id: -1,
-      key: 'saved:$k',
+      key: isEn ? 'saved:$k' : 'saved:${e.langCode}:$k',
+      lang: e.langCode,
       isPersonal: true,
-      level: _estimateLevel(e.word, idx),
+      level: isEn ? _estimateLevel(e.word, idx) : '',
       pos: '',
       en: e.word,
       fa: '',
       translations: (meaning.isNotEmpty &&
-              native != 'en' &&
+              native != e.langCode &&
               textMatchesScript(meaning, native))
           ? {native: meaning}
           : const <String, String>{},

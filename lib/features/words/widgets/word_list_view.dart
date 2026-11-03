@@ -434,7 +434,13 @@ class _WordListViewState extends ConsumerState<WordListView> {
                       fa: w.fa,
                       level: w.level,
                       pos: w.pos,
-                      langsToShow: langsToShow,
+                      lang: w.lang,
+                      langsToShow: w.lang == 'en'
+                          ? langsToShow
+                          : <String>[
+                              sel.native,
+                              ...sel.targets,
+                            ].where((t) => t != w.lang).toSet().toList(),
                       isPersonal: w.isPersonal,
                       knownTranslations: w.translations,
                       isRead: readIds.contains(w.sid),

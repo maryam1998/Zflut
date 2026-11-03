@@ -28,6 +28,9 @@ class WordCard extends StatelessWidget {
   final bool isRead;
   final VoidCallback? onToggleRead;
 
+  /// زبانِ لغت (پیش‌فرض انگلیسی)
+  final String lang;
+
   const WordCard({
     super.key,
     required this.id,
@@ -41,6 +44,7 @@ class WordCard extends StatelessWidget {
     this.onRemove,
     this.isRead = false,
     this.onToggleRead,
+    this.lang = 'en',
   });
 
   @override
@@ -61,6 +65,7 @@ class WordCard extends StatelessWidget {
       onRemove: onRemove,
       isRead: isRead,
       onToggleRead: onToggleRead,
+      lang: lang,
     );
   }
 
