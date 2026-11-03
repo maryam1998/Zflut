@@ -387,6 +387,7 @@ class _SavedTabState extends ConsumerState<SavedTab> {
               langCode: w.langCode,
               fallback: w.meaning,
               speakable: true,
+              refreshable: true,
               style: TextStyle(color: c.inkSoft, fontSize: 11),
             ),
           ],

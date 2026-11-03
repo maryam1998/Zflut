@@ -43,6 +43,10 @@ class WordTranslations extends ConsumerStatefulWidget {
   /// true = کنارِ هر ترجمه یک دکمه‌ی 🔊 برای خواندنِ همان ترجمه (به زبانِ خودش).
   final bool speakable;
 
+  /// true = یک دکمه‌ی رفرش (↻) نشان می‌دهد که ترجمه‌ها را بدون کش دوباره می‌گیرد
+  /// (مترجم‌های رایگان + ناظر AI) — برای وقتی که ترجمه غلط است.
+  final bool refreshable;
+
   const WordTranslations({
     super.key,
     required this.word,
@@ -52,6 +56,7 @@ class WordTranslations extends ConsumerStatefulWidget {
     this.centered = false,
     this.showLabels = true,
     this.speakable = false,
+    this.refreshable = false,
   });
 
   @override
@@ -62,6 +67,63 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
   Map<String, String> _res = {};
   String _sig = '';
   int _gen = 0;
+  bool _refreshing = false;
+
+  /// رفرش: ترجمه‌ی دوباره‌ی همه‌ی زبان‌ها بدون کش.
+  Future<void> _refresh(List<String> langs) async {
+    if (_refreshing || langs.isEmpty) return;
+    final sigAtStart = _sig;
+    final gen = ++_gen; // بارگذاریِ در جریان را لغو می‌کند
+    setState(() => _refreshing = true);
+    final svc = ref.read(translationServiceProvider);
+    final ai = ref.read(aiSettingsProvider);
+    final out = Map<String, String>.from(_res);
+    for (final l in langs) {
+      String r = '';
+      try {
+        r = (await svc.retranslate(
+          text: widget.word,
+          targetLang: l,
+          sourceLang: widget.langCode,
+          aiSettings: ai,
+          previous: _res[l],
+        ))
+            .trim();
+      } catch (_) {}
+      if (!mounted) return;
+      if (r.isNotEmpty && r.toLowerCase() != widget.word.trim().toLowerCase()) {
+        _trCache['${widget.langCode}|$l|${widget.word}'] = r;
+        out[l] = r;
+      }
+    }
+    if (!mounted) return;
+    if (sigAtStart != _sig || gen != _gen) {
+      setState(() => _refreshing = false);
+      return;
+    }
+    setState(() {
+      _res = out;
+      _refreshing = false;
+    });
+  }
+
+  Widget _refreshButton(List<String> langs) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _refreshing ? null : () => _refresh(langs),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: _refreshing
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Color(0xFFC9972B)),
+              )
+            : const Icon(Icons.refresh, size: 16, color: Color(0xFFC9972B)),
+      ),
+    );
+  }
 
   Future<void> _load(List<String> langs) async {
     final gen = ++_gen;
@@ -114,12 +176,22 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
     }
 
     final fb = widget.fallback.trim();
+    final canRefresh = widget.refreshable && langs.isNotEmpty;
     if (_res.isEmpty) {
-      if (fb.isEmpty) return const SizedBox.shrink();
-      return Text(fb,
-          textAlign: widget.centered ? TextAlign.center : TextAlign.start,
-          textDirection: _dirOf(fb),
-          style: widget.style);
+      if (fb.isEmpty && !canRefresh) return const SizedBox.shrink();
+      final fbText = fb.isEmpty
+          ? const SizedBox.shrink()
+          : Text(fb,
+              textAlign: widget.centered ? TextAlign.center : TextAlign.start,
+              textDirection: _dirOf(fb),
+              style: widget.style);
+      if (!canRefresh) return fbText;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment:
+            widget.centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+        children: [fbText, _refreshButton(langs)],
+      );
     }
 
     final labels = widget.showLabels && _res.length > 1;
@@ -166,7 +238,10 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment:
           widget.centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
-      children: lines,
+      children: [
+        ...lines,
+        if (canRefresh) _refreshButton(langs),
+      ],
     );
   }
 }
