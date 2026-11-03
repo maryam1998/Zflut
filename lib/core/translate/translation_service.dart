@@ -52,9 +52,25 @@ final Map<String, RegExp> _scriptRegex = {
 /// شخصی نباید به‌عنوان ترجمه‌ی فارسی نشان داده شود.
 bool textMatchesScript(String text, String lang) {
   final re = _scriptRegex[lang];
-  if (re == null) return true;
+  if (re == null) {
+    // زبان‌های لاتین (انگلیسی، اسپانیایی، ...): تشخیصِ زبان از روی حروف ممکن
+    // نیست، ولی متنی که بیشترِ حروفش فارسی/عربی/سیریلیک/چینی/... است قطعاً
+    // ترجمه‌ی این زبان نیست (مثلاً معنیِ فارسیِ ذخیره‌شده نباید در ردیفِ EN بنشیند).
+    if (_latinLangs.contains(lang)) {
+      final foreign = _foreignScriptRe.allMatches(text).length;
+      if (foreign == 0) return true;
+      final latin = RegExp(r'[A-Za-z\u00C0-\u024F]').allMatches(text).length;
+      return latin >= foreign;
+    }
+    return true;
+  }
   return re.hasMatch(text);
 }
+
+const Set<String> _latinLangs = {'en', 'es', 'de', 'fr', 'it', 'tr'};
+
+final RegExp _foreignScriptRe = RegExp(
+    r'[\u0400-\u04FF\u0590-\u05FF\u0600-\u06FF\u0900-\u097F\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]');
 
 /// AI به‌جای ترجمه «فکر کردنش» را برگردانده؟
 final RegExp aiReasoningRe = RegExp(

@@ -486,13 +486,12 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
 
     if (_hasKnown) {
       _text = widget.knownText;
-      // ترجمه‌ی فارسی: اگر کاربر با دکمه‌ی رفرش دوباره ترجمه‌اش کرده، نسخه‌ی ذخیره‌شده نشان داده شود
-      if (widget.langCode == 'fa') {
-        final saved = ref
-            .read(translationServiceProvider)
-            .peekCached(widget.en, widget.sourceLang, widget.langCode);
-        if (saved != null && _usable(saved)) _text = saved;
-      }
+      // اگر کاربر با دکمه‌ی رفرش دوباره ترجمه‌اش کرده، نسخه‌ی ذخیره‌شده نشان داده شود
+      // (برای همه‌ی زبان‌ها، نه فقط فارسی)
+      final saved = ref
+          .read(translationServiceProvider)
+          .peekCached(widget.en, widget.sourceLang, widget.langCode);
+      if (saved != null && _usable(saved)) _text = saved;
       return;
     }
 
@@ -607,8 +606,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       syncReportTranslation(context, ref, widget.langCode, widget.itemId, text);
     }
 
-    final canRetry =
-        !loading && (!_hasKnown || widget.langCode == 'fa');
+    final canRetry = !loading;
 
     return SyncAnchor(
       code: widget.langCode,
