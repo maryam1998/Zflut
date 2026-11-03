@@ -207,6 +207,7 @@ Future<void> showSelectionCard(
   _closeActiveCard?.call();
 
   final overlay = Overlay.of(context, rootOverlay: true);
+  final drag = _CardDrag();
   final done = Completer<void>();
   var removed = false;
   late final OverlayEntry entry;
@@ -228,20 +229,29 @@ Future<void> showSelectionCard(
     );
     return Stack(
       children: [
-        // کارت فقط با دکمه‌ی ✕ بسته می‌شود؛ لمسِ بیرون از کارت آن را نمی‌بندد
-        // (لایه‌ی خالی لمس را نمی‌گیرد، پس صفحه‌ی زیرین همچنان قابل‌لمس است).
+        // لمسِ هر جای بیرون از کارت آن را می‌بندد (لایه‌ی شفاف؛ لمس به صفحه‌ی زیرین
+        // هم می‌رسد، پس با لمسِ یک لغتِ جدید، کارتِ قبلی بسته و کارتِ لغتِ جدید باز می‌شود).
+        Positioned.fill(
+          child: Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (_) => close(),
+            child: const SizedBox.expand(),
+          ),
+        ),
         Positioned.fill(
           child: CustomSingleChildLayout(
             delegate: _CardLayoutDelegate(
               anchor: anchor ?? fallback,
               safe: mq.padding,
               keyboard: mq.viewInsets.bottom,
+              drag: drag,
             ),
             child: SelectionCard(
               text: picked,
               sentence: (sentence ?? picked),
               langCode: langCode,
               onClose: close,
+              onDrag: drag.add,
             ),
           ),
         ),
@@ -254,17 +264,28 @@ Future<void> showSelectionCard(
   return done.future;
 }
 
+/// جابجاییِ کارت با انگشت (نسبت به جای پیش‌فرضش).
+class _CardDrag extends ChangeNotifier {
+  Offset v = Offset.zero;
+  void add(Offset d) {
+    v += d;
+    notifyListeners();
+  }
+}
+
 /// کارت را بالای متنِ انتخاب‌شده می‌گذارد؛ اگر جا نبود پایینش؛ همیشه داخل صفحه.
 class _CardLayoutDelegate extends SingleChildLayoutDelegate {
   final Rect anchor;
   final EdgeInsets safe;
   final double keyboard;
+  final _CardDrag drag;
 
   _CardLayoutDelegate({
     required this.anchor,
     required this.safe,
     required this.keyboard,
-  });
+    required this.drag,
+  }) : super(relayout: drag);
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
@@ -289,12 +310,21 @@ class _CardLayoutDelegate extends SingleChildLayoutDelegate {
     if (top + childSize.height > bottomLimit) {
       top = math.max(topLimit, bottomLimit - childSize.height);
     }
-    return Offset(left, top);
+    // جابجاییِ کاربر؛ داخل صفحه نگه داشته می‌شود (و مقدارِ ذخیره‌شده هم اصلاح می‌شود)
+    final maxLeft = math.max(12.0, size.width - childSize.width - 12.0);
+    final maxTop = math.max(topLimit, bottomLimit - childSize.height);
+    final fl = (left + drag.v.dx).clamp(12.0, maxLeft).toDouble();
+    final ft = (top + drag.v.dy).clamp(topLimit, maxTop).toDouble();
+    drag.v = Offset(fl - left, ft - top);
+    return Offset(fl, ft);
   }
 
   @override
   bool shouldRelayout(covariant _CardLayoutDelegate old) =>
-      old.anchor != anchor || old.safe != safe || old.keyboard != keyboard;
+      old.anchor != anchor ||
+      old.safe != safe ||
+      old.keyboard != keyboard ||
+      old.drag != drag;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -311,12 +341,16 @@ class SelectionCard extends ConsumerStatefulWidget {
   final String langCode;
   final VoidCallback onClose;
 
+  /// کشیدنِ دسته‌ی بالای کارت → جابجاییِ کارت
+  final ValueChanged<Offset>? onDrag;
+
   const SelectionCard({
     super.key,
     required this.text,
     required this.sentence,
     required this.langCode,
     required this.onClose,
+    this.onDrag,
   });
 
   @override
@@ -469,6 +503,28 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // دسته‌ی جابجایی: با انگشت بکش تا کارت هر جای صفحه برود
+              if (widget.onDrag != null)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanUpdate: (d) {
+                    widget.onDrag!(d.delta);
+                    _arm();
+                  },
+                  child: SizedBox(
+                    height: 22,
+                    child: Center(
+                      child: Container(
+                        width: 48,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.white38,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               // ═══ هدر: متنِ اصلی + ✕ + 🧬 + 🔊 (از راست: 🔊 🧬 ✕) ═══
               Directionality(
                 textDirection: TextDirection.ltr,
@@ -1250,11 +1306,22 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
   bool _open = false;
   Offset? _ptr;
   DateTime? _ptrAt;
+  bool _ptrDown = false; // انگشت همین الان روی این متن است
+  bool _pendingClear = false; // پاک‌کردنِ انتخابِ بومی تا بالا آمدنِ انگشت عقب افتاده
 
   @override
   void dispose() {
     _debounce?.cancel();
     super.dispose();
+  }
+
+  void _onPtrUp() {
+    _ptrDown = false;
+    if (!_pendingClear) return;
+    _pendingClear = false;
+    Timer(const Duration(milliseconds: 350), () {
+      if (mounted && !_open) setState(() => _gen++);
+    });
   }
 
   void _onSelectionChanged(TextSelection sel, SelectionChangedCause? cause) {
@@ -1321,7 +1388,13 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
       setState(() {
         _open = false;
         _hl = null;
-        _gen++; // انتخابِ بومی را پاک کن
+        // انتخابِ بومی را پاک کن؛ اما اگر کارت با لمسِ همین متن بسته شد، پاک‌کردن
+        // بعد از بالا آمدنِ انگشت انجام می‌شود تا همان لمس (لغتِ جدید) از بین نرود.
+        if (_ptrDown) {
+          _pendingClear = true;
+        } else {
+          _gen++;
+        }
       });
     });
   }
@@ -1394,11 +1467,14 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
           onPointerDown: (e) {
             _ptr = e.position;
             _ptrAt = DateTime.now();
+            _ptrDown = true;
           },
           onPointerUp: (e) {
             _ptr = e.position;
             _ptrAt = DateTime.now();
+            _onPtrUp();
           },
+          onPointerCancel: (_) => _onPtrUp(),
           child: SelectableText.rich(
             span,
             key: ValueKey('sel-$_gen'),
