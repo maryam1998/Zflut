@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../neural/neural_store.dart';
+import 'ai_settings_provider.dart';
+import 'app_prefs_provider.dart';
+import 'language_selection_provider.dart';
+import 'translation_provider.dart';
 import '../player_sync/player_sync_provider.dart';
 import '../tts/media_notification.dart';
 import '../tts/speech_controller.dart';
@@ -20,7 +24,34 @@ final speechControllerProvider =
     onChunkPlayed: (e) => _recordNeuralFromPlayback(ref, e),
   );
   // 🎧 کنترلِ پلیر روی نوتیفیکیشن (قبلی / پخش‌وتوقف / بعدی) وقتی از برنامه بیرون هستی
-  final media = MediaNotificationSync(ctl)..attach();
+  // 🌐 ترجمه‌ی جمله‌ی در حال خوانش هم زیرِ جمله در نوتیفیکیشن نشان داده می‌شود
+  String? targetFor(String from) {
+    final targets = ref.read(languageSelectionProvider).targets;
+    for (final t in targets) {
+      if (t != from) return t;
+    }
+    final ui = ref.read(appPrefsProvider).uiLang;
+    return ui != from ? ui : null;
+  }
+
+  final media = MediaNotificationSync(
+    ctl,
+    peek: (text, from) {
+      final to = targetFor(from);
+      if (to == null) return null;
+      return ref.read(translationServiceProvider).peekCached(text, from, to);
+    },
+    translate: (text, from) async {
+      final to = targetFor(from);
+      if (to == null) return '';
+      return ref.read(translationServiceProvider).translate(
+            text: text,
+            targetLang: to,
+            sourceLang: from,
+            aiSettings: ref.read(aiSettingsProvider),
+          );
+    },
+  )..attach();
   ref.onDispose(media.dispose);
   return ctl;
 });
