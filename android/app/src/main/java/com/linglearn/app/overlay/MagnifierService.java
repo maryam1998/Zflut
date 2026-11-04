@@ -33,7 +33,10 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
+import android.text.Layout;
+import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.style.BackgroundColorSpan;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
@@ -112,7 +115,7 @@ public class MagnifierService extends Service {
             "en", "de", "fr", "es", "it", "pt", "nl", "tr"));
 
     // اندازه‌ی ذره‌بین (dp): هم‌اندازه‌ی حبابِ ترجمه‌ی زنده (60)؛ مرکزِ شیشه در (26,26) با شعاعِ 20
-    private static final float LENS_SIZE = 60f, LENS_C = 26f, LENS_R = 20f;
+    private static final float LENS_SIZE = 60f, LENS_C = 26f, LENS_R = 14f;
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -154,7 +157,7 @@ public class MagnifierService extends Service {
     private LinearLayout popup;
     private WindowManager.LayoutParams popupLp;
     private RectF selBox;
-    private String selSrc = "en", selOrig = "";
+    private String selSrc = "en", selOrig = "", cardLang = "en";
 
     // کادرِ سورمه‌ای (هم‌سبکِ پنلِ حبابِ ترجمه‌ی زنده)
     private static final int REPEAT_INF = -1;                 // همان مقدارِ حبابِ ترجمه‌ی زنده
@@ -1160,7 +1163,7 @@ public class MagnifierService extends Service {
 
     private void startWordReview(final int cardToken, final String word, final ArrayList<String[]> rows) {
         final int token = ++wordReviewSeq;
-        reviewAi(() -> cardSeq == cardToken ? wordReviewSeq : -1, token, word, selSrc, rows, (lang, t) -> {
+        reviewAi(() -> cardSeq == cardToken ? wordReviewSeq : -1, token, word, cardLang, rows, (lang, t) -> {
             if (wordRows == null || cardSeq != cardToken) return;
             for (String[] r : rows) if (r[0].equals(lang)) r[1] = t;
             fillRows(wordRows, rows);
@@ -1215,6 +1218,7 @@ public class MagnifierService extends Service {
         clearSelection();
         selBox = box;
         selSrc = src;
+        cardLang = src;
         selOrig = orig;
         wholeResults.clear();
         wholeResults.addAll(results);
@@ -1600,6 +1604,7 @@ public class MagnifierService extends Service {
         head.setGravity(Gravity.CENTER_VERTICAL);
         cardTerm = txt(selOrig, Color.WHITE, 16);
         fonts().style(cardTerm, 16, true);
+        makePickable(cardTerm, selSrc);
         head.addView(cardTerm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         termSpeak = speakBtn();
         termSpeak.setOnClickListener(v -> toggleSpeak(termSpeak, selOrig, selSrc));
@@ -1852,7 +1857,7 @@ public class MagnifierService extends Service {
         wordTerm.setTypeface(wordTerm.getTypeface(), android.graphics.Typeface.BOLD);
         top.addView(wordTerm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         wordSpeak = speakBtn();
-        wordSpeak.setOnClickListener(v -> toggleSpeak(wordSpeak, cardWord, selSrc));
+        wordSpeak.setOnClickListener(v -> toggleSpeak(wordSpeak, cardWord, cardLang));
         top.addView(wordSpeak);
         TextView cardX = headBtn("\u2715", v -> closeWordCard());
         ((IconText) cardX).setIconDp(13f);
@@ -1923,7 +1928,8 @@ public class MagnifierService extends Service {
         if (box == null) return;
         box.removeAllViews();
         for (String[] r : rows) {
-            if (!r[0].isEmpty() && r[0].equalsIgnoreCase(selSrc)) continue;   // مبدأ = مقصد: ترجمه‌ی هم‌زبان نشان داده نمی‌شود
+            final String skipLang = (box == wordRows) ? cardLang : selSrc;
+            if (!r[0].isEmpty() && r[0].equalsIgnoreCase(skipLang)) continue;   // مبدأ = مقصد: ترجمه‌ی هم‌زبان نشان داده نمی‌شود
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER_VERTICAL);
@@ -1936,6 +1942,7 @@ public class MagnifierService extends Service {
             }
             TextView t = txt(tx, Color.parseColor("#E8EAF2"), 15);
             fonts().style(t, 15, false);
+            if (box == rowsBox && !lg.isEmpty() && !"…".equals(tx) && !"—".equals(tx)) makePickable(t, lg);
             row.addView(t, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             if (!lg.isEmpty()) {
                 final TextView sp = speakBtn();
@@ -1998,6 +2005,13 @@ public class MagnifierService extends Service {
             word = sb.toString().trim().replaceAll("^[\\p{Punct}\\u2018\\u2019\\u201C\\u201D]+|[\\p{Punct}\\u2018\\u2019\\u201C\\u201D]+$", "");
         }
         if (word.isEmpty()) return;
+        openWordCard(word, selSrc, whole);
+    }
+
+    /** کادرِ لغت را برای یک لغت/محدوده باز می‌کند؛ lang = زبانِ همان لغت (متنِ اصلی یا یکی از ترجمه‌ها). */
+    private void openWordCard(String word, String lang, boolean whole) {
+        if (popup == null || wordCard == null || word == null || word.isEmpty()) return;
+        cardLang = lang == null || lang.isEmpty() ? selSrc : lang;
         armPopupTimer();
         stopSpeech();
         final int my = ++cardSeq;
@@ -2013,7 +2027,7 @@ public class MagnifierService extends Service {
         armCardTimer();                        // ⏳ ۱۵ ثانیه تا بسته‌شدنِ خودکار (نوارِ طلایی)
         refreshCardButtons();
 
-        if (whole && !wholeResults.isEmpty()) {           // ترجمه‌ی کلِ متن را از قبل داریم
+        if (whole && cardLang.equals(selSrc) && !wholeResults.isEmpty()) {           // ترجمه‌ی کلِ متن را از قبل داریم
             fillRows(wordRows, wholeResults);
             adoptMeaning(wholeResults);
             placePopup();
@@ -2027,10 +2041,19 @@ public class MagnifierService extends Service {
         requestWordMeanings(my, word);
     }
 
+    /** مقصدهای ترجمه‌ی لغتِ کادر: اگر لغت از یکی از ترجمه‌ها آمده، زبانِ متنِ اصلی هم جزوِ مقصدهاست. */
+    private List<String> cardTargets(String from) {
+        ArrayList<String> out = new ArrayList<>(targets(selSrc));
+        if (!from.equalsIgnoreCase(selSrc) && !out.contains(selSrc)) out.add(0, selSrc);
+        out.removeIf(t -> t.equalsIgnoreCase(from));
+        if (out.isEmpty()) out.add("en".equalsIgnoreCase(from) ? "fa" : "en");
+        return out;
+    }
+
     /** ترجمه‌ی لغت/محدوده به همه‌ی زبان‌های انتخابی (پس‌زمینه) ← ردیف‌های کادرِ لغت. */
     private void requestWordMeanings(final int my, final String w2) {
-        final String from = selSrc;
-        final List<String> tg = targets(from);
+        final String from = cardLang;
+        final List<String> tg = cardTargets(from);
         runSafe(() -> {
             final ArrayList<String[]> out = new ArrayList<>();
             for (String t : tg) {
@@ -2063,13 +2086,13 @@ public class MagnifierService extends Service {
         if (cardWord == null || cardWord.isEmpty()) return;
         try {
             JSONObject o = new JSONObject()
-                    .put("key", action + "|" + selSrc + "|" + cardWord.toLowerCase(Locale.ROOT))
+                    .put("key", action + "|" + cardLang + "|" + cardWord.toLowerCase(Locale.ROOT))
                     .put("action", action)
                     .put("word", cardWord)
-                    .put("lang", selSrc)
+                    .put("lang", cardLang)
                     .put("meaning", cardMeaning == null ? "" : cardMeaning)
                     .put("meaningLang", cardMeaningLang == null ? "fa" : cardMeaningLang)
-                    .put("sentence", selOrig == null || selOrig.isEmpty() ? cardWord : selOrig)
+                    .put("sentence", selOrig == null || selOrig.isEmpty() || !cardLang.equals(selSrc) ? cardWord : selOrig)
                     .put("rev", System.currentTimeMillis());
             WordQueue.add(this, o);
             BubblePlugin.notifyWordQueued();
@@ -2604,6 +2627,76 @@ public class MagnifierService extends Service {
         }
     }
 
+
+    // ───────── 👆 انتخابِ لغت/محدوده مستقیماً روی متنِ داخلِ کادر (متنِ اصلی و ترجمه‌ها) ─────────
+
+    private static boolean isWordCh(char c) {
+        return Character.isLetterOrDigit(c) || c == '\'' || c == '\u2019' || c == '-' || c == '\u200c';
+    }
+
+    /** ضربه روی لغت = همان لغت؛ کشیدنِ افقی = محدوده. بعد از رها کردن، کادرِ «افزودن به داستان / گرامر / لایتنر» باز می‌شود. */
+    private void makePickable(final TextView tv, final String lang) {
+        tv.setText(tv.getText(), TextView.BufferType.SPANNABLE);
+        final int slop = ViewConfiguration.get(this).getScaledTouchSlop();
+        final int[] st = new int[]{-1, -1};              // نقطه‌ی شروع و پایانِ انتخاب (offset)
+        final float[] dn = new float[2];
+        final boolean[] drag = new boolean[]{false};
+        final BackgroundColorSpan[] span = new BackgroundColorSpan[1];
+        tv.setOnTouchListener((v, e) -> {
+            CharSequence cs = tv.getText();
+            Layout lay = tv.getLayout();
+            if (lay == null || cs.length() == 0 || !(cs instanceof Spannable)) return false;
+            final Spannable sp = (Spannable) cs;
+            switch (e.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    dn[0] = e.getRawX(); dn[1] = e.getRawY();
+                    drag[0] = false;
+                    st[0] = st[1] = Math.min(cs.length() - 1, Math.max(0, tv.getOffsetForPosition(e.getX(), e.getY())));
+                    paintPick(sp, st, span);
+                    return true;
+                case MotionEvent.ACTION_MOVE: {
+                    float dx = Math.abs(e.getRawX() - dn[0]), dy = Math.abs(e.getRawY() - dn[1]);
+                    if (!drag[0] && dx > slop && dx >= dy) {
+                        drag[0] = true;
+                        if (v.getParent() != null) v.getParent().requestDisallowInterceptTouchEvent(true);
+                    }
+                    if (drag[0]) {
+                        st[1] = Math.min(cs.length() - 1, Math.max(0, tv.getOffsetForPosition(e.getX(), e.getY())));
+                        paintPick(sp, st, span);
+                    }
+                    return true;
+                }
+                case MotionEvent.ACTION_UP: {
+                    int lo = Math.min(st[0], st[1]), hi = Math.max(st[0], st[1]);
+                    String full = cs.toString();
+                    while (lo > 0 && isWordCh(full.charAt(lo - 1))) lo--;
+                    while (hi < full.length() - 1 && isWordCh(full.charAt(hi + 1))) hi++;
+                    String w = full.substring(lo, hi + 1).trim()
+                            .replaceAll("^[\\p{Punct}\\u2018\\u2019\\u201C\\u201D]+|[\\p{Punct}\\u2018\\u2019\\u201C\\u201D]+$", "");
+                    if (!w.isEmpty()) openWordCard(w, lang, w.equals(selOrig) && lang.equals(selSrc));
+                    return true;
+                }
+                case MotionEvent.ACTION_CANCEL:
+                    st[0] = st[1] = -1;
+                    paintPick(sp, st, span);
+                    return true;
+            }
+            return true;
+        });
+    }
+
+    private void paintPick(Spannable sp, int[] st, BackgroundColorSpan[] span) {
+        if (span[0] != null) { sp.removeSpan(span[0]); span[0] = null; }
+        if (st[0] < 0 || st[1] < 0) return;
+        String full = sp.toString();
+        int lo = Math.min(st[0], st[1]), hi = Math.max(st[0], st[1]);
+        if (full.isEmpty()) return;
+        while (lo > 0 && isWordCh(full.charAt(lo - 1))) lo--;
+        while (hi < full.length() - 1 && isWordCh(full.charAt(hi + 1))) hi++;
+        span[0] = new BackgroundColorSpan(Color.parseColor("#8CC9A227"));
+        sp.setSpan(span[0], lo, hi + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
     /** کشیدنِ سربرگ = جابه‌جایی؛ نگه‌داشتن = «برداشتنِ» کادر؛ رها کردن روی ✕ = بستن. */
     private final class PopupMover implements View.OnTouchListener {
         private final int slop = ViewConfiguration.get(MagnifierService.this).getScaledTouchSlop();
@@ -2754,13 +2847,13 @@ public class MagnifierService extends Service {
 
         private void drawRing(Canvas cv) {
             float cx = dp(LENS_C), cy = dp(LENS_C), r = dp(LENS_R);
-            float hx0 = cx + r * 0.72f, hy0 = cy + r * 0.72f, hx1 = hx0 + dp(10), hy1 = hy0 + dp(10);
+            float hx0 = cx + r * 0.72f, hy0 = cy + r * 0.72f, hx1 = hx0 + dp(7), hy1 = hy0 + dp(7);
             outline.setColor(COLOR_INK);
-            outline.setStrokeWidth(dp(6));
+            outline.setStrokeWidth(dp(5));
             cv.drawCircle(cx, cy, r, outline);
             cv.drawLine(hx0, hy0, hx1, hy1, outline);
             gold.setColor(working ? Color.WHITE : COLOR_GOLD);
-            gold.setStrokeWidth(dp(3));
+            gold.setStrokeWidth(dp(2.5f));
             cv.drawCircle(cx, cy, r, gold);
             cv.drawLine(hx0, hy0, hx1, hy1, gold);
         }
