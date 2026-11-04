@@ -14,11 +14,93 @@ import '../../../core/providers/story_user_audio_provider.dart';
 import '../../../core/scroll/global_scroll.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/tts/sentence_splitter.dart';
+import '../../../core/tts/speech_controller.dart';
 import '../../../core/tts/speech_state.dart';
 import 'my_voice_recorder.dart';
 
 /// تخمینِ زمانِ نمایشی (میلی‌ثانیه به‌ازای هر کاراکتر) — مثل TTS_MS_PER_CHAR در Hope.
 const double _kMsPerChar = 90;
+
+/// 🔁 دیالوگِ «تعدادِ تکرارِ دلخواه» (نگه‌داشتنِ دکمه‌ی تکرار): عدد ۲ تا ۹۹، یا ∞، یا خاموش.
+Future<void> _askCustomRepeat(
+    BuildContext context, SpeechController ctrl, int current) async {
+  final fa = Localizations.localeOf(context).languageCode == 'fa';
+  final tc = TextEditingController(
+      text: current > 1 ? '$current' : '');
+  final res = await showDialog<int>(
+    context: context,
+    builder: (ctx) {
+      void done(int v) => Navigator.of(ctx).pop(v);
+      int? parsed() {
+        const faDigits = '۰۱۲۳۴۵۶۷۸۹';
+        const arDigits = '٠١٢٣٤٥٦٧٨٩';
+        final sb = StringBuffer();
+        for (final ch in tc.text.split('')) {
+          final i = faDigits.indexOf(ch);
+          final j = arDigits.indexOf(ch);
+          if (i >= 0) {
+            sb.write(i);
+          } else if (j >= 0) {
+            sb.write(j);
+          } else if (RegExp(r'[0-9]').hasMatch(ch)) {
+            sb.write(ch);
+          }
+        }
+        return int.tryParse(sb.toString());
+      }
+
+      return AlertDialog(
+        title: Text(fa ? 'تعدادِ تکرار' : 'Repeat count'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: tc,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                hintText: fa ? 'مثلاً ۵ (از ۲ تا ۹۹)' : 'e.g. 5 (2–99)',
+              ),
+              onSubmitted: (_) {
+                final n = parsed();
+                if (n != null) done(n);
+              },
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                for (final n in const [5, 10, 20])
+                  ActionChip(label: Text('$n'), onPressed: () => done(n)),
+                ActionChip(label: const Text('∞'), onPressed: () => done(-1)),
+                ActionChip(
+                    label: Text(fa ? 'خاموش' : 'Off'),
+                    onPressed: () => done(0)),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(fa ? 'لغو' : 'Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final n = parsed();
+              if (n != null) done(n);
+            },
+            child: Text(fa ? 'تأیید' : 'OK'),
+          ),
+        ],
+      );
+    },
+  );
+  if (res != null) ctrl.setRepeat(res);
+}
 
 class PlayerBar extends ConsumerWidget {
   const PlayerBar({super.key});
@@ -136,6 +218,8 @@ class PlayerBar extends ConsumerWidget {
                         icon: Icons.repeat,
                         color: state.globalRepeat != 0 ? c.gold : c.inkSoft,
                         onTap: ctrl.cycleRepeat,
+                        // نگه‌داشتن = وارد کردنِ تعدادِ تکرارِ دلخواه
+                        onLongPress: () => _askCustomRepeat(context, ctrl, state.globalRepeat),
                         badge: state.globalRepeat == -1
                             ? '∞'
                             : (state.globalRepeat == 0
@@ -311,12 +395,14 @@ class _IconBtn extends StatelessWidget {
   final Color color;
   final VoidCallback? onTap;
   final String? badge;
+  final VoidCallback? onLongPress;
 
   const _IconBtn({
     required this.icon,
     required this.color,
     required this.onTap,
     this.badge,
+    this.onLongPress,
   });
 
   @override
@@ -326,6 +412,7 @@ class _IconBtn extends StatelessWidget {
       children: [
         InkWell(
           onTap: onTap,
+          onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(24),
           child: Padding(
             padding: const EdgeInsets.all(8),

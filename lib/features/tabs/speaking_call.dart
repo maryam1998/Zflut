@@ -1877,6 +1877,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   double _dlFrac = 0;
   int _approxMb = 0;
   int _prevRepeatCycles = 0;
+  int? _prevRepeatCustom; // تعدادِ تکرارِ دلخواهِ کاربر (خارج از چرخه‌ی ۲/۳/∞)
 
   bool get _sttSupported => !kIsWeb && NativeBridge.instance.isSupported;
 
@@ -1933,12 +1934,21 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         for (var i = 0; i < _repeatOrder.length - idx; i++) {
           _ctl.cycleRepeat();
         }
+      } else if (idx < 0 && cur > 1) {
+        _prevRepeatCustom = cur;
+        _prevRepeatCycles = 0;
+        _ctl.setRepeat(0);
       }
     } catch (_) {}
   }
 
   void _restoreRepeat() {
     try {
+      final custom = _prevRepeatCustom;
+      if (custom != null) {
+        _prevRepeatCustom = null;
+        _ctl.setRepeat(custom);
+      }
       for (var i = 0; i < _prevRepeatCycles; i++) {
         _ctl.cycleRepeat();
       }

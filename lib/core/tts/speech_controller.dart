@@ -506,6 +506,13 @@ class SpeechController extends StateNotifier<SpeechState> {
     state = state.copyWith(globalRepeat: next);
   }
 
+  /// 🔁 تعدادِ تکرارِ دلخواهِ کاربر: ۰/۱ = خاموش | ۲..۹۹ = همین‌قدر بار | -1 = بی‌نهایت
+  void setRepeat(int n) {
+    final v = n == -1 ? -1 : (n <= 1 ? 0 : (n > 99 ? 99 : n));
+    debugPrint('🔁 setRepeat: ${state.globalRepeat} → $v');
+    state = state.copyWith(globalRepeat: v);
+  }
+
   void markAB() {
     if (_chunks.isEmpty) return;
     if (_abState == 'idle') {
