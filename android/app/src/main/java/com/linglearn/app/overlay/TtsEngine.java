@@ -45,7 +45,7 @@ final class TtsEngine {
     private static final String TAG = "TtsEngine";
 
     // 🔎 تشخیصِ موقت: زمان‌های ساخت صدا را روی صفحه (Toast) نشان می‌دهد. بعد از پیدا شدن مشکل false کن.
-    private static final boolean DEBUG_TOAST = true;
+    private static final boolean DEBUG_TOAST = false;
     private static volatile Context dbgCtx;
     private static final Handler DBG_MAIN = new Handler(Looper.getMainLooper());
     private static void dbg(final String msg) {
@@ -651,19 +651,54 @@ final class TtsEngine {
     /** longText=true (جمله‌ی بلند/چندجمله‌ای): مکثِ آخر و مکثِ وسطِ صدا کمی کوتاه‌تر می‌شود. */
     private static float[] trimSilence(float[] x, int sr, boolean longText) {
         if (x == null || x.length == 0 || sr <= 0) return x;
-        final float th = 0.015f;
-        int first = -1, last = -1;
-        for (int i = 0; i < x.length; i++) {
-            float v = x[i] < 0 ? -x[i] : x[i];
-            if (v > th) { if (first < 0) first = i; last = i; }
+        final int fl = Math.max(1, sr * FRAME_MS / 1000);
+        final boolean[] v = voicedFrames(x, sr);
+        int ff = -1, lf = -1;
+        for (int f = 0; f < v.length; f++) {
+            if (v[f]) { if (ff < 0) ff = f; lf = f; }
         }
-        if (first < 0) return x;                       // کاملاً سکوت: دست نزن
+        if (ff < 0) return x;                          // کاملاً سکوت: دست نزن
+        int first = ff * fl;
+        int last = Math.min(x.length, (lf + 1) * fl) - 1;
         int from = Math.max(0, first - sr * 20 / 1000);
-        int to = Math.min(x.length, last + 1 + sr * (longText ? 50 : 70) / 1000);
+        int to = Math.min(x.length, last + 1 + sr * (longText ? 40 : 55) / 1000);
         float[] y = (from == 0 && to == x.length) ? x : java.util.Arrays.copyOfRange(x, from, to);
         y = capInnerSilence(y, sr, longText);
         edgeFade(y, sr);
         return y;
+    }
+
+    // ---- تشخیصِ سکوت بر پایه‌ی انرژیِ فریم‌های ۵ms (نه تک‌نمونه) ----
+    // مدل‌های فارسی/Piper وسطِ مکث‌ها نویزِ زمینه یا «تَقِ» ریز دارند؛ آستانه‌ی ثابتِ تک‌نمونه‌ای آن را
+    // «صدا» می‌دید و مکثِ چندصد‌میلی‌ثانیه‌ای هیچ‌وقت کوتاه نمی‌شد. حالا آستانه نسبت به بلندیِ خودِ صدا
+    // تنظیم می‌شود و فریم‌های تکیِ جدا (کلیک/نویز) صدا حساب نمی‌شوند.
+    private static final int FRAME_MS = 5;
+
+    private static boolean[] voicedFrames(float[] x, int sr) {
+        final int fl = Math.max(1, sr * FRAME_MS / 1000);
+        final int nf = (x.length + fl - 1) / fl;
+        final float[] rms = new float[nf];
+        float peak = 0f;
+        for (int f = 0; f < nf; f++) {
+            int s = f * fl, e = Math.min(x.length, s + fl);
+            double acc = 0;
+            for (int i = s; i < e; i++) {
+                float val = x[i];
+                acc += (double) val * val;
+                float av = val < 0 ? -val : val;
+                if (av > peak) peak = av;
+            }
+            rms[f] = (float) Math.sqrt(acc / Math.max(1, e - s));
+        }
+        final float th = Math.max(0.003f, Math.min(0.015f, peak * 0.025f));
+        final boolean[] raw = new boolean[nf];
+        for (int f = 0; f < nf; f++) raw[f] = rms[f] > th;
+        final boolean[] v = new boolean[nf];
+        for (int f = 0; f < nf; f++) {
+            // فریمِ تکیِ جدا (بدونِ همسایه‌ی صدادار) = نویز/کلیک
+            v[f] = raw[f] && ((f > 0 && raw[f - 1]) || (f + 1 < nf && raw[f + 1]) || nf == 1);
+        }
+        return v;
     }
 
     /** تکه‌ی کاملاً بی‌صدا؟ (همان آستانه‌ی trimSilence) */
@@ -692,38 +727,47 @@ final class TtsEngine {
      * و همین باعث می‌شد صدا «تند و بدون نفس» به‌نظر برسد.
      */
     private static float[] capInnerSilence(float[] x, int sr, boolean longText) {
-        final float th = 0.015f;
-        final int maxGap = sr * (longText ? 220 : 300) / 1000;
-        final int minRun = maxGap + sr * 60 / 1000;   // فقط سکوتِ واقعاً بلند دست می‌خورد
+        final int fl = Math.max(1, sr * FRAME_MS / 1000);
+        final int maxGap = sr * (longText ? 150 : 210) / 1000;   // سقفِ مکثِ وسطِ صدا (بعد از ویرگول/نقطه/…)
+        final int minRun = maxGap + sr * 40 / 1000;              // فقط سکوتِ واقعاً بلند دست می‌خورد
         final int fade = Math.max(1, sr * 10 / 1000);
-        float[] out = new float[x.length];
-        int o = 0, i = 0, n = x.length;
-        while (i < n) {
-            float v = x[i] < 0 ? -x[i] : x[i];
-            if (v > th) { out[o++] = x[i++]; continue; }
-            int j = i;
-            while (j < n) {
-                float w = x[j] < 0 ? -x[j] : x[j];
-                if (w > th) break;
-                j++;
+        final int n = x.length;
+        final boolean[] v = voicedFrames(x, sr);
+        final float[] out = new float[n];
+        int o = 0;
+        int f = 0;
+        while (f < v.length) {
+            int i = f * fl;
+            if (v[f]) {
+                int g = f;
+                while (g < v.length && v[g]) g++;
+                int j = Math.min(n, g * fl);
+                System.arraycopy(x, i, out, o, j - i);
+                o += j - i;
+                f = g;
+                continue;
             }
+            int g = f;
+            while (g < v.length && !v[g]) g++;
+            int j = Math.min(n, g * fl);
             int run = j - i;
             if (run >= minRun) {
                 int half = maxGap / 2;
-                int f = Math.min(fade, half);
+                int fd = Math.min(fade, half);
                 for (int k = 0; k < half; k++) {
-                    float g = k >= half - f ? (float) (half - k) / f : 1f;      // محوِ خروجی
-                    out[o++] = x[i + k] * g;
+                    float gain = k >= half - fd ? (float) (half - k) / fd : 1f;      // محوِ خروجی
+                    out[o++] = x[i + k] * gain;
                 }
                 for (int k = run - half; k < run; k++) {
                     int kk = k - (run - half);
-                    float g = kk < f ? (float) kk / f : 1f;                      // محوِ ورودی
-                    out[o++] = x[i + k] * g;
+                    float gain = kk < fd ? (float) kk / fd : 1f;                      // محوِ ورودی
+                    out[o++] = x[i + k] * gain;
                 }
             } else {
-                for (int k = 0; k < run; k++) out[o++] = x[i + k];
+                System.arraycopy(x, i, out, o, run);
+                o += run;
             }
-            i = j;
+            f = g;
         }
         return o == n ? x : java.util.Arrays.copyOf(out, o);
     }
@@ -851,10 +895,10 @@ final class TtsEngine {
         for (int i = 0; i < n - 1; i++) {
             char c = t.charAt(i);
             int pause;
-            if (c == ',') pause = 170;
-            else if (c == ';') pause = 230;
-            else if (c == ':') pause = 230;
-            else if (c == '\u2014' || c == '\u2013') pause = 190;
+            if (c == ',') pause = 110;
+            else if (c == ';') pause = 150;
+            else if (c == ':') pause = 150;
+            else if (c == '\u2014' || c == '\u2013') pause = 120;
             else continue;
             if (!Character.isWhitespace(t.charAt(i + 1))) continue;
             String head = t.substring(start, i + 1).trim();
