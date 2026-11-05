@@ -426,7 +426,7 @@ final class TtsEngine {
             int cores = Runtime.getRuntime().availableProcessors();
             int threads = Math.max(2, Math.min(4, cores / 2));
             // Supertonic چهار مدل پشت‌سرهم دارد؛ نخ‌های بیشتر = تأخیر کمتر
-            if (SherpaModelManager.ENG_SUPERTONIC.equals(eng)) threads = Math.max(2, Math.min(6, cores - 2));
+            if (SherpaModelManager.ENG_SUPERTONIC.equals(eng)) threads = Math.max(2, Math.min(4, cores - 2));   // بیشتر از ۴ نخ روی هسته‌های ضعیف کندتر می‌شود
 
             OfflineTtsModelConfig modelConfig = new OfflineTtsModelConfig();
             OfflineTtsConfig config = new OfflineTtsConfig();
@@ -881,7 +881,7 @@ final class TtsEngine {
         final VoiceEq eq = new VoiceEq(skipEq ? 0 : sampleRate);
         java.util.List<Clause> clauses = splitClauses(t);
         // جمله‌ی بلند بدون ویرگول: تکه‌تکه ساخته شود تا پخش زودتر شروع شود (Supertonic استریم نمی‌کند)
-        if (skipEq) clauses = chunkLong(clauses, 14, 10);
+        clauses = chunkLong(clauses, 14, 10);   // همه‌ی موتورها: تکه‌های کوتاه → شروعِ زودترِ پخش
         final ArrayList<float[]> all = new ArrayList<>();
         int total = 0;
         for (int ci = 0; ci < clauses.size(); ci++) {
