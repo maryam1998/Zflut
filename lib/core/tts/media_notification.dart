@@ -87,6 +87,8 @@ class MediaNotificationSync {
     // 🌐 ترجمه‌ی همین جمله (زیرِ جمله، همان خطی که شماره‌ی جمله بود)
     final tr = _translationFor(text, s);
     final sub = tr.isEmpty ? counter : (counter.isEmpty ? tr : '$counter · $tr');
+    // ⚡ ترجمه‌ی چند جمله‌ی بعدی از قبل آماده می‌شود تا در بارِ اول هم همراهِ جمله نشان داده شود
+    _prefetchAhead(s);
     final sig = '$title|$sub|$playing|${s.hasPrev}|${s.hasNext}';
     if (sig == _lastSig) return;
     _lastSig = sig;
@@ -146,7 +148,38 @@ class MediaNotificationSync {
     return parts[_rot % parts.length];
   }
 
-  void _fetch(String text, String from, String to, String ck) {
+  /// ترجمه‌ی ۳ جمله‌ی بعدیِ متنِ در حال خوانش را از قبل در کش می‌گذارد.
+  void _prefetchAhead(SpeechState s) {
+    if (translate == null) return;
+    final from = _langOf(s);
+    List<String> tos;
+    try {
+      tos = targets?.call(from) ?? const <String>[];
+    } catch (_) {
+      tos = const <String>[];
+    }
+    if (tos.isEmpty) return;
+    final n = _ctl.getChunkCount();
+    for (var i = s.chunkIndex + 1; i <= s.chunkIndex + 3 && i < n; i++) {
+      final t = _ctl.getChunkText(i).trim();
+      if (t.isEmpty) continue;
+      for (final to in tos) {
+        if (to == from) continue;
+        final ck = '$from>$to|$t';
+        if (_trCache.containsKey(ck)) continue;
+        try {
+          final quick = peek?.call(t, from, to);
+          if (quick != null && quick.trim().isNotEmpty) {
+            _remember(ck, quick);
+            continue;
+          }
+        } catch (_) {}
+        _fetch(t, from, to, ck);
+      }
+    }
+  }
+
+  void _fetch(String text, String from, String to, String ck, [int tries = 0]) {
     if (!_trBusy.add(ck)) return;
     unawaited(() async {
       String r = '';
@@ -155,8 +188,16 @@ class MediaNotificationSync {
       } catch (_) {}
       _trBusy.remove(ck);
       if (_disposed) return;
-      // ترجمه‌ی ناموفق (همان متن مبدأ) نشان داده نمی‌شود
-      if (r.isEmpty || r.toLowerCase() == text.toLowerCase()) return;
+      // ترجمه‌ی ناموفق (همان متن مبدأ) نشان داده نمی‌شود؛ یک بار دیگر هم تلاش می‌کنیم
+      if (r.isEmpty || r.toLowerCase() == text.toLowerCase()) {
+        if (tries < 1) {
+          Timer(const Duration(milliseconds: 1500), () {
+            if (_disposed) return;
+            _fetch(text, from, to, ck, tries + 1);
+          });
+        }
+        return;
+      }
       _remember(ck, r);
       // فقط اگر هنوز همین جمله در حال خوانش است نوتیفیکیشن را تازه کن
       final st = _lastState;

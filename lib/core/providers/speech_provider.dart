@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../neural/neural_store.dart';
 import 'ai_settings_provider.dart';
-import 'app_prefs_provider.dart';
 import 'language_selection_provider.dart';
 import 'translation_provider.dart';
 import '../player_sync/player_sync_provider.dart';
@@ -25,17 +24,12 @@ final speechControllerProvider =
   );
   // 🎧 کنترلِ پلیر روی نوتیفیکیشن (قبلی / پخش‌وتوقف / بعدی) وقتی از برنامه بیرون هستی
   // 🌐 ترجمه‌ی جمله‌ی در حال خوانش هم زیرِ جمله در نوتیفیکیشن نشان داده می‌شود
-  // همه‌ی زبان‌های مقصدِ انتخابی به ترتیبِ انتخاب، بدونِ خودِ زبانِ مبدأ (ترجمه‌ی es→es بی‌معناست)
+  // فقط ترجمه‌ی «زبان مبدأ» (زبان مادریِ کاربر) نشان داده می‌شود، نه چرخش بینِ چند زبان؛
+  // اگر متنِ در حال خوانش خودش به زبان مادری است، ترجمه‌ای لازم نیست.
   List<String> targetsFor(String from) {
-    final out = <String>[];
-    for (final t in ref.read(languageSelectionProvider).targets) {
-      if (t != from && !out.contains(t)) out.add(t);
-    }
-    if (out.isEmpty) {
-      final ui = ref.read(appPrefsProvider).uiLang;
-      if (ui != from) out.add(ui);
-    }
-    return out;
+    final native = ref.read(languageSelectionProvider).native.trim().toLowerCase();
+    if (native.isNotEmpty && native != from) return [native];
+    return const <String>[];
   }
 
   final media = MediaNotificationSync(
