@@ -60,7 +60,49 @@ final class PersianG2P {
             Log.e(TAG, "cannot read tokens", e);
         }
         tokenSet = set;
-        Log.i(TAG, "tokens loaded: " + set.size() + " (rule-based G2P)");
+        Log.i(TAG, "tokens loaded: " + set.size());
+        // لغت‌نامه‌ی ساخته‌شده با Homo-GE2PE (اختیاری): اگر نبود یا خراب بود فقط قواعد داخلی کار می‌کنند
+        lexicon = loadLexicon(ctx);
+        synchronized (CACHE) { CACHE.clear(); }
+    }
+
+    // ======================= لغت‌نامه‌ی Homo-GE2PE (آفلاین، بدون onnxruntime) =======================
+    // فایل متنیِ UTF-8، هر خط:  کلمه<TAB>خروجی‌ی خامِ GE2PE   (مثلاً «سلام<TAB>salAm»)
+    // مسیرها (به ترتیب): files/tts/fa-g2p/lexicon.tsv  ←  assets/fa-g2p/lexicon.tsv
+    // خطا/نبودنِ فایل هرگز مشکلی نمی‌سازد: کلمه‌های بدون مدخل با قواعد داخلی (ruleWord) خوانده می‌شوند.
+    private static volatile Map<String, String> lexicon = new HashMap<>();
+
+    private static Map<String, String> loadLexicon(Context ctx) {
+        Map<String, String> m = new HashMap<>();
+        try {
+            java.io.InputStream in = null;
+            File f = new File(g2pDir, "lexicon.tsv");
+            if (f.isFile() && f.length() > 0) {
+                in = new java.io.FileInputStream(f);
+            } else {
+                try { in = ctx.getApplicationContext().getAssets().open("fa-g2p/lexicon.tsv"); }
+                catch (Throwable ignored) { in = null; }
+            }
+            if (in == null) {
+                Log.i(TAG, "no GE2PE lexicon → rule-based G2P only");
+                return m;
+            }
+            try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(in, "UTF-8"))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    int t = line.indexOf('\t');
+                    if (t <= 0 || t >= line.length() - 1) continue;
+                    String w = line.substring(0, t).trim();
+                    String p = line.substring(t + 1).trim();
+                    if (!w.isEmpty() && !p.isEmpty()) m.put(w, p);
+                }
+            }
+            Log.i(TAG, "GE2PE lexicon loaded: " + m.size() + " words");
+        } catch (Throwable e) {
+            Log.w(TAG, "GE2PE lexicon failed, using rules", e);
+            m = new HashMap<>();
+        }
+        return m;
     }
 
     // ======================= مدل G2P (غیرفعال) =======================
@@ -162,7 +204,16 @@ final class PersianG2P {
         }
         if (out == null) {
             out = new ArrayList<>();
-            for (String w : words) out.add(ruleWord(w));
+            Map<String, String> lx = lexicon;
+            for (String w : words) {
+                String raw = lx.isEmpty() ? null : lx.get(w);
+                String ipa = null;
+                if (raw != null) {
+                    try { ipa = ge2peToIpa(raw); } catch (Throwable ignored) { ipa = null; }
+                }
+                // مدخلِ لغت‌نامه (Homo-GE2PE) اول؛ نبود/خالی → قواعد داخلی
+                out.add(ipa != null && !ipa.isEmpty() ? ipa : ruleWord(w));
+            }
         }
         synchronized (CACHE) { CACHE.put(seg, out); }
         return out;

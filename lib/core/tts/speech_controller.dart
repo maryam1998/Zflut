@@ -1084,6 +1084,18 @@ class SpeechController extends StateNotifier<SpeechState> {
         break;
     }
 
+    // ⛔ فارسی/عربی: مسیر Edge TTS غیرفعال است (مجوز تجاری). صدای این دو زبان فقط از
+    // بسته‌ی آفلاینِ اپ یا TTS خودِ گوشی می‌آید. برای فعال‌کردنِ دوباره این بلاک را بردار.
+    if (TtsConfig.onlineOnly.contains(code)) {
+      if (_skipFailedChunk(idx, myGen)) return;
+      state = state.copyWith(
+        status: SpeechStatus.idle,
+        error: 'برای خواندن فارسی/عربی، بسته‌ی صدای اپ را از تنظیمات ← «صدای برنامه» '
+            'دانلود کنید (یا صدای این زبان را روی گوشی نصب کنید).',
+      );
+      return;
+    }
+
     // Edge TTS از Worker
     final voice = TtsConfig.edgeVoice[code] ?? 'en-US-AriaNeural';
     final url = '${TtsConfig.backendUrl}/api/tts'
