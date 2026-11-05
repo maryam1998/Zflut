@@ -5,9 +5,12 @@ import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioTrack;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Process;
 import android.os.SystemClock;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.k2fsa.sherpa.onnx.OfflineTts;
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig;
@@ -40,6 +43,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 final class TtsEngine {
 
     private static final String TAG = "TtsEngine";
+
+    // 🔎 تشخیصِ موقت: زمان‌های ساخت صدا را روی صفحه (Toast) نشان می‌دهد. بعد از پیدا شدن مشکل false کن.
+    private static final boolean DEBUG_TOAST = true;
+    private static volatile Context dbgCtx;
+    private static final Handler DBG_MAIN = new Handler(Looper.getMainLooper());
+    private static void dbg(final String msg) {
+        Log.i(TAG, msg);
+        final Context c = dbgCtx;
+        if (!DEBUG_TOAST || c == null) return;
+        DBG_MAIN.post(() -> { try { Toast.makeText(c, msg, Toast.LENGTH_SHORT).show(); } catch (Throwable ignored) {} });
+    }
+    volatile int threadsUsed = 0;
     private static final int CACHE_MAX = 16;
     private static final short[] END = new short[0];
 
@@ -397,6 +412,7 @@ final class TtsEngine {
 
     static TtsEngine create(Context ctx, String lang) {
         lastCreateError = null;
+        dbgCtx = ctx.getApplicationContext();
         final SherpaModelManager.TtsVoice voice = SherpaModelManager.getReadyVoice(ctx, lang);
         final File dir = voice == null ? null : SherpaModelManager.voiceDir(ctx, lang, voice);
         if (dir == null) {
@@ -492,6 +508,8 @@ final class TtsEngine {
                     SherpaModelManager.ENG_SUPERTONIC.equals(eng) ? lang : null);
             created.bindVoice(eng, voice.spec.pkg == null ? null : voice.spec.pkg.id);
             created.charFrontend = voice.spec.charFrontend;
+            created.threadsUsed = threads;
+            dbg("TTS لود شد: " + lang + " " + eng + " thr=" + threads + " load=" + (SystemClock.uptimeMillis() - t0) + "ms");
             return created;
         } catch (Throwable e) {
             Log.e(TAG, "Failed to load TTS for " + lang, e);
@@ -1021,18 +1039,25 @@ final class TtsEngine {
             final boolean[] first = {true};
             final boolean pl = plain; // یک‌بار بخون تا بینِ crumb و synth عوض نشه
             TtsCrumb.mark((pl ? "genp:" : "gen:") + lang + ":" + t.length() + ":" + TtsCrumb.brief(t));
+            final long[] firstMs = {-1};
             float[] audio = synth(t, sp, pl, s -> {
                 if (released || epoch.get() != myEpoch) return false;
                 if (first[0]) {
                     first[0] = false;
-                    Log.i(TAG, "first audio after ms=" + (SystemClock.uptimeMillis() - t0));
+                    firstMs[0] = SystemClock.uptimeMillis() - t0;
+                    Log.i(TAG, "first audio after ms=" + firstMs[0]);
                 }
                 gotAudio.set(true);
                 q.add(toPcm16(s));
                 return true;
             });
             TtsCrumb.mark("idle");
-            if (audio != null) cachePut(key, audio);
+            if (audio != null) {
+                cachePut(key, audio);
+                dbg("ساخت " + lang + " " + engineKind + " thr=" + threadsUsed + " | " + t.length()
+                        + " حرف | اولین صدا=" + firstMs[0] + "ms | کل=" + (SystemClock.uptimeMillis() - t0)
+                        + "ms | طول صدا=" + String.format(java.util.Locale.US, "%.1f", audio.length / (float) sampleRate) + "s");
+            }
         } catch (Throwable e) {
             Log.e(TAG, "TTS generate failed", e);
             TtsCrumb.mark("idle");
