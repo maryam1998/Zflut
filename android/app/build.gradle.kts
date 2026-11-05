@@ -86,7 +86,8 @@ android {
             // onnxruntime-android (برای G2P فارسی) و AAR ی Sherpa هر دو libonnxruntime.so دارند
             // اپ فقط arm64 است؛ onnxruntime-android بقیه‌ی معماری‌ها را هم می‌آورد (برای APK و AAB حذف می‌شوند)
             excludes += listOf(
-                "lib/armeabi-v7a/libonnxruntime*.so", "lib/x86/libonnxruntime*.so", "lib/x86_64/libonnxruntime*.so"
+                "**/armeabi-v7a/libonnxruntime.so", "**/x86/libonnxruntime.so", "**/x86_64/libonnxruntime.so",
+                "**/armeabi-v7a/libonnxruntime4j_jni.so", "**/x86/libonnxruntime4j_jni.so", "**/x86_64/libonnxruntime4j_jni.so"
             )
             pickFirsts += listOf("**/libc++_shared.so", "**/libonnxruntime.so")
         }
