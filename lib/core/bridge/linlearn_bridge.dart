@@ -63,6 +63,9 @@ class LinLearnBridge {
       case 'whisperDownloadProgress':
         _setProg('song', d['model'], d);
         break;
+      case 'voskDownloadProgress':
+        _setProg('vosk', d['lang'], d);
+        break;
       case 'ttsModelDownloadDone':
       case 'ttsModelDownloadError':
       case 'ttsModelDownloadCancelled':
@@ -75,6 +78,10 @@ class LinLearnBridge {
       case 'whisperDownloadDone':
       case 'whisperDownloadError':
         _progress.remove('song:${d['model']}');
+        break;
+      case 'voskDownloadDone':
+      case 'voskDownloadError':
+        _progress.remove('vosk:${d['lang']}');
         break;
     }
   }
@@ -183,7 +190,7 @@ class LinLearnBridge {
 
   // ═══════════════════════════════════════════════════════════
   // بسته‌های آفلاین
-  // kind: 'tts' | 'speech' | 'song' | 'sync'   —   id: کد زبان یا نام مدل
+  // kind: 'tts' | 'speech' | 'song' | 'sync' | 'vosk'   —   id: کد زبان یا نام مدل
   // وضعیت: {downloaded, downloading, bytes, total, partialBytes, approxMb, enabled}
   // 'sync' (همگام‌سازی صدا): همان بسته‌های Whisper؛ fast→tiny ، balanced→base
   // ═══════════════════════════════════════════════════════════
@@ -240,6 +247,29 @@ class LinLearnBridge {
           partial: (s['partialBytes'] as num?) ?? 0,
         );
       }
+      if (kind == 'vosk') {
+        final s = await _n.getVoskStatus();
+        bool downloaded = false;
+        num partial = 0;
+        num? approx;
+        final langs = s['langs'];
+        if (langs is List) {
+          for (final m in langs) {
+            if (m is Map && m['lang'] == id) {
+              downloaded = m['downloaded'] == true;
+              partial = (m['partialBytes'] as num?) ?? 0;
+              approx = m['approxMb'] as num?;
+            }
+          }
+        }
+        return _status(
+          'vosk:$id',
+          downloaded: downloaded,
+          downloading: s['downloading'] == true && s['activeLang'] == id,
+          partial: partial,
+          approxMb: approx,
+        );
+      }
       if (kind == 'song' || kind == 'sync') {
         final wid = kind == 'sync' ? syncModelFor(id) : id;
         final s = await _n.getWhisperStatus();
@@ -287,6 +317,8 @@ class LinLearnBridge {
         return _ok(() => _n.downloadWhisperModel(model: id));
       case 'sync':
         return _ok(() => _n.downloadWhisperModel(model: syncModelFor(id)));
+      case 'vosk':
+        return _ok(() => _n.downloadVoskModel(lang: id));
       default:
         return Future.value(false);
     }
@@ -302,6 +334,8 @@ class LinLearnBridge {
       case 'song':
       case 'sync':
         return _ok(() => _n.cancelWhisperDownload());
+      case 'vosk':
+        return _ok(() => _n.cancelVoskDownload());
       default:
         return Future.value(false);
     }
@@ -326,6 +360,9 @@ class LinLearnBridge {
       case 'sync':
         ok = await _ok(() => _n.deleteWhisperModel(model: syncModelFor(id)));
         break;
+      case 'vosk':
+        // بسته‌ی سرعت بالا به حساب ابری همگام نمی‌شود؛ فقط حذفِ محلی
+        return _ok(() => _n.deleteVoskModel(lang: id));
       default:
         return false;
     }
@@ -350,6 +387,26 @@ class LinLearnBridge {
       default:
         return Future.value(false);
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // موتورِ تشخیص گفتار برای فرانسوی/آلمانی/اسپانیایی: 'whisper' (پیش‌فرض) | 'vosk'
+  // ═══════════════════════════════════════════════════════════
+  static Future<String> latinAsrEngine() async {
+    if (!_n.isSupported) return 'whisper';
+    try {
+      final s = await _n.getVoskStatus();
+      return s['engine'] == 'vosk' ? 'vosk' : 'whisper';
+    } on PlatformException {
+      return 'whisper';
+    } on MissingPluginException {
+      return 'whisper';
+    }
+  }
+
+  static Future<bool> setLatinAsrEngine(String engine) {
+    if (!_n.isSupported) return Future.value(false);
+    return _ok(() => _n.setLatinAsrEngine(engine: engine));
   }
 
   // ═══════════════════════════════════════════════════════════

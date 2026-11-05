@@ -149,6 +149,7 @@ public class BubblePlugin extends Plugin {
     public void load() {
         super.load();
         inst = this;
+        try { SherpaModelManager.purgeRemovedSttPacks(getContext()); } catch (Throwable ignored) {}
         try {
             TtsClient.init(getContext(), (lang, text, id, ok) ->
                     emitSpeakDone(lang, text, id.isEmpty() ? null : id, ok));
@@ -728,6 +729,97 @@ public class BubblePlugin extends Plugin {
     @PluginMethod
     public void deleteWhisperModel(PluginCall call) {
         WhisperModelManager.delete(getContext(), call.getString("model", ""));
+        call.resolve();
+    }
+
+    // ================================================================
+    // ===== موتور تشخیص گفتار برای فرانسوی/آلمانی/اسپانیایی ==========
+    // ===== "whisper" (کیفیت بالا؛ پیش‌فرض) یا "vosk" (سرعت بالا) =====
+    // ================================================================
+
+    // setLatinAsrEngine({ engine: "whisper" | "vosk" })
+    @PluginMethod
+    public void setLatinAsrEngine(PluginCall call) {
+        String engine = call.getString("engine", "whisper");
+        if (!"vosk".equals(engine)) engine = "whisper";
+        try {
+            getContext().getSharedPreferences("bubble_prefs", Context.MODE_PRIVATE).edit()
+                    .putString("latinAsr", engine).apply();
+        } catch (Throwable ignored) {}
+        call.resolve();
+    }
+
+    // getVoskStatus() → { engine, langs: [{lang, downloaded, approxMb, partialBytes}], downloading, activeLang }
+    @PluginMethod
+    public void getVoskStatus(PluginCall call) {
+        Context ctx = getContext();
+        SharedPreferences sp = ctx.getSharedPreferences("bubble_prefs", Context.MODE_PRIVATE);
+        JSArray arr = new JSArray();
+        for (String l : new String[]{"fr", "de", "es"}) {
+            JSObject o = new JSObject();
+            o.put("lang", l);
+            o.put("downloaded", VoskModelManager.getModelDir(ctx, l) != null);
+            o.put("approxMb", VoskModelManager.approxMb(l));
+            o.put("partialBytes", VoskModelManager.partialBytes(ctx, l));
+            arr.put(o);
+        }
+        JSObject ret = new JSObject();
+        ret.put("engine", sp.getString("latinAsr", "whisper"));
+        ret.put("langs", arr);
+        ret.put("downloading", VoskModelManager.isDownloading());
+        String active = VoskModelManager.activeLang();
+        ret.put("activeLang", active == null ? "" : active);
+        call.resolve(ret);
+    }
+
+    // downloadVoskModel({ lang: "de" })  → events: voskDownloadProgress / Done / Error
+    @PluginMethod
+    public void downloadVoskModel(PluginCall call) {
+        final Context ctx = getContext();
+        final String lang = call.getString("lang", "");
+        if (!VoskModelManager.isAvailable(lang)) {
+            call.reject("unknown vosk pack: " + lang);
+            return;
+        }
+        if (VoskModelManager.getModelDir(ctx, lang) != null) {
+            JSObject ret = new JSObject();
+            ret.put("alreadyDownloaded", true);
+            call.resolve(ret);
+            return;
+        }
+        VoskModelManager.download(ctx.getApplicationContext(), lang, new VoskModelManager.Callback() {
+            @Override public void onProgress(String l, long done, long total) {
+                JSObject o = new JSObject();
+                o.put("lang", l); o.put("bytes", done); o.put("total", total);
+                notifyListeners("voskDownloadProgress", o);
+            }
+            @Override public void onDone(String l) {
+                JSObject o = new JSObject();
+                o.put("lang", l);
+                notifyListeners("voskDownloadDone", o);
+            }
+            @Override public void onError(String l, Exception e) {
+                JSObject o = new JSObject();
+                o.put("lang", l);
+                o.put("cancelled", e instanceof VoskModelManager.Cancelled);
+                o.put("error", e.getMessage() != null ? e.getMessage() : "unknown");
+                notifyListeners("voskDownloadError", o);
+            }
+        });
+        call.resolve();
+    }
+
+    // cancelVoskDownload() — فایل .part می‌ماند تا دانلودِ بعدی ادامه پیدا کند
+    @PluginMethod
+    public void cancelVoskDownload(PluginCall call) {
+        VoskModelManager.cancel();
+        call.resolve();
+    }
+
+    // deleteVoskModel({ lang: "de" })
+    @PluginMethod
+    public void deleteVoskModel(PluginCall call) {
+        VoskModelManager.delete(getContext(), call.getString("lang", ""));
         call.resolve();
     }
 

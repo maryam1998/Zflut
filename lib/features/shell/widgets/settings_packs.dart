@@ -16,6 +16,7 @@ import '../../../core/constants/supported_languages.dart';
 import '../../../core/data/data_repository.dart';
 import '../../../core/models/filter_state.dart';
 import '../../../core/providers/ai_settings_provider.dart';
+import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/providers/translation_provider.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/app_theme_colors.dart';
@@ -804,8 +805,13 @@ class _TtsPackRowState extends State<TtsPackRow> {
 
 /// زبان‌هایی که بسته‌ی اختصاصیِ تک‌زبانه دارند (باید با SherpaModelManager.SPECS یکی باشد).
 const List<String> kDedicatedPackLangs = [
-  'en', 'es', 'fr', 'de', 'ru', 'zh', 'ko',
+  'en', 'ru', 'zh', 'ko',
 ];
+
+/// فرانسوی / آلمانی / اسپانیایی: بسته‌ی اختصاصیِ تک‌زبانه ندارند؛ کاربر یکی از دو موتور را انتخاب می‌کند:
+///  • کیفیت بالا (پیش‌فرض) ← بسته‌ی چندزبانه (kind: 'song')
+///  • سرعت بالا ← بسته‌ی مخصوصِ همان زبان (kind: 'vosk')
+const List<String> kLatinPackLangs = ['fr', 'de', 'es'];
 
 /// نام زبان‌ها به خطِ خودشان
 const Map<String, String> _kPackLangNames = {
@@ -856,12 +862,19 @@ class LangPackTile extends StatefulWidget {
 class _LangPackTileState extends State<LangPackTile> {
   bool? _ready;
   Timer? _timer;
+  String _engine = 'whisper'; // فقط برای fr/de/es: 'whisper' | 'vosk'
 
   bool get _dedicated => kDedicatedPackLangs.contains(widget.lang);
+  bool get _latin => kLatinPackLangs.contains(widget.lang);
 
   @override
   void initState() {
     super.initState();
+    if (_latin) {
+      LinLearnBridge.latinAsrEngine().then((e) {
+        if (mounted && e != _engine) setState(() => _engine = e);
+      });
+    }
     if (!_dedicated) {
       _poll();
       _timer = Timer.periodic(const Duration(seconds: 2), (_) => _poll());
@@ -892,6 +905,132 @@ class _LangPackTileState extends State<LangPackTile> {
         approxMb: 70,
       );
     }
+    if (_latin) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _enginePicker(context),
+          if (_engine == 'vosk') _voskTile(context) else _multiBody(context),
+        ],
+      );
+    }
+    return _multiBody(context);
+  }
+
+  Future<void> _setEngine(String e) async {
+    if (e == _engine) return;
+    setState(() => _engine = e);
+    await LinLearnBridge.setLatinAsrEngine(e);
+  }
+
+  /// منوی «موتور تشخیص گفتار» (فقط fr/de/es): کیفیت بالا (پیش‌فرض) / سرعت بالا
+  Widget _enginePicker(BuildContext context) {
+    final c = context.appColors;
+    return Consumer(builder: (ctx, ref, _) {
+      final fa = ref.watch(appPrefsProvider).uiLang == 'fa';
+      final langName = _kPackLangNames[widget.lang] ?? widget.lang.toUpperCase();
+
+      Widget opt(String id, String title, String sub) {
+        final sel = _engine == id;
+        return Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _setEngine(id),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
+              decoration: BoxDecoration(
+                color: sel ? c.goldSoft : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: sel ? c.gold : c.cardBorder, width: sel ? 2 : 1),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: c.ink,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 2),
+                  Text(sub,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: c.inkSoft, fontSize: 11)),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      final hint = _engine == 'vosk'
+          ? (fa
+              ? 'برای «$langName» باید «بسته‌ی سرعت بالا» را دانلود کنید (مخصوص همین زبان).'
+              : 'For “$langName” you need to download the “High speed pack” (specific to this language).')
+          : (fa
+              ? 'برای «$langName» باید «بسته‌ی کیفیت بالا» را دانلود کنید (یک بار دانلود می‌شود و برای چند زبان کار می‌کند).'
+              : 'For “$langName” you need to download the “High quality pack” (downloaded once, works for several languages).');
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 6),
+            child: Text(
+              fa ? 'موتور تشخیص گفتار' : 'Speech Recognition Engine',
+              style: TextStyle(
+                  color: c.ink, fontSize: 13, fontWeight: FontWeight.w800),
+            ),
+          ),
+          Row(
+            children: [
+              opt(
+                  'whisper',
+                  fa ? 'کیفیت بالا ★' : 'High quality ★',
+                  fa ? 'مصرف بیشتر' : 'Higher usage'),
+              const SizedBox(width: 6),
+              opt(
+                  'vosk',
+                  fa ? 'سرعت بالا' : 'High speed',
+                  fa ? 'حجم و مصرف کمتر' : 'Smaller size, lower usage'),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(hint,
+                style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.7)),
+          ),
+        ],
+      );
+    });
+  }
+
+  /// دکمه‌ی دانلودِ «بسته‌ی سرعت بالا» (مخصوصِ زبانِ انتخابی)
+  Widget _voskTile(BuildContext context) {
+    return Consumer(builder: (ctx, ref, _) {
+      final fa = ref.watch(appPrefsProvider).uiLang == 'fa';
+      return PackTile(
+        key: ValueKey('lp-vosk-${widget.lang}'),
+        kind: 'vosk',
+        id: widget.lang,
+        title: '',
+        bare: true,
+        filled: true,
+        approxMb: 45,
+        downloadLabel: (mb) => fa
+            ? 'دانلود بسته‌ی سرعت بالا (~$mb مگابایت)'
+            : 'Download the High speed pack (~$mb MB)',
+        resumeLabel: (have, mb) => fa
+            ? 'ادامه‌ی دانلود بسته‌ی سرعت بالا ($have از ~$mb مگابایت)'
+            : 'Resume High speed pack ($have of ~$mb MB)',
+      );
+    });
+  }
+
+  /// بسته‌ی چندزبانه (کیفیت بالا): آماده است یا دکمه‌ی دانلود
+  Widget _multiBody(BuildContext context) {
     final c = context.appColors;
     final L = context.l10n;
     if (_ready == true) {
@@ -1180,6 +1319,15 @@ class _OfflinePacksSheetState extends ConsumerState<OfflinePacksSheet> {
                         kind: 'speech',
                         code: code,
                         label: _kPackLangNames[code] ?? code.toUpperCase(),
+                      ),
+                    // فرانسوی / آلمانی / اسپانیایی: بسته‌ی «سرعت بالا» (اختیاری؛ پیش‌فرض بسته‌ی چندزبانه است)
+                    for (final code in kLatinPackLangs)
+                      TtsPackRow(
+                        key: ValueKey('hub-vosk-$code'),
+                        kind: 'vosk',
+                        code: code,
+                        label:
+                            '${_kPackLangNames[code] ?? code.toUpperCase()} · ${ref.watch(appPrefsProvider).uiLang == 'fa' ? 'سرعت بالا' : 'High speed'}',
                       ),
                   ]),
                 ],

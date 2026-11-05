@@ -88,6 +88,33 @@ const List<_Credit> _credits = [
     'Apache License 2.0',
     asset: 'assets/licenses/kokoro-apache-2.0.txt',
   ),
+  // ── تشخیص گفتار (STT) ──
+  _Credit(
+    'Whisper — OpenAI',
+    'MIT',
+    asset: 'assets/licenses/whisper-mit.txt',
+  ),
+  _Credit(
+    'Vosk — Alpha Cephei Inc.',
+    'Apache License 2.0',
+    asset: 'assets/licenses/vosk-apache-2.0.txt',
+  ),
+  _Credit(
+    'Streaming Zipformer (English) — Zengwei Yao, k2-fsa (icefall)',
+    'Apache License 2.0',
+  ),
+  _Credit(
+    'Streaming Zipformer (Chinese–English) — pfluo, k2-fsa (icefall)',
+    'Apache License 2.0',
+  ),
+  _Credit(
+    'Streaming Zipformer (Korean) — johnBamma, k2-fsa (icefall)',
+    'Not specified by the author',
+  ),
+  _Credit(
+    'Streaming Zipformer (Russian) — Alpha Cephei Inc. (Vosk)',
+    'Apache License 2.0',
+  ),
   _Credit(
     'Mana-TTS — Mahta Fetrat',
     'MIT',

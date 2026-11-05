@@ -20,13 +20,13 @@ import okhttp3.Response;
 
 /**
  * بسته‌های Whisper (MIT) برای تشخیص گفتارِ آهنگ‌ها — کاملاً جدا از SherpaModelManager.
- * بسته‌ها از HuggingFace (همان میرورِ SherpaModelManager) توسط خودِ کاربر دانلود می‌شن
+ * بسته‌ها از HuggingFace (منبع اصلی) توسط خودِ کاربر دانلود می‌شن
  * و توی files/whisper/<id>/ ذخیره می‌شن. دانلود با Range قابل ادامه‌ست.
  */
 final class WhisperModelManager {
 
     private static final String TAG = "WhisperModelMgr";
-    private static final String HF_BASE = "https://hf-mirror.com/";
+    private static final String HF_BASE = "https://huggingface.co/";
 
     private WhisperModelManager() {}
 

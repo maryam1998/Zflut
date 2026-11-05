@@ -6154,6 +6154,11 @@ public class BubbleService extends Service {
 
     /** بسته‌ای که برای زبانِ مبدأ لازم است ولی روی گوشی نیست: {نوع، شناسه}؛ null = بسته آماده است. */
     private String[] missingOfflinePack(String src) {
+        if (voskActive(src)) {                                             // فرانسوی/آلمانی/اسپانیایی با موتورِ «سرعت بالا»
+            if (VoskModelManager.getModelDir(this, src) != null) return null;
+            String vn = SherpaModelManager.normalize(src);
+            return new String[]{"vosk", vn != null ? vn : src};
+        }
         if (whisperModelPref() != null) return null;                       // «حالت آهنگ»ِ انتخابیِ کاربر
         boolean sherpaLang = src != null && !"auto".equals(src) && SherpaModelManager.isAvailable(src);
         if (sherpaLang) {
@@ -6165,6 +6170,17 @@ public class BubbleService extends Service {
         return new String[]{"whisper", "base"};
     }
 
+    /** موتورِ تشخیصِ فرانسوی/آلمانی/اسپانیایی که کاربر انتخاب کرده: "whisper" (پیش‌فرض) یا "vosk". */
+    private String latinEngineChoice() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getString("latinAsr", "whisper");
+    }
+
+    /** true = برای این زبان موتورِ Vosk انتخاب شده (فقط fr/de/es). */
+    private boolean voskActive(String src) {
+        return src != null && !"auto".equals(src) && VoskModelManager.isAvailable(src)
+                && "vosk".equals(latinEngineChoice());
+    }
+
     private String anyWhisperModel() {
         for (String m : new String[]{"small", "base", "tiny"}) {      // مدلِ بزرگ‌تر = تشخیصِ زبانِ دقیق‌تر
             if (WhisperModelManager.getModelDir(this, m) != null) return m;
@@ -6174,7 +6190,7 @@ public class BubbleService extends Service {
 
     /** true = می‌شود شروع کرد؛ false = یا دانلود در جریان است یا پیامِ تأییدِ دانلود نشان داده شد. */
     private boolean offlinePackReady() {
-        if (SherpaModelManager.isDownloading() || WhisperModelManager.isDownloading()) {
+        if (SherpaModelManager.isDownloading() || WhisperModelManager.isDownloading() || VoskModelManager.isDownloading()) {
             showNotice(msg("دانلودِ بسته‌ی آفلاین در حال انجام است؛ کمی صبر کنید",
                     "The offline pack is still downloading — please wait"));
             return false;
@@ -6193,7 +6209,8 @@ public class BubbleService extends Service {
                     .putExtra(ShareReceiverActivity.EXTRA_PACK_KIND, kind)
                     .putExtra(ShareReceiverActivity.EXTRA_PACK_ID, id)
                     .putExtra(ShareReceiverActivity.EXTRA_PACK_NAME, name)
-                    .putExtra(ShareReceiverActivity.EXTRA_PACK_MB, "whisper".equals(kind) ? WhisperModelManager.approxMb(id) : 0)
+                    .putExtra(ShareReceiverActivity.EXTRA_PACK_MB, "whisper".equals(kind) ? WhisperModelManager.approxMb(id)
+                            : "vosk".equals(kind) ? VoskModelManager.approxMb(id) : 0)
                     .putExtra(ShareReceiverActivity.EXTRA_FA, isFa())
                     .putExtra(ShareReceiverActivity.EXTRA_LANG, NativeI18n.lang(this))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION));
@@ -6211,7 +6228,7 @@ public class BubbleService extends Service {
     }
 
     private void downloadAsrPack(final String kind, final String id) {
-        if (SherpaModelManager.isDownloading() || WhisperModelManager.isDownloading()) {
+        if (SherpaModelManager.isDownloading() || WhisperModelManager.isDownloading() || VoskModelManager.isDownloading()) {
             showNotice(msg("یک دانلود دیگر در حال انجام است", "Another download is already running"));
             return;
         }
@@ -6221,7 +6238,13 @@ public class BubbleService extends Service {
         }
         showNotice(msg("دانلودِ بسته‌ی آفلاین شروع شد…", "Offline pack download started…"));
         final long[] last = {0};
-        if ("whisper".equals(kind)) {
+        if ("vosk".equals(kind)) {
+            VoskModelManager.download(this, id, new VoskModelManager.Callback() {
+                @Override public void onProgress(String m, long done, long total) { packProgress(done, total, last); }
+                @Override public void onDone(String m) { packDone(); }
+                @Override public void onError(String m, Exception e) { packFailed(e); }
+            });
+        } else if ("whisper".equals(kind)) {
             WhisperModelManager.download(this, id, new WhisperModelManager.Callback() {
                 @Override public void onProgress(String m, long done, long total) { packProgress(done, total, last); }
                 @Override public void onDone(String m) { packDone(); }
@@ -6379,6 +6402,7 @@ public class BubbleService extends Service {
         String wModel = whisperModelPref();
         final boolean sherpaLang = src != null && !"auto".equals(src) && SherpaModelManager.isAvailable(src);
         if (wModel == null && !sherpaLang) wModel = anyWhisperModel();
+        if (voskActive(src)) wModel = null;                   // موتورِ Vosk انتخاب شده → Whisper/«حالت آهنگ» کنار می‌رود
         if (startSherpaEngine(src, wModel)) return;           // wModel == null ← بسته‌ی Sherpa
         showNotice(msg("راه‌اندازیِ موتورِ آفلاین ممکن نشد", "Could not start the offline engine"));
     }
@@ -6449,7 +6473,9 @@ public class BubbleService extends Service {
      * is not downloaded or the capture cannot start.
      */
     private boolean startSherpaEngine(final String src, final String whisperModel) {
-        if (whisperModel != null) {
+        if (voskActive(src)) {
+            if (VoskModelManager.getModelDir(this, src) == null) return false;                // not downloaded yet
+        } else if (whisperModel != null) {
             if (WhisperModelManager.getModelDir(this, whisperModel) == null) return false;   // not downloaded yet
         } else if (SherpaModelManager.getModelDir(this, src) == null) return false;           // not downloaded yet
         AudioRecord rec = null;
@@ -6475,7 +6501,9 @@ public class BubbleService extends Service {
 
     /** Feed-thread entry for Sherpa: loads the model off the main thread, then runs feedLoop. */
     private void runSherpa(final AudioRecord rec, final String src, final String whisperModel) {
-        PcmSink eng = (whisperModel != null)
+        PcmSink eng = voskActive(src)
+                ? VoskEngine.create(getApplicationContext(), src)
+                : (whisperModel != null)
                 ? WhisperEngine.create(getApplicationContext(), whisperModel, src)
                 : SherpaEngine.create(getApplicationContext(), src);
         boolean stillActive = recording && micEngine && record == rec;

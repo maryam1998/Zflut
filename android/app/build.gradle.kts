@@ -81,6 +81,10 @@ android {
                 )
             }
         }
+        // Sherpa و Vosk هر دو ممکنه libc++_shared.so بیاورند؛ اولی برداشته شود تا بیلد روی تکراری نشکند
+        jniLibs {
+            pickFirsts += listOf("**/libc++_shared.so")
+        }
         resources {
             excludes += listOf(
                 "META-INF/DEPENDENCIES", "META-INF/LICENSE", "META-INF/LICENSE.txt",
@@ -106,6 +110,8 @@ dependencies {
 
     implementation("androidx.core:core:1.13.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Vosk (Apache-2.0): موتورِ «سرعت بالا» برای فرانسوی/آلمانی/اسپانیایی (بسته‌ی مدل داخل APK نیست؛ کاربر دانلود می‌کند)
+    implementation("com.alphacephei:vosk-android:0.3.75")
     implementation("com.google.mlkit:translate:17.0.3")
     implementation("com.google.mlkit:text-recognition:16.0.1")             // OCR لاتین
     implementation("com.google.mlkit:text-recognition-devanagari:16.0.1")  // OCR هندی

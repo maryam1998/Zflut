@@ -149,6 +149,21 @@ class NativeBridge {
   Future<Map<String, dynamic>> deleteWhisperModel({String? model}) =>
       _call('deleteWhisperModel', {if (model != null) 'model': model});
 
+  /// موتورِ تشخیص گفتار برای فرانسوی/آلمانی/اسپانیایی: 'whisper' (پیش‌فرض) | 'vosk'
+  Future<Map<String, dynamic>> setLatinAsrEngine({String? engine}) =>
+      _call('setLatinAsrEngine', {if (engine != null) 'engine': engine});
+
+  /// → { engine, langs: [{lang, downloaded, approxMb, partialBytes}], downloading, activeLang }
+  Future<Map<String, dynamic>> getVoskStatus() => _call('getVoskStatus');
+
+  Future<Map<String, dynamic>> downloadVoskModel({String? lang}) =>
+      _call('downloadVoskModel', {if (lang != null) 'lang': lang});
+
+  Future<Map<String, dynamic>> cancelVoskDownload() => _call('cancelVoskDownload');
+
+  Future<Map<String, dynamic>> deleteVoskModel({String? lang}) =>
+      _call('deleteVoskModel', {if (lang != null) 'lang': lang});
+
   /// همگام‌سازیِ صوتِ آپلودی: فایل را پنجره‌پنجره با Whisper رونویسی می‌کند.
   /// رویدادها: syncChunk {job,text,start,end,frac} / syncDone {job} / syncError {job,code,error}
   Future<Map<String, dynamic>> syncTranscribe(

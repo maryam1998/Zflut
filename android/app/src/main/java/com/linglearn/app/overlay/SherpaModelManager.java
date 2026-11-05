@@ -36,7 +36,8 @@ import okhttp3.Response;
 final class SherpaModelManager {
 
     private static final String TAG = "SherpaModelMgr";
-    private static final String HF_BASE = "https://hf-mirror.com/";
+    // منبع اصلیِ دانلود (Hugging Face). میرور (hf-mirror) عمداً استفاده نمی‌شود.
+    private static final String HF_BASE = "https://huggingface.co/";
 
     private SherpaModelManager() {}
 
@@ -83,16 +84,7 @@ final class SherpaModelManager {
         m.put("ru", new Spec(
                 "csukuangfj/sherpa-onnx-streaming-zipformer-small-ru-vosk-2025-08-16",
                 "encoder.onnx", "decoder.onnx", "joiner.onnx", "tokens.txt"));
-        // فرانسوی / آلمانی / اسپانیایی: بسته‌های جریانی Kroko (Zipformer2)
-        m.put("fr", new Spec(
-                "csukuangfj/sherpa-onnx-streaming-zipformer-fr-kroko-2025-08-06",
-                "encoder.onnx", "decoder.onnx", "joiner.onnx", "tokens.txt"));
-        m.put("de", new Spec(
-                "csukuangfj/sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06",
-                "encoder.onnx", "decoder.onnx", "joiner.onnx", "tokens.txt"));
-        m.put("es", new Spec(
-                "csukuangfj/sherpa-onnx-streaming-zipformer-es-kroko-2025-08-06",
-                "encoder.onnx", "decoder.onnx", "joiner.onnx", "tokens.txt"));
+        // فرانسوی / آلمانی / اسپانیایی: بسته‌ی اختصاصیِ Sherpa نداریم (Whisper یا Vosk؛ نگاه کنید به WhisperModelManager / VoskModelManager)
         SPECS = Collections.unmodifiableMap(m);
     }
 
@@ -1236,6 +1228,18 @@ final class SherpaModelManager {
         if (l == null) return;
         File dir = sttDirFor(ctx, l);
         deleteRecursive(dir);
+    }
+
+    /** بسته‌های قدیمیِ حذف‌شده (فرانسوی/آلمانی/اسپانیایی) اگر روی گوشی مانده باشند پاک می‌شوند تا فضا اشغال نکنند. */
+    static void purgeRemovedSttPacks(Context ctx) {
+        try {
+            for (String l : new String[]{"fr", "de", "es"}) {
+                File dir = sttDirFor(ctx, l);
+                if (dir.exists()) deleteRecursive(dir);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "purgeRemovedSttPacks failed", t);
+        }
     }
 
     static void deleteTtsModel(Context ctx, String lang) {

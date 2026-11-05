@@ -1287,13 +1287,22 @@ class _FloatingBubbleSectionState
         !_auto) {
       return true;
     }
+    // فرانسوی/آلمانی/اسپانیایی: اگر کاربر موتورِ «سرعت بالا» را انتخاب کرده، بسته‌ی همان زبان لازم است
+    String? packKind;
+    if (!_auto && kDedicatedPackLangs.contains(_src)) {
+      packKind = 'speech';
+    } else if (!_auto &&
+        kLatinPackLangs.contains(_src) &&
+        await LinLearnBridge.latinAsrEngine() == 'vosk') {
+      packKind = 'vosk';
+    }
     // زبان‌های بدونِ بسته‌ی اختصاصی (و «خودکار») از بسته‌ی چندزبانه استفاده می‌کنند (هر کیفیتی کافی است)
-    if (_auto || !kDedicatedPackLangs.contains(_src)) {
+    if (packKind == null) {
       return _ensureAutoPack(
           afterDownload: afterDownload,
           langName: _auto ? null : _srcLangs[_src]);
     }
-    final pack = await LinLearnBridge.packStatus('speech', _src);
+    final pack = await LinLearnBridge.packStatus(packKind, _src);
     if (pack == null || pack['downloaded'] == true) return true;
     if (!mounted) return false;
     if (pack['downloading'] == true) {
@@ -1317,7 +1326,7 @@ class _FloatingBubbleSectionState
       )),
     );
     if (yes == true) {
-      await LinLearnBridge.packDownload('speech', _src);
+      await LinLearnBridge.packDownload(packKind, _src);
       _toast(afterDownload);
       if (mounted) setState(() => _packEpoch++);
     }
