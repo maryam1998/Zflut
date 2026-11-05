@@ -1115,6 +1115,15 @@ public class BubblePlugin extends Plugin {
         TtsClient.speak(lang, text, speed, id);
     }
 
+    /** کلیدِ موتورِ یک زبان (همان منطقِ TtsService.poolKey): زبان‌های بسته‌ی مشترک یک موتور دارند. */
+    private static String preloadPoolKey(Context ctx, String lang) {
+        try {
+            SherpaModelManager.TtsVoice v = SherpaModelManager.getReadyVoice(ctx, lang);
+            if (v != null && v.spec.pkg != null) return "pkg:" + v.spec.pkg.id;
+        } catch (Throwable ignored) {}
+        return String.valueOf(lang);
+    }
+
     /**
      * ✅ گرم‌کردنِ موتور: preloadTts({ lang? }) — بدونِ lang، آخرین زبانِ استفاده‌شده
      * (یا اولین زبانِ دانلودشده). فوراً resolve می‌شه و لود توی پس‌زمینه انجام می‌شه.
@@ -1126,19 +1135,38 @@ public class BubblePlugin extends Plugin {
         call.resolve();
         // بدونِ lang: آخرین زبانِ استفاده‌شده + یک زبانِ دانلودشده‌ی دیگر (متن‌های دوزبانه، مثلاً فارسی+انگلیسی،
         // هر دو مدل را لازم دارند؛ هر دو از قبل لود می‌شوند تا سوئیچ بینشان بدون تأخیر باشد)
+        // ⚡ روی گوشی‌های با رمِ کافی، موتورِ «همه‌ی» بسته‌های نصب‌شده (فارسی / Supertonic / Kokoro) از همان اول لود و گرم
+        // می‌شود؛ قبلاً فقط یکی لود می‌شد و اولین تپ روی هر زبانِ دیگر چند ثانیه صبر می‌کرد. موتورها پشتِ‌هم (نه هم‌زمان) لود
+        // می‌شوند و سقفِ TtsService (۳ موتور) رعایت می‌شود. گوشی‌های کم‌رم مثل قبل فقط یک موتور.
+        int maxPreload = 1;
+        try {
+            android.app.ActivityManager am = (android.app.ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
+            android.app.ActivityManager.MemoryInfo mi = new android.app.ActivityManager.MemoryInfo();
+            if (am != null) {
+                am.getMemoryInfo(mi);
+                if (!mi.lowMemory && mi.totalMem >= 4500L * 1024L * 1024L) maxPreload = 3;
+            }
+        } catch (Throwable ignored) {}
         java.util.LinkedHashSet<String> want = new java.util.LinkedHashSet<>();
         if (l != null) want.add(l);
         else {
+            java.util.HashSet<String> seenPools = new java.util.HashSet<>();
             String last = SherpaModelManager.normalize(lastTtsLang(ctx));
-            if (last != null) want.add(last);
+            if (last != null && SherpaModelManager.getTtsModelDir(ctx, last) != null) {
+                want.add(last);
+                seenPools.add(preloadPoolKey(ctx, last));
+            }
             for (String x : SherpaModelManager.ttsLanguages()) {
-                if (want.size() >= 1) break;
-                if (SherpaModelManager.getTtsModelDir(ctx, x) != null) want.add(x);
+                if (want.size() >= maxPreload) break;
+                if (SherpaModelManager.getTtsModelDir(ctx, x) == null) continue;
+                // زبان‌هایی که موتورِ مشترک دارند (مثلاً همه‌ی Supertonic) فقط یک‌بار
+                if (!seenPools.add(preloadPoolKey(ctx, x))) continue;
+                want.add(x);
             }
         }
         int n = 0;
         for (String x : want) {
-            if (n >= 1) break;
+            if (n >= maxPreload) break;
             if (SherpaModelManager.getTtsModelDir(ctx, x) == null) continue;
             if (TtsClient.isBlocked(x)) continue;
             TtsClient.preload(x);

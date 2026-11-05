@@ -576,22 +576,31 @@ class SpeechController extends StateNotifier<SpeechState> {
     _generation++;
     _cancelWaiters();
     _lastStopAt = DateTime.now();
-    try {
-      await _localTts.stop();
-      await NativeTtsBridge.stop();
-      await _onlinePlayer.pause();
-    } catch (_) {}
+    await _stopEngines(pauseOnline: true);
     state = state.copyWith(status: SpeechStatus.paused);
   }
 
   Future<void> _stopAll() async {
     _cancelWaiters();
     _lastStopAt = DateTime.now();
-    try {
-      await _localTts.stop();
-      await NativeTtsBridge.stop();
-      await _onlinePlayer.stop();
-    } catch (_) {}
+    await _stopEngines();
+  }
+
+  /// ⚡ توقفِ هر سه موتور «هم‌زمان». قبلاً سه await پشت‌سرهم بود و هر تپ روی یک جمله‌ی
+  /// جدید تا تمام شدنِ هر سه رفت‌وبرگشتِ پلتفرم (flutter_tts + نیتیو + just_audio)
+  /// صبر می‌کرد و بعد خوانش شروع می‌شد. حالا فقط به اندازه‌ی کندترینِ آن‌ها طول می‌کشد.
+  Future<void> _stopEngines({bool pauseOnline = false}) async {
+    Future<void> safe(Future<dynamic> Function() f) async {
+      try {
+        await f();
+      } catch (_) {}
+    }
+
+    await Future.wait<void>([
+      safe(() => _localTts.stop()),
+      safe(() => NativeTtsBridge.stop()),
+      safe(() => pauseOnline ? _onlinePlayer.pause() : _onlinePlayer.stop()),
+    ]);
   }
 
   Future<void> _playFrom(int idx) async {

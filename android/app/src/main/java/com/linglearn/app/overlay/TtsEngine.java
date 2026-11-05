@@ -195,6 +195,23 @@ final class TtsEngine {
         genPool.execute(new GenTask(r, prio));
     }
 
+    /**
+     * ⚡ تعدادِ درخواست‌های «خوانش» که به سرویس رسیده‌اند ولی کارِ تولیدشان هنوز در صفِ gen ننشسته
+     * (در حالِ پیدا کردن/لودِ موتور). prefetchِ جمله‌ی بعد تا آن موقع کنار می‌ایستد؛ وگرنه روی thread ی
+     * تولید (که تک‌نخی است) زودتر از خوانشِ واقعی شروع می‌شد و خوانش تا تمام شدنِ آن (~۱ ثانیه) معطل می‌ماند.
+     */
+    static final AtomicInteger speakPending = new AtomicInteger(0);
+
+    /** آیا کارِ تولیدِ یک «خوانش» (اولویتِ بالا) در صف منتظر است؟ */
+    private static boolean speakQueued() {
+        try {
+            for (Runnable r : genPool.getQueue()) {
+                if (r instanceof GenTask && ((GenTask) r).prio >= PRIO_SPEAK) return true;
+            }
+        } catch (Throwable ignored) {}
+        return false;
+    }
+
     private TtsEngine(OfflineTts tts, int sampleRate, String lang, int sid, String genLang) {
         this.tts = tts;
         this.sampleRate = sampleRate;
@@ -974,8 +991,21 @@ final class TtsEngine {
         if (cacheHas(key)) return;
         final int g = pfAbort.get();
         try {
-            gen(() -> {
+            final Runnable[] self = new Runnable[1];
+            self[0] = () -> {
                 if (released || pfAbort.get() != g || cacheHas(key)) return;
+                // ⚡ خوانشِ واقعی در راه است: کوتاه صبر کن تا کارش وارد صف شود، بعد خودت را «پشتِ» او بگذار
+                if (speakPending.get() > 0) {
+                    long until = SystemClock.uptimeMillis() + 500;
+                    while (speakPending.get() > 0 && SystemClock.uptimeMillis() < until) {
+                        try { Thread.sleep(3); } catch (InterruptedException ie) { break; }
+                    }
+                    if (released || pfAbort.get() != g || cacheHas(key)) return;
+                }
+                if (speakQueued()) {
+                    try { gen(self[0], PRIO_PREFETCH); } catch (Throwable ignored) {}
+                    return;
+                }
                 curSid = reqSid; curLang = reqLang;
                 inflightPrefetchKey = key;
                 final boolean pl = plain; // یک‌بار بخون تا بینِ crumb و synth عوض نشه
@@ -989,7 +1019,8 @@ final class TtsEngine {
                 } finally {
                     inflightPrefetchKey = null;
                 }
-            }, PRIO_PREFETCH);
+            };
+            gen(self[0], PRIO_PREFETCH);
         } catch (Throwable ignored) {}
     }
 

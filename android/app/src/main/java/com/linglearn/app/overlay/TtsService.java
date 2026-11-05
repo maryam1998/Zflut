@@ -110,9 +110,18 @@ public class TtsService extends Service {
                     final float speed = b.getFloat("speed", 1.0f);
                     final boolean plain = b.getBoolean("plain", false);
                     final int mySeq = speakSeq.incrementAndGet();
+                    // ⚡ prefetch ها تا وارد صف شدنِ کارِ این خوانش جلو نیفتند (TtsEngine.speakPending)
+                    TtsEngine.speakPending.incrementAndGet();
                     try {
-                        speaker.execute(() -> doSpeak(text, lang, speed, id, mySeq, plain));
+                        speaker.execute(() -> {
+                            try {
+                                doSpeak(text, lang, speed, id, mySeq, plain);
+                            } finally {
+                                TtsEngine.speakPending.decrementAndGet();
+                            }
+                        });
                     } catch (Throwable t) {
+                        TtsEngine.speakPending.decrementAndGet();
                         replyDone(lang, id, false, String.valueOf(t));
                     }
                     return true;
