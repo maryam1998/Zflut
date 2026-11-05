@@ -86,6 +86,9 @@ final class TtsEngine {
     }
 
     // پارامترهای VITS: کمتر از پیش‌فرض (0.667 / 0.8) → صدای تمیزتر، کمتر خش‌دار/دماغی و ریتمِ یکنواخت‌تر
+    // Supertonic: تعدادِ گام‌های حذفِ نویز؛ کمتر = سریع‌تر (شروعِ خوانش زودتر). برای کیفیتِ بیشتر ۴ یا ۵ بگذار.
+    private static final int SUPERTONIC_STEPS = 3;
+
     private static final float NOISE_SCALE = 0.60f;
     private static final float NOISE_SCALE_W = 0.80f;
 
@@ -99,9 +102,13 @@ final class TtsEngine {
     private final int sampleRate;
     private final String lang;
     // شناسه‌ی گوینده (sid) و — فقط Supertonic — زبانِ سنتز که با GenerationConfig.extra["lang"] می‌رود
-    private final int sid;
+    private volatile int sid;
     private final String genLang;   // null = از generate()/generateWithCallback() ی ساده استفاده می‌شود
     private final boolean useCfg;
+
+    // موتور/بسته‌ی صدایی که این نمونه برایش ساخته شده (برای تعویضِ سریعِ گوینده بدون لودِ دوباره)
+    private volatile String engineKind = null;
+    private volatile String pkgId = null;
 
     private volatile boolean released = false;
     private volatile long lastUsed = SystemClock.uptimeMillis();
@@ -213,6 +220,7 @@ final class TtsEngine {
         Object g = newSherpa("GenerationConfig");
         setOpt(g, "setSid", sid);
         setOpt(g, "setSpeed", sp);
+        setOpt(g, "setNumSteps", SUPERTONIC_STEPS);
         java.util.HashMap<String, String> ex = new java.util.HashMap<>();
         ex.put("lang", genLang);
         try {
@@ -279,6 +287,26 @@ final class TtsEngine {
     }
 
     String lang() { return lang; }
+
+    void bindVoice(String engineKind, String pkgId) {
+        this.engineKind = engineKind;
+        this.pkgId = pkgId;
+    }
+
+    /** صدای جدید از «همین بسته‌ی مشترک» است (فقط شماره‌ی گوینده فرق دارد) → بدون لودِ دوباره قابل‌تعویض است. */
+    boolean canReuseFor(SherpaModelManager.TtsVoice v) {
+        return !released && v != null && v.spec.pkg != null
+                && v.spec.pkg.id.equals(pkgId) && v.spec.engine.equals(engineKind);
+    }
+
+    /** تعویضِ گوینده روی موتورِ لودشده (فوری؛ بدون لودِ چندثانیه‌ایِ مدل). */
+    void setSid(int newSid) {
+        if (sid == newSid) return;
+        sid = newSid;
+        pfAbort.incrementAndGet();                 // prefetchِ در حالِ ساخت با گوینده‌ی قبلی کنسل شود
+        synchronized (cache) { cache.clear(); }    // کلیدِ کش به گوینده وابسته نیست → صدای قبلی نباید پخش شود
+    }
+
     boolean isReleased() { return released; }
     long lastUsed() { return lastUsed; }
     void touch() { lastUsed = SystemClock.uptimeMillis(); }
@@ -444,8 +472,10 @@ final class TtsEngine {
             Log.i(TAG, "TTS loaded for " + lang + ", sampleRate=" + sr + ", threads=" + threads
                     + ", loadMs=" + (SystemClock.uptimeMillis() - t0));
             TtsCrumb.mark("idle");
-            return new TtsEngine(engine, sr, lang, voice.sid,
+            TtsEngine created = new TtsEngine(engine, sr, lang, voice.sid,
                     SherpaModelManager.ENG_SUPERTONIC.equals(eng) ? lang : null);
+            created.bindVoice(eng, voice.spec.pkg == null ? null : voice.spec.pkg.id);
+            return created;
         } catch (Throwable e) {
             Log.e(TAG, "Failed to load TTS for " + lang, e);
             lastCreateError = String.valueOf(e);
@@ -544,6 +574,16 @@ final class TtsEngine {
         y = capInnerSilence(y, sr, longText);
         edgeFade(y, sr);
         return y;
+    }
+
+    /** تکه‌ی کاملاً بی‌صدا؟ (همان آستانه‌ی trimSilence) */
+    private static boolean isSilent(float[] x) {
+        if (x == null) return true;
+        for (int i = 0; i < x.length; i++) {
+            float v = x[i] < 0 ? -x[i] : x[i];
+            if (v > 0.015f) return false;
+        }
+        return true;
     }
 
     /** محوِ بسیار کوتاه (۶ms اول / ۱۲ms آخر) تا اتصالِ تکه‌ها صدای «تِق» نده. */
@@ -752,6 +792,7 @@ final class TtsEngine {
             return all;
         }
         final ArrayList<float[]> parts = new ArrayList<>();
+        final boolean[] heard = {false};   // تا صدای واقعی نیامده، تکه‌های کاملاً بی‌صدای ابتدای خوانش دور ریخته می‌شوند
         final boolean[] aborted = {false};
         final Throwable[] err = {null};
         synchronized (NATIVE_LOCK) {
@@ -760,6 +801,10 @@ final class TtsEngine {
                 // و ART با exceptionِ معلق کلِ پردازه رو abort می‌کنه (SIGABRT / status=6).
                 try {
                     if (samples == null || samples.length == 0) return 1;
+                    if (!heard[0]) {
+                        if (isSilent(samples)) return 1;   // سکوتِ ابتدای خوانش → رد شو
+                        heard[0] = true;
+                    }
                     float[] copy = trimSilence(samples.clone(), sampleRate, longText);
                     eq.process(copy);
                     parts.add(copy);
@@ -982,6 +1027,8 @@ final class TtsEngine {
     /** سرعتِ کاربر را با time-stretch (حفظِ زیر و بمی) روی AudioTrack اعمال می‌کند. */
     private void applyRate(AudioTrack track, float rate) {
         if (!stretchOk || track == null) return;
+        // سرعتِ عادی (۱×): بدونِ PlaybackParams → مسیرِ time-stretch فعال نمی‌شود (بدونِ تأخیر و سکوتِ ابتدایی)
+        if (Math.abs(rate - 1.0f) < 0.01f) return;
         try {
             android.media.PlaybackParams pp = new android.media.PlaybackParams();
             pp.setSpeed(rate);

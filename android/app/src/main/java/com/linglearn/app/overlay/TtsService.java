@@ -149,9 +149,18 @@ public class TtsService extends Service {
                 case MSG_RELEASE_LANG: {
                     String lang = b.getString("lang", "");
                     synchronized (this) {
-                        TtsEngine e = engines.remove(lang);
-                        if (e != null) e.release();
-                        if (shared == e) shared = null;
+                        TtsEngine cur = engines.get(lang);
+                        if (cur != null) {
+                            // فقط گوینده عوض شده (همان بسته‌ی مشترکِ Supertonic/Kokoro) → مدل دوباره لود نشود
+                            SherpaModelManager.TtsVoice nv = SherpaModelManager.getReadyVoice(getApplicationContext(), lang);
+                            if (nv != null && cur.canReuseFor(nv)) {
+                                cur.setSid(nv.sid);
+                                return true;
+                            }
+                            engines.remove(lang);
+                            cur.release();
+                            if (shared == cur) shared = null;
+                        }
                     }
                     return true;
                 }
@@ -252,6 +261,17 @@ public class TtsService extends Service {
         synchronized (this) {
             TtsEngine e = engines.get(lang);
             if (e != null && e.isReleased()) { engines.remove(lang); e = null; }
+            if (e != null) {
+                // موتورِ لودشده هنوز معتبر است؟ (مثلاً زبان پاک شده) / گویندهٔ فعال عوض شده؟
+                SherpaModelManager.TtsVoice av = SherpaModelManager.getReadyVoice(getApplicationContext(), lang);
+                if (av == null) {
+                    engines.remove(lang);
+                    if (shared == e) shared = null;
+                    e.release();
+                    return null;
+                }
+                if (e.canReuseFor(av)) e.setSid(av.sid);
+            }
             if (e == null) {
                 if (!forSpeak && engines.size() >= MAX_ENGINES) return null;
                 e = TtsEngine.create(getApplicationContext(), lang);

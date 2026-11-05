@@ -435,6 +435,8 @@ class _TtsPackRowState extends State<TtsPackRow> {
     setState(() => _open = !_open);
     if (_open) {
       _loadVoices();
+      // ⚡ موتورِ این زبان همین حالا (پس‌زمینه) لود و گرم شود تا «تست صدا» بدون تأخیر شروع شود
+      unawaited(NativeTtsBridge.preload(lang: widget.code));
     } else if (_dlVoice.isEmpty && _queue.isEmpty) {
       _voiceTimer?.cancel();
     }

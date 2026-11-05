@@ -309,6 +309,33 @@ final class SherpaModelManager {
         return new File(new File(ttsRoot(ctx), "_pkg"), p.id);
     }
 
+    // ---- غیرفعال‌سازیِ «یک زبان» از بسته‌ی مشترک (Supertonic / Kokoro) ----
+    // پاک‌کردنِ یک زبان نباید فایل‌های مشترکِ بسته را پاک کند (زبان‌های دیگر همان‌ها را می‌خوانند).
+    // پس فقط یک marker (tts/<lang>.off) ساخته می‌شود و آن زبان «دانلودنشده» حساب می‌شود.
+    private static File langOffMarker(Context ctx, String l) {
+        return new File(ttsRoot(ctx), l + ".off");
+    }
+
+    private static boolean isLangOff(Context ctx, String l) {
+        return l != null && langOffMarker(ctx, l).isFile();
+    }
+
+    private static void setLangOff(Context ctx, String l, boolean off) {
+        if (l == null) return;
+        try {
+            File f = langOffMarker(ctx, l);
+            if (off) {
+                File root = ttsRoot(ctx);
+                if (!root.isDirectory()) root.mkdirs();
+                if (!f.isFile()) f.createNewFile();
+            } else if (f.isFile()) {
+                f.delete();
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "setLangOff failed", t);
+        }
+    }
+
     /** بسته‌ی مشترک کامل دانلود شده؟ (marker + همه‌ی فایل‌ها و پوشه‌ها) */
     private static boolean pkgReady(Context ctx, Pkg p) {
         File d = pkgDir(ctx, p);
@@ -380,6 +407,7 @@ final class SherpaModelManager {
     private static boolean voiceFilesReady(Context ctx, String l, TtsVoice v) {
         if (v == null) return false;
         if (v.spec.pkg != null) {
+            if (isLangOff(ctx, l)) return false;   // این زبان توسط کاربر پاک شده (بسته‌ی مشترک سر جایش است)
             if (!pkgReady(ctx, v.spec.pkg)) return false;
             // Kokoro برای کلماتِ خارج از لغت‌نامه به espeak-ng-data نیاز دارد
             return !ENG_KOKORO.equals(v.spec.engine) || isEspeakReady(ctx);
@@ -806,7 +834,8 @@ final class SherpaModelManager {
                         else cb.onError(l, new Exception(last.getClass().getSimpleName() + ": " + last.getMessage(), last));
                     }
                 } else {
-                    // دانلودِ کامل شد → همین صدا صدای فعالِ زبان می‌شود
+                    // دانلودِ کامل شد → اگر این زبان قبلاً پاک شده بود دوباره فعال شود، و همین صدا صدای فعالِ زبان می‌شود
+                    if (voice.spec.pkg != null) setLangOff(app, l, false);
                     setActiveVoice(app, l, voice.id);
                     if (cb != null) cb.onDone(l);
                 }
@@ -1220,9 +1249,27 @@ final class SherpaModelManager {
         TtsVoice active = activeVoice(ctx, l);
         TtsVoice v = vid == null || vid.isEmpty() ? active : findVoice(l, vid);
         if (v == null) return;
-        // بسته‌ی مشترک (Supertonic/Kokoro): حذف، برای همه‌ی زبان‌های همان بسته اعمال می‌شود
+        if (v.spec.pkg != null) {
+            // بسته‌ی مشترک (Supertonic/Kokoro): فقط «همین زبان» غیرفعال می‌شود، نه فایل‌های مشترک
+            deletePkgLanguage(ctx, l, v.spec.pkg);
+            return;
+        }
         deleteRecursive(ttsDirFor(ctx, l, v));
         if (active != null && active.id.equals(v.id) && !v.isDefault) setActiveVoice(ctx, l, null);
+    }
+
+    /**
+     * پاک‌کردنِ یک زبان از بسته‌ی مشترک: زبان غیرفعال می‌شود و فایل‌های مشترک دست‌نخورده می‌مانند.
+     * فقط وقتی «هیچ زبانِ دیگری» از همین بسته باقی نمانده باشد، فایل‌های بسته برای آزادشدنِ فضا پاک می‌شوند.
+     */
+    private static void deletePkgLanguage(Context ctx, String l, Pkg p) {
+        setLangOff(ctx, l, true);
+        try { new File(ttsRoot(ctx), l + ".active").delete(); } catch (Throwable ignored) {}
+        for (Map.Entry<String, TtsSpec> e : TTS_SPECS.entrySet()) {
+            if (e.getValue().pkg != p || e.getKey().equals(l)) continue;
+            if (!isLangOff(ctx, e.getKey()) || TTS_ACTIVE.contains(e.getKey())) return;   // زبانِ دیگری هنوز از بسته استفاده می‌کند
+        }
+        deleteRecursive(pkgDir(ctx, p));
     }
 
     private static void deleteRecursive(File f) {
