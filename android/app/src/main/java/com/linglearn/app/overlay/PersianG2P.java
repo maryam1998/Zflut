@@ -4,10 +4,6 @@ import android.content.Context;
 import android.util.Log;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,10 +13,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 /**
  * تبدیل متن فارسی → دنباله‌ی نمادهای مدل Mana، بدون espeak-ng.
@@ -36,15 +28,7 @@ final class PersianG2P {
     private static final String TAG = "PersianG2P";
 
     // ======================= تنظیمات (اگر آدرس/نام فایل‌ها فرق داشت فقط همین‌جا را عوض کن) =======================
-    private static final String G2P_BASE = "https://huggingface.co/MahtaFetrat/Homo-GE2PE-Persian/resolve/main/";
-    /** {نام محلی, مسیر داخل مخزن} */
-    private static final String[][] G2P_FILES = {
-            {"encoder_model.onnx", "onnx/encoder_model.onnx"},
-            {"decoder_model.onnx", "onnx/decoder_model.onnx"},
-    };
-    /** اگر مدل ورودی را با پیشوند خاصی می‌خواهد اینجا بگذار. */
     private static final String INPUT_PREFIX = "";
-    private static final int MAX_NEW_TOKENS_FACTOR = 4;
 
     // تنظیم Piper: ^ شروع، $ پایان، _ پد بین نمادها
     private static final String BOS = "^", EOS = "$", PAD = "_";
@@ -54,9 +38,6 @@ final class PersianG2P {
     // ======================= وضعیت =======================
     private static volatile File g2pDir = null;
     private static volatile Set<Integer> tokenSet = new HashSet<>();
-    private static final Object LOAD_LOCK = new Object();
-    private static Object ort = null;     // Ge2pe
-    private static boolean ortTried = false;
     private static final Set<String> WARNED = new HashSet<>();
     private static final Map<String, List<String>> CACHE = new LinkedHashMap<String, List<String>>(64, 0.75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, List<String>> e) { return size() > 256; }
@@ -79,52 +60,15 @@ final class PersianG2P {
             Log.e(TAG, "cannot read tokens", e);
         }
         tokenSet = set;
-        Log.i(TAG, "tokens loaded: " + set.size() + " (g2p model ready=" + isModelReady(ctx) + ")");
+        Log.i(TAG, "tokens loaded: " + set.size() + " (rule-based G2P)");
     }
 
-    // ======================= دانلود مدل G2P =======================
-    static boolean isModelReady(Context ctx) {
-        File d = new File(new File(ctx.getApplicationContext().getFilesDir(), "tts"), "fa-g2p");
-        for (String[] f : G2P_FILES) {
-            File x = new File(d, f[0]);
-            if (!x.isFile() || x.length() < 100_000L) return false;
-        }
-        return new File(d, "ready.ok").isFile();
-    }
+    // ======================= مدل G2P (غیرفعال) =======================
+    // اجرای مدل ONNX نیازمند onnxruntime-android است؛ آن با onnxruntime ی داخلِ AAR ی Sherpa تداخل می‌کرد
+    // (صداهای Kokoro/Supertonic ساکت می‌شد و حجم اپ زیاد می‌شد). پس فعلاً فقط قواعد داخلی کار می‌کنند.
+    static boolean isModelReady(Context ctx) { return false; }
 
-    /** دانلودِ مدل (غیرِ بلاک‌کننده برای صدا: اگر شکست خورد قواعد داخلی کار را ادامه می‌دهند). */
-    static void downloadModel(Context ctx, SherpaModelManager.ProgressCallback cb, String lang) throws Exception {
-        if (isModelReady(ctx)) return;
-        File d = new File(new File(ctx.getApplicationContext().getFilesDir(), "tts"), "fa-g2p");
-        if (!d.isDirectory() && !d.mkdirs()) throw new java.io.IOException("cannot create " + d);
-        new File(d, "ready.ok").delete();
-        OkHttpClient http = new OkHttpClient();
-        for (String[] f : G2P_FILES) {
-            File target = new File(d, f[0]);
-            if (target.isFile() && target.length() >= 100_000L) continue;
-            File part = new File(d, f[0] + ".part");
-            Request req = new Request.Builder().url(G2P_BASE + f[1]).build();
-            try (Response r = http.newCall(req).execute()) {
-                if (!r.isSuccessful() || r.body() == null) throw new java.io.IOException("HTTP " + r.code() + " " + f[1]);
-                String ct = r.header("Content-Type");
-                if (ct != null && ct.toLowerCase().startsWith("text/html")) throw new java.io.IOException("HTML instead of " + f[1]);
-                long total = r.body().contentLength(), done = 0;
-                try (InputStream in = r.body().byteStream(); OutputStream out = new FileOutputStream(part, false)) {
-                    byte[] buf = new byte[64 * 1024];
-                    int n;
-                    while ((n = in.read(buf)) > 0) {
-                        out.write(buf, 0, n);
-                        done += n;
-                        if (cb != null) cb.onProgress(lang, done, total);
-                    }
-                }
-                if (total > 0 && part.length() != total) { part.delete(); throw new java.io.IOException("incomplete " + f[1]); }
-            }
-            if (target.exists()) target.delete();
-            if (!part.renameTo(target)) throw new java.io.IOException("rename failed " + f[0]);
-        }
-        if (!new File(d, "ready.ok").createNewFile()) throw new java.io.IOException("cannot create ready.ok");
-    }
+    static void downloadModel(Context ctx, SherpaModelManager.ProgressCallback cb, String lang) { /* عمداً خالی */ }
 
     // ======================= API اصلی =======================
     /** متنِ فارسی (هر چیزی) → رشته‌ای که مستقیم به Sherpa داده می‌شود. */
@@ -334,85 +278,9 @@ final class PersianG2P {
         return o.toString();
     }
 
-    // ======================= اجرای مدل ONNX (ByT5-مانند) =======================
-    private static Ge2pe loadModel() {
-        synchronized (LOAD_LOCK) {
-            if (ort != null) return (Ge2pe) ort;
-            if (ortTried) return null;
-            File d = g2pDir;
-            if (d == null || !new File(d, "ready.ok").isFile()) return null;   // هنوز دانلود نشده؛ دفعه‌ی بعد دوباره بررسی می‌شود
-            ortTried = true;
-            try {
-                Ge2pe g = new Ge2pe(new File(d, G2P_FILES[0][0]), new File(d, G2P_FILES[1][0]));
-                ort = g;
-                Log.i(TAG, "GE2PE ONNX model loaded");
-                return g;
-            } catch (Throwable e) {
-                Log.e(TAG, "cannot load GE2PE model → rule-based fallback", e);
-                return null;
-            }
-        }
-    }
+    private interface Ge2pe { String run(String text) throws Exception; }
 
-    /** Encoder-decoder بایت‌محور (ByT5): شناسه = بایت UTF-8 + 3؛ 0=pad، 1=eos. حریصانه (greedy) بدون KV-cache. */
-    private static final class Ge2pe {
-        private final ai.onnxruntime.OrtEnvironment env;
-        private final ai.onnxruntime.OrtSession enc, dec;
-
-        Ge2pe(File encFile, File decFile) throws Exception {
-            env = ai.onnxruntime.OrtEnvironment.getEnvironment();
-            ai.onnxruntime.OrtSession.SessionOptions so = new ai.onnxruntime.OrtSession.SessionOptions();
-            so.setIntraOpNumThreads(2);
-            enc = env.createSession(encFile.getAbsolutePath(), so);
-            dec = env.createSession(decFile.getAbsolutePath(), so);
-        }
-
-        synchronized String run(String text) throws Exception {
-            byte[] b = text.getBytes(StandardCharsets.UTF_8);
-            long[][] ids = new long[1][b.length + 1];
-            long[][] mask = new long[1][b.length + 1];
-            for (int i = 0; i < b.length; i++) { ids[0][i] = (b[i] & 0xff) + 3; mask[0][i] = 1; }
-            ids[0][b.length] = 1; mask[0][b.length] = 1;
-
-            try (ai.onnxruntime.OnnxTensor tIds = ai.onnxruntime.OnnxTensor.createTensor(env, ids);
-                 ai.onnxruntime.OnnxTensor tMask = ai.onnxruntime.OnnxTensor.createTensor(env, mask)) {
-                Map<String, ai.onnxruntime.OnnxTensor> ei = new HashMap<>();
-                for (String name : enc.getInputNames()) {
-                    if (name.contains("mask")) ei.put(name, tMask); else ei.put(name, tIds);
-                }
-                try (ai.onnxruntime.OrtSession.Result er = enc.run(ei)) {
-                    ai.onnxruntime.OnnxTensor hidden = (ai.onnxruntime.OnnxTensor) er.get(0);
-                    int maxNew = Math.min(512, b.length * MAX_NEW_TOKENS_FACTOR + 8);
-                    long[] gen = new long[maxNew + 1];
-                    gen[0] = 0;
-                    int len = 1;
-                    java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
-                    for (int step = 0; step < maxNew; step++) {
-                        long[][] dIds = new long[1][len];
-                        System.arraycopy(gen, 0, dIds[0], 0, len);
-                        try (ai.onnxruntime.OnnxTensor tDec = ai.onnxruntime.OnnxTensor.createTensor(env, dIds)) {
-                            Map<String, ai.onnxruntime.OnnxTensor> di = new HashMap<>();
-                            for (String name : dec.getInputNames()) {
-                                if (name.contains("encoder_hidden")) di.put(name, hidden);
-                                else if (name.contains("mask")) di.put(name, tMask);
-                                else di.put(name, tDec);
-                            }
-                            try (ai.onnxruntime.OrtSession.Result dr = dec.run(di)) {
-                                float[][][] logits = (float[][][]) ((ai.onnxruntime.OnnxTensor) dr.get(0)).getValue();
-                                float[] last = logits[0][len - 1];
-                                int best = 0;
-                                for (int k = 1; k < last.length; k++) if (last[k] > last[best]) best = k;
-                                if (best == 1) break;                  // eos
-                                gen[len++] = best;
-                                if (best >= 3 && best - 3 < 256) bo.write(best - 3);
-                            }
-                        }
-                    }
-                    return new String(bo.toByteArray(), StandardCharsets.UTF_8);
-                }
-            }
-        }
-    }
+    private static Ge2pe loadModel() { return null; }
 
     private static String readText(File f) throws Exception {
         try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {

@@ -14,10 +14,6 @@
 -keep class com.k2fsa.sherpa.onnx.** { *; }
 -keepclasseswithmembernames class * { native <methods>; }
 
-# ONNX Runtime (G2P فارسی)
--keep class ai.onnxruntime.** { *; }
--dontwarn ai.onnxruntime.**
-
 # OkHttp: کلاس‌های اختیاریِ پلتفرم
 -dontwarn okhttp3.internal.platform.**
 -dontwarn org.conscrypt.**
