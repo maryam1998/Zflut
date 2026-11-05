@@ -25,25 +25,25 @@ final speechControllerProvider =
   );
   // 🎧 کنترلِ پلیر روی نوتیفیکیشن (قبلی / پخش‌وتوقف / بعدی) وقتی از برنامه بیرون هستی
   // 🌐 ترجمه‌ی جمله‌ی در حال خوانش هم زیرِ جمله در نوتیفیکیشن نشان داده می‌شود
-  String? targetFor(String from) {
-    final targets = ref.read(languageSelectionProvider).targets;
-    for (final t in targets) {
-      if (t != from) return t;
+  // همه‌ی زبان‌های مقصدِ انتخابی به ترتیبِ انتخاب، بدونِ خودِ زبانِ مبدأ (ترجمه‌ی es→es بی‌معناست)
+  List<String> targetsFor(String from) {
+    final out = <String>[];
+    for (final t in ref.read(languageSelectionProvider).targets) {
+      if (t != from && !out.contains(t)) out.add(t);
     }
-    final ui = ref.read(appPrefsProvider).uiLang;
-    return ui != from ? ui : null;
+    if (out.isEmpty) {
+      final ui = ref.read(appPrefsProvider).uiLang;
+      if (ui != from) out.add(ui);
+    }
+    return out;
   }
 
   final media = MediaNotificationSync(
     ctl,
-    peek: (text, from) {
-      final to = targetFor(from);
-      if (to == null) return null;
-      return ref.read(translationServiceProvider).peekCached(text, from, to);
-    },
-    translate: (text, from) async {
-      final to = targetFor(from);
-      if (to == null) return '';
+    targets: targetsFor,
+    peek: (text, from, to) =>
+        ref.read(translationServiceProvider).peekCached(text, from, to),
+    translate: (text, from, to) async {
       return ref.read(translationServiceProvider).translate(
             text: text,
             targetLang: to,

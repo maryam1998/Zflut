@@ -9,13 +9,15 @@ import 'speech_state.dart';
 /// 🎧 پلیرِ اپ را به نوتیفیکیشنِ مدیای اندروید وصل می‌کند: وقتی از برنامه بیرون می‌روی،
 /// روی نوتیفیکیشن/صفحه‌ی قفل «قبلی ⏮ · پخش/توقف ⏯ · بعدی ⏭» (جمله/لغتِ قبلی و بعدی) داری.
 class MediaNotificationSync {
-  /// [translate]: ترجمه‌ی متنِ جمله (از زبانِ [from]) — اختیاری؛ [peek]: خواندنِ فوریِ ترجمه از کش.
-  /// اگر داده شوند، ترجمه‌ی جمله‌ی در حال خوانش زیرِ خودِ جمله در نوتیفیکیشن نشان داده می‌شود.
-  MediaNotificationSync(this._ctl, {this.translate, this.peek});
+  /// [translate]: ترجمه‌ی متنِ جمله از زبانِ [from] به زبانِ [to] — اختیاری؛ [peek]: خواندنِ فوریِ ترجمه از کش.
+  /// [targets]: زبان‌های مقصدِ انتخابی برای زبانِ مبدأِ [from] (خودِ مبدأ در آن نیست).
+  /// اگر داده شوند، ترجمه‌ی همه‌ی زبان‌های مقصد زیرِ جمله‌ی در حال خوانش در نوتیفیکیشن نشان داده می‌شود.
+  MediaNotificationSync(this._ctl, {this.translate, this.peek, this.targets});
 
   final SpeechController _ctl;
-  final Future<String> Function(String text, String from)? translate;
-  final String? Function(String text, String from)? peek;
+  final Future<String> Function(String text, String from, String to)? translate;
+  final String? Function(String text, String from, String to)? peek;
+  final List<String> Function(String from)? targets;
 
   // ترجمه‌ی جمله‌های اخیر (متن مبدأ → ترجمه) + جمله‌هایی که الان در حال ترجمه‌اند
   final Map<String, String> _trCache = {};
@@ -96,45 +98,66 @@ class MediaNotificationSync {
     return k.substring(0, i).split('-').first.toLowerCase();
   }
 
-  /// ترجمه‌ی آماده (از کش) را برمی‌گرداند؛ اگر نبود در پس‌زمینه می‌گیرد و بعدش نوتیفیکیشن را تازه می‌کند.
+  /// ترجمه‌ی آماده‌ی همه‌ی زبان‌های مقصد (از کش) را برمی‌گرداند؛ هر کدام که نبود در پس‌زمینه
+  /// می‌گیرد و به‌محضِ آماده شدن نوتیفیکیشن را تازه می‌کند.
   String _translationFor(String text, SpeechState s) {
     if (text.isEmpty || translate == null) return '';
     final from = _langOf(s);
-    final hit = _trCache[text];
-    if (hit != null) return hit;
+    List<String> tos;
     try {
-      final quick = peek?.call(text, from);
-      if (quick != null && quick.trim().isNotEmpty) {
-        return _remember(text, quick);
-      }
-    } catch (_) {}
-    if (_trBusy.add(text)) {
-      unawaited(() async {
-        String r = '';
-        try {
-          r = (await translate!(text, from)).trim();
-        } catch (_) {}
-        _trBusy.remove(text);
-        if (_disposed) return;
-        // ترجمه‌ی ناموفق (همان متن مبدأ) نشان داده نمی‌شود
-        if (r.isEmpty || r.toLowerCase() == text.toLowerCase()) return;
-        _remember(text, r);
-        // فقط اگر هنوز همین جمله در حال خوانش است نوتیفیکیشن را تازه کن
-        final st = _lastState;
-        if (st != null && _ctl.currentChunkText.trim() == text) {
-          _lastSig = '';
-          _push(st);
-        }
-      }());
+      tos = targets?.call(from) ?? const <String>[];
+    } catch (_) {
+      tos = const <String>[];
     }
-    return '';
+    if (tos.isEmpty) return '';
+    final parts = <String>[];
+    for (final to in tos) {
+      if (to == from) continue;
+      final ck = '$from>$to|$text';
+      var hit = _trCache[ck];
+      if (hit == null) {
+        try {
+          final quick = peek?.call(text, from, to);
+          if (quick != null && quick.trim().isNotEmpty) {
+            hit = _remember(ck, quick);
+          }
+        } catch (_) {}
+      }
+      if (hit == null) {
+        _fetch(text, from, to, ck);
+        continue;
+      }
+      parts.add(tos.length > 1 ? '${to.toUpperCase()}: $hit' : hit);
+    }
+    return parts.join(' · ');
   }
 
-  String _remember(String text, String tr) {
+  void _fetch(String text, String from, String to, String ck) {
+    if (!_trBusy.add(ck)) return;
+    unawaited(() async {
+      String r = '';
+      try {
+        r = (await translate!(text, from, to)).trim();
+      } catch (_) {}
+      _trBusy.remove(ck);
+      if (_disposed) return;
+      // ترجمه‌ی ناموفق (همان متن مبدأ) نشان داده نمی‌شود
+      if (r.isEmpty || r.toLowerCase() == text.toLowerCase()) return;
+      _remember(ck, r);
+      // فقط اگر هنوز همین جمله در حال خوانش است نوتیفیکیشن را تازه کن
+      final st = _lastState;
+      if (st != null && _ctl.currentChunkText.trim() == text) {
+        _lastSig = '';
+        _push(st);
+      }
+    }());
+  }
+
+  String _remember(String key, String tr) {
     var t = tr.trim().replaceAll(RegExp(r'\s+'), ' ');
     if (t.length > 140) t = '${t.substring(0, 140)}…';
-    if (_trCache.length > 80) _trCache.remove(_trCache.keys.first);
-    _trCache[text] = t;
+    if (_trCache.length > 200) _trCache.remove(_trCache.keys.first);
+    _trCache[key] = t;
     return t;
   }
 
