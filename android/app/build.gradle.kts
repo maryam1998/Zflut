@@ -95,7 +95,7 @@ android {
                 "**/armeabi-v7a/libonnxruntime.so", "**/x86/libonnxruntime.so", "**/x86_64/libonnxruntime.so",
                 "**/armeabi-v7a/libonnxruntime4j_jni.so", "**/x86/libonnxruntime4j_jni.so", "**/x86_64/libonnxruntime4j_jni.so"
             )
-            pickFirsts += listOf("**/libc++_shared.so", "**/libonnxruntime.so")
+            pickFirsts += listOf("**/libc++_shared.so", "lib/arm64-v8a/libonnxruntime.so")
         }
         resources {
             excludes += listOf(
