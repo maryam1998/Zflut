@@ -910,17 +910,6 @@ final class SherpaModelManager {
             }
         }
 
-        // ۲.۶ مدل G2P فارسی (Homo-GE2PE): دانلودش اختیاری است؛ اگر نشد قواعد داخلی جایگزین می‌شوند
-        if (s.charFrontend) {
-            try {
-                PersianG2P.downloadModel(app, cb, l);
-            } catch (DownloadCancelled dc) {
-                throw dc;
-            } catch (Throwable e) {
-                Log.w(TAG, "G2P model download failed (rule-based fallback will be used)", e);
-            }
-        }
-
         // ۳. espeak-ng-data مشترک (فقط یک بار؛ زبان‌های دیگه همین‌جا صبر می‌کنن، ولی با امکانِ توقف)
         if (!s.charFrontend && !isEspeakReady(app)) {
             while (!ESPEAK_LOCK.tryLock(500, TimeUnit.MILLISECONDS)) {
