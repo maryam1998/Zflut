@@ -83,7 +83,8 @@ android {
         }
         // Sherpa و Vosk هر دو ممکنه libc++_shared.so بیاورند؛ اولی برداشته شود تا بیلد روی تکراری نشکند
         jniLibs {
-            pickFirsts += listOf("**/libc++_shared.so")
+            // onnxruntime-android (برای G2P فارسی) و AAR ی Sherpa هر دو libonnxruntime.so دارند
+            pickFirsts += listOf("**/libc++_shared.so", "**/libonnxruntime.so")
         }
         resources {
             excludes += listOf(
@@ -110,6 +111,8 @@ dependencies {
 
     implementation("androidx.core:core:1.13.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // اجرای مدل G2P فارسی (Homo-GE2PE، MIT) — خودِ مدل داخل APK نیست و دانلود می‌شود
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.17.1")
     // Vosk (Apache-2.0): موتورِ «سرعت بالا» برای فرانسوی/آلمانی/اسپانیایی (بسته‌ی مدل داخل APK نیست؛ کاربر دانلود می‌کند)
     implementation("com.alphacephei:vosk-android:0.3.75")
     implementation("com.google.mlkit:translate:17.0.3")

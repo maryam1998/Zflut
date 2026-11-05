@@ -133,17 +133,23 @@ final class SherpaModelManager {
         // true = مخزن فقط فایل خام Piper (.onnx + .onnx.json) دارد (بدون tokens.txt و metadata سازگار با Sherpa)؛
         // tokens.txt از json ساخته و metadata به خود onnx اضافه می‌شود. espeak-ng-data هم از مخزن دیگری می‌آید.
         final boolean rawPiper;
+        // true = بدون espeak-ng: متن را PersianG2P به نمادهای مدل تبدیل می‌کند و Sherpa با frontend=characters می‌خواندش
+        final boolean charFrontend;
         final String engine;       // ENG_*
         final Pkg pkg;             // != null → بسته‌ی مشترک (Supertonic / Kokoro)
         TtsSpec(String repo, String modelFile, String tokensFile, String dataDirName) {
             this(repo, modelFile, tokensFile, dataDirName, false);
         }
         TtsSpec(String repo, String modelFile, String tokensFile, String dataDirName, boolean rawPiper) {
+            this(repo, modelFile, tokensFile, dataDirName, rawPiper, false);
+        }
+        TtsSpec(String repo, String modelFile, String tokensFile, String dataDirName, boolean rawPiper, boolean charFrontend) {
             this.repo = repo;
             this.modelFile = modelFile;
             this.tokensFile = tokensFile;
             this.dataDirName = dataDirName;
             this.rawPiper = rawPiper;
+            this.charFrontend = charFrontend;
             this.engine = ENG_VITS;
             this.pkg = null;
         }
@@ -153,6 +159,7 @@ final class SherpaModelManager {
             this.tokensFile = null;
             this.dataDirName = null;
             this.rawPiper = false;
+            this.charFrontend = false;
             this.engine = engine;
             this.pkg = pkg;
         }
@@ -165,7 +172,7 @@ final class SherpaModelManager {
         // فارسی: Mana (مجوز MIT) — مخزنش فایل خام Piper است، پس rawPiper. (بدون تغییر؛ نیازمند espeak-ng)
         m.put("fa", new TtsSpec(
                 "MahtaFetrat/Mana-Persian-Piper",
-                "fa_IR-mana-medium.onnx", "tokens.txt", "espeak-ng-data", true));
+                "fa_IR-mana-medium.onnx", "tokens.txt", "espeak-ng-data", true, true));
 
         // انگلیسی و چینی: Kokoro multi-lang v1.0 (Apache-2.0)
         m.put("en", new TtsSpec(PKG_KOKORO, ENG_KOKORO));
@@ -411,6 +418,7 @@ final class SherpaModelManager {
         if (!tokens.isFile() || tokens.length() == 0) return false;
         // صدای پیش‌فرضِ en/fa عوض شده؛ فایل‌های قدیمیِ همان پوشه (ryan/gyro) نباید به‌جای صدای جدید حساب شوند
         if (v.isDefault && MIGRATED_LANGS.contains(l) && !v.id.equals(readVoiceMarker(dir))) return false;
+        if (v.spec.charFrontend) return new File(dir, "meta-char.ok").isFile();   // بدون espeak-ng
         if (v.spec.rawPiper && !new File(dir, "meta.ok").isFile()) return false;
         return isEspeakReady(ctx);
     }
@@ -860,6 +868,12 @@ final class SherpaModelManager {
             new File(dir, "meta.ok").delete();
         }
 
+        if (s.charFrontend && !new File(dir, "meta-char.ok").isFile()) {
+            // نسخه‌ی قدیمیِ مبتنی بر espeak (metadata ی comment=piper) با نسخه‌ی frontend=characters سازگار نیست → دوباره می‌گیریم
+            new File(dir, "model.onnx").delete();
+            new File(dir, "model.onnx.part").delete();
+            new File(dir, "meta.ok").delete();
+        }
         if (s.rawPiper) {
             // ۱. فایل پیکربندی Piper → tokens.txt
             checkCancel(l);
@@ -889,15 +903,26 @@ final class SherpaModelManager {
 
         // ۲.۵ فایل خام Piper: metadata موردنیاز Sherpa را به انتهای onnx اضافه کن (فقط یک بار)
         if (s.rawPiper) {
-            File ok = new File(dir, "meta.ok");
+            File ok = new File(dir, s.charFrontend ? "meta-char.ok" : "meta.ok");
             if (!ok.isFile()) {
-                appendSherpaMetadata(modelTarget, new File(dir, "model.json"));
-                if (!ok.createNewFile()) throw new java.io.IOException("cannot create meta.ok");
+                appendSherpaMetadata(modelTarget, new File(dir, "model.json"), s.charFrontend);
+                if (!ok.createNewFile()) throw new java.io.IOException("cannot create " + ok.getName());
+            }
+        }
+
+        // ۲.۶ مدل G2P فارسی (Homo-GE2PE): دانلودش اختیاری است؛ اگر نشد قواعد داخلی جایگزین می‌شوند
+        if (s.charFrontend) {
+            try {
+                PersianG2P.downloadModel(app, cb, l);
+            } catch (DownloadCancelled dc) {
+                throw dc;
+            } catch (Throwable e) {
+                Log.w(TAG, "G2P model download failed (rule-based fallback will be used)", e);
             }
         }
 
         // ۳. espeak-ng-data مشترک (فقط یک بار؛ زبان‌های دیگه همین‌جا صبر می‌کنن، ولی با امکانِ توقف)
-        if (!isEspeakReady(app)) {
+        if (!s.charFrontend && !isEspeakReady(app)) {
             while (!ESPEAK_LOCK.tryLock(500, TimeUnit.MILLISECONDS)) {
                 checkCancel(l);
                 if (isEspeakReady(app)) break;
@@ -1010,17 +1035,23 @@ final class SherpaModelManager {
      * فایل خام Piper آن‌ها را ندارد. ModelProto.metadata_props فیلدِ شماره‌ی ۱۴ (repeated) است و در protobuf
      * اضافه کردنِ بایت‌های یک فیلدِ تکرارشونده به انتهای فایل معتبر است؛ پس همین‌جا به انتهای فایل می‌چسبانیم.
      */
-    private static void appendSherpaMetadata(File onnx, File cfg) throws Exception {
+    private static void appendSherpaMetadata(File onnx, File cfg, boolean charFrontend) throws Exception {
         JSONObject c = new JSONObject(readAll(cfg));
         int sampleRate = c.getJSONObject("audio").optInt("sample_rate", 22050);
         int nSpeakers = c.optInt("num_speakers", 1);
         String voice = c.has("espeak") ? c.getJSONObject("espeak").optString("voice", "fa") : "fa";
         java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
         putMeta(bo, "model_type", "vits");
-        putMeta(bo, "comment", "piper");
         putMeta(bo, "language", "Persian");
-        putMeta(bo, "voice", voice);
-        putMeta(bo, "has_espeak", "1");
+        if (charFrontend) {
+            // بدون espeak: هر کاراکترِ ورودی = یک token (Piper نیست، پس comment=piper نمی‌گذاریم)
+            putMeta(bo, "frontend", "characters");
+            putMeta(bo, "add_blank", "0");        // پدها را خودِ PersianG2P می‌گذارد
+        } else {
+            putMeta(bo, "comment", "piper");
+            putMeta(bo, "voice", voice);
+            putMeta(bo, "has_espeak", "1");
+        }
         putMeta(bo, "n_speakers", String.valueOf(nSpeakers));
         putMeta(bo, "sample_rate", String.valueOf(sampleRate));
         try (FileOutputStream out = new FileOutputStream(onnx, true)) {

@@ -98,6 +98,12 @@ final class TtsEngine {
         } catch (Throwable ignored) {}
     }
 
+    // true = فارسیِ بدون espeak: متن قبل از Sherpa با PersianG2P به نمادهای مدل تبدیل می‌شود
+    volatile boolean charFrontend = false;
+    private String feed(String t) {
+        return charFrontend ? PersianG2P.toModelInput(t) : t;
+    }
+
     private final OfflineTts tts;
     private final int sampleRate;
     private final String lang;
@@ -233,6 +239,7 @@ final class TtsEngine {
 
     /** کلِ جمله را یک‌جا می‌سازد. */
     private com.k2fsa.sherpa.onnx.GeneratedAudio genFull(String t, float sp) {
+        t = feed(t);
         if (!useCfg) return tts.generate(t, sid, sp);
         try {
             Object cfg = makeGenConfig(sp);
@@ -245,6 +252,7 @@ final class TtsEngine {
 
     /** تکه‌تکه می‌سازد؛ callback باید 1 (ادامه) یا 0 (توقف) برگرداند. */
     private void genStream(String t, float sp, final SampleCb cb) {
+        t = feed(t);
         if (!useCfg) {
             tts.generateWithCallback(t, sid, sp, samples -> cb.on(samples));
             return;
@@ -371,6 +379,7 @@ final class TtsEngine {
         } catch (Throwable e) {
             return "cannot read model.onnx";
         }
+        if (voice.spec.charFrontend) return null;   // فارسیِ بدون espeak: داده‌ی espeak لازم نیست
         File es = SherpaModelManager.getEspeakDataDir(ctx);
         String[] need = {"phontab", "phonindex", "phondata", "intonations", lang + "_dict"};
         for (String n : need) {
@@ -449,8 +458,13 @@ final class TtsEngine {
                 OfflineTtsVitsModelConfig vitsConfig = new OfflineTtsVitsModelConfig();
                 vitsConfig.setModel(new File(dir, "model.onnx").getAbsolutePath());
                 vitsConfig.setTokens(new File(dir, "tokens.txt").getAbsolutePath());
-                // espeak-ng-dataِ مشترک (یک بار دانلود می‌شه)
-                vitsConfig.setDataDir(SherpaModelManager.getEspeakDataDir(ctx).getAbsolutePath());
+                if (voice.spec.charFrontend) {
+                    // فارسیِ Mana بدون espeak-ng: نیازی به dataDir نیست
+                    PersianG2P.configure(ctx, new File(dir, "tokens.txt"));
+                } else {
+                    // espeak-ng-dataِ مشترک (یک بار دانلود می‌شه)
+                    vitsConfig.setDataDir(SherpaModelManager.getEspeakDataDir(ctx).getAbsolutePath());
+                }
                 // 🎙 صدای پایدارتر و کم‌خش‌تر: نویز کمتر = لحنِ یکنواخت‌تر و مکثِ کمتر پرش‌دار.
                 // با reflection تا اگه نسخه‌ی کتابخانه این setter را نداشت build/اجرا خراب نشه.
                 setVitsFloat(vitsConfig, "setNoiseScale", NOISE_SCALE);
@@ -475,6 +489,7 @@ final class TtsEngine {
             TtsEngine created = new TtsEngine(engine, sr, lang, voice.sid,
                     SherpaModelManager.ENG_SUPERTONIC.equals(eng) ? lang : null);
             created.bindVoice(eng, voice.spec.pkg == null ? null : voice.spec.pkg.id);
+            created.charFrontend = voice.spec.charFrontend;
             return created;
         } catch (Throwable e) {
             Log.e(TAG, "Failed to load TTS for " + lang, e);
