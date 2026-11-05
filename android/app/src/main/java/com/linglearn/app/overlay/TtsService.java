@@ -36,7 +36,7 @@ public class TtsService extends Service {
     // پیام‌های سرویس → کلاینت
     static final int REPLY_DONE = 100;
 
-    private static final int MAX_ENGINES = 2;
+    private static final int MAX_ENGINES = 3;   // VITS(فارسی) + Supertonic(چند زبان) + Kokoro(en/zh)
 
     private final ConcurrentHashMap<String, TtsEngine> engines = new ConcurrentHashMap<>();
     private volatile TtsEngine shared;
@@ -139,7 +139,7 @@ public class TtsService extends Service {
                                     TtsEngine e = obtainEngine(s.lang, false);
                                     if (e != null && !e.isReleased()) {
                                         e.plain = plainPf;
-                                        e.prefetch(s.text, speed);
+                                        e.prefetch(s.text, speed, sidFor(s.lang), s.lang);
                                     }
                                 } catch (Throwable ignored) {}
                             }
@@ -248,12 +248,12 @@ public class TtsService extends Service {
                         try {
                             if (mySeq != speakSeq.get()) return;
                             TtsEngine ne = obtainEngine(nx.lang, false);
-                            if (ne != null && !ne.isReleased()) { ne.plain = plain; ne.prefetch(nx.text, speed); }
+                            if (ne != null && !ne.isReleased()) { ne.plain = plain; ne.prefetch(nx.text, speed, sidFor(nx.lang), nx.lang); }
                         } catch (Throwable ignored) {}
                     });
                 } catch (Throwable ignored) {}
             }
-            engine.speakAsync(s.text, speed, ok -> {
+            engine.speakAsync(s.text, speed, sidFor(s.lang), s.lang, ok -> {
                 if (!ok) { replyDone(reqLang, id, false, null); return; }
                 if (i + 1 >= segs.size()) { replyDone(reqLang, id, true, null); return; }
                 // لودِ موتورِ تکه‌ی بعد ممکنه کند باشه → روی thread ی loader (نه thread ی پلیر)
@@ -269,42 +269,61 @@ public class TtsService extends Service {
         }
     }
 
+    /** کلیدِ موتور: زبان‌های یک «بسته‌ی مشترک» (Supertonic / Kokoro) یک موتور دارند، نه هر زبان یکی. */
+    private String poolKey(String lang) {
+        try {
+            SherpaModelManager.TtsVoice v = SherpaModelManager.getReadyVoice(getApplicationContext(), lang);
+            if (v != null && v.spec.pkg != null) return "pkg:" + v.spec.pkg.id;
+        } catch (Throwable ignored) {}
+        return lang;
+    }
+
+    private int sidFor(String lang) {
+        try {
+            SherpaModelManager.TtsVoice v = SherpaModelManager.getReadyVoice(getApplicationContext(), lang);
+            return v == null ? 0 : v.sid;
+        } catch (Throwable t) {
+            return 0;
+        }
+    }
+
     /** موتورِ این زبان رو برمی‌گردونه (اگه لود نیست، لودش می‌کنه). */
     private TtsEngine obtainEngine(String lang, boolean forSpeak) {
-        final Object lk = createLocks.computeIfAbsent(lang, k -> new Object());
+        final String key = poolKey(lang);
+        final Object lk = createLocks.computeIfAbsent(key, k -> new Object());
         for (int attempt = 0; attempt < 2; attempt++) {
-            // مسیرِ سریع: موتورِ لودشده (بدونِ انتظار برای لودِ موتورِ زبانِ دیگر)
             synchronized (this) {
-                TtsEngine e = engines.get(lang);
-                if (e != null && e.isReleased()) { engines.remove(lang); e = null; }
-                if (e != null) return reuseLoaded(e, lang, forSpeak);
+                TtsEngine e = engines.get(key);
+                if (e != null && e.isReleased()) { engines.remove(key); e = null; }
+                if (e != null) return reuseLoaded(e, key, lang, forSpeak);
             }
             synchronized (lk) {
                 final int gen0;
                 synchronized (this) {
-                    TtsEngine e = engines.get(lang);
-                    if (e != null && e.isReleased()) { engines.remove(lang); e = null; }
-                    if (e != null) return reuseLoaded(e, lang, forSpeak);
+                    TtsEngine e = engines.get(key);
+                    if (e != null && e.isReleased()) { engines.remove(key); e = null; }
+                    if (e != null) return reuseLoaded(e, key, lang, forSpeak);
                     if (!forSpeak && engines.size() >= MAX_ENGINES) return null;
                     gen0 = releaseGen.get();
                 }
-                // ⚡ لودِ چندثانیه‌ایِ مدل بیرون از قفلِ اصلی انجام می‌شود تا بقیه‌ی کارها قفل نشوند
                 TtsEngine ne = TtsEngine.create(getApplicationContext(), lang);
                 if (ne == null) return null;
                 boolean stale = false;
                 synchronized (this) {
                     if (releaseGen.get() != gen0) {
-                        stale = true;   // وسطِ لود، صدا عوض/حذف شد
+                        stale = true;
                     } else {
-                        engines.put(lang, ne);
+                        engines.put(key, ne);
                         while (engines.size() > MAX_ENGINES) {
+                            String vk = null;
                             TtsEngine victim = null;
-                            for (TtsEngine x : engines.values()) {
+                            for (java.util.Map.Entry<String, TtsEngine> en : engines.entrySet()) {
+                                TtsEngine x = en.getValue();
                                 if (x == ne || x == shared) continue;
-                                if (victim == null || x.lastUsed() < victim.lastUsed()) victim = x;
+                                if (victim == null || x.lastUsed() < victim.lastUsed()) { victim = x; vk = en.getKey(); }
                             }
                             if (victim == null) break;
-                            engines.remove(victim.lang());
+                            engines.remove(vk);
                             victim.release();
                         }
                         if (forSpeak) {
@@ -320,16 +339,15 @@ public class TtsService extends Service {
         return null;
     }
 
-    /** (داخلِ synchronized(this)) موتورِ لودشده هنوز معتبر است؟ / گویندهٔ فعال عوض شده؟ */
-    private TtsEngine reuseLoaded(TtsEngine e, String lang, boolean forSpeak) {
+    /** (داخلِ synchronized(this)) موتورِ لودشده هنوز معتبر است؟ */
+    private TtsEngine reuseLoaded(TtsEngine e, String key, String lang, boolean forSpeak) {
         SherpaModelManager.TtsVoice av = SherpaModelManager.getReadyVoice(getApplicationContext(), lang);
         if (av == null) {
-            engines.remove(lang);
+            engines.remove(key);
             if (shared == e) shared = null;
             e.release();
             return null;
         }
-        if (e.canReuseFor(av)) e.setSid(av.sid);
         if (forSpeak) {
             e.touch();
             shared = e;

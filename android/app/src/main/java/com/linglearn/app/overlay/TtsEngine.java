@@ -124,6 +124,10 @@ final class TtsEngine {
     private final String lang;
     // شناسه‌ی گوینده (sid) و — فقط Supertonic — زبانِ سنتز که با GenerationConfig.extra["lang"] می‌رود
     private volatile int sid;
+    // 🔁 گوینده/زبانِ «همین درخواست». یک موتور (Supertonic / Kokoro) بینِ چند زبان مشترک است و
+    // نباید برای هر زبان دوباره لود شود؛ پس sid و زبان با هر کار روی thread ی تولید (تک‌نخی) ست می‌شود.
+    private volatile int curSid;
+    private volatile String curLang;
     private final String genLang;   // null = از generate()/generateWithCallback() ی ساده استفاده می‌شود
     private final boolean useCfg;
 
@@ -196,6 +200,8 @@ final class TtsEngine {
         this.sampleRate = sampleRate;
         this.lang = lang;
         this.sid = sid;
+        this.curSid = sid;
+        this.curLang = genLang;
         this.genLang = genLang;
         this.useCfg = genLang != null;
     }
@@ -239,15 +245,16 @@ final class TtsEngine {
 
     private Object makeGenConfig(float sp) throws Exception {
         Object g = newSherpa("GenerationConfig");
-        setOpt(g, "setSid", sid);
+        setOpt(g, "setSid", curSid);
         setOpt(g, "setSpeed", sp);
         setOpt(g, "setNumSteps", SUPERTONIC_STEPS);
         java.util.HashMap<String, String> ex = new java.util.HashMap<>();
-        ex.put("lang", genLang);
+        final String gl = curLang != null ? curLang : genLang;
+        ex.put("lang", gl);
         try {
             setReq(g, "setExtra", ex);
         } catch (NoSuchMethodException e) {
-            setReq(g, "setExtra", "{\"lang\": \"" + genLang + "\"}");
+            setReq(g, "setExtra", "{\"lang\": \"" + gl + "\"}");
         }
         return g;
     }
@@ -255,7 +262,7 @@ final class TtsEngine {
     /** کلِ جمله را یک‌جا می‌سازد. */
     private com.k2fsa.sherpa.onnx.GeneratedAudio genFull(String t, float sp) {
         t = feed(t);
-        if (!useCfg) return tts.generate(t, sid, sp);
+        if (!useCfg) return tts.generate(t, curSid, sp);
         try {
             Object cfg = makeGenConfig(sp);
             java.lang.reflect.Method m = tts.getClass().getMethod("generateWithConfig", String.class, cfg.getClass());
@@ -269,7 +276,7 @@ final class TtsEngine {
     private void genStream(String t, float sp, final SampleCb cb) {
         t = feed(t);
         if (!useCfg) {
-            tts.generateWithCallback(t, sid, sp, samples -> cb.on(samples));
+            tts.generateWithCallback(t, curSid, sp, samples -> cb.on(samples));
             return;
         }
         try {
@@ -326,6 +333,7 @@ final class TtsEngine {
     void setSid(int newSid) {
         if (sid == newSid) return;
         sid = newSid;
+        curSid = newSid;
         pfAbort.incrementAndGet();                 // prefetchِ در حالِ ساخت با گوینده‌ی قبلی کنسل شود
         synchronized (cache) { cache.clear(); }    // کلیدِ کش به گوینده وابسته نیست → صدای قبلی نباید پخش شود
     }
@@ -410,6 +418,29 @@ final class TtsEngine {
     /** آخرین خطای لود (برای گزارش به کاربر)؛ فقط توی پردازه‌ی TTS معنی داره. */
     static volatile String lastCreateError = null;
 
+    /** تعدادِ هسته‌هایی که فرکانسشان ≥ ۷۰٪ بیشینه است؛ اگر خوانده نشد -1. */
+    private static int fastCoreCount() {
+        try {
+            int n = Runtime.getRuntime().availableProcessors();
+            long[] f = new long[n];
+            long max = 0;
+            for (int i = 0; i < n; i++) {
+                File ff = new File("/sys/devices/system/cpu/cpu" + i + "/cpufreq/cpuinfo_max_freq");
+                if (!ff.canRead()) return -1;
+                try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(ff))) {
+                    f[i] = Long.parseLong(br.readLine().trim());
+                }
+                if (f[i] > max) max = f[i];
+            }
+            if (max <= 0) return -1;
+            int c = 0;
+            for (long x : f) if (x >= max * 0.7) c++;
+            return c;
+        } catch (Throwable t) {
+            return -1;
+        }
+    }
+
     static TtsEngine create(Context ctx, String lang) {
         lastCreateError = null;
         dbgCtx = ctx.getApplicationContext();
@@ -443,6 +474,10 @@ final class TtsEngine {
             int threads = Math.max(2, Math.min(4, cores / 2));
             // Supertonic چهار مدل پشت‌سرهم دارد؛ نخ‌های بیشتر = تأخیر کمتر
             if (SherpaModelManager.ENG_SUPERTONIC.equals(eng)) threads = Math.max(2, Math.min(4, cores - 2));   // بیشتر از ۴ نخ روی هسته‌های ضعیف کندتر می‌شود
+
+            // ⚡ فقط هسته‌های «قوی» (big/prime): نخِ ONNX روی هسته‌ی ضعیف کلِ محاسبه را کند می‌کند
+            int fastCores = fastCoreCount();
+            if (fastCores > 0) threads = Math.max(2, Math.min(4, fastCores));
 
             OfflineTtsModelConfig modelConfig = new OfflineTtsModelConfig();
             OfflineTtsConfig config = new OfflineTtsConfig();
@@ -547,6 +582,7 @@ final class TtsEngine {
         try {
             gen(() -> {
                 if (released || epoch.get() != warmEpoch) return;
+                curSid = sid; curLang = genLang;
                 try {
                     long t0 = SystemClock.uptimeMillis();
                     TtsCrumb.mark("warm:" + lang);
@@ -564,7 +600,7 @@ final class TtsEngine {
     // سرعتِ کاربر با time-stretch موقعِ پخش اعمال می‌شود (نه با ساختنِ دوباره‌ی صدا)؛ پس کش به سرعت وابسته نیست
     // و تغییرِ سرعت فوری و بدون پرش/تأخیر است. فقط اگر دستگاه setPlaybackParams را نپذیرفت کلید سرعت دارد.
     private volatile boolean stretchOk = true;
-    private String keyOf(String t, float sp) { return (stretchOk ? 1.0f : sp) + "|" + t; }
+    private String keyOf(String t, float sp, int rs, String rl) { return (stretchOk ? 1.0f : sp) + "|" + rs + "|" + rl + "|" + t; }
 
     private float[] cacheGet(String key) {
         synchronized (cache) { return cache.get(key); }
@@ -927,17 +963,20 @@ final class TtsEngine {
 
     // ================= prefetch =================
     /** صدای این متن رو پیش‌پیش می‌سازه و کش می‌کنه (برای جمله‌ی بعدی). */
-    void prefetch(String text, float speed) {
+    void prefetch(String text, float speed) { prefetch(text, speed, sid, genLang != null ? genLang : lang); }
+
+    void prefetch(String text, float speed, final int reqSid, final String reqLang) {
         if (released || text == null || text.trim().isEmpty()) return;
         final String t = sanitize(lang, text);
         if (t.isEmpty()) return;
         final float sp = (speed <= 0f) ? 1.0f : speed;
-        final String key = keyOf(t, sp);
+        final String key = keyOf(t, sp, reqSid, reqLang);
         if (cacheHas(key)) return;
         final int g = pfAbort.get();
         try {
             gen(() -> {
                 if (released || pfAbort.get() != g || cacheHas(key)) return;
+                curSid = reqSid; curLang = reqLang;
                 inflightPrefetchKey = key;
                 final boolean pl = plain; // یک‌بار بخون تا بینِ crumb و synth عوض نشه
                 try {
@@ -959,6 +998,10 @@ final class TtsEngine {
      * خواندن متن؛ cb دقیقاً یک‌بار، بعد از تمام‌شدنِ واقعیِ پخش (یا شکست/لغو) صدا زده می‌شه.
      */
     void speakAsync(String text, float speed, final DoneCallback cb) {
+        speakAsync(text, speed, sid, genLang != null ? genLang : lang, cb);
+    }
+
+    void speakAsync(String text, float speed, final int reqSid, final String reqLang, final DoneCallback cb) {
         if (text == null || text.trim().isEmpty()) {
             if (cb != null) cb.onDone(true);
             return;
@@ -973,7 +1016,7 @@ final class TtsEngine {
             return;
         }
         final float sp = (speed <= 0f) ? 1.0f : speed;
-        final String key = keyOf(t, sp);
+        final String key = keyOf(t, sp, reqSid, reqLang);
         touch();
 
         // اگه prefetchِ در حالِ اجرا مالِ همین متن نیست (و خودِ این متن هم از قبل ساخته نشده)، کنسلش کن
@@ -1006,7 +1049,10 @@ final class TtsEngine {
         }
 
         try {
-            gen(() -> runGenerate(t, sp, key, myEpoch, q, genFailed, gotAudio), PRIO_SPEAK);
+            gen(() -> {
+                curSid = reqSid; curLang = reqLang;
+                runGenerate(t, sp, key, myEpoch, q, genFailed, gotAudio);
+            }, PRIO_SPEAK);
         } catch (Throwable e) {
             genFailed.set(true);
             q.add(END);
@@ -1054,7 +1100,7 @@ final class TtsEngine {
             TtsCrumb.mark("idle");
             if (audio != null) {
                 cachePut(key, audio);
-                dbg("ساخت " + lang + " " + engineKind + " thr=" + threadsUsed + " | " + t.length()
+                dbg("ساخت " + curLang + " " + engineKind + " thr=" + threadsUsed + " | " + t.length()
                         + " حرف | اولین صدا=" + firstMs[0] + "ms | کل=" + (SystemClock.uptimeMillis() - t0)
                         + "ms | طول صدا=" + String.format(java.util.Locale.US, "%.1f", audio.length / (float) sampleRate) + "s");
             }
