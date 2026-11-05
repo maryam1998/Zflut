@@ -11,6 +11,7 @@ import android.util.Log;
 
 import com.k2fsa.sherpa.onnx.OfflineTts;
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig;
+import com.k2fsa.sherpa.onnx.OfflineTtsKokoroModelConfig;
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig;
 import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig;
 
@@ -97,6 +98,10 @@ final class TtsEngine {
     private final OfflineTts tts;
     private final int sampleRate;
     private final String lang;
+    // شناسه‌ی گوینده (sid) و — فقط Supertonic — زبانِ سنتز که با GenerationConfig.extra["lang"] می‌رود
+    private final int sid;
+    private final String genLang;   // null = از generate()/generateWithCallback() ی ساده استفاده می‌شود
+    private final boolean useCfg;
 
     private volatile boolean released = false;
     private volatile long lastUsed = SystemClock.uptimeMillis();
@@ -158,10 +163,119 @@ final class TtsEngine {
         genPool.execute(new GenTask(r, prio));
     }
 
-    private TtsEngine(OfflineTts tts, int sampleRate, String lang) {
+    private TtsEngine(OfflineTts tts, int sampleRate, String lang, int sid, String genLang) {
         this.tts = tts;
         this.sampleRate = sampleRate;
         this.lang = lang;
+        this.sid = sid;
+        this.genLang = genLang;
+        this.useCfg = genLang != null;
+    }
+
+    // ================= کمکی‌های reflection (APIهای جدیدِ Sherpa: Supertonic / GenerationConfig) =================
+    // با reflection تا اگر نامِ کلاس/متدی در نسخه‌ی AAR فرق کرد، بیلد نشکند و خطای واضح در لاگ بیاید.
+    private static Object newSherpa(String cls) throws Exception {
+        return Class.forName("com.k2fsa.sherpa.onnx." + cls).getDeclaredConstructor().newInstance();
+    }
+
+    private static boolean argMatches(Class<?> p, Object v) {
+        if (v == null) return !p.isPrimitive();
+        if (p.isInstance(v)) return true;
+        if (p == float.class) return v instanceof Float;
+        if (p == int.class) return v instanceof Integer;
+        if (p == boolean.class) return v instanceof Boolean;
+        return false;
+    }
+
+    private static void setReq(Object o, String name, Object v) throws Exception {
+        for (java.lang.reflect.Method m : o.getClass().getMethods()) {
+            Class<?>[] pt = m.getParameterTypes();
+            if (m.getName().equals(name) && pt.length == 1 && argMatches(pt[0], v)) {
+                m.invoke(o, v);
+                return;
+            }
+        }
+        throw new NoSuchMethodException(o.getClass().getSimpleName() + "." + name);
+    }
+
+    private static void setOpt(Object o, String name, Object v) {
+        try { setReq(o, name, v); } catch (Throwable ignored) {}
+    }
+
+    private static Throwable unwrap(Throwable t) {
+        while (t instanceof java.lang.reflect.InvocationTargetException && t.getCause() != null) t = t.getCause();
+        return t;
+    }
+
+    private interface SampleCb { int on(float[] samples); }   // 1 = ادامه، 0 = توقف
+
+    private Object makeGenConfig(float sp) throws Exception {
+        Object g = newSherpa("GenerationConfig");
+        setOpt(g, "setSid", sid);
+        setOpt(g, "setSpeed", sp);
+        java.util.HashMap<String, String> ex = new java.util.HashMap<>();
+        ex.put("lang", genLang);
+        try {
+            setReq(g, "setExtra", ex);
+        } catch (NoSuchMethodException e) {
+            setReq(g, "setExtra", "{\"lang\": \"" + genLang + "\"}");
+        }
+        return g;
+    }
+
+    /** کلِ جمله را یک‌جا می‌سازد. */
+    private com.k2fsa.sherpa.onnx.GeneratedAudio genFull(String t, float sp) {
+        if (!useCfg) return tts.generate(t, sid, sp);
+        try {
+            Object cfg = makeGenConfig(sp);
+            java.lang.reflect.Method m = tts.getClass().getMethod("generateWithConfig", String.class, cfg.getClass());
+            return (com.k2fsa.sherpa.onnx.GeneratedAudio) m.invoke(tts, t, cfg);
+        } catch (Throwable e) {
+            throw new RuntimeException("generateWithConfig failed", unwrap(e));
+        }
+    }
+
+    /** تکه‌تکه می‌سازد؛ callback باید 1 (ادامه) یا 0 (توقف) برگرداند. */
+    private void genStream(String t, float sp, final SampleCb cb) {
+        if (!useCfg) {
+            tts.generateWithCallback(t, sid, sp, samples -> cb.on(samples));
+            return;
+        }
+        try {
+            Object cfg = makeGenConfig(sp);
+            java.lang.reflect.Method cm = null;
+            for (java.lang.reflect.Method m : tts.getClass().getMethods()) {
+                Class<?>[] pt = m.getParameterTypes();
+                if (m.getName().equals("generateWithConfigAndCallback") && pt.length == 3
+                        && pt[0] == String.class && pt[1].isInstance(cfg) && pt[2].isInterface()) {
+                    cm = m;
+                    break;
+                }
+            }
+            if (cm == null) {
+                // نسخه‌ی AAR متدِ استریم ندارد → کلِ جمله ساخته و یک‌جا داده می‌شود
+                com.k2fsa.sherpa.onnx.GeneratedAudio ga = genFull(t, sp);
+                float[] all = ga == null ? null : ga.getSamples();
+                if (all != null && all.length > 0) cb.on(all);
+                return;
+            }
+            Class<?> cbType = cm.getParameterTypes()[2];
+            Object proxy = java.lang.reflect.Proxy.newProxyInstance(
+                    cbType.getClassLoader(), new Class<?>[]{cbType},
+                    (p, method, args) -> {
+                        if ("invoke".equals(method.getName()) && args != null && args.length == 1
+                                && args[0] instanceof float[]) {
+                            return cb.on((float[]) args[0]);
+                        }
+                        Class<?> rt = method.getReturnType();
+                        if (rt == int.class) return 0;
+                        if (rt == boolean.class) return false;
+                        return null;
+                    });
+            cm.invoke(tts, t, cfg, proxy);
+        } catch (Throwable e) {
+            throw new RuntimeException("generateWithConfigAndCallback failed", unwrap(e));
+        }
     }
 
     String lang() { return lang; }
@@ -173,7 +287,47 @@ final class TtsEngine {
      * قبل از لودِ native فایل‌ها رو بررسی می‌کنه (فایلِ خراب/ناقص باعثِ exit() یا abort ی native می‌شه).
      * اگه مشکلی باشه متنِ خطا رو برمی‌گردونه و فایلِ خراب رو پاک می‌کنه تا دوباره دانلود بشه.
      */
-    private static String validateFiles(Context ctx, File dir, String lang) {
+    private static String validateFiles(Context ctx, File dir, String lang, SherpaModelManager.TtsVoice voice) {
+        final String eng = voice.spec.engine;
+        if (voice.spec.pkg != null) {
+            // بسته‌ی مشترک (Supertonic / Kokoro): همه‌ی فایل‌ها باید باشند؛ وگرنه marker پاک می‌شود تا دوباره دانلود شود
+            for (String n : voice.spec.pkg.files) {
+                File f = new File(dir, n);
+                if (!f.isFile() || f.length() == 0) {
+                    SherpaModelManager.invalidatePackage(ctx, voice.spec.pkg);
+                    return "package file missing: " + n;
+                }
+                if (n.endsWith(".onnx")) {
+                    try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
+                        int b = in.read();
+                        if (f.length() < 1_000_000L || b == '<' || b == '{' || b == 'v' || b == ' ' || b == '\n' || b == '\r') {
+                            f.delete();
+                            SherpaModelManager.invalidatePackage(ctx, voice.spec.pkg);
+                            return n + " is not a valid ONNX file";
+                        }
+                    } catch (Throwable e) {
+                        return "cannot read " + n;
+                    }
+                }
+            }
+            if (SherpaModelManager.ENG_KOKORO.equals(eng)) {
+                File es = SherpaModelManager.getEspeakDataDir(ctx);
+                String[] need = {"phontab", "phonindex", "phondata", "intonations", "en_dict"};
+                for (String n : need) {
+                    File f = new File(es, n);
+                    if (!f.isFile() || f.length() == 0) {
+                        SherpaModelManager.invalidateEspeak(ctx);
+                        return "espeak-ng-data incomplete: " + n;
+                    }
+                }
+                String[] dd = new File(dir, "dict").list();
+                if (dd == null || dd.length == 0) {
+                    SherpaModelManager.invalidatePackage(ctx, voice.spec.pkg);
+                    return "kokoro dict folder missing";
+                }
+            }
+            return null;
+        }
         File model = new File(dir, "model.onnx");
         if (model.length() < 2_000_000L) {
             model.delete();
@@ -206,13 +360,14 @@ final class TtsEngine {
 
     static TtsEngine create(Context ctx, String lang) {
         lastCreateError = null;
-        File dir = SherpaModelManager.getTtsModelDir(ctx, lang);
+        final SherpaModelManager.TtsVoice voice = SherpaModelManager.getReadyVoice(ctx, lang);
+        final File dir = voice == null ? null : SherpaModelManager.voiceDir(ctx, lang, voice);
         if (dir == null) {
             Log.w(TAG, "TTS model not found for " + lang);
             lastCreateError = "model not found";
             return null;
         }
-        String bad = validateFiles(ctx, dir, lang);
+        String bad = validateFiles(ctx, dir, lang, voice);
         if (bad != null) {
             Log.e(TAG, "invalid TTS files for " + lang + ": " + bad);
             lastCreateError = bad;
@@ -230,25 +385,52 @@ final class TtsEngine {
                 prioChanged = true;
             } catch (Throwable ignored) {}
 
-            OfflineTtsVitsModelConfig vitsConfig = new OfflineTtsVitsModelConfig();
-            vitsConfig.setModel(new File(dir, "model.onnx").getAbsolutePath());
-            vitsConfig.setTokens(new File(dir, "tokens.txt").getAbsolutePath());
-            // espeak-ng-dataِ مشترکِ همه‌ی بسته‌ها (یک بار دانلود می‌شه)
-            vitsConfig.setDataDir(SherpaModelManager.getEspeakDataDir(ctx).getAbsolutePath());
-            // 🎙 صدای پایدارتر و کم‌خش‌تر: نویز کمتر = لحنِ یکنواخت‌تر و مکثِ کمتر پرش‌دار.
-            // با reflection تا اگه نسخه‌ی کتابخانه این setter را نداشت build/اجرا خراب نشه.
-            setVitsFloat(vitsConfig, "setNoiseScale", NOISE_SCALE);
-            setVitsFloat(vitsConfig, "setNoiseScaleW", NOISE_SCALE_W);
-
+            final String eng = voice.spec.engine;
             int cores = Runtime.getRuntime().availableProcessors();
             int threads = Math.max(2, Math.min(4, cores / 2));
 
             OfflineTtsModelConfig modelConfig = new OfflineTtsModelConfig();
-            modelConfig.setVits(vitsConfig);
+            OfflineTtsConfig config = new OfflineTtsConfig();
+
+            if (SherpaModelManager.ENG_SUPERTONIC.equals(eng)) {
+                // Supertonic 3 (بدون espeak): چهار مدل + tts.json + unicode_indexer + voice.bin
+                Object st = newSherpa("OfflineTtsSupertonicModelConfig");
+                setReq(st, "setDurationPredictor", new File(dir, "duration_predictor.int8.onnx").getAbsolutePath());
+                setReq(st, "setTextEncoder", new File(dir, "text_encoder.int8.onnx").getAbsolutePath());
+                setReq(st, "setVectorEstimator", new File(dir, "vector_estimator.int8.onnx").getAbsolutePath());
+                setReq(st, "setVocoder", new File(dir, "vocoder.int8.onnx").getAbsolutePath());
+                setReq(st, "setTtsJson", new File(dir, "tts.json").getAbsolutePath());
+                setReq(st, "setUnicodeIndexer", new File(dir, "unicode_indexer.bin").getAbsolutePath());
+                setReq(st, "setVoiceStyle", new File(dir, "voice.bin").getAbsolutePath());
+                setReq(modelConfig, "setSupertonic", st);
+            } else if (SherpaModelManager.ENG_KOKORO.equals(eng)) {
+                // Kokoro multi-lang v1.0 (انگلیسی + چینی). espeak-ng-data فقط برای کلماتِ خارج از لغت‌نامه است.
+                OfflineTtsKokoroModelConfig k = new OfflineTtsKokoroModelConfig();
+                k.setModel(new File(dir, "model.onnx").getAbsolutePath());
+                k.setVoices(new File(dir, "voices.bin").getAbsolutePath());
+                k.setTokens(new File(dir, "tokens.txt").getAbsolutePath());
+                k.setDataDir(SherpaModelManager.getEspeakDataDir(ctx).getAbsolutePath());
+                setOpt(k, "setDictDir", new File(dir, "dict").getAbsolutePath());
+                setOpt(k, "setLexicon", new File(dir, "lexicon-us-en.txt").getAbsolutePath()
+                        + "," + new File(dir, "lexicon-zh.txt").getAbsolutePath());
+                modelConfig.setKokoro(k);
+                setOpt(config, "setRuleFsts", new File(dir, "date-zh.fst").getAbsolutePath()
+                        + "," + new File(dir, "number-zh.fst").getAbsolutePath());
+            } else {
+                // فارسی (Piper/VITS + espeak-ng) — بدون تغییر
+                OfflineTtsVitsModelConfig vitsConfig = new OfflineTtsVitsModelConfig();
+                vitsConfig.setModel(new File(dir, "model.onnx").getAbsolutePath());
+                vitsConfig.setTokens(new File(dir, "tokens.txt").getAbsolutePath());
+                // espeak-ng-dataِ مشترک (یک بار دانلود می‌شه)
+                vitsConfig.setDataDir(SherpaModelManager.getEspeakDataDir(ctx).getAbsolutePath());
+                // 🎙 صدای پایدارتر و کم‌خش‌تر: نویز کمتر = لحنِ یکنواخت‌تر و مکثِ کمتر پرش‌دار.
+                // با reflection تا اگه نسخه‌ی کتابخانه این setter را نداشت build/اجرا خراب نشه.
+                setVitsFloat(vitsConfig, "setNoiseScale", NOISE_SCALE);
+                setVitsFloat(vitsConfig, "setNoiseScaleW", NOISE_SCALE_W);
+                modelConfig.setVits(vitsConfig);
+            }
             modelConfig.setNumThreads(threads);
             modelConfig.setDebug(false);
-
-            OfflineTtsConfig config = new OfflineTtsConfig();
             config.setModel(modelConfig);
 
             OfflineTts engine;
@@ -262,7 +444,8 @@ final class TtsEngine {
             Log.i(TAG, "TTS loaded for " + lang + ", sampleRate=" + sr + ", threads=" + threads
                     + ", loadMs=" + (SystemClock.uptimeMillis() - t0));
             TtsCrumb.mark("idle");
-            return new TtsEngine(engine, sr, lang);
+            return new TtsEngine(engine, sr, lang, voice.sid,
+                    SherpaModelManager.ENG_SUPERTONIC.equals(eng) ? lang : null);
         } catch (Throwable e) {
             Log.e(TAG, "Failed to load TTS for " + lang, e);
             lastCreateError = String.valueOf(e);
@@ -285,6 +468,13 @@ final class TtsEngine {
             case "ru": w = "привет"; break;
             case "zh": w = "你好"; break;
             case "hi": w = "नमस्ते"; break;
+            case "ja": w = "こんにちは"; break;
+            case "ko": w = "안녕하세요"; break;
+            case "de": w = "Hallo."; break;
+            case "fr": w = "Bonjour."; break;
+            case "es": w = "Hola."; break;
+            case "it": w = "Ciao."; break;
+            case "tr": w = "Merhaba."; break;
             default:   w = "Hello."; break;
         }
         try {
@@ -293,7 +483,7 @@ final class TtsEngine {
                 try {
                     long t0 = SystemClock.uptimeMillis();
                     TtsCrumb.mark("warm:" + lang);
-                    synchronized (NATIVE_LOCK) { tts.generate(w, 0, 1.0f); }
+                    synchronized (NATIVE_LOCK) { genFull(w, 1.0f); }
                     TtsCrumb.mark("idle");
                     Log.i(TAG, "warmUp " + lang + " ms=" + (SystemClock.uptimeMillis() - t0));
                 } catch (Throwable e) {
@@ -553,7 +743,7 @@ final class TtsEngine {
     private float[] synthClause(String t, float sp, boolean pl, boolean longText, VoiceEq eq, final Sink sink) {
         if (pl) {
             com.k2fsa.sherpa.onnx.GeneratedAudio ga;
-            synchronized (NATIVE_LOCK) { ga = tts.generate(t, 0, sp); }
+            synchronized (NATIVE_LOCK) { ga = genFull(t, sp); }
             float[] all = ga == null ? null : ga.getSamples();
             if (all == null || all.length == 0) return new float[0];
             all = trimSilence(all, sampleRate, longText);
@@ -565,7 +755,7 @@ final class TtsEngine {
         final boolean[] aborted = {false};
         final Throwable[] err = {null};
         synchronized (NATIVE_LOCK) {
-            tts.generateWithCallback(t, 0, sp, samples -> {
+            genStream(t, sp, samples -> {
                 // هیچ exception ی نباید از callback به native برگرده: JNI بعدش FindClass صدا می‌زنه
                 // و ART با exceptionِ معلق کلِ پردازه رو abort می‌کنه (SIGABRT / status=6).
                 try {

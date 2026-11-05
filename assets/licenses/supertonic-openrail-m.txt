@@ -1,0 +1,8 @@
+Supertonic 3 — Copyright Supertone Inc.
+The model weights are released under the OpenRAIL-M license.
+Source: https://github.com/supertone-inc/supertonic
+
+TODO (before release): replace this notice with the COMPLETE official OpenRAIL-M
+license text that ships with the Supertonic 3 model (LICENSE file in the model
+repository), including its use-based restrictions. OpenRAIL-M requires those
+restrictions to be passed on to the users of the app.

@@ -24,6 +24,7 @@ import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/widgets/color_palette_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../tabs/_hope_panel.dart' show uiContentDirection;
+import 'credits_page.dart';
 import 'help_center.dart';
 import 'settings_packs.dart';
 
@@ -134,6 +135,8 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   const _OfflineWordsButton(),
                   gap(),
                   const HelpCenterButton(),
+                  const SizedBox(height: 8),
+                  const CreditsButton(),
                 ],
               ),
             ),
@@ -2275,10 +2278,10 @@ class _OfflineTtsSection extends StatefulWidget {
 class _OfflineTtsSectionState extends State<_OfflineTtsSection> {
   /// زبان‌هایی که بسته‌ی صدای آفلاین دارند (ترتیب مثل Hope).
   static const List<String> _downloadable = [
-    'en', 'es', 'de', 'fa', 'fr', 'it', 'hi', 'tr', 'ar', 'zh',
+    'en', 'es', 'de', 'fa', 'fr', 'it', 'hi', 'tr', 'ar', 'zh', 'ko', 'ja',
   ];
   static const List<String> _extraDownloadable = ['ru'];
-  static const List<String> _phoneOnly = ['ko'];
+  static const List<String> _phoneOnly = <String>[];
 
   bool _allRunning = false;
   bool _allCancel = false;

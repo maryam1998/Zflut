@@ -97,14 +97,52 @@ final class SherpaModelManager {
     }
 
     // ============ TTS (تبدیل متن به گفتار) ============
-    private static final class TtsSpec {
+    // موتورها:
+    //   • فارسی: Piper/VITS (مدل Mana) + espeak-ng — بدون تغییر
+    //   • Supertonic 3 (بسته‌ی مشترک، بدون espeak): de fr es it ru tr ar hi ko ja
+    //   • Kokoro multi-lang v1.0 (بسته‌ی مشترک): en zh  (خودِ sherpa برای کلماتِ خارج از لغت‌نامه به espeak-ng-data نیاز دارد)
+    static final String ENG_VITS = "vits";
+    static final String ENG_SUPERTONIC = "supertonic";
+    static final String ENG_KOKORO = "kokoro";
+
+    /** بسته‌ی مشترکِ چندزبانه: یک بار دانلود می‌شود و برای چند زبان کار می‌کند. */
+    static final class Pkg {
+        final String id, repo;
+        final String[] files;      // فایل‌های ریشه‌ی مخزن
+        final String[] dirs;       // پوشه‌هایی که کاملاً از مخزن کپی می‌شوند
+        final long approxBytes;    // فقط برای نوار پیشرفت
+        Pkg(String id, String repo, String[] files, String[] dirs, long approxBytes) {
+            this.id = id; this.repo = repo; this.files = files; this.dirs = dirs; this.approxBytes = approxBytes;
+        }
+    }
+
+    static final Pkg PKG_SUPERTONIC = new Pkg(
+            "supertonic3",
+            "csukuangfj2/sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+            new String[]{"duration_predictor.int8.onnx", "text_encoder.int8.onnx",
+                    "vector_estimator.int8.onnx", "vocoder.int8.onnx",
+                    "tts.json", "unicode_indexer.bin", "voice.bin"},
+            new String[0],
+            146_000_000L);
+
+    static final Pkg PKG_KOKORO = new Pkg(
+            "kokoro-multi-lang-v1_0",
+            "csukuangfj/kokoro-multi-lang-v1_0",
+            new String[]{"model.onnx", "voices.bin", "tokens.txt",
+                    "lexicon-us-en.txt", "lexicon-zh.txt", "date-zh.fst", "number-zh.fst"},
+            new String[]{"dict"},
+            420_000_000L);
+
+    static final class TtsSpec {
         final String repo;         // مخزن HuggingFace
-        final String modelFile;    // فایل .onnx داخل مخزن
-        final String tokensFile;   // فایل tokens.txt
-        final String dataDirName;  // نام پوشه espeak-ng-data
+        final String modelFile;    // فایل .onnx داخل مخزن (فقط VITS)
+        final String tokensFile;   // فایل tokens.txt (فقط VITS)
+        final String dataDirName;  // نام پوشه espeak-ng-data (فقط VITS)
         // true = مخزن فقط فایل خام Piper (.onnx + .onnx.json) دارد (بدون tokens.txt و metadata سازگار با Sherpa)؛
         // tokens.txt از json ساخته و metadata به خود onnx اضافه می‌شود. espeak-ng-data هم از مخزن دیگری می‌آید.
         final boolean rawPiper;
+        final String engine;       // ENG_*
+        final Pkg pkg;             // != null → بسته‌ی مشترک (Supertonic / Kokoro)
         TtsSpec(String repo, String modelFile, String tokensFile, String dataDirName) {
             this(repo, modelFile, tokensFile, dataDirName, false);
         }
@@ -114,6 +152,17 @@ final class SherpaModelManager {
             this.tokensFile = tokensFile;
             this.dataDirName = dataDirName;
             this.rawPiper = rawPiper;
+            this.engine = ENG_VITS;
+            this.pkg = null;
+        }
+        TtsSpec(Pkg pkg, String engine) {
+            this.repo = pkg.repo;
+            this.modelFile = null;
+            this.tokensFile = null;
+            this.dataDirName = null;
+            this.rawPiper = false;
+            this.engine = engine;
+            this.pkg = pkg;
         }
     }
 
@@ -121,99 +170,88 @@ final class SherpaModelManager {
     static {
         Map<String, TtsSpec> m = new LinkedHashMap<>();
 
-        // ⚖️ فقط صداهایی که دیتاستشان آزاد/تجاری‌پذیر است (CC0 / Public Domain / MIT)
-        m.put("en", new TtsSpec(
-                "csukuangfj/vits-piper-en_US-kristin-medium",
-                "en_US-kristin-medium.onnx", "tokens.txt", "espeak-ng-data"));
-        // فارسی: Mana (مجوز MIT) — مخزنش فایل خام Piper است، پس rawPiper
+        // فارسی: Mana (مجوز MIT) — مخزنش فایل خام Piper است، پس rawPiper. (بدون تغییر؛ نیازمند espeak-ng)
         m.put("fa", new TtsSpec(
                 "MahtaFetrat/Mana-Persian-Piper",
                 "fa_IR-mana-medium.onnx", "tokens.txt", "espeak-ng-data", true));
-        m.put("ar", new TtsSpec(
-                "csukuangfj/vits-piper-ar_JO-kareem-medium",
-                "ar_JO-kareem-medium.onnx", "tokens.txt", "espeak-ng-data"));
-        m.put("tr", new TtsSpec(
-                "csukuangfj/vits-piper-tr_TR-fahrettin-medium",
-                "tr_TR-fahrettin-medium.onnx", "tokens.txt", "espeak-ng-data"));
-        m.put("de", new TtsSpec(
-                "csukuangfj/vits-piper-de_DE-thorsten_emotional-medium",
-                "de_DE-thorsten_emotional-medium.onnx", "tokens.txt", "espeak-ng-data"));
-        // فرانسوی: Piper MLS medium (دیتاست MLS با CC BY 4.0 → ذکر منبع لازم است)
-        m.put("fr", new TtsSpec(
-                "csukuangfj/vits-piper-fr_FR-mls-medium",
-                "fr_FR-mls-medium.onnx", "tokens.txt", "espeak-ng-data"));
-        m.put("es", new TtsSpec(
-                "csukuangfj/vits-piper-es_ES-miro-high",
-                "es_ES-miro-high.onnx", "tokens.txt", "espeak-ng-data"));
-        m.put("it", new TtsSpec(
-                "csukuangfj/vits-piper-it_IT-miro-high",
-                "it_IT-miro-high.onnx", "tokens.txt", "espeak-ng-data"));
-        m.put("ru", new TtsSpec(
-                "csukuangfj/vits-piper-ru_RU-irina-medium",
-                "ru_RU-irina-medium.onnx", "tokens.txt", "espeak-ng-data"));
-        m.put("zh", new TtsSpec(
-                "csukuangfj/vits-piper-zh_CN-huayan-medium",
-                "zh_CN-huayan-medium.onnx", "tokens.txt", "espeak-ng-data"));
-        m.put("hi", new TtsSpec(
-                "csukuangfj/vits-piper-hi_IN-rohan-medium",
-                "hi_IN-rohan-medium.onnx", "tokens.txt", "espeak-ng-data"));
-        // he (عبری), ja (ژاپنی), ko (کره‌ای): بسته Piper رسمی ندارن؛
-        // اگه پیدا کردی همینجا اضافه کن.
+
+        // انگلیسی و چینی: Kokoro multi-lang v1.0 (Apache-2.0)
+        m.put("en", new TtsSpec(PKG_KOKORO, ENG_KOKORO));
+        m.put("zh", new TtsSpec(PKG_KOKORO, ENG_KOKORO));
+
+        // ده زبانِ دیگر: Supertonic 3 (مجوز OpenRAIL-M)
+        for (String lg : new String[]{"de", "fr", "es", "it", "ru", "tr", "ar", "hi", "ko", "ja"}) {
+            m.put(lg, new TtsSpec(PKG_SUPERTONIC, ENG_SUPERTONIC));
+        }
 
         TTS_SPECS = Collections.unmodifiableMap(m);
     }
 
     // ============ چند صدا برای هر زبان ============
-    // هر زبان یک صدای پیش‌فرض (همان TTS_SPECS) + چند صدای اضافه‌ی Piper (تک‌گوینده) دارد.
-    // کاربر از تنظیمات هر کدام را دانلود/انتخاب می‌کند. شناسه‌ی صدا = نام Piper (مثلاً en_US-amy-medium).
-    // صدای پیش‌فرض همان پوشه‌ی قدیمی tts/<lang> را نگه می‌دارد (بسته‌های قبلاً دانلودشده سالم می‌مانند)؛
-    // بقیه در tts/<lang>__<id> ذخیره می‌شوند و صدای فعال در فایل tts/<lang>.active ثبت می‌شود
-    // (فایل، چون TtsService در پردازه‌ی جدا اجرا می‌شود و SharedPreferences بین پردازه‌ها مطمئن نیست).
+    // فارسی: صدای پیش‌فرض (Mana) + چند صدای اضافه‌ی Piper، مثل قبل (پوشه‌ی tts/fa و tts/fa__<id>).
+    // Supertonic: ۱۰ گوینده (sid ۰..۹) داخل همان بسته‌ی مشترک؛ Kokoro: چند گوینده‌ی منتخب.
+    // صدای فعال در فایل tts/<lang>.active ثبت می‌شود (TtsService در پردازه‌ی جدا اجرا می‌شود).
     static final class TtsVoice {
         final String id;
         final String label;
         final TtsSpec spec;
         final boolean isDefault;
+        final int sid;
         TtsVoice(String id, String label, TtsSpec spec, boolean isDefault) {
-            this.id = id; this.label = label; this.spec = spec; this.isDefault = isDefault;
+            this(id, label, spec, isDefault, 0);
+        }
+        TtsVoice(String id, String label, TtsSpec spec, boolean isDefault, int sid) {
+            this.id = id; this.label = label; this.spec = spec; this.isDefault = isDefault; this.sid = sid;
         }
     }
+
+    // {id, برچسب, sid}  — ترتیبِ sid در Kokoro v1.0 (۵۳ گوینده، الفبایی). پیش‌فرض = اولی.
+    private static final String[][] KOKORO_EN = {
+            {"af_heart", "Heart · US · F", "3"}, {"af_bella", "Bella · US · F", "2"},
+            {"af_nicole", "Nicole · US · F", "6"}, {"af_sarah", "Sarah · US · F", "9"},
+            {"am_michael", "Michael · US · M", "16"}, {"am_adam", "Adam · US · M", "11"},
+            {"bf_emma", "Emma · UK · F", "21"}, {"bm_george", "George · UK · M", "26"},
+    };
+    private static final String[][] KOKORO_ZH = {
+            {"zf_xiaoxiao", "Xiaoxiao · F", "47"}, {"zf_xiaobei", "Xiaobei · F", "45"},
+            {"zf_xiaoni", "Xiaoni · F", "46"}, {"zf_xiaoyi", "Xiaoyi · F", "48"},
+            {"zm_yunxi", "Yunxi · M", "50"}, {"zm_yunjian", "Yunjian · M", "49"},
+            {"zm_yunyang", "Yunyang · M", "52"},
+    };
+    private static final int SUPERTONIC_VOICES = 10;
 
     private static final Map<String, List<TtsVoice>> TTS_VOICES;
     static {
         Map<String, List<TtsVoice>> vm = new LinkedHashMap<>();
         for (Map.Entry<String, TtsSpec> e : TTS_SPECS.entrySet()) {
+            String lg = e.getKey();
+            TtsSpec sp = e.getValue();
             List<TtsVoice> list = new ArrayList<>();
-            String pid = piperIdOf(e.getValue());
-            list.add(new TtsVoice(pid, voiceLabel(pid), e.getValue(), true));
-            vm.put(e.getKey(), list);
+            if (sp.pkg == null) {
+                String pid = piperIdOf(sp);
+                list.add(new TtsVoice(pid, voiceLabel(pid), sp, true));
+            } else if (ENG_KOKORO.equals(sp.engine)) {
+                String[][] vs = "zh".equals(lg) ? KOKORO_ZH : KOKORO_EN;
+                for (int i = 0; i < vs.length; i++) {
+                    list.add(new TtsVoice(vs[i][0], vs[i][1], sp, i == 0, Integer.parseInt(vs[i][2])));
+                }
+            } else {
+                for (int i = 0; i < SUPERTONIC_VOICES; i++) {
+                    list.add(new TtsVoice("st-" + i, "Supertonic · " + (i + 1), sp, i == 0, i));
+                }
+            }
+            vm.put(lg, list);
         }
-        String[][] extra = {
-            {"en", "en_US-john-medium", "en_US-norman-medium", "en_US-bryce-medium",
-                    "en_US-kathleen-low", "en_US-ljspeech-high", "en_US-ljspeech-medium",
-                    "en_GB-cori-high", "en_GB-cori-medium"},
-            {"de", "de_DE-thorsten-high", "de_DE-thorsten-medium", "de_DE-thorsten-low", "de_DE-eva_k-x_low",
-                    "de_DE-ramona-low", "de_DE-kerstin-low", "de_DE-karlsson-low", "de_DE-pavoque-low"},
-            {"es", "es_ES-davefx-medium", "es_ES-carlfm-x_low", "es_MX-ald-medium", "es_MX-claude-high",
-                    "es_AR-daniela-high"},
-            {"it", "it_IT-paola-medium", "it_IT-riccardo-x_low"},
-            {"ru", "ru_RU-denis-medium", "ru_RU-dmitri-medium", "ru_RU-ruslan-medium"},
-            {"tr", "tr_TR-dfki-medium", "tr_TR-fettah-medium"},
-            {"ar", "ar_JO-kareem-low"},
-            {"fa", "fa_IR-amir-medium", "fa_IR-ganji-medium", "fa_IR-ganji_adabi-medium",
-                    "fa_IR-reza_ibrahim-medium"},
-            {"hi", "hi_IN-pratham-medium", "hi_IN-priyamvada-medium"},
-            {"zh", "zh_CN-xiao_ya-medium", "zh_CN-chaowen-medium", "zh_CN-huayan-x_low"},
-        };
-        for (String[] row : extra) {
-            List<TtsVoice> list = vm.get(row[0]);
-            if (list == null) continue;
-            for (int i = 1; i < row.length; i++) {
-                final String pid = row[i];
+        // صداهای اضافه‌ی فارسی (Piper) — بدون تغییر
+        String[] faExtra = {"fa_IR-amir-medium", "fa_IR-ganji-medium", "fa_IR-ganji_adabi-medium",
+                "fa_IR-reza_ibrahim-medium"};
+        List<TtsVoice> fa = vm.get("fa");
+        if (fa != null) {
+            for (final String pid : faExtra) {
                 boolean dup = false;
-                for (TtsVoice v : list) if (v.id.equals(pid)) { dup = true; break; }
+                for (TtsVoice v : fa) if (v.id.equals(pid)) { dup = true; break; }
                 if (dup) continue;
-                list.add(new TtsVoice(pid, voiceLabel(pid), new TtsSpec(
+                fa.add(new TtsVoice(pid, voiceLabel(pid), new TtsSpec(
                         "csukuangfj/vits-piper-" + pid, pid + ".onnx", "tokens.txt", "espeak-ng-data"), false));
             }
         }
@@ -225,6 +263,7 @@ final class SherpaModelManager {
 
     private static String piperIdOf(TtsSpec s) {
         String f = s.modelFile;
+        if (f == null) return s.pkg != null ? s.pkg.id : "";
         return f.endsWith(".onnx") ? f.substring(0, f.length() - 5) : f;
     }
 
@@ -266,7 +305,36 @@ final class SherpaModelManager {
         return new File(ctx.getFilesDir(), "tts");
     }
 
+    private static File pkgDir(Context ctx, Pkg p) {
+        return new File(new File(ttsRoot(ctx), "_pkg"), p.id);
+    }
+
+    /** بسته‌ی مشترک کامل دانلود شده؟ (marker + همه‌ی فایل‌ها و پوشه‌ها) */
+    private static boolean pkgReady(Context ctx, Pkg p) {
+        File d = pkgDir(ctx, p);
+        if (!new File(d, "ready.ok").isFile()) return false;
+        for (String f : p.files) {
+            File x = new File(d, f);
+            if (!x.isFile() || x.length() == 0) return false;
+        }
+        for (String sub : p.dirs) {
+            String[] ch = new File(d, sub).list();
+            if (ch == null || ch.length == 0) return false;
+        }
+        return true;
+    }
+
+    /** فایلِ خراب پیدا شد: marker پاک می‌شود تا دانلودِ بعدی کم‌وکسرها را دوباره بگیرد. */
+    static void invalidatePackage(Context ctx, Pkg p) {
+        try { new File(pkgDir(ctx, p), "ready.ok").delete(); } catch (Throwable ignored) {}
+    }
+
+    static File voiceDir(Context ctx, String lang, TtsVoice v) {
+        return ttsDirFor(ctx, normalize(lang), v);
+    }
+
     private static File ttsDirFor(Context ctx, String l, TtsVoice v) {
+        if (v != null && v.spec.pkg != null) return pkgDir(ctx, v.spec.pkg);
         return v == null || v.isDefault
                 ? new File(ttsRoot(ctx), l)
                 : new File(ttsRoot(ctx), l + "__" + v.id);
@@ -311,6 +379,11 @@ final class SherpaModelManager {
 
     private static boolean voiceFilesReady(Context ctx, String l, TtsVoice v) {
         if (v == null) return false;
+        if (v.spec.pkg != null) {
+            if (!pkgReady(ctx, v.spec.pkg)) return false;
+            // Kokoro برای کلماتِ خارج از لغت‌نامه به espeak-ng-data نیاز دارد
+            return !ENG_KOKORO.equals(v.spec.engine) || isEspeakReady(ctx);
+        }
         File dir = ttsDirFor(ctx, l, v);
         File model = new File(dir, "model.onnx");
         File tokens = new File(dir, "tokens.txt");
@@ -372,6 +445,13 @@ final class SherpaModelManager {
         if (l == null) return 0;
         TtsVoice v = vid == null || vid.isEmpty() ? activeVoice(ctx, l) : findVoice(l, vid);
         if (v == null) return 0;
+        if (v.spec.pkg != null) {
+            if (pkgReady(ctx, v.spec.pkg)) return 0;
+            long sum = 0;
+            File[] fs = pkgDir(ctx, v.spec.pkg).listFiles();
+            if (fs != null) for (File f : fs) if (f.isFile() && !f.getName().equals("ready.ok")) sum += f.length();
+            return sum;
+        }
         File part = new File(ttsDirFor(ctx, l, v), "model.onnx.part");
         return part.isFile() ? part.length() : 0;
     }
@@ -500,18 +580,58 @@ final class SherpaModelManager {
         try { espeakMarker(ctx).delete(); } catch (Throwable ignored) {}
     }
 
-    static File getTtsModelDir(Context ctx, String lang) {
+    /** صدایی که الان آماده‌ی استفاده است (فعال؛ اگر سالم نبود پیش‌فرض)، یا null. */
+    static TtsVoice getReadyVoice(Context ctx, String lang) {
         String l = normalize(lang);
-        TtsSpec s = l == null ? null : TTS_SPECS.get(l);
-        if (s == null) return null;
+        if (l == null || !TTS_SPECS.containsKey(l)) return null;
+        cleanupLegacyTts(ctx);
         TtsVoice v = activeVoice(ctx, l);
-        if (voiceFilesReady(ctx, l, v)) return ttsDirFor(ctx, l, v);
+        if (voiceFilesReady(ctx, l, v)) return v;
         // صدای انتخاب‌شده سالم نیست (مثلاً ناقص/حذف‌شده) → به صدای پیش‌فرض برگرد تا خوانش قطع نشود
         List<TtsVoice> all = TTS_VOICES.get(l);
         if (all != null && !all.isEmpty() && all.get(0) != v && voiceFilesReady(ctx, l, all.get(0))) {
-            return ttsDirFor(ctx, l, all.get(0));
+            return all.get(0);
         }
         return null;
+    }
+
+    static File getTtsModelDir(Context ctx, String lang) {
+        String l = normalize(lang);
+        TtsVoice v = getReadyVoice(ctx, lang);
+        return v == null ? null : ttsDirFor(ctx, l, v);
+    }
+
+    // ============ پاک‌سازیِ صداهای قدیمیِ Piper (غیرِ فارسی) ============
+    // فقط یک بار: پوشه‌های tts/<lang> و tts/<lang>__* و فایل‌های <lang>.active زبان‌هایی که حالا Supertonic/Kokoro دارند.
+    // فارسی، espeak-ng-data و بسته‌های جدید (_pkg) دست‌نخورده می‌مانند.
+    private static volatile boolean LEGACY_DONE = false;
+    private static final String[] LEGACY_PIPER_LANGS =
+            {"en", "es", "de", "fr", "it", "hi", "tr", "ar", "zh", "ru", "ko", "ja", "he"};
+
+    static void cleanupLegacyTts(Context ctx) {
+        if (LEGACY_DONE) return;
+        LEGACY_DONE = true;
+        try {
+            File root = ttsRoot(ctx);
+            if (!root.isDirectory()) return;
+            File marker = new File(root, "legacy-piper-removed.v1");
+            if (marker.isFile()) return;
+            File[] fs = root.listFiles();
+            if (fs != null) {
+                for (File f : fs) {
+                    String n = f.getName();
+                    for (String lg : LEGACY_PIPER_LANGS) {
+                        if (n.equals(lg) || n.startsWith(lg + "__") || n.equals(lg + ".active")) {
+                            deleteRecursive(f);
+                            break;
+                        }
+                    }
+                }
+            }
+            try { marker.createNewFile(); } catch (Throwable ignored) {}
+        } catch (Throwable t) {
+            Log.w(TAG, "cleanupLegacyTts failed", t);
+        }
     }
 
     // ============ دانلود STT ============
@@ -702,6 +822,10 @@ final class SherpaModelManager {
     }
 
     private static void downloadTtsOnce(Context app, String l, TtsSpec s, File dir, ProgressCallback cb) throws Exception {
+        if (s.pkg != null) {
+            downloadPackage(app, l, s, cb);
+            return;
+        }
         if (!dir.isDirectory() && !dir.mkdirs()) throw new java.io.IOException("cannot create " + dir);
 
         // فایل‌های صدای قدیمی (مثلاً ryan/gyro که پیش‌فرض بودند) پاک می‌شوند تا با صدای جدید قاطی نشوند
@@ -772,6 +896,76 @@ final class SherpaModelManager {
         writeVoiceMarker(dir, vid);
     }
 
+    // ============ دانلودِ بسته‌ی مشترک (Supertonic / Kokoro) ============
+    // چند زبان یک بسته را مشترک دارند؛ قفلِ هر بسته جلوی دانلودِ هم‌زمانِ دوباره را می‌گیرد.
+    private static final Map<String, ReentrantLock> PKG_LOCKS = new ConcurrentHashMap<>();
+
+    private static ProgressCallback offsetCb(final ProgressCallback cb, final long base, final long total) {
+        return new ProgressCallback() {
+            @Override public void onProgress(String lg, long d, long t) {
+                if (cb != null) cb.onProgress(lg, Math.min(base + d, total), total);
+            }
+            @Override public void onDone(String lg) {}
+            @Override public void onError(String lg, Exception e) {}
+        };
+    }
+
+    private static void downloadPackage(Context app, String l, TtsSpec s, ProgressCallback cb) throws Exception {
+        final Pkg p = s.pkg;
+        ReentrantLock lock = PKG_LOCKS.get(p.id);
+        if (lock == null) {
+            PKG_LOCKS.putIfAbsent(p.id, new ReentrantLock());
+            lock = PKG_LOCKS.get(p.id);
+        }
+        while (!lock.tryLock(500, TimeUnit.MILLISECONDS)) {
+            checkCancel(l);
+            if (pkgReady(app, p)) break;
+        }
+        try {
+            if (!pkgReady(app, p)) {
+                File dir = pkgDir(app, p);
+                if (!dir.isDirectory() && !dir.mkdirs()) throw new java.io.IOException("cannot create " + dir);
+                new File(dir, "ready.ok").delete();
+                long done = 0;
+                for (String name : p.files) {
+                    checkCancel(l);
+                    File target = new File(dir, name);
+                    if (!target.isFile() || target.length() == 0) {
+                        downloadFile(HF_BASE + p.repo + "/resolve/main/" + name, target,
+                                offsetCb(cb, done, p.approxBytes), l);
+                    }
+                    done += target.length();
+                    if (cb != null) cb.onProgress(l, Math.min(done, p.approxBytes), p.approxBytes);
+                }
+                for (String sub : p.dirs) {
+                    checkCancel(l);
+                    done += downloadRepoDir(p.repo, sub, new File(dir, sub), offsetCb(cb, done, p.approxBytes), l);
+                }
+                File ok = new File(dir, "ready.ok");
+                if (!ok.exists() && !ok.createNewFile()) throw new java.io.IOException("cannot create ready.ok");
+            }
+        } finally {
+            if (lock.isHeldByCurrentThread()) lock.unlock();
+        }
+        // Kokoro: espeak-ng-data مشترک (همان که فارسی هم دارد)
+        if (ENG_KOKORO.equals(s.engine)) ensureEspeak(app, ESPEAK_FALLBACK_REPO, cb, l);
+    }
+
+    private static void ensureEspeak(Context app, String repo, ProgressCallback cb, String l) throws Exception {
+        if (isEspeakReady(app)) return;
+        while (!ESPEAK_LOCK.tryLock(500, TimeUnit.MILLISECONDS)) {
+            checkCancel(l);
+            if (isEspeakReady(app)) break;
+        }
+        if (ESPEAK_LOCK.isHeldByCurrentThread()) {
+            try {
+                if (!isEspeakReady(app)) downloadEspeakData(app, repo, cb, l);
+            } finally {
+                ESPEAK_LOCK.unlock();
+            }
+        }
+    }
+
     /** tokens.txt ی Sherpa را از phoneme_id_map فایل json ی Piper می‌سازد («نماد id» در هر خط). */
     private static void writeTokensFromPiperJson(File cfg, File out) throws Exception {
         String json = readAll(cfg);
@@ -839,26 +1033,32 @@ final class SherpaModelManager {
         }
     }
 
-    /**
-     * پوشه‌ی espeak-ng-data رو از HuggingFace (لیستِ فایل‌ها با API) دانلود می‌کنه.
-     * فقط وقتی کامل شد فایلِ marker ساخته می‌شه.
-     */
+    /** پوشه‌ی espeak-ng-data رو از HuggingFace می‌گیره؛ فقط وقتی کامل شد فایلِ marker ساخته می‌شه. */
     private static void downloadEspeakData(Context app, String repo, ProgressCallback cb, String l) throws Exception {
-        final String prefix = "espeak-ng-data/";
-        File root = getEspeakDataDir(app);
+        downloadRepoDir(repo, "espeak-ng-data", getEspeakDataDir(app), cb, l);
+        File marker = espeakMarker(app);
+        if (!marker.exists() && !marker.createNewFile()) throw new java.io.IOException("cannot create marker");
+    }
+
+    /**
+     * یک زیرپوشه‌ی مخزنِ HuggingFace (لیستِ فایل‌ها با API) را داخلِ root کپی می‌کند.
+     * خروجی: مجموعِ بایت‌های پوشه.
+     */
+    private static long downloadRepoDir(String repo, String sub, File root, ProgressCallback cb, String l) throws Exception {
+        final String prefix = sub + "/";
         if (!root.isDirectory() && !root.mkdirs()) throw new java.io.IOException("cannot create " + root);
 
         // لیست فایل‌ها (با صفحه‌بندی)
         List<String> paths = new ArrayList<>();
         List<Long> sizes = new ArrayList<>();
-        String next = HF_BASE + "api/models/" + repo + "/tree/main/espeak-ng-data?recursive=true";
+        String next = HF_BASE + "api/models/" + repo + "/tree/main/" + sub + "?recursive=true";
         int guard = 0;
         while (next != null && guard++ < 20) {
             checkCancel(l);
             Request req = new Request.Builder().url(next).build();
             try (Response r = HTTP.newCall(req).execute()) {
                 if (!r.isSuccessful() || r.body() == null) {
-                    throw new java.io.IOException("HTTP " + r.code() + " listing espeak-ng-data");
+                    throw new java.io.IOException("HTTP " + r.code() + " listing " + sub);
                 }
                 String body = r.body().string();
                 JSONArray arr = new JSONArray(body);
@@ -874,7 +1074,7 @@ final class SherpaModelManager {
                 next = fixHost(parseNextLink(r.header("Link")));
             }
         }
-        if (paths.isEmpty()) throw new java.io.IOException("espeak-ng-data list is empty");
+        if (paths.isEmpty()) throw new java.io.IOException(sub + " list is empty");
 
         // فایل‌ها رو چندتا چندتا هم‌زمان می‌گیریم (صدها فایل کوچیکه؛ یکی‌یکی خیلی کند بود)
         final AtomicLong done = new AtomicLong(0);
@@ -918,8 +1118,7 @@ final class SherpaModelManager {
         } finally {
             ex.shutdownNow();
         }
-        File marker = espeakMarker(app);
-        if (!marker.exists() && !marker.createNewFile()) throw new java.io.IOException("cannot create marker");
+        return done.get();
     }
 
     private static long sumSizes(List<Long> sizes) {
@@ -1021,6 +1220,7 @@ final class SherpaModelManager {
         TtsVoice active = activeVoice(ctx, l);
         TtsVoice v = vid == null || vid.isEmpty() ? active : findVoice(l, vid);
         if (v == null) return;
+        // بسته‌ی مشترک (Supertonic/Kokoro): حذف، برای همه‌ی زبان‌های همان بسته اعمال می‌شود
         deleteRecursive(ttsDirFor(ctx, l, v));
         if (active != null && active.id.equals(v.id) && !v.isDefault) setActiveVoice(ctx, l, null);
     }
