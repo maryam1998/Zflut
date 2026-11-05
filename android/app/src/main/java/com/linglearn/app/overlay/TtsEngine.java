@@ -87,7 +87,7 @@ final class TtsEngine {
 
     // پارامترهای VITS: کمتر از پیش‌فرض (0.667 / 0.8) → صدای تمیزتر، کمتر خش‌دار/دماغی و ریتمِ یکنواخت‌تر
     // Supertonic: تعدادِ گام‌های حذفِ نویز؛ کمتر = سریع‌تر (شروعِ خوانش زودتر). برای کیفیتِ بیشتر ۴ یا ۵ بگذار.
-    private static final int SUPERTONIC_STEPS = 3;
+    private static final int SUPERTONIC_STEPS = 4;   // ۳ → صدای ناپایدار/نوسان‌دار؛ ۵ باکیفیت‌تر ولی کندتر
 
     private static final float NOISE_SCALE = 0.60f;
     private static final float NOISE_SCALE_W = 0.80f;
@@ -425,6 +425,8 @@ final class TtsEngine {
             final String eng = voice.spec.engine;
             int cores = Runtime.getRuntime().availableProcessors();
             int threads = Math.max(2, Math.min(4, cores / 2));
+            // Supertonic چهار مدل پشت‌سرهم دارد؛ نخ‌های بیشتر = تأخیر کمتر
+            if (SherpaModelManager.ENG_SUPERTONIC.equals(eng)) threads = Math.max(2, Math.min(6, cores - 2));
 
             OfflineTtsModelConfig modelConfig = new OfflineTtsModelConfig();
             OfflineTtsConfig config = new OfflineTtsConfig();
@@ -794,6 +796,25 @@ final class TtsEngine {
         return out;
     }
 
+    /** تکه‌های بیش از maxWords کلمه را به تکه‌های ~chunk کلمه‌ای می‌شکند (بدون مکثِ اضافه). */
+    private static java.util.List<Clause> chunkLong(java.util.List<Clause> in, int maxWords, int chunk) {
+        java.util.ArrayList<Clause> out = new java.util.ArrayList<>();
+        for (Clause c : in) {
+            String[] w = c.text.trim().split("\\s+");
+            if (w.length <= maxWords) { out.add(c); continue; }
+            int i = 0;
+            while (i < w.length) {
+                int end = Math.min(w.length, i + chunk);
+                if (w.length - end < 4) end = w.length;      // ته‌مانده‌ی خیلی کوتاه به تکه‌ی قبلی بچسبد
+                StringBuilder sb = new StringBuilder();
+                for (int k = i; k < end; k++) { if (k > i) sb.append(' '); sb.append(w[k]); }
+                out.add(new Clause(sb.toString(), end >= w.length ? c.pauseMs : 0));
+                i = end;
+            }
+        }
+        return out;
+    }
+
     /** تولیدِ یک تکه؛ sink برای هر بخشِ صدا زده می‌شود. false = لغو. */
     private float[] synthClause(String t, float sp, boolean pl, boolean longText, VoiceEq eq, final Sink sink) {
         if (pl) {
@@ -853,8 +874,12 @@ final class TtsEngine {
         final float sp = effectiveSpeed(spUser);
         // متنِ بلند / چندجمله‌ای (نه لغتِ تکی و اسلنگ) → مکث‌های کمی کوتاه‌تر
         final boolean longText = wordCount(t) > 4;
-        final VoiceEq eq = new VoiceEq(sampleRate);
-        final java.util.List<Clause> clauses = splitClauses(t);
+        // EQ ی «ضدِ خش» مخصوصِ Piper (۲۲kHz) است؛ روی Supertonic (۴۴kHz) صدا را خفه و «ته‌چاهی» می‌کرد
+        final boolean skipEq = SherpaModelManager.ENG_SUPERTONIC.equals(engineKind);
+        final VoiceEq eq = new VoiceEq(skipEq ? 0 : sampleRate);
+        java.util.List<Clause> clauses = splitClauses(t);
+        // جمله‌ی بلند بدون ویرگول: تکه‌تکه ساخته شود تا پخش زودتر شروع شود (Supertonic استریم نمی‌کند)
+        if (skipEq) clauses = chunkLong(clauses, 14, 10);
         final ArrayList<float[]> all = new ArrayList<>();
         int total = 0;
         for (int ci = 0; ci < clauses.size(); ci++) {
