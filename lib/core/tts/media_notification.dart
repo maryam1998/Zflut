@@ -26,6 +26,9 @@ class MediaNotificationSync {
   void Function()? _removeListener;
   StreamSubscription<Map<String, dynamic>>? _cmdSub;
   Timer? _debounce;
+  Timer? _rotTimer;
+  int _rot = 0; // نوبتِ نمایشِ زبان‌های مقصد (نوتیفیکیشن فقط یک خط جا دارد)
+  bool _multi = false;
   String _lastSig = '';
   bool _disposed = false;
 
@@ -33,6 +36,15 @@ class MediaNotificationSync {
     final nb = NativeBridge.instance;
     if (!nb.isSupported) return;
     _removeListener = _ctl.addListener(_onState, fireImmediately: false);
+    // وقتی چند زبان مقصد هست، هر ۳ ثانیه نوبتِ زبانِ بعدی می‌شود تا همه دیده شوند
+    _rotTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      final st = _lastState;
+      if (_disposed || !_multi || st == null) return;
+      if (st.status == SpeechStatus.idle || st.key == null) return;
+      _rot++;
+      _lastSig = '';
+      _push(st);
+    });
     _cmdSub = nb.on('mediaCmd').listen((d) {
       switch (d['cmd']?.toString()) {
         case 'toggle':
@@ -129,7 +141,9 @@ class MediaNotificationSync {
       }
       parts.add(tos.length > 1 ? '${to.toUpperCase()}: $hit' : hit);
     }
-    return parts.join(' · ');
+    _multi = parts.length > 1;
+    if (parts.isEmpty) return '';
+    return parts[_rot % parts.length];
   }
 
   void _fetch(String text, String from, String to, String ck) {
@@ -164,6 +178,7 @@ class MediaNotificationSync {
   void dispose() {
     _disposed = true;
     _debounce?.cancel();
+    _rotTimer?.cancel();
     _removeListener?.call();
     _cmdSub?.cancel();
     if (NativeBridge.instance.isSupported) {
