@@ -102,11 +102,18 @@ final class SherpaModelManager {
         final String modelFile;    // فایل .onnx داخل مخزن
         final String tokensFile;   // فایل tokens.txt
         final String dataDirName;  // نام پوشه espeak-ng-data
+        // true = مخزن فقط فایل خام Piper (.onnx + .onnx.json) دارد (بدون tokens.txt و metadata سازگار با Sherpa)؛
+        // tokens.txt از json ساخته و metadata به خود onnx اضافه می‌شود. espeak-ng-data هم از مخزن دیگری می‌آید.
+        final boolean rawPiper;
         TtsSpec(String repo, String modelFile, String tokensFile, String dataDirName) {
+            this(repo, modelFile, tokensFile, dataDirName, false);
+        }
+        TtsSpec(String repo, String modelFile, String tokensFile, String dataDirName, boolean rawPiper) {
             this.repo = repo;
             this.modelFile = modelFile;
             this.tokensFile = tokensFile;
             this.dataDirName = dataDirName;
+            this.rawPiper = rawPiper;
         }
     }
 
@@ -114,12 +121,14 @@ final class SherpaModelManager {
     static {
         Map<String, TtsSpec> m = new LinkedHashMap<>();
 
+        // ⚖️ فقط صداهایی که دیتاستشان آزاد/تجاری‌پذیر است (CC0 / Public Domain / MIT)
         m.put("en", new TtsSpec(
-                "csukuangfj/vits-piper-en_US-ryan-medium",
-                "en_US-ryan-medium.onnx", "tokens.txt", "espeak-ng-data"));
+                "csukuangfj/vits-piper-en_US-kristin-medium",
+                "en_US-kristin-medium.onnx", "tokens.txt", "espeak-ng-data"));
+        // فارسی: Mana (مجوز MIT) — مخزنش فایل خام Piper است، پس rawPiper
         m.put("fa", new TtsSpec(
-                "csukuangfj/vits-piper-fa_IR-gyro-medium",
-                "fa_IR-gyro-medium.onnx", "tokens.txt", "espeak-ng-data"));
+                "MahtaFetrat/Mana-Persian-Piper",
+                "fa_IR-mana-medium.onnx", "tokens.txt", "espeak-ng-data", true));
         m.put("ar", new TtsSpec(
                 "csukuangfj/vits-piper-ar_JO-kareem-medium",
                 "ar_JO-kareem-medium.onnx", "tokens.txt", "espeak-ng-data"));
@@ -129,9 +138,10 @@ final class SherpaModelManager {
         m.put("de", new TtsSpec(
                 "csukuangfj/vits-piper-de_DE-thorsten_emotional-medium",
                 "de_DE-thorsten_emotional-medium.onnx", "tokens.txt", "espeak-ng-data"));
+        // فرانسوی: Piper MLS medium (دیتاست MLS با CC BY 4.0 → ذکر منبع لازم است)
         m.put("fr", new TtsSpec(
-                "csukuangfj/vits-piper-fr_FR-miro-high",
-                "fr_FR-miro-high.onnx", "tokens.txt", "espeak-ng-data"));
+                "csukuangfj/vits-piper-fr_FR-mls-medium",
+                "fr_FR-mls-medium.onnx", "tokens.txt", "espeak-ng-data"));
         m.put("es", new TtsSpec(
                 "csukuangfj/vits-piper-es_ES-miro-high",
                 "es_ES-miro-high.onnx", "tokens.txt", "espeak-ng-data"));
@@ -179,17 +189,11 @@ final class SherpaModelManager {
             vm.put(e.getKey(), list);
         }
         String[][] extra = {
-            {"en", "en_US-amy-medium", "en_US-amy-low", "en_US-lessac-high", "en_US-lessac-medium",
-                    "en_US-lessac-low", "en_US-hfc_female-medium", "en_US-hfc_male-medium",
-                    "en_US-joe-medium", "en_US-john-medium", "en_US-kristin-medium", "en_US-norman-medium",
-                    "en_US-ryan-high", "en_US-ryan-low", "en_US-danny-low", "en_US-kathleen-low",
-                    "en_US-ljspeech-high", "en_US-ljspeech-medium",
-                    "en_GB-alba-medium", "en_GB-alan-medium", "en_GB-alan-low", "en_GB-jenny_dioco-medium",
-                    "en_GB-northern_english_male-medium", "en_GB-southern_english_female-low", "en_GB-cori-high",
-                    "en_GB-cori-medium"},
+            {"en", "en_US-john-medium", "en_US-norman-medium", "en_US-bryce-medium",
+                    "en_US-kathleen-low", "en_US-ljspeech-high", "en_US-ljspeech-medium",
+                    "en_GB-cori-high", "en_GB-cori-medium"},
             {"de", "de_DE-thorsten-high", "de_DE-thorsten-medium", "de_DE-thorsten-low", "de_DE-eva_k-x_low",
                     "de_DE-ramona-low", "de_DE-kerstin-low", "de_DE-karlsson-low", "de_DE-pavoque-low"},
-            {"fr", "fr_FR-siwis-medium", "fr_FR-siwis-low", "fr_FR-tom-medium", "fr_FR-gilles-low"},
             {"es", "es_ES-davefx-medium", "es_ES-carlfm-x_low", "es_MX-ald-medium", "es_MX-claude-high",
                     "es_AR-daniela-high"},
             {"it", "it_IT-paola-medium", "it_IT-riccardo-x_low"},
@@ -312,7 +316,39 @@ final class SherpaModelManager {
         File tokens = new File(dir, "tokens.txt");
         if (!model.isFile() || model.length() == 0) return false;
         if (!tokens.isFile() || tokens.length() == 0) return false;
+        // صدای پیش‌فرضِ en/fa عوض شده؛ فایل‌های قدیمیِ همان پوشه (ryan/gyro) نباید به‌جای صدای جدید حساب شوند
+        if (v.isDefault && MIGRATED_LANGS.contains(l) && !v.id.equals(readVoiceMarker(dir))) return false;
+        if (v.spec.rawPiper && !new File(dir, "meta.ok").isFile()) return false;
         return isEspeakReady(ctx);
+    }
+
+    private static final Set<String> MIGRATED_LANGS =
+            Collections.unmodifiableSet(new java.util.HashSet<>(java.util.Arrays.asList("en", "fa", "fr")));
+
+    /** espeak-ng-data برای مدل‌هایی که مخزنشان آن را ندارد (rawPiper) از این مخزن گرفته می‌شود. */
+    private static final String ESPEAK_FALLBACK_REPO = "csukuangfj/vits-piper-en_US-amy-low";
+
+    private static String readVoiceMarker(File dir) {
+        try {
+            File f = new File(dir, "voice.id");
+            if (!f.isFile() || f.length() == 0 || f.length() > 200) return "";
+            byte[] b = new byte[(int) f.length()];
+            try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
+                int off = 0, n;
+                while (off < b.length && (n = in.read(b, off, b.length - off)) > 0) off += n;
+            }
+            return new String(b, "UTF-8").trim();
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
+    private static void writeVoiceMarker(File dir, String id) {
+        try (FileOutputStream out = new FileOutputStream(new File(dir, "voice.id"), false)) {
+            out.write(id.getBytes("UTF-8"));
+        } catch (Throwable t) {
+            Log.w(TAG, "writeVoiceMarker failed", t);
+        }
     }
 
     /** این صدا (نه لزوماً فعال) کامل دانلود شده؟ */
@@ -668,11 +704,35 @@ final class SherpaModelManager {
     private static void downloadTtsOnce(Context app, String l, TtsSpec s, File dir, ProgressCallback cb) throws Exception {
         if (!dir.isDirectory() && !dir.mkdirs()) throw new java.io.IOException("cannot create " + dir);
 
-        // ۱. tokens.txt (کوچیکه)
-        checkCancel(l);
-        File tokensTarget = new File(dir, "tokens.txt");
-        if (!tokensTarget.isFile() || tokensTarget.length() == 0) {
-            downloadFile(HF_BASE + s.repo + "/resolve/main/" + s.tokensFile, tokensTarget, cb, l);
+        // فایل‌های صدای قدیمی (مثلاً ryan/gyro که پیش‌فرض بودند) پاک می‌شوند تا با صدای جدید قاطی نشوند
+        final String vid = piperIdOf(s);
+        if (MIGRATED_LANGS.contains(l) && dir.getName().equals(l) && !vid.equals(readVoiceMarker(dir))) {
+            new File(dir, "model.onnx").delete();
+            new File(dir, "model.onnx.part").delete();
+            new File(dir, "tokens.txt").delete();
+            new File(dir, "tokens.txt.part").delete();
+            new File(dir, "model.json").delete();
+            new File(dir, "meta.ok").delete();
+        }
+
+        if (s.rawPiper) {
+            // ۱. فایل پیکربندی Piper → tokens.txt
+            checkCancel(l);
+            File cfg = new File(dir, "model.json");
+            if (!cfg.isFile() || cfg.length() == 0) {
+                downloadFile(HF_BASE + s.repo + "/resolve/main/" + s.modelFile + ".json", cfg, cb, l);
+            }
+            File tokensTarget = new File(dir, "tokens.txt");
+            if (!tokensTarget.isFile() || tokensTarget.length() == 0) {
+                writeTokensFromPiperJson(cfg, tokensTarget);
+            }
+        } else {
+            // ۱. tokens.txt (کوچیکه)
+            checkCancel(l);
+            File tokensTarget = new File(dir, "tokens.txt");
+            if (!tokensTarget.isFile() || tokensTarget.length() == 0) {
+                downloadFile(HF_BASE + s.repo + "/resolve/main/" + s.tokensFile, tokensTarget, cb, l);
+            }
         }
 
         // ۲. model.onnx (بزرگ‌ترین فایل؛ از همین‌جا پیشرفت دیده می‌شه و از نقطه‌ی توقف ادامه پیدا می‌کنه)
@@ -680,6 +740,15 @@ final class SherpaModelManager {
         File modelTarget = new File(dir, "model.onnx");
         if (!modelTarget.isFile() || modelTarget.length() == 0) {
             downloadFile(HF_BASE + s.repo + "/resolve/main/" + s.modelFile, modelTarget, cb, l);
+        }
+
+        // ۲.۵ فایل خام Piper: metadata موردنیاز Sherpa را به انتهای onnx اضافه کن (فقط یک بار)
+        if (s.rawPiper) {
+            File ok = new File(dir, "meta.ok");
+            if (!ok.isFile()) {
+                appendSherpaMetadata(modelTarget, new File(dir, "model.json"));
+                if (!ok.createNewFile()) throw new java.io.IOException("cannot create meta.ok");
+            }
         }
 
         // ۳. espeak-ng-data مشترک (فقط یک بار؛ زبان‌های دیگه همین‌جا صبر می‌کنن، ولی با امکانِ توقف)
@@ -690,11 +759,83 @@ final class SherpaModelManager {
             }
             if (ESPEAK_LOCK.isHeldByCurrentThread()) {
                 try {
-                    if (!isEspeakReady(app)) downloadEspeakData(app, s.repo, cb, l);
+                    if (!isEspeakReady(app)) {
+                        downloadEspeakData(app, s.rawPiper ? ESPEAK_FALLBACK_REPO : s.repo, cb, l);
+                    }
                 } finally {
                     ESPEAK_LOCK.unlock();
                 }
             }
+        }
+
+        // ۴. همه‌چیز کامل شد → این پوشه مالِ همین صداست
+        writeVoiceMarker(dir, vid);
+    }
+
+    /** tokens.txt ی Sherpa را از phoneme_id_map فایل json ی Piper می‌سازد («نماد id» در هر خط). */
+    private static void writeTokensFromPiperJson(File cfg, File out) throws Exception {
+        String json = readAll(cfg);
+        JSONObject map = new JSONObject(json).getJSONObject("phoneme_id_map");
+        File tmp = new File(out.getParentFile(), "tokens.txt.part");
+        try (java.io.Writer w = new java.io.OutputStreamWriter(new FileOutputStream(tmp, false), "UTF-8")) {
+            java.util.Iterator<String> it = map.keys();
+            while (it.hasNext()) {
+                String sym = it.next();
+                JSONArray ids = map.getJSONArray(sym);
+                if (ids.length() == 0) continue;
+                w.write(sym + " " + ids.getInt(0) + "\n");
+            }
+        }
+        if (out.exists()) out.delete();
+        if (!tmp.renameTo(out)) throw new java.io.IOException("rename failed: tokens.txt");
+    }
+
+    /**
+     * Sherpa-ONNX برای مدل‌های Piper چند کلید metadata داخل خود onnx می‌خواهد (model_type, comment=piper, voice, ...).
+     * فایل خام Piper آن‌ها را ندارد. ModelProto.metadata_props فیلدِ شماره‌ی ۱۴ (repeated) است و در protobuf
+     * اضافه کردنِ بایت‌های یک فیلدِ تکرارشونده به انتهای فایل معتبر است؛ پس همین‌جا به انتهای فایل می‌چسبانیم.
+     */
+    private static void appendSherpaMetadata(File onnx, File cfg) throws Exception {
+        JSONObject c = new JSONObject(readAll(cfg));
+        int sampleRate = c.getJSONObject("audio").optInt("sample_rate", 22050);
+        int nSpeakers = c.optInt("num_speakers", 1);
+        String voice = c.has("espeak") ? c.getJSONObject("espeak").optString("voice", "fa") : "fa";
+        java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+        putMeta(bo, "model_type", "vits");
+        putMeta(bo, "comment", "piper");
+        putMeta(bo, "language", "Persian");
+        putMeta(bo, "voice", voice);
+        putMeta(bo, "has_espeak", "1");
+        putMeta(bo, "n_speakers", String.valueOf(nSpeakers));
+        putMeta(bo, "sample_rate", String.valueOf(sampleRate));
+        try (FileOutputStream out = new FileOutputStream(onnx, true)) {
+            out.write(bo.toByteArray());
+        }
+    }
+
+    private static void putMeta(java.io.ByteArrayOutputStream bo, String key, String value) throws Exception {
+        byte[] k = key.getBytes("UTF-8");
+        byte[] v = value.getBytes("UTF-8");
+        java.io.ByteArrayOutputStream entry = new java.io.ByteArrayOutputStream();
+        entry.write(0x0A); writeVarint(entry, k.length); entry.write(k);       // StringStringEntryProto.key
+        entry.write(0x12); writeVarint(entry, v.length); entry.write(v);       // .value
+        bo.write(0x72);                                                         // ModelProto.metadata_props (14, len-delimited)
+        writeVarint(bo, entry.size());
+        bo.write(entry.toByteArray());
+    }
+
+    private static void writeVarint(java.io.ByteArrayOutputStream o, int v) {
+        while ((v & ~0x7F) != 0) { o.write((v & 0x7F) | 0x80); v >>>= 7; }
+        o.write(v);
+    }
+
+    private static String readAll(File f) throws Exception {
+        try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
+            java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
+            return bo.toString("UTF-8");
         }
     }
 
