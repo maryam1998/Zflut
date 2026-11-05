@@ -84,6 +84,10 @@ android {
         // Sherpa و Vosk هر دو ممکنه libc++_shared.so بیاورند؛ اولی برداشته شود تا بیلد روی تکراری نشکند
         jniLibs {
             // onnxruntime-android (برای G2P فارسی) و AAR ی Sherpa هر دو libonnxruntime.so دارند
+            // اپ فقط arm64 است؛ onnxruntime-android بقیه‌ی معماری‌ها را هم می‌آورد (برای APK و AAB حذف می‌شوند)
+            excludes += listOf(
+                "lib/armeabi-v7a/libonnxruntime*.so", "lib/x86/libonnxruntime*.so", "lib/x86_64/libonnxruntime*.so"
+            )
             pickFirsts += listOf("**/libc++_shared.so", "**/libonnxruntime.so")
         }
         resources {
