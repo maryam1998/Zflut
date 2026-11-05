@@ -136,7 +136,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   gap(),
                   const HelpCenterButton(),
                   const SizedBox(height: 8),
-                  const CreditsButton(),
+                  const AboutButton(),
                 ],
               ),
             ),
