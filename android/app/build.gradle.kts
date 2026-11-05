@@ -27,6 +27,12 @@ android {
         versionCode = appVersionCode
         versionName = "1.0.$appVersionCode"
 
+        // فقط arm64: onnxruntime-android (G2P فارسی) .so ی x86/armeabi هم می‌آورد و بیلد را در Verify می‌انداخت.
+        // abiFilters در مرحله‌ی merge اعمال می‌شود و برای APK و AAB هر دو کار می‌کند.
+        ndk {
+            abiFilters.add("arm64-v8a")
+        }
+
         // معماری‌ها: دستیِ abiFilters نداریم؛ از روشِ استانداردِ Flutter استفاده می‌شه:
         //   flutter build ... --target-platform android-arm64   (ورک‌فلو: build-apk.yml)
     }
