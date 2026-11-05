@@ -1132,13 +1132,13 @@ public class BubblePlugin extends Plugin {
             String last = SherpaModelManager.normalize(lastTtsLang(ctx));
             if (last != null) want.add(last);
             for (String x : SherpaModelManager.ttsLanguages()) {
-                if (want.size() >= 2) break;
+                if (want.size() >= 1) break;
                 if (SherpaModelManager.getTtsModelDir(ctx, x) != null) want.add(x);
             }
         }
         int n = 0;
         for (String x : want) {
-            if (n >= 2) break;
+            if (n >= 1) break;
             if (SherpaModelManager.getTtsModelDir(ctx, x) == null) continue;
             if (TtsClient.isBlocked(x)) continue;
             TtsClient.preload(x);

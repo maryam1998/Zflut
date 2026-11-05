@@ -524,9 +524,11 @@ final class TtsEngine {
             case "tr": w = "Merhaba."; break;
             default:   w = "Hello."; break;
         }
+        // ⚡ اگه تا نوبتِ این گرم‌کردن، خوانشِ واقعی (یا stop) رسید، گرم‌کردن رد می‌شود؛ خودِ خوانش موتور را گرم می‌کند
+        final int warmEpoch = epoch.get();
         try {
             gen(() -> {
-                if (released) return;
+                if (released || epoch.get() != warmEpoch) return;
                 try {
                     long t0 = SystemClock.uptimeMillis();
                     TtsCrumb.mark("warm:" + lang);
@@ -536,7 +538,7 @@ final class TtsEngine {
                 } catch (Throwable e) {
                     Log.w(TAG, "warmUp failed", e);
                 }
-            }, PRIO_SPEAK);
+            }, PRIO_PREFETCH);
         } catch (Throwable ignored) {}
     }
 
