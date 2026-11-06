@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app.dart' show AppL10nX;
 import '../../../core/audio/story_audio_controller.dart';
+import '../../../core/player_sync/playback_origin.dart';
 import '../../../core/player_sync/player_sync_provider.dart';
 import '../../../core/player_sync/sync_widgets.dart';
 import '../../../core/providers/player_prefs_provider.dart';
@@ -276,6 +279,8 @@ class PlayerBar extends ConsumerWidget {
                         final ok = await syncPlayPause(ref);
                         if (!ok && context.mounted) _toastNoText(context);
                       },
+                      // نگه‌داشتنِ چندثانیه‌ای = رفتن به همان تب و همان خطی که در حال خواندن است
+                      onLongPress: () => _goToPlaying(context, ref, userMode),
                     ),
 
                     // قبلی — تپ: جمله‌ی قبل | نگه‌داشتن: پرشِ N ثانیه‌ای عقب
@@ -358,6 +363,65 @@ class PlayerBar extends ConsumerWidget {
             ),
           ),
       ],
+    );
+  }
+
+  /// 📍 لمسِ طولانیِ دکمه‌ی پخش: دقیقاً به همان تب و همان خطی که الان
+  /// خوانده می‌شود می‌برد (حتی اگر بین تب‌ها جابه‌جا شده باشی).
+  Future<void> _goToPlaying(
+      BuildContext context, WidgetRef ref, bool userMode) async {
+    HapticFeedback.mediumImpact();
+
+    // صدای اپلودی: داستانِ در حال پخش همین‌جا باز است → فقط به خطِ فعال اسکرول کن
+    if (userMode) {
+      final n = ref.read(revealActiveTickProvider.notifier);
+      n.state = n.state + 1;
+      return;
+    }
+
+    final st = ref.read(speechControllerProvider);
+    final origin = ref.read(playbackOriginProvider);
+    if (st.key == null ||
+        st.status == SpeechStatus.idle ||
+        origin == null ||
+        origin.key != st.key) {
+      _toastNothingPlaying(context);
+      return;
+    }
+
+    // متنِ در حال پخش مالِ صفحه‌ای است که همین الان باز است → فقط اسکرول
+    final tracks = ref.read(playerSyncProvider).tracks;
+    if (tracks.values.any((t) => t.key == st.key)) {
+      final n = ref.read(revealActiveTickProvider.notifier);
+      n.state = n.state + 1;
+      return;
+    }
+
+    // جای دیگری هستی → برگرد به تبِ مبدأ؛ تب حالتِ درونی‌اش (موضوع/داستان) را
+    // بازمی‌گرداند و اسکوپِ همگام خودکار به خطِ در حال پخش می‌رود.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final router = GoRouter.of(context);
+    container.read(tabRestoreProvider.notifier).state = origin;
+    final cur = router.routeInformationProvider.value.uri.path;
+    if (cur != origin.route) router.go(origin.route);
+    // اگر تبی درخواست را برنداشت، بعداً اشتباهی اعمال نشود
+    Future.delayed(const Duration(seconds: 2), () {
+      try {
+        if (identical(container.read(tabRestoreProvider), origin)) {
+          container.read(tabRestoreProvider.notifier).state = null;
+        }
+      } catch (_) {}
+    });
+  }
+
+  void _toastNothingPlaying(BuildContext context) {
+    final m = ScaffoldMessenger.of(context);
+    m.hideCurrentSnackBar();
+    m.showSnackBar(
+      const SnackBar(
+        content: Text('الان چیزی در حال خواندن نیست'),
+        duration: Duration(seconds: 1),
+      ),
     );
   }
 
@@ -513,10 +577,12 @@ class _ABBtn extends StatelessWidget {
 class _PlayBtn extends StatelessWidget {
   final bool isPlaying;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const _PlayBtn({
     required this.isPlaying,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -528,6 +594,7 @@ class _PlayBtn extends StatelessWidget {
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         customBorder: const CircleBorder(),
         child: SizedBox(
           width: 48,

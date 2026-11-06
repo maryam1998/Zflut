@@ -7,6 +7,8 @@ import '../../app.dart';
 import '../../core/audio/story_audio_controller.dart';
 import '../../core/constants/supported_languages.dart' show dirFor;
 import '../../core/models/text_prefs.dart';
+import '../../core/player_sync/playback_origin.dart'
+    show revealActiveTickProvider;
 import '../../core/player_sync/player_track.dart' show SyncItem, TrackMode;
 import '../../core/player_sync/sync_widgets.dart'
     show SyncAnchor, SyncPlayScope, SyncSpeakButton, syncReportTranslation;
@@ -446,12 +448,34 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     return out;
   }
 
+  void _revealAudioLine() {
+    final a = widget.audio;
+    if (!mounted || a == null || !a.hasAudio) return;
+    final paras = _structure();
+    for (var i = 0; i < paras.length; i++) {
+      if (a.activeIndex < paras[i].firstGi + paras[i].sents.length) {
+        final ctx = _pk[i]?.currentContext;
+        if (ctx != null && ctx.mounted) {
+          Scrollable.ensureVisible(ctx,
+              alignment: 0.25,
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOut);
+        }
+        return;
+      }
+    }
+  }
+
   // ───────────── ساخت ─────────────
   @override
   Widget build(BuildContext context) {
     final audio = widget.audio;
     // ref.watch فقط همین‌جا (داخلِ build) — نه داخلِ builderِ فرزند
     final tp = ref.watch(textPrefsProvider);
+    // لمسِ طولانیِ دکمه‌ی پخش (صدای اپلودی): به پاراگرافِ در حال خواندن برو
+    ref.listen<int>(revealActiveTickProvider, (prev, next) {
+      if (prev != next) _revealAudioLine();
+    });
     if (audio == null) return _card(context, tp, null);
     // با هر تغییرِ خطِ فعالِ صدا، هایلایت و اسکرول به‌روز می‌شود
     return ListenableBuilder(
@@ -505,6 +529,10 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
 
     return SyncPlayScope(
       revision: _scopeRev,
+      originExtra: {
+        'storyId': widget.storyId,
+        'paras': widget.text.split('\n\n').length,
+      },
       mode: TrackMode.lines,
       mainCode: widget.langCode,
       itemsBuilder: () => _editing ? const <SyncItem>[] : _syncItems(),

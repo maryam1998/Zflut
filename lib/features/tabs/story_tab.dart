@@ -11,6 +11,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../app.dart';
 import '../../core/router/back_handlers.dart';
+import '../../core/player_sync/playback_origin.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/widgets/level_chips.dart';
 import '../../core/constants/app_languages.dart' show CalendarSystem;
@@ -326,6 +327,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   void initState() {
     super.initState();
     BackHandlers.add(_handleBack);
+    // لمسِ طولانیِ دکمه‌ی پخش از تبِ دیگر: داستانِ در حال پخش را باز کن
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _applyPlayRestore(ref.read(tabRestoreProvider));
+    });
     unawaited(cleanOcrTemp());
     final d = ref.read(storyDraftProvider);
     if (d != null) {
@@ -333,6 +338,28 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         if (mounted) _consumeDraft(d);
       });
     }
+  }
+
+  /// بازگرداندنِ داستانِ (ذخیره‌شده/ساخته‌شده) که پخش از آن شروع شده بود.
+  void _applyPlayRestore(PlaybackOrigin? r) {
+    if (r == null || r.route != '/story') return;
+    final id = r.extra['storyId'];
+    if (id is! String) return;
+    ref.read(tabRestoreProvider.notifier).state = null;
+    if (!mounted || _libGet(id) == null) return;
+    final paras = r.extra['paras'];
+    setState(() {
+      _showLibrary = true;
+      _showSaved = false;
+      _clearCreateView();
+      _libLevels = <String>{};
+      _libFavOnly = false;
+      _libSearch.clear();
+      if (paras is int && paras > (_libVisible[id] ?? 0)) {
+        _libVisible[id] = paras;
+      }
+      _openStoryId = id;
+    });
   }
 
   /// دکمه‌ی «بازگشت» گوشی: اول داستانِ بازشده/خوانده‌شده و زیرصفحه‌ی کتابخانه/ذخیره‌شده‌ها بسته می‌شوند.
@@ -1560,6 +1587,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
               prev.targets.join(',') != next.targets.join(','))) {
         _restartPdfTransIfOpen();
       }
+    });
+    ref.listen<PlaybackOrigin?>(tabRestoreProvider, (prev, next) {
+      if (next != null) _applyPlayRestore(next);
     });
     ref.listen<StoryDraft?>(storyDraftProvider, (prev, next) {
       if (next == null) return;

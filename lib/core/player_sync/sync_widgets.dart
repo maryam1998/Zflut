@@ -3,11 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/app_prefs_provider.dart';
 import '../providers/speech_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../tts/speech_state.dart';
+import 'playback_origin.dart';
 import 'player_sync_provider.dart';
 import 'player_track.dart';
 
@@ -53,6 +55,10 @@ class SyncPlayScope extends ConsumerStatefulWidget {
 
   final Widget child;
 
+  /// حالتِ درونیِ تب که برای برگشتن به همین متن لازم است (مثلاً موضوع/سناریو
+  /// یا شناسه‌ی داستان). با لمسِ طولانیِ دکمه‌ی پخش به تب برمی‌گردد.
+  final Map<String, Object?> originExtra;
+
   const SyncPlayScope({
     super.key,
     required this.revision,
@@ -60,6 +66,7 @@ class SyncPlayScope extends ConsumerStatefulWidget {
     required this.mode,
     required this.child,
     this.mainCode = 'en',
+    this.originExtra = const {},
   });
 
   @override
@@ -122,6 +129,25 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       if (n.mounted) n.clearScope(id);
     });
     super.dispose();
+  }
+
+  /// ثبتِ «پخش از کجاست»: وقتی متنِ پخش‌شده مالِ همین اسکوپ است.
+  void _recordOrigin() {
+    if (!mounted) return;
+    final sp = ref.read(speechControllerProvider);
+    final key = sp.key;
+    if (key == null || sp.status == SpeechStatus.idle) return;
+    final sync = ref.read(playerSyncProvider);
+    if (sync.scopeId != _scopeId) return;
+    if (!sync.tracks.values.any((t) => t.key == key)) return;
+    String route;
+    try {
+      route = GoRouter.of(context).routeInformationProvider.value.uri.path;
+    } catch (_) {
+      return;
+    }
+    ref.read(playbackOriginProvider.notifier).state =
+        PlaybackOrigin(route, key, widget.originExtra);
   }
 
   // ───────────────────────── اسکرول خودکار ─────────────────────────
@@ -211,6 +237,17 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   Widget build(BuildContext context) {
     ref.listen<ActiveSync?>(activeSyncProvider, (prev, next) {
       if (prev != next) _onActive(next);
+    });
+    // پخش از این اسکوپ شروع شد/متنش عوض شد → مبدأ را ثبت کن
+    ref.listen<({String? key, bool active})>(
+        speechControllerProvider.select(
+            (s) => (key: s.key, active: s.status != SpeechStatus.idle)),
+        (prev, next) {
+      if (next.active && next.key != null) _recordOrigin();
+    });
+    // لمسِ طولانیِ دکمه‌ی پخش: دوباره به خطِ در حال پخش اسکرول کن
+    ref.listen<int>(revealActiveTickProvider, (prev, next) {
+      if (prev != next) _onActive(ref.read(activeSyncProvider));
     });
     return _ScopeToken(scopeId: _scopeId, child: widget.child);
   }

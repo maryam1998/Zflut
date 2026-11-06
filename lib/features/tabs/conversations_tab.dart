@@ -5,6 +5,7 @@ import '../../app.dart';
 import '../../core/constants/topic_icons.dart';
 import '../../core/constants/topic_titles.dart';
 import '../../core/models/conversation.dart';
+import '../../core/player_sync/playback_origin.dart';
 import '../../core/player_sync/player_track.dart';
 import '../../core/player_sync/sync_widgets.dart';
 import '../../core/providers/conversation_provider.dart';
@@ -46,6 +47,24 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     // دکمه‌ی «بازگشت» گوشی: اول از موضوعِ بازشده به لیستِ موضوع‌ها برمی‌گردد؛
     // اگر لیست باز بود، کار را به AppShell می‌سپارد (خروج از برنامه).
     BackHandlers.add(_onSystemBack);
+    // لمسِ طولانیِ دکمه‌ی پخش از تبِ دیگر: موضوع/سناریوی در حال پخش را باز کن
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _applyRestore(ref.read(tabRestoreProvider));
+    });
+  }
+
+  /// بازگرداندنِ موضوع + سناریویی که پخش از آن شروع شده بود.
+  void _applyRestore(PlaybackOrigin? r) {
+    if (r == null || r.route != '/conversations') return;
+    final t = r.extra['topic'];
+    if (t is! String) return;
+    ref.read(tabRestoreProvider.notifier).state = null;
+    final sc = r.extra['scenario'];
+    if (_gridScroll.hasClients) _gridOffset = _gridScroll.offset;
+    setState(() {
+      _activeTopic = t;
+      _openScenario = sc is int ? sc : 0;
+    });
   }
 
   @override
@@ -81,11 +100,16 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   }
 
   @override
-  Widget build(BuildContext context) => Directionality(
-        // جهتِ محتوا طبقِ زبانِ رابط؛ ShellHeader خودش RTL می‌ماند
-        textDirection: uiContentDirection(context),
-        child: _buildBody(context),
-      );
+  Widget build(BuildContext context) {
+    ref.listen<PlaybackOrigin?>(tabRestoreProvider, (prev, next) {
+      if (next != null) _applyRestore(next);
+    });
+    return Directionality(
+      // جهتِ محتوا طبقِ زبانِ رابط؛ ShellHeader خودش RTL می‌ماند
+      textDirection: uiContentDirection(context),
+      child: _buildBody(context),
+    );
+  }
 
   Widget _buildBody(BuildContext context) {
     final c = context.appColors;
@@ -263,6 +287,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 
     return SyncPlayScope(
       revision: openSc ?? topic,
+      originExtra: {'topic': topic.topic, 'scenario': openIdx},
       mode: TrackMode.lines,
       itemsBuilder: () => openSc == null
           ? const <SyncItem>[]
