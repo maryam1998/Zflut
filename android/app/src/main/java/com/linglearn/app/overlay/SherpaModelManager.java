@@ -218,6 +218,21 @@ final class SherpaModelManager {
             {"zm_yunyang", "Yunyang · M", "52"},
     };
     private static final int SUPERTONIC_VOICES = 10;
+    // نام‌های نمایشیِ صداهای Supertonic (به ترتیبِ sid ۰..۹). ۵ مرد + ۵ زن.
+    // اگر هنگامِ گوش‌دادن دیدی جنسیتِ یک صدا برعکس است، فقط همان نام‌ها را جابه‌جا کن.
+    private static final String[] SUPERTONIC_NAMES = {
+            "Adrian · M", "Felix · M", "Leo · M", "Oscar · M", "Theo · M",
+            "Aria · F", "Clara · F", "Luna · F", "Mila · F", "Nora · F",
+    };
+    // نام‌های نمایشیِ صداهای فارسی (فقط برچسب؛ شناسه‌ی مدل‌ها عوض نمی‌شود)
+    private static final Map<String, String> FA_LABELS = new LinkedHashMap<>();
+    static {
+        FA_LABELS.put("fa_IR-mana-medium", "سارا · زن");
+        FA_LABELS.put("fa_IR-amir-medium", "آرمان · مرد");
+        FA_LABELS.put("fa_IR-ganji-medium", "کامران · مرد");
+        FA_LABELS.put("fa_IR-ganji_adabi-medium", "بهرام · مرد");
+        FA_LABELS.put("fa_IR-reza_ibrahim-medium", "پویا · مرد");
+    }
 
     private static final Map<String, List<TtsVoice>> TTS_VOICES;
     static {
@@ -236,7 +251,7 @@ final class SherpaModelManager {
                 }
             } else {
                 for (int i = 0; i < SUPERTONIC_VOICES; i++) {
-                    list.add(new TtsVoice("st-" + i, "Supertonic · " + (i + 1), sp, i == 0, i));
+                    list.add(new TtsVoice("st-" + i, SUPERTONIC_NAMES[i], sp, i == 0, i));
                 }
             }
             vm.put(lg, list);
@@ -268,6 +283,8 @@ final class SherpaModelManager {
 
     /** en_US-amy-medium → «amy · US · medium» */
     private static String voiceLabel(String pid) {
+        String custom = FA_LABELS.get(pid);
+        if (custom != null) return custom;
         try {
             String[] p = pid.split("-");
             if (p.length < 3) return pid;
