@@ -435,7 +435,7 @@ final class SherpaModelManager {
         if (!tokens.isFile() || tokens.length() == 0) return false;
         // صدای پیش‌فرضِ en/fa عوض شده؛ فایل‌های قدیمیِ همان پوشه (ryan/gyro) نباید به‌جای صدای جدید حساب شوند
         if (v.isDefault && MIGRATED_LANGS.contains(l) && !v.id.equals(readVoiceMarker(dir))) return false;
-        if (v.spec.charFrontend) return new File(dir, "meta-char.ok").isFile();   // بدون espeak-ng
+        if (v.spec.charFrontend) return new File(dir, "meta-char2.ok").isFile();   // بدون espeak-ng
         if (v.spec.rawPiper && !new File(dir, "meta.ok").isFile()) return false;
         return isEspeakReady(ctx);
     }
@@ -885,11 +885,12 @@ final class SherpaModelManager {
             new File(dir, "meta.ok").delete();
         }
 
-        if (s.charFrontend && !new File(dir, "meta-char.ok").isFile()) {
+        if (s.charFrontend && !new File(dir, "meta-char2.ok").isFile()) {
             // نسخه‌ی قدیمیِ مبتنی بر espeak (metadata ی comment=piper) با نسخه‌ی frontend=characters سازگار نیست → دوباره می‌گیریم
             new File(dir, "model.onnx").delete();
             new File(dir, "model.onnx.part").delete();
             new File(dir, "meta.ok").delete();
+            new File(dir, "meta-char.ok").delete();   // نسخه‌ی قدیمیِ metadata (بدون comment=coqui) → مدل دوباره گرفته می‌شود
         }
         if (s.rawPiper) {
             // ۱. فایل پیکربندی Piper → tokens.txt
@@ -920,7 +921,7 @@ final class SherpaModelManager {
 
         // ۲.۵ فایل خام Piper: metadata موردنیاز Sherpa را به انتهای onnx اضافه کن (فقط یک بار)
         if (s.rawPiper) {
-            File ok = new File(dir, s.charFrontend ? "meta-char.ok" : "meta.ok");
+            File ok = new File(dir, s.charFrontend ? "meta-char2.ok" : "meta.ok");
             if (!ok.isFile()) {
                 appendSherpaMetadata(modelTarget, new File(dir, "model.json"), s.charFrontend);
                 if (!ok.createNewFile()) throw new java.io.IOException("cannot create " + ok.getName());
@@ -1050,9 +1051,14 @@ final class SherpaModelManager {
         putMeta(bo, "model_type", "vits");
         putMeta(bo, "language", "Persian");
         if (charFrontend) {
-            // بدون espeak: هر کاراکترِ ورودی = یک token (Piper نیست، پس comment=piper نمی‌گذاریم)
+            // بدون espeak: هر کاراکترِ ورودی = یک token.
+            // comment=coqui لازم است: ورودی‌های onnx خامِ Piper (input, input_lengths, scales) را فقط مسیرِ
+            // «piper/coqui» ی Sherpa درست صدا می‌زند؛ بدونِ آن Sherpa ورودی‌های اشتباه می‌دهد و هیچ صدایی ساخته نمی‌شود.
+            // comment=piper هم نمی‌شود چون آن frontend ی espeak را فعال می‌کند.
+            putMeta(bo, "comment", "coqui");
             putMeta(bo, "frontend", "characters");
             putMeta(bo, "add_blank", "0");        // پدها را خودِ PersianG2P می‌گذارد
+            putMeta(bo, "use_eos_bos", "0");      // ^ و $ را هم خودِ PersianG2P می‌گذارد
         } else {
             putMeta(bo, "comment", "piper");
             putMeta(bo, "voice", voice);
