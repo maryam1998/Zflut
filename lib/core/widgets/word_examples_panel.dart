@@ -453,27 +453,62 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
     if (_text.isEmpty) _load();
   }
 
+  /// ترجمه‌ی تأییدشده را ذخیره و نمایش می‌دهد.
+  Future<void> _apply(String t) async {
+    if (!mounted) return;
+    setState(() {
+      _text = t;
+      _failed = false;
+    });
+    await ref.read(wordExamplesStoreProvider).setTranslation(
+        widget.word, widget.langCode, widget.example.id, widget.target, t);
+    ref.read(exampleFavoritesProvider.notifier).setTranslation(
+        widget.example.text, widget.langCode, widget.target, t);
+  }
+
+  /// ⚡ دو مرحله‌ای: اول ترجمه‌ی سریع (ML Kit/کش/مترجم رایگان) فوراً نشان داده می‌شود؛
+  /// بعد در پس‌زمینه با ناظر AI بررسی می‌شود و اگر اصلاحی بود، جایگزین می‌شود.
+  /// (قبلاً تا پایانِ بررسیِ AI هیچ ترجمه‌ای نشان داده نمی‌شد.)
   Future<void> _load() async {
+    final svc = ref.read(translationServiceProvider);
+    final ai = ref.read(aiSettingsProvider);
+    final src = widget.example.text.trim();
+    bool bad(String t) => t.trim().isEmpty || t.trim() == src;
     try {
-      final t = await ref.read(translationServiceProvider).translate(
-            text: widget.example.text,
-            targetLang: widget.target,
-            sourceLang: widget.langCode,
-            aiSettings: ref.read(aiSettingsProvider),
-            forceVerify: true,
-          );
+      // مرحله ۱: سریع
+      var fast = '';
+      try {
+        fast = await svc.translate(
+          text: widget.example.text,
+          targetLang: widget.target,
+          sourceLang: widget.langCode,
+          aiSettings: ai,
+        );
+      } catch (_) {}
       if (!mounted) return;
-      if (t.trim().isEmpty || t.trim() == widget.example.text.trim()) {
+      if (!bad(fast)) await _apply(fast.trim());
+
+      // مرحله ۲: بررسیِ AI در پس‌زمینه (کش را دور می‌زند تا واقعاً بررسی شود)
+      var verified = '';
+      try {
+        verified = await svc
+            .translateNetwork(
+              text: widget.example.text,
+              targetLang: widget.target,
+              sourceLang: widget.langCode,
+              aiSettings: ai,
+              forceVerify: true,
+            )
+            .timeout(const Duration(seconds: 25));
+      } catch (_) {}
+      if (!mounted || _refreshing) return;   // کاربر وسطِ کار رفرش زده؛ نتیجه‌ی او مقدم است
+      if (!bad(verified)) {
+        if (verified.trim() != _text) await _apply(verified.trim());
+      } else if (_text.isEmpty) {
         setState(() => _failed = true);
-        return;
       }
-      setState(() => _text = t.trim());
-      await ref.read(wordExamplesStoreProvider).setTranslation(
-          widget.word, widget.langCode, widget.example.id, widget.target, t);
-      ref.read(exampleFavoritesProvider.notifier).setTranslation(
-          widget.example.text, widget.langCode, widget.target, t);
     } catch (_) {
-      if (mounted) setState(() => _failed = true);
+      if (mounted && _text.isEmpty) setState(() => _failed = true);
     }
   }
 
