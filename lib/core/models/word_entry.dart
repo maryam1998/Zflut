@@ -1,3 +1,4 @@
+import '../translate/known_translations.dart';
 import 'package:flutter/foundation.dart';
 
 @immutable
@@ -39,15 +40,20 @@ class WordEntry {
   }
 
   factory WordEntry.fromJson(Map<String, dynamic> json) {
+    final tr = (json['translations'] as Map?)
+            ?.map((k, v) => MapEntry(k.toString(), v.toString())) ??
+        const <String, String>{};
+    final enText = json['en']?.toString() ?? '';
+    final faText = json['fa']?.toString() ?? '';
+    KnownTranslations.put(enText, 'en', 'fa', faText);
+    tr.forEach((k, v) => KnownTranslations.put(enText, 'en', k, v));
     return WordEntry(
       id: json['id']?.toString() ?? '',
       level: json['level']?.toString() ?? 'A1',
       pos: json['pos']?.toString() ?? 'other',
-      en: json['en']?.toString() ?? '',
-      fa: json['fa']?.toString() ?? '',
-      translations: (json['translations'] as Map?)
-              ?.map((k, v) => MapEntry(k.toString(), v.toString())) ??
-          const {},
+      en: enText,
+      fa: faText,
+      translations: tr,
       examples: (json['examples'] as List?)
               ?.map((e) => e.toString())
               .toList() ??

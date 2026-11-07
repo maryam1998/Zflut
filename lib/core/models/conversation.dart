@@ -1,3 +1,4 @@
+import '../translate/known_translations.dart';
 import 'package:flutter/foundation.dart';
 
 @immutable
@@ -13,9 +14,12 @@ class ConversationLine {
   });
 
   factory ConversationLine.fromJson(Map<String, dynamic> j) {
+    final en = j['en']?.toString() ?? '';
+    final fa = j['fa']?.toString() ?? '';
+    KnownTranslations.put(en, 'en', 'fa', fa);
     return ConversationLine(
-      en: j['en']?.toString() ?? '',
-      fa: j['fa']?.toString() ?? '',
+      en: en,
+      fa: fa,
       level: j['level']?.toString() ?? 'A1',
     );
   }

@@ -1,3 +1,4 @@
+import '../translate/known_translations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -486,6 +487,8 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
 
     if (_hasKnown) {
       _text = widget.knownText;
+      KnownTranslations.put(
+          widget.en, widget.sourceLang, widget.langCode, widget.knownText);
       // اگر کاربر با دکمه‌ی رفرش دوباره ترجمه‌اش کرده، نسخه‌ی ذخیره‌شده نشان داده شود
       // (برای همه‌ی زبان‌ها، نه فقط فارسی)
       final saved = ref

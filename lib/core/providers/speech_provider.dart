@@ -1,3 +1,4 @@
+import '../translate/known_translations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../neural/neural_store.dart';
@@ -35,9 +36,13 @@ final speechControllerProvider =
   final media = MediaNotificationSync(
     ctl,
     targets: targetsFor,
+    // مثلِ کارت‌های برنامه: اول ترجمه‌ی ذخیره‌شده/رفرش‌شده، بعد ترجمه‌ی آماده‌ی داده‌های خودِ اپ
     peek: (text, from, to) =>
-        ref.read(translationServiceProvider).peekCached(text, from, to),
+        ref.read(translationServiceProvider).peekCached(text, from, to) ??
+        KnownTranslations.get(text, from, to),
     translate: (text, from, to) async {
+      final known = KnownTranslations.get(text, from, to);
+      if (known != null && known.trim().isNotEmpty) return known;
       return ref.read(translationServiceProvider).translate(
             text: text,
             targetLang: to,
