@@ -20,6 +20,7 @@ import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/providers/translation_provider.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/providers/speech_provider.dart';
 import '../../../core/tts/native_tts_bridge.dart';
 import '../../../core/translate/translation_service.dart'
     show looksLikelyMistranslated;
@@ -510,7 +511,26 @@ class _TtsPackRowState extends State<TtsPackRow> {
     await _refresh();
   }
 
+  /// پخشِ اصلیِ اپ موقعِ پیش‌نمایش مکث می‌شود (وگرنه با پیش‌رفتنِ خودکار به جمله‌ی بعد،
+  /// پیش‌نمایش را همان لحظه قطع می‌کرد)؛ بعد از پایان خودش ادامه پیدا می‌کند.
+  Future<void> _holdMainPlayer() async {
+    try {
+      await ProviderScope.containerOf(context, listen: false)
+          .read(speechControllerProvider.notifier)
+          .holdForPanel();
+    } catch (_) {}
+  }
+
+  void _releaseMainPlayer() {
+    try {
+      ProviderScope.containerOf(context, listen: false)
+          .read(speechControllerProvider.notifier)
+          .releasePanelHold();
+    } catch (_) {}
+  }
+
   Future<void> _endTest() async {
+    _releaseMainPlayer();
     _testSub?.cancel();
     _testSub = null;
     _testTimer?.cancel();
@@ -540,6 +560,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
         return;
       }
       setState(() => _testing = id);
+      await _holdMainPlayer();
       if (!active) {
         for (final v in _voices) {
           if (v['active'] == true && v['downloaded'] == true) {
