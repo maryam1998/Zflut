@@ -26,7 +26,7 @@ class AboutButton extends ConsumerWidget {
   }
 }
 
-/// درباره‌ی برنامه ← تشکر و منابع
+/// درباره‌ی برنامه ← فناوری‌های اپ
 class AboutPage extends ConsumerWidget {
   const AboutPage({super.key});
 
@@ -51,9 +51,9 @@ class AboutPage extends ConsumerWidget {
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 8),
               dense: true,
-              leading: Icon(Icons.favorite_border_rounded,
+              leading: Icon(Icons.memory_rounded,
                   color: c.inkSoft, size: 20),
-              title: Text(fa ? 'تشکر و منابع' : 'Credits & thanks',
+              title: Text(fa ? 'فناوری‌های اپ' : 'App Technologies',
                   style: TextStyle(
                       color: c.inkSoft,
                       fontSize: 13.5,
@@ -73,61 +73,73 @@ class AboutPage extends ConsumerWidget {
 
 class _Credit {
   final String name;
+  final String author;
   final String license;
   final String? asset; // متنِ کاملِ مجوز (assets/licenses/…)
-  const _Credit(this.name, this.license, {this.asset});
+  const _Credit(this.name, this.license, {this.author = '', this.asset});
 }
 
 const List<_Credit> _credits = [
   _Credit(
-    'Supertonic 3 — Supertone Inc.',
+    'Supertonic 3',
     'OpenRAIL-M',
+    author: 'Supertone Inc.',
     asset: 'assets/licenses/supertonic-openrail-m.txt',
   ),
   _Credit(
-    'Kokoro-82M (multi-lang v1.0) — hexgrad',
-    'Apache License 2.0',
+    'Kokoro-82M',
+    'Apache 2.0',
+    author: 'hexgrad',
     asset: 'assets/licenses/kokoro-apache-2.0.txt',
   ),
   _Credit(
-    'sherpa-onnx — k2-fsa (Next-gen Kaldi)',
-    'Apache License 2.0',
+    'sherpa-onnx',
+    'Apache 2.0',
+    author: 'k2-fsa (Next-gen Kaldi)',
     asset: 'assets/licenses/kokoro-apache-2.0.txt',
   ),
   // ── تشخیص گفتار (STT) ──
   _Credit(
-    'Whisper — OpenAI',
+    'Whisper',
     'MIT',
+    author: 'OpenAI',
     asset: 'assets/licenses/whisper-mit.txt',
   ),
   _Credit(
-    'Vosk — Alpha Cephei Inc.',
-    'Apache License 2.0',
+    'Vosk',
+    'Apache 2.0',
+    author: 'Alpha Cephei Inc.',
     asset: 'assets/licenses/vosk-apache-2.0.txt',
   ),
   _Credit(
-    'Streaming Zipformer (English) — Zengwei Yao, k2-fsa (icefall)',
-    'Apache License 2.0',
+    'Streaming Zipformer (EN)',
+    'Apache 2.0',
+    author: 'Zengwei Yao, k2-fsa (icefall)',
   ),
   _Credit(
-    'Streaming Zipformer (Chinese–English) — pfluo, k2-fsa (icefall)',
-    'Apache License 2.0',
+    'Streaming Zipformer (ZH–EN)',
+    'Apache 2.0',
+    author: 'pfluo, k2-fsa (icefall)',
   ),
   _Credit(
-    'Streaming Zipformer (Korean) — johnBamma, k2-fsa (icefall)',
+    'Streaming Zipformer (KO)',
     'Not specified by the author',
+    author: 'johnBamma, k2-fsa (icefall)',
   ),
   _Credit(
-    'Streaming Zipformer (Russian) — Alpha Cephei Inc. (Vosk)',
-    'Apache License 2.0',
+    'Streaming Zipformer (RU)',
+    'Apache 2.0',
+    author: 'Alpha Cephei Inc. (Vosk)',
   ),
   _Credit(
-    'Mana-TTS — Mahta Fetrat',
+    'Mana-TTS',
     'MIT',
+    author: 'Mahta Fetrat',
   ),
   _Credit(
-    'Piper — Rhasspy / OHF-Voice',
+    'Piper',
     'MIT',
+    author: 'Rhasspy / OHF-Voice',
   ),
   _Credit(
     'espeak-ng',
@@ -151,23 +163,15 @@ class CreditsPage extends ConsumerWidget {
         appBar: AppBar(
           backgroundColor: c.headerFrom,
           foregroundColor: c.headerText,
-          title: Text(fa ? 'تشکر و منابع' : 'Credits & thanks'),
+          title: Text(fa ? 'فناوری‌های اپ' : 'App Technologies'),
         ),
         body: ListView(
           padding: const EdgeInsets.all(14),
           children: [
             Text(
               fa
-                  ? 'با سپاس از'
-                  : 'With thanks to',
-              style: TextStyle(
-                  color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              fa
-                  ? 'این برنامه با کمک پروژه‌های ارزشمند زیر ساخته شده است.'
-                  : 'This app was built with the help of these great projects.',
+                  ? 'این برنامه از موتورهای پیشرفته‌ی پردازش زبان و صدا برای ارائه‌ی بهترین کیفیت استفاده می‌کند. اطلاعات و مجوزهای این فناوری‌ها در ادامه آمده است.'
+                  : 'This app uses advanced language and speech processing engines to deliver the best quality. Details and licenses of these technologies are listed below.',
               style: TextStyle(color: c.inkSoft, fontSize: 12.5, height: 1.7),
             ),
             const SizedBox(height: 12),
@@ -189,24 +193,39 @@ class _CreditCard extends StatelessWidget {
     final c = context.appColors;
     final fa = lang == 'fa';
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: c.paperDark,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: c.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(credit.name,
-              textDirection: TextDirection.ltr,
-              style: TextStyle(
-                  color: c.ink, fontWeight: FontWeight.w800, fontSize: 14)),
-          const SizedBox(height: 4),
-          Text('${fa ? 'مجوز' : 'License'}: ${credit.license}',
-              style: TextStyle(
-                  color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w700)),
+          Row(
+            children: [
+              Expanded(
+                child: Text(credit.name,
+                    textDirection: TextDirection.ltr,
+                    style: TextStyle(
+                        color: c.ink,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13)),
+              ),
+              const SizedBox(width: 8),
+              Text(credit.license,
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(color: c.inkSoft, fontSize: 11.5)),
+            ],
+          ),
+          if (credit.author.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(credit.author,
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(color: c.inkSoft, fontSize: 11)),
+            ),
           if (credit.asset != null)
             _LicenseText(asset: credit.asset!, fa: fa),
         ],
@@ -233,10 +252,10 @@ class _LicenseText extends StatelessWidget {
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
             tilePadding: EdgeInsets.zero,
-            childrenPadding: EdgeInsets.zero,
-            title: Text(fa ? 'متنِ مجوز' : 'License text',
+            childrenPadding: const EdgeInsets.only(bottom: 8),
+            title: Text(fa ? 'جزئیات مجوز' : 'License details',
                 style: TextStyle(
-                    color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                    color: c.inkSoft, fontSize: 11.5, fontWeight: FontWeight.w600)),
             children: [
               SelectableText(txt,
                   textDirection: TextDirection.ltr,
