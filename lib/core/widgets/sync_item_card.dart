@@ -132,7 +132,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
             // کارتِ شخصی جای ✕ی پایین‌راست را دارد (مثل Hope: paddingBottom 30)
             : EdgeInsets.fromLTRB(14, 12, 14, removable ? 30 : 10),
         decoration: BoxDecoration(
-          color: widget.isRead ? const Color(0xFFF8F2DE) : Colors.white,
+          color: widget.isRead ? c.surfaceRead : c.surface,
           borderRadius: BorderRadius.circular(compact ? 10 : 14),
           border: Border.all(
               color: widget.isRead ? const Color(0xFFE3D2A2) : c.cardBorder,
@@ -305,7 +305,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white,
+                        color: c.surface,
                         border: Border.all(color: c.cardBorder),
                       ),
                       child: Icon(Icons.close, size: 12, color: c.inkSoft),
@@ -652,7 +652,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                           text: text,
                           sentence: text,
                           style: TextStyle(
-                            color: const Color(0xFF0F5C34),
+                            color: c.translationText,
                             fontSize: (widget.compact ? 13 : 14) * tp.scaleFactor,
                             fontWeight: (tp.bold == TargetBoldMode.both ||
                                     tp.bold == TargetBoldMode.translation)

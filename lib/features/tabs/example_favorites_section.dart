@@ -246,7 +246,7 @@ class _FavTranslationState extends ConsumerState<_FavTranslation> {
                           textDirection:
                               rtl ? TextDirection.rtl : TextDirection.ltr,
                           style: TextStyle(
-                              color: const Color(0xFF0F5C34),
+                              color: context.appColors.translationText,
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               height: 1.45)),

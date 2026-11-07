@@ -405,7 +405,7 @@ class _TopicCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.fromLTRB(6, 22, 6, 8),
               decoration: BoxDecoration(
-                color: isRead ? const Color(0xFFF8F2DE) : Colors.white,
+                color: isRead ? c.surfaceRead : c.surface,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color:
@@ -422,7 +422,7 @@ class _TopicCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isRead
-                          ? Colors.white.withOpacity(0.7)
+                          ? c.surface.withOpacity(0.7)
                           : badgeBgColor(visual.color),
                     ),
                     alignment: Alignment.center,
@@ -516,7 +516,7 @@ class _ScenarioCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: isRead ? const Color(0xFFF8F2DE) : Colors.white,
+        color: isRead ? c.surfaceRead : c.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
             color: isRead ? const Color(0xFFE3D2A2) : c.cardBorder),

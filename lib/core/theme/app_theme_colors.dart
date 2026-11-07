@@ -32,6 +32,20 @@ class AppThemeColorsExt extends ThemeExtension<AppThemeColorsExt> {
   Color get headerFrom => colors.headerFrom;
   Color get headerTo => colors.headerTo;
   Color get headerText => colors.headerText;
+
+  /// تمِ تیره (مثلِ «شب»): کارت‌ها/چیپ‌ها نباید سفیدِ ثابت باشند وگرنه متنِ کرم‌رنگ روی سفید دیده نمی‌شود.
+  bool get isDark => colors.paper.computeLuminance() < 0.25;
+
+  /// زمینه‌ی کارت/چیپ/فیلد (در تم‌های روشن همان سفید همیشگی)
+  Color get surface => isDark ? const Color(0xFF2A3042) : Colors.white;
+
+  /// زمینه‌ی کارتِ «خوانده‌شده»
+  Color get surfaceRead =>
+      isDark ? const Color(0xFF232838) : const Color(0xFFF8F2DE);
+
+  /// رنگِ متنِ ترجمه (سبزِ تیره روی زمینه‌ی روشن، سبزِ روشن روی زمینه‌ی تیره)
+  Color get translationText =>
+      isDark ? const Color(0xFF86DDAA) : AppFixedColors.translation;
 }
 
 extension AppThemeX on BuildContext {

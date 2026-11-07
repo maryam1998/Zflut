@@ -310,7 +310,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                   Container(
                     height: 46,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: c.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: c.cardBorder, width: 1),
                     ),

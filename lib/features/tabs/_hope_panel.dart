@@ -116,7 +116,7 @@ class HopeCard extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: background ?? Colors.white,
+        color: background ?? c.surface,
         border: Border.all(color: borderColor ?? c.cardBorder, width: 1),
         borderRadius: BorderRadius.circular(radius),
       ),
@@ -177,7 +177,7 @@ class HopeChoiceChip extends StatelessWidget {
         // حالتِ فعال دقیقاً مثلِ تبِ فعالِ Story (بالای صفحه): داخلِ چیپ طلایی
         // + متنِ تیره‌ی هدر — رنگ‌های activeFill/Text نادیده‌اند.
         decoration: BoxDecoration(
-          color: active ? c.gold : (inactiveFill ?? Colors.white),
+          color: active ? c.gold : (inactiveFill ?? c.surface),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: active ? c.gold : (inactiveBorder ?? c.cardBorder),

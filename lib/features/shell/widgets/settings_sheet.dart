@@ -404,7 +404,7 @@ class _LanguageSection extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: c.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: c.cardBorder),
           ),
@@ -414,7 +414,7 @@ class _LanguageSection extends ConsumerWidget {
               isExpanded: true,
               isDense: true,
               icon: Icon(Icons.keyboard_arrow_down, size: 18, color: c.inkSoft),
-              dropdownColor: Colors.white,
+              dropdownColor: c.surface,
               style: TextStyle(color: c.ink, fontSize: 13),
               items: kAppLanguages.values
                   .map((l) => DropdownMenuItem(
@@ -564,7 +564,7 @@ class _ChoiceChip extends StatelessWidget {
         alignment: expand ? Alignment.center : null,
         padding: EdgeInsets.symmetric(horizontal: expand ? 4 : hPad, vertical: 5),
         decoration: BoxDecoration(
-          color: selected ? c.goldSoft : Colors.white,
+          color: selected ? c.goldSoft : c.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: selected ? c.gold : c.cardBorder),
         ),
@@ -603,7 +603,7 @@ class _TargetTextSection extends ConsumerWidget {
               height: 28,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: c.surface,
                 shape: BoxShape.circle,
                 border: Border.all(color: c.cardBorder),
               ),
@@ -900,7 +900,7 @@ class _MascotSection extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: c.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: c.cardBorder),
               ),
@@ -1464,7 +1464,7 @@ class _FloatingBubbleSectionState
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.45),
+        color: c.surface.withOpacity(0.45),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: c.cardBorder),
       ),
@@ -1555,7 +1555,7 @@ class _FloatingBubbleSectionState
                               height: 30,
                               padding: const EdgeInsets.all(2),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: c.surface,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(color: c.cardBorder),
                               ),
@@ -1580,7 +1580,7 @@ class _FloatingBubbleSectionState
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 3),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: c.surface,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(color: c.cardBorder),
                             ),
@@ -1751,7 +1751,7 @@ class _KindChip extends StatelessWidget {
         alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? c.goldSoft : Colors.white,
+          color: selected ? c.goldSoft : c.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: selected ? c.gold : c.cardBorder),
         ),
@@ -1875,7 +1875,7 @@ class _DropBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: c.surface,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: c.cardBorder),
       ),
@@ -1885,7 +1885,7 @@ class _DropBox extends StatelessWidget {
           isExpanded: true,
           isDense: true,
           icon: Icon(Icons.keyboard_arrow_down, size: 18, color: c.inkSoft),
-          dropdownColor: Colors.white,
+          dropdownColor: c.surface,
           style: TextStyle(color: c.ink, fontSize: 12.5),
           items: items.entries
               .map((e) => DropdownMenuItem(
@@ -2082,7 +2082,7 @@ class _SpeechEngineSectionState extends ConsumerState<_SpeechEngineSection> {
       margin: const EdgeInsets.only(top: 4, bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
+        color: c.surface.withOpacity(0.5),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: c.cardBorder),
       ),
@@ -2659,7 +2659,7 @@ class _ReminderSectionState extends ConsumerState<_ReminderSection> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: c.surface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: _on ? c.gold : c.cardBorder),
                 ),

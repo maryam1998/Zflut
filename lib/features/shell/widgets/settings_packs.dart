@@ -185,7 +185,7 @@ class _PackTileState extends State<PackTile> {
               : OutlinedButton(
                   onPressed: onTap,
                   style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white.withOpacity(0.35),
+                    backgroundColor: c.surface.withOpacity(0.35),
                     side: BorderSide(color: color ?? c.cardBorder),
                     padding: const EdgeInsets.symmetric(
                         vertical: 13, horizontal: 10),
@@ -276,7 +276,7 @@ class _PackTileState extends State<PackTile> {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.55),
+        color: c.surface.withOpacity(0.55),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: c.cardBorder),
       ),
@@ -737,7 +737,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.7),
+          color: c.surface.withOpacity(0.7),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: c.cardBorder),
         ),
@@ -805,7 +805,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.35),
+        color: c.surface.withOpacity(0.35),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: c.cardBorder),
       ),
@@ -974,7 +974,7 @@ class _LangPackTileState extends State<LangPackTile> {
               duration: const Duration(milliseconds: 150),
               padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
               decoration: BoxDecoration(
-                color: sel ? c.goldSoft : Colors.white,
+                color: sel ? c.goldSoft : c.surface,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                     color: sel ? c.gold : c.cardBorder, width: sel ? 2 : 1),
@@ -1167,7 +1167,7 @@ class _OfflinePacksSheetState extends ConsumerState<OfflinePacksSheet> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.5),
+        color: c.surface.withOpacity(0.5),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: c.cardBorder),
       ),
@@ -1193,7 +1193,7 @@ class _OfflinePacksSheetState extends ConsumerState<OfflinePacksSheet> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
           decoration: BoxDecoration(
-            color: sel ? c.goldSoft : Colors.white,
+            color: sel ? c.goldSoft : c.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
                 color: sel ? c.gold : c.cardBorder, width: sel ? 2 : 1),
@@ -1559,7 +1559,7 @@ class _OfflineWordsDialogState extends ConsumerState<OfflineWordsDialog> {
                           decoration: BoxDecoration(
                             color: _selected.contains(l.code)
                                 ? c.goldSoft
-                                : Colors.white,
+                                : c.surface,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                                 color: _selected.contains(l.code)

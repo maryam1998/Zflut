@@ -654,7 +654,7 @@ class _MiniBtn extends StatelessWidget {
           height: 24,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: c.surface,
             shape: BoxShape.circle,
             border: Border.all(color: c.cardBorder),
           ),
