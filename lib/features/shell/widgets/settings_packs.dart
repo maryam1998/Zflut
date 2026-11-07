@@ -313,6 +313,21 @@ const Map<String, String> _kVoiceSample = {
   'zh': '你好！这个声音朗读你的文字时就是这样的。',
 };
 
+/// متن‌های ردیفِ صداها (پیش‌فرض / انتخاب / فعال / صف / توقف) به زبانِ نرم‌افزار
+const Map<String, Map<String, String>> _kVoiceUi = {
+  'fa': {'default': 'پیش‌فرض', 'select': 'انتخاب', 'active': 'فعال', 'queued': 'در صف', 'stop': 'توقف'},
+  'en': {'default': 'default', 'select': 'Select', 'active': 'Active', 'queued': 'Queued', 'stop': 'Stop'},
+  'ar': {'default': 'افتراضي', 'select': 'اختيار', 'active': 'مفعّل', 'queued': 'في الانتظار', 'stop': 'إيقاف'},
+  'de': {'default': 'Standard', 'select': 'Wählen', 'active': 'Aktiv', 'queued': 'In Warteschlange', 'stop': 'Stopp'},
+  'es': {'default': 'predeterminada', 'select': 'Elegir', 'active': 'Activa', 'queued': 'En cola', 'stop': 'Detener'},
+  'fr': {'default': 'par défaut', 'select': 'Choisir', 'active': 'Active', 'queued': 'En attente', 'stop': 'Arrêter'},
+};
+
+String _voiceUi(BuildContext context, String key) {
+  final code = Localizations.localeOf(context).languageCode;
+  return (_kVoiceUi[code] ?? _kVoiceUi['en']!)[key] ?? _kVoiceUi['en']![key]!;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // یک ردیف از «صدای آفلاینِ باکیفیت» — [نام زبان]  ........  [📥 دانلود]
 // دانلود فقط وقتی شروع می‌شود که کاربر خودش دکمه را بزند.
@@ -595,27 +610,28 @@ class _TtsPackRowState extends State<TtsPackRow> {
     final active = v['active'] == true;
     final downloading = v['downloading'] == true;
     final isDefault = v['isDefault'] == true;
-    final label = '${v['label'] ?? id}${isDefault ? ' (پیش‌فرض)' : ''}';
+    final label =
+        '${v['label'] ?? id}${isDefault ? ' (${_voiceUi(context, 'default')})' : ''}';
 
     Widget action;
     if (downloading) {
       final bytes = (_st?['bytes'] as num?) ?? 0;
       final total = (_st?['total'] as num?) ?? 0;
       final pct = total > 0 ? (bytes / total * 100).clamp(0, 100).round() : null;
-      action = _pill(context, '⏹ ${pct != null ? '$pct%' : 'توقف'}', _cancel);
+      action = _pill(context, '⏹ ${pct != null ? '$pct%' : _voiceUi(context, 'stop')}', _cancel);
     } else if (_queue.contains(id)) {
-      action = _pill(context, '⏳ در صف', () {
+      action = _pill(context, '⏳ ${_voiceUi(context, 'queued')}', () {
         setState(() {
           _queue.remove(id);
           if (_batch > 0) _batch--;
         });
       });
     } else if (downloaded && active) {
-      action = _pill(context, '✅ فعال', null);
+      action = _pill(context, '✅ ${_voiceUi(context, 'active')}', null);
     } else if (downloaded) {
-      action = _pill(context, 'انتخاب', () => _voiceSelect(id));
+      action = _pill(context, _voiceUi(context, 'select'), () => _voiceSelect(id));
     } else {
-      action = _pill(context, '📥 دانلود', () => _voiceDownload(id));
+      action = _pill(context, '📥 ${context.l10n.settings_download}', () => _voiceDownload(id));
     }
 
     return Padding(
@@ -798,9 +814,6 @@ class _TtsPackRowState extends State<TtsPackRow> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 head,
-                const SizedBox(height: 4),
-                Text('صداهای بیشتر (چند صدا را پشت‌سرهم بزن؛ در صف قرار می‌گیرند و یکی‌یکی دانلود می‌شوند)',
-                    style: TextStyle(color: c.inkSoft, fontSize: 11.5)),
                 if (_voices.isEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),

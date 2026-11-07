@@ -168,7 +168,6 @@ public class TtsService extends Service {
                 }
                 case MSG_RELEASE_LANG: {
                     String lang = b.getString("lang", "");
-                    releaseGen.incrementAndGet();
                     synchronized (this) {
                         TtsEngine cur = engines.get(lang);
                         if (cur != null) {
@@ -178,10 +177,13 @@ public class TtsService extends Service {
                                 cur.setSid(nv.sid);
                                 return true;
                             }
+                            releaseGen.incrementAndGet();
                             engines.remove(lang);
                             cur.release();
                             if (shared == cur) shared = null;
                         }
+                        // ⚡ موتورِ مشترک (کلیدِ pkg:…) با تعویضِ گوینده آزاد نمی‌شود (sid با هر خوانش می‌رسد)؛
+                        // قبلاً releaseGen همیشه بالا می‌رفت و لودِ در حالِ انجام دور ریخته و از نو لود می‌شد → کندیِ چندثانیه‌ای
                     }
                     return true;
                 }
