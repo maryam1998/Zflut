@@ -53,7 +53,7 @@ class AboutPage extends ConsumerWidget {
               dense: true,
               leading: Icon(Icons.memory_rounded,
                   color: c.inkSoft, size: 20),
-              title: Text(fa ? 'فناوری‌های اپ' : 'App Technologies',
+              title: Text(fa ? 'مجوزها' : 'Licenses',
                   style: TextStyle(
                       color: c.inkSoft,
                       fontSize: 13.5,
