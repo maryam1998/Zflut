@@ -128,15 +128,15 @@ class MediaNotificationSync {
     for (final to in tos) {
       if (to == from) continue;
       final ck = '$from>$to|$text';
-      var hit = _trCache[ck];
-      if (hit == null) {
-        try {
-          final quick = peek?.call(text, from, to);
-          if (quick != null && quick.trim().isNotEmpty) {
-            hit = _remember(ck, quick);
-          }
-        } catch (_) {}
-      }
+      // اول کشِ اصلیِ برنامه (ترجمه‌ی رفرش‌شده‌ی کاربر همان‌جا ذخیره می‌شود)؛ بعد حافظه‌ی همین کلاس
+      String? hit;
+      try {
+        final quick = peek?.call(text, from, to);
+        if (quick != null && quick.trim().isNotEmpty) {
+          hit = _remember(ck, quick);
+        }
+      } catch (_) {}
+      hit ??= _trCache[ck];
       if (hit == null) {
         _fetch(text, from, to, ck);
         continue;
@@ -166,7 +166,6 @@ class MediaNotificationSync {
       for (final to in tos) {
         if (to == from) continue;
         final ck = '$from>$to|$t';
-        if (_trCache.containsKey(ck)) continue;
         try {
           final quick = peek?.call(t, from, to);
           if (quick != null && quick.trim().isNotEmpty) {
@@ -174,6 +173,7 @@ class MediaNotificationSync {
             continue;
           }
         } catch (_) {}
+        if (_trCache.containsKey(ck)) continue;
         _fetch(t, from, to, ck);
       }
     }
