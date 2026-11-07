@@ -158,13 +158,6 @@ class CreditsPage extends ConsumerWidget {
         body: ListView(
           padding: const EdgeInsets.all(14),
           children: [
-            Text(
-              fa
-                  ? 'این برنامه از موتورهای پیشرفته‌ی پردازش زبان و صدا برای ارائه‌ی بهترین کیفیت استفاده می‌کند. اطلاعات و مجوزهای این فناوری‌ها در ادامه آمده است.'
-                  : 'This app uses advanced language and speech processing engines to deliver the best quality. Details and licenses of these technologies are listed below.',
-              style: TextStyle(color: c.inkSoft, fontSize: 12.5, height: 1.7),
-            ),
-            const SizedBox(height: 12),
             for (final cr in _credits) _CreditCard(credit: cr, lang: lang),
           ],
         ),
