@@ -218,11 +218,11 @@ final class SherpaModelManager {
             {"zm_yunyang", "Yunyang · M", "52"},
     };
     private static final int SUPERTONIC_VOICES = 10;
-    // نام‌های نمایشیِ صداهای Supertonic (به ترتیبِ sid ۰..۹). ۵ مرد + ۵ زن.
-    // اگر هنگامِ گوش‌دادن دیدی جنسیتِ یک صدا برعکس است، فقط همان نام‌ها را جابه‌جا کن.
+    // نام‌های نمایشیِ صداهای Supertonic (به ترتیبِ sid ۰..۹). ترتیبِ واقعیِ voice.bin: ۵ زن (F1..F5) و بعد ۵ مرد (M1..M5).
+    // ⚠️ برچسب‌ها قبلاً برعکس بود (sid ۰..۴ در واقع زن‌اند). فقط برچسب عوض شده؛ شناسه‌ها (st-0..st-9) و sid ثابت مانده‌اند.
     private static final String[] SUPERTONIC_NAMES = {
-            "Adrian · M", "Felix · M", "Leo · M", "Oscar · M", "Theo · M",
             "Aria · F", "Clara · F", "Luna · F", "Mila · F", "Nora · F",
+            "Adrian · M", "Felix · M", "Leo · M", "Oscar · M", "Theo · M",
     };
     // نام‌های نمایشیِ صداهای فارسی (فقط برچسب؛ شناسه‌ی مدل‌ها عوض نمی‌شود)
     private static final Map<String, String> FA_LABELS = new LinkedHashMap<>();
