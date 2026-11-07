@@ -167,6 +167,7 @@ String _stripQuotes(String s) =>
 // Circuit breaker (سراسری)
 // ═══════════════════════════════════════════════════════════════════
 // ─── ML Kit (آفلاین، روی گوشی) — اولین مرحله‌ی زنجیره‌ی شبکه ───
+const int _kSharedMaxChars = 300;         // سقفِ کشِ مشترک (همان سقفِ Worker): متنِ بلندِ کاربر هرگز به کش نمی‌رود
 const int _kMlKitMaxChars = 400;            // متن بلندتر: AI/MyMemory کیفیت بهتری دارد
 const int _kMlKitRetryAfterMs = 60 * 1000;  // بعد از شکستِ دانلود، یک دقیقه دوباره تلاش نکن
 final Set<String> _mlReady = {};            // جفت‌زبان‌هایی که مدلشان روی گوشی هست
@@ -417,7 +418,8 @@ class TranslationService {
       // ۳. آخرین چاره: ترجمه‌ی مستقیم با AI
       if (ai != null) {
         try {
-          final r = await translateViaAI(text, targetLang, sourceLang, ai);
+          final r = await translateViaAI(text, targetLang, sourceLang, ai,
+              useShared: false);
           if (!bad(r)) {
             await cachePut(text, sourceLang, targetLang, r);
             return r;
@@ -796,9 +798,15 @@ class TranslationService {
     String text,
     String target,
     String source,
-    AiSettings? settings,
-  ) async {
+    AiSettings? settings, {
+    bool useShared = true,
+  }) async {
     if (settings == null) throw Exception('translate-ai-no-settings');
+    // 🗄️ اول کشِ مشترکِ سرور (ترجمه‌ی قبلیِ بقیه‌ی کاربرها)؛ اگر نبود/در دسترس نبود همان مسیرِ قبلی.
+    if (useShared) {
+      final shared = await _viaSharedCache(text, target, source, settings);
+      if (shared != null) return shared;
+    }
     final targetLabel = englishLangName(target);
     final prompt =
         'Translate the following text into $targetLabel. '
@@ -831,6 +839,48 @@ class TranslationService {
       throw Exception('translate-ai-guard-output');
     }
     return cleaned;
+  }
+
+  /// ترجمه‌ی متنِ کوتاه از طریقِ Worker با کشِ مشترکِ همه‌ی کاربرها (/api/translate-text).
+  /// null = استفاده نشد یا نشد (متنِ بلند، زبانِ پشتیبانی‌نشده، خطای شبکه/سرور) → مسیرِ قبلیِ AI ادامه می‌یابد.
+  Future<String?> _viaSharedCache(
+      String text, String target, String source, AiSettings settings) async {
+    final t = text.trim();
+    if (t.isEmpty || t.length > _kSharedMaxChars) return null;
+    if (!_englishNames.containsKey(target)) return null;
+    final src = source.isEmpty ? 'auto' : source;
+    if (src != 'auto' && !_englishNames.containsKey(src)) return null;
+    try {
+      final res = await _aiDio
+          .post(
+            '${settings.baseUrl}/api/translate-text',
+            data: {
+              'text': t,
+              'source_lang_code': src,
+              'target_lang_code': target,
+            },
+            options: Options(
+              contentType: 'application/json',
+              sendTimeout: const Duration(milliseconds: _kAiTimeoutMs),
+              receiveTimeout: const Duration(milliseconds: _kAiTimeoutMs * 2),
+            ),
+          )
+          .timeout(const Duration(milliseconds: _kAiTimeoutMs * 2));
+      final status = res.statusCode ?? 0;
+      if (status < 200 || status >= 300) return null;
+      final data = _json(res.data);
+      final out = data is Map ? data['text'] : null;
+      if (out is! String) return null;
+      final cleaned = _stripQuotes(stripAIReasoning(out));
+      if (cleaned.isEmpty ||
+          looksLikeAIReasoning(cleaned) ||
+          looksLikeGuardOutput(cleaned)) {
+        return null;
+      }
+      return cleaned;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String> _verifyWithAI(
