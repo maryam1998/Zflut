@@ -99,6 +99,18 @@ class SpeechController extends StateNotifier<SpeechState> {
   List<String> _queue = [];
   int _queueIndex = -1;
 
+  // قلاب‌های «پایانِ جمله»: پیش از رفتن به جمله‌ی بعد صدا زده می‌شوند. اگر یکی true
+  // بدهد، خودش پخشِ بعدی را به عهده گرفته (مثلاً خواندنِ مثال‌های یک لغت).
+  // آرگومان‌ها: کلیدِ متن، شروعِ این جمله، شروعِ جمله‌ی بعد (-1 = آخرِ متن)، و اینکه
+  // بعد از آخر دوباره از اول می‌خواند یا نه.
+  final List<bool Function(String?, int, int, bool)> _advanceHooks = [];
+  void addChunkAdvanceHook(bool Function(String?, int, int, bool) f) {
+    if (!_advanceHooks.contains(f)) _advanceHooks.add(f);
+  }
+
+  void removeChunkAdvanceHook(bool Function(String?, int, int, bool) f) =>
+      _advanceHooks.remove(f);
+
   // A-B
   String _abState = 'idle';
   int? _abChunkA;
@@ -1213,6 +1225,19 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
 
     _chunkRepeatsDone.remove(idx);
+    if (_advanceHooks.isNotEmpty && idx < _chunks.length) {
+      final nextStart = idx + 1 < _chunks.length ? _chunks[idx + 1].start : -1;
+      final loops = _loop || state.globalRepeat == -1;
+      for (final h in List.of(_advanceHooks)) {
+        var taken = false;
+        try {
+          taken = h(_currentKey, _chunks[idx].start, nextStart, loops);
+        } catch (e) {
+          debugPrint('chunkAdvanceHook error: $e');
+        }
+        if (taken) return;
+      }
+    }
     unawaited(_playFrom(idx + 1));
   }
 

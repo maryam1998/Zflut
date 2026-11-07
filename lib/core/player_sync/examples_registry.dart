@@ -1,0 +1,37 @@
+import 'player_track.dart';
+
+/// مثال‌های هوش مصنوعیِ «بازِ» هر لغت (پنل‌های مثالِ روی صفحه). پلیرِ لیست
+/// با این اطلاعات بعد از خواندنِ هر لغت، مثال‌هایش را هم می‌خواند.
+class ExamplesRegistry {
+  static final Map<String, ({String word, String lang, List<String> texts})>
+      _open = {};
+
+  static String _k(String lang, String word) =>
+      '$lang::${word.trim().toLowerCase()}';
+
+  static void set(String lang, String word, List<String> texts) {
+    if (texts.isEmpty) {
+      _open.remove(_k(lang, word));
+    } else {
+      _open[_k(lang, word)] = (word: word, lang: lang, texts: List.of(texts));
+    }
+  }
+
+  static void remove(String lang, String word) => _open.remove(_k(lang, word));
+
+  static List<String>? textsFor(String lang, String word) =>
+      _open[_k(lang, word)]?.texts;
+
+  /// صاحبِ مثالی که با این کلیدِ پخش خوانده می‌شود (یا null)
+  static ({String word, String lang, int index, int count})? ownerOfKey(
+      String key) {
+    for (final e in _open.values) {
+      for (var i = 0; i < e.texts.length; i++) {
+        if (PlayerTrack.keyFor(e.lang, e.texts[i]) == key) {
+          return (word: e.word, lang: e.lang, index: i, count: e.texts.length);
+        }
+      }
+    }
+    return null;
+  }
+}

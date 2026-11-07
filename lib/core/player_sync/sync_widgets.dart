@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,7 +9,9 @@ import 'package:go_router/go_router.dart';
 import '../providers/app_prefs_provider.dart';
 import '../providers/speech_provider.dart';
 import '../theme/app_theme_colors.dart';
+import '../tts/speech_controller.dart' show SpeechController;
 import '../tts/speech_state.dart';
+import 'examples_registry.dart';
 import 'playback_origin.dart';
 import 'player_sync_provider.dart';
 import 'player_track.dart';
@@ -84,10 +87,17 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   ActiveSync? _lastActive;
   int _scrollToken = 0;
 
+  late final SpeechController _ctrl;
+  // بعد از تمام شدنِ مثال‌ها، پخشِ لیست از این آیتم ادامه می‌یابد
+  String? _resumeSpanId;
+  bool _resumeFromHook = false;
+
   @override
   void initState() {
     super.initState();
     _notifier = ref.read(playerSyncProvider.notifier);
+    _ctrl = ref.read(speechControllerProvider.notifier);
+    _ctrl.addChunkAdvanceHook(_chunkHook);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _register();
@@ -123,6 +133,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   @override
   void dispose() {
+    _ctrl.removeChunkAdvanceHook(_chunkHook);
     final n = _notifier;
     final id = _scopeId;
     Future.microtask(() {
@@ -148,6 +159,113 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     }
     ref.read(playbackOriginProvider.notifier).state =
         PlaybackOrigin(route, key, widget.originExtra);
+  }
+
+  // ───────────── لغت ← مثال‌هایش ← لغتِ بعد ─────────────
+  TrackSpan? _spanAt(PlayerTrack t, int offset) {
+    for (var i = t.spans.length - 1; i >= 0; i--) {
+      if (offset >= t.spans[i].start) return t.spans[i];
+    }
+    return null;
+  }
+
+  void _playExample(String code, String text) {
+    ref.read(adhocSyncProvider.notifier).state = (
+      key: PlayerTrack.keyFor(code, text),
+      active: ActiveSync(code, 'ai-ex-$code-${text.hashCode}')
+    );
+    unawaited(_ctrl.toggle(text, code));
+  }
+
+  /// پایانِ طبیعیِ خواندنِ یک لغت در پلیرِ لیست: اگر مثال‌های بازِ این لغت
+  /// هست، به‌جای رفتن به لغتِ بعد اول مثال‌ها خوانده می‌شود.
+  bool _chunkHook(String? key, int thisStart, int nextStart, bool loops) {
+    if (!mounted) return false;
+    final sync = ref.read(playerSyncProvider);
+    if (sync.scopeId != _scopeId) return false;
+    final track = sync.tracks[sync.mainCode];
+    if (track == null || track.key != key || track.spans.isEmpty) return false;
+    final cur = _spanAt(track, thisStart);
+    if (cur == null) return false;
+    final nxt = nextStart >= 0 ? _spanAt(track, nextStart) : null;
+    if (nxt != null && nxt.id == cur.id) return false; // هنوز همین آیتم
+    final word = _notifier.itemText(cur.id);
+    if (word == null) return false;
+    final texts = ExamplesRegistry.textsFor(track.code, word);
+    if (texts == null || texts.isEmpty) return false;
+    _resumeFromHook = true;
+    _resumeSpanId =
+        nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
+    _playExample(track.code, texts.first);
+    return true;
+  }
+
+  String? _nextSpanAfterWord(PlayerTrack track, String word) {
+    final w = word.trim().toLowerCase();
+    for (var i = 0; i < track.spans.length; i++) {
+      final t = _notifier.itemText(track.spans[i].id);
+      if (t != null && t.trim().toLowerCase() == w) {
+        return track.spans[(i + 1) % track.spans.length].id;
+      }
+    }
+    return null;
+  }
+
+  void _onSpeech(SpeechState? prev, SpeechState next) {
+    final sync = ref.read(playerSyncProvider);
+    if (sync.scopeId != _scopeId) return;
+    if (next.key == null) {
+      _resumeSpanId = null;
+      _resumeFromHook = false;
+      return;
+    }
+    final ad = ref.read(adhocSyncProvider);
+    final isExample = ad != null && ad.key == next.key;
+
+    if (prev?.key != next.key) {
+      if (!isExample) {
+        _resumeSpanId = null;
+        _resumeFromHook = false;
+      } else if (!_resumeFromHook) {
+        // مثالی که کاربر خودش زد: بعد از مثال‌های همان لغت، لغتِ بعدی
+        final o = ExamplesRegistry.ownerOfKey(next.key!);
+        final track = sync.tracks[sync.mainCode];
+        _resumeSpanId = (o == null || track == null)
+            ? null
+            : _nextSpanAfterWord(track, o.word);
+      }
+    }
+
+    // پایانِ طبیعیِ آخرین مثال → ادامه‌ی لیست از لغتِ بعد
+    if (isExample &&
+        _resumeSpanId != null &&
+        prev != null &&
+        prev.status == SpeechStatus.playing &&
+        next.status == SpeechStatus.idle &&
+        prev.key == next.key &&
+        next.error == null) {
+      final o = ExamplesRegistry.ownerOfKey(next.key!);
+      if (o != null && o.index + 1 < o.count) return; // پنل مثالِ بعدی را می‌خواند
+      _resumeMain();
+    }
+  }
+
+  void _resumeMain() {
+    final id = _resumeSpanId;
+    _resumeSpanId = null;
+    _resumeFromHook = false;
+    if (id == null) return;
+    final sync = ref.read(playerSyncProvider);
+    final track = sync.tracks[sync.mainCode];
+    final span = track?.byId[id];
+    if (track == null || span == null) return;
+    unawaited(_ctrl.toggle(
+      track.fullText,
+      track.code,
+      startCharOffset: span.start,
+      loop: true,
+      sentenceBoundaries: track.boundaries,
+    ));
   }
 
   // ───────────────────────── اسکرول خودکار ─────────────────────────
@@ -245,6 +363,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         (prev, next) {
       if (next.active && next.key != null) _recordOrigin();
     });
+    ref.listen<SpeechState>(speechControllerProvider, _onSpeech);
     // لمسِ طولانیِ دکمه‌ی پخش: دوباره به خطِ در حال پخش اسکرول کن
     ref.listen<int>(revealActiveTickProvider, (prev, next) {
       if (prev != next) _onActive(ref.read(activeSyncProvider));
@@ -492,9 +611,11 @@ Future<bool> syncPlayPause(WidgetRef ref) async {
   final tracks = ref.read(playerSyncProvider).tracks;
   final hasPageText = tracks.values.any((t) => t.fullText.isNotEmpty);
 
+  final ad = ref.read(adhocSyncProvider);
+  final adhocHere = ad != null && ad.key == st.key;
   if (st.key != null && st.status != SpeechStatus.idle) {
     // متنِ در حال پخش/مکث مالِ همین صفحه است (یا این صفحه متنی ندارد) → پخش/توقف
-    if (!hasPageText || tracks.values.any((t) => t.key == st.key)) {
+    if (!hasPageText || adhocHere || tracks.values.any((t) => t.key == st.key)) {
       await ctrl.togglePlayPause();
       return true;
     }

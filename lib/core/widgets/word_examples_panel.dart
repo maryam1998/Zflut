@@ -9,7 +9,10 @@ import '../providers/translation_provider.dart';
 import '../providers/example_favorites_provider.dart';
 import '../providers/speech_provider.dart';
 import '../../features/reader/widgets/neural_path_dialog.dart';
+import '../player_sync/examples_registry.dart';
+import '../player_sync/player_track.dart' show PlayerTrack;
 import '../player_sync/sync_widgets.dart' show SyncAnchor, syncSpeakAdhoc;
+import '../tts/speech_state.dart';
 import 'selection_card.dart' show SelectableSyncText;
 import 'sync_item_card.dart' show NeuralPathButton;
 import '../theme/app_theme_colors.dart';
@@ -136,10 +139,39 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
   }
 
   @override
+  void dispose() {
+    ExamplesRegistry.remove(widget.langCode, widget.word);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.appColors;
     final targets =
         widget.targetLangs.where((l) => l != widget.langCode).toList();
+
+    // پلیرِ لیست از اینجا می‌فهمد این لغت مثالِ بازِ روی صفحه دارد
+    ExamplesRegistry.set(
+        widget.langCode, widget.word, [for (final e in _examples) e.text]);
+
+    // ▶️ پایانِ طبیعیِ پخشِ یک مثال → مثالِ بعدی خودکار پخش می‌شود
+    // (توقفِ دستی کلید را پاک می‌کند، پس زنجیره ادامه پیدا نمی‌کند).
+    ref.listen<SpeechState>(speechControllerProvider, (prev, next) {
+      if (prev == null ||
+          prev.status != SpeechStatus.playing ||
+          next.status != SpeechStatus.idle ||
+          next.key == null ||
+          next.key != prev.key ||
+          next.error != null) {
+        return;
+      }
+      final i = _examples.indexWhere(
+          (e) => PlayerTrack.keyFor(widget.langCode, e.text) == next.key);
+      if (i < 0 || i + 1 >= _examples.length) return;
+      final n = _examples[i + 1];
+      syncSpeakAdhoc(ref, widget.langCode,
+          'ai-ex-${widget.langCode}-${n.text.hashCode}', n.text);
+    });
 
     final g = widget.gutter;
 
