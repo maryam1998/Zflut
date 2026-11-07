@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import '../native/native_bridge.dart';
 import '../storage/translation_cache_db.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -165,6 +166,13 @@ String _stripQuotes(String s) =>
 // ═══════════════════════════════════════════════════════════════════
 // Circuit breaker (سراسری)
 // ═══════════════════════════════════════════════════════════════════
+// ─── ML Kit (آفلاین، روی گوشی) — اولین مرحله‌ی زنجیره‌ی شبکه ───
+const int _kMlKitMaxChars = 400;            // متن بلندتر: AI/MyMemory کیفیت بهتری دارد
+const int _kMlKitRetryAfterMs = 60 * 1000;  // بعد از شکستِ دانلود، یک دقیقه دوباره تلاش نکن
+final Set<String> _mlReady = {};            // جفت‌زبان‌هایی که مدلشان روی گوشی هست
+final Set<String> _mlDownloading = {};
+final Map<String, int> _mlRetryAt = {};
+
 final Map<String, int> _providerFailCounts = {};
 final Map<String, int> _providerBlockedUntil = {};
 
@@ -437,6 +445,19 @@ class TranslationService {
     AiSettings? aiSettings,
     bool forceVerify = false,
   }) async {
+    // ۰. ML Kit روی گوشی: آنی، رایگان، بدون سقف و بدون هزینه‌ی Worker. اگر مدل آماده نبود
+    //    دانلود در پس‌زمینه شروع می‌شود و همین‌بار از مسیر معمولِ زیر ترجمه می‌شود.
+    if (!forceVerify) {
+      final ml = await _viaMlKit(text, targetLang, sourceLang);
+      if (ml != null &&
+          ml.trim().isNotEmpty &&
+          !looksLikelyMistranslated(text, ml, targetLang,
+              sourceLang: sourceLang)) {
+        await cachePut(text, sourceLang, targetLang, ml.trim());
+        return ml.trim();
+      }
+    }
+
     final providers =
         _freeProviders().where((p) => !_isProviderBlocked(p.name)).toList();
 
@@ -477,6 +498,62 @@ class TranslationService {
     }
 
     return text; // هیچ سرویسی جواب نداد → متن اصلی (تا برنامه نیفتد)
+  }
+
+  /// دانلودِ مدلِ ML Kit در پس‌زمینه (Wi‑Fi و داده‌ی موبایل). هرگز خطا پرتاب نمی‌کند.
+  Future<void> _mlDownload(String key, String source, String target) async {
+    try {
+      await NativeBridge.instance
+          .mlkitDownload(src: source, tgt: target, wifiOnly: false);
+      _mlReady.add(key);
+    } catch (_) {
+      _mlRetryAt[key] =
+          DateTime.now().millisecondsSinceEpoch + _kMlKitRetryAfterMs;
+    } finally {
+      _mlDownloading.remove(key);
+    }
+  }
+
+  /// ترجمه با ML Kit. null = استفاده نشد (iOS/وب، زبان نامشخص، جفت‌زبان پشتیبانی‌نشده، مدل هنوز دانلود نشده، یا خطا).
+  /// دانلودِ مدل خودکار و بدون قید Wi‑Fi (داده‌ی موبایل هم) در پس‌زمینه شروع می‌شود.
+  Future<String?> _viaMlKit(String text, String target, String source) async {
+    try {
+      final n = NativeBridge.instance;
+      if (!n.isSupported) return null;
+      if (source.isEmpty || source == 'auto' || source == target) return null;
+      if (text.length > _kMlKitMaxChars) return null;
+      final key = '$source>$target';
+
+      if (!_mlReady.contains(key)) {
+        final retryAt = _mlRetryAt[key];
+        if (retryAt != null &&
+            DateTime.now().millisecondsSinceEpoch < retryAt) {
+          return null;
+        }
+        if (_mlDownloading.contains(key)) return null;
+        final st = await n
+            .mlkitStatus(src: source, tgt: target)
+            .timeout(const Duration(seconds: 4));
+        if (st['supported'] != true) return null;
+        if (st['ready'] == true) {
+          _mlReady.add(key);
+        } else {
+          if (st['downloading'] != true) {
+            _mlDownloading.add(key);
+            unawaited(_mlDownload(key, source, target));
+          }
+          return null;
+        }
+      }
+
+      final r = await n
+          .mlkitTranslate(text: text, src: source, tgt: target)
+          .timeout(const Duration(seconds: 5));
+      final t = r['text'];
+      return t is String ? t : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// سرویس‌های آنلاینِ رایگان. در حالتِ تجاری (kAllowUnofficialTranslators=false) فقط MyMemory (API رسمی با سقف) می‌ماند؛
