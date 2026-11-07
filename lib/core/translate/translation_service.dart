@@ -20,6 +20,9 @@ import '../storage/translation_cache_db.dart';
 const String kDefaultBackendUrl =
     'https://phrasebook-api.maryam-s-sharifiyan.workers.dev';
 
+/// false = انتشار تجاری: سرویس‌های غیررسمی (Google gtx / Lingva / LibreTranslate عمومی) خاموش‌اند. true = مثل قبل.
+const bool kAllowUnofficialTranslators = false;
+
 const int _kProviderFailThreshold = 4;
 const int _kProviderBlockMs = 45 * 1000;
 const int kGlobalTranslateConcurrency = 10;
@@ -385,12 +388,7 @@ class TranslationService {
 
     Future<String> run() async {
       // ۱. مترجم‌های رایگان (بدون کش)
-      final providers = <_Provider>[
-        _Provider('google', _viaGoogle),
-        _Provider('mymemory', _viaMyMemory),
-        _Provider('lingva', _viaLingva),
-        _Provider('libre', _viaLibre),
-      ];
+      final providers = _freeProviders();
       var result = '';
       try {
         final winner =
@@ -439,12 +437,8 @@ class TranslationService {
     AiSettings? aiSettings,
     bool forceVerify = false,
   }) async {
-    final providers = <_Provider>[
-      _Provider('google', _viaGoogle),
-      _Provider('mymemory', _viaMyMemory),
-      _Provider('lingva', _viaLingva),
-      _Provider('libre', _viaLibre),
-    ].where((p) => !_isProviderBlocked(p.name)).toList();
+    final providers =
+        _freeProviders().where((p) => !_isProviderBlocked(p.name)).toList();
 
     final winner = await _raceProviders(providers, text, targetLang, sourceLang);
 
@@ -484,6 +478,15 @@ class TranslationService {
 
     return text; // هیچ سرویسی جواب نداد → متن اصلی (تا برنامه نیفتد)
   }
+
+  /// سرویس‌های آنلاینِ رایگان. در حالتِ تجاری (kAllowUnofficialTranslators=false) فقط MyMemory (API رسمی با سقف) می‌ماند؛
+  /// google(gtx)/lingva غیررسمی‌اند و libre عمومی کلید می‌خواهد. بقیه‌ی زنجیره (کش، AI) بدون تغییر است.
+  List<_Provider> _freeProviders() => <_Provider>[
+        if (kAllowUnofficialTranslators) _Provider('google', _viaGoogle),
+        _Provider('mymemory', _viaMyMemory),
+        if (kAllowUnofficialTranslators) _Provider('lingva', _viaLingva),
+        if (kAllowUnofficialTranslators) _Provider('libre', _viaLibre),
+      ];
 
   /// مسابقه‌ی مترجم‌ها: اولین نتیجه‌ی «سالم» برنده است. اگر نتیجه‌ای از کنترل
   /// کیفیت رد شد (مثلاً جوابِ بی‌ربطِ MyMemory برای یک کلمه) فعلاً نگه داشته

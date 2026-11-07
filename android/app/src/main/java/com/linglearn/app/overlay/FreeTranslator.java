@@ -58,13 +58,13 @@ final class FreeTranslator {
     private static final long[] downUntil = new long[SERVICES];
 
     /**
-     * false (پیش‌فرض برای انتشار تجاری): سرویس‌های «غیررسمی» (۰ = Google gtx، ۲ = Lingva) در زنجیره نیستند،
+     * false (پیش‌فرض برای انتشار تجاری): سرویس‌های «غیررسمی» (۰ = Google gtx، ۲ = Lingva، ۳ = LibreTranslate عمومی) در زنجیره نیستند،
      * چون API رسمی/مجاز نیستند و شرایط استفاده‌شان برای اپِ تجاری امن نیست. true = مثل قبل.
      */
     private static final boolean ALLOW_UNOFFICIAL = false;
 
     private static boolean allowed(int svc) {
-        return ALLOW_UNOFFICIAL || (svc != 0 && svc != 2);
+        return ALLOW_UNOFFICIAL || svc == 1;   // فقط MyMemory؛ ۰=gtx ۲=Lingva ۳=LibreTranslate عمومی خاموش
     }
 
     /** اگر سرویسِ اول در این مدت جواب نداد، سرویسِ بعدی «هم‌زمان» شروع می‌شود (اولین جوابِ سالم برنده است). */
