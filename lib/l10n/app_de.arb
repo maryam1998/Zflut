@@ -840,5 +840,7 @@
   "packs_lang_title": "Schnelle Einzelsprach-Pakete",
   "packs_lang_desc": "Optional; ein eigenes Paket ist für diese Sprachen schneller und genauer.",
   "packs_multi_ready": "✅ Mehrsprachiges Paket ist bereit",
-  "packs_manage": "Verwalten"
+  "packs_manage": "Verwalten",
+  "tts_err_need_pack": "Zum Vorlesen von Persisch/Arabisch lade die App-Stimme unter Einstellungen → „App-Stimme“ herunter (oder installiere die Stimme dieser Sprache auf deinem Handy).",
+  "tts_err_no_voice": "Für diese Sprache ist keine Stimme auf dem Gerät installiert. Installiere eine in den Geräte-/Browsereinstellungen."
 }

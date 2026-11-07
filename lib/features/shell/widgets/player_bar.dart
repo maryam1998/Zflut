@@ -152,7 +152,7 @@ class PlayerBar extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
                   child: Text(
-                    state.error!,
+                    _ttsErrorText(context, state.error!),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 11,
@@ -1317,5 +1317,18 @@ class _UserSeekAmountControl extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+/// خطاهای TTS به‌صورت کلید می‌آیند و اینجا به زبانِ رابط ترجمه می‌شوند.
+String _ttsErrorText(BuildContext context, String e) {
+  final L = context.l10n;
+  switch (e) {
+    case 'tts_err_no_voice':
+      return L.tts_err_no_voice;
+    case 'tts_err_need_pack':
+      return L.tts_err_need_pack;
+    default:
+      return e;
   }
 }

@@ -138,6 +138,15 @@ export default {
       }
       const capped = Math.min(Math.max(Number(maxTokens) || 1000, 1), 8192);
 
+      // کشِ مشترکِ D1: همان پرامپت (با همان سقفِ توکن) دوباره به هوش مصنوعی نمی‌رود.
+      // برای «مثالِ جدید/بازتولید» کلاینت می‌تواند { "noCache": true } بفرستد.
+      const useCache = !body.noCache;
+      const cacheKey = useCache ? await genCacheKey(prompt, capped) : null;
+      if (cacheKey) {
+        const hit = await genCacheGet(env, cacheKey);
+        if (hit) return json({ text: hit, provider: "cache", cached: true });
+      }
+
       const chain = getProviderChain(env);
       const errors = [];
       // سقفِ زمانِ هر پرووایدر: یکی که کند/بی‌صدا شد، کلِ درخواست را معطل نکند و
@@ -151,6 +160,7 @@ export default {
           const text = sanitizeAiText(raw);
           const bad = badAiOutputReason(text, prompt);
           if (bad) throw new Error(`unusable output (${bad})`);
+          if (cacheKey) ctx.waitUntil(genCachePut(env, cacheKey, text, provider));
           return json({ text, provider });
         } catch (e) {
           errors.push(`${provider}: ${e.message}`);
@@ -162,6 +172,49 @@ export default {
     return json({ error: "Not found" }, 404);
   },
 };
+
+// --- کشِ مشترکِ D1 برای /api/generate (مثال‌ساز و ...) ---------------------
+// اگر binding با نام TR_DB تنظیم نشده باشد، همه‌ی این توابع بی‌صدا هیچ‌کاری نمی‌کنند.
+const GEN_CACHE_TTL_MS = 180 * 24 * 60 * 60 * 1000; // ۱۸۰ روز
+let genCacheReady = false;
+
+async function genCacheKey(prompt, capped) {
+  const data = new TextEncoder().encode(JSON.stringify([prompt, capped]));
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function genCacheInit(env) {
+  if (genCacheReady) return;
+  await env.TR_DB.prepare(
+    "CREATE TABLE IF NOT EXISTS gen_cache (k TEXT PRIMARY KEY, v TEXT NOT NULL, provider TEXT, created INTEGER NOT NULL)"
+  ).run();
+  genCacheReady = true;
+}
+
+async function genCacheGet(env, key) {
+  if (!env.TR_DB) return null;
+  try {
+    await genCacheInit(env);
+    const row = await env.TR_DB.prepare("SELECT v, created FROM gen_cache WHERE k = ?1").bind(key).first();
+    if (!row || Date.now() - row.created > GEN_CACHE_TTL_MS) return null;
+    return row.v;
+  } catch {
+    return null;
+  }
+}
+
+async function genCachePut(env, key, text, provider) {
+  if (!env.TR_DB || !text) return;
+  try {
+    await genCacheInit(env);
+    await env.TR_DB.prepare(
+      "INSERT OR REPLACE INTO gen_cache (k, v, provider, created) VALUES (?1, ?2, ?3, ?4)"
+    ).bind(key, text, provider, Date.now()).run();
+  } catch {
+    // خطای کش نباید جواب را خراب کند
+  }
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {

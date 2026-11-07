@@ -26,7 +26,7 @@ class AboutButton extends ConsumerWidget {
   }
 }
 
-/// درباره‌ی برنامه ← مجوزهای متن‌باز
+/// درباره‌ی برنامه ← تشکر و منابع
 class AboutPage extends ConsumerWidget {
   const AboutPage({super.key});
 
@@ -50,10 +50,16 @@ class AboutPage extends ConsumerWidget {
           children: [
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              leading: Icon(Icons.description_outlined, color: c.gold),
-              title: Text(fa ? 'مجوزهای متن‌باز' : 'Open Source Licenses',
-                  style: TextStyle(color: c.ink, fontWeight: FontWeight.w700)),
-              trailing: Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+              dense: true,
+              leading: Icon(Icons.favorite_border_rounded,
+                  color: c.inkSoft, size: 20),
+              title: Text(fa ? 'تشکر و منابع' : 'Credits & thanks',
+                  style: TextStyle(
+                      color: c.inkSoft,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500)),
+              trailing: Icon(Icons.chevron_right_rounded,
+                  color: c.inkSoft, size: 20),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const CreditsPage()),
               ),
@@ -145,23 +151,23 @@ class CreditsPage extends ConsumerWidget {
         appBar: AppBar(
           backgroundColor: c.headerFrom,
           foregroundColor: c.headerText,
-          title: Text(fa ? 'مجوزهای متن‌باز' : 'Open Source Licenses'),
+          title: Text(fa ? 'تشکر و منابع' : 'Credits & thanks'),
         ),
         body: ListView(
           padding: const EdgeInsets.all(14),
           children: [
             Text(
               fa
-                  ? 'اطلاعیه‌های حقوقی و مجوزهای شخص ثالث'
-                  : 'Legal Notices and Third-Party Licenses',
+                  ? 'با سپاس از'
+                  : 'With thanks to',
               style: TextStyle(
                   color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 4),
             Text(
               fa
-                  ? 'این برنامه از اجزای متن‌باز زیر استفاده می‌کند.'
-                  : 'This app uses the open-source components listed below.',
+                  ? 'این برنامه با کمک پروژه‌های ارزشمند زیر ساخته شده است.'
+                  : 'This app was built with the help of these great projects.',
               style: TextStyle(color: c.inkSoft, fontSize: 12.5, height: 1.7),
             ),
             const SizedBox(height: 12),

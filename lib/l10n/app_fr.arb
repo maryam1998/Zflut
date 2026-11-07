@@ -840,5 +840,7 @@
   "packs_lang_title": "Modules rapides par langue",
   "packs_lang_desc": "Facultatif ; un module dédié est plus rapide et plus précis pour ces langues.",
   "packs_multi_ready": "✅ Le module multilingue est prêt",
-  "packs_manage": "Gérer"
+  "packs_manage": "Gérer",
+  "tts_err_need_pack": "Pour écouter le persan/l’arabe, télécharge la voix de l’appli dans Réglages → « Voix de l’appli » (ou installe la voix de cette langue sur ton téléphone).",
+  "tts_err_no_voice": "Aucune voix n’est installée pour cette langue. Installe-en une dans les réglages de l’appareil/du navigateur."
 }

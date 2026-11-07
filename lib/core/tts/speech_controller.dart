@@ -1073,8 +1073,7 @@ class SpeechController extends StateNotifier<SpeechState> {
           if (_skipFailedChunk(idx, myGen)) return;
           state = state.copyWith(
             status: SpeechStatus.idle,
-            error: 'برای این زبان صدایی روی دستگاه نصب نیست؛ '
-                'صدای آن را از تنظیمات دستگاه/مرورگر نصب کنید.',
+            error: 'tts_err_no_voice', // کلیدِ ترجمه — در player_bar ترجمه می‌شود
           );
           return;
         }
@@ -1090,8 +1089,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       if (_skipFailedChunk(idx, myGen)) return;
       state = state.copyWith(
         status: SpeechStatus.idle,
-        error: 'برای خواندن فارسی/عربی، بسته‌ی صدای اپ را از تنظیمات ← «صدای برنامه» '
-            'دانلود کنید (یا صدای این زبان را روی گوشی نصب کنید).',
+        error: 'tts_err_need_pack', // کلیدِ ترجمه — در player_bar ترجمه می‌شود
       );
       return;
     }

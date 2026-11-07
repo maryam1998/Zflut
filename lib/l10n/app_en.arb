@@ -1490,5 +1490,7 @@
   "packs_lang_title": "Fast single-language packs",
   "packs_lang_desc": "Optional; a dedicated pack is faster and more accurate for these languages.",
   "packs_multi_ready": "✅ Multilingual pack is ready",
-  "packs_manage": "Manage"
+  "packs_manage": "Manage",
+  "tts_err_need_pack": "To hear Persian/Arabic, download the app voice from Settings → “App voice” (or install this language’s voice on your phone).",
+  "tts_err_no_voice": "No voice is installed on this device for this language. Install one from your device/browser settings."
 }

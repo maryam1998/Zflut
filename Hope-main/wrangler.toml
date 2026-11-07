@@ -48,3 +48,9 @@ binding = "AI"
 # (kilocode/llm7/ovhcloud need no key at all — skip those three.)
 # Secrets set this way persist across deploys; `wrangler deploy` never
 # touches or clears them.
+
+# ⭐ D1 — کشِ مشترکِ ترجمه (binding باید دقیقاً TR_DB باشد)
+[[d1_databases]]
+binding = "TR_DB"
+database_name = "phrasebook-tr-cache"
+database_id = "2c917ede-0b23-492a-9833-9b35400c56c3"
