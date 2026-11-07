@@ -122,11 +122,6 @@ const List<_Credit> _credits = [
     author: 'pfluo, k2-fsa (icefall)',
   ),
   _Credit(
-    'Streaming Zipformer (KO)',
-    'Not specified by the author',
-    author: 'johnBamma, k2-fsa (icefall)',
-  ),
-  _Credit(
     'Streaming Zipformer (RU)',
     'Apache 2.0',
     author: 'Alpha Cephei Inc. (Vosk)',
@@ -140,15 +135,6 @@ const List<_Credit> _credits = [
     'Mana-TTS',
     'MIT',
     author: 'Mahta Fetrat',
-  ),
-  _Credit(
-    'Piper',
-    'MIT',
-    author: 'Rhasspy / OHF-Voice',
-  ),
-  _Credit(
-    'espeak-ng',
-    'GPL-3.0',
   ),
 ];
 
@@ -168,7 +154,6 @@ class CreditsPage extends ConsumerWidget {
         appBar: AppBar(
           backgroundColor: c.headerFrom,
           foregroundColor: c.headerText,
-          title: Text(fa ? 'فناوری‌های اپ' : 'App Technologies'),
         ),
         body: ListView(
           padding: const EdgeInsets.all(14),
