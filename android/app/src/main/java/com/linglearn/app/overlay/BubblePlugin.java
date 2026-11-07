@@ -940,7 +940,7 @@ public class BubblePlugin extends Plugin {
                 JSObject o = new JSObject();
                 o.put("id", v.id);
                 o.put("label", v.label);
-                o.put("isDefault", v.isDefault);
+                o.put("isDefault", SherpaModelManager.isShownDefault(lang, v));
                 o.put("downloaded", SherpaModelManager.isTtsVoiceInstalled(ctx, lang, v.id));
                 o.put("active", av != null && av.id.equals(v.id));
                 o.put("downloading", dl != null && dl.equals(v.id));

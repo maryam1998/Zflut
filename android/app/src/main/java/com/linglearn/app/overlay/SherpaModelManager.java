@@ -400,7 +400,21 @@ final class SherpaModelManager {
                 if (v != null) return v;
             }
         } catch (Throwable ignored) {}
+        // فارسی: وقتی کاربر صدایی انتخاب نکرده، صدای پیش‌فرض «آرمان» (مرد) است، نه سارا (Mana)
+        if ("fa".equals(l)) {
+            TtsVoice pv = findVoice(l, FA_PREFERRED_VOICE);
+            if (pv != null) return pv;
+        }
         return list.get(0);
+    }
+
+    /** صدای پیش‌فرضِ فارسی (وقتی انتخابی ثبت نشده). */
+    static final String FA_PREFERRED_VOICE = "fa_IR-amir-medium";
+
+    /** برچسبِ «پیش‌فرض» در فهرستِ صداها (فارسی: آرمان؛ بقیه: صدای اول). */
+    static boolean isShownDefault(String lang, TtsVoice v) {
+        if (v == null) return false;
+        return "fa".equals(normalize(lang)) ? FA_PREFERRED_VOICE.equals(v.id) : v.isDefault;
     }
 
     static void setActiveVoice(Context ctx, String lang, String vid) {
@@ -411,7 +425,9 @@ final class SherpaModelManager {
             if (!root.isDirectory()) root.mkdirs();
             File f = new File(root, l + ".active");
             TtsVoice v = findVoice(l, vid);
-            if (v == null || v.isDefault) { f.delete(); return; }   // پیش‌فرض = بدون فایل
+            // پیش‌فرض = بدون فایل. فارسی: پیش‌فرض آرمان است، پس انتخابِ صریحِ سارا باید در فایل بماند
+            if (v == null || (v.isDefault && !"fa".equals(l))) { f.delete(); return; }
+            if ("fa".equals(l) && FA_PREFERRED_VOICE.equals(v.id)) { f.delete(); return; }
             try (FileOutputStream out = new FileOutputStream(f, false)) {
                 out.write(v.id.getBytes("UTF-8"));
             }
@@ -1302,7 +1318,7 @@ final class SherpaModelManager {
             return;
         }
         deleteRecursive(ttsDirFor(ctx, l, v));
-        if (active != null && active.id.equals(v.id) && !v.isDefault) setActiveVoice(ctx, l, null);
+        if (active != null && active.id.equals(v.id) && (!v.isDefault || "fa".equals(l))) setActiveVoice(ctx, l, null);
     }
 
     /**
