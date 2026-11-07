@@ -206,8 +206,8 @@ final class SherpaModelManager {
 
     // {id, برچسب, sid}  — ترتیبِ sid در Kokoro v1.0 (۵۳ گوینده، الفبایی). پیش‌فرض = اولی.
     private static final String[][] KOKORO_EN = {
-            {"af_heart", "Heart · US · F", "3"}, {"af_bella", "Bella · US · F", "2"},
-            {"af_nicole", "Nicole · US · F", "6"}, {"af_sarah", "Sarah · US · F", "9"},
+            {"af_nicole", "Nicole · US · F", "6"}, {"af_heart", "Heart · US · F", "3"},
+            {"af_bella", "Bella · US · F", "2"}, {"af_sarah", "Sarah · US · F", "9"},
             {"am_michael", "Michael · US · M", "16"}, {"am_adam", "Adam · US · M", "11"},
             {"bf_emma", "Emma · UK · F", "21"}, {"bm_george", "George · UK · M", "26"},
     };
