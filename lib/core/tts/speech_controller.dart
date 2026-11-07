@@ -337,6 +337,29 @@ class SpeechController extends StateNotifier<SpeechState> {
     unawaited(_playFrom(startIdx));
   }
 
+  /// ⚡ صدای متنِ کوتاهی که کاربر احتمالاً تا چند لحظه‌ی دیگر روی 🔊‌اش می‌زند
+  /// (مثلاً مثالِ هوش مصنوعی) پیش‌پیش ساخته و کش می‌شود تا پخش بدون تأخیر شروع شود.
+  /// فقط با «صدای اپ» (نیتیو) کار می‌کند؛ اگر موتور/زبان آماده نباشد بی‌صدا نادیده گرفته می‌شود.
+  void warmUp(String text, String code) {
+    if (_disposed || !NativeTtsBridge.isAvailable) return;
+    if (_preferPhoneVoice?.call() ?? false) return;
+    final chunks = SentenceSplitter.split(text);
+    if (chunks.isEmpty) return;
+    final clean = SentenceSplitter.sanitize(chunks.first.text);
+    if (clean.isEmpty ||
+        !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(clean)) {
+      return;
+    }
+    final c = _speakCode(clean, code);
+    unawaited(() async {
+      try {
+        if (!await NativeTtsBridge.isModelReady(c)) return;
+        if (_disposed) return;
+        await NativeTtsBridge.prefetch(clean, c, state.rate);
+      } catch (_) {}
+    }());
+  }
+
   /// متنِ جمله/لغتی که الان در حال پخش (یا آماده‌ی پخش) است — برای نوتیفیکیشنِ مدیا
   String get currentChunkText =>
       _chunkIndex >= 0 && _chunkIndex < _chunks.length ? _chunks[_chunkIndex].text : '';

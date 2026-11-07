@@ -176,6 +176,11 @@ final playerSyncProvider =
     StateNotifierProvider<PlayerSyncNotifier, PlayerSyncState>(
         (ref) => PlayerSyncNotifier(ref));
 
+/// متن‌هایی که «بیرون از اسکوپِ پلیر» پخش می‌شوند (مثلاً مثال‌های هوش مصنوعی):
+/// کلیدِ پخش ← آیتمِ فعال، تا هایلایت و اسکرولِ خودکار برایشان هم کار کند.
+final adhocSyncProvider =
+    StateProvider<({String key, ActiveSync active})?>((ref) => null);
+
 /// آیتمِ در حال خواندن — null اگر چیزی از این اسکوپ پخش نمی‌شود.
 /// (Hope: status === "idle" → null؛ مکث هم همچنان هایلایت دارد.)
 final activeSyncProvider = Provider<ActiveSync?>((ref) {
@@ -189,5 +194,8 @@ final activeSyncProvider = Provider<ActiveSync?>((ref) {
     final span = t.spanAt(sp.offset);
     return span == null ? null : ActiveSync(t.code, span.id);
   }
+  // متنِ تکیِ بیرون از اسکوپ (مثال‌های AI و ترجمه‌هایشان)
+  final ad = ref.watch(adhocSyncProvider);
+  if (ad != null && ad.key == sp.key) return ad.active;
   return null;
 });

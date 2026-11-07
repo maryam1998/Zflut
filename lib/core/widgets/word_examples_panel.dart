@@ -9,6 +9,7 @@ import '../providers/translation_provider.dart';
 import '../providers/example_favorites_provider.dart';
 import '../providers/speech_provider.dart';
 import '../../features/reader/widgets/neural_path_dialog.dart';
+import '../player_sync/sync_widgets.dart' show SyncAnchor, syncSpeakAdhoc;
 import 'selection_card.dart' show SelectableSyncText;
 import 'sync_item_card.dart' show NeuralPathButton;
 import '../theme/app_theme_colors.dart';
@@ -63,7 +64,14 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
     _examples = ref
         .read(wordExamplesStoreProvider)
         .load(widget.word, widget.langCode);
-    if (_examples.isEmpty) _generate();
+    if (_examples.isEmpty) {
+      _generate();
+    } else {
+      // ⚡ صدای اولین مثال از قبل ساخته شود تا تپ روی 🔊 بدون تأخیر باشد
+      ref
+          .read(speechControllerProvider.notifier)
+          .warmUp(_examples.first.text, widget.langCode);
+    }
   }
 
   Future<void> _generate() async {
@@ -87,6 +95,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
           .add(widget.word, widget.langCode, text);
       if (!mounted) return;
       setState(() => _examples = list);
+      ref.read(speechControllerProvider.notifier).warmUp(text, widget.langCode);
     } catch (_) {
       if (!mounted) return;
       setState(() => _err = context.l10n.word_examples_failed);
@@ -117,6 +126,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
           .replace(widget.word, widget.langCode, id, text);
       if (!mounted) return;
       setState(() => _examples = list);
+      ref.read(speechControllerProvider.notifier).warmUp(text, widget.langCode);
     } catch (_) {
       if (!mounted) return;
       setState(() => _err = context.l10n.word_examples_failed);
@@ -287,6 +297,7 @@ class _ExActions extends ConsumerWidget {
   final String text;
   final String lang;
   final String baseText;
+  final String syncId;
   final bool refreshing;
   final VoidCallback? onRefresh;
 
@@ -294,6 +305,7 @@ class _ExActions extends ConsumerWidget {
     required this.text,
     required this.lang,
     required this.baseText,
+    required this.syncId,
     required this.refreshing,
     required this.onRefresh,
   });
@@ -330,8 +342,7 @@ class _ExActions extends ConsumerWidget {
             ),
           ),
           InkResponse(
-            onTap: () =>
-                ref.read(speechControllerProvider.notifier).toggle(text, lang),
+            onTap: () => syncSpeakAdhoc(ref, lang, syncId, text),
             radius: 16,
             child: Padding(
               padding: const EdgeInsets.all(4),
@@ -365,7 +376,11 @@ class _ExampleRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
-    return Container(
+    final exId = 'ai-ex-$langCode-${example.text.hashCode}';
+    return SyncAnchor(
+      code: langCode,
+      id: exId,
+      child: Container(
       margin: const EdgeInsets.only(top: 6),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -387,7 +402,7 @@ class _ExampleRow extends ConsumerWidget {
                     // لمسِ لغت یا انتخابِ محدوده → کارتِ پاپ‌آپ (ذخیره برای داستان بعدی، گرامر، …)
                     child: SelectableSyncText(
                       code: langCode,
-                      id: 'ai-ex-$langCode-${example.text.hashCode}',
+                      id: exId,
                       text: example.text,
                       textDirection: TextDirection.ltr,
                       style: TextStyle(
@@ -402,6 +417,7 @@ class _ExampleRow extends ConsumerWidget {
                   text: example.text,
                   lang: langCode,
                   baseText: example.text,
+                  syncId: exId,
                   refreshing: refreshing,
                   onRefresh: onRefresh,
                 ),
@@ -418,7 +434,7 @@ class _ExampleRow extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -464,6 +480,9 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
         widget.word, widget.langCode, widget.example.id, widget.target, t);
     ref.read(exampleFavoritesProvider.notifier).setTranslation(
         widget.example.text, widget.langCode, widget.target, t);
+    if (mounted) {
+      ref.read(speechControllerProvider.notifier).warmUp(t, widget.target);
+    }
   }
 
   /// ⚡ دو مرحله‌ای: اول ترجمه‌ی سریع (ML Kit/کش/مترجم رایگان) فوراً نشان داده می‌شود؛
@@ -556,7 +575,11 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
         rtl = l.dir == TextDirection.rtl;
       }
     }
-    return Padding(
+    final trId = 'ai-ex-tr-${widget.target}-${_text.hashCode}';
+    return SyncAnchor(
+      code: widget.target,
+      id: trId,
+      child: Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,7 +607,7 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
                           rtl ? TextDirection.rtl : TextDirection.ltr,
                       child: SelectableSyncText(
                           code: widget.target,
-                          id: 'ai-ex-tr-${widget.target}-${_text.hashCode}',
+                          id: trId,
                           text: _text,
                           textDirection:
                               rtl ? TextDirection.rtl : TextDirection.ltr,
@@ -600,11 +623,12 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
             text: _text,
             lang: widget.target,
             baseText: widget.example.text,
+            syncId: trId,
             refreshing: _refreshing,
             onRefresh: _refresh,
           ),
         ],
       ),
-    );
+    ));
   }
 }

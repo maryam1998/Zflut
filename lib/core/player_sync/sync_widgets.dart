@@ -446,6 +446,15 @@ Future<void> syncSpeak(WidgetRef ref, String code, String id, String text) async
   );
 }
 
+/// 🔊 برای متن‌هایی که جزو لیستِ اسکوپ نیستند (مثال‌های AI و ترجمه‌هایشان):
+/// پخشِ تکی، ولی با همان هایلایت و اسکرولِ خودکارِ پلیر.
+Future<void> syncSpeakAdhoc(
+    WidgetRef ref, String code, String id, String text) async {
+  ref.read(adhocSyncProvider.notifier).state =
+      (key: PlayerTrack.keyFor(code, text), active: ActiveSync(code, id));
+  await ref.read(speechControllerProvider.notifier).toggle(text, code);
+}
+
 /// دکمه‌ی مرکزیِ پلیرِ پایین وقتی چیزی پخش نمی‌شود: کلِ متنِ تبِ فعلی
 /// را از اول می‌خواند (onFullTextChange → دکمه‌ی پخش در Hope).
 Future<bool> syncPlayMainTrack(WidgetRef ref) async {
