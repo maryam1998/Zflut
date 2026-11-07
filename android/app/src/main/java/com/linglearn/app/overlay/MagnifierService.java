@@ -159,6 +159,17 @@ public class MagnifierService extends Service {
     private RectF selBox;
     private String selSrc = "en", selOrig = "", cardLang = "en";
 
+    // ↧ گسترشِ انتخاب: از ابتدای متنِ انتخاب‌شده تا هرجا که ذره‌بین را رها کنی (کادرِ زرد + ترجمه‌ی کلِ محدوده)
+    // (خودکار: ذره‌بین را روی ابتدای متن نگه دار؛ بعد بدونِ بلند کردنِ انگشت تا انتها بکش)
+    private boolean extendMode = false;
+    private Rect extendAnchor;
+    private Rect dwellRect;                     // متنِ زیرِ ذره‌بین که چند لحظه ثابت مانده
+    private long dwellSince = 0;
+    private volatile boolean previewA11y = false;
+    private static final long DWELL_MS = 600;
+    private boolean extendA11y = false;         // انتخابِ اول از متنِ دسترس‌پذیری (فارسی/عربی) آمده بود
+    private boolean selFromA11y = false, pendingA11y = false;
+
     // کادرِ سورمه‌ای (هم‌سبکِ پنلِ حبابِ ترجمه‌ی زنده)
     private static final int REPEAT_INF = -1;                 // همان مقدارِ حبابِ ترجمه‌ی زنده
     private LinearLayout rowsBox, wordCard, wordRows, opacityRow;
@@ -457,6 +468,7 @@ public class MagnifierService extends Service {
                         startX = e.getRawX(); startY = e.getRawY();
                         dx = lensLp.x - startX; dy = lensLp.y - startY;
                         moved = false; wasDocked = docked;
+                        extendMode = false; extendAnchor = null; dwellRect = null;
                         lens.setAlpha(1f);
                         return true;
                     case MotionEvent.ACTION_MOVE:
@@ -653,6 +665,13 @@ public class MagnifierService extends Service {
         main.post(() -> {
             previewBusy = false;
             if (tok != previewSeq || !dragging || busy) return;
+            if (!extendMode && r != null) {          // ذره‌بین چند لحظه روی یک متن ثابت ماند → ابتدای محدوده؛ بعد از آن حرکت = گسترش
+                long t = android.os.SystemClock.uptimeMillis();
+                if (dwellRect != null && Rect.intersects(dwellRect, r)
+                        && Math.abs(dwellRect.top - r.top) < dp(6) && Math.abs(dwellRect.bottom - r.bottom) < dp(6)) {
+                    if (t - dwellSince >= DWELL_MS) { extendMode = true; extendAnchor = new Rect(r); extendA11y = previewA11y; }
+                } else { dwellRect = new Rect(r); dwellSince = t; }
+            }
             showHilite(r);
         });
     }
@@ -666,9 +685,27 @@ public class MagnifierService extends Service {
         previewBusy = true;
         final int tok = previewSeq;
         final float cx = lensLp.x + dp(LENS_C), cy = lensLp.y + dp(LENS_C);
+        final boolean ext = extendMode && extendAnchor != null;
+        final Rect extA = ext ? new Rect(extendAnchor) : null;
+        final boolean extA11 = extendA11y;
         try {
             worker.execute(() -> {
                 try {
+                    if (ext) {          // ↧ حالتِ گسترش: کادرِ زرد از ابتدای انتخاب تا زیرِ ذره‌بین
+                        Bitmap eb = frameBitmap();
+                        if (eb == null) { endPreview(tok, extA); return; }
+                        TextRecognizer er = recognizerFor(sourceLang());
+                        if (er == null) er = recognizerFor("en");
+                        er.process(InputImage.fromBitmap(eb, 0))
+                                .addOnSuccessListener(text -> runSafe(() -> {
+                                    RangeSel rs = computeRange(text, extA11, extA, cx, cy);
+                                    Rect u = new Rect(extA);
+                                    if (rs != null && rs.box != null) u.union(rs.box);
+                                    endPreview(tok, u);
+                                }))
+                                .addOnFailureListener(e -> endPreview(tok, extA));
+                        return;
+                    }
                     final SpeedAccessibilityService.ScreenText a = pickScreenText(cx, cy);
                     final Rect ar = a != null ? new Rect(a.r) : null;
                     final boolean aRtl = a != null && hasArabicScript(cleanScreenText(a.t));
@@ -687,8 +724,8 @@ public class MagnifierService extends Service {
                                 }
                                 if (box != null && bd > dp(40)) box = null;
                                 Rect pick;
-                                if (ar != null && (box == null || aRtl || !Rect.intersects(box, ar))) pick = ar;
-                                else pick = box != null ? new Rect(box) : null;
+                                if (ar != null && (box == null || aRtl || !Rect.intersects(box, ar))) { pick = ar; previewA11y = true; }
+                                else { pick = box != null ? new Rect(box) : null; previewA11y = false; }
                                 endPreview(tok, pick);
                             })
                             .addOnFailureListener(e -> endPreview(tok, ar));
@@ -791,12 +828,165 @@ public class MagnifierService extends Service {
         TextRecognizer rec0 = recognizerFor(src);
         if (rec0 == null) rec0 = recognizerFor("en");   // زبانِ ذخیره‌شده OCR ندارد (مثلاً فارسی): با OCR لاتین بخوان و زبانِ واقعیِ متن را خودکار تشخیص بده
         final TextRecognizer rec = rec0;
+        final boolean ext = extendMode && extendAnchor != null && !extendAnchor.contains((int) x, (int) y);
         rec.process(InputImage.fromBitmap(bmp, 0))
-                .addOnSuccessListener(text -> runSafe(() -> handleText(text, src, x, y)))
-                .addOnFailureListener(e -> runSafe(() -> handleText(null, src, x, y)));
+                .addOnSuccessListener(text -> runSafe(() -> { if (ext) handleRange(text, src, x, y); else handleText(text, src, x, y); }))
+                .addOnFailureListener(e -> runSafe(() -> { if (ext) handleRange(null, src, x, y); else handleText(null, src, x, y); }));
+    }
+
+    // ───────────────────────── ↧ گسترشِ انتخاب (محدوده‌ی چندخطی/چندپاراگرافی) ─────────────────────────
+
+    private static final class RangeSel {
+        Rect box;
+        final ArrayList<ElemInfo> elems = new ArrayList<>();
+        String orig = "";
+    }
+
+    /** خط‌های (OCR) یا گره‌های (دسترس‌پذیری) بینِ ابتدای انتخابِ اول و نقطه‌ی (x,y) را به‌ترتیبِ خواندن برمی‌گرداند. */
+    private RangeSel computeRange(Text text, boolean a11y, Rect A, float x, float y) {
+        final int lo = (int) Math.min(A.top, y), hi = (int) Math.max(A.bottom, y);
+        final int colL = A.left - dp(8), colR = A.right + dp(8);
+        final RangeSel rs = new RangeSel();
+
+        // خط‌های OCR داخلِ محدوده (ستونِ همان متن)
+        final ArrayList<Text.Line> lns = new ArrayList<>();
+        if (text != null) {
+            for (Text.TextBlock b : text.getTextBlocks()) {
+                for (Text.Line l : b.getLines()) {
+                    Rect r = l.getBoundingBox();
+                    if (r == null) continue;
+                    if (r.centerY() < lo - dp(2) || r.top > hi) continue;
+                    if (r.right < colL || r.left > colR) continue;
+                    lns.add(l);
+                }
+            }
+            java.util.Collections.sort(lns, (p, q) -> {
+                Rect a = p.getBoundingBox(), b = q.getBoundingBox();
+                int dy = Math.abs(a.centerY() - b.centerY()) < Math.min(a.height(), b.height()) / 2 ? 0 : Integer.compare(a.top, b.top);
+                return dy != 0 ? dy : Integer.compare(a.left, b.left);
+            });
+        }
+
+        if (a11y) {
+            List<SpeedAccessibilityService.ScreenText> all;
+            try { all = SpeedAccessibilityService.readScreenText(this); }
+            catch (Throwable e) { all = new ArrayList<>(); }
+            ArrayList<SpeedAccessibilityService.ScreenText> pick = new ArrayList<>();
+            for (SpeedAccessibilityService.ScreenText n : all) {
+                if (n.r.width() >= capW * 0.98 && n.r.height() >= capH * 0.5) continue;      // کانتینرِ کلِ صفحه
+                String ct = cleanScreenText(n.t);
+                if (!hasLetterChar(ct) || ct.length() > 3000) continue;
+                if (n.r.centerY() < lo - dp(2) || n.r.top > hi) continue;
+                if (n.r.right < colL || n.r.left > colR) continue;
+                pick.add(n);
+            }
+            // گره‌ی تو در تو (والد و فرزند با یک متن) دوبار شمرده نشود
+            ArrayList<SpeedAccessibilityService.ScreenText> uniq = new ArrayList<>();
+            for (SpeedAccessibilityService.ScreenText n : pick) {
+                boolean dup = false;
+                for (SpeedAccessibilityService.ScreenText m : pick) {
+                    if (m == n) continue;
+                    if (m.r.contains(n.r) && m.t.contains(n.t) && (m.t.length() > n.t.length() || (m.t.length() == n.t.length() && pick.indexOf(m) < pick.indexOf(n)))) { dup = true; break; }
+                }
+                if (!dup) uniq.add(n);
+            }
+            if (!uniq.isEmpty()) {
+                java.util.Collections.sort(uniq, (p, q) -> p.r.top != q.r.top ? Integer.compare(p.r.top, q.r.top) : Integer.compare(p.r.left, q.r.left));
+                StringBuilder sb = new StringBuilder();
+                Rect ub = null;
+                ArrayList<Rect> rects = new ArrayList<>();
+                for (SpeedAccessibilityService.ScreenText n : uniq) {
+                    if (sb.length() > 0) sb.append(' ');
+                    sb.append(cleanScreenText(n.t));
+                    if (ub == null) ub = new Rect(n.r); else ub.union(n.r);
+                    rects.add(new Rect(n.r));
+                }
+                String o = sb.toString().trim();
+                boolean rtl = hasArabicScript(o);
+                ArrayList<Rect> lineRects = new ArrayList<>();
+                for (Text.Line l : lns) lineRects.add(new Rect(l.getBoundingBox()));
+                rs.elems.addAll(splitWords(o, lineRects.isEmpty() ? rects : lineRects, rtl, ub));
+                rs.orig = o;
+                rs.box = ub;
+                if (!rs.elems.isEmpty()) return rs;
+                rs.orig = ""; rs.box = null;
+            }
+        }
+
+        // مسیرِ OCR (لاتین و بقیه)
+        for (Text.Line l : lns) {
+            for (Text.Element e : l.getElements()) {
+                Rect er = e.getBoundingBox();
+                if (er != null && !e.getText().trim().isEmpty()) rs.elems.add(new ElemInfo(new Rect(er), e.getText()));
+            }
+        }
+        cleanElems(rs.elems);
+        StringBuilder osb = new StringBuilder();
+        Rect ub = null;
+        for (ElemInfo ei : rs.elems) {
+            if (osb.length() > 0) osb.append(' ');
+            osb.append(ei.t);
+            if (ub == null) ub = new Rect(ei.r); else ub.union(ei.r);
+        }
+        rs.orig = osb.toString().trim();
+        rs.box = ub;
+        return rs;
+    }
+
+    private void handleRange(Text text, String src, float x, float y) {
+        final Rect A = extendAnchor;
+        final boolean a11y = extendA11y;
+        extendMode = false;
+        extendAnchor = null;
+        RangeSel rs = A == null ? null : computeRange(text, a11y, A, x, y);
+        if (rs == null || rs.box == null || rs.elems.isEmpty() || rs.orig.isEmpty()) {
+            finish(msg("در این محدوده متنی پیدا نشد", "No text found in this range"));
+            return;
+        }
+        rs.box.union(A);
+        // سقفِ طول (برای ترجمه): از انتهای محدوده کوتاه می‌شود
+        while (rs.orig.length() > 3500 && rs.elems.size() > 1) {
+            rs.elems.remove(rs.elems.size() - 1);
+            StringBuilder osb = new StringBuilder();
+            Rect ub = null;
+            for (ElemInfo ei : rs.elems) {
+                if (osb.length() > 0) osb.append(' ');
+                osb.append(ei.t);
+                if (ub == null) ub = new Rect(ei.r); else ub.union(ei.r);
+            }
+            rs.orig = osb.toString().trim();
+            if (ub != null) { rs.box = ub; rs.box.union(A); }
+        }
+        final String orig = rs.orig;
+        try {
+            String arSrc = arabicScriptLang(orig, src);
+            if (arSrc != null) src = arSrc;
+            else {
+                String det = LangDetect.detect(orig);
+                if (det != null && !det.equals(src)) src = det;
+            }
+        } catch (Throwable ignored) { }
+        final ArrayList<String[]> results = new ArrayList<>();
+        for (String tgt : targets(src)) {
+            String tr;
+            try { tr = translateOne(orig, src, tgt); }
+            catch (Exception ex) { tr = "—"; }
+            results.add(new String[]{tgt, (tr == null || tr.trim().isEmpty()) ? "—" : tr.trim()});
+        }
+        final String fsrc = src;
+        final RectF rf = new RectF(rs.box);
+        final ArrayList<ElemInfo> elems = rs.elems;
+        main.post(() -> {
+            busy = false;
+            if (lens != null) lens.setBusy(false);
+            selFromA11y = a11y;
+            showSelection(rf, elems, orig, fsrc, results);
+            scheduleDock(2500);
+        });
     }
 
     private void handleText(Text text, String src, float x, float y) {
+        pendingA11y = false;
         Text.TextBlock best = null;
         double bestD = Double.MAX_VALUE;
         if (text != null) {
@@ -856,6 +1046,7 @@ public class MagnifierService extends Service {
                         orig = at;
                     }
                 } else if (elems.isEmpty() || rtl || !overlap) {
+                    pendingA11y = true;
                     elems.clear();
                     // متنِ دسترس‌پذیری یک تکه است؛ برای انتخابِ لغت/محدوده آن را روی خط‌های OCR به لغت‌ها تقسیم می‌کنیم
                     ArrayList<Rect> lns = new ArrayList<>();
@@ -935,9 +1126,11 @@ public class MagnifierService extends Service {
         }
         final String fo = orig, fsrc = src;
         final RectF rf = new RectF(box);
+        final boolean fA11y = pendingA11y;
         main.post(() -> {
             busy = false;
             if (lens != null) lens.setBusy(false);
+            selFromA11y = fA11y;
             showSelection(rf, elems, fo, fsrc, results);
             scheduleDock(2500);
         });
