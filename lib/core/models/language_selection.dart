@@ -13,9 +13,11 @@ class LanguageSelection {
     required this.targets,
   });
 
+  // پیش‌فرضِ نصبِ تازه: مبدأ اسپانیایی، مقصد = انگلیسی + فارسی + اسپانیایی
+  // (تا کاربر همان ابتدا ببیند می‌شود چند زبان را هم‌زمان انتخاب کرد). کاربرانِ قبلی انتخابِ خودشان را نگه می‌دارند.
   static const LanguageSelection defaults = LanguageSelection(
-    native: 'fa',
-    targets: ['en'],
+    native: 'es',
+    targets: ['en', 'fa', 'es'],
   );
 
   String? get primaryTarget =>
