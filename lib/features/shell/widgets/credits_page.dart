@@ -132,6 +132,11 @@ const List<_Credit> _credits = [
     author: 'Alpha Cephei Inc. (Vosk)',
   ),
   _Credit(
+    'Homo-GE2PE',
+    'MIT',
+    author: 'Mahta Fetrat',
+  ),
+  _Credit(
     'Mana-TTS',
     'MIT',
     author: 'Mahta Fetrat',
