@@ -5955,7 +5955,8 @@ public class BubbleService extends Service {
                 try {
                     YtMedia.Now n = YtMedia.nowPlaying(BubbleService.this);
                     other = n != null && n.playing && !YtMedia.YT_PKG.equals(n.pkg)
-                            && !getPackageName().equals(n.pkg);
+                            && !getPackageName().equals(n.pkg)
+                            && !(yt != null && yt.isSongMode());     // 🎵 آهنگ: ترانه‌ی زنده نشان داده می‌شود، نه ترجمه‌ی صدا
                 } catch (Throwable ignored) {}
                 ytAwayCount = other ? ytAwayCount + 1 : 0;     // دو بررسیِ پشت‌سرهم (~۳ ثانیه) تا وضعیتِ گذرا اشتباه نشود
                 if (ytAwayCount >= 2) { ytAwayCount = 0; switchYoutubeToLive(); return; }
@@ -6056,6 +6057,24 @@ public class BubbleService extends Service {
                     "No YouTube captions found for this video")), 1500);
             if (resume && !recording) {          // ترجمه‌ی زنده‌ی صدا که قبل از روشن‌شدنِ خودکار در جریان بود، برگردد
                 main.post(() -> { try { toggleRecording(); } catch (Throwable ignored) {} });
+            }
+        }
+
+        @Override public void songNotFound() {
+            // 🎵 ترانه‌ی همگام پیدا نشد (آهنگِ بدونِ ترانه، پادکست، کتابِ صوتی، یا آفلاین): مثلِ قبل → ترجمه‌ی زنده‌ی صدا
+            final boolean wasAuto = ytAutoStarted;
+            final boolean resume = ytAutoWasRecording;
+            ytAutoWasRecording = false;
+            ytAutoOffKey = ytWatchKey;           // همین آهنگ دوباره امتحان نشود
+            stopYoutube(false);
+            if (wasAuto) {
+                if (resume && !recording) {
+                    main.post(() -> { try { toggleRecording(); } catch (Throwable ignored) {} });
+                }
+            } else {
+                if (!recording) { try { toggleRecording(); } catch (Throwable ignored) {} }
+                main.postDelayed(() -> showNotice(msg("ترانه‌ی همگام پیدا نشد — ترجمه‌ی زنده",
+                        "No synced lyrics found — live translation")), 600);
             }
         }
 

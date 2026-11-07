@@ -87,6 +87,8 @@ final class YtSubtitles {
         void videoChanged();
         /** این ویدیو زیرنویس ندارد. (حالتِ خودکار: میزبان می‌تواند حالتِ یوتیوب را بی‌سروصدا خاموش کند.) */
         default void noCaptions() {}
+        /** 🎵 برای این آهنگ ترانه‌ی همگام پیدا نشد (یا شبکه نبود): میزبان حالتِ ترانه را می‌بندد (مثلاً برمی‌گردد به ترجمه‌ی زنده). */
+        default void songNotFound() {}
         /** تکرارِ بی‌نهایتِ کلِ ویدیو روشن/خاموش شد (از جمله وقتی خودش متوقف شد: ویدیوی دیگر، لایو، …). */
         default void onVideoLoopChanged(boolean on) {}
     }
@@ -118,6 +120,7 @@ final class YtSubtitles {
             });
 
     private volatile boolean active = false;
+    private volatile boolean lineMode = false;    // 🎵 ترانه: هر خطِ LRC یک جمله است (نه ادغام/شکستن مثلِ زیرنویسِ یوتیوب)
     private volatile int gen = 0;                 // با هر ویدیو بالا می‌ره؛ جوابِ دیررسیده‌ی ویدیوی قبلی دور ریخته می‌شه
     private YtMedia.State last;
     private String curKey = "";
@@ -177,6 +180,9 @@ final class YtSubtitles {
     }
 
     boolean isActive() { return active; }
+
+    /** 🎵 الان پلیرِ فعلی یک آهنگ (غیرِ یوتیوب) است و ترانه نشان داده می‌شود. */
+    boolean isSongMode() { YtMedia.State s = last; return s != null && s.hasSession && s.song; }
 
     void setOffsetMs(long ms) { offsetMs = ms; }
 
@@ -395,6 +401,7 @@ final class YtSubtitles {
     }
 
     private String keyOf(YtMedia.State s) {
+        if (s.song) return "s:" + s.title + "|" + s.channel;     // آهنگ: بدونِ مدت (مدت ممکنه دیرتر برسه و دوباره لود نشه)
         String id = s.videoId != null ? s.videoId : idByTitle.get(s.title);
         if (id != null) return id;
         return "t:" + s.title + "|" + (s.durationMs / 1000);
@@ -404,6 +411,7 @@ final class YtSubtitles {
         final YtMedia.State s = last;
         if (!active || s == null || !s.hasSession) return;
         if (!keyOf(s).equals(curKey)) return;     // دوباره عوض شده
+        if (s.song) { loadSong(s); return; }
         String id = s.videoId != null ? s.videoId : idByTitle.get(s.title);
         if (id != null) { loadCaptions(id, s.title); return; }
         if (s.title.isEmpty()) return;
@@ -449,6 +457,60 @@ final class YtSubtitles {
         shownSent = -1;
         shown.clear();
         curVideoId = "";
+        lineMode = false;
+    }
+
+    // ════════════════════ 🎵 ترانه‌ی آهنگ (LRCLIB) ════════════════════
+    // نامِ آهنگ از MediaSession/نوتیفیکیشنِ پلیر خوانده می‌شود و ترانه‌ی زمان‌دار فقط به‌صورتِ زنده در RAM می‌آید:
+    // curVideoId خالی می‌ماند، پس نه ترجمه‌ای روی دیسک کش می‌شود و نه چیزی در «داستان‌های ذخیره‌شده» ثبت می‌شود.
+
+    private void loadSong(final YtMedia.State s) {
+        final String title = s.title == null ? "" : s.title, artist = s.channel == null ? "" : s.channel;
+        if (title.isEmpty()) return;
+        final long dur = s.durationMs / 1000;
+        final String hist = "s:" + title + "|" + artist;
+        final boolean other = !hist.equals(histVideoId);
+        histVideoId = hist;
+        resetVideo();
+        lineMode = true;
+        if (other) host.videoChanged();
+        curTitle = artist.isEmpty() ? title : artist + " - " + title;
+        final int g = gen;
+        netCaps.execute(() -> {
+            List<Cue> got = null;
+            try {
+                got = SongLyrics.fetch(httpFast, title, artist, dur);
+            } catch (SongLyrics.NotFound nf) {
+                Log.d(TAG, "no synced lyrics for: " + curTitle);
+            } catch (Exception e) {
+                Log.w(TAG, "lyrics failed: " + e);
+            }
+            final List<Cue> fin = got;
+            main.post(() -> {
+                if (g != gen || !active) return;
+                if (fin == null || fin.isEmpty()) {
+                    host.songNotFound();
+                    return;
+                }
+                cues = fin;
+                trackLang = songLang(fin);
+                buildSentences();
+                host.notice("");
+                publishList();
+                pump();
+            });
+        });
+    }
+
+    /** زبانِ ترانه: از روی خودِ متن؛ نامطمئن → زبانِ صدای تنظیمات (اگر auto نبود)، وگرنه انگلیسی. */
+    private String songLang(List<Cue> cs) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < cs.size() && sb.length() < 1500; i++) sb.append(cs.get(i).text).append(' ');
+        String d = null;
+        try { d = LangDetect.detect(sb.toString()); } catch (Throwable ignored) {}
+        if (d != null && !d.isEmpty()) return d;
+        String r = host.requestedSource();
+        return (r == null || r.isEmpty() || "auto".equalsIgnoreCase(r)) ? "en" : r;
     }
 
     private void loadCaptions(final String videoId, final String title) {
@@ -884,6 +946,10 @@ final class YtSubtitles {
             if (j >= len || full.charAt(j) == ' ') brk[Math.min(j, len)] = true;
             i = Math.max(i, j - 1);
         }
+        if (lineMode) {                                   // 🎵 هر خطِ ترانه یک جمله (نقطه‌ی وسطِ خط جمله را نمی‌شکند)
+            java.util.Arrays.fill(brk, false);
+            for (int i = 0; i < n; i++) brk[ce[i]] = true;
+        }
         // ۲) مرزِ اجباری: مکثِ زیاد بینِ دو تکه، یا جمله‌ی خیلی بلندِ بدونِ نقطه (زیرنویس‌های خودکار)
         int terminals = 0;
         for (int i = 0; i < len; i++) if (isTerminal(full.charAt(i))) terminals++;
@@ -896,7 +962,7 @@ final class YtSubtitles {
             while (scan <= ce[i]) { if (brk[scan]) lastB = scan; scan++; }
             long gap = cues.get(i + 1).startMs - cues.get(i).endMs;
             int run = ce[i] - lastB;
-            boolean cut = (gap > gapLimit && (!autoCaps || run >= AUTO_MIN_CHARS)) || run >= maxChars;
+            boolean cut = !lineMode && ((gap > gapLimit && (!autoCaps || run >= AUTO_MIN_CHARS)) || run >= maxChars);
             if (!brk[ce[i]] && cut) {
                 brk[ce[i]] = true;
                 lastB = ce[i];

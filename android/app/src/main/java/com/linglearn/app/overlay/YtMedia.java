@@ -62,7 +62,28 @@ public class YtMedia extends NotificationListenerService {
     private static volatile String hintId;
     private static volatile String hintTitle = "";
 
+    // 🎵 نامِ آهنگ/خواننده از خودِ نوتیفیکیشنِ پلیر (فقط وقتی MediaSession عنوان نداد). فقط در حافظه، ذخیره نمی‌شود.
+    private static final java.util.concurrent.ConcurrentHashMap<String, String[]> songHints =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static void scanSong(StatusBarNotification sbn) {
+        try {
+            if (sbn == null || sbn.getNotification() == null) return;
+            String pkg = sbn.getPackageName();
+            if (pkg == null || YT_PKG.equals(pkg)) return;
+            Bundle ex = sbn.getNotification().extras;
+            if (ex == null || !ex.containsKey(android.app.Notification.EXTRA_MEDIA_SESSION)) return;   // فقط نوتیفیکیشنِ مدیا
+            CharSequence t = ex.getCharSequence(android.app.Notification.EXTRA_TITLE);
+            CharSequence a = ex.getCharSequence(android.app.Notification.EXTRA_TEXT);
+            if (t == null || t.toString().trim().isEmpty()) return;
+            songHints.put(pkg, new String[]{t.toString().trim(), a == null ? "" : a.toString().trim()});
+        } catch (Throwable e) {
+            Log.d(TAG, "scanSong failed: " + e);
+        }
+    }
+
     private static void scan(StatusBarNotification sbn) {
+        scanSong(sbn);
         try {
             if (sbn == null || !YT_PKG.equals(sbn.getPackageName()) || sbn.getNotification() == null) return;
             Bundle ex = sbn.getNotification().extras;
@@ -133,6 +154,8 @@ public class YtMedia extends NotificationListenerService {
 
     public static final class State {
         public boolean hasSession;
+        public String pkg = "";         // پکیجِ پلیر
+        public boolean song;            // 🎵 پلیرِ غیرِ یوتیوب (آهنگ): ترانه از LRCLIB می‌آید، نه زیرنویسِ یوتیوب
         public String videoId;          // null = از session درنیومد (مثلاً باید از روی عنوان پیدا بشه)
         public String title = "";
         public String channel = "";
@@ -215,12 +238,18 @@ public class YtMedia extends NotificationListenerService {
 
         private void pick(List<MediaController> list) {
             MediaController best = null;
+            int bestRank = -1;
             if (list != null) {
                 for (MediaController c : list) {
-                    if (!YT_PKG.equals(c.getPackageName())) continue;
-                    if (best == null) best = c;
+                    String pk = c.getPackageName();
+                    boolean yt = YT_PKG.equals(pk);
+                    if (!yt && (pk == null || pk.equals(app.getPackageName()))) continue;   // پلیرِ خودِ اپ (TTS) آهنگ نیست
                     PlaybackState ps = c.getPlaybackState();
-                    if (ps != null && ps.getState() == PlaybackState.STATE_PLAYING) { best = c; break; }
+                    boolean playing = ps != null && ps.getState() == PlaybackState.STATE_PLAYING;
+                    if (!yt && !hasTitle(c)) continue;                                     // 🎵 آهنگ فقط وقتی نام دارد
+                    // رتبه: یوتیوبِ در حالِ پخش > آهنگِ در حالِ پخش > یوتیوبِ مکث > آهنگِ مکث
+                    int rank = playing ? (yt ? 4 : 3) : (yt ? 2 : 1);
+                    if (rank > bestRank) { best = c; bestRank = rank; }
                 }
             }
             if (best != null && ctrl != null && best.getSessionToken().equals(ctrl.getSessionToken())) {
@@ -233,6 +262,19 @@ public class YtMedia extends NotificationListenerService {
             publish();
         }
 
+        private boolean hasTitle(MediaController c) {
+            try {
+                MediaMetadata md = c.getMetadata();
+                if (md != null) {
+                    String t = md.getString(MediaMetadata.METADATA_KEY_TITLE);
+                    if (t == null) t = md.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE);
+                    if (t != null && !t.trim().isEmpty()) return true;
+                }
+            } catch (Throwable ignored) {}
+            String[] h = c.getPackageName() == null ? null : songHints.get(c.getPackageName());
+            return h != null && !h[0].isEmpty();
+        }
+
         private void publish() {
             if (!started) return;
             listener.onYtState(snapshot());
@@ -243,6 +285,8 @@ public class YtMedia extends NotificationListenerService {
             MediaController c = ctrl;
             if (c == null) return s;
             s.hasSession = true;
+            s.pkg = c.getPackageName() == null ? "" : c.getPackageName();
+            s.song = !YT_PKG.equals(s.pkg);
             try {
                 MediaMetadata md = c.getMetadata();
                 if (md != null) {
@@ -253,10 +297,14 @@ public class YtMedia extends NotificationListenerService {
                     if (ch == null) ch = md.getString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE);
                     s.channel = ch == null ? "" : ch.trim();
                     s.durationMs = Math.max(0L, md.getLong(MediaMetadata.METADATA_KEY_DURATION));
-                    s.videoId = videoIdFrom(md, s.title);
+                    s.videoId = s.song ? null : videoIdFrom(md, s.title);
                 }
             } catch (Throwable e) {
                 Log.d(TAG, "metadata read failed: " + e);
+            }
+            if (s.song && s.title.isEmpty()) {          // MediaSession عنوان نداد → از نوتیفیکیشنِ پلیر
+                String[] h = songHints.get(s.pkg);
+                if (h != null) { s.title = h[0]; if (s.channel.isEmpty()) s.channel = h[1]; }
             }
             try {
                 PlaybackState ps = c.getPlaybackState();

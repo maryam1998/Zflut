@@ -224,14 +224,14 @@ final class SherpaModelManager {
             "Aria · F", "Clara · F", "Luna · F", "Mila · F", "Nora · F",
             "Adrian · M", "Felix · M", "Leo · M", "Oscar · M", "Theo · M",
     };
-    // نام‌های نمایشیِ صداهای فارسی (فقط برچسب؛ شناسه‌ی مدل‌ها عوض نمی‌شود)
+    // نام‌های نمایشیِ صداهای فارسی (فقط برچسب؛ شناسه‌ی مدل‌ها عوض نمی‌شود) — لاتین + F/M مثلِ بقیه‌ی زبان‌ها، تا در همه‌ی زبان‌های رابط ترجمه‌شده باشد
     private static final Map<String, String> FA_LABELS = new LinkedHashMap<>();
     static {
-        FA_LABELS.put("fa_IR-mana-medium", "سارا · زن");
-        FA_LABELS.put("fa_IR-amir-medium", "آرمان · مرد");
-        FA_LABELS.put("fa_IR-ganji-medium", "کامران · مرد");
-        FA_LABELS.put("fa_IR-ganji_adabi-medium", "بهرام · مرد");
-        FA_LABELS.put("fa_IR-reza_ibrahim-medium", "پویا · مرد");
+        FA_LABELS.put("fa_IR-mana-medium", "Sara · F");
+        FA_LABELS.put("fa_IR-amir-medium", "Arman · M");
+        FA_LABELS.put("fa_IR-ganji-medium", "Kamran · M");
+        FA_LABELS.put("fa_IR-ganji_adabi-medium", "Bahram · M");
+        FA_LABELS.put("fa_IR-reza_ibrahim-medium", "Pouya · M");
     }
 
     private static final Map<String, List<TtsVoice>> TTS_VOICES;
