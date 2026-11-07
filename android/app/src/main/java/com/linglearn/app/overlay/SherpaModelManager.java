@@ -400,7 +400,7 @@ final class SherpaModelManager {
                 if (v != null) return v;
             }
         } catch (Throwable ignored) {}
-        // فارسی: وقتی کاربر صدایی انتخاب نکرده، صدای پیش‌فرض «آرمان» (مرد) است، نه سارا (Mana)
+        // فارسی: وقتی کاربر صدایی انتخاب نکرده، صدای پیش‌فرض «کامران» (مرد) است، نه سارا (Mana)
         if ("fa".equals(l)) {
             TtsVoice pv = findVoice(l, FA_PREFERRED_VOICE);
             if (pv != null) return pv;
@@ -409,7 +409,7 @@ final class SherpaModelManager {
     }
 
     /** صدای پیش‌فرضِ فارسی (وقتی انتخابی ثبت نشده). */
-    static final String FA_PREFERRED_VOICE = "fa_IR-amir-medium";
+    static final String FA_PREFERRED_VOICE = "fa_IR-ganji-medium";
 
     /** برچسبِ «پیش‌فرض» در فهرستِ صداها (فارسی: آرمان؛ بقیه: صدای اول). */
     static boolean isShownDefault(String lang, TtsVoice v) {
