@@ -38,17 +38,17 @@ final class WhisperEngine implements PcmSink {
     private static final String TAG = "WhisperEngine";
     private static final int SR = 16000;
     private static final int FRAME = SR / 10;              // ۱۰۰ms
-    private static final int PARTIAL_MIN = SR;             // اولین «پیش‌نمایشِ زنده» بعد از ۱ ثانیه صدا
-    private static final long PARTIAL_MIN_GAP_MS = 600;    // کمترین فاصله‌ی دو پیش‌نمایش (متنِ زنده پیوسته‌تر بیاید)
-    private static final long PARTIAL_MAX_GAP_MS = 4000;
+    private static final int PARTIAL_MIN = SR * 8 / 10;        // اولین «پیش‌نمایشِ زنده» بعد از ۰٫۸ ثانیه صدا
+    private static final long PARTIAL_MIN_GAP_MS = 300;    // کمترین فاصله‌ی دو پیش‌نمایش (متنِ زنده پیوسته‌تر بیاید)
+    private static final long PARTIAL_MAX_GAP_MS = 3000;
 
     /** زبان‌هایی که برنامه پشتیبانی می‌کند؛ تشخیصِ بیرون از این فهرست (مثلاً az) هذیانِ نویز حساب می‌شود. */
     private static final Set<String> ALLOWED = new HashSet<>(Arrays.asList(
             "en", "de", "fr", "es", "it", "pt", "nl", "tr", "fa", "ar", "ur", "ru", "ja", "ko", "zh", "hi"));
-    private static final int MIN_WIN_FLOOR = 5 * SR;       // کمترین طولِ پنجره‌ی «نهایی» (پیش‌نمایش‌ها زودتر متن رو نشون می‌دن)
-    private static final int MIN_WIN_CEIL = 9 * SR;        // بیشترین مقدارِ «حداقلِ تطبیقی»
-    private static final int MAX_WIN = 12 * SR;
-    private static final int SEARCH_BACK = 3 * SR;         // برش توی ۳ ثانیه‌ی آخرِ پنجره
+    private static final int MIN_WIN_FLOOR = SR * 7 / 2;        // کمترین طولِ پنجره‌ی «نهایی» (پیش‌نمایش‌ها زودتر متن رو نشون می‌دن)
+    private static final int MIN_WIN_CEIL = 6 * SR;        // بیشترین مقدارِ «حداقلِ تطبیقی»
+    private static final int MAX_WIN = 8 * SR;
+    private static final int SEARCH_BACK = SR * 5 / 2;         // برش توی ۳ ثانیه‌ی آخرِ پنجره
     private static final int MAX_QUEUE = 3;                // عقب افتادیم → قدیمی‌ترین پنجره دور ریخته می‌شه
     private static final double SILENT_RMS = 0.004;        // پنجره‌ی تقریباً ساکت decode نمی‌شه
 
@@ -211,7 +211,7 @@ final class WhisperEngine implements PcmSink {
     /** هر ~۲ تا ۶ ثانیه (بسته به سرعتِ گوشی) از صدای جمع‌شده تا الان یک پیش‌نمایشِ متن می‌گیریم. (زیرِ lock) */
     private void maybeRequestPartial() {
         if (partialBusy || partialReq != null || len < PARTIAL_MIN || !queue.isEmpty()) return;
-        long gapMs = (long) Math.max(PARTIAL_MIN_GAP_MS, Math.min(PARTIAL_MAX_GAP_MS, avgDecodeMs * 1.3));
+        long gapMs = (long) Math.max(PARTIAL_MIN_GAP_MS, Math.min(PARTIAL_MAX_GAP_MS, avgDecodeMs * 0.6));   // پشتِ‌سرهم decode کن؛ تازه‌ترین متن زودتر برسد
         if (sincePartial < gapMs * SR / 1000) return;
         if (rms(0, len) < SILENT_RMS) { sincePartial = 0; return; }       // ساکت → decode نکن
         partialReq = java.util.Arrays.copyOf(buf, len);
