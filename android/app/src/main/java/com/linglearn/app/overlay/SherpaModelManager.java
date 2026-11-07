@@ -172,7 +172,7 @@ final class SherpaModelManager {
         // فارسی: Mana (مجوز MIT) — مخزنش فایل خام Piper است، پس rawPiper. (بدون تغییر؛ نیازمند espeak-ng)
         m.put("fa", new TtsSpec(
                 "MahtaFetrat/Mana-Persian-Piper",
-                "fa_IR-mana-medium.onnx", "tokens.txt", "espeak-ng-data", true, true));
+                "fa_IR-mana-medium.onnx", "tokens.txt", "espeak-ng-data", true, false));   // سارا: دوباره با espeak-ng (تلفظِ دقیق‌تر)
 
         // انگلیسی و چینی: Kokoro multi-lang v1.0 (Apache-2.0)
         m.put("en", new TtsSpec(PKG_KOKORO, ENG_KOKORO));
@@ -901,6 +901,14 @@ final class SherpaModelManager {
             new File(dir, "meta.ok").delete();
         }
 
+        if (s.rawPiper && !s.charFrontend && new File(dir, "meta-char2.ok").isFile()) {
+            // نسخه‌ی قبلیِ بدون espeak (metadata ی coqui/characters) با حالتِ espeak سازگار نیست → دوباره گرفته می‌شود
+            new File(dir, "model.onnx").delete();
+            new File(dir, "model.onnx.part").delete();
+            new File(dir, "meta-char2.ok").delete();
+            new File(dir, "meta-char.ok").delete();
+            new File(dir, "meta.ok").delete();
+        }
         if (s.charFrontend && !new File(dir, "meta-char2.ok").isFile()) {
             // نسخه‌ی قدیمیِ مبتنی بر espeak (metadata ی comment=piper) با نسخه‌ی frontend=characters سازگار نیست → دوباره می‌گیریم
             new File(dir, "model.onnx").delete();
