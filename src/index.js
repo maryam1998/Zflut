@@ -112,6 +112,21 @@ export default {
       }
     }
 
+    // 🌍 ترجمه‌ی متنِ کوتاه (کلمه/جمله) با کشِ «مشترکِ همه‌ی کاربرها» (D1). بدونِ D1 هم کار می‌کند (فقط کش نمی‌شود).
+    if (url.pathname === "/api/translate-text" && request.method === "POST") {
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return json({ error: "Invalid JSON body" }, 400);
+      }
+      try {
+        return json(await translateTextShared(body, env, ctx));
+      } catch (e) {
+        return json({ error: e.message || "translation failed" }, e.status || 502);
+      }
+    }
+
     // 📺 وقتی MediaSession آی‌دی ویدیو نمی‌ده، از روی عنوان (+مدت و کانال) آی‌دی رو پیدا می‌کنه
     if (url.pathname === "/api/youtube-resolve" && request.method === "GET") {
       const title = (url.searchParams.get("title") || "").trim();
@@ -413,6 +428,116 @@ function pickCaptionTrack(tracks, wantLang) {
   );
 }
 
+// --- کشِ مشترکِ ترجمه (Cloudflare D1) -------------------------------------
+// اختیاری: اگر در wrangler.toml بایندینگِ D1 با نامِ TR_DB تعریف نشده باشد، همه‌ی توابعِ زیر بی‌اثر می‌شوند
+// و رفتارِ Worker دقیقاً مثلِ قبل است. جدول خودکار ساخته می‌شود.
+// فقط ترجمه‌هایی که «خودِ Worker» ساخته ذخیره می‌شود (نه چیزی که کلاینت بفرستد) تا کسی نتواند کش را مسموم کند.
+const TR_TTL_MS = 180 * 24 * 3600 * 1000;
+let trDbReady = false;
+
+async function trDb(env) {
+  const db = env && env.TR_DB;
+  if (!db) return null;
+  if (!trDbReady) {
+    try {
+      await db
+        .prepare("CREATE TABLE IF NOT EXISTS tr_cache (k TEXT PRIMARY KEY, val TEXT NOT NULL, created INTEGER NOT NULL)")
+        .run();
+      trDbReady = true;
+    } catch {
+      return null;
+    }
+  }
+  return db;
+}
+
+async function trCacheGet(env, key) {
+  try {
+    const db = await trDb(env);
+    if (!db) return null;
+    const row = await db.prepare("SELECT val, created FROM tr_cache WHERE k = ?1").bind(key).first();
+    if (!row || Date.now() - Number(row.created) > TR_TTL_MS) return null;
+    return row.val;
+  } catch {
+    return null;
+  }
+}
+
+async function trCachePut(env, key, val) {
+  try {
+    const db = await trDb(env);
+    if (!db) return;
+    await db
+      .prepare("INSERT OR REPLACE INTO tr_cache (k, val, created) VALUES (?1, ?2, ?3)")
+      .bind(key, String(val), Date.now())
+      .run();
+  } catch {
+    /* کش اختیاری است */
+  }
+}
+
+async function sha256Hex(str) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+const TR_LANG_NAMES = {
+  fa: "Persian", en: "English", it: "Italian", hi: "Hindi", tr: "Turkish", ar: "Arabic", es: "Spanish",
+  de: "German", fr: "French", zh: "Chinese", ko: "Korean", ru: "Russian", ja: "Japanese",
+};
+const TR_TEXT_MAX = 300; // فقط کلمه/جمله‌ی کوتاه؛ متنِ بلندِ کاربر (کتاب/داستان) هرگز ذخیره نمی‌شود
+
+function httpErr(status, message) {
+  const e = new Error(message);
+  e.status = status;
+  return e;
+}
+
+// ورودی: { text, source_lang_code, target_lang_code } — خروجی: { ok, text, cached, provider }
+async function translateTextShared(body, env, ctx) {
+  const text = String(body?.text ?? "").replace(/\s+/g, " ").trim();
+  const src = String(body?.source_lang_code || "auto").toLowerCase();
+  const tgt = String(body?.target_lang_code || "").toLowerCase();
+  if (!text) throw httpErr(400, "text is required");
+  if (text.length > TR_TEXT_MAX) throw httpErr(400, "text too long");
+  if (!TR_LANG_NAMES[tgt]) throw httpErr(400, "unsupported target language");
+  if (src !== "auto" && !TR_LANG_NAMES[src]) throw httpErr(400, "unsupported source language");
+  if (src === tgt) return { ok: true, text, cached: false, provider: "same" };
+
+  const key = "txt:" + (await sha256Hex(JSON.stringify([src, tgt, text])));
+  const hit = await trCacheGet(env, key);
+  if (hit) return { ok: true, text: hit, cached: true, provider: "cache" };
+
+  const tgtName = TR_LANG_NAMES[tgt];
+  const prompt =
+    `Translate the following text into ${tgtName}. ` +
+    `Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.\n\n` +
+    `Text: ${text}`;
+  const maxTokens = Math.min(Math.max(128, Math.floor(text.length / 2) + 96), 400);
+
+  const chain = getProviderChain(env);
+  const errors = [];
+  for (const provider of chain) {
+    try {
+      const raw = await withTimeout(callProvider(provider, prompt, maxTokens, env), 8000, provider);
+      let out = sanitizeAiText(raw).replace(/^["'«»“”\s]+|["'«»“”\s]+$/g, "").trim();
+      const bad = badAiOutputReason(out, prompt);
+      if (bad) throw new Error(`unusable output (${bad})`);
+      if (!out || out.length > text.length * 4 + 40 || out.includes("\n\n")) throw new Error("unusable output (shape)");
+      // ترجمه‌ای که عیناً همان متنِ مبدأ است معمولاً شکست است؛ نشان بده ولی ذخیره نکن
+      const cacheable = out.toLowerCase() !== text.toLowerCase();
+      if (cacheable) {
+        const put = trCachePut(env, key, out);
+        if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(put);
+      }
+      return { ok: true, text: out, cached: false, provider };
+    } catch (e) {
+      errors.push(`${provider}: ${e.message}`);
+    }
+  }
+  throw httpErr(502, errors.join(" | ") || "no provider available");
+}
+
 // --- ترجمه‌ی chunk به chunk‌ِ زیرنویس (برای حالت یوتیوبِ حباب) --------------
 // ورودی: { subtitles: [متنِ هر خط], context_before: [...], context_after: [...],
 //          content_title, source_language, target_language, translation_tone }
@@ -453,6 +578,22 @@ async function translateSubtitleChunk(body, env, ctx) {
     (after.length ? `Context after (do not translate): ${JSON.stringify(after)}\n` : "");
 
   const maxTokens = Math.min(Math.max(600, subs.join("").length * 4 + 300), 4000);
+
+  // 🗄️ کشِ مشترکِ ماندگار (D1، بین همه‌ی کاربرها و همه‌ی دیتاسنترها). Cache API روی workers.dev کار نمی‌کند و
+  // حتی روی دامنه‌ی اختصاصی هم بینِ دیتاسنترها همگام نمی‌شود؛ پس این لایه‌ی اصلی است. بدونِ D1 رد می‌شود.
+  let sharedKey = null;
+  try {
+    sharedKey = "sub:" + (await sha256Hex(JSON.stringify([srcName, tgtName, tone, subs])));
+    const saved = await trCacheGet(env, sharedKey);
+    if (saved) {
+      const savedArr = JSON.parse(saved);
+      if (Array.isArray(savedArr) && savedArr.length === subs.length) {
+        return { ok: true, provider: "cache", cached: true, translations: savedArr };
+      }
+    }
+  } catch {
+    sharedKey = null;
+  }
 
   // ⚡ کشِ سمتِ سرور: همین جمله‌ها + همین زبان‌ها + همین لحن = همان ترجمه (بین همه‌ی کاربرها مشترک).
   // زمینه (جمله‌های قبل/بعد) عمداً در کلید نیست تا شانسِ hit بیشتر شود.
@@ -495,6 +636,10 @@ async function translateSubtitleChunk(body, env, ctx) {
       )
       .catch(() => {});
     if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(put);
+  }
+  if (sharedKey) {
+    const putD1 = trCachePut(env, sharedKey, JSON.stringify(arr));
+    if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(putD1);
   }
   return { ok: true, provider, translations: arr };
 }

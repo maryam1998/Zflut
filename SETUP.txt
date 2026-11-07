@@ -1,0 +1,28 @@
+راه‌اندازی کش مشترک ترجمه (Cloudflare D1)
+==========================================
+بدون این مراحل هم Worker مثل قبل کار می‌کند (فقط کشِ مشترک غیرفعال است). کد تغییر نکرده را دست نزن.
+
+1) ساخت دیتابیس (یک‌بار، داخل پوشه‌ی پروژه‌ی Worker):
+   npx wrangler d1 create phrasebook-tr-cache
+   ← یک database_id چاپ می‌کند؛ کپی‌اش کن.
+
+2) این بلوک را به انتهای wrangler.toml اضافه کن (اسم binding باید دقیقاً TR_DB باشد):
+   [[d1_databases]]
+   binding = "TR_DB"
+   database_name = "phrasebook-tr-cache"
+   database_id = "همان IDی مرحله ۱"
+
+3) جایگزین کردن src/index.js با فایل این زیپ، و دیپلوی:
+   npx wrangler deploy
+   (جدول tr_cache خودکار ساخته می‌شود؛ نیازی به SQL دستی نیست.)
+
+4) تست:
+   curl -X POST https://<آدرس-worker-تو>/api/translate-text \
+     -H "Content-Type: application/json" \
+     -d '{"text":"hello","source_lang_code":"en","target_lang_code":"fa"}'
+   بار اول: "cached": false  — بار دوم: "cached": true, "provider": "cache"
+
+پاک‌کردن ردیف‌های قدیمی (اختیاری؛ کد خودش بعد از ۱۸۰ روز نادیده‌شان می‌گیرد):
+   npx wrangler d1 execute phrasebook-tr-cache --remote --command "DELETE FROM tr_cache WHERE created < strftime('%s','now','-180 day')*1000"
+
+نکته: محدودیت‌ها و قیمتِ D1 را از صفحه‌ی قیمت‌گذاری Cloudflare چک کن.
