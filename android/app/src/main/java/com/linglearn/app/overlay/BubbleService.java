@@ -5462,6 +5462,39 @@ public class BubbleService extends Service {
         return extractText(resp);
     }
 
+    /** 🔎 بازبینیِ AI برای لغتِ ذره‌بین با جمله‌ی اطرافش: «OK» یا ترجمه‌ی اصلاح‌شده‌ی لغت. */
+    static String aiVerifyCtxStatic(String text, String from, String tgt, String draft, String ctx) throws Exception {
+        String to = LANG_NAMES.containsKey(tgt) ? LANG_NAMES.get(tgt) : tgt;
+        String fr = LANG_NAMES.containsKey(from) ? LANG_NAMES.get(from) : from;
+        String prompt = "Sentence (" + fr + "): \"" + ctx + "\"\n"
+                + "Word/phrase from that sentence: \"" + text + "\"\n"
+                + "Draft translation of the word/phrase into " + to + ": \"" + draft + "\"\n\n"
+                + "The sentence may contain small OCR/typing errors. Is the draft the right translation of the word/phrase "
+                + "as it is used in THIS sentence (meaning, tense, form)? If yes, reply with EXACTLY: OK\n"
+                + "If no, reply with ONLY the corrected short translation of the word/phrase \u2014 no quotes, no explanation, nothing else.";
+        JSONObject body = new JSONObject();
+        body.put(GENERATE_PROMPT_KEY, prompt);
+        String resp = postBytes(HTTP_FAST, 1, WORKER_BASE + GENERATE_PATH,
+                "application/json; charset=utf-8", body.toString().getBytes(StandardCharsets.UTF_8));
+        return extractText(resp);
+    }
+
+    /** ترجمه‌ی مستقیمِ AI برای لغتِ ذره‌بین با جمله‌ی اطرافش. */
+    static String aiTranslateCtxStatic(String text, String from, String tgt, String ctx) throws Exception {
+        String to = LANG_NAMES.containsKey(tgt) ? LANG_NAMES.get(tgt) : tgt;
+        String fr = LANG_NAMES.containsKey(from) ? LANG_NAMES.get(from) : from;
+        String prompt = "Sentence (" + fr + "): \"" + ctx + "\"\n"
+                + "Translate ONLY the word/phrase \"" + text + "\" from that sentence into " + to
+                + ", with the meaning and grammatical form it has in THIS sentence. "
+                + "The sentence may contain small OCR errors. "
+                + "Reply with ONLY the short translation of the word/phrase, no quotes, no explanations.";
+        JSONObject body = new JSONObject();
+        body.put(GENERATE_PROMPT_KEY, prompt);
+        String resp = postBytes(HTTP_FAST, 2, WORKER_BASE + GENERATE_PATH,
+                "application/json; charset=utf-8", body.toString().getBytes(StandardCharsets.UTF_8));
+        return extractText(resp);
+    }
+
     private final LiveTranslator.Ai aiBackend = new LiveTranslator.Ai() {
         @Override public String translate(String text, String tgt) throws Exception {
             return BubbleService.this.translate(text, "", tgt);

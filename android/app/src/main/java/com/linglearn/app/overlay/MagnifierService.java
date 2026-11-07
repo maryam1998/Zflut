@@ -1119,6 +1119,12 @@ public class MagnifierService extends Service {
 
     private void reviewAi(final java.util.function.IntSupplier cur, final int token, final String text,
                           final String from, final List<String[]> rows, final RowFix fix) {
+        reviewAi(cur, token, text, from, rows, fix, null);
+    }
+
+    /** ctx = جمله‌ی اطرافِ لغت (برای لغت‌های کادر)؛ بدونش AI فقط یک لغتِ تنها می‌بیند و «شود» را «Be» تأیید می‌کند. */
+    private void reviewAi(final java.util.function.IntSupplier cur, final int token, final String text,
+                          final String from, final List<String[]> rows, final RowFix fix, final String ctx) {
         for (final String[] r : new ArrayList<>(rows)) {
             final String tgt = r[0], draft = r[1];
             if (tgt == null || tgt.isEmpty() || tgt.equals(from)) continue;
@@ -1128,8 +1134,11 @@ public class MagnifierService extends Service {
                     String better = null;
                     try {
                         boolean failed = draft == null || draft.isEmpty() || "—".equals(draft) || "…".equals(draft);
-                        String out = failed ? BubbleService.aiTranslateStatic(text, from, tgt)
-                                            : BubbleService.aiVerifyStatic(text, from, tgt, draft);
+                        String out = ctx != null
+                                ? (failed ? BubbleService.aiTranslateCtxStatic(text, from, tgt, ctx)
+                                          : BubbleService.aiVerifyCtxStatic(text, from, tgt, draft, ctx))
+                                : (failed ? BubbleService.aiTranslateStatic(text, from, tgt)
+                                          : BubbleService.aiVerifyStatic(text, from, tgt, draft));
                         if (out != null) {
                             out = out.trim().replaceAll("^[\"'“”«»]+|[\"'“”«»]+$", "").trim();
                             boolean ok = out.equalsIgnoreCase("OK") || out.equalsIgnoreCase("OK.");
@@ -1140,7 +1149,8 @@ public class MagnifierService extends Service {
                     } catch (Throwable ignored) { }
                     if (better == null) return;
                     final String fb = better;
-                    main.post(() -> { if (token == cur.getAsInt()) fix.apply(tgt, fb); });
+                    // ردیفی که در این فاصله با ↻ عوض شده دست نمی‌خورد
+                    main.post(() -> { if (token == cur.getAsInt() && java.util.Objects.equals(r[1], draft)) fix.apply(tgt, fb); });
                 });
             } catch (Exception ignored) { /* سرویس در حال بسته شدن است */ }
         }
@@ -1169,7 +1179,7 @@ public class MagnifierService extends Service {
             fillRows(wordRows, rows);
             adoptMeaning(rows);
             placePopup();
-        });
+        }, contextFor(cardLang, word));
     }
 
     private void finish(final String message) {
@@ -1243,6 +1253,7 @@ public class MagnifierService extends Service {
         popupLp = new WindowManager.LayoutParams(w, ViewGroup.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                        | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
                         | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
         popupLp.gravity = Gravity.TOP | Gravity.START;
@@ -1330,7 +1341,7 @@ public class MagnifierService extends Service {
 
     private final class IconText extends TextView {
         private static final int I_PLAY = 4, I_STOP = 6, I_REPLAY = 8, I_DROP = 10,
-                I_SPEAKER = 14, I_DOC = 15, I_CLOSE = 16, I_PAUSE = 3, I_PIN = 11, I_TRASH = 12;
+                I_SPEAKER = 14, I_DOC = 15, I_CLOSE = 16, I_PAUSE = 3, I_PIN = 11, I_TRASH = 12, I_REFRESH = 13;
         private int icon;
         private String suffix;
         private float iconDp = 18f;
@@ -1371,6 +1382,7 @@ public class MagnifierService extends Service {
                 case "\u2715": return I_CLOSE;
                 case "\uD83D\uDCCC": return I_PIN;
                 case "\uD83D\uDDD1": return I_TRASH;
+                case "\u21BB": return I_REFRESH;
                 default: return 0;
             }
         }
@@ -1451,6 +1463,11 @@ public class MagnifierService extends Service {
                     p.moveTo(10f, 10.5f); p.lineTo(10f, 16f);
                     p.moveTo(14f, 10.5f); p.lineTo(14f, 16f);
                     break;
+                case I_REFRESH:
+                    r.set(5f, 5f, 19f, 19f);
+                    p.arcTo(r, -40f, 275f, true);
+                    p.moveTo(5.49f, 4.1f); p.lineTo(10.61f, 4.43f); p.lineTo(9.17f, 9.35f);
+                    break;
                 case I_CLOSE:
                     p.moveTo(6.5f, 6.5f); p.lineTo(17.5f, 17.5f);
                     p.moveTo(17.5f, 6.5f); p.lineTo(6.5f, 17.5f);
@@ -1506,10 +1523,33 @@ public class MagnifierService extends Service {
         panelAlpha = Math.max(0f, Math.min(1f, prefs().getFloat("panelAlphaV2", 1f)));
         popupHFrac = Math.max(POPUP_H_MIN, Math.min(POPUP_H_MAX, prefs().getFloat("magHFrac", POPUP_H_DEFAULT)));
         popup = new LinearLayout(this) {
+            private boolean outDown;
+            private int outSeq;
+            private float outX, outY;
             @Override public boolean dispatchTouchEvent(MotionEvent ev) {
                 int a = ev.getActionMasked();
+                if (a == MotionEvent.ACTION_OUTSIDE) {                 // لمس بیرونِ کادر (روی صفحه‌ی برنامه‌ی زیرین)
+                    onOutsideTouch(ev);
+                    return false;
+                }
                 if (a == MotionEvent.ACTION_DOWN || a == MotionEvent.ACTION_UP) armPopupTimer();   // هر لمس شمارش را از نو می‌کند
-                return super.dispatchTouchEvent(ev);
+                if (a == MotionEvent.ACTION_DOWN) {
+                    // ضربه داخلِ کادرِ ترجمه ولی بیرونِ کادرِ لغت (روی جای غیرِ دکمه) → کادرِ لغت بسته شود
+                    outDown = wordCard != null && wordCard.getVisibility() == View.VISIBLE
+                            && !rawInside(wordCard, ev) && !hitsClickable(this, ev.getRawX(), ev.getRawY());
+                    outSeq = cardSeq; outX = ev.getRawX(); outY = ev.getRawY();
+                }
+                boolean res = super.dispatchTouchEvent(ev);
+                if (a == MotionEvent.ACTION_CANCEL) outDown = false;
+                if (a == MotionEvent.ACTION_UP && outDown) {
+                    outDown = false;
+                    float slop = ViewConfiguration.get(MagnifierService.this).getScaledTouchSlop();
+                    if (Math.hypot(ev.getRawX() - outX, ev.getRawY() - outY) <= slop && cardSeq == outSeq
+                            && wordCard != null && wordCard.getVisibility() == View.VISIBLE) {
+                        main.post(() -> closeWordCard());
+                    }
+                }
+                return res;
             }
         };
         popup.setOrientation(LinearLayout.VERTICAL);
@@ -1897,6 +1937,43 @@ public class MagnifierService extends Service {
         wordCard.addView(cardBar, cbLp);
     }
 
+    private static boolean rawInside(View v, MotionEvent ev) {
+        int[] l = new int[2];
+        v.getLocationOnScreen(l);
+        float x = ev.getRawX(), y = ev.getRawY();
+        return x >= l[0] && x <= l[0] + v.getWidth() && y >= l[1] && y <= l[1] + v.getHeight();
+    }
+
+    /** آیا نقطه روی دکمه/آیتمِ قابل‌کلیک است؟ (آن لمس‌ها کادرِ لغت را نمی‌بندند) */
+    private static boolean hitsClickable(View root, float rx, float ry) {
+        View cur = root;
+        while (cur instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) cur;
+            View next = null;
+            for (int i = g.getChildCount() - 1; i >= 0; i--) {
+                View c = g.getChildAt(i);
+                if (c.getVisibility() != View.VISIBLE) continue;
+                int[] l = new int[2];
+                c.getLocationOnScreen(l);
+                if (rx >= l[0] && rx <= l[0] + c.getWidth() && ry >= l[1] && ry <= l[1] + c.getHeight()) { next = c; break; }
+            }
+            if (next == null) break;
+            if (next.isClickable()) return true;
+            cur = next;
+        }
+        return false;
+    }
+
+    /** لمس بیرونِ کادرِ ترجمه: کادرِ لغتِ بازشده بسته می‌شود (لمس به برنامه‌ی زیرین هم می‌رسد). */
+    private void onOutsideTouch(MotionEvent ev) {
+        if (wordCard == null || wordCard.getVisibility() != View.VISIBLE) return;
+        if (selView != null && selLp != null) {                       // لمس روی لغت‌های هایلایت‌شده = انتخابِ لغت، نه بستن
+            float x = ev.getRawX(), y = ev.getRawY();
+            if (x >= selLp.x && x <= selLp.x + selLp.width && y >= selLp.y && y <= selLp.y + selLp.height) return;
+        }
+        main.post(() -> closeWordCard());
+    }
+
     /** ✕ی کادرِ لغت: فقط کادرِ «ذخیره برای داستان بعدی / گرامر / لایتنر» را می‌بندد؛ پنجره‌ی ترجمه می‌ماند. */
     private void closeWordCard() {
         main.removeCallbacks(cardTick);
@@ -1945,11 +2022,107 @@ public class MagnifierService extends Service {
             if (box == rowsBox && !lg.isEmpty() && !"…".equals(tx) && !"—".equals(tx)) makePickable(t, lg);
             row.addView(t, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             if (!lg.isEmpty()) {
+                // ↻ ترجمه‌ی همین ردیف را دوباره می‌گیرد و AI بازبینی می‌کند
+                final TextView rf = headBtn("\u21BB", null);
+                ((IconText) rf).setIconDp(18f);
+                rf.setMinWidth(dp(34));
+                rf.setAlpha(0.85f);
+                rf.setContentDescription(msg("ترجمه‌ی دوباره (با بازبینی AI)", "Retranslate (AI review)"));
+                final String[] rowRef = r;
+                final List<String[]> rowsRef = rows;
+                rf.setOnClickListener(v -> refreshRow(box, rowsRef, rowRef));
+                row.addView(rf);
                 final TextView sp = speakBtn();
                 sp.setOnClickListener(v -> toggleSpeak(sp, tx, lg));
                 row.addView(sp);
             }
             box.addView(row, matchWrap(4));
+        }
+    }
+
+    /** جمله‌ای که لغتِ کادر از آن آمده (برای ترجمه‌ی درستِ لغت در متن)؛ برای کلِ متن null. */
+    private String contextFor(String lang, String word) {
+        String c = null;
+        if (lang != null && lang.equalsIgnoreCase(selSrc)) c = selOrig;
+        else if (lang != null) {
+            for (String[] r : wholeResults) {
+                if (r[0].equalsIgnoreCase(lang) && !"…".equals(r[1]) && !"—".equals(r[1])) { c = r[1]; break; }
+            }
+        }
+        if (c == null || c.trim().isEmpty() || word == null || c.trim().equalsIgnoreCase(word.trim())) return null;
+        return c.length() > 500 ? c.substring(0, 500) : c;
+    }
+
+    private static String cleanAiOut(String out) {
+        if (out == null) return null;
+        out = out.trim().replaceAll("^[\"'“”«»]+|[\"'“”«»]+$", "").trim();
+        if (out.isEmpty() || out.equalsIgnoreCase("OK") || out.equalsIgnoreCase("OK.")) return null;
+        return out;
+    }
+
+    /** ترجمه‌ی تازه: اول خودِ AI (با جمله‌ی اطرافِ لغت)، اگر نشد مترجمِ رایگان. null = هیچ‌کدام جواب نداد. */
+    private String freshTranslation(String text, String from, String tgt, String ctx) {
+        try {
+            String out = cleanAiOut(ctx != null ? BubbleService.aiTranslateCtxStatic(text, from, tgt, ctx)
+                                                : BubbleService.aiTranslateStatic(text, from, tgt));
+            if (out != null && !LiveTranslator.isReasoningLeak(out)
+                    && !LiveTranslator.looksLikelyMistranslated(text, out, tgt, from)) return out;
+        } catch (Throwable ignored) { }
+        try {
+            String out = cleanAiOut(translateOne(text, from, tgt));
+            if (out != null && !LiveTranslator.looksLikelyMistranslated(text, out, tgt, from)) return out;
+        } catch (Throwable ignored) { }
+        return null;
+    }
+
+    private void repaintRows(LinearLayout box, List<String[]> rows) {
+        fillRows(box, rows);
+        if (rows == wholeResults) {                                  // همان ردیف‌ها در کادرِ لغت هم هست (لغت = کلِ متن)
+            boolean cardWhole = wordCard != null && wordCard.getVisibility() == View.VISIBLE && wordRows != null
+                    && cardWord != null && cardWord.equals(selOrig) && cardLang.equals(selSrc);
+            if (box != rowsBox && rowsBox != null) fillRows(rowsBox, wholeResults);
+            if (box != wordRows && cardWhole) fillRows(wordRows, wholeResults);
+        }
+        placePopup();
+    }
+
+    /** ↻ یک ردیفِ ترجمه را دوباره می‌گیرد؛ AI (با جمله‌ی اطرافِ لغت) بازبینی/ترجمه می‌کند. */
+    private void refreshRow(final LinearLayout box, final List<String[]> rows, final String[] r) {
+        final boolean inCard = box == wordRows;
+        if (popup == null || (!inCard && box != rowsBox)) return;
+        final String text = inCard ? cardWord : selOrig;
+        final String from = inCard ? cardLang : selSrc;
+        final String tgt = r[0];
+        if (text == null || text.isEmpty() || tgt == null || tgt.isEmpty() || "…".equals(r[1])) return;
+        final String ctx = inCard ? contextFor(from, text) : null;
+        final String old = r[1];
+        final int cs = cardSeq, ls = langSeq;
+        r[1] = "…";
+        repaintRows(box, rows);
+        armPopupTimer();
+        if (inCard) armCardTimer();
+        try {
+            aiPool.execute(() -> {
+                final String res = freshTranslation(text, from, tgt, ctx);
+                main.post(() -> {
+                    r[1] = res != null ? res : old;
+                    if (popup == null) return;
+                    boolean alive = inCard ? (cardSeq == cs && wordRows == box) : (langSeq == ls && rowsBox == box);
+                    if (!alive) return;
+                    repaintRows(box, rows);
+                    if (res == null) { toast(msg("ترجمه‌ی تازه گرفته نشد", "Could not get a new translation")); return; }
+                    if (inCard) {
+                        adoptMeaning(rows);
+                        if (cardStoryDone) queueWord("story");
+                        if (cardLeitnerDone) queueWord("leitner");
+                    }
+                    armPopupTimer();
+                    if (inCard) armCardTimer();
+                });
+            });
+        } catch (Exception ex) {
+            r[1] = old;
+            repaintRows(box, rows);
         }
     }
 
