@@ -140,6 +140,15 @@ const List<_Article> _articles = [
     },
     'player speed loop a-b record mic سرعت تکرار ضبط میکروفون',
   ),
+  _Article(
+    'audio',
+    {'en': 'Jump back to the playing line', 'fa': 'برگشت به خطِ در حال پخش'},
+    {
+      'en': 'Long-press the Play button in the bottom player to jump straight back to the exact line that is playing — even if you have switched to another tab or page since. If nothing is playing, you will see a short message instead.',
+      'fa': 'روی دکمه‌ی پخش (Play) پلیر پایین صفحه لمس طولانی کن تا دقیقاً به همان خطی که در حال پخش است برگردی؛ حتی اگر بعد از شروع پخش بین تب‌ها یا صفحه‌ها جابه‌جا شده باشی. اگر چیزی در حال پخش نباشد، یک پیام کوتاه نشان داده می‌شود.',
+    },
+    'play long press long-press go to playing line tab back لمس طولانی پخش برگشت خط تب جابجایی',
+  ),
 
   // ── زبان‌ها ──
   _Article(
