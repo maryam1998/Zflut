@@ -156,8 +156,9 @@ final class MlKitTranslator {
         if (Looper.myLooper() == Looper.getMainLooper()) return false;
         if (isReady(src, tgt)) return true;
         if (refreshReadyBlocking(src, tgt)) return true;
-        // آماده نیست: در پس‌زمینه و فقط روی Wi‑Fi دانلود کن؛ همین‌بار آنلاین ترجمه می‌شود.
-        download(src, tgt, true, null);
+        // آماده نیست: در پس‌زمینه دانلود کن (با Wi‑Fi و داده‌ی موبایل هر دو)؛ همین‌بار آنلاین ترجمه می‌شود.
+        // برای برگرداندن به «فقط Wi‑Fi» آرگومان سوم را true کن.
+        download(src, tgt, false, null);
         return false;
     }
 

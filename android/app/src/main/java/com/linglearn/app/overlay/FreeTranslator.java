@@ -57,6 +57,16 @@ final class FreeTranslator {
     };
     private static final long[] downUntil = new long[SERVICES];
 
+    /**
+     * false (پیش‌فرض برای انتشار تجاری): سرویس‌های «غیررسمی» (۰ = Google gtx، ۲ = Lingva) در زنجیره نیستند،
+     * چون API رسمی/مجاز نیستند و شرایط استفاده‌شان برای اپِ تجاری امن نیست. true = مثل قبل.
+     */
+    private static final boolean ALLOW_UNOFFICIAL = false;
+
+    private static boolean allowed(int svc) {
+        return ALLOW_UNOFFICIAL || (svc != 0 && svc != 2);
+    }
+
     /** اگر سرویسِ اول در این مدت جواب نداد، سرویسِ بعدی «هم‌زمان» شروع می‌شود (اولین جوابِ سالم برنده است). */
     private static final long HEDGE_MS = 400;
     private static final ExecutorService POOL = Executors.newCachedThreadPool(new ThreadFactory() {
@@ -106,9 +116,9 @@ final class FreeTranslator {
         final long now = SystemClock.elapsedRealtime();
         List<Integer> order = new ArrayList<>();
         synchronized (downUntil) {
-            for (int i = 0; i < SERVICES; i++) if (downUntil[i] <= now) order.add(i);
+            for (int i = 0; i < SERVICES; i++) if (allowed(i) && downUntil[i] <= now) order.add(i);
         }
-        if (order.isEmpty()) for (int i = 0; i < SERVICES; i++) order.add(i);
+        if (order.isEmpty()) for (int i = 0; i < SERVICES; i++) if (allowed(i)) order.add(i);
 
         // موازیِ تدریجی (hedged): به‌جای این‌که منتظرِ تایم‌اوتِ یک سرویسِ کند بمانیم، اگر در HEDGE_MS جواب نیامد
         // سرویسِ بعدی هم هم‌زمان شروع می‌شود؛ هر کدام زودتر جوابِ سالم داد همان نمایش داده می‌شود.
