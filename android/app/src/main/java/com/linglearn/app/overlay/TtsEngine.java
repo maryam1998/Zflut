@@ -45,7 +45,7 @@ final class TtsEngine {
     private static final String TAG = "TtsEngine";
 
     // 🔎 تشخیصِ موقت: زمان‌های ساخت صدا را روی صفحه (Toast) نشان می‌دهد. بعد از پیدا شدن مشکل false کن.
-    private static final boolean DEBUG_TOAST = false;
+    private static final boolean DEBUG_TOAST = true;
     private static volatile Context dbgCtx;
     private static final Handler DBG_MAIN = new Handler(Looper.getMainLooper());
     private static void dbg(final String msg) {
