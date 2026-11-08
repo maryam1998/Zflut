@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
+import 'core/auth/worker_auth.dart';
 import 'core/config/app_config.dart';
 import 'core/storage/durable_store.dart';
 import 'core/storage/local_storage.dart' show sharedPrefsProvider;
@@ -79,6 +80,13 @@ Future<void> main() async {
     }
 
     final prefs = await SharedPreferences.getInstance();
+
+    // 🔐 توکنِ نشست برای Worker (حتی برای بخشِ بومیِ حباب از همین prefs خوانده می‌شود)
+    WorkerAuth.init(prefs);
+    if (supabaseError == null) {
+      WorkerAuth.listen();
+      unawaited(WorkerAuth.ensureFresh());
+    }
 
     // نسخه‌ی دائمیِ داده‌های کاربر (IndexedDB روی وب / فایل روی موبایل):
     // اگر prefs خالی/پاک شده باشد، لغات و داستان‌ها و ... از این‌جا برمی‌گردند.

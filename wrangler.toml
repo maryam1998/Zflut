@@ -21,6 +21,13 @@ AI_PROVIDER = "groq,gemini,cerebras,mistral,nvidianim,cloudflareai,ollamacloud,o
 GEMINI_MODEL = "gemini-3.6-flash"
 HF_MODEL = "openai/gpt-oss-120b"
 
+# 🔐 احراز هویت: "on" = فقط اپِ لاگین‌شده؛ "log" = فقط لاگ (برای مرحله‌ی انتقال)؛ "off" = قدیمی
+# Secrets لازم:  wrangler secret put SESSION_SECRET / SUPABASE_URL / SUPABASE_ANON_KEY
+AUTH_MODE = "on"
+LIMIT_AI = "600"      # ترجمه/زیرنویس/تشخیص گفتار — در روزِ هر کاربر
+LIMIT_TTS = "4000"    # صدای آنلاین
+LIMIT_MISC = "3000"
+
 # ⭐ NEW: Cloudflare Workers AI binding — برای تبدیلِ صدا به متن با Whisper
 # (@cf/openai/whisper-large-v3-turbo). رایگان: ۱۰٬۰۰۰ نورون در روز.
 [ai]

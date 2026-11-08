@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:just_audio/just_audio.dart';
 
+import '../auth/worker_auth.dart';
 import 'native_tts_bridge.dart';
 import 'sentence_splitter.dart';
 import 'speech_state.dart';
@@ -1138,7 +1139,8 @@ class SpeechController extends StateNotifier<SpeechState> {
     StreamSubscription<PlayerState>? sub;
     try {
       await _onlinePlayer.stop();
-      await _onlinePlayer.setUrl(url);
+      await WorkerAuth.ensureFresh();
+      await _onlinePlayer.setUrl(url, headers: WorkerAuth.headers);
       await _onlinePlayer.setSpeed(state.rate);
       await _onlinePlayer.setVolume(state.muted ? 0.0 : 1.0);
 

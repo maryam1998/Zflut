@@ -4,11 +4,12 @@
 // ---------------------------------------------------------------------------
 
 import { handleTranscribe } from "./transcribe.js";
+import { authGate, handleSession } from "./auth.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, X-App-Token, Authorization",
 };
 
 export default {
@@ -32,6 +33,17 @@ export default {
           ar: hfTtsConfigStatus(env, "ar"),
         },
       });
+    }
+
+    // 🔐 ورود: توکنِ Supabase → توکنِ نشستِ امضاشده (فقط همین مسیر بدونِ X-App-Token است)
+    if (url.pathname === "/api/session" && request.method === "POST") {
+      return handleSession(request, env, CORS_HEADERS);
+    }
+
+    // 🔐 همه‌ی بقیه‌ی /api/* نیاز به توکنِ نشست + سهمیه‌ی روزانه‌ی هر کاربر دارند
+    if (url.pathname.startsWith("/api/")) {
+      const denied = await authGate(request, env, url, CORS_HEADERS);
+      if (denied) return denied;
     }
 
     // ⭐ NEW: تبدیل صدا به متن با Whisper (Cloudflare Workers AI)

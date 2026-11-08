@@ -750,6 +750,7 @@ public class BubbleService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        WorkerAuthNative.init(this);
         String action = intent != null ? intent.getAction() : null;
         instance = this;
 
@@ -7101,9 +7102,9 @@ public class BubbleService extends Service {
 
     private static String postOnce(OkHttpClient client, String url, String contentType, byte[] body)
             throws IOException {
-        Request req = new Request.Builder()
+        Request req = WorkerAuthNative.sign(new Request.Builder()
                 .url(url)
-                .post(RequestBody.create(body, MediaType.get(contentType)))
+                .post(RequestBody.create(body, MediaType.get(contentType))), url)    // 🔐 X-App-Token
                 .build();
         try (Response r = client.newCall(req).execute()) {
             ResponseBody rb = r.body();

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import '../auth/worker_auth.dart';
 import '../native/native_bridge.dart';
 import '../storage/translation_cache_db.dart';
 
@@ -293,7 +294,10 @@ class TranslationService {
         _aiDio = Dio(BaseOptions(
           // پاسخ‌های غیر 2xx را خودمان بررسی می‌کنیم (برای 429 و ...)
           validateStatus: (_) => true,
-        ));
+        )) {
+    // 🔐 هدرِ X-App-Token برای Worker (و تازه‌سازیِ خودکار با 401)
+    _aiDio.interceptors.add(WorkerAuthInterceptor(_aiDio));
+  }
 
   final Dio _dio;
   final Dio _aiDio;

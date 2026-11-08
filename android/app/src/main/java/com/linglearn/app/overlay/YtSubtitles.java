@@ -1087,7 +1087,7 @@ final class YtSubtitles {
     }
 
     private static String getString(OkHttpClient c, String url) throws Exception {
-        Request req = new Request.Builder().url(url).get().build();
+        Request req = WorkerAuthNative.sign(new Request.Builder().url(url).get(), url).build();
         try (Response r = c.newCall(req).execute()) {
             ResponseBody b = r.body();
             String s = b == null ? "" : b.string();
@@ -1097,8 +1097,8 @@ final class YtSubtitles {
     }
 
     private static String post(OkHttpClient c, String url, String json) throws Exception {
-        Request req = new Request.Builder().url(url)
-                .post(RequestBody.create(json.getBytes(StandardCharsets.UTF_8), JSON_MT)).build();
+        Request req = WorkerAuthNative.sign(new Request.Builder().url(url)
+                .post(RequestBody.create(json.getBytes(StandardCharsets.UTF_8), JSON_MT)), url).build();
         try (Response r = c.newCall(req).execute()) {
             ResponseBody b = r.body();
             String s = b == null ? "" : b.string();

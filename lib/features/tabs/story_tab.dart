@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import '../../core/auth/worker_auth.dart';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1507,8 +1508,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       }
       if (html.isEmpty) {
         final base = ref.read(aiSettingsProvider).baseUrl;
+        await WorkerAuth.ensureFresh();
         final r = await dio.get<String>(
-            '$base/api/fetch-url?url=${Uri.encodeComponent(uri.toString())}');
+            '$base/api/fetch-url?url=${Uri.encodeComponent(uri.toString())}',
+            options: Options(headers: WorkerAuth.headers));
         html = r.data ?? '';
       }
       final body = _extractMainBodyText(html);

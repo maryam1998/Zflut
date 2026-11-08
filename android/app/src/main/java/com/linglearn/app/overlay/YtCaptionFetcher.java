@@ -186,8 +186,8 @@ final class YtCaptionFetcher {
     // ───────── مسیرِ Worker ─────────
 
     private static Out viaWorker(OkHttpClient http, String workerBase, String videoId, String wantLang) throws Exception {
-        Request req = new Request.Builder()
-                .url(workerBase + "/api/youtube-captions?videoId=" + enc(videoId) + "&lang=" + enc(wantLang)).get().build();
+        final String capUrl = workerBase + "/api/youtube-captions?videoId=" + enc(videoId) + "&lang=" + enc(wantLang);
+        Request req = WorkerAuthNative.sign(new Request.Builder().url(capUrl).get(), capUrl).build();
         try (Response r = http.newCall(req).execute()) {
             String s = r.body() == null ? "" : r.body().string();
             JSONObject j;
@@ -643,8 +643,9 @@ final class YtCaptionFetcher {
     }
 
     private static String searchViaWorker(OkHttpClient http, String workerBase, String title, String channel, long durSec) throws Exception {
-        Request req = new Request.Builder().url(workerBase + "/api/youtube-resolve?title=" + enc(title)
-                + "&channel=" + enc(channel) + "&durationSec=" + durSec).get().build();
+        final String resUrl = workerBase + "/api/youtube-resolve?title=" + enc(title)
+                + "&channel=" + enc(channel) + "&durationSec=" + durSec;
+        Request req = WorkerAuthNative.sign(new Request.Builder().url(resUrl).get(), resUrl).build();
         try (Response r = http.newCall(req).execute()) {
             String s = r.body() == null ? "" : r.body().string();
             JSONObject j;
