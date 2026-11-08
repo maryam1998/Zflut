@@ -50,6 +50,23 @@ jobs:
           | base64 -d > android/app/release-key.jks
           ls -lh android/app/release-key.jks
 
+      # فقط اثرانگشتِ عمومیِ کلید (SHA-1/SHA-256) را چاپ می‌کند تا در Google Cloud برای ورودِ گوگل بگذاری.
+      # رمز چاپ نمی‌شود. بعد از کپی کردن می‌توانی این مرحله را پاک کنی.
+      - name: Print signing key fingerprint (SHA-1)
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          keytool -list -v -keystore android/app/release-key.jks \
+            -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" 2>/dev/null \
+            | grep -E "^\s*(SHA1|SHA256):" | sed 's/^ *//' | tee fingerprint.txt
+          {
+            echo "### Signing key fingerprint"
+            echo '```'
+            cat fingerprint.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build STORE APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -60,6 +77,7 @@ jobs:
           flutter build apk --release --flavor store --target-platform android-arm64 
           --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} 
           --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} 
+          --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }} 
           2>&1 | tee build-store-apk.log
 
       - name: Build STORE AAB (Google Play)
@@ -72,6 +90,7 @@ jobs:
           flutter build appbundle --release --flavor store --target-platform android-arm64 
           --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} 
           --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} 
+          --dart-define=GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID }} 
           2>&1 | tee build-store-aab.log
 
       - name: Verify 64-bit only (arm64-v8a)
