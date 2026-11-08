@@ -1087,6 +1087,7 @@ public class BubblePlugin extends Plugin {
         final String text = call.getString("text");
         final String lang = SherpaModelManager.normalize(call.getString("lang", "en"));
         final String id = call.getString("id");
+        final String voice = call.getString("voice");     // 🎭 صدای همین جمله (اختیاری)
         Double sp = call.getDouble("speed", 1.0);
 
         if (text == null || text.trim().isEmpty()) {
@@ -1112,7 +1113,7 @@ public class BubblePlugin extends Plugin {
             return;
         }
         call.resolve();
-        TtsClient.speak(lang, text, speed, id);
+        TtsClient.speak(lang, text, speed, id, voice);
     }
 
     /** کلیدِ موتورِ یک زبان (همان منطقِ TtsService.poolKey): زبان‌های بسته‌ی مشترک یک موتور دارند. */
@@ -1182,11 +1183,12 @@ public class BubblePlugin extends Plugin {
     public void prefetchTts(PluginCall call) {
         String text = call.getString("text");
         String lang = SherpaModelManager.normalize(call.getString("lang", "en"));
+        String voice = call.getString("voice");
         Double sp = call.getDouble("speed", 1.0);
         call.resolve();
         if (text == null || text.trim().isEmpty() || lang == null) return;
         if (TtsClient.isBlocked(lang)) return;
-        TtsClient.prefetch(lang, text, (sp == null || sp <= 0) ? 1.0f : sp.floatValue());
+        TtsClient.prefetch(lang, text, (sp == null || sp <= 0) ? 1.0f : sp.floatValue(), voice);
     }
 
     // ---------------- TTS خودِ گوشی (android.speech.tts) ----------------

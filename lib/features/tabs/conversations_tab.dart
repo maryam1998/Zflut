@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +8,7 @@ import '../../app.dart';
 import '../../core/constants/topic_icons.dart';
 import '../../core/constants/topic_titles.dart';
 import '../../core/models/conversation.dart';
+import '../../core/native/native_bridge.dart';
 import '../../core/player_sync/playback_origin.dart';
 import '../../core/player_sync/player_track.dart';
 import '../../core/player_sync/sync_widgets.dart';
@@ -29,6 +33,63 @@ class ConversationsTab extends ConsumerStatefulWidget {
 class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   String? _activeTopic;
   int? _openScenario;
+
+  // 🎭 دو صدای متفاوت برای دو نفرِ مکالمه (A = «می‌شنوی»، B = «می‌گی») — هر بار که سناریو باز می‌شود تصادفی
+  final math.Random _rng = math.Random();
+  String? _voiceA, _voiceB;
+  String? _voicesFor;
+  bool _voicesBusy = false;
+
+  /// برچسبِ صدا به F/M ختم می‌شود (مثلاً «Nicole · US · F»).
+  static bool _isFemale(String label) => label.trim().endsWith('F');
+
+  Future<void> _pickVoices(String scenarioKey) async {
+    if (_voicesBusy || _voicesFor == scenarioKey) return;
+    _voicesBusy = true;
+    _voicesFor = scenarioKey;
+    String? a, b;
+    try {
+      if (NativeBridge.instance.isSupported) {
+        final r = await NativeBridge.instance.getTtsVoices(lang: 'en');
+        final raw = r['voices'];
+        final ok = <Map<String, dynamic>>[
+          if (raw is List)
+            for (final e in raw)
+              if (e is Map && e['downloaded'] == true && '${e['id']}'.isNotEmpty)
+                Map<String, dynamic>.from(e),
+        ];
+        if (ok.length >= 2) {
+          ok.shuffle(_rng);
+          final first = ok.first;
+          // ترجیحاً یک زن و یک مرد؛ وگرنه دو صدای متفاوت
+          final fFem = _isFemale('${first['label']}');
+          final other = ok.skip(1).firstWhere(
+                (v) => _isFemale('${v['label']}') != fFem,
+                orElse: () => ok[1],
+              );
+          if (_rng.nextBool()) {
+            a = '${first['id']}';
+            b = '${other['id']}';
+          } else {
+            a = '${other['id']}';
+            b = '${first['id']}';
+          }
+        }
+      }
+    } catch (_) {
+      a = b = null;
+    }
+    _voicesBusy = false;
+    if (!mounted) return;
+    _voiceA = a;
+    _voiceB = b;
+  }
+
+  String? _voiceForItem(String itemId) {
+    if (itemId.startsWith('a')) return _voiceA;
+    if (itemId.startsWith('b')) return _voiceB;
+    return null;
+  }
   String _query = '';
   Set<String> _levels = <String>{};
 
@@ -284,11 +345,16 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final openSc = (openIdx != null && openIdx < topic.scenarios.length)
         ? topic.scenarios[openIdx]
         : null;
+    if (openSc != null) {
+      final k = '${topic.topic}:$openIdx';
+      if (_voicesFor != k) unawaited(_pickVoices(k));    // 🎭 صدای تازه برای هر بار بازشدنِ سناریو
+    }
 
     return SyncPlayScope(
       revision: openSc ?? topic,
       originExtra: {'topic': topic.topic, 'scenario': openIdx},
       mode: TrackMode.lines,
+      voiceForItem: _voiceForItem,
       itemsBuilder: () => openSc == null
           ? const <SyncItem>[]
           : [

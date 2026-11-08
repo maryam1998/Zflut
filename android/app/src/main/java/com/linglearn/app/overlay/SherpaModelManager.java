@@ -302,6 +302,26 @@ final class SherpaModelManager {
         }
     }
 
+    /**
+     * 🎭 sid گوینده‌ی [vid] برای خوانشِ «همین یک جمله» (مثلاً دو نفرِ یک مکالمه با دو صدای متفاوت).
+     * فقط وقتی معتبر است که آن صدا هم‌بسته‌ی (pkg) صدای فعال باشد (مثلاً همه‌ی صداهای Kokoro یک موتور و
+     * یک مدل‌اند و فقط sid فرق می‌کند)؛ در غیر این‌صورت -1 = از صدای فعال استفاده کن.
+     */
+    static int sidForVoice(Context ctx, String lang, String vid) {
+        try {
+            String l = normalize(lang);
+            if (l == null || vid == null || vid.isEmpty()) return -1;
+            TtsVoice v = findVoice(l, vid);
+            TtsVoice av = getReadyVoice(ctx, l);
+            if (v == null || av == null || v.spec == null || av.spec == null) return -1;
+            if (v.spec.pkg == null || av.spec.pkg == null) return -1;
+            if (!v.spec.pkg.id.equals(av.spec.pkg.id)) return -1;
+            return v.sid;
+        } catch (Throwable t) {
+            return -1;
+        }
+    }
+
     static List<TtsVoice> ttsVoices(String lang) {
         String l = normalize(lang);
         List<TtsVoice> v = l == null ? null : TTS_VOICES.get(l);

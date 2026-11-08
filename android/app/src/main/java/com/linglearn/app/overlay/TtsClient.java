@@ -113,8 +113,14 @@ final class TtsClient {
     }
 
     static void speak(String lang, String text, float speed, String id) {
+        speak(lang, text, speed, id, null);
+    }
+
+    /** voice = شناسه‌ی صدای همین جمله (اختیاری؛ برای مکالمه‌ی دو نفره). */
+    static void speak(String lang, String text, float speed, String id, String voice) {
         if (id != null) PENDING.put(id, new String[]{lang, text});
         Bundle b = new Bundle();
+        if (voice != null && !voice.isEmpty()) b.putString("voice", voice);
         b.putString("lang", lang);
         b.putString("text", text);
         b.putFloat("speed", speed);
@@ -126,7 +132,12 @@ final class TtsClient {
     static void stop() { send(TtsService.MSG_STOP, null); }
 
     static void prefetch(String lang, String text, float speed) {
+        prefetch(lang, text, speed, null);
+    }
+
+    static void prefetch(String lang, String text, float speed, String voice) {
         Bundle b = new Bundle();
+        if (voice != null && !voice.isEmpty()) b.putString("voice", voice);
         b.putString("lang", lang);
         b.putString("text", text);
         b.putFloat("speed", speed);

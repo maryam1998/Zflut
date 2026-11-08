@@ -68,10 +68,11 @@ class NativeTtsBridge {
   }
 
   /// صدای جمله‌ی بعدی را پیش‌پیش می‌سازد (موقعِ نوبتش بدون تأخیر پخش می‌شود).
-  static Future<void> prefetch(String text, String lang, double rate) async {
+  static Future<void> prefetch(String text, String lang, double rate,
+      {String? voice}) async {
     if (!isAvailable) return;
     try {
-      await _b.prefetchTts(text: text, lang: lang, speed: rate);
+      await _b.prefetchTts(text: text, lang: lang, speed: rate, voice: voice);
     } catch (_) {}
   }
 
@@ -99,11 +100,12 @@ class NativeTtsBridge {
     String lang,
     double rate, {
     String? id,
+    String? voice,
   }) async {
     if (!isAvailable) return false;
     _ensureListening();
     try {
-      await _b.speak(text: text, lang: lang, speed: rate, id: id);
+      await _b.speak(text: text, lang: lang, speed: rate, id: id, voice: voice);
       return true;
     } catch (e) {
       debugPrint('native speak error: $e');

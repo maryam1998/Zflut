@@ -62,6 +62,10 @@ class SyncPlayScope extends ConsumerStatefulWidget {
   /// یا شناسه‌ی داستان). با لمسِ طولانیِ دکمه‌ی پخش به تب برمی‌گردد.
   final Map<String, Object?> originExtra;
 
+  /// 🎭 اختیاری: شناسه‌ی صدای خواندنِ هر آیتم (مثلاً مکالمه: گوینده‌ی A و B صدای جدا).
+  /// null برگرداند = صدای معمولیِ تنظیمات.
+  final String? Function(String itemId)? voiceForItem;
+
   const SyncPlayScope({
     super.key,
     required this.revision,
@@ -70,6 +74,7 @@ class SyncPlayScope extends ConsumerStatefulWidget {
     required this.child,
     this.mainCode = 'en',
     this.originExtra = const {},
+    this.voiceForItem,
   });
 
   @override
@@ -98,6 +103,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     _notifier = ref.read(playerSyncProvider.notifier);
     _ctrl = ref.read(speechControllerProvider.notifier);
     _ctrl.addChunkAdvanceHook(_chunkHook);
+    _ctrl.addChunkVoiceResolver(_voiceResolver);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _register();
@@ -134,12 +140,25 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   @override
   void dispose() {
     _ctrl.removeChunkAdvanceHook(_chunkHook);
+    _ctrl.removeChunkVoiceResolver(_voiceResolver);
     final n = _notifier;
     final id = _scopeId;
     Future.microtask(() {
       if (n.mounted) n.clearScope(id);
     });
     super.dispose();
+  }
+
+  /// 🎭 صدای جمله‌ی در حال خواندن (فقط وقتی متنِ پخش‌شده مالِ همین اسکوپ است).
+  String? _voiceResolver(String? key, int start) {
+    final vf = widget.voiceForItem;
+    if (vf == null || !mounted) return null;
+    final sync = ref.read(playerSyncProvider);
+    if (sync.scopeId != _scopeId) return null;
+    final track = sync.tracks[sync.mainCode];
+    if (track == null || track.key != key) return null;
+    final sp = track.spanAt(start);
+    return sp == null ? null : vf(sp.id);
   }
 
   /// ثبتِ «پخش از کجاست»: وقتی متنِ پخش‌شده مالِ همین اسکوپ است.

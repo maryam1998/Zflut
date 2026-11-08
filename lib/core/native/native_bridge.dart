@@ -213,14 +213,14 @@ class NativeBridge {
         if (voice != null && voice.isNotEmpty) 'voice': voice,
       });
 
-  Future<Map<String, dynamic>> speak({String? text, String? lang, String? id, num? speed}) =>
-      _call('speak', {if (text != null) 'text': text, if (lang != null) 'lang': lang, if (id != null) 'id': id, if (speed != null) 'speed': speed});
+  Future<Map<String, dynamic>> speak({String? text, String? lang, String? id, num? speed, String? voice}) =>
+      _call('speak', {if (text != null) 'text': text, if (lang != null) 'lang': lang, if (id != null) 'id': id, if (speed != null) 'speed': speed, if (voice != null && voice.isNotEmpty) 'voice': voice});
 
   Future<Map<String, dynamic>> preloadTts({String? lang}) =>
       _call('preloadTts', {if (lang != null) 'lang': lang});
 
-  Future<Map<String, dynamic>> prefetchTts({String? text, String? lang, num? speed}) =>
-      _call('prefetchTts', {if (text != null) 'text': text, if (lang != null) 'lang': lang, if (speed != null) 'speed': speed});
+  Future<Map<String, dynamic>> prefetchTts({String? text, String? lang, num? speed, String? voice}) =>
+      _call('prefetchTts', {if (text != null) 'text': text, if (lang != null) 'lang': lang, if (speed != null) 'speed': speed, if (voice != null && voice.isNotEmpty) 'voice': voice});
 
   Future<Map<String, dynamic>> checkSystemTts({String? lang}) =>
       _call('checkSystemTts', {if (lang != null) 'lang': lang});

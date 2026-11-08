@@ -112,6 +112,29 @@ class SpeechController extends StateNotifier<SpeechState> {
   void removeChunkAdvanceHook(bool Function(String?, int, int, bool) f) =>
       _advanceHooks.remove(f);
 
+  // 🎭 صدای هر جمله: مثلاً در مکالمه، گوینده‌ی A و B با دو صدای متفاوت.
+  // هر resolver (کلیدِ متن، آفستِ شروعِ جمله) را می‌گیرد و شناسه‌ی صدا یا null برمی‌گرداند.
+  final List<String? Function(String?, int)> _voiceResolvers = [];
+  void addChunkVoiceResolver(String? Function(String?, int) f) {
+    if (!_voiceResolvers.contains(f)) _voiceResolvers.add(f);
+  }
+
+  void removeChunkVoiceResolver(String? Function(String?, int) f) =>
+      _voiceResolvers.remove(f);
+
+  String? _voiceFor(int idx) {
+    if (_voiceResolvers.isEmpty || idx < 0 || idx >= _chunks.length) {
+      return null;
+    }
+    final c = _chunks[idx];
+    final lead = c.text.length - c.text.trimLeft().length;
+    for (final r in _voiceResolvers) {
+      final v = r(state.key, c.start + lead);
+      if (v != null && v.isNotEmpty) return v;
+    }
+    return null;
+  }
+
   // A-B
   String _abState = 'idle';
   int? _abChunkA;
@@ -775,7 +798,8 @@ class SpeechController extends StateNotifier<SpeechState> {
 
   Future<bool> _playNative(int idx, String text, String code, int myGen) {
     return _speakNativeAndWait(
-      speakFn: (id) => NativeTtsBridge.speak(text, code, state.rate, id: id),
+      speakFn: (id) => NativeTtsBridge.speak(text, code, state.rate,
+          id: id, voice: _voiceFor(idx)),
       idx: idx,
       text: text,
       myGen: myGen,
@@ -794,7 +818,8 @@ class SpeechController extends StateNotifier<SpeechState> {
       if (t.isEmpty || !RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(t)) {
         continue;
       }
-      unawaited(NativeTtsBridge.prefetch(t, _speakCode(t, code), state.rate));
+      unawaited(NativeTtsBridge.prefetch(t, _speakCode(t, code), state.rate,
+          voice: _voiceFor(n)));
     }
   }
 

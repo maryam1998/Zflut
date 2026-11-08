@@ -109,13 +109,14 @@ public class TtsService extends Service {
                     final String id = b.getString("id", "");
                     final float speed = b.getFloat("speed", 1.0f);
                     final boolean plain = b.getBoolean("plain", false);
+                    final String voice = b.getString("voice", "");
                     final int mySeq = speakSeq.incrementAndGet();
                     // ⚡ prefetch ها تا وارد صف شدنِ کارِ این خوانش جلو نیفتند (TtsEngine.speakPending)
                     TtsEngine.speakPending.incrementAndGet();
                     try {
                         speaker.execute(() -> {
                             try {
-                                doSpeak(text, lang, speed, id, mySeq, plain);
+                                doSpeak(text, lang, speed, id, mySeq, plain, voice);
                             } finally {
                                 TtsEngine.speakPending.decrementAndGet();
                             }
@@ -137,6 +138,8 @@ public class TtsService extends Service {
                     String lang = b.getString("lang", "en");
                     final float speed = b.getFloat("speed", 1.0f);
                     final boolean plainPf = b.getBoolean("plain", false);
+                    final String voicePf = b.getString("voice", "");
+                    final String langPf = lang;
                     final int seqPf = speakSeq.get();
                     // متنِ دوزبانه → هر تکه روی موتورِ زبانِ خودش (دقیقاً همون تکه‌بندیِ موقعِ پخش، تا کش بخوره)
                     final java.util.List<TtsSegmenter.Seg> segsPf = TtsSegmenter.split(text, lang);
@@ -148,7 +151,7 @@ public class TtsService extends Service {
                                     TtsEngine e = obtainEngine(s.lang, false);
                                     if (e != null && !e.isReleased()) {
                                         e.plain = plainPf;
-                                        e.prefetch(s.text, speed, sidFor(s.lang), s.lang);
+                                        e.prefetch(s.text, speed, sidFor(s.lang, langPf, voicePf), s.lang);
                                     }
                                 } catch (Throwable ignored) {}
                             }
@@ -211,7 +214,7 @@ public class TtsService extends Service {
      * (همون کاری که TTS خودِ گوشی خودکار می‌کنه). اگه مدلِ یکی از زبان‌ها دانلود نشده باشه، قبل از شروع ok=false
      * برمی‌گرده تا سمتِ اپ به TTS گوشی (که دوزبانه رو بلده) برگرده.
      */
-    private void doSpeak(String text, String lang, float speed, String id, int mySeq, boolean plain) {
+    private void doSpeak(String text, String lang, float speed, String id, int mySeq, boolean plain, String voice) {
         try {
             java.util.List<TtsSegmenter.Seg> segs = TtsSegmenter.split(text, lang);
             for (TtsSegmenter.Seg s : segs) {
@@ -220,7 +223,7 @@ public class TtsService extends Service {
                     return;
                 }
             }
-            speakSegment(segs, 0, lang, speed, id, mySeq, plain);
+            speakSegment(segs, 0, lang, speed, id, mySeq, plain, voice);
         } catch (Throwable e) {
             Log.e(TAG, "doSpeak failed", e);
             replyDone(lang, id, false, String.valueOf(e));
@@ -228,7 +231,8 @@ public class TtsService extends Service {
     }
 
     private void speakSegment(final java.util.List<TtsSegmenter.Seg> segs, final int i, final String reqLang,
-                              final float speed, final String id, final int mySeq, final boolean plain) {
+                              final float speed, final String id, final int mySeq, final boolean plain,
+                              final String voice) {
         try {
             // وسطِ لود/پخش، stop() یا speak ی جدید اومده، یا همه‌ی تکه‌ها تموم شد
             if (mySeq != speakSeq.get() || i >= segs.size()) {
@@ -259,17 +263,17 @@ public class TtsService extends Service {
                         try {
                             if (mySeq != speakSeq.get()) return;
                             TtsEngine ne = obtainEngine(nx.lang, false);
-                            if (ne != null && !ne.isReleased()) { ne.plain = plain; ne.prefetch(nx.text, speed, sidFor(nx.lang), nx.lang); }
+                            if (ne != null && !ne.isReleased()) { ne.plain = plain; ne.prefetch(nx.text, speed, sidFor(nx.lang, reqLang, voice), nx.lang); }
                         } catch (Throwable ignored) {}
                     });
                 } catch (Throwable ignored) {}
             }
-            engine.speakAsync(s.text, speed, sidFor(s.lang), s.lang, ok -> {
+            engine.speakAsync(s.text, speed, sidFor(s.lang, reqLang, voice), s.lang, ok -> {
                 if (!ok) { replyDone(reqLang, id, false, null); return; }
                 if (i + 1 >= segs.size()) { replyDone(reqLang, id, true, null); return; }
                 // لودِ موتورِ تکه‌ی بعد ممکنه کند باشه → روی thread ی loader (نه thread ی پلیر)
                 try {
-                    speaker.execute(() -> speakSegment(segs, i + 1, reqLang, speed, id, mySeq, plain));
+                    speaker.execute(() -> speakSegment(segs, i + 1, reqLang, speed, id, mySeq, plain, voice));
                 } catch (Throwable t) {
                     replyDone(reqLang, id, false, String.valueOf(t));
                 }
@@ -287,6 +291,15 @@ public class TtsService extends Service {
             if (v != null && v.spec.pkg != null) return "pkg:" + v.spec.pkg.id;
         } catch (Throwable ignored) {}
         return lang;
+    }
+
+    /** sid برای تکه‌ای از زبانِ segLang؛ اگر voice داده شده و تکه هم‌زبانِ درخواست است، همان گوینده. */
+    private int sidFor(String segLang, String reqLang, String voice) {
+        if (voice != null && !voice.isEmpty() && segLang != null && segLang.equals(reqLang)) {
+            int sid = SherpaModelManager.sidForVoice(getApplicationContext(), segLang, voice);
+            if (sid >= 0) return sid;
+        }
+        return sidFor(segLang);
     }
 
     private int sidFor(String lang) {
