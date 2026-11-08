@@ -18,6 +18,8 @@ dependencies:
 
   # ═══ Backend / Storage / Network ═══
   supabase_flutter: ^2.5.0
+  # ورودِ بومیِ گوگل در اندروید (صفحه‌ی گوگل اسمِ برنامه را نشان می‌دهد نه آدرسِ supabase.co)
+  google_sign_in: ^6.2.1
   shared_preferences: ^2.2.3
   dio: ^5.4.0
   # کشِ دائمیِ ترجمه‌ها: وب = IndexedDB، موبایل = فایل (معادلِ translationCacheDb.js در Hope)
