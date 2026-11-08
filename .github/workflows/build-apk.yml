@@ -50,23 +50,6 @@ jobs:
           | base64 -d > android/app/release-key.jks
           ls -lh android/app/release-key.jks
 
-      # فقط اثرانگشتِ عمومیِ کلید (SHA-1/SHA-256) را چاپ می‌کند تا در Google Cloud برای ورودِ گوگل بگذاری.
-      # رمز چاپ نمی‌شود. بعد از کپی کردن می‌توانی این مرحله را پاک کنی.
-      - name: Print signing key fingerprint (SHA-1)
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        run: |
-          keytool -list -v -keystore android/app/release-key.jks \
-            -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" 2>/dev/null \
-            | grep -E "^\s*(SHA1|SHA256):" | sed 's/^ *//' | tee fingerprint.txt
-          {
-            echo "### Signing key fingerprint"
-            echo '```'
-            cat fingerprint.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
       - name: Build STORE APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
