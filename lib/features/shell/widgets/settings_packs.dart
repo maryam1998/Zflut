@@ -300,7 +300,7 @@ class _PackTileState extends State<PackTile> {
 
 /// جمله‌ی کوتاهِ «تست صدا» برای هر زبان
 const Map<String, String> _kVoiceSample = {
-  'en': 'Hello! This is how this voice sounds when it reads your text.',
+  'en': 'Hello! This is how this voice sounds.',
   'de': 'Hallo! So klingt diese Stimme, wenn sie deinen Text vorliest.',
   'fr': 'Bonjour ! Voici comment cette voix sonne quand elle lit ton texte.',
   'es': '¡Hola! Así suena esta voz cuando lee tu texto.',
@@ -576,7 +576,8 @@ class _TtsPackRowState extends State<TtsPackRow> {
       }
       setState(() => _testing = id);
       await _holdMainPlayer();
-      if (!active) {
+      if (!active && widget.code == 'fa') {
+        // فارسی: هر صدا مدلِ جدا دارد → ناچار تعویضِ صدای فعال (بعد از تست برمی‌گردد)
         for (final v in _voices) {
           if (v['active'] == true && v['downloaded'] == true) {
             _testRestore = '${v['id']}';
@@ -594,6 +595,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
         widget.code,
         1.0,
         id: tid,
+        voice: (!active && widget.code != 'fa') ? id : null,
       );
       if (!ok) await _endTest();
     } catch (_) {
