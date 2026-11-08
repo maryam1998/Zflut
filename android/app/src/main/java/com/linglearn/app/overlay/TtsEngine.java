@@ -44,8 +44,9 @@ final class TtsEngine {
 
     private static final String TAG = "TtsEngine";
 
-    // 🔎 تشخیصِ موقت: زمان‌های ساخت صدا را روی صفحه (Toast) نشان می‌دهد. بعد از پیدا شدن مشکل false کن.
-    private static final boolean DEBUG_TOAST = true;
+    // 🔎 تشخیص: زمان‌های ساخت صدا را روی صفحه (Toast) نشان می‌دهد. پیش‌فرض خاموش؛ برای اندازه‌گیری true کن.
+    // پیام‌ها فقط ASCII/انگلیسی‌اند تا در محیط راست‌به‌چپ عددها وارونه نشوند.
+    private static final boolean DEBUG_TOAST = false;
     private static volatile Context dbgCtx;
     private static final Handler DBG_MAIN = new Handler(Looper.getMainLooper());
     private static void dbg(final String msg) {
@@ -55,6 +56,19 @@ final class TtsEngine {
         DBG_MAIN.post(() -> { try { Toast.makeText(c, msg, Toast.LENGTH_SHORT).show(); } catch (Throwable ignored) {} });
     }
     volatile int threadsUsed = 0;
+
+    // ⚡ تعدادِ خوانش‌هایی که همین الان در حالِ «ساختنِ صدا» هستند. لودِ پس‌زمینه‌ی یک مدلِ دیگر (preload/prefetch)
+    // قفلِ NATIVE_LOCK را چند ثانیه نگه می‌داشت و جمله‌ی در حالِ خوانش پشتِ آن می‌ماند؛ حالا صبر می‌کند.
+    private static final AtomicInteger speakGenActive = new AtomicInteger(0);
+
+    /** لودِ پس‌زمینه تا فارغ شدنِ خوانش (حداکثر maxMs، بدون نگه‌داشتنِ هیچ قفلی) صبر می‌کند؛ خوانشِ واقعی همیشه اولویت دارد. */
+    static void yieldToSpeech(long maxMs) {
+        final long until = SystemClock.uptimeMillis() + maxMs;
+        while (SystemClock.uptimeMillis() < until
+                && (speakPending.get() > 0 || speakGenActive.get() > 0 || speakQueued())) {
+            try { Thread.sleep(20); } catch (InterruptedException ie) { return; }
+        }
+    }
     private static final int CACHE_MAX = 16;
     private static final short[] END = new short[0];
 
@@ -458,7 +472,10 @@ final class TtsEngine {
         }
     }
 
-    static TtsEngine create(Context ctx, String lang) {
+    static TtsEngine create(Context ctx, String lang) { return create(ctx, lang, true); }
+
+    /** forSpeak فقط برای سازگاری است؛ عقب‌انداختنِ لودِ پس‌زمینه در TtsService.obtainEngine (قبل از قفلِ ساخت) انجام می‌شود. */
+    static TtsEngine create(Context ctx, String lang, boolean forSpeak) {
         lastCreateError = null;
         dbgCtx = ctx.getApplicationContext();
         final SherpaModelManager.TtsVoice voice = SherpaModelManager.getReadyVoice(ctx, lang);
@@ -561,7 +578,7 @@ final class TtsEngine {
             created.bindVoice(eng, voice.spec.pkg == null ? null : voice.spec.pkg.id);
             created.charFrontend = voice.spec.charFrontend;
             created.threadsUsed = threads;
-            dbg("TTS لود شد: " + lang + " " + eng + " thr=" + threads + " load=" + (SystemClock.uptimeMillis() - t0) + "ms");
+            dbg("TTS loaded: " + lang + " " + eng + " thr=" + threads + " load=" + (SystemClock.uptimeMillis() - t0) + "ms");
             return created;
         } catch (Throwable e) {
             Log.e(TAG, "Failed to load TTS for " + lang, e);
@@ -1028,7 +1045,7 @@ final class TtsEngine {
 
     void prefetch(String text, float speed, final int reqSid, final String reqLang) {
         if (released || text == null || text.trim().isEmpty()) return;
-        final String t = sanitize(lang, text);
+        final String t = NumberWords.expand(reqLang, sanitize(lang, text));
         if (t.isEmpty()) return;
         final float sp = (speed <= 0f) ? 1.0f : speed;
         final String key = keyOf(t, sp, reqSid, reqLang);
@@ -1085,7 +1102,7 @@ final class TtsEngine {
             if (cb != null) cb.onDone(false);
             return;
         }
-        final String t = sanitize(lang, text);
+        final String t = NumberWords.expand(reqLang, sanitize(lang, text));
         if (t.isEmpty()) {
             if (cb != null) cb.onDone(true);
             return;
@@ -1146,6 +1163,7 @@ final class TtsEngine {
     private void runGenerate(String t, float sp, String key, final int myEpoch,
                              final LinkedBlockingQueue<short[]> q,
                              AtomicBoolean genFailed, final AtomicBoolean gotAudio) {
+        boolean counted = false;
         try {
             if (released || epoch.get() != myEpoch) return;
             float[] cached = cacheGet(key);
@@ -1156,6 +1174,8 @@ final class TtsEngine {
                 }
                 return;
             }
+            speakGenActive.incrementAndGet();
+            counted = true;
             long t0 = SystemClock.uptimeMillis();
             final boolean[] first = {true};
             final boolean pl = plain; // یک‌بار بخون تا بینِ crumb و synth عوض نشه
@@ -1175,15 +1195,16 @@ final class TtsEngine {
             TtsCrumb.mark("idle");
             if (audio != null) {
                 cachePut(key, audio);
-                dbg("ساخت " + curLang + " " + engineKind + " thr=" + threadsUsed + " | " + t.length()
-                        + " حرف | اولین صدا=" + firstMs[0] + "ms | کل=" + (SystemClock.uptimeMillis() - t0)
-                        + "ms | طول صدا=" + String.format(java.util.Locale.US, "%.1f", audio.length / (float) sampleRate) + "s");
+                dbg("TTS gen: " + curLang + " " + engineKind + " thr=" + threadsUsed + " | " + t.length()
+                        + " chars | first=" + firstMs[0] + "ms | total=" + (SystemClock.uptimeMillis() - t0)
+                        + "ms | audio=" + String.format(java.util.Locale.US, "%.1f", audio.length / (float) sampleRate) + "s");
             }
         } catch (Throwable e) {
             Log.e(TAG, "TTS generate failed", e);
             TtsCrumb.mark("idle");
             genFailed.set(true);
         } finally {
+            if (counted) speakGenActive.decrementAndGet();
             q.add(END);
         }
     }

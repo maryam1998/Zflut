@@ -315,6 +315,9 @@ public class TtsService extends Service {
     private TtsEngine obtainEngine(String lang, boolean forSpeak) {
         final String key = poolKey(lang);
         final Object lk = createLocks.computeIfAbsent(key, k -> new Object());
+        // ⚡ لودِ پس‌زمینه (preload/prefetch) وقتی خوانشی در حالِ ساخته‌شدن است کمی عقب می‌افتد (بدون نگه‌داشتنِ قفل)،
+        // تا لودِ چندثانیه‌ایِ مدلِ زبانِ دیگر جمله‌ی در حالِ خوانش را معطل نکند.
+        if (!forSpeak && !engines.containsKey(key)) TtsEngine.yieldToSpeech(3000);
         for (int attempt = 0; attempt < 2; attempt++) {
             synchronized (this) {
                 TtsEngine e = engines.get(key);
@@ -330,7 +333,7 @@ public class TtsService extends Service {
                     if (!forSpeak && engines.size() >= MAX_ENGINES) return null;
                     gen0 = releaseGen.get();
                 }
-                TtsEngine ne = TtsEngine.create(getApplicationContext(), lang);
+                TtsEngine ne = TtsEngine.create(getApplicationContext(), lang, forSpeak);
                 if (ne == null) return null;
                 boolean stale = false;
                 synchronized (this) {

@@ -1146,6 +1146,7 @@ public class BubblePlugin extends Plugin {
             if (am != null) {
                 am.getMemoryInfo(mi);
                 if (!mi.lowMemory && mi.totalMem >= 4500L * 1024L * 1024L) maxPreload = 3;
+                else if (!mi.lowMemory && mi.totalMem >= 3000L * 1024L * 1024L) maxPreload = 2;   // انگلیسی + فارسی هر دو از قبل آماده
             }
         } catch (Throwable ignored) {}
         java.util.LinkedHashSet<String> want = new java.util.LinkedHashSet<>();
