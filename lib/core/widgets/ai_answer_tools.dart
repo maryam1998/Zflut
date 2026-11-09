@@ -20,7 +20,7 @@ import 'selection_card.dart' show SelectableSyncText;
 /// خودِ زبانِ جواب (جواب به همان زبان است و ترجمه‌اش لازم نیست).
 List<String> answerTranslationLangs(LanguageSelection sel, String source) {
   final out = <String>[];
-  for (final t in [sel.native, ...sel.targets]) {
+  for (final t in [if (!sel.targets.contains(sel.native)) sel.native, ...sel.targets]) {
     if (t.isNotEmpty && t != source && !out.contains(t)) out.add(t);
   }
   return out;

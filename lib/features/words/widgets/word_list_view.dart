@@ -230,7 +230,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
 
     // مبدأ و مقصدِ یکسان (مثلاً هر دو عربی) → هر زبان فقط یک‌بار
     final langsToShow = <String>[
-      if (sel.native != 'en') sel.native,
+      if (sel.native != 'en' && !sel.targets.contains(sel.native)) sel.native,
       ...sel.targets.where((t) => t != 'en'),
     ].toSet().toList();
 
@@ -438,7 +438,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                       langsToShow: w.lang == 'en'
                           ? langsToShow
                           : <String>[
-                              sel.native,
+                              if (!sel.targets.contains(sel.native)) sel.native,
                               ...sel.targets,
                             ].where((t) => t != w.lang).toSet().toList(),
                       isPersonal: w.isPersonal,

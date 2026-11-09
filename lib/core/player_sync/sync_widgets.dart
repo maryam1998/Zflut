@@ -382,7 +382,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   List<String> _fgLangs(String mainCode) {
     final sel = ref.read(languageSelectionProvider);
     final out = <String>[];
-    for (final c in [sel.native, ...sel.targets]) {
+    for (final c in [if (!sel.targets.contains(sel.native)) sel.native, ...sel.targets]) {
       final t = c.trim().toLowerCase();
       if (t.isNotEmpty && t != mainCode && !out.contains(t)) out.add(t);
     }

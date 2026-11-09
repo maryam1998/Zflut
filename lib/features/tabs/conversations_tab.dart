@@ -747,7 +747,7 @@ class _LineRow extends ConsumerWidget {
 
     // مبدأ و مقصدِ یکسان (مثلاً هر دو عربی) → هر زبان فقط یک‌بار
     final langsToShow = <String>[
-      if (sel.native != 'en') sel.native,
+      if (sel.native != 'en' && !sel.targets.contains(sel.native)) sel.native,
       ...sel.targets.where((t) => t != 'en'),
     ].toSet().toList();
 

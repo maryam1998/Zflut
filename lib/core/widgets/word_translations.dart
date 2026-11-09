@@ -15,7 +15,7 @@ List<String> wordTranslationLangs({
   required String wordLang,
 }) {
   final out = <String>[];
-  for (final c in [native, ...targets]) {
+  for (final c in [if (!targets.contains(native)) native, ...targets]) {
     final t = c.trim().toLowerCase();
     if (t.isEmpty || t == wordLang.toLowerCase() || out.contains(t)) continue;
     out.add(t);
