@@ -75,6 +75,13 @@ class SpeechController extends StateNotifier<SpeechState> {
   final FlutterTts _localTts = FlutterTts();
   final AudioPlayer _onlinePlayer = AudioPlayer();
 
+  // ⚡ فقط موتورهایی که واقعاً استفاده شده‌اند stop می‌شوند (هر stop یک رفت‌وبرگشتِ
+  // پلتفرم است و قبلاً قبل از هر جمله‌ی جدید برای هر سه موتور انجام می‌شد).
+  int _localUseSeq = 0;
+  int _localStoppedSeq = 0;
+  int _onlineUseSeq = 0;
+  int _onlineStoppedSeq = 0;
+
   String _fullText = '';
   List<TextChunk> _chunks = [];
   int _chunkIndex = 0;
@@ -658,11 +665,18 @@ class SpeechController extends StateNotifier<SpeechState> {
       } catch (_) {}
     }
 
+    final localSeq = _localUseSeq;
+    final onlineSeq = _onlineUseSeq;
+    final needLocal = kIsWeb || localSeq != _localStoppedSeq;
+    final needOnline = onlineSeq != _onlineStoppedSeq;
     await Future.wait<void>([
-      safe(() => _localTts.stop()),
+      if (needLocal) safe(() => _localTts.stop()),
       safe(() => NativeTtsBridge.stop()),
-      safe(() => pauseOnline ? _onlinePlayer.pause() : _onlinePlayer.stop()),
+      if (needOnline)
+        safe(() => pauseOnline ? _onlinePlayer.pause() : _onlinePlayer.stop()),
     ]);
+    if (needLocal) _localStoppedSeq = localSeq;
+    if (needOnline && !pauseOnline) _onlineStoppedSeq = onlineSeq;
   }
 
   Future<void> _playFrom(int idx) async {
@@ -834,6 +848,8 @@ class SpeechController extends StateNotifier<SpeechState> {
       text: text,
       myGen: myGen,
       detectSilent: true,
+      // ⚡ مکثِ بینِ جمله‌ها با صدای گوشی هم نصف (مثل Piper) — خوانش پشت‌سرهم سریع‌تر
+      gapScale: 0.5,
     );
   }
 
@@ -974,6 +990,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   ) async {
     final waiter = Completer<bool>();
     _webWaiter = waiter;
+    _localUseSeq++;
     var started = false;
 
     // پایان خوانش را با handler می‌فهمیم (نه awaitSpeakCompletion که روی
@@ -1165,6 +1182,7 @@ class SpeechController extends StateNotifier<SpeechState> {
         '&text=${Uri.encodeComponent(text)}';
 
     StreamSubscription<PlayerState>? sub;
+    _onlineUseSeq++;
     try {
       await _onlinePlayer.stop();
       await WorkerAuth.ensureFresh();

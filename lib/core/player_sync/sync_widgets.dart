@@ -1,4 +1,4 @@
-import 'dart:async' show Timer, unawaited;
+import 'dart:async' show Completer, Timer, unawaited;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -14,6 +14,7 @@ import '../theme/app_theme_colors.dart';
 import '../providers/ai_settings_provider.dart';
 import '../providers/translation_provider.dart';
 import '../translate/known_translations.dart';
+import '../ai/word_examples.dart' show wordExamplesStoreProvider;
 import '../tts/native_tts_bridge.dart';
 import '../tts/sentence_splitter.dart';
 import '../tts/speech_controller.dart' show SpeechController;
@@ -146,6 +147,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   @override
   void dispose() {
+    _bgCancel();
     _ctrl.removeChunkAdvanceHook(_chunkHook);
     _ctrl.removeChunkVoiceResolver(_voiceResolver);
     final n = _notifier;
@@ -232,6 +234,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       // 🌐 پس‌زمینه: ترجمه‌ی (آماده‌شده‌ی) این آیتم را هم بخوان — اگر در تنظیمات روشن باشد
       return _readTranslation(track, cur, nxt, loops);
     }
+    // 🌐 پس‌زمینه + مثال‌های باز: لغت ← ترجمه‌اش ← هر مثال ← ترجمه‌ی همان مثال ← لغتِ بعد
+    if (_startBgQueue(track, cur, nxt, loops, word, texts)) return true;
     _resumeFromHook = true;
     _resumeSpanId =
         nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
@@ -351,6 +355,184 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         unawaited(NativeTtsBridge.prefetch(
             clean, to, ref.read(speechControllerProvider).rate));
       }());
+      // مثال‌های بازِ این لغت و ترجمه‌هایشان هم از قبل آماده شوند
+      final w = _notifier.itemText(id);
+      final exs = w == null ? null : ExamplesRegistry.textsFor(track.code, w);
+      if (w != null && exs != null) {
+        for (final e in exs) {
+          unawaited(() async {
+            final rate = ref.read(speechControllerProvider).rate;
+            final ce = SentenceSplitter.sanitize(e);
+            if (ce.isNotEmpty) {
+              unawaited(NativeTtsBridge.prefetch(ce, track.code, rate));
+            }
+            final t = await _exampleTranslation(w, track.code, e, to);
+            if (t == null || !mounted) return;
+            final ct = SentenceSplitter.sanitize(t);
+            if (ct.isNotEmpty) unawaited(NativeTtsBridge.prefetch(ct, to, rate));
+          }());
+        }
+      }
+    }
+    // ⚡ ترجمه‌ی چند لغتِ بعدی هم از همین الان گرفته می‌شود تا موقعِ نوبتشان مکثی نباشد
+    for (var k = i + 2; i >= 0 && k <= i + 6 && k < track.spans.length; k++) {
+      unawaited(_translationText(track.spans[k].id, track.code, to,
+          timeout: const Duration(seconds: 20)));
+    }
+  }
+
+  // ═══════════════ صفِ خوانشِ پس‌زمینه (لغت + مثال‌ها + ترجمه‌ها) ═══════════════
+  bool _bgActive = false;
+  int _bgToken = 0;
+  Completer<bool>? _bgWait;
+  String? _bgKey;
+  bool _bgSeen = false;
+
+  /// ترجمه‌ی یک مثال: اول از حافظه‌ی مثال‌ها (همان که روی صفحه است)، بعد کش/مترجم.
+  Future<String?> _exampleTranslation(
+      String word, String from, String text, String to) async {
+    try {
+      final list = ref.read(wordExamplesStoreProvider).load(word, from);
+      for (final e in list) {
+        if (e.text == text) {
+          final t = e.translations[to]?.trim();
+          if (t != null && t.isNotEmpty) return t;
+          break;
+        }
+      }
+    } catch (_) {}
+    final src = text.trim();
+    if (src.isEmpty) return null;
+    try {
+      final svc = ref.read(translationServiceProvider);
+      final hit =
+          svc.peekCached(src, from, to) ?? KnownTranslations.get(src, from, to);
+      if (hit != null && hit.trim().isNotEmpty) return hit.trim();
+      final r = (await svc
+              .translate(
+                  text: src,
+                  targetLang: to,
+                  sourceLang: from,
+                  aiSettings: ref.read(aiSettingsProvider))
+              .timeout(const Duration(seconds: 12)))
+          .trim();
+      if (r.isEmpty || r.toLowerCase() == src.toLowerCase()) return null;
+      return r;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _startBgQueue(PlayerTrack track, TrackSpan cur, TrackSpan? nxt,
+      bool loops, String word, List<String> texts) {
+    if (!_readTransBg() || !_inBackground()) return false;
+    final to = _nativeCode();
+    if (to.isEmpty || to == track.code) return false;
+    _bgCancel();
+    _resumeFromHook = true;
+    _resumeSpanId =
+        nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
+
+    // همه‌ی ترجمه‌ها هم‌زمان و از همین الان درخواست می‌شوند (نه یکی‌یکی موقعِ نوبت)
+    final steps = <_BgStep>[
+      _BgStep(to, true, null, _translationText(cur.id, track.code, to),
+          (t) => cur.id),
+    ];
+    for (final ex in List<String>.of(texts)) {
+      steps.add(_BgStep(track.code, false, ex, null,
+          (t) => 'ai-ex-${track.code}-${ex.hashCode}'));
+      steps.add(_BgStep(to, true, null,
+          _exampleTranslation(word, track.code, ex, to),
+          (t) => 'ai-ex-tr-$to-${t.hashCode}'));
+    }
+
+    _bgActive = true;
+    ExamplesRegistry.bgDriving = true;
+    final token = ++_bgToken;
+    unawaited(_runBgQueue(steps, token, track.key));
+    return true;
+  }
+
+  Future<void> _runBgQueue(
+      List<_BgStep> steps, int token, String firstKey) async {
+    var expectKey = firstKey;
+    var first = true;
+    var completed = false;
+    try {
+      for (final st in steps) {
+        final text = (await st.text())?.trim();
+        if (!mounted || token != _bgToken) return;
+        if (text == null || text.isEmpty) continue; // ترجمه‌ای نبود → رد شو
+        final sp = ref.read(speechControllerProvider);
+        final stateOk = sp.key == expectKey &&
+            (first
+                ? sp.status == SpeechStatus.playing
+                : sp.status == SpeechStatus.idle);
+        if (!stateOk || ref.read(playerSyncProvider).scopeId != _scopeId) {
+          return; // کاربر در این فاصله توقف کرد یا چیزِ دیگری را پخش کرد
+        }
+        final key = PlayerTrack.keyFor(st.code, text);
+        _bgKey = key;
+        _bgSeen = false;
+        final w = _bgWait = Completer<bool>();
+        SpeechController.translationReadKey = st.isTrans ? key : null;
+        ref.read(adhocSyncProvider.notifier).state =
+            (key: key, active: ActiveSync(st.code, st.idFor(text)));
+        unawaited(_ctrl.toggle(text, st.code));
+        first = false;
+        expectKey = key;
+        if (!await _bgWaitDone(w, key, text)) return;
+        if (!mounted || token != _bgToken) return;
+      }
+      completed = true;
+    } finally {
+      if (token == _bgToken) {
+        _bgActive = false;
+        _bgWait = null;
+        ExamplesRegistry.bgDriving = false;
+      }
+    }
+    if (completed && mounted && token == _bgToken) _resumeMain();
+  }
+
+  Future<bool> _bgWaitDone(Completer<bool> w, String key, String text) async {
+    final cap = Duration(seconds: 25 + text.length ~/ 4);
+    final Future<bool?> f = w.future;
+    while (true) {
+      final r = await f.timeout(cap, onTimeout: () => null);
+      if (r != null) return r;
+      final cur = ref.read(speechControllerProvider);
+      if (cur.key == key && cur.status == SpeechStatus.paused) continue;
+      return cur.key == key; // گیر کرده بود → برو مرحله‌ی بعد
+    }
+  }
+
+  void _bgOnSpeech(SpeechState? prev, SpeechState next) {
+    final w = _bgWait;
+    final key = _bgKey;
+    if (w == null || w.isCompleted || key == null) return;
+    if (next.key == key) {
+      _bgSeen = true;
+      if (prev != null &&
+          prev.key == key &&
+          prev.status == SpeechStatus.playing &&
+          next.status == SpeechStatus.idle) {
+        w.complete(true); // پایانِ همین مرحله (یا خطا → رد می‌شود)
+      }
+      return;
+    }
+    if (_bgSeen || next.key == null) w.complete(false); // کاربر توقف/عوض کرد
+  }
+
+  void _bgCancel() {
+    _bgToken++;
+    final w = _bgWait;
+    if (w != null && !w.isCompleted) w.complete(false);
+    _bgWait = null;
+    _bgKey = null;
+    if (_bgActive) {
+      _bgActive = false;
+      ExamplesRegistry.bgDriving = false;
     }
   }
 
@@ -367,7 +549,12 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   void _onSpeech(SpeechState? prev, SpeechState next) {
     final sync = ref.read(playerSyncProvider);
+    if (_bgActive && sync.scopeId != _scopeId) _bgCancel();
     if (sync.scopeId != _scopeId) return;
+    if (_bgActive) {
+      _bgOnSpeech(prev, next);
+      return;
+    }
     if (next.key == null) {
       _resumeSpanId = null;
       _resumeFromHook = false;
@@ -798,4 +985,16 @@ void syncReportTranslation(
   WidgetsBinding.instance.addPostFrameCallback((_) {
     if (notifier.mounted) notifier.reportTranslation(scopeId, code, id, text);
   });
+}
+
+/// یک مرحله از صفِ خوانشِ پس‌زمینه: متنِ آماده یا ترجمه‌ای که هنوز در راه است.
+class _BgStep {
+  final String code;
+  final bool isTrans;
+  final String? _fixed;
+  final Future<String?>? _fut;
+  final String Function(String text) idFor;
+  _BgStep(this.code, this.isTrans, this._fixed, this._fut, this.idFor);
+
+  Future<String?> text() => _fixed != null ? Future.value(_fixed) : (_fut ?? Future.value(null));
 }

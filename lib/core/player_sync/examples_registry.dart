@@ -3,6 +3,10 @@ import 'player_track.dart';
 /// مثال‌های هوش مصنوعیِ «بازِ» هر لغت (پنل‌های مثالِ روی صفحه). پلیرِ لیست
 /// با این اطلاعات بعد از خواندنِ هر لغت، مثال‌هایش را هم می‌خواند.
 class ExamplesRegistry {
+  /// true = صفِ خوانشِ پس‌زمینه (لغت ← ترجمه ← مثال ← ترجمه‌ی مثال) در حال کار است؛
+  /// پنلِ مثال‌ها در این حالت مثالِ بعدی را خودش پخش نمی‌کند.
+  static bool bgDriving = false;
+
   static final Map<String, ({String word, String lang, List<String> texts})>
       _open = {};
 

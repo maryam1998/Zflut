@@ -36,6 +36,7 @@ class NativeTtsBridge {
 
   /// آیا بسته‌ی آفلاینِ (Piper) این زبان نصب شده؟
   static final Map<String, DateTime> _readyAt = {};
+  static final Map<String, DateTime> _notReadyAt = {};
 
   static Future<bool> isModelReady(String lang) async {
     if (!isAvailable) return false;
@@ -44,13 +45,20 @@ class NativeTtsBridge {
     if (t != null && DateTime.now().difference(t) < const Duration(seconds: 30)) {
       return true;
     }
+    // ⚡ جوابِ «آماده نیست» هم چند ثانیه کش می‌شود (قبلاً برای هر جمله یک رفت‌وبرگشتِ اضافه بود)
+    final nt = _notReadyAt[lang];
+    if (nt != null && DateTime.now().difference(nt) < const Duration(seconds: 8)) {
+      return false;
+    }
     try {
       final r = await _b.checkTtsStatus(lang: lang);
       final ok = r['downloaded'] == true;
       if (ok) {
         _readyAt[lang] = DateTime.now();
+        _notReadyAt.remove(lang);
       } else {
         _readyAt.remove(lang);
+        _notReadyAt[lang] = DateTime.now();
       }
       return ok;
     } catch (e) {

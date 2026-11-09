@@ -26,6 +26,12 @@ final class SystemTts {
     private final Object lock = new Object();
     private final ConcurrentHashMap<String, Done> callbacks = new ConcurrentHashMap<>();
 
+    // ⚡ کش: زبان/صدا/سرعتی که آخرین‌بار روی موتور ست شد. قبلاً با هر جمله setLanguage +
+    // getVoice/getVoices (چند ده تا چند صد میلی‌ثانیه) تکرار می‌شد؛ حالا فقط وقتی زبان عوض شود.
+    private String curLangKey = null;
+    private float curRate = -1f;
+    private final java.util.HashMap<String, android.speech.tts.Voice> bestVoice = new java.util.HashMap<>();
+
     SystemTts(Context ctx) {
         this.app = ctx.getApplicationContext();
     }
@@ -113,6 +119,7 @@ final class SystemTts {
             if (cur != null && cur.getLocale() != null
                     && cur.getLocale().getLanguage().equalsIgnoreCase(loc.getLanguage())
                     && !cur.isNetworkConnectionRequired()) {
+                bestVoice.put(loc.toLanguageTag(), cur);
                 return;
             }
             java.util.Set<android.speech.tts.Voice> all = tts.getVoices();
@@ -130,7 +137,10 @@ final class SystemTts {
                         && loc.getCountry().equalsIgnoreCase(vl.getCountry())) score += 150;
                 if (score > bestScore) { bestScore = score; best = v; }
             }
-            if (best != null) tts.setVoice(best);
+            if (best != null) {
+                tts.setVoice(best);
+                bestVoice.put(loc.toLanguageTag(), best);
+            }
         } catch (Throwable t) {
             Log.w(TAG, "pickBestVoice failed", t);
         }
@@ -140,17 +150,35 @@ final class SystemTts {
         if (!awaitReady()) { cb.onDone(false); return; }
         try {
             Locale loc = localeFor(lang);
-            int r = tts.setLanguage(loc);
-            if (r < TextToSpeech.LANG_AVAILABLE) { cb.onDone(false); return; }
-            pickBestVoice(loc);
-            try { tts.setPitch(1.0f); } catch (Throwable ignored) {}
+            String lk = loc.toLanguageTag();
+            if (!lk.equals(curLangKey)) {
+                // زبان عوض شده (یا اولین خوانش): اگر صدای انتخاب‌شده‌ی قبلیِ این زبان را داریم همان را بگذار
+                boolean applied = false;
+                android.speech.tts.Voice cached = bestVoice.get(lk);
+                if (cached != null) {
+                    try { applied = tts.setVoice(cached) == TextToSpeech.SUCCESS; } catch (Throwable ignored) {}
+                }
+                if (!applied) {
+                    int r = tts.setLanguage(loc);
+                    if (r < TextToSpeech.LANG_AVAILABLE) { curLangKey = null; cb.onDone(false); return; }
+                    pickBestVoice(loc);
+                }
+                curLangKey = lk;
+                try { tts.setPitch(1.0f); } catch (Throwable ignored) {}
+            }
             // سرعتِ پایه کمی آرام‌تر از پیش‌فرضِ موتور (صدای گوشی در ۱× معمولاً تنده)
-            tts.setSpeechRate(Math.max(0.25f, Math.min(speed * BASE_RATE, 2.0f)));
+            float rate = Math.max(0.25f, Math.min(speed * BASE_RATE, 2.0f));
+            if (rate != curRate) {
+                tts.setSpeechRate(rate);
+                curRate = rate;
+            }
             final String uid = id != null ? id : ("sys-" + System.nanoTime());
             callbacks.put(uid, cb);
             int res = tts.speak(text, TextToSpeech.QUEUE_FLUSH, new Bundle(), uid);
             if (res != TextToSpeech.SUCCESS) {
                 callbacks.remove(uid);
+                curLangKey = null;
+                curRate = -1f;
                 cb.onDone(false);
             }
         } catch (Throwable t) {
@@ -167,6 +195,7 @@ final class SystemTts {
         synchronized (lock) {
             try { if (tts != null) { tts.stop(); tts.shutdown(); } } catch (Throwable ignored) {}
             tts = null; ready = false; initFailed = false;
+            curLangKey = null; curRate = -1f; bestVoice.clear();
         }
         callbacks.clear();
     }

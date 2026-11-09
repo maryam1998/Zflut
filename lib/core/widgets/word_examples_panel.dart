@@ -157,6 +157,8 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
     // ▶️ پایانِ طبیعیِ پخشِ یک مثال → مثالِ بعدی خودکار پخش می‌شود
     // (توقفِ دستی کلید را پاک می‌کند، پس زنجیره ادامه پیدا نمی‌کند).
     ref.listen<SpeechState>(speechControllerProvider, (prev, next) {
+      // پس‌زمینه: صفِ پلیر خودش ترتیبِ مثال‌ها و ترجمه‌هایشان را می‌خواند
+      if (ExamplesRegistry.bgDriving) return;
       if (prev == null ||
           prev.status != SpeechStatus.playing ||
           next.status != SpeechStatus.idle ||
