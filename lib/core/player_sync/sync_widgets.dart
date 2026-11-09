@@ -304,6 +304,21 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     unawaited(_ctrl.toggle(text, code));
   }
 
+  /// مثال‌های یک لغت برای خوانش: اول مثال‌های بازِ روی صفحه، وگرنه مثال‌های ذخیره‌شده
+  /// (هم داخل برنامه و هم پس‌زمینه، حتی اگر پنلِ مثال‌ها بسته باشد).
+  List<String> _examplesOf(String word, String code) {
+    final open = ExamplesRegistry.textsFor(code, word);
+    if (open != null && open.isNotEmpty) return open;
+    try {
+      return [
+        for (final e in ref.read(wordExamplesStoreProvider).load(word, code))
+          if (e.text.trim().isNotEmpty) e.text,
+      ];
+    } catch (_) {
+      return const <String>[];
+    }
+  }
+
   /// پایانِ طبیعیِ خواندنِ یک لغت در پلیرِ لیست: اگر مثال‌های بازِ این لغت
   /// هست، به‌جای رفتن به لغتِ بعد اول مثال‌ها خوانده می‌شود.
   bool _chunkHook(String? key, int thisStart, int nextStart, bool loops) {
@@ -331,29 +346,22 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     final word = _notifier.itemText(cur.id);
     if (word == null) return false;
     if (_notifier.isForeignItem(cur.id)) return false; // ترجمه‌ی انگلیسیِ لغتِ زبانِ دیگر
-    final texts = ExamplesRegistry.textsFor(track.code, word);
+    // مثال‌های باز؛ اگر پنلِ مثال بسته بود، مثال‌های ذخیره‌شده‌ی همین لغت
+    final texts = ExamplesRegistry.textsFor(track.code, word); // فقط بازها
+    final allTexts = _examplesOf(word, track.code);
     // 🌐 داخل برنامه (اگر در تنظیمات روشن باشد): ترجمه‌ی همه‌ی زبان‌های انتخاب‌شده
     final fgOn = _readTransFg() && !_inBackground();
     if (fgOn) {
-      // مثال‌های باز؛ اگر پنلِ مثال بسته بود، مثال‌های ذخیره‌شده‌ی همین لغت هم خوانده شوند
-      var fgTexts = texts ?? const <String>[];
-      if (fgTexts.isEmpty) {
-        try {
-          fgTexts = [
-            for (final e
-                in ref.read(wordExamplesStoreProvider).load(word, track.code))
-              if (e.text.trim().isNotEmpty) e.text,
-          ];
-        } catch (_) {}
-      }
-      if (_startFgQueue(track, cur, nxt, loops, word, fgTexts)) return true;
+      if (_startFgQueue(track, cur, nxt, loops, word, allTexts)) return true;
+    }
+    if (allTexts.isNotEmpty &&
+        _startBgQueue(track, cur, nxt, loops, word, allTexts)) {
+      return true;
     }
     if (texts == null || texts.isEmpty) {
       // 🌐 پس‌زمینه: ترجمه‌ی (آماده‌شده‌ی) این آیتم را هم بخوان — اگر در تنظیمات روشن باشد
       return _readTranslation(track, cur, nxt, loops);
     }
-    // 🌐 پس‌زمینه + مثال‌های باز: لغت ← ترجمه‌اش ← هر مثال ← ترجمه‌ی همان مثال ← لغتِ بعد
-    if (_startBgQueue(track, cur, nxt, loops, word, texts)) return true;
     _resumeFromHook = true;
     _resumeSpanId =
         nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
@@ -501,7 +509,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       }());
       // مثال‌های بازِ این لغت و ترجمه‌هایشان هم از قبل آماده شوند
       final w = _notifier.itemText(id);
-      final exs = w == null ? null : ExamplesRegistry.textsFor(track.code, w);
+      final exs = w == null ? null : _examplesOf(w, track.code);
       if (w != null && exs != null) {
         for (final e in exs) {
           unawaited(() async {
