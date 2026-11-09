@@ -164,8 +164,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     if (vf == null || !mounted) return null;
     final sync = ref.read(playerSyncProvider);
     if (sync.scopeId != _scopeId) return null;
-    final track = sync.tracks[sync.mainCode];
-    if (track == null || track.key != key) return null;
+    final track = _notifier.mainTrackForKey(key);
+    if (track == null) return null;
     final sp = track.spanAt(start);
     return sp == null ? null : vf(sp.id);
   }
@@ -211,8 +211,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     if (!mounted) return false;
     final sync = ref.read(playerSyncProvider);
     if (sync.scopeId != _scopeId) return false;
-    final track = sync.tracks[sync.mainCode];
-    if (track == null || track.key != key || track.spans.isEmpty) return false;
+    final track = _notifier.mainTrackForKey(key);
+    if (track == null || track.spans.isEmpty) return false;
     // ⚠️ شروعِ تکه‌ها گاهی روی فاصله/خطِ جدیدِ «قبل از متن» می‌افتد و آیتمِ قبلی را نشان می‌دهد
     // (آن‌وقت جمله «هنوز همین آیتم» حساب می‌شد و ترجمه رد می‌شد) → فاصله‌ها را کنار بگذار.
     int skipWs(int i) {
@@ -517,9 +517,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   /// داخل برنامه: ترجمه‌ی چند آیتمِ بعدی برای همه‌ی زبان‌ها از قبل گرفته و صدایشان پیش‌ساخته می‌شود.
   void _prewarmFg(SpeechState s) {
     if (!_readTransFg() || _inBackground()) return;
-    final sync = ref.read(playerSyncProvider);
-    final track = sync.tracks[sync.mainCode];
-    if (track == null || track.key != s.key) return;
+    final track = _notifier.mainTrackForKey(s.key);
+    if (track == null) return;
     final cur = track.spanAt(s.charOffset);
     if (cur == null || cur.id == _prewarmFgId) return;
     _prewarmFgId = cur.id;
@@ -553,14 +552,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         final text = (await st.text())?.trim();
         if (!mounted || token != _bgToken) return;
         if (text == null || text.isEmpty) continue; // ترجمه‌ای نبود → رد شو
-        final sp = ref.read(speechControllerProvider);
-        final stateOk = sp.key == expectKey &&
-            (first
-                ? sp.status == SpeechStatus.playing
-                : sp.status == SpeechStatus.idle);
-        if (!stateOk || ref.read(playerSyncProvider).scopeId != _scopeId) {
-          return; // کاربر در این فاصله توقف کرد یا چیزِ دیگری را پخش کرد
-        }
+        // مکث یا پخشِ چیزِ دیگر صف را کنسل نمی‌کند؛ صبر می‌کنیم تا آزاد شود و ادامه می‌دهیم
+        if (!await _bgWaitFree(token, first ? expectKey : null)) return;
         final key = PlayerTrack.keyFor(st.code, text);
         _bgKey = key;
         _bgSeen = false;
@@ -593,7 +586,26 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       if (r != null) return r;
       final cur = ref.read(speechControllerProvider);
       if (cur.key == key && cur.status == SpeechStatus.paused) continue;
-      return cur.key == key; // گیر کرده بود → برو مرحله‌ی بعد
+      return cur.key != null; // گیر کرده بود (یا چیزِ دیگری پخش شد) → مرحله‌ی بعد
+    }
+  }
+
+  /// صبر تا موتورِ صدا آزاد شود: بیکار است، یا (فقط برای مرحله‌ی اول) متنِ اصلیِ منتظرِ ماست.
+  /// مکثِ کاربر یا پخشِ دیگر فقط تأخیر می‌اندازد و چیزی کنسل نمی‌شود.
+  /// فقط «توقفِ کامل» (پلیر بسته شد) یا ترک‌کردنِ اسکوپ صف را تمام می‌کند.
+  Future<bool> _bgWaitFree(int token, String? firstKey) async {
+    while (true) {
+      if (!mounted || token != _bgToken) return false;
+      if (ref.read(playerSyncProvider).scopeId != _scopeId) return false;
+      final sp = ref.read(speechControllerProvider);
+      if (sp.key == null) return false;
+      if (sp.status == SpeechStatus.idle) return true;
+      if (firstKey != null &&
+          sp.key == firstKey &&
+          sp.status == SpeechStatus.playing) {
+        return true;
+      }
+      await Future.delayed(const Duration(milliseconds: 400));
     }
   }
 
@@ -611,7 +623,12 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       }
       return;
     }
-    if (_bgSeen || next.key == null) w.complete(false); // کاربر توقف/عوض کرد
+    // پخشِ دیگری جایش را گرفت → مرحله‌ی بعد (بعد از آزاد شدنِ صدا)؛ فقط توقفِ کامل پایان می‌دهد
+    if (next.key == null) {
+      w.complete(false);
+      return;
+    }
+    if (_bgSeen) w.complete(true);
   }
 
   void _bgCancel() {

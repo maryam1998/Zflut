@@ -34,8 +34,16 @@ class PlayerSyncState {
   /// متنِ کاملِ هر زبان: [mainCode] = متنِ اصلی، بقیه = ترجمه‌ها
   final Map<String, PlayerTrack> tracks;
 
+  /// ⏳ ترکِ قدیمیِ متنی که همین الان در حال پخش است ولی لیست وسطِ پخش بزرگ‌تر شد
+  /// (بارگذاریِ بخشِ بعدیِ لغات → متنِ کامل و کلیدش عوض می‌شود). تا پایانِ همان پخش
+  /// نگه داشته می‌شود تا هایلایت و اسکرولِ خودکار برای «ته‌ِ» لیست قطع نشود.
+  final List<PlayerTrack> legacy;
+
   const PlayerSyncState(
-      {this.scopeId, this.mainCode = 'en', this.tracks = const {}});
+      {this.scopeId,
+      this.mainCode = 'en',
+      this.tracks = const {},
+      this.legacy = const []});
 }
 
 /// قلبِ سیستمِ مشترکِ پلیر برای همه‌ی تب‌ها — معادلِ این الگوی Hope که
@@ -64,6 +72,17 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
     return null;
   }
 
+  /// ترکِ اصلیِ فعلی، یا (اگر لیست وسطِ پخش بزرگ شده) ترکِ قدیمیِ در حال پخش با این کلید.
+  PlayerTrack? mainTrackForKey(String? key) {
+    if (key == null) return null;
+    final t = state.tracks[state.mainCode];
+    if (t != null && t.key == key) return t;
+    for (final l in state.legacy) {
+      if (l.key == key && l.code == state.mainCode) return l;
+    }
+    return null;
+  }
+
   /// ترجمه‌ی «همین الان آماده»ی یک آیتم به زبان [code] (null اگر هنوز ترجمه نشده).
   String? translationFor(String id, String code) {
     if (code.isEmpty || code == _mainCode) return null;
@@ -75,6 +94,17 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
   void setScope(String scopeId, List<SyncItem> items, TrackMode mode,
       {String mainCode = 'en'}) {
     _debounce?.cancel();
+    // متنی که همین الان پخش می‌شود و با این ثبتِ جدید عوض می‌شود → ترکِ قدیمی‌اش را نگه دار
+    final legacy = <PlayerTrack>[];
+    if (state.scopeId == scopeId) {
+      final sp = _ref.read(speechControllerProvider);
+      final pk = sp.status == SpeechStatus.idle ? null : sp.key;
+      if (pk != null) {
+        for (final t in [...state.tracks.values, ...state.legacy]) {
+          if (t.key == pk && !legacy.any((x) => x.key == pk)) legacy.add(t);
+        }
+      }
+    }
     _items = items;
     _mode = mode;
     _mainCode = mainCode;
@@ -105,10 +135,13 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
       ];
       tracks[code] = PlayerTrack.build(code, entries, mode);
     }
+    // اگر ترکِ جدید همان کلیدِ در حال پخش را دارد، نیازی به نسخه‌ی قدیمی نیست
+    legacy.removeWhere((l) => tracks.values.any((t) => t.key == l.key));
     state = PlayerSyncState(
       scopeId: scopeId,
       mainCode: mainCode,
       tracks: tracks,
+      legacy: legacy,
     );
   }
 
@@ -165,7 +198,10 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
 
     if (changed) {
       state = PlayerSyncState(
-          scopeId: state.scopeId, mainCode: _mainCode, tracks: tracks);
+          scopeId: state.scopeId,
+          mainCode: _mainCode,
+          tracks: tracks,
+          legacy: state.legacy);
     }
     if (deferred) {
       _debounce = Timer(const Duration(seconds: 1), _flush);
@@ -197,6 +233,13 @@ final activeSyncProvider = Provider<ActiveSync?>((ref) {
 
   final tracks = ref.watch(playerSyncProvider.select((s) => s.tracks));
   for (final t in tracks.values) {
+    if (t.key != sp.key) continue;
+    final span = t.spanAt(sp.offset);
+    return span == null ? null : ActiveSync(t.code, span.id);
+  }
+  // لیست وسطِ پخش بزرگ شده (بخشِ بعدیِ لغات اضافه شد): ترکِ قدیمیِ در حال پخش
+  final legacy = ref.watch(playerSyncProvider.select((s) => s.legacy));
+  for (final t in legacy) {
     if (t.key != sp.key) continue;
     final span = t.spanAt(sp.offset);
     return span == null ? null : ActiveSync(t.code, span.id);
