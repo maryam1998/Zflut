@@ -270,7 +270,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   bool _readTransFg() {
     try {
       return ref.read(sharedPrefsProvider).getBool('zflut-read-trans-fg') ??
-          false;
+          true;
     } catch (_) {
       return false;
     }
@@ -292,9 +292,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     if (st == null) return false;
     // «inactive» یعنی اپ هنوز روی صفحه است ولی فوکوس ندارد (مثلاً کادر شناور/
     // اعلان/دیالوگِ سیستم) — این پس‌زمینه نیست. فقط paused/hidden/detached.
-    return st == AppLifecycleState.paused ||
-        st == AppLifecycleState.detached ||
-        st.name == 'hidden';
+    // «hidden» را پس‌زمینه حساب نمی‌کنیم: روی بعضی گوشی‌ها (کادر شناور/پنجره‌ی کوچک)
+    // وقتی داخل برنامه‌ای هم می‌آید و باعث می‌شد فقط ترجمه‌ی زبان مبدأ خوانده شود.
+    return st == AppLifecycleState.paused || st == AppLifecycleState.detached;
   }
 
   String _nativeCode() =>
@@ -431,7 +431,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   /// ترجمه‌ی یک مثال: اول از حافظه‌ی مثال‌ها (همان که روی صفحه است)، بعد کش/مترجم.
   Future<String?> _exampleTranslation(
-      String word, String from, String text, String to) async {
+      String word, String from, String text, String to,
+      {Duration timeout = const Duration(seconds: 12)}) async {
     try {
       final list = ref.read(wordExamplesStoreProvider).load(word, from);
       for (final e in list) {
@@ -455,7 +456,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
                   targetLang: to,
                   sourceLang: from,
                   aiSettings: ref.read(aiSettingsProvider))
-              .timeout(const Duration(seconds: 12)))
+              .timeout(timeout))
           .trim();
       if (r.isEmpty || r.toLowerCase() == src.toLowerCase()) return null;
       return r;
