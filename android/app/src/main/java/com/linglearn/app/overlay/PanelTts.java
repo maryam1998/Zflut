@@ -20,6 +20,18 @@ final class PanelTts {
 
     private PanelTts() {}
 
+    /**
+     * همان گزینه‌ی تنظیماتِ اپ («خواندن ترجمه‌ها در پس‌زمینه»، کلیدِ zflut-read-trans-bg) — حباب و ذره‌بین
+     * همیشه روی برنامه‌های دیگرند، پس همین گزینه تعیین می‌کند ترجمه‌ی زبانِ مبدأ بعد از متن خوانده شود یا نه.
+     */
+    static boolean readTransBg(Context ctx) {
+        try {
+            return ctx.getApplicationContext()
+                    .getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                    .getBoolean("flutter.zflut-read-trans-bg", true);
+        } catch (Throwable t) { return false; }
+    }
+
     static void stop(Context ctx) {
         SEQ.incrementAndGet();
         try { TtsClient.stop(); } catch (Throwable ignored) {}

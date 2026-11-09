@@ -1840,7 +1840,7 @@ public class MagnifierService extends Service {
         makePickable(cardTerm, selSrc);
         head.addView(cardTerm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         termSpeak = speakBtn();
-        termSpeak.setOnClickListener(v -> toggleSpeak(termSpeak, selOrig, selSrc));
+        termSpeak.setOnClickListener(v -> toggleSpeak(termSpeak, selOrig, selSrc, wholeResults));
         head.addView(termSpeak);
         body.addView(head, matchWrap(2));
 
@@ -2090,7 +2090,7 @@ public class MagnifierService extends Service {
         wordTerm.setTypeface(wordTerm.getTypeface(), android.graphics.Typeface.BOLD);
         top.addView(wordTerm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         wordSpeak = speakBtn();
-        wordSpeak.setOnClickListener(v -> toggleSpeak(wordSpeak, cardWord, cardLang));
+        wordSpeak.setOnClickListener(v -> toggleSpeak(wordSpeak, cardWord, cardLang, cardRowsRef));
         top.addView(wordSpeak);
         TextView cardX = headBtn("\u2715", v -> closeWordCard());
         ((IconText) cardX).setIconDp(13f);
@@ -2196,6 +2196,7 @@ public class MagnifierService extends Service {
     /** ردیف‌های ترجمه: [کدِ زبان، متن]؛ هر ردیف 🔊ِ همان زبان دارد. */
     private void fillRows(LinearLayout box, List<String[]> rows) {
         if (box == null) return;
+        if (box == wordRows) cardRowsRef = rows;
         box.removeAllViews();
         for (String[] r : rows) {
             final String skipLang = (box == wordRows) ? cardLang : selSrc;
@@ -2226,7 +2227,7 @@ public class MagnifierService extends Service {
                 rf.setOnClickListener(v -> refreshRow(box, rowsRef, rowRef));
                 row.addView(rf);
                 final TextView sp = speakBtn();
-                sp.setOnClickListener(v -> toggleSpeak(sp, tx, lg));
+                sp.setOnClickListener(v -> toggleSpeak(sp, tx, lg, rowsRef));
                 row.addView(sp);
             }
             box.addView(row, matchWrap(4));
@@ -2328,31 +2329,67 @@ public class MagnifierService extends Service {
         if (wordCard != null && wordCard.getVisibility() == View.VISIBLE && cardBar != null) armCardTimer();
     }
 
+    /** ردیف‌های ترجمه‌ی همین لحظه‌ی کادرِ لغت (برای خوانشِ ترجمه‌ی زبانِ مبدأ بعد از متن). */
+    private List<String[]> cardRowsRef = null;
+
+    /** {زبانِ مبدأ(مادری)، ترجمه}‌ی همین متن در ردیف‌های [rows] — اگر گزینه‌ی «خواندن ترجمه‌ها در پس‌زمینه» روشن و ترجمه آماده باشد. */
+    private String[] companionFor(String spokenLang, List<String[]> rows) {
+        try {
+            if (rows == null || !PanelTts.readTransBg(this)) return null;
+            final String nat = prefs().getString("target", "fa");
+            if (nat == null || nat.isEmpty() || nat.equalsIgnoreCase(spokenLang)) return null;
+            for (String[] r : new ArrayList<>(rows)) {
+                if (r != null && r.length > 1 && nat.equalsIgnoreCase(r[0])
+                        && r[1] != null && !r[1].trim().isEmpty()
+                        && !"…".equals(r[1]) && !"—".equals(r[1])) return new String[]{nat, r[1]};
+            }
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
     private void toggleSpeak(final TextView b, String text, String lang) {
+        toggleSpeak(b, text, lang, null);
+    }
+
+    private void toggleSpeak(final TextView b, String text, String lang, final List<String[]> rows) {
         if (text == null || text.trim().isEmpty() || "…".equals(text) || "—".equals(text)) return;
         if (speakingBtn == b) { stopSpeech(); return; }
         stopSpeech();
         speakingBtn = b;
         b.setText("\u23F9");
         b.setTextColor(COLOR_GOLD);
-        speakLoop(b, text, lang, ++speakTok, 0);
+        speakLoop(b, text, lang, ++speakTok, 0, companionFor(lang, rows));
     }
 
-    private void speakLoop(final TextView b, final String text, final String lang, final int token, final int done) {
+    private void speakLoop(final TextView b, final String text, final String lang, final int token,
+                           final int done, final String[] comp) {
         PanelTts.speak(this, text, lang, 1.0f, ok -> main.post(() -> {
             if (token != speakTok) return;
             int rep = repeatSetting();
             int cap = rep == 0 ? 1 : rep == REPEAT_INF ? Integer.MAX_VALUE : rep;
             final int n = done + 1;
             if (ok && n < cap) {
-                main.postDelayed(() -> { if (token == speakTok) speakLoop(b, text, lang, token, n); }, 700);
+                main.postDelayed(() -> { if (token == speakTok) speakLoop(b, text, lang, token, n, comp); }, 700);
+            } else if (ok && comp != null) {
+                // 🌐 بعد از متن، ترجمه‌ی زبانِ مبدأ (مادری)
+                main.postDelayed(() -> {
+                    if (token != speakTok) return;
+                    PanelTts.speak(this, comp[1], comp[0], 1.0f, ok2 -> main.post(() -> {
+                        if (token != speakTok) return;
+                        finishSpeakUi();
+                    }));
+                }, 500);
             } else {
-                if (speakingBtn != null) { speakingBtn.setText("\uD83D\uDD0A"); speakingBtn.setTextColor(Color.WHITE); speakingBtn = null; }
-                // همه‌ی تکرارها تمام شد → نوارِ طلاییِ بسته‌شدنِ خودکار ظاهر می‌شود و شمارش شروع می‌شود
-                if (popup != null && popupBar != null) armPopupTimer();
-                if (wordCard != null && wordCard.getVisibility() == View.VISIBLE && cardBar != null) armCardTimer();
+                finishSpeakUi();
             }
         }));
+    }
+
+    private void finishSpeakUi() {
+        if (speakingBtn != null) { speakingBtn.setText("\uD83D\uDD0A"); speakingBtn.setTextColor(Color.WHITE); speakingBtn = null; }
+        // همه‌ی تکرارها تمام شد → نوارِ طلاییِ بسته‌شدنِ خودکار ظاهر می‌شود و شمارش شروع می‌شود
+        if (popup != null && popupBar != null) armPopupTimer();
+        if (wordCard != null && wordCard.getVisibility() == View.VISIBLE && cardBar != null) armCardTimer();
     }
 
     /** لغت/محدوده‌ی انتخاب‌شده (یا کلِ متن با 📄) ← کادرِ لغت باز می‌شود. */

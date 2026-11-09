@@ -2732,7 +2732,7 @@ public class BubbleService extends Service {
 
     private final class SpeakRun {
         Entry ent; String kind; TextView btn; TextView hl; String text; String lang;
-        ArrayList<int[]> segs; int unitStart = 0; int rep = 0; int my;
+        ArrayList<int[]> segs; int unitStart = 0; int rep = 0; int my; boolean compDone = false;
     }
 
     private void loadRepeatPref() {
@@ -2858,6 +2858,11 @@ public class BubbleService extends Service {
 
     /** بخش‌های این جمله تمام شد: اگر تکرار روشن است برو سراغِ جمله‌ی بعدیِ همان نوع، وگرنه تمام. */
     private void advanceOrFinish(final SpeakRun r) {
+        // 🌐 بعد از متنِ جمله، ترجمه‌ی زبانِ مبدأ (مادری) هم خوانده می‌شود (گزینه‌ی «خواندن ترجمه‌ها در پس‌زمینه»)
+        if (!r.compDone) {
+            r.compDone = true;
+            if (speakCompanion(r)) return;
+        }
         Entry n = repeatSetting == 0 ? null : nextEntryFor(r.ent, r.kind);
         if (n == null) { finishSpeak(r.btn, r.my); return; }
         TextView nb = "src".equals(r.kind) ? n.srcSpeakBtn : n.rowSpeakBtn.get(r.kind);
@@ -2869,7 +2874,7 @@ public class BubbleService extends Service {
         refreshRecentEntries();
         String t = entryText(n, r.kind);
         if (t.trim().isEmpty()) { finishSpeak(r.btn, r.my); return; }
-        r.ent = n; r.btn = nb; r.hl = nh; r.text = t;
+        r.ent = n; r.btn = nb; r.hl = nh; r.text = t; r.compDone = false;
         r.lang = "src".equals(r.kind) ? n.srcLang : r.kind;
         r.segs = splitSegments(t);
         r.unitStart = 0; r.rep = 0;
@@ -2877,6 +2882,40 @@ public class BubbleService extends Service {
         updateScrollFreeze();
         setSpeaking(nb);
         speakSegment(r, 0);
+    }
+
+    /** ترجمه‌ی زبانِ مبدأ (مادری) همین جمله که باید بعدِ خوانشِ [spokenLang]/[kind] خوانده شود؛ null = لازم نیست/آماده نیست. */
+    private String nativeCompanion(Entry e, String spokenLang, String kind) {
+        try {
+            if (e == null || !PanelTts.readTransBg(this)) return null;
+            final String nat = targetLang();
+            if (nat == null || nat.isEmpty()) return null;
+            if (nat.equalsIgnoreCase(spokenLang) || nat.equals(kind)) return null;
+            final View vis = e.rowBox.get(nat);
+            if (vis == null || vis.getVisibility() != View.VISIBLE) return null;
+            final String t = entryText(e, nat).trim();
+            return (t.isEmpty() || t.equals("\u2026") || t.equals("…")) ? null : t;
+        } catch (Throwable ex) { return null; }
+    }
+
+    private boolean speakCompanion(final SpeakRun r) {
+        final String t = nativeCompanion(r.ent, r.lang, r.kind);
+        if (t == null) return false;
+        final String nat = targetLang();
+        final TextView nh = r.ent.rowText.get(nat);
+        if (nh != null) {
+            if (r.hl != null && r.hl != cardSrcTv && r.hl != nh) clearHighlight(r.hl);
+            r.hl = nh;
+            speakTv = nh;
+            updateScrollFreeze();
+            highlightSpeak(nh, t, 0, t.length());
+        }
+        PanelTts.speak(this, t, nat, 1.0f, ok -> {
+            if (r.my != speakToken || run != r) return;
+            if (!ok) { finishSpeak(r.btn, r.my); return; }
+            advanceOrFinish(r);
+        });
+        return true;
     }
 
     private void finishSpeak(TextView b, int my) {
@@ -5929,8 +5968,15 @@ public class BubbleService extends Service {
         PanelTts.speak(this, t, e.srcLang, 1.0f, ok -> {
             if (!fullLoop || my != fullToken) return;
             if (!ok) { stopFullText(); return; }
-            fullIdx++;
-            speakFull(my, 0);
+            // 🌐 بعد از متنِ اصلی، ترجمه‌ی زبانِ مبدأ (مادری)
+            final String comp = nativeCompanion(e, e.srcLang, "src");
+            if (comp == null) { fullIdx++; speakFull(my, 0); return; }
+            PanelTts.speak(this, comp, targetLang(), 1.0f, ok2 -> {
+                if (!fullLoop || my != fullToken) return;
+                if (!ok2) { stopFullText(); return; }
+                fullIdx++;
+                speakFull(my, 0);
+            });
         });
     }
 
