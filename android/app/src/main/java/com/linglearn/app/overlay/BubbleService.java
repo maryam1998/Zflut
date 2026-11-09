@@ -2891,6 +2891,11 @@ public class BubbleService extends Service {
             final String nat = targetLang();
             if (nat == null || nat.isEmpty()) return null;
             if (nat.equalsIgnoreCase(spokenLang) || nat.equals(kind)) return null;
+            // 🔊 روی ترجمه‌ی یک زبانِ دیگر و زبانِ مبدأ همان زبانِ متنِ اصلی است ← خودِ متنِ اصلی خوانده شود
+            if (!"src".equals(kind) && e.srcLang != null && nat.equalsIgnoreCase(e.srcLang)) {
+                final String s0 = e.src == null ? "" : e.src.trim();
+                return s0.isEmpty() ? null : s0;
+            }
             final View vis = e.rowBox.get(nat);
             if (vis == null || vis.getVisibility() != View.VISIBLE) return null;
             final String t = entryText(e, nat).trim();

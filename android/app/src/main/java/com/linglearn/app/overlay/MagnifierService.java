@@ -2343,6 +2343,12 @@ public class MagnifierService extends Service {
                         && r[1] != null && !r[1].trim().isEmpty()
                         && !"…".equals(r[1]) && !"—".equals(r[1])) return new String[]{nat, r[1]};
             }
+            // زبانِ مبدأ همان زبانِ متنِ اصلی است ← خودِ متنِ اصلی (کادرِ لغت یا نتیجه‌ی انتخاب) خوانده شود
+            final boolean cardRows = rows == cardRowsRef;
+            final String sl = cardRows ? cardLang : selSrc;
+            final String st = cardRows ? cardWord : selOrig;
+            if (sl != null && nat.equalsIgnoreCase(sl) && st != null && !st.trim().isEmpty()
+                    && !"…".equals(st) && !"—".equals(st)) return new String[]{nat, st};
         } catch (Throwable ignored) {}
         return null;
     }

@@ -225,6 +225,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   /// ترجمه‌ی همان آیتم به زبان مبدأ (مادری) خوانده می‌شود، چه داخل برنامه چه پس‌زمینه.
   bool _transChunkHook(String? key, int thisStart, int nextStart, bool loops) {
     if (key == null) return false;
+    // فقط اگر تیکِ تنظیماتِ همان حالت روشن باشد: داخل برنامه ← «داخل برنامه»، پس‌زمینه ← «پس‌زمینه»
+    if (_inBackground() ? !_readTransBg() : !_readTransFg()) return false;
     final sync = ref.read(playerSyncProvider);
     PlayerTrack? track;
     for (final t in sync.tracks.values) {
