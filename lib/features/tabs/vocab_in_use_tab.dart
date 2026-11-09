@@ -112,7 +112,7 @@ class _TopicFilter extends ConsumerWidget {
                   fs: 11.5),
               for (final x in topic.categories)
                 if ((perCat[x] ?? 0) > 0)
-                  chip('$x (${perCat[x]})', catSel == x,
+                  chip('${vocabCategoryLabel(x, ui)} (${perCat[x]})', catSel == x,
                       () => ref.read(vocabCategoryProvider.notifier).state = x,
                       fs: 11.5),
             ]),
