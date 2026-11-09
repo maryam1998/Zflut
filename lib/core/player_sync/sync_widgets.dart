@@ -218,6 +218,82 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     return null;
   }
 
+  // ───────────── 🔊 روی ترجمه (مثلاً اسپانیایی) ← ترجمه‌ی زبان مبدأ ← آیتمِ بعدیِ همان ترجمه ─────────────
+  String? _resumeCode;
+
+  /// پایانِ خواندنِ یک آیتم در «تراکِ ترجمه» (کاربر 🔊 ردیفِ ترجمه را زده): بعدش
+  /// ترجمه‌ی همان آیتم به زبان مبدأ (مادری) خوانده می‌شود، چه داخل برنامه چه پس‌زمینه.
+  bool _transChunkHook(String? key, int thisStart, int nextStart, bool loops) {
+    if (key == null) return false;
+    final sync = ref.read(playerSyncProvider);
+    PlayerTrack? track;
+    for (final t in sync.tracks.values) {
+      if (t.key == key && t.code != sync.mainCode) track = t;
+    }
+    if (track == null || track.spans.isEmpty) return false;
+    final native = _nativeCode();
+    if (native.isEmpty || native == track.code) return false;
+
+    int skipWs(int i) {
+      final t = track!.fullText;
+      while (i >= 0 && i < t.length && t.codeUnitAt(i) <= 32) {
+        i++;
+      }
+      return i;
+    }
+
+    final cur = _spanAt(track, skipWs(thisStart));
+    if (cur == null) return false;
+    final nxt = nextStart >= 0 ? _spanAt(track, skipWs(nextStart)) : null;
+    if (nxt != null && nxt.id == cur.id) return false; // هنوز همین آیتم
+
+    _resumeFromHook = true;
+    _resumeCode = track.code;
+    _resumeSpanId =
+        nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
+    unawaited(_playNativeAfterTrans(track, cur.id, native));
+    return true;
+  }
+
+  Future<void> _playNativeAfterTrans(
+      PlayerTrack track, String id, String native) async {
+    final sync = ref.read(playerSyncProvider);
+    final foreign = _notifier.isForeignItem(id);
+    String? text;
+    if (!foreign && native == sync.mainCode) {
+      text = _notifier.itemText(id)?.trim(); // مبدأ = زبانِ متنِ اصلی
+    } else {
+      text = await _translationText(
+          id, foreign ? track.code : sync.mainCode, native);
+    }
+    if (!mounted) return;
+    final sp = ref.read(speechControllerProvider);
+    if (sp.key != track.key || sp.status != SpeechStatus.playing) {
+      // کاربر در این فاصله توقف کرد یا متن را عوض کرد
+      _resumeSpanId = null;
+      _resumeFromHook = false;
+      _resumeCode = null;
+      return;
+    }
+    if (text == null || text.isEmpty) {
+      _resumeMain(); // ترجمه‌ای نبود → آیتمِ بعدیِ همان ترجمه
+      return;
+    }
+    final nkey = PlayerTrack.keyFor(native, text);
+    SpeechController.translationReadKey = nkey;
+    ref.read(adhocSyncProvider.notifier).state =
+        (key: nkey, active: ActiveSync(native, id));
+    unawaited(_ctrl.toggle(text, native));
+    // اگر خوانش تمام نشد (خطا/شروع‌نشدن) پلیر گیر نکند
+    Timer(Duration(seconds: 12 + text.length ~/ 6), () {
+      if (!mounted || _resumeSpanId == null) return;
+      if (SpeechController.translationReadKey != nkey) return;
+      final cur = ref.read(speechControllerProvider);
+      if (cur.key == nkey && cur.status == SpeechStatus.paused) return;
+      _resumeMain();
+    });
+  }
+
   void _playExample(String code, String text) {
     ref.read(adhocSyncProvider.notifier).state = (
       key: PlayerTrack.keyFor(code, text),
@@ -233,7 +309,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     final sync = ref.read(playerSyncProvider);
     if (sync.scopeId != _scopeId) return false;
     final track = _notifier.mainTrackForKey(key);
-    if (track == null || track.spans.isEmpty) return false;
+    if (track == null) return _transChunkHook(key, thisStart, nextStart, loops);
+    _resumeCode = null;
+    if (track.spans.isEmpty) return false;
     // ⚠️ شروعِ تکه‌ها گاهی روی فاصله/خطِ جدیدِ «قبل از متن» می‌افتد و آیتمِ قبلی را نشان می‌دهد
     // (آن‌وقت جمله «هنوز همین آیتم» حساب می‌شد و ترجمه رد می‌شد) → فاصله‌ها را کنار بگذار.
     int skipWs(int i) {
@@ -703,6 +781,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     if (next.key == null) {
       _resumeSpanId = null;
       _resumeFromHook = false;
+      _resumeCode = null;
       return;
     }
     if (next.status == SpeechStatus.playing) {
@@ -716,6 +795,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       if (!isExample) {
         _resumeSpanId = null;
         _resumeFromHook = false;
+        _resumeCode = null;
       } else if (!_resumeFromHook) {
         // مثالی که کاربر خودش زد: بعد از مثال‌های همان لغت، لغتِ بعدی
         final o = ExamplesRegistry.ownerOfKey(next.key!);
@@ -746,7 +826,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     _resumeFromHook = false;
     if (id == null) return;
     final sync = ref.read(playerSyncProvider);
-    final track = sync.tracks[sync.mainCode];
+    final rc = _resumeCode;
+    _resumeCode = null;
+    final track = sync.tracks[rc ?? sync.mainCode];
     final span = track?.byId[id];
     if (track == null || span == null) return;
     unawaited(_ctrl.toggle(
