@@ -72,7 +72,7 @@ class _FrameWatch {
   }
 
   static bool get recent =>
-      DateTime.now().difference(_last) < const Duration(milliseconds: 2500);
+      DateTime.now().difference(_last) < const Duration(seconds: 12);
 }
 
 class SyncPlayScope extends ConsumerStatefulWidget {
