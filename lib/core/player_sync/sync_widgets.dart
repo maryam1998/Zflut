@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -54,6 +55,25 @@ class _ScopeToken extends InheritedWidget {
 
 /// شناسه‌ی اسکوپِ بالاتر (برای گزارشِ ترجمه‌ها) — null اگر اسکوپی نیست.
 String? syncScopeOf(BuildContext context) => _ScopeToken.maybeOf(context);
+
+/// آخرین لحظه‌ای که برنامه واقعاً فریم کشیده است. وقتی روی صفحه هستی (نوارِ پیشرفتِ پلیر
+/// و هایلایت مدام فریم می‌سازند) فریم‌ها می‌آیند؛ در پس‌زمینه/قفل‌صفحه فریمی نیست. این
+/// معیار از «حالتِ چرخه‌ی عمرِ» اندروید که روی بعضی گوشی‌ها اشتباه گزارش می‌شود مستقل است.
+class _FrameWatch {
+  static DateTime _last = DateTime.fromMillisecondsSinceEpoch(0);
+  static bool _on = false;
+
+  static void ensure() {
+    if (_on) return;
+    _on = true;
+    SchedulerBinding.instance.addPersistentFrameCallback((_) {
+      _last = DateTime.now();
+    });
+  }
+
+  static bool get recent =>
+      DateTime.now().difference(_last) < const Duration(milliseconds: 2500);
+}
 
 class SyncPlayScope extends ConsumerStatefulWidget {
   /// تا وقتی همین شیء (identical / ==) بماند، آیتم‌ها دوباره ساخته نمی‌شوند.
@@ -108,6 +128,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   @override
   void initState() {
     super.initState();
+    _FrameWatch.ensure();
     _notifier = ref.read(playerSyncProvider.notifier);
     _ctrl = ref.read(speechControllerProvider.notifier);
     _ctrl.addChunkAdvanceHook(_chunkHook);
@@ -288,6 +309,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   }
 
   bool _inBackground() {
+    if (_FrameWatch.recent) return false; // فریم می‌آید = داخل برنامه‌ای
     final st = WidgetsBinding.instance.lifecycleState;
     if (st == null) return false;
     // «inactive» یعنی اپ هنوز روی صفحه است ولی فوکوس ندارد (مثلاً کادر شناور/
