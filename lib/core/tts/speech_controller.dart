@@ -55,6 +55,9 @@ class SpeechController extends StateNotifier<SpeechState> {
     unawaited(NativeTtsBridge.preload());
   }
 
+  /// کلیدِ پخشِ «ترجمه‌ای که پلیر بعد از هر جمله می‌خواند» — نوتیفیکیشنِ مدیا برایش عنوانِ جدا نشان نمی‌دهد.
+  static String? translationReadKey;
+
   final String? Function(String lang)? _voicePref;
   final void Function(ChunkPlayedEvent e)? _onChunkPlayed;
   /// تنظیمات ← «صدای خوانش»: true = همیشه TTS خودِ گوشی (نه بسته‌ی Piper)

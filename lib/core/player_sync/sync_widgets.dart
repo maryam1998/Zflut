@@ -11,6 +11,11 @@ import '../providers/language_selection_provider.dart';
 import '../storage/local_storage.dart' show sharedPrefsProvider;
 import '../providers/speech_provider.dart';
 import '../theme/app_theme_colors.dart';
+import '../providers/ai_settings_provider.dart';
+import '../providers/translation_provider.dart';
+import '../translate/known_translations.dart';
+import '../tts/native_tts_bridge.dart';
+import '../tts/sentence_splitter.dart';
 import '../tts/speech_controller.dart' show SpeechController;
 import '../tts/speech_state.dart';
 import 'examples_registry.dart';
@@ -232,24 +237,103 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     }
   }
 
-  /// وقتی اپ در پس‌زمینه است و گزینه‌ی تنظیمات روشن: بعد از هر آیتم، ترجمه‌اش (اگر قبلاً ترجمه شده) خوانده می‌شود.
+  bool _inBackground() {
+    final st = WidgetsBinding.instance.lifecycleState;
+    return st != null && st != AppLifecycleState.resumed;
+  }
+
+  String _nativeCode() =>
+      ref.read(languageSelectionProvider).native.trim().toLowerCase();
+
+  /// ترجمه‌ی آیتم: اول آنچه روی صفحه آماده شده، بعد کشِ ترجمه/داده‌های اپ، و اگر نبود همان لحظه ترجمه می‌کند.
+  Future<String?> _translationText(String id, String from, String to,
+      {Duration timeout = const Duration(seconds: 8)}) async {
+    final local = _notifier.translationFor(id, to);
+    if (local != null) return local;
+    final src = _notifier.itemText(id)?.trim();
+    if (src == null || src.isEmpty) return null;
+    try {
+      final svc = ref.read(translationServiceProvider);
+      final hit =
+          svc.peekCached(src, from, to) ?? KnownTranslations.get(src, from, to);
+      if (hit != null && hit.trim().isNotEmpty) return hit.trim();
+      final r = (await svc
+              .translate(
+                  text: src,
+                  targetLang: to,
+                  sourceLang: from,
+                  aiSettings: ref.read(aiSettingsProvider))
+              .timeout(timeout))
+          .trim();
+      if (r.isEmpty || r.toLowerCase() == src.toLowerCase()) return null;
+      return r;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// وقتی اپ در پس‌زمینه است و گزینه‌ی تنظیمات روشن: بعد از هر آیتم، ترجمه‌اش خوانده می‌شود
+  /// (اگر هنوز ترجمه نشده باشد همان لحظه ترجمه می‌شود؛ فقط اگر نشد رد می‌شود).
   bool _readTranslation(
       PlayerTrack track, TrackSpan cur, TrackSpan? nxt, bool loops) {
-    if (!_readTransBg()) return false;
-    final st = WidgetsBinding.instance.lifecycleState;
-    if (st == null || st == AppLifecycleState.resumed) return false;
-    final code = ref.read(languageSelectionProvider).native.trim().toLowerCase();
-    final text = _notifier.translationFor(cur.id, code);
-    if (text == null) return false;
+    if (!_readTransBg() || !_inBackground()) return false;
+    final to = _nativeCode();
+    if (to.isEmpty || to == track.code) return false;
     _resumeFromHook = true;
     _resumeSpanId =
         nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
-    ref.read(adhocSyncProvider.notifier).state = (
-      key: PlayerTrack.keyFor(code, text),
-      active: ActiveSync(code, cur.id)
-    );
-    unawaited(_ctrl.toggle(text, code));
+    unawaited(_playTranslationThenResume(track, cur.id, to));
     return true;
+  }
+
+  Future<void> _playTranslationThenResume(
+      PlayerTrack track, String id, String to) async {
+    final text = await _translationText(id, track.code, to);
+    if (!mounted) return;
+    final sp = ref.read(speechControllerProvider);
+    if (sp.key != track.key || sp.status != SpeechStatus.playing) {
+      // کاربر در این فاصله توقف کرد یا متن را عوض کرد
+      _resumeSpanId = null;
+      _resumeFromHook = false;
+      return;
+    }
+    if (text == null) {
+      _resumeMain(); // ترجمه‌ای نبود → همان آیتمِ بعد
+      return;
+    }
+    final key = PlayerTrack.keyFor(to, text);
+    SpeechController.translationReadKey = key;
+    ref.read(adhocSyncProvider.notifier).state =
+        (key: key, active: ActiveSync(to, id));
+    unawaited(_ctrl.toggle(text, to));
+  }
+
+  String? _prewarmId;
+
+  /// پس‌زمینه: ترجمه‌ی آیتمِ در حال خوانش و بعدی از قبل آماده و صدایشان پیش‌ساخته می‌شود (بدون مکث بینِ جمله‌ها).
+  void _prewarmTranslations(SpeechState s) {
+    if (!_readTransBg() || !_inBackground()) return;
+    final sync = ref.read(playerSyncProvider);
+    final track = sync.tracks[sync.mainCode];
+    if (track == null || track.key != s.key) return;
+    final cur = track.spanAt(s.charOffset);
+    if (cur == null || cur.id == _prewarmId) return;
+    _prewarmId = cur.id;
+    final to = _nativeCode();
+    if (to.isEmpty || to == track.code) return;
+    final i = track.spans.indexWhere((x) => x.id == cur.id);
+    for (final k in [i, i + 1]) {
+      if (k < 0 || k >= track.spans.length) continue;
+      final id = track.spans[k].id;
+      unawaited(() async {
+        final t = await _translationText(id, track.code, to);
+        if (t == null || !mounted) return;
+        final clean = SentenceSplitter.sanitize(t);
+        if (clean.isEmpty) return;
+        unawaited(NativeTtsBridge.prefetch(
+            clean, to, ref.read(speechControllerProvider).rate));
+      }());
+    }
   }
 
   String? _nextSpanAfterWord(PlayerTrack track, String word) {
@@ -271,6 +355,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       _resumeFromHook = false;
       return;
     }
+    if (next.status == SpeechStatus.playing) _prewarmTranslations(next);
     final ad = ref.read(adhocSyncProvider);
     final isExample = ad != null && ad.key == next.key;
 

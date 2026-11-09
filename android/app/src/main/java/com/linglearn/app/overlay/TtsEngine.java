@@ -1013,7 +1013,7 @@ final class TtsEngine {
         final VoiceEq eq = new VoiceEq(skipEq ? 0 : sampleRate);
         java.util.List<Clause> clauses = splitClauses(t);
         // جمله‌ی بلند بدون ویرگول: تکه‌تکه ساخته شود تا پخش زودتر شروع شود (Supertonic استریم نمی‌کند)
-        clauses = chunkLong(clauses, 14, 10);   // همه‌ی موتورها: تکه‌های کوتاه → شروعِ زودترِ پخش
+        clauses = chunkLong(clauses, 12, 8);    // همه‌ی موتورها: تکه‌های کوتاه → شروعِ زودترِ پخش
         final ArrayList<float[]> all = new ArrayList<>();
         int total = 0;
         for (int ci = 0; ci < clauses.size(); ci++) {

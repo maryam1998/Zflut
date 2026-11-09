@@ -31,6 +31,8 @@ class MediaNotificationSync {
   bool _multi = false;
   String _lastSig = '';
   bool _disposed = false;
+  String? _heldTitle; // آخرین عنوان/زیرعنوانِ «جمله‌ی اصلی» (برای زمانی که ترجمه خوانده می‌شود)
+  String? _heldSub;
 
   void attach() {
     final nb = NativeBridge.instance;
@@ -80,15 +82,26 @@ class MediaNotificationSync {
       }
       return;
     }
-    final text = _ctl.currentChunkText.trim();
-    final title = text.length > 90 ? '${text.substring(0, 90)}…' : text;
     final playing = s.status == SpeechStatus.playing;
-    final counter = s.total > 1 ? '${s.chunkIndex + 1} / ${s.total}' : '';
-    // 🌐 ترجمه‌ی همین جمله (زیرِ جمله، همان خطی که شماره‌ی جمله بود)
-    final tr = _translationFor(text, s);
-    final sub = tr.isEmpty ? counter : (counter.isEmpty ? tr : '$counter · $tr');
-    // ⚡ ترجمه‌ی چند جمله‌ی بعدی از قبل آماده می‌شود تا در بارِ اول هم همراهِ جمله نشان داده شود
-    _prefetchAhead(s);
+    String title;
+    String sub;
+    if (s.key != null && s.key == SpeechController.translationReadKey &&
+        _heldTitle != null) {
+      // 🌐 پلیر دارد ترجمه را می‌خواند: نوتیفیکیشن همان جمله‌ی اصلی (با ترجمه‌اش زیرش) را نگه می‌دارد
+      title = _heldTitle!;
+      sub = _heldSub ?? '';
+    } else {
+      final text = _ctl.currentChunkText.trim();
+      title = text.length > 90 ? '${text.substring(0, 90)}…' : text;
+      final counter = s.total > 1 ? '${s.chunkIndex + 1} / ${s.total}' : '';
+      // 🌐 ترجمه‌ی همین جمله (زیرِ جمله، همان خطی که شماره‌ی جمله بود)
+      final tr = _translationFor(text, s);
+      sub = tr.isEmpty ? counter : (counter.isEmpty ? tr : '$counter · $tr');
+      _heldTitle = title;
+      _heldSub = sub;
+      // ⚡ ترجمه‌ی چند جمله‌ی بعدی از قبل آماده می‌شود تا در بارِ اول هم همراهِ جمله نشان داده شود
+      _prefetchAhead(s);
+    }
     final sig = '$title|$sub|$playing|${s.hasPrev}|${s.hasNext}';
     if (sig == _lastSig) return;
     _lastSig = sig;
