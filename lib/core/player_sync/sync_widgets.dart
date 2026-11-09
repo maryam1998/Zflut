@@ -250,6 +250,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     if (nxt != null && nxt.id == cur.id) return false; // هنوز همین آیتم
     final word = _notifier.itemText(cur.id);
     if (word == null) return false;
+    if (_notifier.isForeignItem(cur.id)) return false; // ترجمه‌ی انگلیسیِ لغتِ زبانِ دیگر
     final texts = ExamplesRegistry.textsFor(track.code, word);
     // 🌐 داخل برنامه (اگر در تنظیمات روشن باشد): ترجمه‌ی همه‌ی زبان‌های انتخاب‌شده
     final fgOn = _readTransFg() && !_inBackground();
@@ -1068,11 +1069,16 @@ Future<void> syncSpeakAdhoc(
 Future<bool> syncPlayMainTrack(WidgetRef ref) async {
   final sync = ref.read(playerSyncProvider);
   var track = sync.tracks[sync.mainCode];
-  if (track == null || track.fullText.isEmpty) {
+  if (track == null ||
+      track.fullText.isEmpty ||
+      !ref.read(playerSyncProvider.notifier).hasMainItems) {
     // تراکِ اصلی خالی است (مثلاً فهرست فقط لغاتِ غیرانگلیسی دارد) → اولین
     // تراکِ دارای متن
     track = null;
+    final ownMain = ref.read(playerSyncProvider.notifier).hasMainItems;
     for (final t in sync.tracks.values) {
+      // فهرست فقط لغاتِ زبانِ دیگر دارد: تراکِ اصلی فقط ترجمه‌هاست، نه لغت‌ها
+      if (!ownMain && t.code == sync.mainCode) continue;
       if (t.fullText.isNotEmpty) {
         track = t;
         break;

@@ -84,8 +84,26 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
   }
 
   /// ترجمه‌ی «همین الان آماده»ی یک آیتم به زبان [code] (null اگر هنوز ترجمه نشده).
+  /// آیتمی که زبانش با زبانِ اصلیِ اسکوپ فرق دارد (مثلاً لغتِ شخصیِ اسپانیایی در تبِ لغاتِ انگلیسی)
+  bool _isForeign(String id) {
+    for (final it in _items) {
+      if (it.id != id) continue;
+      final l = it.lang;
+      return l != null && l.isNotEmpty && l != _mainCode;
+    }
+    return false;
+  }
+
+  /// آیا آیتمی هست که جزو متنِ اصلیِ اسکوپ باشد (نه لغتِ زبانِ دیگر)؟
+  bool isForeignItem(String id) => _isForeign(id);
+
+  bool get hasMainItems => _items.any((it) {
+        final l = it.lang;
+        return l == null || l.isEmpty || l == _mainCode;
+      });
+
   String? translationFor(String id, String code) {
-    if (code.isEmpty || code == _mainCode) return null;
+    if (code.isEmpty || (code == _mainCode && !_isForeign(id))) return null;
     final t = (_trans[code]?[id] ?? _pending[code]?[id])?.trim();
     return (t == null || t.isEmpty) ? null : t;
   }
@@ -159,7 +177,9 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
   /// هر ردیفِ ترجمه، به محضِ آماده‌شدنِ مقدارش صدا می‌زند
   /// (معادل onResolveTranslation / reportTranslation در Hope).
   void reportTranslation(String scopeId, String code, String id, String text) {
-    if (state.scopeId != scopeId || code == _mainCode) return;
+    if (state.scopeId != scopeId) return;
+    // ترجمه‌ی «انگلیسی» برای لغتِ غیرانگلیسی هم باید ثبت شود تا هایلایت/اسکرول داشته باشد
+    if (code == _mainCode && !_isForeign(id)) return;
     final t = text.trim();
     if (t.isEmpty) return;
     if (_trans[code]?[id] == t || _pending[code]?[id] == t) return;
@@ -189,6 +209,11 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
       final entries = <SyncItem>[];
       final map = _trans[code]!;
       for (final it in _items) {
+        if (code == _mainCode && !_isForeign(it.id)) {
+          // تراکِ اصلی: لغاتِ همان زبان + ترجمه‌های همان زبان برای لغاتِ زبانِ دیگر
+          if (it.text.isNotEmpty) entries.add(SyncItem(it.id, it.text));
+          continue;
+        }
         final v = map[it.id];
         if (v != null && v.isNotEmpty) entries.add(SyncItem(it.id, v));
       }
