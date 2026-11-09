@@ -2453,7 +2453,7 @@ class _ReadTransBgSectionState extends ConsumerState<_ReadTransBgSection> {
   @override
   void initState() {
     super.initState();
-    _on = ref.read(sharedPrefsProvider).getBool(_key) ?? false;
+    _on = ref.read(sharedPrefsProvider).getBool(_key) ?? true;
   }
 
   @override

@@ -231,7 +231,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   bool _readTransBg() {
     try {
-      return ref.read(sharedPrefsProvider).getBool('zflut-read-trans-bg') ?? false;
+      return ref.read(sharedPrefsProvider).getBool('zflut-read-trans-bg') ?? true;
     } catch (_) {
       return false;
     }
