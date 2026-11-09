@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/app_prefs_provider.dart';
+import '../providers/language_selection_provider.dart';
+import '../storage/local_storage.dart' show sharedPrefsProvider;
 import '../providers/speech_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../tts/speech_controller.dart' show SpeechController;
@@ -211,11 +213,42 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     final word = _notifier.itemText(cur.id);
     if (word == null) return false;
     final texts = ExamplesRegistry.textsFor(track.code, word);
-    if (texts == null || texts.isEmpty) return false;
+    if (texts == null || texts.isEmpty) {
+      // 🌐 پس‌زمینه: ترجمه‌ی (آماده‌شده‌ی) این آیتم را هم بخوان — اگر در تنظیمات روشن باشد
+      return _readTranslation(track, cur, nxt, loops);
+    }
     _resumeFromHook = true;
     _resumeSpanId =
         nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
     _playExample(track.code, texts.first);
+    return true;
+  }
+
+  bool _readTransBg() {
+    try {
+      return ref.read(sharedPrefsProvider).getBool('zflut-read-trans-bg') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// وقتی اپ در پس‌زمینه است و گزینه‌ی تنظیمات روشن: بعد از هر آیتم، ترجمه‌اش (اگر قبلاً ترجمه شده) خوانده می‌شود.
+  bool _readTranslation(
+      PlayerTrack track, TrackSpan cur, TrackSpan? nxt, bool loops) {
+    if (!_readTransBg()) return false;
+    final st = WidgetsBinding.instance.lifecycleState;
+    if (st == null || st == AppLifecycleState.resumed) return false;
+    final code = ref.read(languageSelectionProvider).native.trim().toLowerCase();
+    final text = _notifier.translationFor(cur.id, code);
+    if (text == null) return false;
+    _resumeFromHook = true;
+    _resumeSpanId =
+        nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
+    ref.read(adhocSyncProvider.notifier).state = (
+      key: PlayerTrack.keyFor(code, text),
+      active: ActiveSync(code, cur.id)
+    );
+    unawaited(_ctrl.toggle(text, code));
     return true;
   }
 

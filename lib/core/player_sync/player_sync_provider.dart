@@ -64,6 +64,13 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
     return null;
   }
 
+  /// ترجمه‌ی «همین الان آماده»ی یک آیتم به زبان [code] (null اگر هنوز ترجمه نشده).
+  String? translationFor(String id, String code) {
+    if (code.isEmpty || code == _mainCode) return null;
+    final t = (_trans[code]?[id] ?? _pending[code]?[id])?.trim();
+    return (t == null || t.isEmpty) ? null : t;
+  }
+
   /// ثبتِ آیتم‌های اسکوپ. اگر اسکوپِ دیگری فعال بود جایگزین می‌شود.
   void setScope(String scopeId, List<SyncItem> items, TrackMode mode,
       {String mainCode = 'en'}) {

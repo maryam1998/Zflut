@@ -130,6 +130,7 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                     const _FloatingBubbleSection(),
                     gap(),
                   ],
+                  if (_isAndroidApp) const _ReadTransBgSection(),
                   const _AudioSyncSection(),
                   const SizedBox(height: 4),
                   const _OfflineWordsButton(),
@@ -2429,6 +2430,66 @@ class _OfflineTtsSectionState extends State<_OfflineTtsSection> {
                     ],
                   )
                 : const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 🌐 خواندنِ ترجمه‌ها هنگامِ پخش در پس‌زمینه (فقط ترجمه‌هایی که قبلاً آماده شده‌اند)
+class _ReadTransBgSection extends ConsumerStatefulWidget {
+  const _ReadTransBgSection();
+
+  @override
+  ConsumerState<_ReadTransBgSection> createState() =>
+      _ReadTransBgSectionState();
+}
+
+class _ReadTransBgSectionState extends ConsumerState<_ReadTransBgSection> {
+  static const String _key = 'zflut-read-trans-bg';
+  late bool _on;
+
+  @override
+  void initState() {
+    super.initState();
+    _on = ref.read(sharedPrefsProvider).getBool(_key) ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '🌐 ${fa ? 'خواندن ترجمه‌ها در پس‌زمینه' : 'Read translations in background'}',
+                  style: TextStyle(
+                      color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  fa
+                      ? 'هنگام پخش با اپ بسته/قفل‌شده، بعد از هر جمله ترجمه‌اش هم خوانده می‌شود (فقط اگر ترجمه شده باشد).'
+                      : 'When playing with the app in background, each line\'s translation is read too (only if already translated).',
+                  style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.6),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _on,
+            activeColor: c.gold,
+            onChanged: (v) {
+              setState(() => _on = v);
+              ref.read(sharedPrefsProvider).setBool(_key, v);
+            },
           ),
         ],
       ),
