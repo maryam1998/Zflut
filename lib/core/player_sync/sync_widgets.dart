@@ -232,10 +232,19 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     final texts = ExamplesRegistry.textsFor(track.code, word);
     // 🌐 داخل برنامه (اگر در تنظیمات روشن باشد): ترجمه‌ی همه‌ی زبان‌های انتخاب‌شده
     final fgOn = _readTransFg() && !_inBackground();
-    if (fgOn &&
-        _startFgQueue(track, cur, nxt, loops, word,
-            texts ?? const <String>[])) {
-      return true;
+    if (fgOn) {
+      // مثال‌های باز؛ اگر پنلِ مثال بسته بود، مثال‌های ذخیره‌شده‌ی همین لغت هم خوانده شوند
+      var fgTexts = texts ?? const <String>[];
+      if (fgTexts.isEmpty) {
+        try {
+          fgTexts = [
+            for (final e
+                in ref.read(wordExamplesStoreProvider).load(word, track.code))
+              if (e.text.trim().isNotEmpty) e.text,
+          ];
+        } catch (_) {}
+      }
+      if (_startFgQueue(track, cur, nxt, loops, word, fgTexts)) return true;
     }
     if (texts == null || texts.isEmpty) {
       // 🌐 پس‌زمینه: ترجمه‌ی (آماده‌شده‌ی) این آیتم را هم بخوان — اگر در تنظیمات روشن باشد
