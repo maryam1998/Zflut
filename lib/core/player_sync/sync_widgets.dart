@@ -280,7 +280,12 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   bool _inBackground() {
     final st = WidgetsBinding.instance.lifecycleState;
-    return st != null && st != AppLifecycleState.resumed;
+    if (st == null) return false;
+    // «inactive» یعنی اپ هنوز روی صفحه است ولی فوکوس ندارد (مثلاً کادر شناور/
+    // اعلان/دیالوگِ سیستم) — این پس‌زمینه نیست. فقط paused/hidden/detached.
+    return st == AppLifecycleState.paused ||
+        st == AppLifecycleState.detached ||
+        st.name == 'hidden';
   }
 
   String _nativeCode() =>
