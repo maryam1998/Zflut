@@ -230,6 +230,13 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     final word = _notifier.itemText(cur.id);
     if (word == null) return false;
     final texts = ExamplesRegistry.textsFor(track.code, word);
+    // 🌐 داخل برنامه (اگر در تنظیمات روشن باشد): ترجمه‌ی همه‌ی زبان‌های انتخاب‌شده
+    final fgOn = _readTransFg() && !_inBackground();
+    if (fgOn &&
+        _startFgQueue(track, cur, nxt, loops, word,
+            texts ?? const <String>[])) {
+      return true;
+    }
     if (texts == null || texts.isEmpty) {
       // 🌐 پس‌زمینه: ترجمه‌ی (آماده‌شده‌ی) این آیتم را هم بخوان — اگر در تنظیمات روشن باشد
       return _readTranslation(track, cur, nxt, loops);
@@ -249,6 +256,26 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     } catch (_) {
       return false;
     }
+  }
+
+  bool _readTransFg() {
+    try {
+      return ref.read(sharedPrefsProvider).getBool('zflut-read-trans-fg') ??
+          false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// زبان‌هایی که ترجمه‌شان خوانده می‌شود: مبدأ + همه‌ی مقصدها (بدون زبانِ خودِ متن، بدون تکرار)
+  List<String> _fgLangs(String mainCode) {
+    final sel = ref.read(languageSelectionProvider);
+    final out = <String>[];
+    for (final c in [sel.native, ...sel.targets]) {
+      final t = c.trim().toLowerCase();
+      if (t.isNotEmpty && t != mainCode && !out.contains(t)) out.add(t);
+    }
+    return out;
   }
 
   bool _inBackground() {
@@ -453,6 +480,69 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     return true;
   }
 
+  /// داخل برنامه: لغت ← ترجمه‌ی هر زبان ← (مثال ← ترجمه‌ی هر زبان) ← لغتِ بعد
+  bool _startFgQueue(PlayerTrack track, TrackSpan cur, TrackSpan? nxt,
+      bool loops, String word, List<String> texts) {
+    final langs = _fgLangs(track.code);
+    if (langs.isEmpty) return false;
+    _bgCancel();
+    _resumeFromHook = true;
+    _resumeSpanId =
+        nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
+
+    final steps = <_BgStep>[
+      for (final l in langs)
+        _BgStep(l, true, null, _translationText(cur.id, track.code, l),
+            (t) => cur.id),
+    ];
+    for (final ex in List<String>.of(texts)) {
+      steps.add(_BgStep(track.code, false, ex, null,
+          (t) => 'ai-ex-${track.code}-${ex.hashCode}'));
+      for (final l in langs) {
+        steps.add(_BgStep(l, true, null,
+            _exampleTranslation(word, track.code, ex, l),
+            (t) => 'ai-ex-tr-$l-${t.hashCode}'));
+      }
+    }
+
+    _bgActive = true;
+    ExamplesRegistry.bgDriving = true;
+    final token = ++_bgToken;
+    unawaited(_runBgQueue(steps, token, track.key));
+    return true;
+  }
+
+  String? _prewarmFgId;
+
+  /// داخل برنامه: ترجمه‌ی چند آیتمِ بعدی برای همه‌ی زبان‌ها از قبل گرفته و صدایشان پیش‌ساخته می‌شود.
+  void _prewarmFg(SpeechState s) {
+    if (!_readTransFg() || _inBackground()) return;
+    final sync = ref.read(playerSyncProvider);
+    final track = sync.tracks[sync.mainCode];
+    if (track == null || track.key != s.key) return;
+    final cur = track.spanAt(s.charOffset);
+    if (cur == null || cur.id == _prewarmFgId) return;
+    _prewarmFgId = cur.id;
+    final langs = _fgLangs(track.code);
+    final i = track.spans.indexWhere((x) => x.id == cur.id);
+    if (i < 0) return;
+    for (var k = i; k <= i + 4 && k < track.spans.length; k++) {
+      final id = track.spans[k].id;
+      for (final l in langs) {
+        unawaited(() async {
+          final t = await _translationText(id, track.code, l,
+              timeout: const Duration(seconds: 20));
+          if (t == null || !mounted || k > i + 1) return;
+          final clean = SentenceSplitter.sanitize(t);
+          if (clean.isNotEmpty) {
+            unawaited(NativeTtsBridge.prefetch(
+                clean, l, ref.read(speechControllerProvider).rate));
+          }
+        }());
+      }
+    }
+  }
+
   Future<void> _runBgQueue(
       List<_BgStep> steps, int token, String firstKey) async {
     var expectKey = firstKey;
@@ -560,7 +650,10 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       _resumeFromHook = false;
       return;
     }
-    if (next.status == SpeechStatus.playing) _prewarmTranslations(next);
+    if (next.status == SpeechStatus.playing) {
+      _prewarmTranslations(next);
+      _prewarmFg(next);
+    }
     final ad = ref.read(adhocSyncProvider);
     final isExample = ad != null && ad.key == next.key;
 
