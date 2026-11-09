@@ -1,4 +1,4 @@
-import 'dart:async' show unawaited;
+import 'dart:async' show Timer, unawaited;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -211,9 +211,19 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     if (sync.scopeId != _scopeId) return false;
     final track = sync.tracks[sync.mainCode];
     if (track == null || track.key != key || track.spans.isEmpty) return false;
-    final cur = _spanAt(track, thisStart);
+    // ⚠️ شروعِ تکه‌ها گاهی روی فاصله/خطِ جدیدِ «قبل از متن» می‌افتد و آیتمِ قبلی را نشان می‌دهد
+    // (آن‌وقت جمله «هنوز همین آیتم» حساب می‌شد و ترجمه رد می‌شد) → فاصله‌ها را کنار بگذار.
+    int skipWs(int i) {
+      final t = track.fullText;
+      while (i >= 0 && i < t.length && t.codeUnitAt(i) <= 32) {
+        i++;
+      }
+      return i;
+    }
+
+    final cur = _spanAt(track, skipWs(thisStart));
     if (cur == null) return false;
-    final nxt = nextStart >= 0 ? _spanAt(track, nextStart) : null;
+    final nxt = nextStart >= 0 ? _spanAt(track, skipWs(nextStart)) : null;
     if (nxt != null && nxt.id == cur.id) return false; // هنوز همین آیتم
     final word = _notifier.itemText(cur.id);
     if (word == null) return false;
@@ -306,6 +316,14 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     ref.read(adhocSyncProvider.notifier).state =
         (key: key, active: ActiveSync(to, id));
     unawaited(_ctrl.toggle(text, to));
+    // اگر خوانشِ ترجمه به هر دلیل (خطا/شروع‌نشدن) تمام نشد، پلیر گیر نکند و ادامه بدهد
+    Timer(Duration(seconds: 12 + text.length ~/ 6), () {
+      if (!mounted || _resumeSpanId == null) return;
+      if (SpeechController.translationReadKey != key) return;
+      final cur = ref.read(speechControllerProvider);
+      if (cur.key == key && cur.status == SpeechStatus.paused) return; // کاربر مکث کرده
+      _resumeMain();
+    });
   }
 
   String? _prewarmId;
@@ -380,7 +398,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         prev.status == SpeechStatus.playing &&
         next.status == SpeechStatus.idle &&
         prev.key == next.key &&
-        next.error == null) {
+        (next.error == null || next.key == SpeechController.translationReadKey)) {
       final o = ExamplesRegistry.ownerOfKey(next.key!);
       if (o != null && o.index + 1 < o.count) return; // پنل مثالِ بعدی را می‌خواند
       _resumeMain();
