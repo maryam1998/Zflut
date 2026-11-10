@@ -26,6 +26,19 @@ final allTopicsProvider = Provider<List<ConversationTopic>>((ref) {
   return ref.watch(conversationRepoProvider).all;
 });
 
+/// 📚 متنِ کاملِ یک موضوع (لود تنبل) — با نامِ موضوع کلید می‌خورد.
+/// با Pro شدن/به‌روزشدنِ محتوا دوباره ساخته می‌شود.
+final conversationTopicProvider =
+    FutureProvider.family<ConversationTopic?, String>((ref, name) async {
+  ref.watch(isProProvider);
+  ref.watch(paidRevisionProvider);
+  await ref.watch(conversationLoaderProvider.future);
+  final repo = ref.watch(conversationRepoProvider);
+  final stub = repo.all.where((t) => t.topic == name).firstOrNull;
+  if (stub == null) return null;
+  return repo.loadTopic(stub);
+});
+
 // ═══════════════════════════════════════════════════════════════════
 // Daily Words
 // ═══════════════════════════════════════════════════════════════════

@@ -33,8 +33,6 @@ class PaidContent {
     'words:daily',
     'words:slang',
     'words:vocab',
-    'conv:daily',
-    'conv:thematic',
   ];
 
   static String _fileName(String key) => '${key.replaceAll(':', '_')}.json';
@@ -53,9 +51,59 @@ class PaidContent {
   static Future<List<dynamic>?> words(String list) =>
       _get('words:$list', '/api/content/words?list=$list', 'words');
 
-  /// موضوع‌های کاملِ مکالمه ('daily' | 'thematic') — null اگر Pro نیستی/در دسترس نیست.
-  static Future<List<dynamic>?> conversations(String kind) => _get(
-      'conv:$kind', '/api/content/conversations?kind=$kind', 'topics');
+  /// 💎 یک موضوعِ کاملِ مکالمه (لود تنبل) — null اگر Pro نیستی/در دسترس نیست.
+  /// کش: <پوشه‌ی اپ>/paid_content/conv/<id>.json (نسخه داخلِ خودِ فایل است).
+  /// اگر کش بود فوراً برمی‌گردد و نسخه در پس‌زمینه چک می‌شود (بازشدنِ بعدی تازه است).
+  static Future<Map<String, dynamic>?> conversationTopic(String id) async {
+    if (!ProStatus.isPro) return null;
+    try {
+      final f = await _convFile(id);
+      String? have;
+      if (await f.exists()) {
+        final m = await compute(_decodeMap, await f.readAsString());
+        have = m['version']?.toString();
+        final t = m['topic'];
+        if (t is Map<String, dynamic>) {
+          unawaited(_refreshTopic(id, have));
+          return t;
+        }
+      }
+      return await _downloadTopic(id, have);
+    } catch (e) {
+      debugPrint('PaidContent.conversationTopic($id): $e');
+      return null;
+    }
+  }
+
+  static Future<File> _convFile(String id) async {
+    final d = Directory('${(await _dir()).path}/conv');
+    if (!await d.exists()) await d.create(recursive: true);
+    return File('${d.path}/$id.json');
+  }
+
+  static Future<Map<String, dynamic>?> _downloadTopic(
+      String id, String? have) async {
+    final r = await _fetch(
+        '/api/content/conversation?id=${Uri.encodeQueryComponent(id)}', have);
+    if (r == null || r['notModified'] == true) return null;
+    final t = r['topic'];
+    if (t is! Map<String, dynamic>) return null;
+    await (await _convFile(id)).writeAsString(r['__raw'] as String, flush: true);
+    return t;
+  }
+
+  /// نسخه‌ی موضوع را چک می‌کند؛ اگر عوض شده بود کش را به‌روز می‌کند و حافظه را خالی می‌کند.
+  static Future<void> _refreshTopic(String id, String? have) async {
+    try {
+      final t = await _downloadTopic(id, have);
+      if (t != null) onTopicUpdated?.call(id);
+    } catch (e) {
+      debugPrint('PaidContent.refreshTopic($id): $e');
+    }
+  }
+
+  /// وقتی موضوعی در کش به‌روز شد (ConversationRepository حافظه‌ی همان موضوع را خالی می‌کند).
+  static void Function(String id)? onTopicUpdated;
 
   static Future<List<dynamic>?> _get(
       String key, String path, String field) async {
@@ -142,6 +190,7 @@ class PaidContent {
     _syncing = true;
     var changed = false;
     try {
+      unawaited(_dropLegacyConvCache());
       final man = await _fetch('/api/content/manifest', null);
       final items = man?['items'];
       if (items is! Map) return;
@@ -169,6 +218,20 @@ class PaidContent {
       _syncing = false;
     }
     if (changed) revision.value++;
+  }
+
+  /// کشِ قدیمیِ «کلِ مکالمه‌ها در یک فایل» (قبل از لود تنبل) را پاک می‌کند.
+  static Future<void> _dropLegacyConvCache() async {
+    try {
+      final d = await _dir();
+      for (final n in ['conv_daily.json', 'conv_thematic.json']) {
+        final f = File('${d.path}/$n');
+        if (await f.exists()) await f.delete();
+      }
+      final p = await SharedPreferences.getInstance();
+      await p.remove('paid_v:conv:daily');
+      await p.remove('paid_v:conv:thematic');
+    } catch (_) {}
   }
 
   /// خروج از حساب / پایانِ Pro: محتوای پولی از گوشی پاک می‌شود.

@@ -9,6 +9,7 @@
 //   GET /api/content/manifest                      → {items:{"words:slang":{version,count}, …}}
 //   GET /api/content/words?list=daily|slang|vocab  → {version, words:[…]}
 //   GET /api/content/conversations?kind=daily|thematic → {version, topics:[…]}
+//   GET /api/content/conversation?id=<شناسه>        → {version, topic:{…}}   (لود تنبل: فقط یک موضوع)
 //   پارامترِ اختیاریِ v=<نسخه‌ی کشِ گوشی>: اگر یکی باشد فقط {notModified:true, version} برمی‌گردد.
 // غیرِ Pro: 403 {code:"pro_required"}
 // ---------------------------------------------------------------------------
@@ -84,6 +85,18 @@ export async function handleContent(request, env, url, cors, session) {
       ).bind(kind).all();
       const body = (results || []).map((r) => r.data).join(",");
       return jsonResp(`{"version":${JSON.stringify(meta.version)},"topics":[${body}]}`, 200, cors);
+    }
+
+    // 💎 لود تنبل: فقط یک موضوعِ مکالمه (فایلِ هر موضوع ~۲ تا ۱۰ کیلوبایت)
+    if (path === "/api/content/conversation") {
+      const id = (url.searchParams.get("id") || "").trim();
+      if (!/^[a-z0-9-]{1,80}$/.test(id)) return jsonResp({ error: "bad id" }, 400, cors);
+      const row = await env.TR_DB.prepare(
+        "SELECT version, data FROM paid_conv_topics WHERE id = ?1"
+      ).bind(id).first();
+      if (!row) return jsonResp({ error: "topic not found", code: "not_found" }, 404, cors);
+      if (have && have === row.version) return jsonResp({ notModified: true, version: row.version }, 200, cors);
+      return jsonResp(`{"version":${JSON.stringify(row.version)},"topic":${row.data}}`, 200, cors);
     }
 
     return jsonResp({ error: "not found" }, 404, cors);

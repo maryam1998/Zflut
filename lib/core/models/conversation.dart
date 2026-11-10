@@ -4,12 +4,13 @@ import 'package:flutter/foundation.dart';
 @immutable
 class ConversationLine {
   final String en;
+  /// ترجمه‌ی از‌پیش‌معلوم (اختیاری). جمله‌های جدید فقط en دارند و سیستمِ ترجمه‌ی اپ ترجمه می‌کند.
   final String fa;
   final String level;
 
   const ConversationLine({
     required this.en,
-    required this.fa,
+    this.fa = '',
     required this.level,
   });
 
@@ -55,16 +56,28 @@ class ConversationScenario {
 
 @immutable
 class ConversationTopic {
+  /// شناسه‌ی ثابتِ موضوع (نامِ فایل / ردیفِ D1) — مثلاً d-greetings-and-small-talk
+  final String id;
+
+  /// 'daily' | 'thematic'
+  final String kind;
   final String topic;
+
+  /// برای موضوعِ «خالی» (فقط نام، لود تنبل) لیستِ خالی است؛ با بازشدنِ موضوع پر می‌شود.
   final List<ConversationScenario> scenarios;
 
   const ConversationTopic({
+    this.id = '',
+    this.kind = '',
     required this.topic,
     required this.scenarios,
   });
 
-  factory ConversationTopic.fromJson(Map<String, dynamic> j) {
+  factory ConversationTopic.fromJson(Map<String, dynamic> j,
+      {String id = '', String kind = ''}) {
     return ConversationTopic(
+      id: id,
+      kind: kind,
       topic: j['topic']?.toString() ?? '',
       scenarios: (j['scenarios'] as List<dynamic>? ?? [])
           .map((e) => ConversationScenario.fromJson(e as Map<String, dynamic>))

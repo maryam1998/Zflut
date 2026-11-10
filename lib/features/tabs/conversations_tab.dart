@@ -126,10 +126,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   /// کاربرِ رایگان: از «ایندکسِ شمارش» (چون متنِ موضوع‌های پولی داخلِ اپ نیست)؛
   /// کاربرِ Pro (یا اگر ایندکس نبود): از خودِ سناریوها.
   bool _topicHasLevel(ConversationTopic t, ConversationsIndex? index) {
-    if (!ProStatus.isPro) {
-      final n = index?.of(t.topic)?.total(_levels);
-      if (n != null) return n > 0;
-    }
+    // 📚 لود تنبل: متنِ موضوع‌ها هنوز لود نشده؛ شمارش از ایندکس می‌آید (برای Pro هم)
+    final n = index?.of(t.topic)?.total(_levels);
+    if (n != null) return n > 0;
     return t.scenarios.any((s) =>
         s.speakerA.any((l) => _lvOk(l.level)) ||
         s.speakerB.any((l) => _lvOk(l.level)));
@@ -230,10 +229,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final c = context.appColors;
     ref.watch(isProProvider); // با عوض شدنِ وضعیتِ Pro قفل‌ها به‌روز شوند
     final topics = ref.watch(allTopicsProvider);
-    // 💎 شمارشِ جمله‌ی هر موضوع به‌تفکیکِ سطح (فقط کاربرِ رایگان لازم دارد)
-    final index = ProStatus.isPro
-        ? null
-        : ref.watch(conversationsIndexProvider).valueOrNull;
+    // 📚 شمارشِ جمله‌ی هر موضوع به‌تفکیکِ سطح (همه لازم دارند: متنِ موضوع‌ها لود تنبل است)
+    final index = ref.watch(conversationsIndexProvider).valueOrNull;
 
     if (topics.isEmpty) {
       final loading = ref.watch(conversationLoaderProvider).isLoading;
@@ -278,9 +275,12 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     }).toList();
 
     if (_activeTopic != null) {
-      final topic = topics.firstWhere((t) => t.topic == _activeTopic,
-          orElse: () => topics.first);
-      return _buildTopicView(context, topic, index);
+      final name = _activeTopic!;
+      // 📚 لود تنبل: متنِ همین یک موضوع الان لود می‌شود (فایلِ کوچک)
+      final loaded = ref.watch(conversationTopicProvider(name));
+      final topic = loaded.valueOrNull;
+      if (topic != null) return _buildTopicView(context, topic, index);
+      return _buildTopicLoading(context, name, loading: loaded.isLoading);
     }
     return _buildTopicsGrid(context, filtered, index);
   }
@@ -407,6 +407,61 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           },
         ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// حالتِ «در حالِ لودِ موضوع» یا «لود نشد» (با تلاشِ دوباره).
+  Widget _buildTopicLoading(BuildContext context, String name,
+      {required bool loading}) {
+    final c = context.appColors;
+    return ListView(
+      children: [
+        const ShellHeader(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: InkWell(
+            onTap: _closeTopic,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.arrow_back, size: 18, color: c.teal),
+                  const SizedBox(width: 6),
+                  Text(context.l10n.dialogs_back_to_topics,
+                      style: TextStyle(
+                          color: c.teal,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(40),
+          child: Center(
+            child: loading
+                ? SizedBox(
+                    width: 26,
+                    height: 26,
+                    child:
+                        CircularProgressIndicator(strokeWidth: 2.4, color: c.gold),
+                  )
+                : Column(
+                    children: [
+                      Text(context.l10n.dialogs_no_results,
+                          style: TextStyle(color: c.inkSoft, fontSize: 15)),
+                      const SizedBox(height: 12),
+                      IconButton(
+                        icon: Icon(Icons.refresh, color: c.teal),
+                        onPressed: () =>
+                            ref.invalidate(conversationTopicProvider(name)),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ],

@@ -25,9 +25,58 @@ const SRC = "paid-content";
 const WORD_LISTS = { daily: "daily_words", slang: "slang_words", vocab: "vocab_in_use_words" };
 const CONV_KINDS = { daily: "daily_conversations", thematic: "thematic_conversations" };
 
+// 🌍 ترجمه‌ی فارسیِ جمله‌ها (fa) در فایل‌ها بماند؟ false = فقط متنِ انگلیسی؛ ترجمه را سیستمِ ترجمه‌ی اپ انجام می‌دهد.
+// جمله‌های جدید همیشه فقط en دارند؛ این گزینه فقط روی جمله‌های قدیمیِ دارای fa اثر می‌گذارد.
+const KEEP_FA = true;
+
 const read = (n) => JSON.parse(fs.readFileSync(path.join(SRC, n + ".json"), "utf8"));
 const hash = (s) => crypto.createHash("sha1").update(s).digest("hex").slice(0, 12);
 const q = (s) => "'" + String(s).replace(/'/g, "''") + "'";
+
+// ─────────── شناسه‌ی هر موضوع (نامِ فایل / ردیفِ D1) ───────────
+// daily: «Greetings and Small Talk» → d-greetings-and-small-talk
+// thematic: «طبیعت (Nature)» → t-nature   (از متنِ داخلِ پرانتز)
+function topicId(kind, topic) {
+  const m = topic.match(/\(([^)]+)\)/);
+  const base = (m ? m[1] : topic)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return (kind === "daily" ? "d-" : "t-") + base;
+}
+
+// نسخه‌ی فایل: بدونِ fa (اگر KEEP_FA=false) و بدونِ فیلدهای خالی
+function cleanTopic(t) {
+  return {
+    ...t,
+    scenarios: (t.scenarios || []).map((s) => ({
+      ...s,
+      speakerA: (s.speakerA || []).map(cleanLine),
+      speakerB: (s.speakerB || []).map(cleanLine),
+    })),
+  };
+}
+function cleanLine(l) {
+  const o = { en: l.en, level: l.level };
+  if (KEEP_FA && l.fa) o.fa = l.fa;
+  return o;
+}
+
+// فهرستِ مرتبِ همه‌ی موضوع‌ها (daily بعد thematic) با شناسه و نسخه‌ی محتوای کامل
+function allTopics() {
+  const out = [];
+  const seen = new Set();
+  for (const [kind, f] of Object.entries(CONV_KINDS)) {
+    read(f).forEach((t, i) => {
+      const id = topicId(kind, t.topic);
+      if (seen.has(id)) throw new Error(`duplicate topic id: ${id} (${t.topic})`);
+      seen.add(id);
+      const full = cleanTopic(t);
+      out.push({ id, kind, idx: i, topic: t.topic, full, ver: hash(JSON.stringify(full)) });
+    });
+  }
+  return out;
+}
 
 function freeConversations(kind, topics) {
   return topics.map((t) => {
@@ -53,7 +102,8 @@ function freeConversations(kind, topics) {
 // در هر سطح چند جمله دارد (و چندتایش قفل است). این فایل فقط «عدد» است، نه خودِ جمله‌ها.
 //   s = تعدادِ سناریوها | t = کلِ جمله‌ها به‌تفکیکِ سطح (A1..C2) | f = جمله‌های رایگان به‌تفکیکِ سطح
 function buildConvIndex() {
-  const out = { v: 1, freeLevel: FREE_LEVEL, freeTopics: FREE_TOPICS, topics: {} };
+  const out = { v: 2, freeLevel: FREE_LEVEL, freeTopics: FREE_TOPICS, list: [], topics: {} };
+  for (const t of allTopics()) out.list.push({ id: t.id, kind: t.kind, topic: t.topic, ver: t.ver });
   for (const [kind, f] of Object.entries(CONV_KINDS)) {
     for (const t of read(f)) {
       const e = { s: t.scenarios.length, t: [0, 0, 0, 0, 0, 0], f: [0, 0, 0, 0, 0, 0] };
@@ -240,11 +290,19 @@ if (args.includes("--assets")) {
     );
   }
   fs.writeFileSync("assets/data/words_index.json", JSON.stringify(buildIndex(prepared)));
-  for (const [kind, f] of Object.entries(CONV_KINDS)) {
-    fs.writeFileSync(`assets/data/${f}.json`, JSON.stringify(freeConversations(kind, read(f))));
+  // 💎 مکالمه‌ها: هر موضوع یک فایل. فقط موضوع‌های رایگان (و فقط جمله‌های A1) داخلِ اپ می‌آیند.
+  // بقیه فقط در D1 هستند و موقعِ بازکردنِ موضوع دانلود می‌شوند (لود تنبل).
+  const convDir = "assets/data/conversations";
+  fs.rmSync(convDir, { recursive: true, force: true });
+  fs.mkdirSync(convDir, { recursive: true });
+  for (const f of Object.values(CONV_KINDS)) fs.rmSync(`assets/data/${f}.json`, { force: true });
+  for (const t of allTopics()) {
+    if (t.kind !== "daily" || !FREE_TOPICS.includes(t.topic)) continue;
+    const [free] = freeConversations("daily", [t.full]);
+    fs.writeFileSync(path.join(convDir, `${t.id}.json`), JSON.stringify(free));
   }
   fs.writeFileSync("assets/data/conversations_index.json", JSON.stringify(buildConvIndex()));
-  console.log("assets/data: free versions + words_index.json + conversations_index.json written");
+  console.log("assets/data: free words + conversations/<id>.json (free topics) + indexes written");
 }
 
 const si = args.indexOf("--sql");
@@ -256,9 +314,11 @@ if (si >= 0) {
   const stmts = [
     "CREATE TABLE IF NOT EXISTS paid_words (list TEXT NOT NULL, chunk INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (list, chunk))",
     "CREATE TABLE IF NOT EXISTS paid_conversations (kind TEXT NOT NULL, idx INTEGER NOT NULL, topic TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY (kind, idx))",
+    "CREATE TABLE IF NOT EXISTS paid_conv_topics (id TEXT PRIMARY KEY, kind TEXT NOT NULL, idx INTEGER NOT NULL, topic TEXT NOT NULL, version TEXT NOT NULL, data TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS content_meta (key TEXT PRIMARY KEY, version TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0)",
     "DELETE FROM paid_words",
     "DELETE FROM paid_conversations",
+    "DELETE FROM paid_conv_topics",
     "DELETE FROM content_meta",
   ];
 
@@ -280,7 +340,14 @@ if (si >= 0) {
     stmts.push(`INSERT INTO content_meta (key, version, count) VALUES (${q("words:" + list)}, ${q(hash(JSON.stringify(paid)))}, ${paid.length})`);
   }
 
-  // مکالمه‌ها: کلِ هر موضوع (همه‌ی سطح‌ها) — برای Pro جایگزینِ نسخه‌ی رایگان می‌شود
+  // مکالمه‌ها (لود تنبل): یک ردیف برای هر موضوعِ کامل، با نسخه‌ی خودش. اپ فقط موضوعِ بازشده را می‌گیرد.
+  for (const t of allTopics()) {
+    const s = JSON.stringify(t.full);
+    if (Buffer.byteLength(s, "utf8") > 90000) throw new Error(`topic too large for one D1 statement: ${t.topic}`);
+    stmts.push(`INSERT INTO paid_conv_topics (id, kind, idx, topic, version, data) VALUES (${q(t.id)}, ${q(t.kind)}, ${t.idx}, ${q(t.topic)}, ${q(t.ver)}, ${q(s)})`);
+  }
+
+  // ⚠️ مسیرِ قدیمی (نسخه‌های قدیمیِ اپ): کلِ لیست در یک پاسخ — برای سازگاری نگه داشته شده
   for (const [kind, f] of Object.entries(CONV_KINDS)) {
     const topics = read(f);
     topics.forEach((t, i) => {
