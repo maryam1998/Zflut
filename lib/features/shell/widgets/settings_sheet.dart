@@ -25,6 +25,7 @@ import '../../../core/widgets/color_palette_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../tabs/_hope_panel.dart' show uiContentDirection;
 import 'credits_page.dart';
+import 'feature_dock.dart' show FeatureDockToggleRow;
 import 'help_center.dart';
 import 'settings_packs.dart';
 
@@ -1728,6 +1729,8 @@ class _FloatingBubbleSectionState
                     child: Text(L.settings_live_audio_description, style: note),
                   ),
                 ],
+                // داکِ ابزارها (لبه‌ی راست): نمایش/پنهان
+                const FeatureDockToggleRow(),
               ],
             ),
     );

@@ -23,6 +23,7 @@ import '../../../core/providers/linlearn_provider.dart';
 import '../../../core/providers/native_sync_provider.dart';
 import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../../core/theme/app_theme_colors.dart';
+import 'settings_packs.dart' show kDedicatedPackLangs, kLatinPackLangs;
 
 const String _kSeenKey = 'zflut-feature-dock-seen-v1';
 
@@ -31,7 +32,26 @@ const String _kScreenInfoKey = 'phrasebook-screenrec-info-seen';
 const String _kColorKey = 'phrasebook-bubble-panel-color';
 const String _kDispKey = 'phrasebook-live-display-mode';
 
+const String _kSrcKey = 'phrasebook-live-src-lang';
+const String _kAutoKey = 'phrasebook-live-src-auto';
+const String _kSpeechProviderKey = 'phrasebook-speech-provider';
+
+const Map<String, String> _srcNames = {
+  'en': 'English', 'de': 'Deutsch', 'fr': 'Français', 'es': 'Español',
+  'it': 'Italiano', 'tr': 'Türkçe', 'ar': 'العربية', 'ru': 'Русский',
+  'ja': '日本語', 'ko': '한국어', 'zh': '中文', 'hi': 'हिन्दी',
+  'pt': 'Português', 'nl': 'Nederlands', 'ur': 'اردو', 'fa': 'فارسی',
+};
+
 const Map<String, Map<String, String>> _tx = {
+  'show': {
+    'fa': 'نمایش داکِ ابزارها (ذره‌بین، ترجمه‌ی زنده، یوتیوب) در لبه‌ی راست',
+    'en': 'Show the tools dock (magnifier, live translation, YouTube) on the right edge',
+    'es': 'Mostrar el dock de herramientas en el borde derecho',
+    'de': 'Tool-Dock (Lupe, Live-Übersetzung, YouTube) am rechten Rand anzeigen',
+    'fr': 'Afficher le dock d’outils (loupe, traduction, YouTube) sur le bord droit',
+    'ar': 'إظهار شريط الأدوات (المكبّرة، الترجمة الفورية، يوتيوب) على الحافة اليمنى',
+  },
   'title': {
     'fa': 'ابزارهای هوشمندت آماده‌اند',
     'en': 'Your smart tools are ready',
@@ -101,6 +121,12 @@ const Map<String, Map<String, String>> _tx = {
 class FeatureDock extends ConsumerStatefulWidget {
   const FeatureDock({super.key});
 
+  /// کلیدِ ذخیره‌ی «پنهان‌کردنِ داک» (از تنظیمات).
+  static const String hiddenKey = 'zflut-feature-dock-hidden';
+
+  /// true = کاربر داک را از تنظیمات پنهان کرده. تنظیمات و داک هر دو همین را می‌خوانند.
+  static final ValueNotifier<bool> hidden = ValueNotifier<bool>(false);
+
   @override
   ConsumerState<FeatureDock> createState() => _FeatureDockState();
 }
@@ -140,6 +166,11 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
       seen = ref.read(sharedPrefsProvider).getBool(_kSeenKey) ?? false;
     } catch (_) {}
     _first = !seen;
+    try {
+      FeatureDock.hidden.value =
+          ref.read(sharedPrefsProvider).getBool(FeatureDock.hiddenKey) ?? false;
+    } catch (_) {}
+    FeatureDock.hidden.addListener(_onHidden);
     // کمی بعد از بالا آمدنِ صفحه، تا ورودِ اسلایدی کاملاً دیده شود
     Future<void>.delayed(const Duration(milliseconds: 1200), () {
       if (!mounted) return;
@@ -158,9 +189,16 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
     _poll = Timer.periodic(const Duration(seconds: 4), (_) => _refresh());
   }
 
+  void _onHidden() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
-    if (_supported) WidgetsBinding.instance.removeObserver(this);
+    if (_supported) {
+      WidgetsBinding.instance.removeObserver(this);
+      FeatureDock.hidden.removeListener(_onHidden);
+    }
     _poll?.cancel();
     _collapseTimer?.cancel();
     _in.dispose();
@@ -309,6 +347,86 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
     return false;
   }
 
+  /// مثل تنظیمات: اگر بسته‌ی آفلاینِ «زبان صدا» دانلود نشده، یک‌بار می‌پرسد و دانلود را شروع می‌کند.
+  /// true = می‌شود ادامه داد؛ false = اول باید بسته دانلود شود.
+  Future<bool> _ensureSpeechPack() async {
+    final sp = ref.read(sharedPrefsProvider);
+    final auto = sp.getBool(_kAutoKey) == true;
+    var src = sp.getString(_kSrcKey);
+    if (src == null || !_srcNames.containsKey(src)) src = 'en';
+    // موتورِ Google انتخاب شده: بسته‌ی آفلاین شرطِ شروع نیست
+    if (sp.getString(_kSpeechProviderKey) == 'google' && !auto) return true;
+    String? packKind;
+    if (!auto && kDedicatedPackLangs.contains(src)) {
+      packKind = 'speech';
+    } else if (!auto &&
+        kLatinPackLangs.contains(src) &&
+        await LinLearnBridge.latinAsrEngine() == 'vosk') {
+      packKind = 'vosk';
+    }
+    if (packKind == null) {
+      return _ensureAutoPack(auto ? null : _srcNames[src]);
+    }
+    final pack = await LinLearnBridge.packStatus(packKind, src);
+    if (pack == null || pack['downloaded'] == true) return true;
+    if (!mounted) return false;
+    if (pack['downloading'] == true) {
+      _toast(context.l10n.st_pack_wait);
+      return false;
+    }
+    if (await _askPack(_srcNames[src]!)) {
+      await LinLearnBridge.packDownload(packKind, src);
+      _toast(context.l10n.st_live_download_started);
+    }
+    return false;
+  }
+
+  /// حالتِ «خودکار» / زبان‌های بدونِ بسته‌ی اختصاصی: اگر هیچ مدلِ چندزبانه نیست «base» را دانلود می‌کند.
+  Future<bool> _ensureAutoPack(String? langName) async {
+    Map<String, dynamic>? baseSt;
+    for (final id in const ['base', 'small', 'tiny']) {
+      final st = await LinLearnBridge.packStatus('song', id);
+      if (st == null) return true; // پشتیبانی نمی‌شود/خطا: مانعِ شروع نشو
+      if (st['downloaded'] == true) return true;
+      if (id == 'base') baseSt = st;
+      if (st['downloading'] == true) {
+        if (mounted) _toast(context.l10n.st_pack_wait);
+        return false;
+      }
+    }
+    if (baseSt == null || !mounted) return false;
+    final name =
+        langName ?? context.l10n.settings_lang_auto.replaceFirst('🌐 ', '');
+    if (await _askPack(name)) {
+      await LinLearnBridge.packDownload('song', 'base');
+      _toast(context.l10n.st_live_download_started);
+    }
+    return false;
+  }
+
+  Future<bool> _askPack(String langName) async {
+    if (!mounted) return false;
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: _rtl ? TextDirection.rtl : TextDirection.ltr,
+        child: AlertDialog(
+          title: Text(context.l10n.st_speech_pack_title),
+          content: Text(context.l10n.st_speech_pack_body(langName)),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(context.l10n.st_no)),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(context.l10n.settings_download)),
+          ],
+        ),
+      ),
+    );
+    return yes == true;
+  }
+
   /// زبان‌ها + رنگ/حالتِ نمایشِ ذخیره‌شده‌ی کاربر را به حباب می‌رساند.
   Future<void> _prepare() async {
     try {
@@ -366,6 +484,8 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
         }
         if (!await _ensureOverlay()) return;
         if (!await _ensureScreenInfo()) return;
+        // ترجمه‌ی زنده آفلاین کار می‌کند: بسته‌ی زبانِ صدا باید روی گوشی باشد
+        if (!await _ensureSpeechPack()) return;
         await _prepare();
         await ref.read(bubbleProvider.notifier).start(mode: 'translator');
       });
@@ -392,8 +512,12 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
         _markSeen();
         if (!await _ensureOverlay()) return;
         if (!await _ensureScreenInfo()) return;
+        // اگر بسته‌ی صدا هنوز نیست: ذره‌بین و یوتیوب روشن می‌شوند، ترجمه‌ی زنده بعد از دانلود
+        final packOk = await _ensureSpeechPack();
         await _prepare();
-        await ref.read(bubbleProvider.notifier).start(mode: 'both');
+        await ref
+            .read(bubbleProvider.notifier)
+            .start(mode: packOk ? 'both' : 'magnifier');
         if (await _ensureNotif()) {
           await LinLearnBridge.ytSetEnabled(true);
         }
@@ -406,7 +530,9 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
   // ───────────────────────── ظاهر ─────────────────────────
   @override
   Widget build(BuildContext context) {
-    if (!_supported || !_ready) return const SizedBox.shrink();
+    if (!_supported || !_ready || FeatureDock.hidden.value) {
+      return const SizedBox.shrink();
+    }
     ref.listen<bool>(
         bubbleProvider.select((s) => s.running), (_, __) => _refresh());
     final c = context.appColors;
@@ -653,6 +779,66 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
                   ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+/// ردیفِ تیک در تنظیمات: نمایش/پنهان‌کردنِ داکِ ابزارها (لبه‌ی راست).
+class FeatureDockToggleRow extends ConsumerWidget {
+  const FeatureDockToggleRow({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!NativeBridge.instance.isSupported) return const SizedBox.shrink();
+    final c = context.appColors;
+    final lang = ref.watch(appPrefsProvider).uiLang;
+    final label = _tx['show']![lang] ?? _tx['show']!['en']!;
+    return ValueListenableBuilder<bool>(
+      valueListenable: FeatureDock.hidden,
+      builder: (_, hidden, __) => InkWell(
+        onTap: () {
+          final v = !hidden;
+          FeatureDock.hidden.value = v;
+          try {
+            ref.read(sharedPrefsProvider).setBool(FeatureDock.hiddenKey, v);
+          } catch (_) {}
+        },
+        child: Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 10),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Checkbox(
+                  value: !hidden,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  activeColor: c.gold,
+                  onChanged: (_) {
+                    final v = !hidden;
+                    FeatureDock.hidden.value = v;
+                    try {
+                      ref
+                          .read(sharedPrefsProvider)
+                          .setBool(FeatureDock.hiddenKey, v);
+                    } catch (_) {}
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(label,
+                    style: TextStyle(
+                        color: c.inkSoft,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700)),
+              ),
+            ],
           ),
         ),
       ),
