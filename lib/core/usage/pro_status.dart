@@ -11,6 +11,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// ⚠️ باید با FREE_PER_GROUP در scripts/build-paid-content.mjs یکی باشد.
 const int kFreeWordsPerGroup = 10;
 
+/// «دیکشنری من»: در کلِ تب (همه‌ی موضوع‌ها و سطح‌ها روی هم) فقط این‌قدر لغت برای کاربرِ رایگان باز است؛
+/// بقیه قفل‌اند و فقط شمارشان نشان داده می‌شود. لغاتِ باز از بینِ موضوع‌ها پخش می‌شوند
+/// (و ساده‌ترها ــ A1 ــ اول)، تا کاربر هر موضوع را کمی بچشد.
+const int kFreeDictionaryWords = 20;
+
 /// (قدیمی — دیگر استفاده نمی‌شود؛ جایش kFreeWordsPerGroup است)
 const int kFreeWordCount = 30;
 

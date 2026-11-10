@@ -32,6 +32,9 @@ class ProI18n {
     'conv_cta': 'Unlock all conversations with Pro',
     'conv_card_title': '{n} more lines locked',
     'conv_cta_levels': 'Unlock every level with Pro',
+    'dict_banner_title': '{free} of {total} words free',
+    'dict_banner_sub': 'Unlock {locked} more words — every topic, every level',
+    'dict_banner_cta': 'Go Pro',
   };
 
   static const Map<String, String> _fa = {
@@ -55,6 +58,9 @@ class ProI18n {
     'conv_cta': 'باز کردنِ همه‌ی مکالمه‌ها با Pro',
     'conv_card_title': '{n} جمله‌ی دیگر قفل است',
     'conv_cta_levels': 'باز کردنِ همه‌ی سطح‌ها با Pro',
+    'dict_banner_title': '{free} از {total} لغت رایگان است',
+    'dict_banner_sub': 'با Pro، {locked} لغتِ دیگر را در همه‌ی موضوع‌ها و سطح‌ها باز کنید',
+    'dict_banner_cta': 'ارتقا به Pro',
   };
 
   static const Map<String, String> _ar = {
@@ -78,6 +84,9 @@ class ProI18n {
     'conv_cta': 'افتح جميع المحادثات مع Pro',
     'conv_card_title': '{n} جملة أخرى مقفلة',
     'conv_cta_levels': 'افتح كل المستويات مع Pro',
+    'dict_banner_title': '{free} من {total} كلمة مجانية',
+    'dict_banner_sub': 'افتح {locked} كلمة أخرى — كل المواضيع وكل المستويات',
+    'dict_banner_cta': 'احصل على Pro',
   };
 
   static const Map<String, String> _de = {
@@ -101,6 +110,9 @@ class ProI18n {
     'conv_cta': 'Alle Gespräche mit Pro freischalten',
     'conv_card_title': '{n} weitere Sätze gesperrt',
     'conv_cta_levels': 'Alle Niveaus mit Pro freischalten',
+    'dict_banner_title': '{free} von {total} Wörtern kostenlos',
+    'dict_banner_sub': 'Schalte {locked} weitere Wörter frei – alle Themen, alle Niveaus',
+    'dict_banner_cta': 'Pro holen',
   };
 
   static const Map<String, String> _es = {
@@ -125,6 +137,9 @@ class ProI18n {
     'conv_cta': 'Desbloquea todas las conversaciones con Pro',
     'conv_card_title': '{n} frases más bloqueadas',
     'conv_cta_levels': 'Desbloquea todos los niveles con Pro',
+    'dict_banner_title': '{free} de {total} palabras gratis',
+    'dict_banner_sub': 'Desbloquea {locked} palabras más: todos los temas y niveles',
+    'dict_banner_cta': 'Hazte Pro',
   };
 
   static const Map<String, String> _fr = {
@@ -149,6 +164,9 @@ class ProI18n {
     'conv_cta': 'Débloquez toutes les conversations avec Pro',
     'conv_card_title': '{n} phrases de plus verrouillées',
     'conv_cta_levels': 'Débloquez tous les niveaux avec Pro',
+    'dict_banner_title': '{free} mots sur {total} gratuits',
+    'dict_banner_sub': 'Débloquez {locked} mots de plus : tous les thèmes et niveaux',
+    'dict_banner_cta': 'Passer à Pro',
   };
 
   static const Map<String, Map<String, String>> _all = {
