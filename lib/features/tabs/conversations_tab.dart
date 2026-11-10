@@ -1,4 +1,7 @@
 import '../../core/usage/free_limit.dart';
+import '../../core/usage/conversations_index.dart';
+import '../../core/widgets/locked_conversation_card.dart';
+import '../../core/constants/level_colors.dart';
 import '../../core/usage/pro_status.dart';
 import 'dart:async';
 import 'dart:math' as math;
@@ -108,6 +111,37 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final s = _effLevels;
     return s.isEmpty || s.contains(l);
   }
+
+  /// 🔒 آیا این موضوع، با فیلترِ سطحِ فعلی، برای کاربرِ رایگان قفل است؟
+  /// موضوعِ پولی همیشه قفل است؛ موضوعِ رایگان هم وقتی فیلتر فقط سطح‌های پولی
+  /// (B1, B2, …) را می‌خواهد، چون جمله‌های رایگانش فقط A1 است.
+  bool _lockedFor(String topic) {
+    if (ProStatus.isPro) return false;
+    if (ProStatus.topicLocked(topic)) return true;
+    return _levels.isNotEmpty && !_levels.contains(kFreeConversationLevel);
+  }
+
+  /// آیا موضوع در سطح‌های انتخاب‌شده جمله دارد؟
+  /// کاربرِ رایگان: از «ایندکسِ شمارش» (چون متنِ موضوع‌های پولی داخلِ اپ نیست)؛
+  /// کاربرِ Pro (یا اگر ایندکس نبود): از خودِ سناریوها.
+  bool _topicHasLevel(ConversationTopic t, ConversationsIndex? index) {
+    if (!ProStatus.isPro) {
+      final n = index?.of(t.topic)?.total(_levels);
+      if (n != null) return n > 0;
+    }
+    return t.scenarios.any((s) =>
+        s.speakerA.any((l) => _lvOk(l.level)) ||
+        s.speakerB.any((l) => _lvOk(l.level)));
+  }
+
+  int _countLines(ConversationTopic t) {
+    var n = 0;
+    for (final s in t.scenarios) {
+      n += s.speakerA.where((l) => _lvOk(l.level)).length;
+      n += s.speakerB.where((l) => _lvOk(l.level)).length;
+    }
+    return n;
+  }
   int _rangeFrom = 1;
   int _rangeTo = 60;
 
@@ -157,7 +191,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 
   void _openTopic(String topic) {
     // 💎 موضوعِ پولی: به‌جای باز شدن، پیامِ «مخصوص Pro»
-    if (ProStatus.topicLocked(topic)) {
+    if (_lockedFor(topic)) {
       FreeLimit.reportLocked();
       return;
     }
@@ -195,6 +229,10 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final c = context.appColors;
     ref.watch(isProProvider); // با عوض شدنِ وضعیتِ Pro قفل‌ها به‌روز شوند
     final topics = ref.watch(allTopicsProvider);
+    // 💎 شمارشِ جمله‌ی هر موضوع به‌تفکیکِ سطح (فقط کاربرِ رایگان لازم دارد)
+    final index = ProStatus.isPro
+        ? null
+        : ref.watch(conversationsIndexProvider).valueOrNull;
 
     if (topics.isEmpty) {
       final loading = ref.watch(conversationLoaderProvider).isLoading;
@@ -221,10 +259,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 
     final filtered = topics.where((t) {
       // فیلتر سطح: موضوعی که دست‌کم یک جمله‌ی هم‌سطح دارد
-      if (_levels.isNotEmpty &&
-          !t.scenarios.any((s) =>
-              s.speakerA.any((l) => _lvOk(l.level)) ||
-              s.speakerB.any((l) => _lvOk(l.level)))) {
+      if (_levels.isNotEmpty && !_topicHasLevel(t, index)) {
         return false;
       }
       if (_query.trim().isEmpty) return true;
@@ -244,9 +279,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     if (_activeTopic != null) {
       final topic = topics.firstWhere((t) => t.topic == _activeTopic,
           orElse: () => topics.first);
-      return _buildTopicView(context, topic);
+      return _buildTopicView(context, topic, index);
     }
-    return _buildTopicsGrid(context, filtered);
+    return _buildTopicsGrid(context, filtered, index);
   }
 
   /// ردیف فیلتر سطح (A1–C2) بالای لیست موضوع‌ها.
@@ -262,8 +297,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         ),
       );
 
-  Widget _buildTopicsGrid(
-      BuildContext context, List<ConversationTopic> topics) {
+  Widget _buildTopicsGrid(BuildContext context, List<ConversationTopic> topics,
+      ConversationsIndex? index) {
     final c = context.appColors;
     final total = topics.length;
 
@@ -291,6 +326,12 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final topicReadN = ref.read(readIdsProvider('conv-topics').notifier);
     final readInRange = visible.where((t) => topicRead.contains(t.topic)).length;
     final readTotal = topics.where((t) => topicRead.contains(t.topic)).length;
+    final isPro = ProStatus.isPro;
+    // 🔒 خلاصه‌ی قفل‌ها برای بنر (فقط کاربرِ رایگان)
+    final lockSum = (isPro || index == null)
+        ? null
+        : index.summary(visible.map((t) => t.topic), _levels,
+            isLocked: _lockedFor);
 
     return ListView(
       controller: _gridScroll,
@@ -322,6 +363,15 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
               topicReadN.setMany(visible.map((t) => t.topic), false),
         ),
         const SizedBox(height: 14),
+        if (lockSum != null && lockSum.locked > 0) ...[
+          LockedConversationsBanner(
+            lockedTopics: lockSum.lockedTopics,
+            locked: lockSum.locked,
+            total: lockSum.total,
+            byLevel: lockSum.byLevel,
+          ),
+          const SizedBox(height: 14),
+        ],
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -329,39 +379,29 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             crossAxisCount: 3,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
-            childAspectRatio: 0.74,
+            childAspectRatio: 0.62,
           ),
           itemCount: visible.length,
           itemBuilder: (_, i) {
             final topic = visible[i];
             final visual = visualForTopic(topic.topic);
-            final card = _TopicCard(
+            final e = index?.of(topic.topic);
+            final locked = _lockedFor(topic.topic);
+            return _TopicCard(
               topic: topic,
               visual: visual,
               badgeColor: kTopicBadgeColors[i % kTopicBadgeColors.length],
-              isRead: topicRead.contains(topic.topic),
+              isRead: !locked && topicRead.contains(topic.topic),
+              mode: locked
+                  ? _CardMode.locked
+                  : (isPro ? _CardMode.open : _CardMode.free),
+              lineCount: e != null
+                  ? e.total(_levels)
+                  : (isPro ? _countLines(topic) : null),
+              freeCount: e?.free(_levels) ?? 0,
+              levels: e != null ? e.levels : conversationLevels(topic),
               onTap: () => _openTopic(topic.topic),
               onToggleRead: () => topicReadN.toggle(topic.topic),
-            );
-            if (!ProStatus.topicLocked(topic.topic)) return card;
-            // 🔒 موضوعِ مخصوصِ Pro
-            return Stack(
-              children: [
-                Opacity(opacity: 0.6, child: card),
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: IgnorePointer(
-                    child: Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: const BoxDecoration(
-                          color: Colors.black54, shape: BoxShape.circle),
-                      child: const Icon(Icons.lock,
-                          size: 14, color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
             );
           },
         ),
@@ -372,8 +412,14 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     );
   }
 
-  Widget _buildTopicView(BuildContext context, ConversationTopic topic) {
+  Widget _buildTopicView(BuildContext context, ConversationTopic topic,
+      ConversationsIndex? index) {
     final c = context.appColors;
+    // 🔒 جمله‌های قفل‌شده‌ی این موضوعِ رایگان (غیر از A1) — برای کارتِ انتهای صفحه
+    final topicCounts = (ProStatus.isPro || index == null)
+        ? null
+        : index.of(topic.topic);
+    final lockedHere = topicCounts?.locked(_levels) ?? 0;
     final visual = visualForTopic(topic.topic);
     final scenarioRead = ref.watch(readIdsProvider('conv-scenarios'));
     final scenarioReadN = ref.read(readIdsProvider('conv-scenarios').notifier);
@@ -470,6 +516,21 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             onToggleRead: () => scenarioReadN.toggle(readKey),
           );
         }),
+        if (topicCounts != null && lockedHere > 0) ...[
+          const SizedBox(height: 4),
+          LockedConversationCard(
+            locked: lockedHere,
+            total: topicCounts.total(_levels),
+            byLevel: {
+              for (final lv in topicCounts.levels)
+                if ((_levels.isEmpty || _levels.contains(lv)) &&
+                    topicCounts.lockedAt(lv) > 0)
+                  lv: topicCounts.lockedAt(lv),
+            },
+            scopeLabel: topicTitle(
+                topic.topic, Localizations.localeOf(context).languageCode),
+          ),
+        ],
             ],
           ),
         ),
@@ -483,11 +544,25 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 // ═══════════════════════════════════════════════════════════════════
 // کارت موضوع
 // ═══════════════════════════════════════════════════════════════════
+
+/// open = Pro (همه‌چیز باز) · free = موضوعِ رایگان (فقط A1 باز) · locked = قفل
+enum _CardMode { open, free, locked }
+
 class _TopicCard extends StatelessWidget {
   final ConversationTopic topic;
   final TopicVisual visual;
   final Color badgeColor;
   final bool isRead;
+  final _CardMode mode;
+
+  /// تعدادِ جمله‌ها (با فیلترِ سطحِ فعلی)؛ null = نشان داده نشود
+  final int? lineCount;
+
+  /// تعدادِ جمله‌های رایگان (فقط برای mode == free)
+  final int freeCount;
+
+  /// سطح‌هایی که موضوع دارد (نقطه‌های رنگیِ زیرِ آیکون)
+  final List<String> levels;
   final VoidCallback onTap, onToggleRead;
 
   const _TopicCard({
@@ -495,13 +570,81 @@ class _TopicCard extends StatelessWidget {
     required this.visual,
     required this.badgeColor,
     required this.isRead,
+    required this.mode,
+    required this.lineCount,
+    required this.freeCount,
+    required this.levels,
     required this.onTap,
     required this.onToggleRead,
   });
 
+  static Widget _pill(
+      AppThemeColorsExt c, Color color, IconData icon, String text) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Container(
+        height: 20,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.16),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withOpacity(0.55)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 10, color: color),
+            const SizedBox(width: 4),
+            Text(text,
+                style: TextStyle(
+                    color: c.ink, fontSize: 11, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    final locked = mode == _CardMode.locked;
+
+    // فوترِ کارت: تعدادِ جمله‌ها
+    Widget? footer;
+    final n = lineCount;
+    if (n != null && n > 0) {
+      final unit = fa ? 'جمله' : 'lines';
+      if (locked) {
+        footer = _pill(c, c.gold, Icons.lock, '$n $unit');
+      } else if (mode == _CardMode.free) {
+        footer = _pill(c, c.teal, Icons.lock_open,
+            fa ? '$freeCount از $n' : '$freeCount of $n');
+      } else {
+        footer = Text('$n $unit',
+            style: TextStyle(
+                color: c.inkSoft, fontSize: 11, fontWeight: FontWeight.w600));
+      }
+    }
+
+    final BoxDecoration deco = locked
+        ? BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [c.goldSoft.withOpacity(0.55), c.surface],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: c.gold.withOpacity(0.55), width: 1.1),
+          )
+        : BoxDecoration(
+            color: isRead ? c.surfaceRead : c.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isRead ? const Color(0xFFE3D2A2) : c.cardBorder,
+              width: 1,
+            ),
+          );
 
     return GestureDetector(
       onTap: onTap,
@@ -509,38 +652,52 @@ class _TopicCard extends StatelessWidget {
         children: [
           Positioned.fill(
             child: Container(
-              padding: const EdgeInsets.fromLTRB(6, 22, 6, 8),
-              decoration: BoxDecoration(
-                color: isRead ? c.surfaceRead : c.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color:
-                      isRead ? const Color(0xFFE3D2A2) : c.cardBorder,
-                  width: 1,
-                ),
-              ),
+              padding: const EdgeInsets.fromLTRB(6, 16, 6, 8),
+              decoration: deco,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 54,
-                    height: 54,
+                    width: 46,
+                    height: 46,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isRead
-                          ? c.surface.withOpacity(0.7)
-                          : badgeBgColor(visual.color),
+                      color: locked
+                          ? c.gold.withOpacity(0.14)
+                          : (isRead
+                              ? c.surface.withOpacity(0.7)
+                              : badgeBgColor(visual.color)),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
                       visual.icon,
-                      size: 27,
-                      color: isRead
-                          ? const Color(0xFF2E7D6C)
-                          : visual.color,
+                      size: 24,
+                      color: locked
+                          ? visual.color.withOpacity(0.8)
+                          : (isRead
+                              ? const Color(0xFF2E7D6C)
+                              : visual.color),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 5),
+                  SizedBox(
+                    height: 5,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (final lv in levels)
+                          Container(
+                            width: 5,
+                            height: 5,
+                            margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: levelColor(lv),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 5),
                   Expanded(
                     child: Align(
                       alignment: Alignment.topCenter,
@@ -552,13 +709,17 @@ class _TopicCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: c.ink,
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          height: 1.3,
+                          height: 1.22,
                         ),
                       ),
                     ),
                   ),
+                  if (footer != null) ...[
+                    const SizedBox(height: 4),
+                    SizedBox(height: 20, child: Center(child: footer)),
+                  ],
                 ],
               ),
             ),
@@ -566,30 +727,47 @@ class _TopicCard extends StatelessWidget {
           Positioned(
             top: 4,
             right: 4,
-            child: GestureDetector(
-              onTap: onToggleRead,
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isRead
-                      ? const Color(0xFF3F9B72)
-                      : Colors.white,
-                  border: Border.all(
-                    color: isRead
-                        ? const Color(0xFF276E4F)
-                        : const Color(0xFFC8BE95),
-                    width: 1.5,
+            child: locked
+                ? Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: c.gold,
+                      boxShadow: [
+                        BoxShadow(
+                          color: c.gold.withOpacity(0.35),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child:
+                        const Icon(Icons.lock, size: 12, color: Colors.white),
+                  )
+                : GestureDetector(
+                    onTap: onToggleRead,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isRead ? const Color(0xFF3F9B72) : Colors.white,
+                        border: Border.all(
+                          color: isRead
+                              ? const Color(0xFF276E4F)
+                              : const Color(0xFFC8BE95),
+                          width: 1.5,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: isRead
+                          ? const Icon(Icons.check,
+                              size: 11, color: Colors.white)
+                          : null,
+                    ),
                   ),
-                ),
-                alignment: Alignment.center,
-                child: isRead
-                    ? const Icon(Icons.check,
-                        size: 11, color: Colors.white)
-                    : null,
-              ),
-            ),
           ),
         ],
       ),

@@ -48,6 +48,31 @@ function freeConversations(kind, topics) {
 }
 
 
+// ایندکسِ «شمارشِ» مکالمه‌ها (assets/data/conversations_index.json):
+// نسخه‌ی رایگانِ اپ فقط نامِ موضوع‌های پولی را دارد، ولی کاربرِ رایگان باید ببیند هر موضوع
+// در هر سطح چند جمله دارد (و چندتایش قفل است). این فایل فقط «عدد» است، نه خودِ جمله‌ها.
+//   s = تعدادِ سناریوها | t = کلِ جمله‌ها به‌تفکیکِ سطح (A1..C2) | f = جمله‌های رایگان به‌تفکیکِ سطح
+function buildConvIndex() {
+  const out = { v: 1, freeLevel: FREE_LEVEL, freeTopics: FREE_TOPICS, topics: {} };
+  for (const [kind, f] of Object.entries(CONV_KINDS)) {
+    for (const t of read(f)) {
+      const e = { s: t.scenarios.length, t: [0, 0, 0, 0, 0, 0], f: [0, 0, 0, 0, 0, 0] };
+      const free = kind === "daily" && FREE_TOPICS.includes(t.topic);
+      for (const s of t.scenarios) {
+        for (const l of [...(s.speakerA || []), ...(s.speakerB || [])]) {
+          const i = LEVELS.indexOf(l.level);
+          if (i < 0) continue;
+          e.t[i]++;
+          if (free && l.level === FREE_LEVEL) e.f[i]++;
+        }
+      }
+      out.topics[t.topic] = e;
+    }
+  }
+  return out;
+}
+
+
 // ─────────── دسته‌بندیِ لغات (باید با اپ یکی باشد) ───────────
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -218,7 +243,8 @@ if (args.includes("--assets")) {
   for (const [kind, f] of Object.entries(CONV_KINDS)) {
     fs.writeFileSync(`assets/data/${f}.json`, JSON.stringify(freeConversations(kind, read(f))));
   }
-  console.log("assets/data: free versions + words_index.json written");
+  fs.writeFileSync("assets/data/conversations_index.json", JSON.stringify(buildConvIndex()));
+  console.log("assets/data: free versions + words_index.json + conversations_index.json written");
 }
 
 const si = args.indexOf("--sql");
