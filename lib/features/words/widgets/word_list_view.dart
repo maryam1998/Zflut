@@ -1,4 +1,3 @@
-import '../../../core/usage/free_limit.dart';
 import '../../../core/usage/pro_status.dart';
 import 'dart:math' as math;
 
@@ -16,6 +15,7 @@ import '../../../core/providers/my_dictionary_provider.dart';
 import '../../../core/providers/read_ids_provider.dart';
 import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/widgets/locked_words_card.dart';
 import '../../../core/widgets/range_card.dart';
 import '../../shell/widgets/shell_header.dart';
 import 'word_card.dart';
@@ -60,9 +60,12 @@ class WordListView extends ConsumerStatefulWidget {
   /// ویجتِ اضافه (مثلاً مثال‌های ⭐‌دار) درست زیرِ فیلتر/عنوان
   final Widget? afterHeading;
 
-  /// 💎 نسخه‌ی رایگان: «کلِ لیستِ بدونِ فیلتر». فقط [kFreeWordCount] لغتِ اولِ آن (و لغاتِ شخصیِ کاربر)
-  /// برای کاربرِ رایگان باز است. null = قفلی ندارد (مثلاً علاقه‌مندی‌ها).
+  /// 💎 نسخه‌ی رایگان: «کلِ لیستِ بدونِ فیلتر». لغاتِ داخلِ اپ فقط ده لغتِ رایگانِ هر دسته‌اند
+  /// (بقیه اصلاً روی گوشی نیست). null = قفلی ندارد (مثلاً علاقه‌مندی‌ها).
   final List<DailyWord>? freeSource;
+
+  /// 💎 کارتِ «لغاتِ قفل‌شده» (شمارِ کل/قفل/تفکیک) برای کاربرِ رایگان؛ null = چیزی قفل نیست.
+  final LockedWordsInfo? lockedInfo;
 
   const WordListView({
     super.key,
@@ -74,6 +77,7 @@ class WordListView extends ConsumerStatefulWidget {
     this.heading,
     this.afterHeading,
     this.freeSource,
+    this.lockedInfo,
   });
 
   @override
@@ -192,24 +196,20 @@ class _WordListViewState extends ConsumerState<WordListView> {
     _autoTo = kWordsPageSize;
   }
 
-  // 💎 قفلِ لغاتِ بعد از ۳۰ام — نتیجه کش می‌شود تا identityِ لیست ثابت بماند (پلیر/اسکرول)
+  // 💎 فقط لغاتِ رایگان (و شخصی) — نتیجه کش می‌شود تا identityِ لیست ثابت بماند (پلیر/اسکرول)
   List<DailyWord>? _gateIn;
   List<DailyWord>? _gateFree;
   bool? _gatePro;
   List<DailyWord> _gateOut = const <DailyWord>[];
-  int _gateLocked = 0;
   Set<String> _gateIds = const <String>{};
   List<DailyWord>? _gateIdsSrc;
 
   List<DailyWord> _gate(List<DailyWord> src, bool pro) {
     final free = widget.freeSource;
-    if (pro || free == null) {
-      _gateLocked = 0;
-      return src;
-    }
+    if (pro || free == null) return src;
     if (!identical(_gateIdsSrc, free)) {
       _gateIdsSrc = free;
-      _gateIds = {for (final w in free.take(kFreeWordCount)) w.sid};
+      _gateIds = {for (final w in free) w.sid};
       _gateIn = null; // لیستِ پایه عوض شد → دوباره حساب کن
     }
     if (identical(_gateIn, src) && identical(_gateFree, free) && _gatePro == pro) {
@@ -223,7 +223,6 @@ class _WordListViewState extends ConsumerState<WordListView> {
     _gateFree = free;
     _gatePro = pro;
     _gateOut = out;
-    _gateLocked = src.length - out.length;
     return out;
   }
 
@@ -232,7 +231,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
     final L = context.l10n;
     final isPro = ref.watch(isProProvider);
     final words = _applySort(_gate(widget.words, isPro));
-    final lockedCount = isPro ? 0 : _gateLocked;
+    final lockedInfo = isPro ? null : widget.lockedInfo;
     final c = context.appColors;
     final sel = ref.watch(languageSelectionProvider);
     final filter = ref.watch(wordsFilterProvider);
@@ -440,7 +439,10 @@ class _WordListViewState extends ConsumerState<WordListView> {
                 ),
               ),
             ),
-          if (words.isEmpty)
+          if (words.isEmpty &&
+              (lockedInfo == null ||
+                  lockedInfo.searchActive ||
+                  (widget.loading && !widget.hasAnyData)))
             SliverFillRemaining(
               hasScrollBody: false,
               child: _EmptyState(
@@ -450,7 +452,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                 message: widget.emptyMessage ?? L.dialogs_no_results,
               ),
             )
-          else
+          else if (words.isNotEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 90),
               sliver: SliverList(
@@ -500,59 +502,17 @@ class _WordListViewState extends ConsumerState<WordListView> {
                 ),
               ),
             ),
-          // 🔒 لغاتِ بعد از سقفِ رایگان
-          if (!isPro && widget.freeSource != null)
+          // 🔒 لغاتِ قفل‌شده: کل چندتاست، چندتا رایگان است، قفل‌شده‌ها مربوط به چیست
+          if (!isPro && widget.freeSource != null && lockedInfo != null)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 90),
-                child: _LockedBanner(count: lockedCount),
+                padding: EdgeInsets.fromLTRB(
+                    12, words.isEmpty ? 12 : 0, 12, 90),
+                child: LockedWordsCard(info: lockedInfo),
               ),
             ),
         ],
       ),
-      ),
-    );
-  }
-}
-
-/// بنرِ «لغاتِ بیشتر با Pro»
-class _LockedBanner extends StatelessWidget {
-  final int count;
-  const _LockedBanner({required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    final fa = Localizations.localeOf(context).languageCode == 'fa';
-    return InkWell(
-      onTap: FreeLimit.reportLocked,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: c.goldSoft.withOpacity(0.35),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: c.gold),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.lock, color: c.gold, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                fa
-                    ? (count > 0
-                        ? '$count لغتِ دیگر با نسخه‌ی Pro باز می‌شود'
-                        : 'لغاتِ بیشتر با نسخه‌ی Pro باز می‌شود')
-                    : (count > 0
-                        ? '$count more words unlock with Pro'
-                        : 'More words unlock with Pro'),
-                style: TextStyle(
-                    color: c.ink, fontSize: 13.5, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

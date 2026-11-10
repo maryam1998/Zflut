@@ -233,6 +233,9 @@ String? _keywordTopic(String token) {
 
 /// موضوعِ یک مورد (کلیدِ kDictTopics).
 String dictTopicOf(DailyWord w, Map<String, String> idx) {
+  // 💎 لغاتِ روزمره موضوعشان از قبل (هنگامِ ساختِ داده) حساب شده؛ این‌طوری شمارِ هر موضوع
+  // برای کاربرِ رایگان و Pro یکی است (کاربرِ رایگان فقط بخشی از لغات را دارد).
+  if (!w.isPersonal && w.category.isNotEmpty) return w.category;
   final k = _cleanToken(w.en);
   final isExpr = w.pos == 'idiom' || w.pos == 'slang';
   // ۱) واژه‌نامه‌ی دستی: عبارت‌ها/اصطلاح‌ها بر اساسِ کاربردشان، لغت‌ها بر

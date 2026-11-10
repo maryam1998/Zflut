@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/vocab_topics.dart';
 import '../../core/models/daily_word.dart';
 import '../../core/providers/word_sources_provider.dart';
+import '../../core/providers/words_filter_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/usage/pro_status.dart';
+import '../../core/usage/words_index.dart';
+import '../../core/widgets/locked_words_card.dart';
 import '../words/widgets/word_list_view.dart';
 import '_hope_panel.dart' show HopeChoiceChip;
 
@@ -20,6 +24,31 @@ class VocabInUseTab extends ConsumerWidget {
     final src = ref.watch(vocabInUseWordsProvider);
     final topicKey = ref.watch(vocabTopicProvider);
     final cat = ref.watch(vocabCategoryProvider);
+    // 💎 کاربرِ رایگان: کلِ لغاتِ هر موضوع + چندتایش قفل است (فقط ده لغتِ هر موضوع باز است)
+    final isPro = ref.watch(isProProvider);
+    final filter = ref.watch(wordsFilterProvider);
+    final ui = Localizations.localeOf(context).languageCode;
+    String? catSel;
+    if (topicKey.length == 1 && cat != null) {
+      final t = vocabTopicByKey(topicKey.first);
+      if (t != null && t.categories.contains(cat)) catSel = cat;
+    }
+    final lockedInfo = isPro
+        ? null
+        : buildLockedInfo(
+            index: ref.watch(wordsIndexProvider).valueOrNull,
+            list: 'vocab',
+            groups: topicKey,
+            category: catSel,
+            levels: filter.levels,
+            query: filter.query,
+            groupLabel: (k) => vocabTopicByKey(k)?.label(ui),
+            scopeLabel: catSel != null
+                ? vocabCategoryLabel(catSel, ui)
+                : (topicKey.length == 1
+                    ? vocabTopicByKey(topicKey.first)?.label(ui)
+                    : null),
+          );
     return WordListView(
       // با عوض‌شدنِ موضوع/دسته، لیست از اول (و اسکرول از بالا) شروع می‌شود
       key: ValueKey('vocab-${(topicKey.toList()..sort()).join(',')}-${cat ?? '_'}'),
@@ -28,7 +57,8 @@ class VocabInUseTab extends ConsumerWidget {
       hasAnyData: src.valueOrNull?.isNotEmpty ?? false,
       loading: src.isLoading,
       afterHeading: _TopicFilter(all: src.valueOrNull ?? const <DailyWord>[]),
-      freeSource: src.valueOrNull, // 💎 ۳۰ لغتِ اول رایگان
+      freeSource: src.valueOrNull, // 💎 ده لغتِ اولِ هر موضوع رایگان
+      lockedInfo: lockedInfo,
     );
   }
 }
@@ -39,7 +69,10 @@ class _TopicFilter extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (all.isEmpty) return const SizedBox.shrink();
+    // 💎 کاربرِ رایگان: شمارِ «کلِ» هر موضوع/دسته از ایندکس می‌آید (نه فقط لغاتِ باز)
+    final isPro = ref.watch(isProProvider);
+    final index = isPro ? null : ref.watch(wordsIndexProvider).valueOrNull;
+    if (all.isEmpty && index == null) return const SizedBox.shrink();
     final c = context.appColors;
     final ui = Localizations.localeOf(context).languageCode;
     final fa = ui == 'fa' || ui == 'ar';
@@ -53,7 +86,10 @@ class _TopicFilter extends ConsumerWidget {
     for (final w in all) {
       perCat[w.category] = (perCat[w.category] ?? 0) + 1;
     }
+    int catCount(String x) =>
+        index != null ? index.total('vocab', category: x) : (perCat[x] ?? 0);
     int topicCount(VocabTopic t) {
+      if (index != null) return index.total('vocab', groups: {t.key});
       var n = 0;
       for (final x in t.categories) {
         n += perCat[x] ?? 0;
@@ -91,7 +127,8 @@ class _TopicFilter extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           row([
-            chip('$allLabel (${all.length})', topicSel.isEmpty, () {
+            chip('$allLabel (${index != null ? index.total('vocab') : all.length})',
+                topicSel.isEmpty, () {
               ref.read(vocabTopicProvider.notifier).state = const <String>{};
               ref.read(vocabCategoryProvider.notifier).state = null;
             }),
@@ -112,8 +149,8 @@ class _TopicFilter extends ConsumerWidget {
                   () => ref.read(vocabCategoryProvider.notifier).state = null,
                   fs: 11.5),
               for (final x in topic.categories)
-                if ((perCat[x] ?? 0) > 0)
-                  chip('${vocabCategoryLabel(x, ui)} (${perCat[x]})', catSel == x,
+                if (catCount(x) > 0)
+                  chip('${vocabCategoryLabel(x, ui)} (${catCount(x)})', catSel == x,
                       () => ref.read(vocabCategoryProvider.notifier).state = x,
                       fs: 11.5),
             ]),

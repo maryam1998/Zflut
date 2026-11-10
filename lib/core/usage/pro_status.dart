@@ -6,7 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // (سقف‌ها را فقط همین‌جا عوض کن)
 // ═══════════════════════════════════════════════════════════════════
 
-/// لغات: فقط N لغتِ اولِ هر لیست (دیکشنری، اسلنگ، Vocab in use) رایگان است.
+/// لغات: فقط N لغتِ اولِ «هر دسته» (دیکشنری: هر موضوع، اسلنگ: هر دسته، Vocab in use: هر موضوعِ اصلی)
+/// رایگان است؛ بقیه قفل‌اند ولی تعدادشان به کاربر نشان داده می‌شود.
+/// ⚠️ باید با FREE_PER_GROUP در scripts/build-paid-content.mjs یکی باشد.
+const int kFreeWordsPerGroup = 10;
+
+/// (قدیمی — دیگر استفاده نمی‌شود؛ جایش kFreeWordsPerGroup است)
 const int kFreeWordCount = 30;
 
 /// مکالمه: فقط این موضوع‌ها (Greeting و Introduction) رایگان‌اند …
