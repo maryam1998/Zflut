@@ -99,4 +99,14 @@ jobs:
         if: steps.push.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run deploy-web.yml --ref main
+        run: |
+          gh workflow run deploy-web.yml --ref main
+          # wrangler.toml / src/ عوض شده → Worker هم دیپلوی شود (push با GITHUB_TOKEN خودکار trigger نمی‌کند)
+          changed="$(git diff --name-only HEAD~1 HEAD)"
+          if echo "$changed" | grep -qE '^(wrangler\.toml|src/)'; then
+            gh workflow run deploy-worker.yml --ref main
+          fi
+          # محتوای پولی عوض شده → D1 دوباره seed شود
+          if echo "$changed" | grep -qE '^(paid-content/|scripts/build-paid-content\.mjs)'; then
+            gh workflow run seed-paid-content.yml --ref main
+          fi
