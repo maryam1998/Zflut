@@ -23,6 +23,9 @@ import '../theme/app_theme_colors.dart';
 // • مثال‌ها روی گوشی کش می‌شوند؛ «مثالِ جدید» با لیستِ قبلی تکراری نمی‌سازد
 // • هر مثال: 🔊، 🔁 (جایگزینیِ همان مثال)، و ترجمه به زبان‌های انتخابی
 // ═══════════════════════════════════════════════════════════════════
+/// یک عضو از زنجیره‌ی خوانش: مثال یا ترجمه‌ی یک مثال
+typedef _ChainItem = ({String code, String text, String id});
+
 class WordExamplesPanel extends ConsumerStatefulWidget {
   final String word;
   final String langCode;
@@ -138,6 +141,40 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
     }
   }
 
+  /// 🔗 ترتیبِ خوانشِ خودکار: مثال ۱ ← ترجمه‌ی هر زبان ← مثال ۲ ← ترجمه‌ها ← …
+  /// ترجمه‌ها از حافظه‌ی مثال‌ها خوانده می‌شوند (همان متنی که روی صفحه است)؛
+  /// ترجمه‌ای که هنوز آماده نشده در زنجیره نیست.
+  List<_ChainItem> _chainItems() {
+    Map<String, Map<String, String>> stored = {};
+    try {
+      stored = {
+        for (final e
+            in ref.read(wordExamplesStoreProvider).load(widget.word, widget.langCode))
+          e.id: e.translations,
+      };
+    } catch (_) {}
+    final targets =
+        widget.targetLangs.where((l) => l != widget.langCode).toList();
+    final out = <_ChainItem>[];
+    for (final e in _examples) {
+      if (e.text.trim().isEmpty) continue;
+      out.add((
+        code: widget.langCode,
+        text: e.text,
+        id: 'ai-ex-${widget.langCode}-${e.text.hashCode}',
+      ));
+      final trs = stored[e.id] ?? e.translations;
+      for (final t in targets) {
+        final tr = trs[t];
+        if (tr == null || tr.trim().isEmpty || tr.trim() == e.text.trim()) {
+          continue;
+        }
+        out.add((code: t, text: tr, id: 'ai-ex-tr-$t-${tr.hashCode}'));
+      }
+    }
+    return out;
+  }
+
   @override
   void dispose() {
     ExamplesRegistry.remove(widget.langCode, widget.word);
@@ -153,8 +190,12 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
     // پلیرِ لیست از اینجا می‌فهمد این لغت مثالِ بازِ روی صفحه دارد
     ExamplesRegistry.set(
         widget.langCode, widget.word, [for (final e in _examples) e.text]);
+    // پلیرِ لیست از اینجا می‌فهمد زنجیره‌ی (مثال ← ترجمه‌ها ← مثالِ بعدی) کجا تمام می‌شود
+    ExamplesRegistry.setChain(widget.langCode, widget.word, () => [
+          for (final it in _chainItems()) PlayerTrack.keyFor(it.code, it.text)
+        ]);
 
-    // ▶️ پایانِ طبیعیِ پخشِ یک مثال → مثالِ بعدی خودکار پخش می‌شود
+    // ▶️ پایانِ طبیعیِ پخشِ یک مثال ← ترجمه‌هایش (به ترتیبِ زبان‌ها) ← مثالِ بعدی ← ترجمه‌هایش …
     // (توقفِ دستی کلید را پاک می‌کند، پس زنجیره ادامه پیدا نمی‌کند).
     ref.listen<SpeechState>(speechControllerProvider, (prev, next) {
       // پس‌زمینه: صفِ پلیر خودش ترتیبِ مثال‌ها و ترجمه‌هایشان را می‌خواند
@@ -163,16 +204,17 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
           prev.status != SpeechStatus.playing ||
           next.status != SpeechStatus.idle ||
           next.key == null ||
-          next.key != prev.key ||
-          next.error != null) {
+          next.key != prev.key) {
         return;
       }
-      final i = _examples.indexWhere(
-          (e) => PlayerTrack.keyFor(widget.langCode, e.text) == next.key);
-      if (i < 0 || i + 1 >= _examples.length) return;
-      final n = _examples[i + 1];
-      syncSpeakAdhoc(ref, widget.langCode,
-          'ai-ex-${widget.langCode}-${n.text.hashCode}', n.text);
+      final items = _chainItems();
+      final i = items.indexWhere(
+          (it) => PlayerTrack.keyFor(it.code, it.text) == next.key);
+      if (i < 0 || i + 1 >= items.length) return;
+      // خطای صدا (مثلاً نبودنِ صدای یک زبان) فقط برای «ترجمه‌ها» زنجیره را قطع نمی‌کند
+      if (next.error != null && items[i].code == widget.langCode) return;
+      final n = items[i + 1];
+      syncSpeakAdhoc(ref, n.code, n.id, n.text);
     });
 
     final g = widget.gutter;
