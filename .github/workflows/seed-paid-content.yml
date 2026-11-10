@@ -1,0 +1,44 @@
+name: Seed paid content (D1)
+
+# محتوای پولی (paid-content/*.json) را در D1 (phrasebook-tr-cache) می‌ریزد.
+# هر بار فایل‌های paid-content/ یا اسکریپت عوض شوند خودکار اجرا می‌شود؛ دستی هم می‌شود (Run workflow).
+# به همان secretهای deploy-worker نیاز دارد: CLOUDFLARE_API_TOKEN و CLOUDFLARE_ACCOUNT_ID
+# (توکن باید دسترسیِ «D1 Edit» داشته باشد).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'paid-content/**'
+      - 'scripts/build-paid-content.mjs'
+      - '.github/workflows/seed-paid-content.yml'
+
+concurrency:
+  group: seed-paid-content
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build SQL
+        run: node scripts/build-paid-content.mjs --sql content_seed
+
+      - name: Seed D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npm i -g wrangler@3
+          for f in content_seed/*.sql; do
+            echo "== $f"
+            wrangler d1 execute phrasebook-tr-cache --remote --file="$f" || exit 1
+          done
