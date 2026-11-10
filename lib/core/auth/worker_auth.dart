@@ -24,6 +24,8 @@ class WorkerAuth {
   static const String _kProAt = 'worker_pro_at';
   // وضعیتِ Pro حداکثر هر ۶ ساعت از سرور دوباره پرسیده می‌شود
   static const int _proMaxAgeSec = 6 * 3600;
+  // اگر Pro نیستیم (مثلاً مقدارِ کهنه‌ای از بکاپِ گوگل برگشته یا تازه VIP شده‌ایم) زودتر دوباره می‌پرسیم
+  static const int _nonProMaxAgeSec = 5 * 60;
   static const int _renewBeforeSec = 7 * 24 * 3600;
 
   static SharedPreferences? _prefs;
@@ -51,9 +53,10 @@ class WorkerAuth {
 
   /// اگر توکن نیست یا کم‌اعتبار شده، تازه می‌کند.
   static Future<void> ensureFresh() {
+    final maxAge = ProStatus.pro.value ? _proMaxAgeSec : _nonProMaxAgeSec;
     if (_token.isNotEmpty &&
         _exp - _now > _renewBeforeSec &&
-        _now - _proAt < _proMaxAgeSec) {
+        _now - _proAt < maxAge) {
       return Future.value();
     }
     return refresh();
