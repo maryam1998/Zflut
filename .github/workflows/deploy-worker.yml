@@ -4,7 +4,8 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'Hope-main/**'
+      - 'wrangler.toml'
+      - 'src/**'
       - '.github/workflows/deploy-worker.yml'
   workflow_dispatch:
 
@@ -25,5 +26,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: Hope-main
+          workingDirectory: .
           command: deploy
