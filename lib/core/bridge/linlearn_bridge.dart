@@ -4,6 +4,7 @@
 // ولی حالا روی NativeBridge → BubblePlugin.java کار می‌کند.
 // روی وب/iOS همه‌چیز بی‌صدا مقدار پیش‌فرض (false / null) برمی‌گرداند.
 
+import '../usage/free_limit.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart'
@@ -139,23 +140,46 @@ class LinLearnBridge {
   // Bubble (حباب شناور)
   // mode: 'both' | 'magnifier' | 'translator'
   // ═══════════════════════════════════════════════════════════
-  static Future<void> startBubble({String mode = 'both'}) async {
-    if (!_n.isSupported) return;
+  /// 💎 نسخه‌ی رایگان: هر بار شروعِ «ترجمه‌ی زنده» / «ذره‌بین» یک استفاده حساب می‌شود (سقفِ کل عمر، سمتِ سرور).
+  /// [countLive] = false وقتی حباب فقط برای زیرنویسِ یوتیوب باز می‌شود (آن بخش جدا شمرده می‌شود).
+  /// خروجی: true اگر چیزی شروع شد؛ false اگر سقفِ رایگان تمام بود (پیامش خودکار نشان داده می‌شود).
+  static Future<bool> startBubble(
+      {String mode = 'both', bool countLive = true}) async {
+    if (!_n.isSupported) return false;
     _listen();
-    if (mode != 'magnifier') {
+    var wantLive = mode != 'magnifier';
+    var wantMag = mode == 'magnifier' || mode == 'both';
+    if (wantLive && countLive) {
+      var running = false;
+      try {
+        running = (await _n.isRunning())['running'] == true;
+      } catch (_) {}
+      if (!running && !await FreeLimit.consume(Feature.live)) wantLive = false;
+    }
+    if (wantMag) {
+      var running = false;
+      try {
+        running = (await _n.magnifierIsRunning())['running'] == true;
+      } catch (_) {}
+      if (!running && !await FreeLimit.consume(Feature.magnifier)) {
+        wantMag = false;
+      }
+    }
+    if (wantLive) {
       await _n.showBubble(
         targetLang: _uiLang,
         sourceLang: _sourceLang,
         targetLangs: _targetLangs,
       );
     }
-    if (mode == 'magnifier' || mode == 'both') {
+    if (wantMag) {
       await _n.magnifierStart(
         targetLang: _uiLang,
         sourceLang: _sourceLang,
         targetLangs: _targetLangs,
       );
     }
+    return wantLive || wantMag;
   }
 
   static Future<void> stopBubble() async {
@@ -454,12 +478,18 @@ class LinLearnBridge {
   // ═══════════════════════════════════════════════════════════
   // Live Translator (ترجمه‌ی زنده‌ی صدا)
   // ═══════════════════════════════════════════════════════════
-  static Future<void> startLiveTranslator({
+  /// 💎 هر شروع یک استفاده‌ی «ترجمه‌ی زنده» حساب می‌شود. false = سقفِ رایگان تمام بود.
+  static Future<bool> startLiveTranslator({
     required String sourceLang,
     required String targetLang,
   }) async {
-    if (!_n.isSupported) return;
+    if (!_n.isSupported) return false;
     _listen();
+    var running = false;
+    try {
+      running = (await _n.isRunning())['running'] == true;
+    } catch (_) {}
+    if (!running && !await FreeLimit.consume(Feature.live)) return false;
     _sourceLang = sourceLang;
     _uiLang = targetLang;
     await _n.showBubble(
@@ -467,6 +497,7 @@ class LinLearnBridge {
       sourceLang: sourceLang,
       targetLangs: _targetLangs,
     );
+    return true;
   }
 
   static Future<void> stopLiveTranslator() async {

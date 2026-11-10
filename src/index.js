@@ -4,12 +4,13 @@
 // ---------------------------------------------------------------------------
 
 import { handleTranscribe } from "./transcribe.js";
-import { authGate, handleSession } from "./auth.js";
+import { authGate, handleSession, verifySessionToken } from "./auth.js";
+import { handleUsage } from "./usage.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, X-App-Token, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, X-App-Token, Authorization, X-Feature, X-Use-Id",
 };
 
 export default {
@@ -38,6 +39,15 @@ export default {
     // 🔐 ورود: توکنِ Supabase → توکنِ نشستِ امضاشده (فقط همین مسیر بدونِ X-App-Token است)
     if (url.pathname === "/api/session" && request.method === "POST") {
       return handleSession(request, env, CORS_HEADERS);
+    }
+
+    // 💎 وضعیتِ سهمیه‌ی رایگان / شروعِ یک استفاده (بدونِ شمارشِ سهمیه‌ی روزانه)
+    if ((url.pathname === "/api/use" && request.method === "POST") ||
+        (url.pathname === "/api/usage" && request.method === "GET")) {
+      const sess = await verifySessionToken(env, request.headers.get("X-App-Token"));
+      if (!sess) return new Response(JSON.stringify({ error: "login required" }), {
+        status: 401, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      return handleUsage(request, env, url, CORS_HEADERS, sess);
     }
 
     // 🔐 همه‌ی بقیه‌ی /api/* نیاز به توکنِ نشست + سهمیه‌ی روزانه‌ی هر کاربر دارند

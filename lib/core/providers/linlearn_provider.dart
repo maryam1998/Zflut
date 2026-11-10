@@ -31,9 +31,10 @@ class BubbleState {
 class BubbleNotifier extends StateNotifier<BubbleState> {
   BubbleNotifier() : super(const BubbleState());
 
-  Future<void> start({String mode = 'both'}) async {
-    await LinLearnBridge.startBubble(mode: mode);
-    state = BubbleState(running: true, mode: mode);
+  Future<void> start({String mode = 'both', bool countLive = true}) async {
+    final ok =
+        await LinLearnBridge.startBubble(mode: mode, countLive: countLive);
+    if (ok) state = BubbleState(running: true, mode: mode);
   }
 
   Future<void> stop() async {
@@ -65,11 +66,11 @@ class LiveTranslatorNotifier extends StateNotifier<bool> {
     required String sourceLang,
     required String targetLang,
   }) async {
-    await LinLearnBridge.startLiveTranslator(
+    final ok = await LinLearnBridge.startLiveTranslator(
       sourceLang: sourceLang,
       targetLang: targetLang,
     );
-    state = true;
+    state = ok;
   }
 
   Future<void> stop() async {

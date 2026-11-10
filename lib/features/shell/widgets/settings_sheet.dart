@@ -1438,7 +1438,10 @@ class _FloatingBubbleSectionState
       await ref.read(nativeSyncProvider).pushLangs();
       await _pushOptions();
       if (!ref.read(bubbleProvider).running) {
-        await ref.read(bubbleProvider.notifier).start(mode: 'translator');
+        // زیرنویسِ یوتیوب «ترجمه‌ی زنده» حساب نمی‌شود (سقفِ جدا دارد، سمتِ سرور)
+        await ref
+            .read(bubbleProvider.notifier)
+            .start(mode: 'translator', countLive: false);
       }
       await _pushOptions();
       await LinLearnBridge.ytSetEnabled(true);

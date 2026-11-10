@@ -1,3 +1,4 @@
+import '../../core/usage/free_limit.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -1086,6 +1087,8 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
         maxTokens: tokens,
         retries: retries,
         settings: ai,
+        // 💎 سقفِ «کل عمر» نسخه‌ی رایگان: تماس جدا از چت شمرده می‌شود
+        feature: _callMode ? Feature.videocall : Feature.chat,
       );
       return cleanAiText(_stripThink(r));
     }

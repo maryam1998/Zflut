@@ -1,3 +1,4 @@
+import '../../core/usage/free_limit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -412,6 +413,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         maxTokens: 600,
         retries: 1,
         timeoutMs: 45000,
+        feature: Feature.grammar, // 💎 سقفِ «کل عمر» نسخه‌ی رایگان
       );
       // جوابِ خالی/خراب (گارد، استدلال، پژواکِ پرامپت) → خطا؛ چیزی ذخیره نمی‌شود
       if (text.trim().isEmpty || aiOutputProblem(text) != null) {
@@ -428,8 +430,17 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         _failedQ = '';
         _failedIndex = null;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      if (e is FreeLimitException) {
+        setState(() {
+          _failedQ = '';
+          _failedIndex = null;
+          _error =
+              FreeLimit.message(Localizations.localeOf(context).languageCode);
+        });
+        return;
+      }
       setState(() {
         _failedQ = question;
         _failedIndex = target;

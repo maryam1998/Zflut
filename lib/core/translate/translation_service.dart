@@ -1,3 +1,4 @@
+import '../usage/free_limit.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -721,8 +722,14 @@ class TranslationService {
     int retries = 2,
     required AiSettings settings,
     int timeoutMs = _kAiTimeoutMs,
+    // 💎 نسخه‌ی رایگان: نامِ بخش (برای سقفِ «کل عمر») — null = شمرده نمی‌شود (مثلاً ترجمه)
+    String? feature,
+    String? useId,
+    // false = پنجره‌ی «سقف تمام شد» خودکار نشان داده نشود (مثلاً ساختِ خودکارِ مثال)
+    bool reportLimit = true,
   }) async {
     final url = '${settings.baseUrl}/api/generate';
+    final fUseId = feature == null ? null : (useId ?? FreeLimit.newUseId());
     final tokens = (maxTokens ?? 300).clamp(64, 8192).toInt();
     final body = {'prompt': prompt, 'maxTokens': tokens};
 
@@ -734,6 +741,10 @@ class TranslationService {
               data: body,
               options: Options(
                 contentType: 'application/json',
+                headers: {
+                  if (feature != null) 'X-Feature': feature,
+                  if (fUseId != null) 'X-Use-Id': fUseId,
+                },
                 sendTimeout: Duration(milliseconds: timeoutMs),
                 receiveTimeout: Duration(milliseconds: timeoutMs),
               ),
@@ -741,6 +752,11 @@ class TranslationService {
             .timeout(Duration(milliseconds: timeoutMs));
 
         final status = res.statusCode ?? 0;
+        if (status == 402) {
+          // سقفِ استفاده‌ی رایگانِ این بخش تمام شده → بدونِ تلاشِ دوباره
+          if (reportLimit) FreeLimit.report(feature ?? '');
+          throw FreeLimitException(feature ?? '');
+        }
         if (status < 200 || status >= 300) {
           var detail = 'HTTP $status';
           final isRateLimited = status == 429;
@@ -781,6 +797,8 @@ class TranslationService {
           throw _AiBackendError(_aiNetMsg);
         }
         return text;
+      } on FreeLimitException {
+        rethrow;
       } on _AiBackendError {
         rethrow;
       } catch (e) {

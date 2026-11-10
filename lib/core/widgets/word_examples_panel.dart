@@ -1,3 +1,4 @@
+import '../usage/free_limit.dart';
 import '../../app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,7 +72,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
         .read(wordExamplesStoreProvider)
         .load(widget.word, widget.langCode);
     if (_examples.isEmpty) {
-      _generate();
+      _generate(auto: true);
     } else {
       // ⚡ صدای اولین مثال از قبل ساخته شود تا تپ روی 🔊 بدون تأخیر باشد
       ref
@@ -80,7 +81,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
     }
   }
 
-  Future<void> _generate() async {
+  Future<void> _generate({bool auto = false}) async {
     if (_generating) return;
     setState(() {
       _generating = true;
@@ -95,6 +96,8 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
         meaningNative: widget.meaningNative,
         nativeLabel: _nativeLabel,
         existing: _examples.map((e) => e.text).toList(),
+        // ساختِ خودکارِ اولین مثال (با باز شدنِ کارت) پنجره‌ی «سقف تمام شد» را باز نمی‌کند
+        reportLimit: !auto,
       );
       final list = await ref
           .read(wordExamplesStoreProvider)
@@ -102,9 +105,11 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
       if (!mounted) return;
       setState(() => _examples = list);
       ref.read(speechControllerProvider.notifier).warmUp(text, widget.langCode);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _err = context.l10n.word_examples_failed);
+      setState(() => _err = e is FreeLimitException
+          ? FreeLimit.message(Localizations.localeOf(context).languageCode)
+          : context.l10n.word_examples_failed);
     } finally {
       if (mounted) setState(() => _generating = false);
     }
@@ -133,9 +138,11 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
       if (!mounted) return;
       setState(() => _examples = list);
       ref.read(speechControllerProvider.notifier).warmUp(text, widget.langCode);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _err = context.l10n.word_examples_failed);
+      setState(() => _err = e is FreeLimitException
+          ? FreeLimit.message(Localizations.localeOf(context).languageCode)
+          : context.l10n.word_examples_failed);
     } finally {
       if (mounted) setState(() => _refreshingId = null);
     }

@@ -1,3 +1,4 @@
+import '../../../core/usage/free_limit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -277,6 +278,7 @@ class _GrammarPracticeContentState
         retries: 1,
         timeoutMs: 45000,
         settings: ai,
+        feature: Feature.grammar, // 💎 سقفِ «کل عمر» نسخه‌ی رایگان
       );
       final text = _stripThink(raw);
       if (text.isEmpty || _reasoningRe.hasMatch(text)) {
@@ -286,6 +288,11 @@ class _GrammarPracticeContentState
       setState(() => _msgs.add(_ChatMsg(false, text)));
     } catch (e) {
       if (!mounted) return;
+      if (e is FreeLimitException) {
+        setState(() => _error =
+            FreeLimit.message(Localizations.localeOf(context).languageCode));
+        return;
+      }
       final m = e.toString().replaceFirst(RegExp(r'^.*ai-backend-error:\s*'), '');
       setState(() => _error = (m.isEmpty || m.startsWith('Exception'))
           ? 'هوش مصنوعی جواب نداد. اینترنتت رو چک کن و دوباره امتحان کن.'

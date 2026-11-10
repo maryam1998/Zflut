@@ -1,4 +1,5 @@
 import '../translate/translation_service.dart';
+import '../usage/free_limit.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // AI Gateway — تنها دروازه‌ی تمیزِ خروجیِ هوش مصنوعی برای همه‌ی بخش‌ها
@@ -70,9 +71,14 @@ Future<String> aiGenerate({
   int retries = 1,
   int timeoutMs = 15000,
   bool Function(String text)? extraCheck,
+  // 💎 نسخه‌ی رایگان: نامِ بخش برای سقفِ «کل عمر» (null = شمرده نمی‌شود)
+  String? feature,
+  bool reportLimit = true,
 }) async {
   String? problem;
   var text = '';
+  // هر دو تلاش (اولی و دوباره‌ی سخت‌گیرانه) یک «استفاده» حساب می‌شوند
+  final useId = feature == null ? null : FreeLimit.newUseId();
 
   Future<void> attempt(String p, int r) async {
     final raw = await svc.callAI(
@@ -81,6 +87,9 @@ Future<String> aiGenerate({
       retries: r,
       settings: settings,
       timeoutMs: timeoutMs,
+      feature: feature,
+      useId: useId,
+      reportLimit: reportLimit,
     );
     text = cleanAiText(raw);
     problem = aiOutputProblem(text);

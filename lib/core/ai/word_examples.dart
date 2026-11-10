@@ -1,3 +1,4 @@
+import '../usage/free_limit.dart';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -139,6 +140,7 @@ Future<String> generateWordExample({
   String meaningNative = '',
   String nativeLabel = '',
   List<String> existing = const [],
+  bool reportLimit = true,
 }) async {
   final langLabel = _langLabel(langCode);
   final avoid = existing.isEmpty
@@ -164,6 +166,8 @@ Future<String> generateWordExample({
     timeoutMs: 12000,
     // بیشتر از یک خط یا خیلی بلند = جمله‌ی مثال نیست
     extraCheck: (t) => !t.trim().contains('\n') && t.length <= 300,
+    feature: Feature.example, // 💎 سقفِ «کل عمر» نسخه‌ی رایگان
+    reportLimit: reportLimit,
   );
   final s = out
       .replaceAll(RegExp(r'''^["'«»“”\s]+|["'«»“”.\s]+$'''), '')

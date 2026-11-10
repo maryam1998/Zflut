@@ -17,6 +17,8 @@
 //   LIMIT_AI / LIMIT_TTS / LIMIT_MISC = سقفِ روزانه‌ی هر کاربر (پیش‌فرض ۶۰۰ / ۴۰۰۰ / ۳۰۰۰)
 // ---------------------------------------------------------------------------
 
+import { featureGate, isPro } from "./usage.js";
+
 const enc = new TextEncoder();
 const SESSION_TTL_SEC = 14 * 24 * 3600;
 
@@ -45,16 +47,17 @@ async function hmacKey(secret, usages) {
   return crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, usages);
 }
 
-async function issueSessionToken(env, userId) {
+async function issueSessionToken(env, userId, email) {
   const exp = Math.floor(Date.now() / 1000) + SESSION_TTL_SEC;
-  const payload = b64uEncode(enc.encode(JSON.stringify({ sub: userId, exp })));
+  // em = ایمیلِ کاربر (برای تشخیصِ VIP بدونِ رفتن سراغِ Supabase)
+  const payload = b64uEncode(enc.encode(JSON.stringify({ sub: userId, exp, em: String(email || "").toLowerCase() })));
   const key = await hmacKey(env.SESSION_SECRET, ["sign"]);
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode("v1." + payload));
   return { token: `v1.${payload}.${b64uEncode(sig)}`, exp };
 }
 
 /** {sub, exp} یا null */
-async function verifySessionToken(env, token) {
+export async function verifySessionToken(env, token) {
   try {
     const parts = String(token || "").split(".");
     if (parts.length !== 3 || parts[0] !== "v1") return null;
@@ -129,8 +132,10 @@ export async function handleSession(request, env, cors) {
   let user = null;
   try { user = await verifySupabaseUser(env, m[1]); } catch { /* پایین */ }
   if (!user) return jsonResp({ error: "invalid login" }, 401, cors);
-  const { token, exp } = await issueSessionToken(env, user.id);
-  return jsonResp({ token, exp }, 200, cors);
+  const { token, exp } = await issueSessionToken(env, user.id, user.email);
+  let pro = false;
+  try { pro = await isPro(env, user.id, user.email); } catch { /* ignore */ }
+  return jsonResp({ token, exp, pro }, 200, cors);
 }
 
 /** برای هر /api/* (جز /api/session): null = اجازه، وگرنه Response ردّ. */
@@ -152,6 +157,12 @@ export async function authGate(request, env, url, cors) {
   if (!(await underLimit(env, p.sub, bucket))) {
     if (!enforce) { console.log("auth(log): over limit", bucket); return null; }
     return jsonResp({ error: "daily limit reached, try again tomorrow" }, 429, cors);
+  }
+  // 💎 سقفِ «کل عمر» برای هر بخشِ نسخه‌ی رایگان (۴۰۲ اگر تمام شده)
+  const gated = await featureGate(request, env, url, p, cors);
+  if (gated) {
+    if (!enforce) { console.log("auth(log): free limit", url.pathname); return null; }
+    return gated;
   }
   return null;
 }

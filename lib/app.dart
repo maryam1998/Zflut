@@ -13,6 +13,7 @@ import 'core/router/app_router.dart';
 import 'core/stats/listening_tracker.dart';
 import 'core/sync/cloud_sync.dart';
 import 'core/theme/theme_builder.dart';
+import 'core/usage/free_limit.dart';
 import 'l10n/app_localizations.dart';
 
 // فایل‌های دیگر (login_screen, header_tabs, ...) فقط app.dart را import می‌کنند
@@ -69,7 +70,8 @@ class LingoLearnApp extends ConsumerWidget {
             data: MediaQuery.of(context).copyWith(
               textScaler: TextScaler.linear(sizePreset.scale),
             ),
-            child: child ?? const SizedBox.shrink(),
+            // 💎 پنجره‌ی «سقف استفاده‌ی رایگان تمام شده» (روی کلِ اپ)
+            child: FreeLimitHost(child: child ?? const SizedBox.shrink()),
           ),
         );
       },

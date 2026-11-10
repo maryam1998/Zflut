@@ -1,3 +1,4 @@
+import '../../core/usage/free_limit.dart';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -555,6 +556,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             retries: 1,
             settings: ref.read(aiSettingsProvider),
             timeoutMs: 90000,
+            feature: Feature.story, // 💎 سقفِ «کل عمر» نسخه‌ی رایگان
           );
       var text = _stripThink(raw);
       if (text.isEmpty) throw Exception('empty');
@@ -586,8 +588,13 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       );
       if (!mounted) return;
       _finishStory(story);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      if (e is FreeLimitException) {
+        setState(() => _error =
+            FreeLimit.message(Localizations.localeOf(context).languageCode));
+        return;
+      }
       setState(() => _error =
           'ساخت داستان انجام نشد. اینترنتت رو چک کن و دوباره امتحان کن.'
           '${kLastAiError.isEmpty ? '' : '\n($kLastAiError)'}');
