@@ -32,6 +32,7 @@ class WordsTab extends ConsumerWidget {
       hasAnyData: all.isNotEmpty || personal.isNotEmpty,
       loading: ref.watch(dailyWordsLoaderProvider).isLoading,
       afterHeading: _TopicFilter(all: base),
+      freeSource: all, // 💎 ۳۰ لغتِ اولِ لیستِ روزمره رایگان
     );
   }
 }

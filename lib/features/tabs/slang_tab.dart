@@ -26,6 +26,7 @@ class SlangTab extends ConsumerWidget {
       hasAnyData: src.valueOrNull?.isNotEmpty ?? false,
       loading: src.isLoading,
       afterHeading: _SlangTopicFilter(all: src.valueOrNull ?? const <DailyWord>[]),
+      freeSource: src.valueOrNull, // 💎 ۳۰ لغتِ اول رایگان
     );
   }
 }

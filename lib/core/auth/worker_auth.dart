@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../tts/tts_config.dart';
+import '../usage/pro_status.dart';
 
 /// 🔐 توکنِ نشست برای Worker.
 ///
@@ -18,17 +19,24 @@ class WorkerAuth {
 
   static const String _kToken = 'worker_token';
   static const String _kExp = 'worker_token_exp';
+  static const String _kPro = 'worker_pro';
+  static const String _kProAt = 'worker_pro_at';
+  // وضعیتِ Pro حداکثر هر ۶ ساعت از سرور دوباره پرسیده می‌شود
+  static const int _proMaxAgeSec = 6 * 3600;
   static const int _renewBeforeSec = 7 * 24 * 3600;
 
   static SharedPreferences? _prefs;
   static String _token = '';
   static int _exp = 0;
+  static int _proAt = 0;
   static Future<void>? _inflight;
 
   static void init(SharedPreferences prefs) {
     _prefs = prefs;
     _token = prefs.getString(_kToken) ?? '';
     _exp = prefs.getInt(_kExp) ?? 0;
+    _proAt = prefs.getInt(_kProAt) ?? 0;
+    ProStatus.pro.value = prefs.getBool(_kPro) ?? false;
   }
 
   static int get _now => DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -42,7 +50,9 @@ class WorkerAuth {
 
   /// اگر توکن نیست یا کم‌اعتبار شده، تازه می‌کند.
   static Future<void> ensureFresh() {
-    if (_token.isNotEmpty && _exp - _now > _renewBeforeSec) {
+    if (_token.isNotEmpty &&
+        _exp - _now > _renewBeforeSec &&
+        _now - _proAt < _proMaxAgeSec) {
       return Future.value();
     }
     return refresh();
@@ -71,6 +81,11 @@ class WorkerAuth {
         _exp = (data['exp'] as num?)?.toInt() ?? (_now + 3600);
         await _prefs?.setString(_kToken, _token);
         await _prefs?.setInt(_kExp, _exp);
+        _proAt = _now;
+        final pro = data['pro'] == true;
+        ProStatus.pro.value = pro;
+        await _prefs?.setBool(_kPro, pro);
+        await _prefs?.setInt(_kProAt, _proAt);
       } else {
         debugPrint('WorkerAuth: HTTP ${res.statusCode}');
       }
@@ -83,8 +98,12 @@ class WorkerAuth {
   static Future<void> clear() async {
     _token = '';
     _exp = 0;
+    _proAt = 0;
+    ProStatus.pro.value = false;
     await _prefs?.remove(_kToken);
     await _prefs?.remove(_kExp);
+    await _prefs?.remove(_kPro);
+    await _prefs?.remove(_kProAt);
   }
 
   /// به تغییرِ وضعیتِ ورود گوش می‌دهد (لاگین → گرفتنِ توکن، خروج → پاک کردن).

@@ -35,7 +35,17 @@ class FreeLimit {
   static const String messageEn =
       "You've reached the free usage limit for this feature. Buy Pro for unlimited use.";
 
+  static const String lockedFa =
+      'این بخش مخصوص نسخه‌ی Pro است. برای دسترسی کامل، نسخه‌ی Pro را بخرید.';
+  static const String lockedEn =
+      'This content is for Pro. Buy Pro for full access.';
+
   static String message(String lang) => lang == 'fa' ? messageFa : messageEn;
+
+  /// محتوای قفل‌شده (لغتِ بعد از ۳۰ام، موضوعِ پولیِ مکالمه) — همان پنجره، با پیامِ «مخصوص Pro».
+  static void reportLocked() => report('locked');
+  static String lockedMessage(String lang) =>
+      lang == 'fa' ? lockedFa : lockedEn;
 
   /// هر بار که زیاد شود، پنجره‌ی «سقف تمام شد» نشان داده می‌شود (FreeLimitHost).
   static final ValueNotifier<int> tick = ValueNotifier<int>(0);
@@ -122,6 +132,7 @@ class _FreeLimitHostState extends State<FreeLimitHost> {
   @override
   Widget build(BuildContext context) {
     if (!_show) return widget.child;
+    final lastLocked = FreeLimit.lastFeature == 'locked';
     final lang = Localizations.maybeLocaleOf(context)?.languageCode ?? 'fa';
     final fa = lang == 'fa';
     final theme = Theme.of(context);
@@ -155,7 +166,9 @@ class _FreeLimitHostState extends State<FreeLimitHost> {
                                 style: TextStyle(fontSize: 34)),
                             const SizedBox(height: 10),
                             Text(
-                              FreeLimit.message(lang),
+                              lastLocked
+                                  ? FreeLimit.lockedMessage(lang)
+                                  : FreeLimit.message(lang),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,

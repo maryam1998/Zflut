@@ -28,6 +28,7 @@ class VocabInUseTab extends ConsumerWidget {
       hasAnyData: src.valueOrNull?.isNotEmpty ?? false,
       loading: src.isLoading,
       afterHeading: _TopicFilter(all: src.valueOrNull ?? const <DailyWord>[]),
+      freeSource: src.valueOrNull, // 💎 ۳۰ لغتِ اول رایگان
     );
   }
 }

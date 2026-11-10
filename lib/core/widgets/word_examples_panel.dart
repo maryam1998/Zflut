@@ -1,4 +1,5 @@
 import '../usage/free_limit.dart';
+import '../usage/pro_status.dart';
 import '../../app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,7 +73,8 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
         .read(wordExamplesStoreProvider)
         .load(widget.word, widget.langCode);
     if (_examples.isEmpty) {
-      _generate(auto: true);
+      // 💎 کاربر رایگان: مثال فقط با زدنِ دکمه ساخته می‌شود (تا سهمیه الکی خرج نشود)
+      if (ProStatus.isPro) _generate(auto: true);
     } else {
       // ⚡ صدای اولین مثال از قبل ساخته شود تا تپ روی 🔊 بدون تأخیر باشد
       ref

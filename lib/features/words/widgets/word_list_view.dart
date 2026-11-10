@@ -1,3 +1,5 @@
+import '../../../core/usage/free_limit.dart';
+import '../../../core/usage/pro_status.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -58,6 +60,10 @@ class WordListView extends ConsumerStatefulWidget {
   /// ویجتِ اضافه (مثلاً مثال‌های ⭐‌دار) درست زیرِ فیلتر/عنوان
   final Widget? afterHeading;
 
+  /// 💎 نسخه‌ی رایگان: «کلِ لیستِ بدونِ فیلتر». فقط [kFreeWordCount] لغتِ اولِ آن (و لغاتِ شخصیِ کاربر)
+  /// برای کاربرِ رایگان باز است. null = قفلی ندارد (مثلاً علاقه‌مندی‌ها).
+  final List<DailyWord>? freeSource;
+
   const WordListView({
     super.key,
     required this.listId,
@@ -67,6 +73,7 @@ class WordListView extends ConsumerStatefulWidget {
     this.loading = false,
     this.heading,
     this.afterHeading,
+    this.freeSource,
   });
 
   @override
@@ -185,10 +192,47 @@ class _WordListViewState extends ConsumerState<WordListView> {
     _autoTo = kWordsPageSize;
   }
 
+  // 💎 قفلِ لغاتِ بعد از ۳۰ام — نتیجه کش می‌شود تا identityِ لیست ثابت بماند (پلیر/اسکرول)
+  List<DailyWord>? _gateIn;
+  List<DailyWord>? _gateFree;
+  bool? _gatePro;
+  List<DailyWord> _gateOut = const <DailyWord>[];
+  int _gateLocked = 0;
+  Set<String> _gateIds = const <String>{};
+  List<DailyWord>? _gateIdsSrc;
+
+  List<DailyWord> _gate(List<DailyWord> src, bool pro) {
+    final free = widget.freeSource;
+    if (pro || free == null) {
+      _gateLocked = 0;
+      return src;
+    }
+    if (!identical(_gateIdsSrc, free)) {
+      _gateIdsSrc = free;
+      _gateIds = {for (final w in free.take(kFreeWordCount)) w.sid};
+      _gateIn = null; // لیستِ پایه عوض شد → دوباره حساب کن
+    }
+    if (identical(_gateIn, src) && identical(_gateFree, free) && _gatePro == pro) {
+      return _gateOut;
+    }
+    final out = <DailyWord>[
+      for (final w in src)
+        if (w.isPersonal || _gateIds.contains(w.sid)) w,
+    ];
+    _gateIn = src;
+    _gateFree = free;
+    _gatePro = pro;
+    _gateOut = out;
+    _gateLocked = src.length - out.length;
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     final L = context.l10n;
-    final words = _applySort(widget.words);
+    final isPro = ref.watch(isProProvider);
+    final words = _applySort(_gate(widget.words, isPro));
+    final lockedCount = isPro ? 0 : _gateLocked;
     final c = context.appColors;
     final sel = ref.watch(languageSelectionProvider);
     final filter = ref.watch(wordsFilterProvider);
@@ -456,8 +500,55 @@ class _WordListViewState extends ConsumerState<WordListView> {
                 ),
               ),
             ),
+          // 🔒 لغاتِ بعد از سقفِ رایگان
+          if (lockedCount > 0)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 90),
+                child: _LockedBanner(count: lockedCount),
+              ),
+            ),
         ],
       ),
+      ),
+    );
+  }
+}
+
+/// بنرِ «لغاتِ بیشتر با Pro»
+class _LockedBanner extends StatelessWidget {
+  final int count;
+  const _LockedBanner({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    return InkWell(
+      onTap: FreeLimit.reportLocked,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: c.goldSoft.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.gold),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.lock, color: c.gold, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                fa
+                    ? '$count لغتِ دیگر با نسخه‌ی Pro باز می‌شود'
+                    : '$count more words unlock with Pro',
+                style: TextStyle(
+                    color: c.ink, fontSize: 13.5, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,3 +1,5 @@
+import '../../core/usage/free_limit.dart';
+import '../../core/usage/pro_status.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -93,7 +95,19 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   String _query = '';
   Set<String> _levels = <String>{};
 
-  bool _lvOk(String l) => _levels.isEmpty || _levels.contains(l);
+  /// 💎 کاربرِ رایگان داخلِ موضوع‌های باز فقط جمله‌های A1 را می‌بیند
+  Set<String> get _effLevels {
+    final t = _activeTopic;
+    if (t != null && !ProStatus.isPro && kFreeConversationTopics.contains(t)) {
+      return const <String>{kFreeConversationLevel};
+    }
+    return _levels;
+  }
+
+  bool _lvOk(String l) {
+    final s = _effLevels;
+    return s.isEmpty || s.contains(l);
+  }
   int _rangeFrom = 1;
   int _rangeTo = 60;
 
@@ -118,7 +132,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   void _applyRestore(PlaybackOrigin? r) {
     if (r == null || r.route != '/conversations') return;
     final t = r.extra['topic'];
-    if (t is! String) return;
+    if (t is! String || ProStatus.topicLocked(t)) return;
     ref.read(tabRestoreProvider.notifier).state = null;
     final sc = r.extra['scenario'];
     if (_gridScroll.hasClients) _gridOffset = _gridScroll.offset;
@@ -142,6 +156,11 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   }
 
   void _openTopic(String topic) {
+    // 💎 موضوعِ پولی: به‌جای باز شدن، پیامِ «مخصوص Pro»
+    if (ProStatus.topicLocked(topic)) {
+      FreeLimit.reportLocked();
+      return;
+    }
     if (_gridScroll.hasClients) _gridOffset = _gridScroll.offset;
     setState(() {
       _activeTopic = topic;
@@ -174,6 +193,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 
   Widget _buildBody(BuildContext context) {
     final c = context.appColors;
+    ref.watch(isProProvider); // با عوض شدنِ وضعیتِ Pro قفل‌ها به‌روز شوند
     final topics = ref.watch(allTopicsProvider);
 
     if (topics.isEmpty) {
@@ -315,13 +335,33 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           itemBuilder: (_, i) {
             final topic = visible[i];
             final visual = visualForTopic(topic.topic);
-            return _TopicCard(
+            final card = _TopicCard(
               topic: topic,
               visual: visual,
               badgeColor: kTopicBadgeColors[i % kTopicBadgeColors.length],
               isRead: topicRead.contains(topic.topic),
               onTap: () => _openTopic(topic.topic),
               onToggleRead: () => topicReadN.toggle(topic.topic),
+            );
+            if (!ProStatus.topicLocked(topic.topic)) return card;
+            // 🔒 موضوعِ مخصوصِ Pro
+            return Stack(
+              children: [
+                Opacity(opacity: 0.6, child: card),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: IgnorePointer(
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: const BoxDecoration(
+                          color: Colors.black54, shape: BoxShape.circle),
+                      child: const Icon(Icons.lock,
+                          size: 14, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -412,7 +452,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         const SizedBox(height: 12),
         ...List.generate(topic.scenarios.length, (i) {
           final sc = topic.scenarios[i];
-          if (_levels.isNotEmpty &&
+          if (_effLevels.isNotEmpty &&
               !(sc.speakerA.any((l) => _lvOk(l.level)) ||
                   sc.speakerB.any((l) => _lvOk(l.level)))) {
             return const SizedBox.shrink();
@@ -422,7 +462,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           final isRead = scenarioRead.contains(readKey);
           return _ScenarioCard(
             scenario: sc,
-            levelFilter: _levels,
+            levelFilter: _effLevels,
             isOpen: isOpen,
             isRead: isRead,
             onToggle: () =>
