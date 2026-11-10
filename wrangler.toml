@@ -32,7 +32,7 @@ LIMIT_MISC = "3000"
 FREE_LIMIT = "2"
 # سقفِ اختصاصیِ یک بخش (اختیاری):  FREE_LIMIT_STORY = "3"
 # 👑 جیمیل‌هایی که همیشه Pro (بدونِ محدودیت) هستند؛ با ویرگول جدا کن. (نقطه و +‌ی جیمیل نادیده گرفته می‌شود)
-VIP_EMAILS = "maryam.s.sharifiyan@gmail.com"
+VIP_EMAILS = "your@gmail.com"
 
 # ⭐ NEW: Cloudflare Workers AI binding — برای تبدیلِ صدا به متن با Whisper
 # (@cf/openai/whisper-large-v3-turbo). رایگان: ۱۰٬۰۰۰ نورون در روز.

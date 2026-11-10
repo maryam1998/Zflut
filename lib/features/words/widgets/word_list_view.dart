@@ -501,7 +501,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
               ),
             ),
           // 🔒 لغاتِ بعد از سقفِ رایگان
-          if (lockedCount > 0)
+          if (!isPro && widget.freeSource != null)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 90),
@@ -541,8 +541,12 @@ class _LockedBanner extends StatelessWidget {
             Expanded(
               child: Text(
                 fa
-                    ? '$count لغتِ دیگر با نسخه‌ی Pro باز می‌شود'
-                    : '$count more words unlock with Pro',
+                    ? (count > 0
+                        ? '$count لغتِ دیگر با نسخه‌ی Pro باز می‌شود'
+                        : 'لغاتِ بیشتر با نسخه‌ی Pro باز می‌شود')
+                    : (count > 0
+                        ? '$count more words unlock with Pro'
+                        : 'More words unlock with Pro'),
                 style: TextStyle(
                     color: c.ink, fontSize: 13.5, fontWeight: FontWeight.w700),
               ),

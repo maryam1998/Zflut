@@ -1,3 +1,5 @@
+import '../data/paid_content.dart';
+import '../usage/pro_status.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/slang_topics.dart';
@@ -10,13 +12,21 @@ import 'words_filter_provider.dart';
 /// منبع‌های داده‌ی جدا برای تب‌های «اسلنگ» و «Vocabulary in Use»
 /// (قبلاً هر دو لیست «لغات روزمره» را نشان می‌دادند).
 /// فایل‌ها با scripts/convert-data.mjs از hope_data/*.js ساخته می‌شوند.
-Future<List<DailyWord>> _loadWords(String asset) => loadWordsAsset(asset);
+Future<List<DailyWord>> _loadWords(String asset, String paidList) =>
+    loadWordsAsset(asset, paidList: paidList);
 
-final slangWordsProvider = FutureProvider<List<DailyWord>>(
-    (ref) => _loadWords('assets/data/slang_words.json'));
+// 💎 فایلِ داخلِ اپ فقط ۳۰ لغتِ رایگان دارد؛ Pro بقیه را از Worker (کش‌شده) می‌گیرد
+final slangWordsProvider = FutureProvider<List<DailyWord>>((ref) {
+  ref.watch(isProProvider);
+  ref.watch(paidRevisionProvider);
+  return _loadWords('assets/data/slang_words.json', 'slang');
+});
 
-final vocabInUseWordsProvider = FutureProvider<List<DailyWord>>(
-    (ref) => _loadWords('assets/data/vocab_in_use_words.json'));
+final vocabInUseWordsProvider = FutureProvider<List<DailyWord>>((ref) {
+  ref.watch(isProProvider);
+  ref.watch(paidRevisionProvider);
+  return _loadWords('assets/data/vocab_in_use_words.json', 'vocab');
+});
 
 List<DailyWord> _applyFilter(List<DailyWord> all, WordsFilterState f) {
   final q = f.query.trim().toLowerCase();

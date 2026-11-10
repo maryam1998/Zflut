@@ -1,3 +1,5 @@
+import '../data/paid_content.dart';
+import '../usage/pro_status.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/conversation_repository.dart';
@@ -13,7 +15,10 @@ final conversationRepoProvider = Provider<ConversationRepository>((ref) {
 });
 
 final conversationLoaderProvider = FutureProvider<void>((ref) async {
-  await ref.watch(conversationRepoProvider).load();
+  // 💎 با Pro شدن / به‌روزشدنِ محتوای پولی دوباره بارگذاری می‌شود
+  ref.watch(isProProvider);
+  ref.watch(paidRevisionProvider);
+  await ref.watch(conversationRepoProvider).load(force: true);
 });
 
 final allTopicsProvider = Provider<List<ConversationTopic>>((ref) {
@@ -29,7 +34,9 @@ final dailyWordsRepoProvider = Provider<DailyWordsRepository>((ref) {
 });
 
 final dailyWordsLoaderProvider = FutureProvider<void>((ref) async {
-  await ref.watch(dailyWordsRepoProvider).load();
+  ref.watch(isProProvider);
+  ref.watch(paidRevisionProvider);
+  await ref.watch(dailyWordsRepoProvider).load(force: true);
 });
 
 final allDailyWordsProvider = Provider<List<DailyWord>>((ref) {

@@ -16,12 +16,20 @@ class DailyWordsRepository {
   Future<void>? _inflight;
 
   /// فقط یک‌بار اجرا می‌شود؛ فراخوانی‌های هم‌زمان همان Future را می‌گیرند.
-  Future<void> load() => _inflight ??= _doLoad();
+  /// [force] = دوباره از نو بارگذاری کن (وقتی Pro شد/محتوای پولی به‌روز شد).
+  Future<void> load({bool force = false}) {
+    if (force) {
+      _loaded = false;
+      _inflight = null;
+    }
+    return _inflight ??= _doLoad();
+  }
 
   Future<void> _doLoad() async {
     if (_loaded) return;
     try {
-      _words = await loadWordsAsset('assets/data/daily_words.json');
+      _words = await loadWordsAsset('assets/data/daily_words.json',
+          paidList: 'daily');
       _loaded = true;
       _error = null;
     } catch (e) {

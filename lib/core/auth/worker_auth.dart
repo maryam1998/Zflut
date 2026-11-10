@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../tts/tts_config.dart';
+import '../data/paid_content.dart';
 import '../usage/pro_status.dart';
 
 /// 🔐 توکنِ نشست برای Worker.
@@ -83,7 +84,10 @@ class WorkerAuth {
         await _prefs?.setInt(_kExp, _exp);
         _proAt = _now;
         final pro = data['pro'] == true;
+        final wasPro = ProStatus.pro.value;
         ProStatus.pro.value = pro;
+        // Pro تمام شد → محتوای پولیِ کش‌شده از گوشی پاک شود
+        if (wasPro && !pro) unawaited(PaidContent.clearCache());
         await _prefs?.setBool(_kPro, pro);
         await _prefs?.setInt(_kProAt, _proAt);
       } else {
@@ -100,6 +104,7 @@ class WorkerAuth {
     _exp = 0;
     _proAt = 0;
     ProStatus.pro.value = false;
+    unawaited(PaidContent.clearCache());
     await _prefs?.remove(_kToken);
     await _prefs?.remove(_kExp);
     await _prefs?.remove(_kPro);

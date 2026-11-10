@@ -6,6 +6,7 @@
 import { handleTranscribe } from "./transcribe.js";
 import { authGate, handleSession, verifySessionToken } from "./auth.js";
 import { handleUsage } from "./usage.js";
+import { handleContent } from "./content.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -48,6 +49,14 @@ export default {
       if (!sess) return new Response(JSON.stringify({ error: "login required" }), {
         status: 401, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
       return handleUsage(request, env, url, CORS_HEADERS, sess);
+    }
+
+    // 💎 محتوای پولی (فقط Pro) — توکنِ نشست + چکِ پلن داخلِ handleContent
+    if (url.pathname.startsWith("/api/content/")) {
+      const sess = await verifySessionToken(env, request.headers.get("X-App-Token"));
+      if (!sess) return new Response(JSON.stringify({ error: "login required" }), {
+        status: 401, headers: { "Content-Type": "application/json", ...CORS_HEADERS } });
+      return handleContent(request, env, url, CORS_HEADERS, sess);
     }
 
     // 🔐 همه‌ی بقیه‌ی /api/* نیاز به توکنِ نشست + سهمیه‌ی روزانه‌ی هر کاربر دارند

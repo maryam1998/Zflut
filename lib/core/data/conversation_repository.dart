@@ -1,3 +1,5 @@
+import '../usage/pro_status.dart';
+import 'paid_content.dart';
 import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
@@ -23,7 +25,14 @@ class ConversationRepository {
   Future<void>? _inflight;
 
   /// فقط یک‌بار اجرا می‌شود؛ فراخوانی‌های هم‌زمان همان Future را می‌گیرند.
-  Future<void> load() => _inflight ??= _doLoad();
+  /// [force] = دوباره از نو بارگذاری کن (وقتی Pro شد/محتوای پولی به‌روز شد).
+  Future<void> load({bool force = false}) {
+    if (force) {
+      _loaded = false;
+      _inflight = null;
+    }
+    return _inflight ??= _doLoad();
+  }
 
   Future<void> _doLoad() async {
     if (_loaded) return;
@@ -39,6 +48,22 @@ class ConversationRepository {
       _thematic = (jsonDecode(thematicRaw) as List<dynamic>)
           .map((e) => ConversationTopic.fromJson(e as Map<String, dynamic>))
           .toList();
+
+      // 💎 Pro: مکالمه‌های کامل (همه‌ی موضوع‌ها و سطح‌ها) از Worker/کش — جایگزینِ نسخه‌ی رایگان
+      if (ProStatus.isPro) {
+        final d = await PaidContent.conversations('daily');
+        if (d != null && d.isNotEmpty) {
+          _daily = d
+              .map((e) => ConversationTopic.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+        final t = await PaidContent.conversations('thematic');
+        if (t != null && t.isNotEmpty) {
+          _thematic = t
+              .map((e) => ConversationTopic.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      }
 
       _loaded = true;
       _error = null;
