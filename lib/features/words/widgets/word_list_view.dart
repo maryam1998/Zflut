@@ -1,3 +1,5 @@
+import '../../../core/constants/cefr_levels.dart';
+import '../../../core/usage/free_limit.dart';
 import '../../../core/usage/pro_status.dart';
 import 'dart:math' as math;
 
@@ -226,12 +228,37 @@ class _WordListViewState extends ConsumerState<WordListView> {
     return out;
   }
 
+  // 💎 سطح‌های قفل‌شده برای کاربرِ رایگان: همه‌ی سطح‌ها جز پایین‌ترین سطحِ لغاتِ رایگانِ این لیست
+  List<DailyWord>? _lvSrc;
+  Set<String> _lvOut = const <String>{};
+
+  Set<String> _lockedLevels() {
+    final free = widget.freeSource;
+    if (free == null) return const <String>{};
+    if (identical(_lvSrc, free)) return _lvOut;
+    var open = '';
+    var best = 99;
+    for (final w in free) {
+      final r = _kLevelRank[w.level] ?? 99;
+      if (r < best) {
+        best = r;
+        open = w.level;
+      }
+    }
+    _lvSrc = free;
+    _lvOut = open.isEmpty
+        ? const <String>{}
+        : {for (final l in kCefrLevels) if (l != open) l};
+    return _lvOut;
+  }
+
   @override
   Widget build(BuildContext context) {
     final L = context.l10n;
     final isPro = ref.watch(isProProvider);
     final words = _applySort(_gate(widget.words, isPro));
     final lockedInfo = isPro ? null : widget.lockedInfo;
+    final lockedLevels = isPro ? const <String>{} : _lockedLevels();
     final c = context.appColors;
     final sel = ref.watch(languageSelectionProvider);
     final filter = ref.watch(wordsFilterProvider);
@@ -291,6 +318,9 @@ class _WordListViewState extends ConsumerState<WordListView> {
                   LevelChipsMulti(
                     selected: filter.levels,
                     onChanged: notifier.setLevels,
+                    // 💎 فقط پایین‌ترین سطحِ لیست باز است؛ بقیه‌ی سطح‌ها (تا C2) با Pro
+                    lockedLevels: lockedLevels,
+                    onLockedTap: FreeLimit.reportLocked,
                   ),
                   const SizedBox(height: 8),
                   Align(

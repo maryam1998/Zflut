@@ -68,12 +68,19 @@ class LevelChipsMulti extends StatelessWidget {
   final double height;
   final String? allLabel;
 
+  /// 💎 سطح‌هایی که فقط با Pro باز می‌شوند: قفل نشان می‌دهند و زدنشان [onLockedTap] را صدا می‌زند
+  /// (انتخاب نمی‌شوند). خالی = بدونِ قفل (رفتارِ قبلی).
+  final Set<String> lockedLevels;
+  final VoidCallback? onLockedTap;
+
   const LevelChipsMulti({
     super.key,
     required this.selected,
     required this.onChanged,
     this.height = 38,
     this.allLabel,
+    this.lockedLevels = const <String>{},
+    this.onLockedTap,
   });
 
   @override
@@ -93,8 +100,11 @@ class LevelChipsMulti extends StatelessWidget {
               level: lvl,
               active: isAll ? selected.isEmpty : selected.contains(lvl),
               allLabel: allLabel,
+              locked: lockedLevels.contains(lvl),
               onTap: () {
-                if (isAll) {
+                if (lockedLevels.contains(lvl)) {
+                  onLockedTap?.call();
+                } else if (isAll) {
                   onChanged(<String>{});
                 } else {
                   final next = <String>{...selected};
@@ -116,12 +126,16 @@ class LevelChip extends StatelessWidget {
   final VoidCallback onTap;
   final String? allLabel;
 
+  /// 💎 قفلِ Pro: آیکنِ قفل + کم‌رنگ
+  final bool locked;
+
   const LevelChip({
     super.key,
     required this.level,
     required this.active,
     required this.onTap,
     this.allLabel,
+    this.locked = false,
   });
 
   @override
@@ -146,12 +160,24 @@ class LevelChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: border, width: 1.1),
         ),
-        child: Text(
-          isAll ? (allLabel ?? context.l10n.levels_all) : level,
-          style: TextStyle(
-            color: text,
-            fontSize: 12.5,
-            fontWeight: active ? FontWeight.w800 : FontWeight.w700,
+        child: Opacity(
+          opacity: locked ? 0.78 : 1,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (locked) ...[
+                Icon(Icons.lock, size: 11, color: text),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                isAll ? (allLabel ?? context.l10n.levels_all) : level,
+                style: TextStyle(
+                  color: text,
+                  fontSize: 12.5,
+                  fontWeight: active ? FontWeight.w800 : FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
       ),
