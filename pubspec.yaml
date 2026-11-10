@@ -58,5 +58,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/data/
+    - assets/data/conversations/
     - assets/licenses/
     - assets/tessdata_config.json
