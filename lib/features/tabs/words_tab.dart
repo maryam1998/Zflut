@@ -55,6 +55,12 @@ class WordsTab extends ConsumerWidget {
       afterHeading: _TopicFilter(all: base),
       freeSource: all, // 💎 ده لغتِ اولِ هر موضوع رایگان
       lockedInfo: lockedInfo,
+      levelAvailability: isPro
+          ? null
+          : ref
+              .watch(wordsIndexProvider)
+              .valueOrNull
+              ?.availability('daily', groups: topic),
     );
   }
 }

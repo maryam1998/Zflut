@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/level_colors.dart';
 import '../theme/app_theme_colors.dart';
 import '../usage/free_limit.dart';
+import '../usage/pro_i18n.dart';
 import '../usage/words_index.dart';
 
 /// یک چیپِ شمارش داخلِ کارتِ قفل (سطح یا موضوع)
@@ -24,6 +25,9 @@ class LockedWordsInfo {
   /// نامِ دسته‌ی انتخاب‌شده (null = همه / چند دسته)
   final String? scopeLabel;
 
+  /// سطح‌های انتخاب‌شده، مثلاً «B1 · B2» (null = همه‌ی سطح‌ها)
+  final String? levelsLabel;
+
   /// تفکیک: سطح‌ها (وقتی یک دسته انتخاب شده) یا موضوع‌ها (وقتی همه)
   final List<LockedChipData> chips;
   final bool chipsAreLevels;
@@ -31,13 +35,18 @@ class LockedWordsInfo {
   /// جستجو فعال است (جستجو فقط روی لغاتِ رایگان کار می‌کند)
   final bool searchActive;
 
+  /// متنِ جستجو
+  final String query;
+
   const LockedWordsInfo({
     required this.locked,
     required this.total,
     this.scopeLabel,
+    this.levelsLabel,
     this.chips = const <LockedChipData>[],
     this.chipsAreLevels = false,
     this.searchActive = false,
+    this.query = '',
   });
 
   int get free => total - locked;
@@ -81,13 +90,16 @@ LockedWordsInfo? buildLockedInfo({
       if (chips.length >= 8) break;
     }
   }
+  final lv = [for (final l in kIndexLevels) if (levels.contains(l)) l];
   return LockedWordsInfo(
     locked: locked,
     total: total,
     scopeLabel: scopeLabel,
+    levelsLabel: lv.isEmpty ? null : lv.join(' · '),
     chips: chips,
     chipsAreLevels: byLevel,
     searchActive: query.trim().isNotEmpty,
+    query: query.trim(),
   );
 }
 
@@ -105,30 +117,36 @@ String _n(int v) {
 /// و قفل‌شده‌ها به چه سطح/موضوعی مربوط‌اند — تا کاربر ارزشِ Pro را ببیند.
 class LockedWordsCard extends StatelessWidget {
   final LockedWordsInfo info;
-  const LockedWordsCard({super.key, required this.info});
+
+  /// نتیجه‌ی رایگانی برای نمایش نیست (لیستِ باز خالی است) — برای متنِ جستجو
+  final bool emptyResults;
+
+  const LockedWordsCard({
+    super.key,
+    required this.info,
+    this.emptyResults = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    final fa = Localizations.localeOf(context).languageCode == 'fa';
-    final scope = info.scopeLabel;
+    String t(String k, [Map<String, Object> a = const <String, Object>{}]) =>
+        ProI18n.t(context, k, a);
 
-    final title = fa
-        ? '${_n(info.locked)} لغتِ دیگر قفل است'
-        : '${_n(info.locked)} more words locked';
-    final subtitle = scope == null
-        ? null
-        : (fa ? 'در دسته‌ی «$scope»' : 'in “$scope”');
-    final progressText = fa
-        ? 'شما ${_n(info.free)} از ${_n(info.total)} لغت را می‌توانید بخوانید'
-        : 'You can read ${_n(info.free)} of ${_n(info.total)} words';
-    final chipsTitle = info.chipsAreLevels
-        ? (fa ? 'قفل‌شده به‌تفکیکِ سطح' : 'Locked by level')
-        : (fa ? 'قفل‌شده به‌تفکیکِ موضوع' : 'Locked by topic');
-    final cta = fa ? 'باز کردنِ همه‌ی لغات با Pro' : 'Unlock all words with Pro';
-    final searchNote = fa
-        ? 'جستجو فقط روی لغاتِ رایگان کار می‌کند. با Pro در همه‌ی ${_n(info.total)} لغت جستجو کنید.'
-        : 'Search only covers the free words. Go Pro to search all ${_n(info.total)} words.';
+    // زیرعنوان: «در «دسته»» + سطح‌های انتخاب‌شده
+    final subParts = <String>[
+      if (info.scopeLabel != null) t('in_scope', {'scope': info.scopeLabel!}),
+      if (info.levelsLabel != null) info.levelsLabel!,
+    ];
+    final subtitle = subParts.isEmpty ? null : subParts.join(' · ');
+
+    final title = t('words_locked_title', {'n': _n(info.locked)});
+    final progressText =
+        t('words_progress', {'free': _n(info.free), 'total': _n(info.total)});
+    final chipsTitle =
+        t(info.chipsAreLevels ? 'locked_by_level' : 'locked_by_topic');
+    final cta = t('words_cta');
+    final searchNote = t('search_note', {'total': _n(info.total)});
 
     final value = info.total <= 0 ? 0.0 : info.free / info.total;
 
@@ -176,6 +194,23 @@ class LockedWordsCard extends StatelessWidget {
           ),
         );
 
+    Widget perk(String text) => Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, size: 16, color: c.gold),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(text,
+                    style: TextStyle(
+                        color: c.ink,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        );
+
     return InkWell(
       onTap: FreeLimit.reportLocked,
       borderRadius: BorderRadius.circular(16),
@@ -200,13 +235,29 @@ class LockedWordsCard extends StatelessWidget {
                   Icon(Icons.lock, color: c.gold, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      searchNote,
-                      style: TextStyle(
-                          color: c.ink,
-                          fontSize: 13,
-                          height: 1.5,
-                          fontWeight: FontWeight.w600),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (emptyResults && info.query.isNotEmpty) ...[
+                          Text(
+                            t('search_empty_title', {'q': info.query}),
+                            style: TextStyle(
+                                color: c.ink,
+                                fontSize: 14,
+                                height: 1.4,
+                                fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                        Text(
+                          searchNote,
+                          style: TextStyle(
+                              color: emptyResults ? c.inkSoft : c.ink,
+                              fontSize: 13,
+                              height: 1.5,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -244,6 +295,21 @@ class LockedWordsCard extends StatelessWidget {
                           ),
                       ],
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: c.gold,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text('PRO',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8)),
                   ),
                 ],
               ),
@@ -306,6 +372,10 @@ class LockedWordsCard extends StatelessWidget {
               skeletonRow(0.55, 0.8),
               skeletonRow(0.4, 0.65),
               skeletonRow(0.62, 0.5),
+              const SizedBox(height: 4),
+              perk(t('perk_words', {'total': _n(info.total)})),
+              perk(t('perk_levels')),
+              perk(t('perk_search')),
             ],
             const SizedBox(height: 6),
             FilledButton.icon(

@@ -1,5 +1,6 @@
 import '../../core/usage/free_limit.dart';
 import '../../core/usage/conversations_index.dart';
+import '../../core/usage/pro_i18n.dart';
 import '../../core/widgets/locked_conversation_card.dart';
 import '../../core/constants/level_colors.dart';
 import '../../core/usage/pro_status.dart';
@@ -607,19 +608,18 @@ class _TopicCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    final fa = Localizations.localeOf(context).languageCode == 'fa';
     final locked = mode == _CardMode.locked;
 
     // فوترِ کارت: تعدادِ جمله‌ها
     Widget? footer;
     final n = lineCount;
     if (n != null && n > 0) {
-      final unit = fa ? 'جمله' : 'lines';
+      final unit = ProI18n.t(context, 'lines_unit');
       if (locked) {
         footer = _pill(c, c.gold, Icons.lock, '$n $unit');
       } else if (mode == _CardMode.free) {
         footer = _pill(c, c.teal, Icons.lock_open,
-            fa ? '$freeCount از $n' : '$freeCount of $n');
+            ProI18n.t(context, 'free_of', {'free': freeCount, 'n': n}));
       } else {
         footer = Text('$n $unit',
             style: TextStyle(

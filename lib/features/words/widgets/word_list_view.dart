@@ -1,6 +1,5 @@
-import '../../../core/constants/cefr_levels.dart';
-import '../../../core/usage/free_limit.dart';
 import '../../../core/usage/pro_status.dart';
+import '../../../core/usage/words_index.dart' show LevelAvailability;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -69,6 +68,9 @@ class WordListView extends ConsumerStatefulWidget {
   /// 💎 کارتِ «لغاتِ قفل‌شده» (شمارِ کل/قفل/تفکیک) برای کاربرِ رایگان؛ null = چیزی قفل نیست.
   final LockedWordsInfo? lockedInfo;
 
+  /// 💎 وضعیتِ هر سطح برای چیپ‌های سطح (قفل / خالی)؛ null = همه‌ی سطح‌ها عادی.
+  final LevelAvailability? levelAvailability;
+
   const WordListView({
     super.key,
     required this.listId,
@@ -80,6 +82,7 @@ class WordListView extends ConsumerStatefulWidget {
     this.afterHeading,
     this.freeSource,
     this.lockedInfo,
+    this.levelAvailability,
   });
 
   @override
@@ -228,37 +231,17 @@ class _WordListViewState extends ConsumerState<WordListView> {
     return out;
   }
 
-  // 💎 سطح‌های قفل‌شده برای کاربرِ رایگان: همه‌ی سطح‌ها جز پایین‌ترین سطحِ لغاتِ رایگانِ این لیست
-  List<DailyWord>? _lvSrc;
-  Set<String> _lvOut = const <String>{};
-
-  Set<String> _lockedLevels() {
-    final free = widget.freeSource;
-    if (free == null) return const <String>{};
-    if (identical(_lvSrc, free)) return _lvOut;
-    var open = '';
-    var best = 99;
-    for (final w in free) {
-      final r = _kLevelRank[w.level] ?? 99;
-      if (r < best) {
-        best = r;
-        open = w.level;
-      }
-    }
-    _lvSrc = free;
-    _lvOut = open.isEmpty
-        ? const <String>{}
-        : {for (final l in kCefrLevels) if (l != open) l};
-    return _lvOut;
-  }
-
   @override
   Widget build(BuildContext context) {
     final L = context.l10n;
     final isPro = ref.watch(isProProvider);
     final words = _applySort(_gate(widget.words, isPro));
     final lockedInfo = isPro ? null : widget.lockedInfo;
-    final lockedLevels = isPro ? const <String>{} : _lockedLevels();
+    // 💎 چیپ‌های سطح از «ایندکسِ شمارش» می‌آیند: سطحِ بدونِ لغتِ رایگان = قفل (ولی قابلِ
+    // انتخاب؛ کارتِ قفل شمارِ لغاتِ آن سطح را نشان می‌دهد)، سطحِ بدونِ هیچ لغت = کم‌رنگ.
+    final avail = isPro ? null : widget.levelAvailability;
+    final lockedLevels = avail?.locked ?? const <String>{};
+    final emptyLevels = avail?.empty ?? const <String>{};
     final c = context.appColors;
     final sel = ref.watch(languageSelectionProvider);
     final filter = ref.watch(wordsFilterProvider);
@@ -318,9 +301,9 @@ class _WordListViewState extends ConsumerState<WordListView> {
                   LevelChipsMulti(
                     selected: filter.levels,
                     onChanged: notifier.setLevels,
-                    // 💎 فقط پایین‌ترین سطحِ لیست باز است؛ بقیه‌ی سطح‌ها (تا C2) با Pro
                     lockedLevels: lockedLevels,
-                    onLockedTap: FreeLimit.reportLocked,
+                    disabledLevels: emptyLevels,
+                    selectLocked: true,
                   ),
                   const SizedBox(height: 8),
                   Align(
@@ -469,10 +452,10 @@ class _WordListViewState extends ConsumerState<WordListView> {
                 ),
               ),
             ),
+          // (کاربرِ رایگان با جستجوی بی‌نتیجه هم «Nothing found» نمی‌بیند؛ کارتِ قفل
+          // توضیح می‌دهد جستجو فقط روی لغاتِ رایگان است)
           if (words.isEmpty &&
-              (lockedInfo == null ||
-                  lockedInfo.searchActive ||
-                  (widget.loading && !widget.hasAnyData)))
+              (lockedInfo == null || (widget.loading && !widget.hasAnyData)))
             SliverFillRemaining(
               hasScrollBody: false,
               child: _EmptyState(
@@ -538,7 +521,8 @@ class _WordListViewState extends ConsumerState<WordListView> {
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
                     12, words.isEmpty ? 12 : 0, 12, 90),
-                child: LockedWordsCard(info: lockedInfo),
+                child: LockedWordsCard(
+                    info: lockedInfo, emptyResults: words.isEmpty),
               ),
             ),
         ],

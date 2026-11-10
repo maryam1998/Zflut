@@ -32,6 +32,17 @@ class _Counts {
   }
 }
 
+/// وضعیتِ هر سطح (A1..C2) در یک محدوده‌ی لغات (لیست / موضوع / دسته) برای کاربرِ رایگان
+@immutable
+class LevelAvailability {
+  /// سطح‌هایی که لغت دارند ولی هیچ‌کدام رایگان نیست (قفل، ولی قابلِ انتخاب)
+  final Set<String> locked;
+
+  /// سطح‌هایی که در این محدوده اصلاً لغتی ندارند (کم‌رنگ و غیرقابلِ انتخاب)
+  final Set<String> empty;
+  const LevelAvailability(this.locked, this.empty);
+}
+
 class WordsIndex {
   final Map<String, Map<String, _Counts>> _groups;
   final Map<String, _Counts> _vocabCats;
@@ -102,6 +113,28 @@ class WordsIndex {
       if (n > 0) out[lv] = n;
     }
     return out;
+  }
+
+  /// وضعیتِ هر سطح در محدوده‌ی [groups]/[category] — برای چیپ‌های سطح:
+  /// «قفل» = لغت دارد ولی هیچ‌کدام رایگان نیست · «خالی» = اصلاً لغتی ندارد.
+  LevelAvailability availability(String list,
+      {Set<String> groups = const <String>{}, String? category}) {
+    final src = _pick(list, groups, category).toList();
+    final locked = <String>{};
+    final empty = <String>{};
+    for (var i = 0; i < kIndexLevels.length; i++) {
+      var t = 0, f = 0;
+      for (final c in src) {
+        if (i < c.t.length) t += c.t[i];
+        if (i < c.f.length) f += c.f[i];
+      }
+      if (t == 0) {
+        empty.add(kIndexLevels[i]);
+      } else if (f == 0) {
+        locked.add(kIndexLevels[i]);
+      }
+    }
+    return LevelAvailability(locked, empty);
   }
 
   /// لغاتِ قفل‌شده به‌تفکیکِ گروه (موضوع/دسته) برای فیلترِ سطحِ فعلی

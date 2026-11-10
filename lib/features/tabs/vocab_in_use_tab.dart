@@ -59,6 +59,12 @@ class VocabInUseTab extends ConsumerWidget {
       afterHeading: _TopicFilter(all: src.valueOrNull ?? const <DailyWord>[]),
       freeSource: src.valueOrNull, // 💎 ده لغتِ اولِ هر موضوع رایگان
       lockedInfo: lockedInfo,
+      levelAvailability: isPro
+          ? null
+          : ref
+              .watch(wordsIndexProvider)
+              .valueOrNull
+              ?.availability('vocab', groups: topicKey, category: catSel),
     );
   }
 }

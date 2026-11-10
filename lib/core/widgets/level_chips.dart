@@ -73,6 +73,14 @@ class LevelChipsMulti extends StatelessWidget {
   final Set<String> lockedLevels;
   final VoidCallback? onLockedTap;
 
+  /// true = سطحِ قفل‌شده هم مثلِ بقیه انتخاب می‌شود (قفل فقط نشان می‌دهد و صفحه
+  /// «کارتِ قفل» را با شمارِ لغاتِ آن سطح نشان می‌دهد)؛ false = رفتارِ قبلی ([onLockedTap]).
+  final bool selectLocked;
+
+  /// سطح‌هایی که در این محدوده اصلاً محتوا ندارند: کم‌رنگ و غیرقابلِ انتخاب
+  /// (اگر از قبل انتخاب شده باشند، برای برداشتنشان قابلِ لمس می‌مانند).
+  final Set<String> disabledLevels;
+
   const LevelChipsMulti({
     super.key,
     required this.selected,
@@ -81,6 +89,8 @@ class LevelChipsMulti extends StatelessWidget {
     this.allLabel,
     this.lockedLevels = const <String>{},
     this.onLockedTap,
+    this.selectLocked = false,
+    this.disabledLevels = const <String>{},
   });
 
   @override
@@ -95,14 +105,18 @@ class LevelChipsMulti extends StatelessWidget {
         itemBuilder: (_, i) {
           final lvl = levels[i];
           final isAll = lvl == 'all';
+          final isDisabled =
+              disabledLevels.contains(lvl) && !selected.contains(lvl);
           return Center(
             child: LevelChip(
               level: lvl,
               active: isAll ? selected.isEmpty : selected.contains(lvl),
               allLabel: allLabel,
               locked: lockedLevels.contains(lvl),
+              disabled: isDisabled,
               onTap: () {
-                if (lockedLevels.contains(lvl)) {
+                if (isDisabled) return;
+                if (lockedLevels.contains(lvl) && !selectLocked) {
                   onLockedTap?.call();
                 } else if (isAll) {
                   onChanged(<String>{});
@@ -129,6 +143,9 @@ class LevelChip extends StatelessWidget {
   /// 💎 قفلِ Pro: آیکنِ قفل + کم‌رنگ
   final bool locked;
 
+  /// این سطح در این محدوده محتوا ندارد: خیلی کم‌رنگ
+  final bool disabled;
+
   const LevelChip({
     super.key,
     required this.level,
@@ -136,6 +153,7 @@ class LevelChip extends StatelessWidget {
     required this.onTap,
     this.allLabel,
     this.locked = false,
+    this.disabled = false,
   });
 
   @override
@@ -161,7 +179,7 @@ class LevelChip extends StatelessWidget {
           border: Border.all(color: border, width: 1.1),
         ),
         child: Opacity(
-          opacity: locked ? 0.78 : 1,
+          opacity: disabled ? 0.38 : (locked ? 0.78 : 1),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

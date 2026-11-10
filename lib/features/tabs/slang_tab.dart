@@ -49,6 +49,12 @@ class SlangTab extends ConsumerWidget {
       afterHeading: _SlangTopicFilter(all: src.valueOrNull ?? const <DailyWord>[]),
       freeSource: src.valueOrNull, // 💎 ده لغتِ اولِ هر دسته رایگان
       lockedInfo: lockedInfo,
+      levelAvailability: isPro
+          ? null
+          : ref
+              .watch(wordsIndexProvider)
+              .valueOrNull
+              ?.availability('slang', groups: topicKey),
     );
   }
 }

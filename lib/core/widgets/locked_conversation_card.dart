@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../constants/level_colors.dart';
 import '../theme/app_theme_colors.dart';
 import '../usage/free_limit.dart';
+import '../usage/pro_i18n.dart';
 import 'locked_words_card.dart' show LockedChipData;
 
 String _n(int v) {
@@ -128,22 +129,18 @@ class LockedConversationsBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    String t(String k, [Map<String, Object> a = const <String, Object>{}]) =>
+        ProI18n.t(context, k, a);
     final free = total - locked;
 
     final title = lockedTopics > 0
-        ? (fa
-            ? '${_n(locked)} جمله‌ی مکالمه در ${_n(lockedTopics)} موضوع قفل است'
-            : '${_n(locked)} dialogue lines in ${_n(lockedTopics)} topics are locked')
-        : (fa
-            ? '${_n(locked)} جمله‌ی دیگر قفل است'
-            : '${_n(locked)} more lines locked');
-    final progressText = fa
-        ? 'شما ${_n(free)} از ${_n(total)} جمله را می‌توانید بخوانید'
-        : 'You can read ${_n(free)} of ${_n(total)} lines';
-    final chipsTitle = fa ? 'قفل‌شده به‌تفکیکِ سطح' : 'Locked by level';
-    final cta =
-        fa ? 'باز کردنِ همه‌ی مکالمه‌ها با Pro' : 'Unlock all conversations with Pro';
+        ? t('conv_banner_title',
+            {'locked': _n(locked), 'topics': _n(lockedTopics)})
+        : t('conv_banner_title_short', {'locked': _n(locked)});
+    final progressText =
+        t('conv_progress', {'free': _n(free), 'total': _n(total)});
+    final chipsTitle = t('locked_by_level');
+    final cta = t('conv_cta');
 
     return InkWell(
       onTap: FreeLimit.reportLocked,
@@ -211,19 +208,16 @@ class LockedConversationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    String t(String k, [Map<String, Object> a = const <String, Object>{}]) =>
+        ProI18n.t(context, k, a);
     final free = total - locked;
 
-    final title = fa
-        ? '${_n(locked)} جمله‌ی دیگر قفل است'
-        : '${_n(locked)} more lines locked';
-    final subtitle = fa ? 'در موضوعِ «$scopeLabel»' : 'in “$scopeLabel”';
-    final progressText = fa
-        ? 'شما ${_n(free)} از ${_n(total)} جمله را می‌توانید بخوانید'
-        : 'You can read ${_n(free)} of ${_n(total)} lines';
-    final chipsTitle = fa ? 'قفل‌شده به‌تفکیکِ سطح' : 'Locked by level';
-    final cta =
-        fa ? 'باز کردنِ همه‌ی سطح‌ها با Pro' : 'Unlock every level with Pro';
+    final title = t('conv_card_title', {'n': _n(locked)});
+    final subtitle = t('in_scope', {'scope': scopeLabel});
+    final progressText =
+        t('conv_progress', {'free': _n(free), 'total': _n(total)});
+    final chipsTitle = t('locked_by_level');
+    final cta = t('conv_cta_levels');
 
     // سه حبابِ «مکالمه‌ی محو» — نشان می‌دهد پشتِ قفل مکالمه‌ی واقعی هست
     Widget bubble(double w, bool start) => Align(
