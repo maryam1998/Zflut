@@ -72,11 +72,30 @@ export async function verifySessionToken(env, token) {
   }
 }
 
+function tokenIssuer(accessToken) {
+  // فقط برای عیب‌یابی: پروژه‌ی Supabaseی که این توکن را صادر کرده (iss) — راز نیست
+  try {
+    const p = JSON.parse(new TextDecoder().decode(b64uDecode(String(accessToken).split(".")[1])));
+    return String(p.iss || "");
+  } catch {
+    return "unreadable";
+  }
+}
+
 async function verifySupabaseUser(env, accessToken) {
-  const r = await fetch(`${String(env.SUPABASE_URL).replace(/\/+$/, "")}/auth/v1/user`, {
-    headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` },
+  // مقدارها trim می‌شوند (فاصله/خطِ اضافه هنگامِ paste در داشبورد باعث ۴۰۱ می‌شد)
+  const base = String(env.SUPABASE_URL).trim().replace(/\/+$/, "");
+  const key = String(env.SUPABASE_ANON_KEY).trim();
+  const r = await fetch(`${base}/auth/v1/user`, {
+    headers: { apikey: key, Authorization: `Bearer ${accessToken}` },
   });
-  if (!r.ok) return null;
+  if (!r.ok) {
+    let body = "";
+    try { body = (await r.text()).slice(0, 200); } catch { /* ignore */ }
+    console.log("session: supabase rejected", r.status, body,
+      "| worker=", base, "| token iss=", tokenIssuer(accessToken));
+    return null;
+  }
   const u = await r.json();
   return u && u.id ? u : null;
 }
@@ -130,7 +149,7 @@ export async function handleSession(request, env, cors) {
   const m = /^Bearer\s+(.+)$/i.exec(request.headers.get("Authorization") || "");
   if (!m) return jsonResp({ error: "login required" }, 401, cors);
   let user = null;
-  try { user = await verifySupabaseUser(env, m[1]); } catch { /* پایین */ }
+  try { user = await verifySupabaseUser(env, m[1]); } catch (e) { console.log("session: verify error", String(e)); }
   if (!user) return jsonResp({ error: "invalid login" }, 401, cors);
   const { token, exp } = await issueSessionToken(env, user.id, user.email);
   let pro = false;
