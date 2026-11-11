@@ -38,7 +38,7 @@ class FreeLimit {
   static const String lockedFa =
       'این بخش مخصوص نسخه‌ی Pro است. برای دسترسی کامل، نسخه‌ی Pro را بخرید.';
   static const String lockedEn =
-      'This content is for Pro. Buy Pro for full access.';
+      'This content is available with Pro. Upgrade to unlock full access.';
 
   static String message(String lang) => lang == 'fa' ? messageFa : messageEn;
 
