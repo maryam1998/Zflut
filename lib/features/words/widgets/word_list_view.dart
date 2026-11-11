@@ -71,6 +71,10 @@ class WordListView extends ConsumerStatefulWidget {
   /// 💎 وضعیتِ هر سطح برای چیپ‌های سطح (قفل / خالی)؛ null = همه‌ی سطح‌ها عادی.
   final LevelAvailability? levelAvailability;
 
+  /// 🗂️ حالتِ «شبکه‌ی دسته‌ها»: لیستِ لغات/بازه/مرتب‌سازی/کارتِ قفل پنهان می‌شوند و فقط
+  /// فیلترِ سطح + جستجو + [afterHeading] (شبکه‌ی دسته‌ها) دیده می‌شود.
+  final bool gridMode;
+
   const WordListView({
     super.key,
     required this.listId,
@@ -83,6 +87,7 @@ class WordListView extends ConsumerStatefulWidget {
     this.freeSource,
     this.lockedInfo,
     this.levelAvailability,
+    this.gridMode = false,
   });
 
   @override
@@ -306,6 +311,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                     selectLocked: true,
                   ),
                   const SizedBox(height: 8),
+                  if (!widget.gridMode)
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: PopupMenuButton<WordListSort>(
@@ -429,7 +435,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
                 ),
               ),
             ),
-          if (words.isNotEmpty)
+          if (words.isNotEmpty && !widget.gridMode)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
@@ -454,7 +460,9 @@ class _WordListViewState extends ConsumerState<WordListView> {
             ),
           // (کاربرِ رایگان با جستجوی بی‌نتیجه هم «Nothing found» نمی‌بیند؛ کارتِ قفل
           // توضیح می‌دهد جستجو فقط روی لغاتِ رایگان است)
-          if (words.isEmpty &&
+          if (widget.gridMode)
+            const SliverToBoxAdapter(child: SizedBox.shrink())
+          else if (words.isEmpty &&
               (lockedInfo == null || (widget.loading && !widget.hasAnyData)))
             SliverFillRemaining(
               hasScrollBody: false,
@@ -516,7 +524,10 @@ class _WordListViewState extends ConsumerState<WordListView> {
               ),
             ),
           // 🔒 لغاتِ قفل‌شده: کل چندتاست، چندتا رایگان است، قفل‌شده‌ها مربوط به چیست
-          if (!isPro && widget.freeSource != null && lockedInfo != null)
+          if (!widget.gridMode &&
+              !isPro &&
+              widget.freeSource != null &&
+              lockedInfo != null)
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(

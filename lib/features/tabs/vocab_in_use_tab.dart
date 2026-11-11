@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/vocab_topics.dart';
 import '../../core/models/daily_word.dart';
+import '../../core/models/filter_state.dart';
+import '../../core/providers/category_search_provider.dart';
 import '../../core/providers/word_sources_provider.dart';
 import '../../core/providers/words_filter_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
@@ -10,6 +12,7 @@ import '../../core/usage/free_limit.dart';
 import '../../core/usage/pro_i18n.dart';
 import '../../core/usage/pro_status.dart';
 import '../../core/usage/words_index.dart';
+import '../../core/widgets/category_grid.dart';
 import '../../core/widgets/locked_words_card.dart';
 import '../words/widgets/word_list_view.dart';
 
@@ -30,8 +33,16 @@ class VocabInUseTab extends ConsumerWidget {
     final filter = ref.watch(wordsFilterProvider);
     final proIndex = isPro ? null : ref.watch(wordsIndexProvider).valueOrNull;
     final ui = Localizations.localeOf(context).languageCode;
+    // 🗂️ شبکه‌ی موضوع‌ها: بدونِ موضوع/«همه»/جستجو ← شبکه؛ وگرنه لیستِ لغات
+    final searching = filter.query.trim().isNotEmpty;
+    final allOpen = ref.watch(categoryAllOpenProvider('vocab'));
+    final gridMode = topicKey.isEmpty && !allOpen && !searching;
+    final scope = searching ? const <String>{} : topicKey;
+    final shown = gridMode
+        ? const <DailyWord>[]
+        : (searching ? ref.watch(vocabSearchAllProvider) : words);
     String? catSel;
-    if (topicKey.length == 1 && cat != null) {
+    if (!searching && topicKey.length == 1 && cat != null) {
       final t = vocabTopicByKey(topicKey.first);
       if (t != null && t.categories.contains(cat)) catSel = cat;
     }
@@ -40,22 +51,23 @@ class VocabInUseTab extends ConsumerWidget {
         : buildLockedInfo(
             index: ref.watch(wordsIndexProvider).valueOrNull,
             list: 'vocab',
-            groups: topicKey,
+            groups: scope,
             category: catSel,
             levels: filter.levels,
             query: filter.query,
             groupLabel: (k) => vocabTopicByKey(k)?.label(ui),
             scopeLabel: catSel != null
                 ? vocabCategoryLabel(catSel, ui)
-                : (topicKey.length == 1
-                    ? vocabTopicByKey(topicKey.first)?.label(ui)
+                : (scope.length == 1
+                    ? vocabTopicByKey(scope.first)?.label(ui)
                     : null),
           );
     return WordListView(
       // با عوض‌شدنِ موضوع/دسته، لیست از اول (و اسکرول از بالا) شروع می‌شود
       key: ValueKey('vocab-${(topicKey.toList()..sort()).join(',')}-${cat ?? '_'}'),
       listId: 'vocab-in-use',
-      words: words,
+      words: shown,
+      gridMode: gridMode,
       hasAnyData: src.valueOrNull?.isNotEmpty ?? false,
       loading: src.isLoading,
       afterHeading: Column(
@@ -67,7 +79,46 @@ class VocabInUseTab extends ConsumerWidget {
               free: proIndex.total('vocab') - proIndex.locked('vocab'),
               total: proIndex.total('vocab'),
             ),
-          _TopicFilter(all: src.valueOrNull ?? const <DailyWord>[]),
+          if (gridMode)
+            CategoryGrid(
+              list: 'vocab',
+              items: _vocabItems(
+                context: context,
+                src: src.valueOrNull ?? const <DailyWord>[],
+                index: proIndex,
+                filter: filter,
+              ),
+              onTap: (k) {
+                ref.read(vocabCategoryProvider.notifier).state = null;
+                if (k == null) {
+                  ref.read(categoryAllOpenProvider('vocab').notifier).state =
+                      true;
+                } else {
+                  ref.read(vocabTopicProvider.notifier).state = {k};
+                }
+              },
+            )
+          else if (!searching) ...[
+            CategoryBackBar(
+              list: 'vocab',
+              categoryKey: topicKey.length == 1 ? topicKey.first : null,
+              label: topicKey.length == 1
+                  ? (vocabTopicByKey(topicKey.first)?.label(ui) ??
+                      topicKey.first)
+                  : (ui == 'fa' || ui == 'ar' ? 'همه' : 'All'),
+              onBack: () {
+                ref.read(vocabTopicProvider.notifier).state = const <String>{};
+                ref.read(vocabCategoryProvider.notifier).state = null;
+                ref.read(categoryAllOpenProvider('vocab').notifier).state =
+                    false;
+              },
+            ),
+            // دسته‌های ریزِ همان موضوع (مثلاً «سلامت و پزشکی»)
+            if (topicKey.length == 1)
+              _TopicFilter(
+                  all: src.valueOrNull ?? const <DailyWord>[],
+                  onlyCategories: true),
+          ],
         ],
       ),
       freeSource: src.valueOrNull, // 💎 ده لغتِ اولِ هر موضوع رایگان
@@ -77,14 +128,17 @@ class VocabInUseTab extends ConsumerWidget {
           : ref
               .watch(wordsIndexProvider)
               .valueOrNull
-              ?.availability('vocab', groups: topicKey, category: catSel),
+              ?.availability('vocab', groups: scope, category: catSel),
     );
   }
 }
 
 class _TopicFilter extends ConsumerWidget {
   final List<DailyWord> all;
-  const _TopicFilter({required this.all});
+
+  /// true = فقط ردیفِ دسته‌های ریزِ موضوعِ بازشده (ردیفِ موضوع‌ها را شبکه جایگزین کرده)
+  final bool onlyCategories;
+  const _TopicFilter({required this.all, this.onlyCategories = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -146,6 +200,7 @@ class _TopicFilter extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!onlyCategories)
           row([
             chip('$allLabel (${index != null ? index.total('vocab') : all.length})',
                 topicSel.isEmpty, () {
@@ -366,4 +421,49 @@ class _TopicChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 🗂️ کارت‌های شبکه‌ی موضوع‌های Vocab in use (با احترام به فیلترِ سطح). کاربرِ رایگان: «باز از کل».
+List<CategoryItem> _vocabItems({
+  required BuildContext context,
+  required List<DailyWord> src,
+  required WordsIndex? index,
+  required WordsFilterState filter,
+}) {
+  final ui = Localizations.localeOf(context).languageCode;
+  final levels = filter.levels;
+  final per = <String, int>{};
+  for (final w in src) {
+    if (!filter.matchesLevel(w.level)) continue;
+    final t = vocabTopicOfCategory(w.category);
+    if (t == null) continue;
+    per[t.key] = (per[t.key] ?? 0) + 1;
+  }
+  int totalOf(String k) => index != null
+      ? index.total('vocab', groups: {k}, levels: levels)
+      : (per[k] ?? 0);
+  int? freeOf(String k) => index == null
+      ? null
+      : totalOf(k) - index.locked('vocab', groups: {k}, levels: levels);
+  final allTotal = index != null
+      ? index.total('vocab', levels: levels)
+      : per.values.fold<int>(0, (a, b) => a + b);
+  return [
+    CategoryItem(
+      key: null,
+      label: ui == 'fa' || ui == 'ar' ? 'همه' : 'All',
+      total: allTotal,
+      free: index == null
+          ? null
+          : allTotal - index.locked('vocab', levels: levels),
+    ),
+    for (final t in kVocabTopics)
+      if (totalOf(t.key) > 0)
+        CategoryItem(
+          key: t.key,
+          label: t.label(ui),
+          total: totalOf(t.key),
+          free: freeOf(t.key),
+        ),
+  ];
 }

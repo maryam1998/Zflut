@@ -12,6 +12,7 @@ import '../../core/usage/free_limit.dart';
 import '../../core/usage/pro_i18n.dart';
 import '../../core/usage/pro_status.dart';
 import '../../core/usage/words_index.dart';
+import '../../core/widgets/category_grid.dart';
 import '../../core/widgets/locked_words_card.dart';
 import '../words/widgets/word_list_view.dart';
 
@@ -40,6 +41,14 @@ class WordsTab extends ConsumerWidget {
     final filter = ref.watch(wordsFilterProvider);
     final ui = Localizations.localeOf(context).languageCode;
 
+    // 🗂️ شبکه‌ی دسته‌ها: بدونِ دسته/«همه»/جستجو ← شبکه؛ وگرنه لیستِ لغات
+    final searching = filter.query.trim().isNotEmpty;
+    final allOpen = ref.watch(categoryAllOpenProvider('words'));
+    final gridMode = topic.isEmpty && !allOpen && !searching;
+    // جستجو همیشه روی همه‌ی دسته‌ها کار می‌کند
+    final scope = searching ? const <String>{} : topic;
+    final shown = gridMode ? const <DailyWord>[] : (searching ? base : words);
+
     // 💎 فقط لغاتِ باز (و شخصی) — برای شمارشِ چیپ‌ها وقتی جستجو فعال است
     List<DailyWord> gated(List<DailyWord> src) {
       if (isPro) return src;
@@ -55,19 +64,20 @@ class WordsTab extends ConsumerWidget {
         : _scopedLockedInfo(
             index: index,
             free: free,
-            groups: topic,
+            groups: scope,
             levels: filter.levels,
             query: filter.query,
             groupLabel: (k) => dictTopicByKey(k)?.label(ui),
-            scopeLabel: topic.length == 1
-                ? dictTopicByKey(topic.first)?.label(ui)
+            scopeLabel: scope.length == 1
+                ? dictTopicByKey(scope.first)?.label(ui)
                 : null,
           );
     return WordListView(
       // با عوض‌شدنِ دسته، لیست از اول (و اسکرول از بالا) شروع می‌شود
       key: ValueKey('words-${(topic.toList()..sort()).join(',')}'),
       listId: 'words',
-      words: words,
+      words: shown,
+      gridMode: gridMode,
       hasAnyData: all.isNotEmpty || personal.isNotEmpty,
       loading: ref.watch(dailyWordsLoaderProvider).isLoading,
       afterHeading: Column(
@@ -79,15 +89,97 @@ class WordsTab extends ConsumerWidget {
               free: free.length,
               total: index.total('daily'),
             ),
-          _TopicFilter(all: gated(base), free: free),
+          if (gridMode)
+            CategoryGrid(
+              list: 'daily',
+              items: _dictItems(
+                context: context,
+                base: base,
+                topics: ref.watch(wordsTabTopicsProvider),
+                index: index,
+                free: free,
+                levels: filter.levels,
+              ),
+              onTap: (k) {
+                if (k == null) {
+                  ref.read(categoryAllOpenProvider('words').notifier).state =
+                      true;
+                } else {
+                  ref.read(wordsTopicProvider.notifier).state = {k};
+                }
+              },
+            )
+          else if (!searching)
+            CategoryBackBar(
+              list: 'daily',
+              categoryKey: topic.length == 1 ? topic.first : null,
+              label: topic.length == 1
+                  ? (dictTopicByKey(topic.first)?.label(ui) ?? topic.first)
+                  : (ui == 'fa' || ui == 'ar' ? 'همه' : 'All'),
+              onBack: () {
+                ref.read(wordsTopicProvider.notifier).state = const <String>{};
+                ref.read(categoryAllOpenProvider('words').notifier).state =
+                    false;
+              },
+            ),
         ],
       ),
       freeSource: isPro ? all : free, // 💎 فقط ۲۰ لغتِ رایگان
       lockedInfo: lockedInfo,
       levelAvailability:
-          isPro ? null : _levelAvailability(index, free, topic),
+          isPro ? null : _levelAvailability(index, free, scope),
     );
   }
+}
+
+/// 🗂️ کارت‌های شبکه‌ی دسته‌ها (با احترام به فیلترِ سطح). کاربرِ رایگان: «باز از کل».
+List<CategoryItem> _dictItems({
+  required BuildContext context,
+  required List<DailyWord> base,
+  required Map<String, String> topics,
+  required WordsIndex? index,
+  required List<DailyWord> free,
+  required Set<String> levels,
+}) {
+  final ui = Localizations.localeOf(context).languageCode;
+  final isFree = index != null; // فقط برای کاربرِ رایگان ایندکس داریم
+  final perTopic = <String, int>{};
+  final personalPer = <String, int>{};
+  var personalAll = 0;
+  for (final w in base) {
+    final t = topics[w.sid] ?? kTopicOther;
+    perTopic[t] = (perTopic[t] ?? 0) + 1;
+    if (w.isPersonal) {
+      personalPer[t] = (personalPer[t] ?? 0) + 1;
+      personalAll++;
+    }
+  }
+  int totalOf(String k) => index != null
+      ? index.total('daily', groups: {k}, levels: levels) +
+          (personalPer[k] ?? 0)
+      : (perTopic[k] ?? 0);
+  int? freeOf(String k) =>
+      isFree ? _freeCount(free, {k}, levels) + (personalPer[k] ?? 0) : null;
+
+  final allTotal = index != null
+      ? index.total('daily', levels: levels) + personalAll
+      : base.length;
+  return [
+    CategoryItem(
+      key: null,
+      label: ui == 'fa' || ui == 'ar' ? 'همه' : 'All',
+      total: allTotal,
+      free: isFree ? _freeCount(free, <String>{}, levels) + personalAll : null,
+    ),
+    for (final t in kDictTopics)
+      if (totalOf(t.key) > 0)
+        CategoryItem(
+          key: t.key,
+          label: t.label(ui),
+          total: totalOf(t.key),
+          free: freeOf(t.key),
+        ),
+  ];
 }
 
 // ═══════════════════════════════════════════════════════════════════

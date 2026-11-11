@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/slang_topics.dart';
 import '../../core/models/daily_word.dart';
+import '../../core/models/filter_state.dart';
+import '../../core/providers/category_search_provider.dart';
 import '../../core/providers/word_sources_provider.dart';
 import '../../core/providers/words_filter_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
@@ -10,6 +12,7 @@ import '../../core/usage/free_limit.dart';
 import '../../core/usage/pro_i18n.dart';
 import '../../core/usage/pro_status.dart';
 import '../../core/usage/words_index.dart';
+import '../../core/widgets/category_grid.dart';
 import '../../core/widgets/locked_words_card.dart';
 import '../words/widgets/word_list_view.dart';
 
@@ -28,24 +31,33 @@ class SlangTab extends ConsumerWidget {
     final filter = ref.watch(wordsFilterProvider);
     final proIndex = isPro ? null : ref.watch(wordsIndexProvider).valueOrNull;
     final ui = Localizations.localeOf(context).languageCode;
+    // 🗂️ شبکه‌ی دسته‌ها: بدونِ دسته/«همه»/جستجو ← شبکه؛ وگرنه لیستِ لغات
+    final searching = filter.query.trim().isNotEmpty;
+    final allOpen = ref.watch(categoryAllOpenProvider('slang'));
+    final gridMode = topicKey.isEmpty && !allOpen && !searching;
+    final scope = searching ? const <String>{} : topicKey;
+    final shown = gridMode
+        ? const <DailyWord>[]
+        : (searching ? ref.watch(slangSearchAllProvider) : words);
     final lockedInfo = isPro
         ? null
         : buildLockedInfo(
             index: ref.watch(wordsIndexProvider).valueOrNull,
             list: 'slang',
-            groups: topicKey,
+            groups: scope,
             levels: filter.levels,
             query: filter.query,
             groupLabel: (k) => slangTopicByKey(k)?.label(ui),
-            scopeLabel: topicKey.length == 1
-                ? slangTopicByKey(topicKey.first)?.label(ui)
+            scopeLabel: scope.length == 1
+                ? slangTopicByKey(scope.first)?.label(ui)
                 : null,
           );
     return WordListView(
       // با عوض‌شدنِ موضوع، لیست از اول (و اسکرول از بالا) شروع می‌شود
       key: ValueKey('slang-${(topicKey.toList()..sort()).join(',')}'),
       listId: 'slang',
-      words: words,
+      words: shown,
+      gridMode: gridMode,
       hasAnyData: src.valueOrNull?.isNotEmpty ?? false,
       loading: src.isLoading,
       afterHeading: Column(
@@ -57,7 +69,38 @@ class SlangTab extends ConsumerWidget {
               free: proIndex.total('slang') - proIndex.locked('slang'),
               total: proIndex.total('slang'),
             ),
-          _SlangTopicFilter(all: src.valueOrNull ?? const <DailyWord>[]),
+          if (gridMode)
+            CategoryGrid(
+              list: 'slang',
+              items: _slangItems(
+                context: context,
+                src: src.valueOrNull ?? const <DailyWord>[],
+                index: proIndex,
+                filter: filter,
+              ),
+              onTap: (k) {
+                if (k == null) {
+                  ref.read(categoryAllOpenProvider('slang').notifier).state =
+                      true;
+                } else {
+                  ref.read(slangTopicProvider.notifier).state = {k};
+                }
+              },
+            )
+          else if (!searching)
+            CategoryBackBar(
+              list: 'slang',
+              categoryKey: topicKey.length == 1 ? topicKey.first : null,
+              label: topicKey.length == 1
+                  ? (slangTopicByKey(topicKey.first)?.label(ui) ??
+                      topicKey.first)
+                  : (ui == 'fa' || ui == 'ar' ? 'همه' : 'All'),
+              onBack: () {
+                ref.read(slangTopicProvider.notifier).state = const <String>{};
+                ref.read(categoryAllOpenProvider('slang').notifier).state =
+                    false;
+              },
+            ),
         ],
       ),
       freeSource: src.valueOrNull, // 💎 ده لغتِ اولِ هر دسته رایگان
@@ -67,9 +110,52 @@ class SlangTab extends ConsumerWidget {
           : ref
               .watch(wordsIndexProvider)
               .valueOrNull
-              ?.availability('slang', groups: topicKey),
+              ?.availability('slang', groups: scope),
     );
   }
+}
+
+/// 🗂️ کارت‌های شبکه‌ی دسته‌های Slang (با احترام به فیلترِ سطح). کاربرِ رایگان: «باز از کل».
+List<CategoryItem> _slangItems({
+  required BuildContext context,
+  required List<DailyWord> src,
+  required WordsIndex? index,
+  required WordsFilterState filter,
+}) {
+  final ui = Localizations.localeOf(context).languageCode;
+  final levels = filter.levels;
+  final per = <String, int>{};
+  for (final w in src) {
+    if (!filter.matchesLevel(w.level)) continue;
+    per[w.category] = (per[w.category] ?? 0) + 1;
+  }
+  int totalOf(String k) => index != null
+      ? index.total('slang', groups: {k}, levels: levels)
+      : (per[k] ?? 0);
+  int? freeOf(String k) => index == null
+      ? null
+      : totalOf(k) - index.locked('slang', groups: {k}, levels: levels);
+  final allTotal = index != null
+      ? index.total('slang', levels: levels)
+      : per.values.fold<int>(0, (a, b) => a + b);
+  return [
+    CategoryItem(
+      key: null,
+      label: ui == 'fa' || ui == 'ar' ? 'همه' : 'All',
+      total: allTotal,
+      free: index == null
+          ? null
+          : allTotal - index.locked('slang', levels: levels),
+    ),
+    for (final t in kSlangTopics)
+      if (totalOf(t.key) > 0)
+        CategoryItem(
+          key: t.key,
+          label: t.label(ui),
+          total: totalOf(t.key),
+          free: freeOf(t.key),
+        ),
+  ];
 }
 
 class _SlangTopicFilter extends ConsumerWidget {
