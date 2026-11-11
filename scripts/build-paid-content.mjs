@@ -245,7 +245,8 @@ function prepareList(list, tools) {
   const taken = new Map();
   for (const w of words) {
     const n = taken.get(w.__g) ?? 0;
-    w.__free = n < FREE_PER_GROUP;
+    // لغاتِ افزوده‌شده با scripts/add-words.mjs (id ≥ 500000) هرگز رایگان نمی‌شوند
+    w.__free = n < FREE_PER_GROUP && !(Number(w.id) >= 500000);
     if (w.__free) taken.set(w.__g, n + 1);
   }
   return words;
