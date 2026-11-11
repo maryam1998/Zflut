@@ -443,13 +443,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   bool _readTranslation(
       PlayerTrack track, TrackSpan cur, TrackSpan? nxt, bool loops) {
     if (!_readTransBg() || !_inBackground()) return false;
-    final to = _nativeCode();
-    if (to.isEmpty || to == track.code) return false;
-    _resumeFromHook = true;
-    _resumeSpanId =
-        nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
-    unawaited(_playTranslationThenResume(track, cur.id, to));
-    return true;
+    // 🌐 همه‌ی زبان‌های انتخاب‌شده در هدر (مبدأ + مقصدها) به‌ترتیب؛ نه فقط اولی
+    if (_fgLangs(track.code).isEmpty) return false;
+    return _startFgQueue(track, cur, nxt, loops, '', const <String>[]);
   }
 
   Future<void> _playTranslationThenResume(
@@ -493,43 +489,51 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     final cur = track.spanAt(s.charOffset);
     if (cur == null || cur.id == _prewarmId) return;
     _prewarmId = cur.id;
-    final to = _nativeCode();
-    if (to.isEmpty || to == track.code) return;
+    final langs = _fgLangs(track.code); // همه‌ی زبان‌های هدر (مبدأ + مقصدها)
+    if (langs.isEmpty) return;
     final i = track.spans.indexWhere((x) => x.id == cur.id);
     for (final k in [i, i + 1]) {
       if (k < 0 || k >= track.spans.length) continue;
       final id = track.spans[k].id;
-      unawaited(() async {
-        final t = await _translationText(id, track.code, to);
-        if (t == null || !mounted) return;
-        final clean = SentenceSplitter.sanitize(t);
-        if (clean.isEmpty) return;
-        unawaited(NativeTtsBridge.prefetch(
-            clean, to, ref.read(speechControllerProvider).rate));
-      }());
+      for (final to in langs) {
+        unawaited(() async {
+          final t = await _translationText(id, track.code, to);
+          if (t == null || !mounted) return;
+          final clean = SentenceSplitter.sanitize(t);
+          if (clean.isEmpty) return;
+          unawaited(NativeTtsBridge.prefetch(
+              clean, to, ref.read(speechControllerProvider).rate));
+        }());
+      }
       // مثال‌های بازِ این لغت و ترجمه‌هایشان هم از قبل آماده شوند
       final w = _notifier.itemText(id);
       final exs = w == null ? null : _examplesOf(w, track.code);
       if (w != null && exs != null) {
         for (final e in exs) {
-          unawaited(() async {
-            final rate = ref.read(speechControllerProvider).rate;
-            final ce = SentenceSplitter.sanitize(e);
-            if (ce.isNotEmpty) {
-              unawaited(NativeTtsBridge.prefetch(ce, track.code, rate));
-            }
-            final t = await _exampleTranslation(w, track.code, e, to);
-            if (t == null || !mounted) return;
-            final ct = SentenceSplitter.sanitize(t);
-            if (ct.isNotEmpty) unawaited(NativeTtsBridge.prefetch(ct, to, rate));
-          }());
+          final rate = ref.read(speechControllerProvider).rate;
+          final ce = SentenceSplitter.sanitize(e);
+          if (ce.isNotEmpty) {
+            unawaited(NativeTtsBridge.prefetch(ce, track.code, rate));
+          }
+          for (final to in langs) {
+            unawaited(() async {
+              final t = await _exampleTranslation(w, track.code, e, to);
+              if (t == null || !mounted) return;
+              final ct = SentenceSplitter.sanitize(t);
+              if (ct.isNotEmpty) {
+                unawaited(NativeTtsBridge.prefetch(ct, to, rate));
+              }
+            }());
+          }
         }
       }
     }
     // ⚡ ترجمه‌ی چند لغتِ بعدی هم از همین الان گرفته می‌شود تا موقعِ نوبتشان مکثی نباشد
     for (var k = i + 2; i >= 0 && k <= i + 6 && k < track.spans.length; k++) {
-      unawaited(_translationText(track.spans[k].id, track.code, to,
-          timeout: const Duration(seconds: 20)));
+      for (final to in langs) {
+        unawaited(_translationText(track.spans[k].id, track.code, to,
+            timeout: const Duration(seconds: 20)));
+      }
     }
   }
 
@@ -579,31 +583,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   bool _startBgQueue(PlayerTrack track, TrackSpan cur, TrackSpan? nxt,
       bool loops, String word, List<String> texts) {
     if (!_readTransBg() || !_inBackground()) return false;
-    final to = _nativeCode();
-    if (to.isEmpty || to == track.code) return false;
-    _bgCancel();
-    _resumeFromHook = true;
-    _resumeSpanId =
-        nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
-
-    // همه‌ی ترجمه‌ها هم‌زمان و از همین الان درخواست می‌شوند (نه یکی‌یکی موقعِ نوبت)
-    final steps = <_BgStep>[
-      _BgStep(to, true, null, _translationText(cur.id, track.code, to),
-          (t) => cur.id),
-    ];
-    for (final ex in List<String>.of(texts)) {
-      steps.add(_BgStep(track.code, false, ex, null,
-          (t) => 'ai-ex-${track.code}-${ex.hashCode}'));
-      steps.add(_BgStep(to, true, null,
-          _exampleTranslation(word, track.code, ex, to),
-          (t) => 'ai-ex-tr-$to-${t.hashCode}'));
-    }
-
-    _bgActive = true;
-    ExamplesRegistry.bgDriving = true;
-    final token = ++_bgToken;
-    unawaited(_runBgQueue(steps, token, track.key));
-    return true;
+    // 🌐 پس‌زمینه هم مثل داخل برنامه: ترجمه‌ی همه‌ی زبان‌های انتخاب‌شده در هدر (مبدأ + مقصدها)
+    // به‌ترتیبِ هدر خوانده می‌شود؛ هر تغییری در هدر بلافاصله اعمال می‌شود.
+    return _startFgQueue(track, cur, nxt, loops, word, texts);
   }
 
   /// داخل برنامه: لغت ← ترجمه‌ی هر زبان ← (مثال ← ترجمه‌ی هر زبان) ← لغتِ بعد
