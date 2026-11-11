@@ -1,0 +1,2914 @@
+[
+ {
+  "id": 10172,
+  "level": "B2",
+  "category": "other",
+  "en": "When hell freezes over",
+  "fa": "هرگز"
+ },
+ {
+  "id": 10207,
+  "level": "B1",
+  "category": "other",
+  "en": "You can say that again!",
+  "fa": "دقیقاً!"
+ },
+ {
+  "id": 10292,
+  "level": "B1",
+  "category": "other",
+  "en": "What do you say...",
+  "fa": "نظرت چیست..."
+ },
+ {
+  "id": 10296,
+  "level": "B2",
+  "category": "other",
+  "en": "How do you like them apples?",
+  "fa": "نظرت در مورد این چیست؟ (در مقام تلافی)"
+ },
+ {
+  "id": 10343,
+  "level": "B2",
+  "category": "other",
+  "en": "You scratch my back, I'll scratch yours",
+  "fa": "تو لطف کن، من هم لطف می‌کنم"
+ },
+ {
+  "id": 10603,
+  "level": "B2",
+  "category": "food",
+  "en": "That's the way the cookie crumbles",
+  "fa": "قضیه همین است"
+ },
+ {
+  "id": 10711,
+  "level": "B2",
+  "category": "other",
+  "en": "You bet your boots!",
+  "fa": "حتماً!"
+ },
+ {
+  "id": 10754,
+  "level": "B2",
+  "category": "other",
+  "en": "What in blue blazes!?",
+  "fa": "چه خبر است؟!"
+ },
+ {
+  "id": 10866,
+  "level": "B2",
+  "category": "other",
+  "en": "My dogs are barking",
+  "fa": "پاهایم درد می‌کند"
+ },
+ {
+  "id": 10880,
+  "level": "B2",
+  "category": "other",
+  "en": "That's a different kettle of fish",
+  "fa": "این چیز دیگری است"
+ },
+ {
+  "id": 10881,
+  "level": "B2",
+  "category": "other",
+  "en": "This is a fine kettle of fish!",
+  "fa": "وضعیت بدی است!"
+ },
+ {
+  "id": 12069,
+  "level": "B1",
+  "category": "other",
+  "en": "Let's hear it for...",
+  "fa": "بیایید برای... کف بزنیم"
+ },
+ {
+  "id": 12202,
+  "level": "B2",
+  "category": "other",
+  "en": "That's a load off my mind",
+  "fa": "آسوده شدم"
+ },
+ {
+  "id": 12281,
+  "level": "B2",
+  "category": "other",
+  "en": "There's no getting around it",
+  "fa": "چاره‌ای نیست"
+ },
+ {
+  "id": 12741,
+  "level": "B1",
+  "category": "other",
+  "en": "What's the plan, Sam?",
+  "fa": "برنامه چیه؟"
+ },
+ {
+  "id": 13043,
+  "level": "B2",
+  "category": "other",
+  "en": "Why are you clownin'?",
+  "fa": "چرا مسخره‌ام می‌کنی؟"
+ },
+ {
+  "id": 13204,
+  "level": "B2",
+  "category": "other",
+  "en": "When she fell in",
+  "fa": "وقتی که رسید"
+ },
+ {
+  "id": 13208,
+  "level": "B2",
+  "category": "exclaim",
+  "en": "could really bust a move",
+  "fa": "خوب می‌تونست برقصد"
+ },
+ {
+  "id": 14064,
+  "level": "B2",
+  "category": "idioms",
+  "en": "Don't hold your breath",
+  "fa": "توقع نداشته باش"
+ },
+ {
+  "id": 14089,
+  "level": "B2",
+  "category": "idioms",
+  "en": "That's out of the question!",
+  "fa": "اصلاً امکان ندارد!"
+ },
+ {
+  "id": 14176,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "There's no accounting for taste",
+  "fa": "سلیقه را نمی‌توان حساب کرد"
+ },
+ {
+  "id": 14178,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "When in Rome, do as the Romans do",
+  "fa": "در هر شهری بروی، رسم آنجا به جا آور"
+ },
+ {
+  "id": 14179,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "When it rains, it pours",
+  "fa": "بلاها یک دفعه می‌آیند"
+ },
+ {
+  "id": 14196,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "Don't count your chickens before they hatch",
+  "fa": "تخم مرغ را قبل از جوجه شدن نشمار"
+ },
+ {
+  "id": 14197,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "Don't look a gift horse in the mouth",
+  "fa": "هدیه را نقد نکن"
+ },
+ {
+  "id": 14198,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "Don't put all your eggs in one basket",
+  "fa": "تخم‌ها را در یک سبد نگذار"
+ },
+ {
+  "id": 14199,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "Don't put the cart before the horse",
+  "fa": "کاری را وارونه انجام نده"
+ },
+ {
+  "id": 14207,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "He who laughs last, laughs longest",
+  "fa": "آخرش خنده‌اش می‌ماند"
+ },
+ {
+  "id": 14223,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "There are plenty of other fish in the sea",
+  "fa": "در دنیا آدم‌های زیاد دیگری هم هستند"
+ },
+ {
+  "id": 14224,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "There's more than one way to skin a cat",
+  "fa": "برای هر کاری راه‌های متعددی وجود دارد"
+ },
+ {
+  "id": 14227,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "We'll cross that bridge when we come to it",
+  "fa": "به موقع خودش فکر می‌کنیم"
+ },
+ {
+  "id": 14228,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "When the cat's away, the mice will play",
+  "fa": "گربه خوابه، موش‌ها جشن می‌گیرن"
+ },
+ {
+  "id": 14229,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "Where there's a will, there's a way",
+  "fa": "هر که خواهد، تواند"
+ },
+ {
+  "id": 14230,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "You can't judge a book by its cover",
+  "fa": "از روی ظاهر نمی‌توان قضاوت کرد"
+ },
+ {
+  "id": 14231,
+  "level": "B2",
+  "category": "proverbs",
+  "en": "You can't teach an old dog new tricks",
+  "fa": "به پیرمرد نمی‌توان چیز جدید یاد داد"
+ },
+ {
+  "id": 14249,
+  "level": "B2",
+  "category": "other",
+  "en": "I'll blow your head off!",
+  "fa": "سَرَت را می‌ترکانم!"
+ },
+ {
+  "id": 14263,
+  "level": "B2",
+  "category": "other",
+  "en": "We've got you covered",
+  "fa": "هدف گرفته‌ایم"
+ },
+ {
+  "id": 600004,
+  "level": "B2",
+  "category": "money",
+  "en": "I don't buy it",
+  "fa": "چشمم آب نمی‌خوره"
+ },
+ {
+  "id": 600011,
+  "level": "B1",
+  "category": "travel",
+  "en": "Let's hit the road",
+  "fa": "بزن بریم"
+ },
+ {
+  "id": 600016,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I don't get it",
+  "fa": "چیزیم نمیشه"
+ },
+ {
+  "id": 600020,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I don't give a damn",
+  "fa": "به تخمم نیست"
+ },
+ {
+  "id": 600021,
+  "level": "B1",
+  "category": "phrases",
+  "en": "That's kind of you",
+  "fa": "لطف دارید"
+ },
+ {
+  "id": 600033,
+  "level": "B1",
+  "category": "health",
+  "en": "I feel sick / I'm not well",
+  "fa": "حالم بده"
+ },
+ {
+  "id": 600035,
+  "level": "B1",
+  "category": "phrases",
+  "en": "You've got it wrong",
+  "fa": "داری اشتباه میکنی"
+ },
+ {
+  "id": 600039,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I swear to God",
+  "fa": "به جان خودم"
+ },
+ {
+  "id": 600044,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We'll cross paths again",
+  "fa": "کوه به کوه نمی‌رسه، آدم به آدم می‌رسه"
+ },
+ {
+  "id": 600045,
+  "level": "B2",
+  "category": "phrases",
+  "en": "What goes around comes around",
+  "fa": "زمین گرده (یعنی روزی روزگاری جبران می‌شه)"
+ },
+ {
+  "id": 600051,
+  "level": "A2",
+  "category": "phrases",
+  "en": "What's wrong with you?",
+  "fa": "چته؟ (چه خبرته؟)"
+ },
+ {
+  "id": 600052,
+  "level": "B1",
+  "category": "phrases",
+  "en": "My dear / Darling",
+  "fa": "جانم (صدا زدن با محبت)"
+ },
+ {
+  "id": 600055,
+  "level": "B1",
+  "category": "exclaim",
+  "en": "You wish! / In your dreams!",
+  "fa": "خودتی! (در جواب لاف و گزاف)"
+ },
+ {
+  "id": 600058,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I changed my mind",
+  "fa": "نظرم عوض شد"
+ },
+ {
+  "id": 600059,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I'm confused / I mixed it up",
+  "fa": "قاطی کردم"
+ },
+ {
+  "id": 600060,
+  "level": "B1",
+  "category": "emotions",
+  "en": "I can't be bothered / I'm not in the mood",
+  "fa": "حوصله ندارم"
+ },
+ {
+  "id": 600063,
+  "level": "B2",
+  "category": "health",
+  "en": "I meant it from the bottom of my heart",
+  "fa": "از ته دل گفتم"
+ },
+ {
+  "id": 600064,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I know what I'm doing",
+  "fa": "خودم می‌دونم چیکار کنم"
+ },
+ {
+  "id": 600067,
+  "level": "B2",
+  "category": "work",
+  "en": "You're a lifesaver! / Nice job!",
+  "fa": "دستت طلا"
+ },
+ {
+  "id": 600071,
+  "level": "B2",
+  "category": "phrases",
+  "en": "Don't believe your eyes / Believe it or not",
+  "fa": "چشماتو باور نکن"
+ },
+ {
+  "id": 600072,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm watching out for you",
+  "fa": "حواسم بهت هست"
+ },
+ {
+  "id": 600074,
+  "level": "A2",
+  "category": "phrases",
+  "en": "What luck! / How lucky!",
+  "fa": "چه شانسی!"
+ },
+ {
+  "id": 600077,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Don't forget it / Don't skip it",
+  "fa": "از قلم نیانداز"
+ },
+ {
+  "id": 600082,
+  "level": "B1",
+  "category": "food",
+  "en": "I messed it up / I wasted it",
+  "fa": "به فنا دادم"
+ },
+ {
+  "id": 600083,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Let's team up / Let's put our heads together",
+  "fa": "دست به دست هم بدیم"
+ },
+ {
+  "id": 600084,
+  "level": "B1",
+  "category": "abbrev",
+  "en": "My dear / My love (friendly)",
+  "fa": "جانم به قربانت (محاوره‌ای برای صمیمیت)"
+ },
+ {
+  "id": 600086,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I had so much faith in them",
+  "fa": "چشمام بهش اعتماد داشتم"
+ },
+ {
+  "id": 600090,
+  "level": "B1",
+  "category": "phrases",
+  "en": "What did they even see in them?",
+  "fa": "از چیزش خوش اومده؟"
+ },
+ {
+  "id": 600091,
+  "level": "B2",
+  "category": "phrases",
+  "en": "What a jinx! / Such bad omen",
+  "fa": "نکبت (چه نحسی)"
+ },
+ {
+  "id": 600093,
+  "level": "B2",
+  "category": "phrases",
+  "en": "They're good for nothing",
+  "fa": "ازش چیزی در نمیاد"
+ },
+ {
+  "id": 600094,
+  "level": "B1",
+  "category": "phrases",
+  "en": "He's so stingy / He's a tightwad",
+  "fa": "آب از دستش نمی‌چکه"
+ },
+ {
+  "id": 600096,
+  "level": "B2",
+  "category": "money",
+  "en": "I'm flat broke / My pockets are empty",
+  "fa": "جیبم عنکبوت بسته"
+ },
+ {
+  "id": 600097,
+  "level": "B2",
+  "category": "phrases",
+  "en": "They don't have a penny to their name",
+  "fa": "کف دستش مو نداره"
+ },
+ {
+  "id": 600098,
+  "level": "B1",
+  "category": "money",
+  "en": "I'm not buying it / I don't believe a word",
+  "fa": "تهش چی؟ (با شک و تردید)"
+ },
+ {
+  "id": 600099,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I swear I didn't mean it",
+  "fa": "به خدا قصدش رو نداشتم"
+ },
+ {
+  "id": 600100,
+  "level": "A2",
+  "category": "phrases",
+  "en": "Don't push it / That's enough",
+  "fa": "زیادی نشه"
+ },
+ {
+  "id": 600104,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Don't embarrass me / Don't make a scene",
+  "fa": "آبروریزی نکن"
+ },
+ {
+  "id": 600107,
+  "level": "A2",
+  "category": "phrases",
+  "en": "What's it to me? / None of my business",
+  "fa": "به من چه؟"
+ },
+ {
+  "id": 600108,
+  "level": "B1",
+  "category": "abbrev",
+  "en": "I don't care at all",
+  "fa": "به تخمم نیست (نسخهٔ محاوره‌ای)"
+ },
+ {
+  "id": 600110,
+  "level": "B1",
+  "category": "emotions",
+  "en": "I'm upset with you",
+  "fa": "دلخورم ازت"
+ },
+ {
+  "id": 600111,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I'm not talking to you / I'm mad at you",
+  "fa": "قهر کردم با تو"
+ },
+ {
+  "id": 600112,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I've had it up to here with you",
+  "fa": "دیگه از دستت خسته شدم"
+ },
+ {
+  "id": 600113,
+  "level": "A2",
+  "category": "phrases",
+  "en": "What's your problem, man?",
+  "fa": "چته بابا؟"
+ },
+ {
+  "id": 600115,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I can't take it anymore",
+  "fa": "دیگه طاقت ندارم"
+ },
+ {
+  "id": 600116,
+  "level": "B2",
+  "category": "emotions",
+  "en": "I'm so mad at you right now",
+  "fa": "از دستت عصبانی‌ام (با عصبانیت)"
+ },
+ {
+  "id": 600119,
+  "level": "B2",
+  "category": "phrases",
+  "en": "Don't you have better things to do?",
+  "fa": "حیف وقتت نیست؟"
+ },
+ {
+  "id": 600120,
+  "level": "B2",
+  "category": "phrases",
+  "en": "That's fake / That's total BS",
+  "fa": "آبکی است"
+ },
+ {
+  "id": 600121,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Did he actually come through?",
+  "fa": "اومد پای حرفش؟"
+ },
+ {
+  "id": 600122,
+  "level": "B1",
+  "category": "exclaim",
+  "en": "I'm really down / I'm heartbroken",
+  "fa": "دلم خیلی گرفته"
+ },
+ {
+  "id": 600123,
+  "level": "B2",
+  "category": "phrases",
+  "en": "There's a lot brewing beneath the surface",
+  "fa": "آتش زیر خاکستره"
+ },
+ {
+  "id": 600124,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm not vibing with this / I'm not into this",
+  "fa": "با اینا حال نمیکنم"
+ },
+ {
+  "id": 600125,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I swear to God, that's enough!",
+  "fa": "به خدا دیگه بس است!"
+ },
+ {
+  "id": 600128,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I need to pee",
+  "fa": "جیش دارم"
+ },
+ {
+  "id": 600129,
+  "level": "A2",
+  "category": "health",
+  "en": "I need to poop / I need to take a dump",
+  "fa": "مدفوع دارم (نیاز به دستشویی)"
+ },
+ {
+  "id": 600133,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Your feet stink / Your feet smell terrible",
+  "fa": "بو گند پا میده"
+ },
+ {
+  "id": 600135,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Don't be a buzzkill",
+  "fa": "جو گیر نباش"
+ },
+ {
+  "id": 600136,
+  "level": "B2",
+  "category": "exclaim",
+  "en": "This is the best / This is awesome",
+  "fa": "این‌ها حال میده"
+ },
+ {
+  "id": 600137,
+  "level": "B1",
+  "category": "health",
+  "en": "That's totally rad / That's sick (good)",
+  "fa": "داغونه"
+ },
+ {
+  "id": 600138,
+  "level": "B2",
+  "category": "phrases",
+  "en": "Don't get too ahead of yourself",
+  "fa": "ول نکن (از حد نگذر)"
+ },
+ {
+  "id": 600142,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'd rather not / I'll pass",
+  "fa": "ترجیح می‌دم نه"
+ },
+ {
+  "id": 600143,
+  "level": "B1",
+  "category": "health",
+  "en": "I feel so relieved (after peeing/pooping)",
+  "fa": "نفسم بالا اومد (تخفیف پیدا کردم)"
+ },
+ {
+  "id": 600144,
+  "level": "A2",
+  "category": "food",
+  "en": "I'm starving / I'm super hungry",
+  "fa": "گرسنه‌ام (مردم از گرسنگی)"
+ },
+ {
+  "id": 600145,
+  "level": "B1",
+  "category": "health",
+  "en": "I have a sweet tooth / I crave sweets",
+  "fa": "میل به شیرینی دارم"
+ },
+ {
+  "id": 600146,
+  "level": "A2",
+  "category": "health",
+  "en": "My mouth is watering",
+  "fa": "آب از دلم راه افتاد"
+ },
+ {
+  "id": 600147,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I'm full / I'm stuffed",
+  "fa": "سیرم"
+ },
+ {
+  "id": 600148,
+  "level": "B1",
+  "category": "food",
+  "en": "I'm so full I could burst",
+  "fa": "شکم سیرم (کاملاً پر)"
+ },
+ {
+  "id": 600149,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I ate too much / I overate",
+  "fa": "زیاد خوردم (چاق شدم)"
+ },
+ {
+  "id": 600150,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I ate like a pig / I stuffed myself",
+  "fa": "چِپ کردم (از خوردن زیاد)"
+ },
+ {
+  "id": 600151,
+  "level": "B1",
+  "category": "health",
+  "en": "I have heartburn / I'm burning inside",
+  "fa": "سوزش معده دارم"
+ },
+ {
+  "id": 600152,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I feel bloated / I'm gassy",
+  "fa": "باد گلو دارم"
+ },
+ {
+  "id": 600153,
+  "level": "A2",
+  "category": "exclaim",
+  "en": "I need to burp / Excuse me (burping)",
+  "fa": "آروغ زدم"
+ },
+ {
+  "id": 600156,
+  "level": "B1",
+  "category": "phrases",
+  "en": "This tastes like cardboard / Tasteless",
+  "fa": "مَزه‌ش رو نداره / بی‌مزه"
+ },
+ {
+  "id": 600157,
+  "level": "B2",
+  "category": "health",
+  "en": "You'll get fat if you eat that",
+  "fa": "باد می‌کنی (چاق می‌شی)"
+ },
+ {
+  "id": 600163,
+  "level": "A2",
+  "category": "phrases",
+  "en": "This is inedible / It tastes awful",
+  "fa": "اینو نمی‌شه خورد"
+ },
+ {
+  "id": 600164,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I want to vomit / I feel nauseous",
+  "fa": "دلم به هم می‌خوره"
+ },
+ {
+  "id": 600170,
+  "level": "B1",
+  "category": "travel",
+  "en": "You have a flat tire",
+  "fa": "ماشینت پنچر شده"
+ },
+ {
+  "id": 600175,
+  "level": "A2",
+  "category": "health",
+  "en": "I'm sleepy / I feel drowsy",
+  "fa": "خوابم میاد"
+ },
+ {
+  "id": 600178,
+  "level": "B1",
+  "category": "health",
+  "en": "You're such a heavy sleeper",
+  "fa": "خوابت سنگینه (به راحتی بیدار نمی‌شی)"
+ },
+ {
+  "id": 600186,
+  "level": "A2",
+  "category": "home",
+  "en": "Do the laundry / Wash the clothes",
+  "fa": "لباسا رو بشور"
+ },
+ {
+  "id": 600190,
+  "level": "A2",
+  "category": "school",
+  "en": "I have an exam tomorrow",
+  "fa": "فردا امتحان دارم"
+ },
+ {
+  "id": 600191,
+  "level": "A2",
+  "category": "school",
+  "en": "I have to study all night",
+  "fa": "شب امتحانه (مجبورم درس بخونم)"
+ },
+ {
+  "id": 600192,
+  "level": "B1",
+  "category": "school",
+  "en": "I failed the exam",
+  "fa": "افتادم (رد شدم)"
+ },
+ {
+  "id": 600193,
+  "level": "B1",
+  "category": "school",
+  "en": "I passed the exam / I aced it",
+  "fa": "قبول شدم"
+ },
+ {
+  "id": 600195,
+  "level": "B1",
+  "category": "school",
+  "en": "I have a lot of homework",
+  "fa": "تکلیفم زیاده"
+ },
+ {
+  "id": 600196,
+  "level": "B1",
+  "category": "school",
+  "en": "I need a good grade / I need to get an A",
+  "fa": "باید نمره بیارم"
+ },
+ {
+  "id": 600197,
+  "level": "B1",
+  "category": "love",
+  "en": "I'm in love with you",
+  "fa": "عاشقتم"
+ },
+ {
+  "id": 600198,
+  "level": "B1",
+  "category": "people",
+  "en": "I'm crazy about you",
+  "fa": "دیوونتم"
+ },
+ {
+  "id": 600199,
+  "level": "B2",
+  "category": "money",
+  "en": "We broke up / We split up",
+  "fa": "به هم خوردیم (جداشدیم)"
+ },
+ {
+  "id": 600200,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We made up / We got back together",
+  "fa": "آشتی کردیم"
+ },
+ {
+  "id": 600201,
+  "level": "B1",
+  "category": "love",
+  "en": "I have a crush on them",
+  "fa": "بهش علاقه دارم (از دور)"
+ },
+ {
+  "id": 600202,
+  "level": "B2",
+  "category": "phrases",
+  "en": "They cheated on me",
+  "fa": "به من خیانت کرد"
+ },
+ {
+  "id": 600203,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm heartbroken / I'm devastated",
+  "fa": "دلم شکسته"
+ },
+ {
+  "id": 600204,
+  "level": "A2",
+  "category": "health",
+  "en": "I'm sick / I feel ill",
+  "fa": "مریضم"
+ },
+ {
+  "id": 600205,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I have a headache / My head hurts",
+  "fa": "سرم درد می‌کنه"
+ },
+ {
+  "id": 600206,
+  "level": "B1",
+  "category": "health",
+  "en": "I have a fever / I'm running a temperature",
+  "fa": "تب دارم"
+ },
+ {
+  "id": 600207,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I have high blood pressure",
+  "fa": "فشار خون دارم"
+ },
+ {
+  "id": 600208,
+  "level": "B1",
+  "category": "health",
+  "en": "I need to go to the hospital",
+  "fa": "باید برم بیمارستان"
+ },
+ {
+  "id": 600216,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I'm running late / I'm going to be late",
+  "fa": "دیرم شده"
+ },
+ {
+  "id": 600218,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We're out of time / Time's up",
+  "fa": "وقت تموم شد"
+ },
+ {
+  "id": 600219,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm saving up for something",
+  "fa": "دارم پس‌انداز می‌کنم"
+ },
+ {
+  "id": 600220,
+  "level": "B2",
+  "category": "money",
+  "en": "I'm in debt / I'm drowning in debt",
+  "fa": "بدهکارم"
+ },
+ {
+  "id": 600222,
+  "level": "B1",
+  "category": "money",
+  "en": "I'll pay you back / I'll return it",
+  "fa": "بهت پس می‌دم"
+ },
+ {
+  "id": 600223,
+  "level": "A2",
+  "category": "money",
+  "en": "How much does it cost?",
+  "fa": "چنده؟ / قیمتش چنده؟"
+ },
+ {
+  "id": 600225,
+  "level": "A2",
+  "category": "tech",
+  "en": "My phone battery died / It's flat",
+  "fa": "باتری گوشیم خالی شد"
+ },
+ {
+  "id": 600226,
+  "level": "B1",
+  "category": "tech",
+  "en": "I need to charge my phone",
+  "fa": "باید گوشیم رو بزنم به شارژ"
+ },
+ {
+  "id": 600227,
+  "level": "A2",
+  "category": "tech",
+  "en": "My phone is vibrating / It's on silent",
+  "fa": "گوشیم در حال ویبره‌ست"
+ },
+ {
+  "id": 600229,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Where are you going on vacation?",
+  "fa": "تعطیلات کجا می‌ری؟"
+ },
+ {
+  "id": 600230,
+  "level": "A2",
+  "category": "fun",
+  "en": "I'm going to the beach / I'm going to the sea",
+  "fa": "دارم می‌رم ساحل"
+ },
+ {
+  "id": 600231,
+  "level": "B1",
+  "category": "travel",
+  "en": "I need to book a hotel / Make a reservation",
+  "fa": "باید هتل رزرو کنم"
+ },
+ {
+  "id": 600233,
+  "level": "B1",
+  "category": "emotions",
+  "en": "That's a mood / I relate to that",
+  "fa": "حالمو گرفت"
+ },
+ {
+  "id": 600234,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need some me-time / I need to be alone",
+  "fa": "نیاز به تنهایی دارم"
+ },
+ {
+  "id": 600236,
+  "level": "B1",
+  "category": "work",
+  "en": "I'm done with this / I quit",
+  "fa": "بی‌خیال شدم / ولش کردم"
+ },
+ {
+  "id": 600237,
+  "level": "B1",
+  "category": "phrases",
+  "en": "You'll get used to it / You'll adapt",
+  "fa": "عادت می‌کنی"
+ },
+ {
+  "id": 600239,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'll do it later / I'll get to it eventually",
+  "fa": "می‌ذارم برای بعد"
+ },
+ {
+  "id": 600241,
+  "level": "B2",
+  "category": "phrases",
+  "en": "That's the last straw",
+  "fa": "آخرین ضربه (دیگه طاقت ندارم)"
+ },
+ {
+  "id": 600242,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I'll be right back / I'll return soon",
+  "fa": "برمی‌گردم"
+ },
+ {
+  "id": 600243,
+  "level": "A2",
+  "category": "health",
+  "en": "Let's work out / Let's hit the gym",
+  "fa": "بریم ورزش"
+ },
+ {
+  "id": 600244,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I need to lose weight",
+  "fa": "باید وزن کم کنم"
+ },
+ {
+  "id": 600245,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm out of shape / I'm unfit",
+  "fa": "از فرم افتادم"
+ },
+ {
+  "id": 600246,
+  "level": "B1",
+  "category": "health",
+  "en": "I pulled a muscle / I strained a muscle",
+  "fa": "کشیدگی عضله دارم"
+ },
+ {
+  "id": 600247,
+  "level": "A2",
+  "category": "fun",
+  "en": "Let's play football / Let's have a match",
+  "fa": "بریم فوتبال"
+ },
+ {
+  "id": 600252,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We need to go grocery shopping",
+  "fa": "باید بریم خواروبار بخریم"
+ },
+ {
+  "id": 600253,
+  "level": "A2",
+  "category": "love",
+  "en": "I love this song",
+  "fa": "این آهنگو دوست دارم"
+ },
+ {
+  "id": 600256,
+  "level": "B2",
+  "category": "fun",
+  "en": "This song is stuck in my head",
+  "fa": "این آهنگ تو مغزم مونده"
+ },
+ {
+  "id": 600257,
+  "level": "B1",
+  "category": "fun",
+  "en": "Let's go to a concert",
+  "fa": "بریم کنسرت"
+ },
+ {
+  "id": 600258,
+  "level": "A2",
+  "category": "fun",
+  "en": "Let's watch a movie",
+  "fa": "بریم فیلم ببینیم"
+ },
+ {
+  "id": 600259,
+  "level": "B1",
+  "category": "fun",
+  "en": "This movie is boring",
+  "fa": "این فیلم کسل‌کننده‌ست"
+ },
+ {
+  "id": 600263,
+  "level": "B1",
+  "category": "fun",
+  "en": "I'm binge-watching a series",
+  "fa": "دارم یه سریال رو پشت سر هم می‌بینم"
+ },
+ {
+  "id": 600269,
+  "level": "A2",
+  "category": "fun",
+  "en": "Let's have a party",
+  "fa": "بریم مهمونی"
+ },
+ {
+  "id": 600270,
+  "level": "B1",
+  "category": "fun",
+  "en": "I'm the host / I'm throwing a party",
+  "fa": "من میزبانم"
+ },
+ {
+  "id": 600272,
+  "level": "B1",
+  "category": "health",
+  "en": "Let's raise a toast",
+  "fa": "به سلامتی هم"
+ },
+ {
+  "id": 600273,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I'm just browsing / I'm looking around",
+  "fa": "فقط دارم نگاه می‌کنم"
+ },
+ {
+  "id": 600274,
+  "level": "A2",
+  "category": "school",
+  "en": "Can I try this on?",
+  "fa": "میشه امتحانش کنم؟"
+ },
+ {
+  "id": 600275,
+  "level": "A2",
+  "category": "phrases",
+  "en": "Do you have this in a different size?",
+  "fa": "سایز دیگه‌ای دارید؟"
+ },
+ {
+  "id": 600277,
+  "level": "A2",
+  "category": "phrases",
+  "en": "You look great / You look nice",
+  "fa": "خوشتیپی"
+ },
+ {
+  "id": 600278,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need a haircut",
+  "fa": "باید موهام رو کوتاه کنم"
+ },
+ {
+  "id": 600279,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm putting on makeup",
+  "fa": "دارم آرایش می‌کنم"
+ },
+ {
+  "id": 600280,
+  "level": "B1",
+  "category": "phrases",
+  "en": "This outfit suits you",
+  "fa": "این لباس بهت میاد"
+ },
+ {
+  "id": 600281,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I have a dog / I have a cat",
+  "fa": "سگ دارم / گربه دارم"
+ },
+ {
+  "id": 600282,
+  "level": "A2",
+  "category": "phrases",
+  "en": "Let's go for a walk in the park",
+  "fa": "بریم تو پارک قدم بزنیم"
+ },
+ {
+  "id": 600284,
+  "level": "A2",
+  "category": "love",
+  "en": "I love mountains / I love the sea",
+  "fa": "کوه رو دوست دارم / دریا رو دوست دارم"
+ },
+ {
+  "id": 600285,
+  "level": "B1",
+  "category": "fun",
+  "en": "Let's play a game",
+  "fa": "بریم بازی"
+ },
+ {
+  "id": 600286,
+  "level": "B1",
+  "category": "fun",
+  "en": "I won / I lost",
+  "fa": "بردم / باختم"
+ },
+ {
+  "id": 600287,
+  "level": "B1",
+  "category": "fun",
+  "en": "This game is lagging",
+  "fa": "بازی هنگ می‌کنه"
+ },
+ {
+  "id": 600288,
+  "level": "B2",
+  "category": "fun",
+  "en": "I'm a pro at this game",
+  "fa": "تو این بازی حرفه‌ای‌ام"
+ },
+ {
+  "id": 600291,
+  "level": "B1",
+  "category": "love",
+  "en": "I have a wedding to attend",
+  "fa": "یه عروسی دارم"
+ },
+ {
+  "id": 600292,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We're expecting a baby",
+  "fa": "بچه دار می‌شیم"
+ },
+ {
+  "id": 600293,
+  "level": "A2",
+  "category": "phrases",
+  "en": "How old are you?",
+  "fa": "چند سالته؟"
+ },
+ {
+  "id": 600294,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I'm 25 years old",
+  "fa": "۲۵ سالمه"
+ },
+ {
+  "id": 600296,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We're the same age",
+  "fa": "همسن و سالیم"
+ },
+ {
+  "id": 600297,
+  "level": "B1",
+  "category": "tech",
+  "en": "Let's take a selfie",
+  "fa": "بریم سلفی بگیریم"
+ },
+ {
+  "id": 600299,
+  "level": "A2",
+  "category": "home",
+  "en": "They parked in front of our house",
+  "fa": "جلوی خونه‌مون پارک کردن"
+ },
+ {
+  "id": 600301,
+  "level": "A2",
+  "category": "phrases",
+  "en": "Is there a supermarket nearby?",
+  "fa": "نزدیک‌ترین سوپرمارکت کجاست؟"
+ },
+ {
+  "id": 600303,
+  "level": "B1",
+  "category": "phrases",
+  "en": "There's a blackout / Power outage",
+  "fa": "برق رفته"
+ },
+ {
+  "id": 600310,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need a screwdriver / I need a wrench",
+  "fa": "پیچ‌گوشتی لازم دارم"
+ },
+ {
+  "id": 600315,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need to weed the garden",
+  "fa": "باید باغچه رو علف‌هرز کنم"
+ },
+ {
+  "id": 600316,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I need to renew my passport",
+  "fa": "باید پاسپورتم رو تمدید کنم"
+ },
+ {
+  "id": 600317,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I got my driver's license",
+  "fa": "گواهینامه گرفتم"
+ },
+ {
+  "id": 600319,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need a signature",
+  "fa": "امضا لازم دارم"
+ },
+ {
+  "id": 600321,
+  "level": "B2",
+  "category": "phrases",
+  "en": "My application was approved",
+  "fa": "درخواستم تأیید شد"
+ },
+ {
+  "id": 600322,
+  "level": "B2",
+  "category": "phrases",
+  "en": "My application got rejected",
+  "fa": "درخواستم رد شد"
+ },
+ {
+  "id": 600324,
+  "level": "B1",
+  "category": "money",
+  "en": "I need a loan / I need to borrow money",
+  "fa": "وام نیاز دارم"
+ },
+ {
+  "id": 600331,
+  "level": "A2",
+  "category": "work",
+  "en": "What time does work start?",
+  "fa": "سرکار ساعت چند شروع میشه؟"
+ },
+ {
+  "id": 600332,
+  "level": "A2",
+  "category": "work",
+  "en": "I have a meeting today",
+  "fa": "امروز جلسه دارم"
+ },
+ {
+  "id": 600333,
+  "level": "B1",
+  "category": "tech",
+  "en": "I need to send an email",
+  "fa": "باید ایمیل بفرستم"
+ },
+ {
+  "id": 600334,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I got promoted / I got a raise",
+  "fa": "توی کار ترفیع گرفتم"
+ },
+ {
+  "id": 600335,
+  "level": "B1",
+  "category": "work",
+  "en": "I was fired / I was let go",
+  "fa": "اخراج شدم"
+ },
+ {
+  "id": 600336,
+  "level": "A2",
+  "category": "health",
+  "en": "I have a cold / I have a cough",
+  "fa": "سرماخوردم"
+ },
+ {
+  "id": 600338,
+  "level": "B1",
+  "category": "health",
+  "en": "I need to see a doctor",
+  "fa": "باید دکتر برم"
+ },
+ {
+  "id": 600339,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm allergic to something",
+  "fa": "حساسیت دارم"
+ },
+ {
+  "id": 600342,
+  "level": "B1",
+  "category": "health",
+  "en": "My pet is sick",
+  "fa": "حیوان خونگیم مریضه"
+ },
+ {
+  "id": 600348,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need to do research / I need to write a thesis",
+  "fa": "پایان‌نامه دارم"
+ },
+ {
+  "id": 600352,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm cancelling the plan / I'm backing out",
+  "fa": "پشیمون شدم"
+ },
+ {
+  "id": 600355,
+  "level": "C1",
+  "category": "fun",
+  "en": "We've only come to watch / We're just here for the show",
+  "fa": "ما بهر تماشا آمده‌ایم"
+ },
+ {
+  "id": 600357,
+  "level": "A2",
+  "category": "phrases",
+  "en": "There's been an accident",
+  "fa": "تصادف شده"
+ },
+ {
+  "id": 600362,
+  "level": "B1",
+  "category": "crime",
+  "en": "We need to evacuate",
+  "fa": "باید تخلیه کنیم"
+ },
+ {
+  "id": 600363,
+  "level": "A2",
+  "category": "phrases",
+  "en": "What's the news? / Any updates?",
+  "fa": "خبری هست؟"
+ },
+ {
+  "id": 600366,
+  "level": "B2",
+  "category": "phrases",
+  "en": "That's fake news / That's misinformation",
+  "fa": "خبر دروغه"
+ },
+ {
+  "id": 600368,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I saw it on Twitter / I saw it on Instagram",
+  "fa": "توی توییتر دیدمش"
+ },
+ {
+  "id": 600369,
+  "level": "B1",
+  "category": "phrases",
+  "en": "You need a lawyer / Get legal advice",
+  "fa": "وکیل بگیر"
+ },
+ {
+  "id": 600370,
+  "level": "B2",
+  "category": "phrases",
+  "en": "You have the right to remain silent",
+  "fa": "حق سکوت داری"
+ },
+ {
+  "id": 600372,
+  "level": "B1",
+  "category": "crime",
+  "en": "He's under arrest / He got arrested",
+  "fa": "دستگیرش کردن"
+ },
+ {
+  "id": 600374,
+  "level": "B2",
+  "category": "phrases",
+  "en": "You're innocent until proven guilty",
+  "fa": "تا اثبات خلاف، بی‌گناهی"
+ },
+ {
+  "id": 600375,
+  "level": "B2",
+  "category": "phrases",
+  "en": "He was released on bail",
+  "fa": "با وثیقه آزاد شد"
+ },
+ {
+  "id": 600376,
+  "level": "A2",
+  "category": "fun",
+  "en": "There's a festival in town",
+  "fa": "توی شهر جشنواره‌ست"
+ },
+ {
+  "id": 600377,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Are you coming to the gathering?",
+  "fa": "به جمع میای؟"
+ },
+ {
+  "id": 600379,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We're having a family reunion",
+  "fa": "دورهمی خانوادگی داریم"
+ },
+ {
+  "id": 600380,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm not going to the gathering",
+  "fa": "نمیام جمع"
+ },
+ {
+  "id": 600381,
+  "level": "A2",
+  "category": "phrases",
+  "en": "When I was a kid...",
+  "fa": "وقتی بچه بودم..."
+ },
+ {
+  "id": 600383,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm an adult now / I'm a grown-up",
+  "fa": "بزرگ شدم"
+ },
+ {
+  "id": 600384,
+  "level": "B1",
+  "category": "phrases",
+  "en": "They're just a kid / They're a teenager",
+  "fa": "بچه‌ست / نوجونه"
+ },
+ {
+  "id": 600386,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I miss being a kid",
+  "fa": "دلم برای بچگی تنگ شده"
+ },
+ {
+  "id": 600391,
+  "level": "A2",
+  "category": "phrases",
+  "en": "Where's the nearest subway station?",
+  "fa": "نزدیک‌ترین ایستگاه مترو کجاست؟"
+ },
+ {
+  "id": 600392,
+  "level": "A2",
+  "category": "travel",
+  "en": "I need a taxi / Call me an Uber",
+  "fa": "تاکسی لازم دارم"
+ },
+ {
+  "id": 600393,
+  "level": "B1",
+  "category": "money",
+  "en": "I'm living paycheck to paycheck",
+  "fa": "دستم به دهن می‌رسه"
+ },
+ {
+  "id": 600394,
+  "level": "B1",
+  "category": "money",
+  "en": "I need to budget better",
+  "fa": "باید بودجه‌بندی کنم"
+ },
+ {
+  "id": 600395,
+  "level": "A2",
+  "category": "health",
+  "en": "My back hurts / My neck hurts",
+  "fa": "کمرم درد می‌کنه"
+ },
+ {
+  "id": 600396,
+  "level": "A2",
+  "category": "phrases",
+  "en": "What time is it?",
+  "fa": "ساعت چنده؟"
+ },
+ {
+  "id": 600397,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I'll pick you up at 8",
+  "fa": "ساعت ۸ میام دنبالت"
+ },
+ {
+  "id": 600398,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We're just friends / We're platonic",
+  "fa": "فقط دوستیم"
+ },
+ {
+  "id": 600399,
+  "level": "B1",
+  "category": "love",
+  "en": "I think I'm in love",
+  "fa": "فکر کنم عاشق شدم"
+ },
+ {
+  "id": 600400,
+  "level": "B1",
+  "category": "emotions",
+  "en": "That's such a vibe",
+  "fa": "چقدر حال میده"
+ },
+ {
+  "id": 600401,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm obsessed with this",
+  "fa": "واسه این دیوونم"
+ },
+ {
+  "id": 600402,
+  "level": "B1",
+  "category": "home",
+  "en": "Let's take a rain check",
+  "fa": "بذار بذاریم برای بعد"
+ },
+ {
+  "id": 600403,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm all for it / I'm in",
+  "fa": "موافقم"
+ },
+ {
+  "id": 600404,
+  "level": "B2",
+  "category": "phrases",
+  "en": "That's a huge red flag",
+  "fa": "این یه علامت خطر بزرگه"
+ },
+ {
+  "id": 600405,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need to unplug / I need a digital detox",
+  "fa": "باید از همه چیز فاصله بگیرم"
+ },
+ {
+  "id": 600406,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Let's keep it low-key",
+  "fa": "ساده بگیریمش"
+ },
+ {
+  "id": 600407,
+  "level": "B1",
+  "category": "health",
+  "en": "I'm going to sleep on it",
+  "fa": "می‌ذارم واسه فردا"
+ },
+ {
+  "id": 600408,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Let's plant a tree / Go green",
+  "fa": "درخت بکاریم"
+ },
+ {
+  "id": 600415,
+  "level": "B1",
+  "category": "love",
+  "en": "I love visiting art galleries",
+  "fa": "عاشق گالری رفتنم"
+ },
+ {
+  "id": 600416,
+  "level": "B1",
+  "category": "phrases",
+  "en": "This painting is a masterpiece",
+  "fa": "این نقاشی شاهکاره"
+ },
+ {
+  "id": 600417,
+  "level": "B2",
+  "category": "phrases",
+  "en": "They have an exhibition downtown",
+  "fa": "توی مرکز شهر نمایشگاه دارن"
+ },
+ {
+  "id": 600418,
+  "level": "B1",
+  "category": "fun",
+  "en": "I'm into graffiti and street art",
+  "fa": "به گرافیتی و هنر خیابانی علاقه دارم"
+ },
+ {
+  "id": 600423,
+  "level": "B2",
+  "category": "phrases",
+  "en": "There's an election coming up",
+  "fa": "انتخابات در پیشه"
+ },
+ {
+  "id": 600424,
+  "level": "B2",
+  "category": "phrases",
+  "en": "He's a politician / He's in politics",
+  "fa": "سیاستمداره"
+ },
+ {
+  "id": 600425,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We need to vote / Vote wisely",
+  "fa": "رأی بدیم"
+ },
+ {
+  "id": 600427,
+  "level": "B1",
+  "category": "work",
+  "en": "I need to work on myself",
+  "fa": "باید روی خودم کار کنم"
+ },
+ {
+  "id": 600428,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I have low self-esteem",
+  "fa": "اعتماد به نفسم پایینه"
+ },
+ {
+  "id": 600429,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm struggling with anxiety",
+  "fa": "با اضطراب دست و پنجه نرم می‌کنم"
+ },
+ {
+  "id": 600431,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm just trying to find myself",
+  "fa": "دارم خودم رو پیدا می‌کنم"
+ },
+ {
+  "id": 600432,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I need to set boundaries",
+  "fa": "باید برای خودم خط قرمز بذارم"
+ },
+ {
+  "id": 600433,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm more self-aware now",
+  "fa": "بیشتر به خودم آگاهم"
+ },
+ {
+  "id": 600436,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need some peace and quiet",
+  "fa": "به آرامش نیاز دارم"
+ },
+ {
+  "id": 600437,
+  "level": "A2",
+  "category": "food",
+  "en": "Let's grab a coffee at a café",
+  "fa": "بریم کافه قهوه بخوریم"
+ },
+ {
+  "id": 600438,
+  "level": "B1",
+  "category": "emotions",
+  "en": "I'm stressed out from work",
+  "fa": "از کار استرس دارم"
+ },
+ {
+  "id": 600439,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We live in a modern society",
+  "fa": "توی جامعه مدرن زندگی می‌کنیم"
+ },
+ {
+  "id": 600441,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I prefer the suburbs",
+  "fa": "زندگی توی حومه شهر رو ترجیح می‌دم"
+ },
+ {
+  "id": 600442,
+  "level": "B1",
+  "category": "fun",
+  "en": "There's a street festival this weekend",
+  "fa": "این آخر هفته جشنواره خیابونی‌ست"
+ },
+ {
+  "id": 600443,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We're going to the theater",
+  "fa": "داریم می‌ریم تئاتر"
+ },
+ {
+  "id": 600444,
+  "level": "A2",
+  "category": "tech",
+  "en": "I spend too much time on my phone",
+  "fa": "وقتم رو زیاد با گوشی می‌گذرونم"
+ },
+ {
+  "id": 600445,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need to disconnect sometimes",
+  "fa": "بعضی وقتا باید قطع ارتباط کنم"
+ },
+ {
+  "id": 600446,
+  "level": "A2",
+  "category": "food",
+  "en": "I'm craving pizza / I want fast food",
+  "fa": "میل به پیتزا دارم"
+ },
+ {
+  "id": 600448,
+  "level": "A2",
+  "category": "travel",
+  "en": "I want to travel the world",
+  "fa": "می‌خوام دنیا رو بگردم"
+ },
+ {
+  "id": 600449,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm learning a new language",
+  "fa": "دارم یه زبان جدید یاد می‌گیرم"
+ },
+ {
+  "id": 600450,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I want to start my own business",
+  "fa": "می‌خوام کسب‌وکار خودم رو راه بندازم"
+ },
+ {
+  "id": 600451,
+  "level": "B1",
+  "category": "emotions",
+  "en": "That's a mood / Same here",
+  "fa": "حال منم همینه"
+ },
+ {
+  "id": 600452,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I can't even right now",
+  "fa": "وای، تحملش رو ندارم"
+ },
+ {
+  "id": 600454,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Let's get this bread",
+  "fa": "بریم پول دربیاریم"
+ },
+ {
+  "id": 600458,
+  "level": "A2",
+  "category": "phrases",
+  "en": "That's interesting / That's cool",
+  "fa": "جالبه / چه جالب"
+ },
+ {
+  "id": 600459,
+  "level": "A2",
+  "category": "fun",
+  "en": "I'm kidding / Just kidding",
+  "fa": "شوخی می‌کنم"
+ },
+ {
+  "id": 600460,
+  "level": "A2",
+  "category": "exclaim",
+  "en": "I'm sorry / My apologies",
+  "fa": "متاسفم / شرمنده"
+ },
+ {
+  "id": 600461,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We need to communicate better",
+  "fa": "باید بهتر با هم حرف بزنیم"
+ },
+ {
+  "id": 600462,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I appreciate you / I value you",
+  "fa": "برات ارزش قائلم"
+ },
+ {
+  "id": 600463,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I write poetry in my free time",
+  "fa": "توی وقتای آزادم شعر می‌گم"
+ },
+ {
+  "id": 600464,
+  "level": "B2",
+  "category": "phrases",
+  "en": "This poem speaks to my soul",
+  "fa": "این شعر با روح من حرف می‌زنه"
+ },
+ {
+  "id": 600465,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm reading a novel right now",
+  "fa": "الان یه رمان می‌خونم"
+ },
+ {
+  "id": 600467,
+  "level": "B1",
+  "category": "love",
+  "en": "I love classic Persian literature",
+  "fa": "عاشق ادبیات کلاسیک فارسی‌ام"
+ },
+ {
+  "id": 600468,
+  "level": "B1",
+  "category": "phrases",
+  "en": "He's a famous poet / He's a renowned writer",
+  "fa": "شاعر مشهوری‌ست"
+ },
+ {
+  "id": 600470,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I can't put this book down",
+  "fa": "نمی‌تونم این کتاب رو زمین بذارم"
+ },
+ {
+  "id": 600472,
+  "level": "C1",
+  "category": "phrases",
+  "en": "That line stayed with me / That verse resonated",
+  "fa": "این بیت تو دلم نشست"
+ },
+ {
+  "id": 600473,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm writing my memoir / I'm writing my autobiography",
+  "fa": "دارم خاطراتم رو می‌نویسم"
+ },
+ {
+  "id": 600474,
+  "level": "B1",
+  "category": "fun",
+  "en": "Let's go to the book fair",
+  "fa": "بریم نمایشگاه کتاب"
+ },
+ {
+  "id": 600475,
+  "level": "B1",
+  "category": "love",
+  "en": "This author is my favorite / I love this writer",
+  "fa": "این نویسنده رو خیلی دوست دارم"
+ },
+ {
+  "id": 600476,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I have two kids / I have children",
+  "fa": "دو تا بچه دارم"
+ },
+ {
+  "id": 600478,
+  "level": "A2",
+  "category": "phrases",
+  "en": "Don't spoil the child / Be firm with them",
+  "fa": "بچه رو لوس نکن"
+ },
+ {
+  "id": 600479,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We need to teach them manners",
+  "fa": "باید بهشون ادب یاد بدیم"
+ },
+ {
+  "id": 600480,
+  "level": "A2",
+  "category": "phrases",
+  "en": "They're just teenagers / They're going through a phase",
+  "fa": "نوجونن / دوران بلوغه"
+ },
+ {
+  "id": 600482,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We're a close-knit family",
+  "fa": "خانواده‌مون صمیمیه"
+ },
+ {
+  "id": 600483,
+  "level": "B1",
+  "category": "health",
+  "en": "I'm taking my mom to the doctor",
+  "fa": "مادرم رو می‌برم دکتر"
+ },
+ {
+  "id": 600484,
+  "level": "A2",
+  "category": "home",
+  "en": "My dad is coming home late",
+  "fa": "بابام دیر میاد خونه"
+ },
+ {
+  "id": 600485,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We had a family gathering",
+  "fa": "دورهمی خانوادگی داشتیم"
+ },
+ {
+  "id": 600488,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We're planning for the future",
+  "fa": "داریم برای آینده برنامه‌ریزی می‌کنیم"
+ },
+ {
+  "id": 600489,
+  "level": "A2",
+  "category": "fun",
+  "en": "I play the guitar / I play the piano",
+  "fa": "گیتار می‌زنم / پیانو می‌زنم"
+ },
+ {
+  "id": 600490,
+  "level": "B1",
+  "category": "fun",
+  "en": "Let's listen to some music",
+  "fa": "بیا یه موسیقی گوش بدیم"
+ },
+ {
+  "id": 600491,
+  "level": "B1",
+  "category": "phrases",
+  "en": "What genre do you like?",
+  "fa": "چه سبکی دوست داری؟"
+ },
+ {
+  "id": 600492,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I'm tone-deaf / I can't sing",
+  "fa": "صدای خوبی ندارم / نمی‌تونم بخونم"
+ },
+ {
+  "id": 600493,
+  "level": "B1",
+  "category": "fun",
+  "en": "This band is amazing",
+  "fa": "این گروه موسیقی عالیه"
+ },
+ {
+  "id": 600495,
+  "level": "B1",
+  "category": "fun",
+  "en": "I'm learning to read sheet music",
+  "fa": "دارم نت‌خوانی یاد می‌گیرم"
+ },
+ {
+  "id": 600497,
+  "level": "B1",
+  "category": "fun",
+  "en": "I love live music / I love concerts",
+  "fa": "عاشق کنسرتام"
+ },
+ {
+  "id": 600498,
+  "level": "B2",
+  "category": "fun",
+  "en": "This song is a classic",
+  "fa": "این آهنگ کلاسیکه"
+ },
+ {
+  "id": 600499,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I want to learn the drums",
+  "fa": "می‌خوام درام یاد بگیرم"
+ },
+ {
+  "id": 600501,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm so proud of you",
+  "fa": "بهت افتخار می‌کنم"
+ },
+ {
+  "id": 600502,
+  "level": "A2",
+  "category": "love",
+  "en": "I love you, mom / I love you, dad",
+  "fa": "دوستت دارم مامان / دوستت دارم بابا"
+ },
+ {
+  "id": 600503,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Don't interrupt me / Let me finish",
+  "fa": "حرفمو قطع نکن"
+ },
+ {
+  "id": 600504,
+  "level": "A2",
+  "category": "home",
+  "en": "I'll be home soon",
+  "fa": "زود میام خونه"
+ },
+ {
+  "id": 600507,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need a break from everything",
+  "fa": "به یه استراحت از همه‌چی نیاز دارم"
+ },
+ {
+  "id": 600509,
+  "level": "B1",
+  "category": "fun",
+  "en": "Let's write a song together",
+  "fa": "بیا با هم یه آهنگ بسازیم"
+ },
+ {
+  "id": 600510,
+  "level": "B1",
+  "category": "phrases",
+  "en": "That book changed my life",
+  "fa": "اون کتاب زندگی من رو عوض کرد"
+ },
+ {
+  "id": 600511,
+  "level": "B1",
+  "category": "work",
+  "en": "I'm a big fan of his work",
+  "fa": "از کاراش خوشم میاد"
+ },
+ {
+  "id": 600513,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I want to pass this down to my kids",
+  "fa": "می‌خوام این رو به بچه‌هام بدم"
+ },
+ {
+  "id": 600514,
+  "level": "A2",
+  "category": "emotions",
+  "en": "We're one big happy family",
+  "fa": "ما یه خانواده بزرگ و شادیم"
+ },
+ {
+  "id": 600517,
+  "level": "A2",
+  "category": "fun",
+  "en": "I'm going to a concert tonight",
+  "fa": "امشب می‌رم کنسرت"
+ },
+ {
+  "id": 600518,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm planning to emigrate / I'm moving abroad",
+  "fa": "دارم برنامه‌ریزی برای مهاجرت می‌کنم"
+ },
+ {
+  "id": 600519,
+  "level": "B1",
+  "category": "work",
+  "en": "I have a visa interview",
+  "fa": "مصاحبه ویزا دارم"
+ },
+ {
+  "id": 600520,
+  "level": "B2",
+  "category": "phrases",
+  "en": "My residency permit was approved",
+  "fa": "اجازه اقامتم تأیید شد"
+ },
+ {
+  "id": 600521,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm learning the local language",
+  "fa": "دارم زبان محلی رو یاد می‌گیرم"
+ },
+ {
+  "id": 600523,
+  "level": "B1",
+  "category": "home",
+  "en": "I miss my home country",
+  "fa": "دلم برای کشورم تنگ شده"
+ },
+ {
+  "id": 600524,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm applying for citizenship",
+  "fa": "برای اخذ تابعیت اقدام می‌کنم"
+ },
+ {
+  "id": 600526,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I need to find a sponsor",
+  "fa": "باید یه اسپانسر پیدا کنم"
+ },
+ {
+  "id": 600527,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm going back to visit family",
+  "fa": "برمی‌گردم خانواده رو ببینم"
+ },
+ {
+  "id": 600528,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm starting my own business",
+  "fa": "کسب‌وکار خودم رو راه می‌ندازم"
+ },
+ {
+  "id": 600529,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I have a business idea",
+  "fa": "یه ایده کسب‌وکار دارم"
+ },
+ {
+  "id": 600530,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We need funding / We need investors",
+  "fa": "بودجه نیاز داریم"
+ },
+ {
+  "id": 600531,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm building a startup",
+  "fa": "دارم یه استارتاپ می‌سازم"
+ },
+ {
+  "id": 600532,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We're scaling up / We're expanding",
+  "fa": "داریم بزرگ‌تر می‌شیم"
+ },
+ {
+  "id": 600533,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We need to pivot / Change direction",
+  "fa": "باید استراتژی رو عوض کنیم"
+ },
+ {
+  "id": 600535,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm networking with other entrepreneurs",
+  "fa": "با کارآفرینان دیگه شبکه‌سازی می‌کنم"
+ },
+ {
+  "id": 600536,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We hit a milestone / We achieved a goal",
+  "fa": "به یه هدف بزرگ رسیدیم"
+ },
+ {
+  "id": 600537,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm looking for a co-founder",
+  "fa": "به دنبال شریک هستم"
+ },
+ {
+  "id": 600538,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm healing from trauma",
+  "fa": "دارم از آسیب‌ها بهبود پیدا می‌کنم"
+ },
+ {
+  "id": 600539,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I need to forgive myself",
+  "fa": "باید خودم رو ببخشم"
+ },
+ {
+  "id": 600540,
+  "level": "B1",
+  "category": "love",
+  "en": "I'm learning to love myself",
+  "fa": "دارم خودم رو دوست داشتن یاد می‌گیرم"
+ },
+ {
+  "id": 600541,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm in a better place mentally",
+  "fa": "از نظر روانی جای بهتری هستم"
+ },
+ {
+  "id": 600542,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need to let go of the past",
+  "fa": "باید گذشته رو رها کنم"
+ },
+ {
+  "id": 600544,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm dealing with burnout",
+  "fa": "با فرسودگی شغلی دست و پنجه نرم می‌کنم"
+ },
+ {
+  "id": 600545,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I've found my purpose",
+  "fa": "هدف زندگی‌ام رو پیدا کردم"
+ },
+ {
+  "id": 600546,
+  "level": "B1",
+  "category": "work",
+  "en": "I'm working on my self-esteem",
+  "fa": "روی عزت نفسم کار می‌کنم"
+ },
+ {
+  "id": 600548,
+  "level": "B1",
+  "category": "tech",
+  "en": "I need to update my software",
+  "fa": "باید نرم‌افزارم رو آپدیت کنم"
+ },
+ {
+  "id": 600549,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm switching to a new OS",
+  "fa": "دارم سیستم‌عاملم رو عوض می‌کنم"
+ },
+ {
+  "id": 600550,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need more storage",
+  "fa": "فضای ذخیره‌سازی بیشتری نیاز دارم"
+ },
+ {
+  "id": 600552,
+  "level": "B1",
+  "category": "work",
+  "en": "I'm joining a zoom meeting",
+  "fa": "جلسه زوم دارم"
+ },
+ {
+  "id": 600553,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm into AI and machine learning",
+  "fa": "به هوش مصنوعی علاقه دارم"
+ },
+ {
+  "id": 600554,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm backing up my files",
+  "fa": "دارم از فایل‌هام بک‌آپ می‌گیرم"
+ },
+ {
+  "id": 600556,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm praying for you",
+  "fa": "برات دعا می‌کنم"
+ },
+ {
+  "id": 600559,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm going to the mosque / church / temple",
+  "fa": "می‌رم مسجد / کلیسا / معبد"
+ },
+ {
+  "id": 600563,
+  "level": "C1",
+  "category": "food",
+  "en": "Don't count your chickens before they hatch",
+  "fa": "جوجه رو آخر پاییز می‌شمارن"
+ },
+ {
+  "id": 600567,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm going through a phase",
+  "fa": "یه دوران خاصی رو می‌گذرونم"
+ },
+ {
+  "id": 600570,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm not here to argue",
+  "fa": "نیومدم بحث کنم"
+ },
+ {
+  "id": 600571,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm so relieved / That's a weight off my shoulders",
+  "fa": "نفسم بالا اومد"
+ },
+ {
+  "id": 600572,
+  "level": "B1",
+  "category": "exclaim",
+  "en": "What a relief / Thank goodness",
+  "fa": "خدا رو شکر که تموم شد"
+ },
+ {
+  "id": 600574,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm not good at small talk",
+  "fa": "تو حرف‌های روزمره خوب نیستم"
+ },
+ {
+  "id": 600575,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We're on the same page",
+  "fa": "نظرمون یکی‌ست"
+ },
+ {
+  "id": 600576,
+  "level": "B2",
+  "category": "phrases",
+  "en": "Let's agree to disagree",
+  "fa": "بذار با اختلاف نظر کنار بیایم"
+ },
+ {
+  "id": 600577,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need to speak my mind",
+  "fa": "باید حرف دلم رو بزنم"
+ },
+ {
+  "id": 600578,
+  "level": "B2",
+  "category": "phrases",
+  "en": "That was a miscommunication",
+  "fa": "سوءتفاهم شد"
+ },
+ {
+  "id": 600579,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I feel heard / I feel understood",
+  "fa": "احساس می‌کنم درک شدم"
+ },
+ {
+  "id": 600580,
+  "level": "B2",
+  "category": "phrases",
+  "en": "Let's talk it out / Let's hash it out",
+  "fa": "بیا حرف بزنیم و حلش کنیم"
+ },
+ {
+  "id": 600581,
+  "level": "B1",
+  "category": "phrases",
+  "en": "You're not listening to me",
+  "fa": "به حرف من گوش نمی‌دی"
+ },
+ {
+  "id": 600582,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm feeling disconnected from you",
+  "fa": "احساس فاصله می‌کنم با تو"
+ },
+ {
+  "id": 600583,
+  "level": "B2",
+  "category": "phrases",
+  "en": "Let's clear the air",
+  "fa": "بیا جو رو عادی کنیم"
+ },
+ {
+  "id": 600584,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I owe you an apology",
+  "fa": "به تو بدهکارم (باید عذرخواهی کنم)"
+ },
+ {
+  "id": 600585,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm dealing with depression",
+  "fa": "با افسردگی دست و پنجه نرم می‌کنم"
+ },
+ {
+  "id": 600586,
+  "level": "B2",
+  "category": "tech",
+  "en": "I have social anxiety",
+  "fa": "اضطراب اجتماعی دارم"
+ },
+ {
+  "id": 600587,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm going to therapy",
+  "fa": "رواندرمانی می‌رم"
+ },
+ {
+  "id": 600588,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need emotional support",
+  "fa": "به حمایت عاطفی نیاز دارم"
+ },
+ {
+  "id": 600589,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm in a dark place right now",
+  "fa": "الان شرایط روحی بدی دارم"
+ },
+ {
+  "id": 600590,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I'm slowly getting better",
+  "fa": "آروم آروم بهتر می‌شم"
+ },
+ {
+  "id": 600591,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I had a panic attack",
+  "fa": "حمله پانیک داشتم"
+ },
+ {
+  "id": 600593,
+  "level": "B2",
+  "category": "crime",
+  "en": "I'm learning coping strategies",
+  "fa": "راه‌های مقابله یاد می‌گیرم"
+ },
+ {
+  "id": 600594,
+  "level": "B2",
+  "category": "health",
+  "en": "My mental health is declining",
+  "fa": "سلامت روانم داره بدتر میشه"
+ },
+ {
+  "id": 600596,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We need to increase production",
+  "fa": "باید تولید رو زیاد کنیم"
+ },
+ {
+  "id": 600598,
+  "level": "B2",
+  "category": "travel",
+  "en": "We're investing in new machinery",
+  "fa": "توی ماشین‌آلات جدید سرمایه‌گذاری می‌کنیم"
+ },
+ {
+  "id": 600601,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We need raw materials",
+  "fa": "مواد اولیه نیاز داریم"
+ },
+ {
+  "id": 600603,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We need to irrigate the fields",
+  "fa": "باید مزرعه رو آبیاری کنیم"
+ },
+ {
+  "id": 600605,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We're using organic methods",
+  "fa": "از روش‌های ارگانیک استفاده می‌کنیم"
+ },
+ {
+  "id": 600608,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We need to fertilize the plants",
+  "fa": "باید به گیاه‌ها کود بدیم"
+ },
+ {
+  "id": 600610,
+  "level": "B1",
+  "category": "fun",
+  "en": "I play tennis every weekend",
+  "fa": "هر آخر هفته تنیس بازی می‌کنم"
+ },
+ {
+  "id": 600611,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I want to learn how to ski",
+  "fa": "می‌خوام اسکی یاد بگیرم"
+ },
+ {
+  "id": 600612,
+  "level": "B1",
+  "category": "travel",
+  "en": "We're cycling to the park",
+  "fa": "با دوچرخه می‌ریم پارک"
+ },
+ {
+  "id": 600613,
+  "level": "B1",
+  "category": "travel",
+  "en": "I'm training for a marathon",
+  "fa": "برای ماراتن تمرین می‌کنم"
+ },
+ {
+  "id": 600615,
+  "level": "A2",
+  "category": "phrases",
+  "en": "I like to go hiking",
+  "fa": "کوهپیمایی دوست دارم"
+ },
+ {
+  "id": 600616,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We're going rock climbing",
+  "fa": "می‌ریم سنگ‌نوردی"
+ },
+ {
+  "id": 600617,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'm investing in the stock market",
+  "fa": "در بورس سرمایه‌گذاری می‌کنم"
+ },
+ {
+  "id": 600618,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We're diversifying our portfolio",
+  "fa": "پرتفوی خودمون رو متنوع می‌کنیم"
+ },
+ {
+  "id": 600620,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We're in a recession",
+  "fa": "در رکود اقتصادی هستیم"
+ },
+ {
+  "id": 600621,
+  "level": "B1",
+  "category": "fun",
+  "en": "That's a game changer",
+  "fa": "این همه چیز رو عوض می‌کنه"
+ },
+ {
+  "id": 600622,
+  "level": "B1",
+  "category": "phrases",
+  "en": "We need to level up",
+  "fa": "باید بریم سطح بالاتر"
+ },
+ {
+  "id": 600623,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I've been through a lot",
+  "fa": "خیلی چیزها رو پشت سر گذاشتم"
+ },
+ {
+  "id": 600624,
+  "level": "B2",
+  "category": "phrases",
+  "en": "Let's talk later / Hit me up later",
+  "fa": "بعداً حرف می‌زنیم"
+ },
+ {
+  "id": 600625,
+  "level": "B1",
+  "category": "phrases",
+  "en": "That's a deal / We have a deal",
+  "fa": "قبول / معامله تمومه"
+ },
+ {
+  "id": 600626,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I've made up my mind",
+  "fa": "تصمیم نهایی رو گرفتم"
+ },
+ {
+  "id": 600627,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I need a fresh start",
+  "fa": "به یک شروع تازه نیاز دارم"
+ },
+ {
+  "id": 600628,
+  "level": "B2",
+  "category": "phrases",
+  "en": "We need to rebuild trust",
+  "fa": "باید اعتماد رو دوباره بسازیم"
+ },
+ {
+  "id": 600629,
+  "level": "B1",
+  "category": "phrases",
+  "en": "I feel like a stranger",
+  "fa": "احساس غریبی می‌کنم"
+ },
+ {
+  "id": 600630,
+  "level": "B1",
+  "category": "work",
+  "en": "We have to work as a team",
+  "fa": "باید تیمی کار کنیم"
+ },
+ {
+  "id": 600632,
+  "level": "B2",
+  "category": "work",
+  "en": "We need a long-term plan",
+  "fa": "برنامه بلندمدت نیاز داریم"
+ },
+ {
+  "id": 600633,
+  "level": "B2",
+  "category": "phrases",
+  "en": "Don't rub salt in my wound",
+  "fa": "رو زخمم نمک نپاش"
+ },
+ {
+  "id": 600635,
+  "level": "B2",
+  "category": "phrases",
+  "en": "I'll make you regret it / I'll teach you a lesson",
+  "fa": "پشت دستمو داغ می‌کنم (یعنی تلافی می‌کنم)"
+ },
+ {
+  "id": 600638,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Who do you think you are?",
+  "fa": "کی باشی تو؟"
+ },
+ {
+  "id": 600640,
+  "level": "B2",
+  "category": "phrases",
+  "en": "You're coming on too strong for me, be careful",
+  "fa": "واسه من زیادی سوسه می‌ای حواست باشه"
+ },
+ {
+  "id": 600641,
+  "level": "B2",
+  "category": "phrases",
+  "en": "You're not in the big leagues / You don't belong here",
+  "fa": "مال این صحبتا نیستی"
+ },
+ {
+  "id": 600643,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Who do you think you are? (aggressive)",
+  "fa": "فکر کردی کی هستی؟"
+ },
+ {
+  "id": 600644,
+  "level": "C1",
+  "category": "exclaim",
+  "en": "Your days are just routine for us! Yeah, right!",
+  "fa": "اروزهای شما روزمرگیای ماست! اره دادش!"
+ },
+ {
+  "id": 600646,
+  "level": "B2",
+  "category": "phrases",
+  "en": "You've just arrived on the scene (like a newbie)",
+  "fa": "تازه به دوران رسیده‌اس انگار"
+ },
+ {
+  "id": 600647,
+  "level": "B1",
+  "category": "phrases",
+  "en": "Don't even think about it",
+  "fa": "فکرشم نکن"
+ },
+ {
+  "id": 600648,
+  "level": "A2",
+  "category": "love",
+  "en": "My dear / My love (friendly, sometimes sarcastic)",
+  "fa": "جون من"
+ },
+ {
+  "id": 600649,
+  "level": "B2",
+  "category": "phrases",
+  "en": "My death? Are you serious? Then why lie?",
+  "fa": "مرگ من؟ راست می‌گی؟ دوروغ چرا"
+ },
+ {
+  "id": 600650,
+  "level": "B1",
+  "category": "phrases",
+  "en": "What a thing! / What a deal! (sarcastic or impressed)",
+  "fa": "عجب چیزیه"
+ }
+]
