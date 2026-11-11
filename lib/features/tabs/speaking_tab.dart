@@ -22,6 +22,7 @@ import '../../core/utils/html_entities.dart';
 import '../../core/widgets/ai_answer_tools.dart';
 import '../../core/widgets/selection_card.dart'
     show SelectableSyncText, SelectableRun;
+import '../../core/widgets/feature_switch_cards.dart';
 import '_hope_panel.dart';
 import 'speaking_call.dart';
 
@@ -394,64 +395,25 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.appColors;
-    Widget seg(int i, String label, IconData icon) {
-      final active = _sub == i;
-      return Expanded(
-        child: GestureDetector(
-          onTap: () => _go(i),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 5),
-            decoration: BoxDecoration(
-              color: active ? c.gold : Colors.transparent,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: active ? c.gold : Colors.transparent,
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 15, color: active ? c.headerTo : c.inkSoft),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: active ? c.headerTo : c.inkSoft,
-                      fontSize: 12,
-                      fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     return HopePanel(
       contentDirection: uiContentDirection(context),
       children: [
-        Container(
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: c.paperDark,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: c.cardBorder),
-          ),
-          child: Row(
-            children: [
-              seg(0, context.l10n.speaking_tab_speaking,
-                  Icons.chat_bubble_outline),
-              seg(1, context.l10n.speaking_tab_history, Icons.history),
-            ],
-          ),
+        FeatureSwitchCards(
+          selected: _sub,
+          onSelect: _go,
+          items: [
+            FeatureCardItem(
+              icon: Icons.record_voice_over_rounded,
+              title: context.l10n.speaking_tab_speaking,
+              subtitle: FeatureCardTexts.of(context, 'talk_chat'),
+              ai: true,
+            ),
+            FeatureCardItem(
+              icon: Icons.history_rounded,
+              title: context.l10n.speaking_tab_history,
+              subtitle: FeatureCardTexts.of(context, 'talk_history'),
+            ),
+          ],
         ),
         // هر دو زنده می‌مانند (مکالمه‌ی در حال ارسال با رفتن به تاریخچه گم نشود)
         Column(

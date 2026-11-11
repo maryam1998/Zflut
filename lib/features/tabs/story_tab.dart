@@ -43,6 +43,7 @@ import '../../core/book/page_translate_engine.dart';
 import '../../core/story/long_text_prep.dart';
 import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/web/ocr_block.dart';
+import '../../core/widgets/feature_switch_cards.dart';
 import '../story/story_i18n.dart';
 import '../story/book_translate_bar.dart';
 import '../story/page_translate_render.dart';
@@ -1661,70 +1662,48 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       _kImportLabels['en']!;
 
   Widget _modeSwitch(AppThemeColorsExt c, int count) {
-    // چهار حالت: ساخت داستان | ایمپورت و خواندن | ذخیره‌شده‌ها (کتابخانه) | ذخیره برای داستان بعدی
-    Widget seg(int mode, String label, IconData icon) {
-      // 0 = ساخت داستان، 1 = کتابخانه، 2 = ذخیره برای داستان بعدی، 3 = ایمپورت و خواندن
-      final cur = _showLibrary ? 1 : (_showSaved ? 2 : (_showImport ? 3 : 0));
-      final active = cur == mode;
-      return Expanded(
-        child: GestureDetector(
-          onTap: () => setState(() {
-            _showLibrary = mode == 1;
-            _showSaved = mode == 2;
-            _showImport = mode == 3;
-            // هر بار که به «ساخت داستان» می‌آییم یا از آن می‌رویم، داستانِ قبلی پاک می‌شود
-            _clearCreateView();
-          }),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 3),
-            decoration: BoxDecoration(
-              color: active ? c.gold : Colors.transparent,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: active ? c.gold : Colors.transparent,
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 14, color: active ? c.headerTo : c.inkSoft),
-                const SizedBox(width: 3),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: active ? c.headerTo : c.inkSoft,
-                      fontSize: 11,
-                      fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: c.paperDark,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: c.cardBorder),
+    // چهار حالت (کارت‌های آیکون‌دار، دو ردیف):
+    // 0 = ساخت داستان، 1 = کتابخانه، 2 = ذخیره برای داستان بعدی، 3 = ایمپورت و خواندن
+    final cur = _showLibrary ? 1 : (_showSaved ? 2 : (_showImport ? 3 : 0));
+    // ترتیبِ نمایش: ساخت | ایمپورت | ذخیره‌شده‌ها | ذخیره برای داستان بعدی
+    const order = [0, 3, 1, 2];
+    final items = <FeatureCardItem>[
+      FeatureCardItem(
+        icon: Icons.auto_fix_high,
+        title: context.l10n.story_mode_create,
+        subtitle: FeatureCardTexts.of(context, 'story_create'),
+        ai: true,
       ),
-      child: Row(
-        children: [
-          seg(0, context.l10n.story_mode_create, Icons.auto_fix_high),
-          seg(3, _importLabel(context), Icons.upload_file_outlined),
-          seg(1, '${context.l10n.story_mode_saved_library} ($count)', Icons.local_library_outlined),
-          seg(2, context.l10n.story_mode_saved_words, Icons.bookmark_outline),
-        ],
+      FeatureCardItem(
+        icon: Icons.upload_file_outlined,
+        title: _importLabel(context),
+        subtitle: FeatureCardTexts.of(context, 'story_import'),
       ),
+      FeatureCardItem(
+        icon: Icons.local_library_outlined,
+        title: context.l10n.story_mode_saved_library,
+        subtitle: FeatureCardTexts.of(context, 'story_library'),
+        count: count > 0 ? count : null,
+      ),
+      FeatureCardItem(
+        icon: Icons.bookmark_outline,
+        title: context.l10n.story_mode_saved_words,
+        subtitle: FeatureCardTexts.of(context, 'story_saved'),
+      ),
+    ];
+    return FeatureSwitchCards(
+      items: items,
+      selected: order.indexOf(cur),
+      onSelect: (i) {
+        final mode = order[i];
+        setState(() {
+          _showLibrary = mode == 1;
+          _showSaved = mode == 2;
+          _showImport = mode == 3;
+          // هر بار که به «ساخت داستان» می‌آییم یا از آن می‌رویم، داستانِ قبلی پاک می‌شود
+          _clearCreateView();
+        });
+      },
     );
   }
 
