@@ -233,8 +233,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       if (t.key == key && t.code != sync.mainCode) track = t;
     }
     if (track == null || track.spans.isEmpty) return false;
-    final native = _nativeCode();
-    if (native.isEmpty || native == track.code) return false;
+    // 🌐 همه‌ی زبان‌های هدر (مبدأ + مقصدها) به‌ترتیب؛ نه فقط زبانِ مبدأ، و نه فقط زبانی که کاربر ▶ زده
+    final langs = _transTrackLangs(track.code);
+    if (langs.isEmpty) return false;
 
     int skipWs(int i) {
       final t = track!.fullText;
@@ -249,51 +250,51 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     final nxt = nextStart >= 0 ? _spanAt(track, skipWs(nextStart)) : null;
     if (nxt != null && nxt.id == cur.id) return false; // هنوز همین آیتم
 
-    _resumeFromHook = true;
-    _resumeCode = track.code;
-    _resumeSpanId =
-        nxt != null ? nxt.id : (loops ? track.spans.first.id : null);
-    unawaited(_playNativeAfterTrans(track, cur.id, native));
+    _startTransTrackQueue(track, cur.id, langs,
+        nxt != null ? nxt.id : (loops ? track.spans.first.id : null));
     return true;
   }
 
-  Future<void> _playNativeAfterTrans(
-      PlayerTrack track, String id, String native) async {
+  /// زبان‌هایی که بعد از خواندنِ یک آیتمِ «تراکِ ترجمه» خوانده می‌شوند: مبدأ + همه‌ی مقصدهای هدر
+  /// (به‌ترتیبِ هدر، بدون تکرار، بدون زبانِ خودِ همین ترک که همین الان خوانده شد).
+  List<String> _transTrackLangs(String trackCode) {
+    final sel = ref.read(languageSelectionProvider);
+    final out = <String>[];
+    for (final c in [
+      if (!sel.targets.contains(sel.native)) sel.native,
+      ...sel.targets,
+    ]) {
+      final t = c.trim().toLowerCase();
+      if (t.isNotEmpty && t != trackCode && !out.contains(t)) out.add(t);
+    }
+    return out;
+  }
+
+  void _startTransTrackQueue(PlayerTrack track, String id,
+      List<String> langs, String? resumeId) {
+    _bgCancel();
+    _resumeFromHook = true;
+    _resumeCode = track.code;
+    _resumeSpanId = resumeId;
     final sync = ref.read(playerSyncProvider);
     final foreign = _notifier.isForeignItem(id);
-    String? text;
-    if (!foreign && native == sync.mainCode) {
-      text = _notifier.itemText(id)?.trim(); // مبدأ = زبانِ متنِ اصلی
-    } else {
-      text = await _translationText(
-          id, foreign ? track.code : sync.mainCode, native);
-    }
-    if (!mounted) return;
-    final sp = ref.read(speechControllerProvider);
-    if (sp.key != track.key || sp.status != SpeechStatus.playing) {
-      // کاربر در این فاصله توقف کرد یا متن را عوض کرد
-      _resumeSpanId = null;
-      _resumeFromHook = false;
-      _resumeCode = null;
-      return;
-    }
-    if (text == null || text.isEmpty) {
-      _resumeMain(); // ترجمه‌ای نبود → آیتمِ بعدیِ همان ترجمه
-      return;
-    }
-    final nkey = PlayerTrack.keyFor(native, text);
-    SpeechController.translationReadKey = nkey;
-    ref.read(adhocSyncProvider.notifier).state =
-        (key: nkey, active: ActiveSync(native, id));
-    unawaited(_ctrl.toggle(text, native));
-    // اگر خوانش تمام نشد (خطا/شروع‌نشدن) پلیر گیر نکند
-    Timer(Duration(seconds: 12 + text.length ~/ 6), () {
-      if (!mounted || _resumeSpanId == null) return;
-      if (SpeechController.translationReadKey != nkey) return;
-      final cur = ref.read(speechControllerProvider);
-      if (cur.key == nkey && cur.status == SpeechStatus.paused) return;
-      _resumeMain();
-    });
+    final steps = <_BgStep>[
+      for (final l in langs)
+        _BgStep(
+          l,
+          true,
+          null,
+          (!foreign && l == sync.mainCode)
+              ? Future<String?>.value(_notifier.itemText(id)?.trim()) // متنِ اصلی
+              : _translationText(
+                  id, foreign ? track.code : sync.mainCode, l),
+          (t) => id,
+        ),
+    ];
+    _bgActive = true;
+    ExamplesRegistry.bgDriving = true;
+    final token = ++_bgToken;
+    unawaited(_runBgQueue(steps, token, track.key));
   }
 
   void _playExample(String code, String text) {
