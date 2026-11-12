@@ -144,18 +144,33 @@ final myDictionaryWordsProvider = Provider<List<DailyWord>>((ref) {
       pos: '',
       en: e.word,
       fa: '',
-      translations: (meaning.isNotEmpty &&
-              native != e.langCode &&
-              textMatchesScript(meaning, native))
-          ? {native: meaning}
-          : const <String, String>{},
+      translations: () {
+        // 🌐 ترجمه‌ی همه‌ی زبان‌های انتخاب‌شده (نه فقط اولی)
+        final tr = <String, String>{};
+        e.translations.forEach((k, v) {
+          final t = v.trim();
+          if (k != e.langCode && t.isNotEmpty && textMatchesScript(t, k)) {
+            tr[k] = t;
+          }
+        });
+        if (meaning.isNotEmpty &&
+            native != e.langCode &&
+            !tr.containsKey(native) &&
+            textMatchesScript(meaning, native)) {
+          tr[native] = meaning;
+        }
+        return tr;
+      }(),
     ));
   }
   return out;
 });
 
 bool _matches(DailyWord w, WordsFilterState f) {
-  if (!f.matchesLevel(w.level)) return false;
+  // لغتِ شخصیِ بی‌سطح با فیلترِ سطح پنهان نشود (تا بلافاصله بعد از ذخیره دیده شود)
+  if (!(w.isPersonal && w.level.isEmpty) && !f.matchesLevel(w.level)) {
+    return false;
+  }
   final q = f.query.trim().toLowerCase();
   if (q.isEmpty) return true;
   return w.en.toLowerCase().contains(q) ||

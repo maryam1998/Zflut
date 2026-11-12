@@ -77,6 +77,33 @@ class SavedWordsNotifier extends StateNotifier<List<SavedWord>> {
   bool isSaved(String word, String langCode) =>
       state.any((w) => _same(w, word, langCode));
 
+  /// ترجمه‌هایی که بعد از ذخیره رسیدند به همان لغت اضافه می‌شوند (بدون تغییر ترتیب/زمانِ ذخیره).
+  void mergeTranslations(
+      String word, String langCode, Map<String, String> tr) {
+    final clean = {
+      for (final e in tr.entries)
+        if (e.value.trim().isNotEmpty) e.key: e.value.trim()
+    };
+    if (clean.isEmpty) return;
+    var changed = false;
+    final next = [
+      for (final w in state)
+        if (_same(w, word, langCode))
+          () {
+            final merged = {...w.translations, ...clean};
+            if (merged.length == w.translations.length &&
+                merged.entries.every((e) => w.translations[e.key] == e.value)) {
+              return w;
+            }
+            changed = true;
+            return w.copyWith(translations: merged);
+          }()
+        else
+          w
+    ];
+    if (changed) _set(next);
+  }
+
   /// حذفِ چندتایی (برای «پاک کردن همه» / «حذف انتخاب‌شده‌ها» در تب لغات ذخیره‌شده).
   void removeWords(Iterable<SavedWord> words) {
     final list = words.toList();

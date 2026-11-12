@@ -440,7 +440,23 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
     });
   }
 
-  void _onResolved(String lang, String value) => _results[lang] = value;
+  void _onResolved(String lang, String value) {
+    _results[lang] = value;
+    // اگر لغت همین الان ذخیره شده، ترجمه‌ی دیر‌رسیده هم فوراً به آن اضافه شود
+    final word = _text;
+    final wl = widget.langCode;
+    Future.microtask(() {
+      if (!mounted) return;
+      final n = ref.read(savedWordsProvider.notifier);
+      if (n.isSaved(word, wl)) n.mergeTranslations(word, wl, {lang: value});
+    });
+  }
+
+  Map<String, String> _allMeanings() => {
+        for (final e in _results.entries)
+          if (e.value.trim().isNotEmpty && e.key != widget.langCode)
+            e.key: e.value.trim()
+      };
 
   /// کارتِ مسیر عصبی را باز می‌کند و کارتِ انتخاب را می‌بندد تا روی هم نیفتند.
   void _openNeural(String word, String code, String? base) {
@@ -619,6 +635,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                           langCode: lang,
                           meaning: _meaning(sel),
                           savedAt: DateTime.now(),
+                          translations: _allMeanings(),
                         ),
                       );
                 },
