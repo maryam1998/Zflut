@@ -171,6 +171,29 @@ public class BubblePlugin extends Plugin {
     @PluginMethod
     public void openExternal(PluginCall call) {
         String url = call.getString("url");
+        // mailto: → اپِ ایمیل (اول جیمیل، وگرنه هر برنامه‌ی ایمیل)
+        if (url != null && url.startsWith("mailto:")) {
+            Uri mail = Uri.parse(url);
+            try {
+                Intent g = new Intent(Intent.ACTION_SENDTO, mail);
+                g.setPackage("com.google.android.gm");
+                g.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(g);
+                call.resolve();
+                return;
+            } catch (Exception ignored) {
+                // جیمیل نصب نیست → برنامه‌ی ایمیلِ پیش‌فرض
+            }
+            try {
+                Intent i = new Intent(Intent.ACTION_SENDTO, mail);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+                call.resolve();
+            } catch (Exception e) {
+                call.reject("no email app: " + e.getMessage());
+            }
+            return;
+        }
         if (url == null || !(url.startsWith("https://") || url.startsWith("http://"))) {
             call.reject("invalid url");
             return;

@@ -23,7 +23,6 @@ import '../../core/widgets/ai_answer_tools.dart';
 import '../../core/widgets/selection_card.dart'
     show SelectableSyncText, SelectableRun;
 import '../../core/widgets/feature_switch_cards.dart';
-import '../../core/widgets/ai_guide_cards.dart';
 import '_hope_panel.dart';
 import 'speaking_call.dart';
 
@@ -416,8 +415,6 @@ class _SpeakingTabState extends ConsumerState<SpeakingTab> {
             ),
           ],
         ),
-        // راهنمای سریعِ AI (کارت‌های راهنما + تورِ بار اول با «دیگر نشان نده»)
-        const AiGuideSection(),
         // هر دو زنده می‌مانند (مکالمه‌ی در حال ارسال با رفتن به تاریخچه گم نشود)
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

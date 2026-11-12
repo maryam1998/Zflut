@@ -24,6 +24,7 @@ import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/widgets/color_palette_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../tabs/_hope_panel.dart' show uiContentDirection;
+import 'contact_us_button.dart';
 import 'credits_page.dart';
 import 'feature_dock.dart' show FeatureDockToggleRow;
 import 'help_center.dart';
@@ -138,6 +139,8 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   const _OfflineWordsButton(),
                   gap(),
                   const HelpCenterButton(),
+                  const SizedBox(height: 8),
+                  const ContactUsButton(),
                   const SizedBox(height: 8),
                   const AboutButton(),
                 ],
