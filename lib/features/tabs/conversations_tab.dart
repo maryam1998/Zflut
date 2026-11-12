@@ -40,121 +40,89 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   String? _activeTopic;
   int? _openScenario;
 
-  // 🎭 دو صدای متفاوت برای دو نفرِ مکالمه (A = «می‌شنوی»، B = «می‌گی») — هر بار که سناریو باز می‌شود تصادفی
-  final math.Random _rng = math.Random();
-  String? _voiceA, _voiceB;
-  String? _voicesFor;
+  // 🎭 مکالمه‌ی واقعی بین دو نفر: «می‌شنوی» (A) = همیشه صدای مرد، «می‌گی» (B) = همیشه صدای زن.
+  // هم متنِ اصلی و هم ترجمه‌ها (هر زبانی که در هدر انتخاب شده) برای هر نفر با همان جنسیت
+  // و با مدلِ مخصوصِ همان زبان خوانده می‌شود. هدر عوض شد → صداها خودکار دوباره انتخاب می‌شوند.
+  static const String _mainLang = 'en';
+  final Map<String, ({String? male, String? female})> _langVoices = {};
   bool _voicesBusy = false;
+  bool _voicesDirty = false;
 
   /// برچسبِ صدا به F/M ختم می‌شود (مثلاً «Nicole · US · F»).
   static bool _isFemale(String label) => label.trim().endsWith('F');
+  static bool _isMale(String label) => label.trim().endsWith('M');
 
-  Future<void> _pickVoices(String scenarioKey) async {
-    if (_voicesBusy || _voicesFor == scenarioKey) return;
-    _voicesBusy = true;
-    _voicesFor = scenarioKey;
-    String? a, b;
-    try {
-      if (NativeBridge.instance.isSupported) {
-        final r = await NativeBridge.instance.getTtsVoices(lang: 'en');
-        final raw = r['voices'];
-        final ok = <Map<String, dynamic>>[
-          if (raw is List)
-            for (final e in raw)
-              if (e is Map && e['downloaded'] == true && '${e['id']}'.isNotEmpty)
-                Map<String, dynamic>.from(e),
-        ];
-        if (ok.length >= 2) {
-          ok.shuffle(_rng);
-          final first = ok.first;
-          // ترجیحاً یک زن و یک مرد؛ وگرنه دو صدای متفاوت
-          final fFem = _isFemale('${first['label']}');
-          final other = ok.skip(1).firstWhere(
-                (v) => _isFemale('${v['label']}') != fFem,
-                orElse: () => ok[1],
-              );
-          if (_rng.nextBool()) {
-            a = '${first['id']}';
-            b = '${other['id']}';
-          } else {
-            a = '${other['id']}';
-            b = '${first['id']}';
-          }
-        }
-      }
-    } catch (_) {
-      a = b = null;
-    }
-    _voicesBusy = false;
-    if (!mounted) return;
-    _voiceA = a;
-    _voiceB = b;
-    _aFemale = null;
-    if (a != null) {
-      try {
-        final r = await NativeBridge.instance.getTtsVoices(lang: 'en');
-        final raw = r['voices'];
-        if (raw is List) {
-          for (final e in raw) {
-            if (e is Map && '${e['id']}' == a) _aFemale = _isFemale('${e['label']}');
-          }
-        }
-      } catch (_) {}
-    }
-    await _pickTransVoices();
-  }
-
-  // 🎭 صدای A/B برای «ترجمه‌ها» در هر زبان (مثل متنِ اصلی، با هر بار بازشدنِ سناریو عوض می‌شود)
-  final Map<String, ({String? a, String? b})> _transVoices = {};
-  bool? _aFemale;
-
-  Future<void> _pickTransVoices() async {
-    _transVoices.clear();
-    if (!NativeBridge.instance.isSupported) return;
+  /// زبانِ متنِ اصلی + مبدأ + همه‌ی مقصدهای انتخاب‌شده در هدر
+  Set<String> _wantedLangs() {
     final sel = ref.read(languageSelectionProvider);
-    final langs = <String>{
+    return <String>{
+      _mainLang,
       for (final c in [sel.native, ...sel.targets]) c.trim().toLowerCase(),
     }..remove('');
-    langs.remove('en');
-    for (final lang in langs) {
-      try {
-        final r = await NativeBridge.instance.getTtsVoices(lang: lang);
-        final raw = r['voices'];
-        final ok = <Map<String, dynamic>>[
-          if (raw is List)
-            for (final e in raw)
-              if (e is Map && e['downloaded'] == true && '${e['id']}'.isNotEmpty)
-                Map<String, dynamic>.from(e),
-        ]..shuffle(_rng);
-        if (ok.length < 2) continue;
-        // ترجیحاً جنسیتِ A همان جنسیتِ A در متنِ اصلی باشد
-        final want = _aFemale;
-        final first = want == null
-            ? ok.first
-            : ok.firstWhere((v) => _isFemale('${v['label']}') == want,
-                orElse: () => ok.first);
-        final fFem = _isFemale('${first['label']}');
-        final other = ok.firstWhere(
-          (v) => v['id'] != first['id'] && _isFemale('${v['label']}') != fFem,
-          orElse: () => ok.firstWhere((v) => v['id'] != first['id']),
-        );
-        _transVoices[lang] = (a: '${first['id']}', b: '${other['id']}');
-      } catch (_) {}
+  }
+
+  Future<void> _loadVoices() async {
+    if (!NativeBridge.instance.isSupported) return;
+    if (_voicesBusy) {
+      _voicesDirty = true;
+      return;
+    }
+    _voicesBusy = true;
+    try {
+      do {
+        _voicesDirty = false;
+        final next = <String, ({String? male, String? female})>{};
+        for (final lang in _wantedLangs()) {
+          try {
+            final r = await NativeBridge.instance.getTtsVoices(lang: lang);
+            final raw = r['voices'];
+            final ok = <Map<String, dynamic>>[
+              if (raw is List)
+                for (final e in raw)
+                  if (e is Map &&
+                      e['downloaded'] == true &&
+                      '${e['id']}'.isNotEmpty)
+                    Map<String, dynamic>.from(e),
+            ];
+            // اگر صدای فعالِ تنظیمات همان جنسیت را دارد همان؛ وگرنه اولین صدای آن جنسیت
+            String? pick(bool Function(String) isG) {
+              Map<String, dynamic>? first;
+              for (final v in ok) {
+                if (!isG('${v['label']}')) continue;
+                if (v['active'] == true) return '${v['id']}';
+                first ??= v;
+              }
+              return first == null ? null : '${first['id']}';
+            }
+
+            next[lang] = (male: pick(_isMale), female: pick(_isFemale));
+          } catch (_) {}
+        }
+        if (!mounted) return;
+        _langVoices
+          ..clear()
+          ..addAll(next);
+      } while (_voicesDirty);
+    } catch (_) {
+    } finally {
+      _voicesBusy = false;
     }
   }
 
-  String? _voiceForTrans(String itemId, String lang) {
+  /// A («می‌شنوی») = مرد، B («می‌گی») = زن
+  String? _voiceFor(String itemId, String lang) {
     if (!RegExp(r'^[ab]\d+$').hasMatch(itemId)) return null;
-    final p = _transVoices[lang.trim().toLowerCase()];
-    if (p == null) return null;
-    return itemId.startsWith('a') ? p.a : p.b;
+    final p = _langVoices[lang.trim().toLowerCase()];
+    if (p == null) {
+      unawaited(_loadVoices()); // زبانِ تازه (مثلاً هدر تازه عوض شده) → صدایش را پیدا کن
+      return null;
+    }
+    return itemId.startsWith('a') ? p.male : p.female;
   }
 
-  String? _voiceForItem(String itemId) {
-    if (itemId.startsWith('a')) return _voiceA;
-    if (itemId.startsWith('b')) return _voiceB;
-    return null;
-  }
+  String? _voiceForTrans(String itemId, String lang) => _voiceFor(itemId, lang);
+
+  String? _voiceForItem(String itemId) => _voiceFor(itemId, _mainLang);
   String _query = '';
   Set<String> _levels = <String>{};
 
@@ -215,6 +183,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     // دکمه‌ی «بازگشت» گوشی: اول از موضوعِ بازشده به لیستِ موضوع‌ها برمی‌گردد؛
     // اگر لیست باز بود، کار را به AppShell می‌سپارد (خروج از برنامه).
     BackHandlers.add(_onSystemBack);
+    unawaited(_loadVoices()); // 🎭 صدای مرد/زن برای متنِ اصلی و زبان‌های هدر
     // لمسِ طولانیِ دکمه‌ی پخش از تبِ دیگر: موضوع/سناریوی در حال پخش را باز کن
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _applyRestore(ref.read(tabRestoreProvider));
@@ -274,6 +243,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(languageSelectionProvider, (_, __) => unawaited(_loadVoices()));
     ref.listen<PlaybackOrigin?>(tabRestoreProvider, (prev, next) {
       if (next != null) _applyRestore(next);
     });
@@ -546,10 +516,6 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final openSc = (openIdx != null && openIdx < topic.scenarios.length)
         ? topic.scenarios[openIdx]
         : null;
-    if (openSc != null) {
-      final k = '${topic.topic}:$openIdx';
-      if (_voicesFor != k) unawaited(_pickVoices(k));    // 🎭 صدای تازه برای هر بار بازشدنِ سناریو
-    }
 
     return SyncPlayScope(
       revision: openSc ?? topic,
