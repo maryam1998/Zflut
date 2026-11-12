@@ -724,41 +724,19 @@ class SpeechController extends StateNotifier<SpeechState> {
 
     if (NativeTtsBridge.isAvailable) {
       // ۱. Piper نیتیو
-      // ⚡ دو پرسش از نیتیو هم‌زمان و با مهلتِ کوتاه — جواب دیر آمد = «آماده نیست» و فوراً صدای گوشی
+      // ⚡ فقط یک پرسشِ سبک (جوابِ «آماده» ۳۰ ثانیه کش می‌شود)؛ جوابِ دیر = «آماده نیست»
       final phoneOnly = _preferPhoneVoice?.call() ?? false;
-      final readyF = phoneOnly
-          ? Future<bool>.value(false)
-          : NativeTtsBridge.isModelReady(code)
-              .timeout(const Duration(milliseconds: 600), onTimeout: () => false);
-      final sysF = NativeTtsBridge.systemAvailable(code)
-          .timeout(const Duration(milliseconds: 600), onTimeout: () => false);
-      final ready = await readyF;
-      final sysOk = await sysF;
+      final ready = phoneOnly
+          ? false
+          : await NativeTtsBridge.isModelReady(code)
+              .timeout(const Duration(milliseconds: 800), onTimeout: () => false);
       if (myGen != _generation) return;
       // 📥 صدای اپ برای این زبان نصب نیست → خودکار دانلود شود (تا آماده شدن با صدای گوشی)
-      if (!ready &&
-          !(_preferPhoneVoice?.call() ?? false) &&
-          (_autoDownloadModels?.call() ?? true)) {
+      if (!ready && !phoneOnly && (_autoDownloadModels?.call() ?? true)) {
         unawaited(NativeTtsBridge.ensureModelDownload(code));
       }
-      // ⚡ جمله‌ای که صدای Piperش هنوز ساخته نشده (سرد) و گوشی برای این زبان صدا دارد:
-      // همین الان با صدای گوشی خوانده می‌شود (بدون انتظار)؛ در همین حین صدای Piper جمله‌های
-      // بعدی ساخته می‌شود تا آن‌ها با صدای اپ و بدون تأخیر پخش شوند.
-      // 🎭 خطی که صدای مخصوصِ گوینده (می‌شنوی/می‌گی) دارد و Piperش در راه است، با صدای گوشی
-      // خوانده نمی‌شود (وگرنه دو گوینده یک صدا می‌شدند)؛ فقط اولین خطِ سرد فوراً با گوشی می‌رود.
-      final speakerVoice = _voiceFor(idx);
-      final keepPiperVoice = speakerVoice != null &&
-          NativeTtsBridge.wasPrefetched(cleanText, code, state.rate);
-      if (ready &&
-          !keepPiperVoice &&
-          !NativeTtsBridge.isPrefetchWarm(cleanText, code, state.rate) &&
-          sysOk) {
-        if (myGen != _generation) return;
-        _prefetchNext(idx, _currentCode ?? code);
-        final okFast = await _playSystemTts(idx, cleanText, code, myGen);
-        if (myGen != _generation) return;
-        if (okFast) return;
-      }
+      // 🎙 کیفیتِ صدا: وقتی صدای اپ (Piper/Supertonic) آماده است همیشه همان خوانده می‌شود —
+      // جمله‌ی اول هم. فقط اگر موتور گیر کند (نرسیدنِ «پایان» تا مهلت) همان جمله با صدای گوشی خوانده می‌شود.
       if (ready) {
         final ok = await _playNative(idx, cleanText, code, myGen);
         // ✅ اگر وسط کار pause/stop/seek شد، هرگز سراغ موتور بعدی نرو
@@ -788,6 +766,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     void Function()? onStarted,
     bool detectSilent = false,
     double gapScale = 1.0,
+    bool stallFallback = false,
   }) async {
     try {
       final id = 'f${++_utteranceSeq}';
@@ -814,12 +793,26 @@ class SpeechController extends StateNotifier<SpeechState> {
         } catch (_) {}
       }
 
+      // موتورِ اپ (Piper…): اگر تا «مدتِ خوانشِ تخمینی + ۱۰ ثانیه» خبرِ پایان نیامد یعنی گیر کرده →
+      // قطع و همان جمله با صدای گوشی. (قبلاً تا ۳۰ ثانیه منتظر می‌ماند و بعد بی‌صدا رد می‌شد.)
+      var stalled = false;
+      final stallSecs = 10 + (text.length * 0.12 / state.rate.clamp(0.25, 3.0)).ceil();
       final finished = await waiter.future.timeout(
-        Duration(seconds: 30 + text.length ~/ 10),
-        onTimeout: () => true,
+        stallFallback
+            ? Duration(seconds: stallSecs)
+            : Duration(seconds: 30 + text.length ~/ 10),
+        onTimeout: () {
+          if (stallFallback) stalled = true;
+          return true;
+        },
       );
       if (identical(_nativeWaiter, waiter)) _nativeWaiter = null;
       if (myGen != _generation) return false;
+      if (stalled) {
+        debugPrint('⚠️ Piper گیر کرد (${text.length} حرف) → صدای گوشی');
+        await NativeTtsBridge.stop();
+        return false;
+      }
       if (!finished) return false;
 
       // موتورِ گوشی گاهی (مثلاً وقتی زبان/خطِ جمله را نمی‌شناسد) «تمام شد» را تقریباً
@@ -853,6 +846,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       myGen: myGen,
       // صدای Piper خودش مکثِ آخرِ جمله را دارد؛ مکثِ اضافه‌ی اپ نصف می‌شود تا بینِ جمله‌ها سکوتِ طولانی نیفتد
       gapScale: 0.5,
+      stallFallback: true,
       // جمله‌ی بعدی را همین حین که این یکی پخش می‌شود آماده کن (بعد از شروعِ پخش، تا خوانشِ فعلی کند نشود)
       onStarted: () => _prefetchNext(idx, _currentCode ?? code),
     );
