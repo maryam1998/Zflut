@@ -89,6 +89,65 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     if (!mounted) return;
     _voiceA = a;
     _voiceB = b;
+    _aFemale = null;
+    if (a != null) {
+      try {
+        final r = await NativeBridge.instance.getTtsVoices(lang: 'en');
+        final raw = r['voices'];
+        if (raw is List) {
+          for (final e in raw) {
+            if (e is Map && '${e['id']}' == a) _aFemale = _isFemale('${e['label']}');
+          }
+        }
+      } catch (_) {}
+    }
+    await _pickTransVoices();
+  }
+
+  // 🎭 صدای A/B برای «ترجمه‌ها» در هر زبان (مثل متنِ اصلی، با هر بار بازشدنِ سناریو عوض می‌شود)
+  final Map<String, ({String? a, String? b})> _transVoices = {};
+  bool? _aFemale;
+
+  Future<void> _pickTransVoices() async {
+    _transVoices.clear();
+    if (!NativeBridge.instance.isSupported) return;
+    final sel = ref.read(languageSelectionProvider);
+    final langs = <String>{
+      for (final c in [sel.native, ...sel.targets]) c.trim().toLowerCase(),
+    }..remove('');
+    langs.remove('en');
+    for (final lang in langs) {
+      try {
+        final r = await NativeBridge.instance.getTtsVoices(lang: lang);
+        final raw = r['voices'];
+        final ok = <Map<String, dynamic>>[
+          if (raw is List)
+            for (final e in raw)
+              if (e is Map && e['downloaded'] == true && '${e['id']}'.isNotEmpty)
+                Map<String, dynamic>.from(e),
+        ]..shuffle(_rng);
+        if (ok.length < 2) continue;
+        // ترجیحاً جنسیتِ A همان جنسیتِ A در متنِ اصلی باشد
+        final want = _aFemale;
+        final first = want == null
+            ? ok.first
+            : ok.firstWhere((v) => _isFemale('${v['label']}') == want,
+                orElse: () => ok.first);
+        final fFem = _isFemale('${first['label']}');
+        final other = ok.firstWhere(
+          (v) => v['id'] != first['id'] && _isFemale('${v['label']}') != fFem,
+          orElse: () => ok.firstWhere((v) => v['id'] != first['id']),
+        );
+        _transVoices[lang] = (a: '${first['id']}', b: '${other['id']}');
+      } catch (_) {}
+    }
+  }
+
+  String? _voiceForTrans(String itemId, String lang) {
+    if (!RegExp(r'^[ab]\d+$').hasMatch(itemId)) return null;
+    final p = _transVoices[lang.trim().toLowerCase()];
+    if (p == null) return null;
+    return itemId.startsWith('a') ? p.a : p.b;
   }
 
   String? _voiceForItem(String itemId) {
@@ -497,6 +556,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       originExtra: {'topic': topic.topic, 'scenario': openIdx},
       mode: TrackMode.lines,
       voiceForItem: _voiceForItem,
+      voiceForTrans: _voiceForTrans,
       itemsBuilder: () => openSc == null
           ? const <SyncItem>[]
           : [

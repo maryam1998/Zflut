@@ -94,6 +94,9 @@ class SyncPlayScope extends ConsumerStatefulWidget {
   /// null برگرداند = صدای معمولیِ تنظیمات.
   final String? Function(String itemId)? voiceForItem;
 
+  /// 🎭 اختیاری: صدای خواندنِ «ترجمه»‌ی هر آیتم به یک زبان (مثلاً مکالمه: گوینده‌ی A و B در هر زبان صدای جدا).
+  final String? Function(String itemId, String lang)? voiceForTrans;
+
   const SyncPlayScope({
     super.key,
     required this.revision,
@@ -103,6 +106,7 @@ class SyncPlayScope extends ConsumerStatefulWidget {
     this.mainCode = 'en',
     this.originExtra = const {},
     this.voiceForItem,
+    this.voiceForTrans,
   });
 
   @override
@@ -180,11 +184,23 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   }
 
   /// 🎭 صدای جمله‌ی در حال خواندن (فقط وقتی متنِ پخش‌شده مالِ همین اسکوپ است).
+  // 🎭 ترجمه‌ای که الان خوانده می‌شود: (کلیدِ متن، شناسه‌ی آیتم، زبان) — تا صدای ترجمه هم مثلِ متنِ اصلی عوض شود
+  String? _trVoiceKey, _trVoiceItem, _trVoiceLang;
+
   String? _voiceResolver(String? key, int start) {
     final vf = widget.voiceForItem;
-    if (vf == null || !mounted) return null;
+    final vt = widget.voiceForTrans;
+    if ((vf == null && vt == null) || !mounted) return null;
     final sync = ref.read(playerSyncProvider);
     if (sync.scopeId != _scopeId) return null;
+    if (vt != null &&
+        key != null &&
+        key == _trVoiceKey &&
+        _trVoiceItem != null &&
+        _trVoiceLang != null) {
+      return vt(_trVoiceItem!, _trVoiceLang!);
+    }
+    if (vf == null) return null;
     final track = _notifier.mainTrackForKey(key);
     if (track == null) return null;
     final sp = track.spanAt(start);
@@ -495,6 +511,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     }
     final key = PlayerTrack.keyFor(to, text);
     SpeechController.translationReadKey = key;
+    _trVoiceKey = key; _trVoiceItem = id; _trVoiceLang = to;
     ref.read(adhocSyncProvider.notifier).state =
         (key: key, active: ActiveSync(to, id));
     unawaited(_ctrl.toggle(text, to));
@@ -532,7 +549,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
           final clean = SentenceSplitter.sanitize(t);
           if (clean.isEmpty) return;
           unawaited(NativeTtsBridge.prefetch(
-              clean, to, ref.read(speechControllerProvider).rate));
+              clean, to, ref.read(speechControllerProvider).rate,
+              voice: widget.voiceForTrans?.call(id, to)));
         }());
       }
       // مثال‌های بازِ این لغت و ترجمه‌هایشان هم از قبل آماده شوند
@@ -673,7 +691,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
           final clean = SentenceSplitter.sanitize(t);
           if (clean.isNotEmpty) {
             unawaited(NativeTtsBridge.prefetch(
-                clean, l, ref.read(speechControllerProvider).rate));
+                clean, l, ref.read(speechControllerProvider).rate,
+                voice: widget.voiceForTrans?.call(id, l)));
           }
         }());
       }
@@ -700,6 +719,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         _bgSeen = false;
         final w = _bgWait = Completer<bool>();
         SpeechController.translationReadKey = st.isTrans ? key : null;
+        _trVoiceKey = st.isTrans ? key : null;
+        _trVoiceItem = st.isTrans ? st.idFor(text) : null;
+        _trVoiceLang = st.code;
         ref.read(adhocSyncProvider.notifier).state =
             (key: key, active: ActiveSync(st.code, st.idFor(text)));
         unawaited(_ctrl.toggle(text, st.code));
