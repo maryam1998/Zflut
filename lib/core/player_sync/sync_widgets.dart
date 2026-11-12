@@ -308,6 +308,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
               : _translationText(
                   id, foreign ? track.code : sync.mainCode, l),
           (t) => id,
+          retry: () => _translationText(
+              id, foreign ? track.code : sync.mainCode, l,
+              timeout: const Duration(seconds: 30)),
         ),
     ];
     _bgActive = true;
@@ -454,7 +457,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   /// ترجمه‌ی آیتم: اول آنچه روی صفحه آماده شده، بعد کشِ ترجمه/داده‌های اپ، و اگر نبود همان لحظه ترجمه می‌کند.
   Future<String?> _translationText(String id, String from, String to,
-      {Duration timeout = const Duration(seconds: 15)}) async {
+      {Duration timeout = const Duration(seconds: 25)}) async {
     final local = _notifier.translationFor(id, to);
     if (local != null) return local;
     final src = _notifier.itemText(id)?.trim();
@@ -473,7 +476,13 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
                   sourceLang: from,
                   aiSettings: ref.read(aiSettingsProvider)))
               .trim();
-          if (r.isEmpty || r.toLowerCase() == src.toLowerCase()) return null;
+          if (r.isEmpty) return null;
+          // همان متن: برای زبان‌های لاتین (مثلاً hotel ← es/de) ترجمه‌ی درست است و باید خوانده شود؛
+          // برای فارسی/عربی یعنی ترجمه شکست خورده.
+          if (r.toLowerCase() == src.toLowerCase() &&
+              (to == 'fa' || to == 'ar')) {
+            return null;
+          }
           return r;
         }();
         return f.whenComplete(() => _trInflight.remove(k));
@@ -595,7 +604,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   /// ترجمه‌ی یک مثال: اول از حافظه‌ی مثال‌ها (همان که روی صفحه است)، بعد کش/مترجم.
   Future<String?> _exampleTranslation(
       String word, String from, String text, String to,
-      {Duration timeout = const Duration(seconds: 12)}) async {
+      {Duration timeout = const Duration(seconds: 20)}) async {
     try {
       final list = ref.read(wordExamplesStoreProvider).load(word, from);
       for (final e in list) {
@@ -621,7 +630,10 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
                   aiSettings: ref.read(aiSettingsProvider))
               .timeout(timeout))
           .trim();
-      if (r.isEmpty || r.toLowerCase() == src.toLowerCase()) return null;
+      if (r.isEmpty) return null;
+      if (r.toLowerCase() == src.toLowerCase() && (to == 'fa' || to == 'ar')) {
+        return null;
+      }
       return r;
     } catch (_) {
       return null;
@@ -649,7 +661,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     final steps = <_BgStep>[
       for (final l in langs)
         _BgStep(l, true, null, _translationText(cur.id, track.code, l),
-            (t) => cur.id),
+            (t) => cur.id,
+            retry: () => _translationText(cur.id, track.code, l,
+                timeout: const Duration(seconds: 30))),
     ];
     for (final ex in List<String>.of(texts)) {
       steps.add(_BgStep(track.code, false, ex, null,
@@ -657,7 +671,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       for (final l in langs) {
         steps.add(_BgStep(l, true, null,
             _exampleTranslation(word, track.code, ex, l),
-            (t) => 'ai-ex-tr-$l-${t.hashCode}'));
+            (t) => 'ai-ex-tr-$l-${t.hashCode}',
+            retry: () => _exampleTranslation(word, track.code, ex, l,
+                timeout: const Duration(seconds: 25))));
       }
     }
 
@@ -706,8 +722,12 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     var completed = false;
     try {
       for (final st in steps) {
-        final text = (await st.text())?.trim();
+        var text = (await st.text())?.trim();
         if (!mounted || token != _bgToken) return;
+        if ((text == null || text.isEmpty) && st.retry != null) {
+          text = (await st.retry!())?.trim();
+          if (!mounted || token != _bgToken) return;
+        }
         if (text == null || text.isEmpty) {
           debugPrint('⏭ خوانش ترجمه رد شد (متن آماده نشد): ${st.code}');
           continue; // ترجمه‌ای نبود → رد شو
@@ -1276,7 +1296,11 @@ class _BgStep {
   final String? _fixed;
   final Future<String?>? _fut;
   final String Function(String text) idFor;
-  _BgStep(this.code, this.isTrans, this._fixed, this._fut, this.idFor);
+
+  /// اگر ترجمه‌ی اول نرسید، یک بار دیگر با مهلتِ بیشتر امتحان می‌شود (رد نشود).
+  final Future<String?> Function()? retry;
+  _BgStep(this.code, this.isTrans, this._fixed, this._fut, this.idFor,
+      {this.retry});
 
   Future<String?> text() => _fixed != null ? Future.value(_fixed) : (_fut ?? Future.value(null));
 }
