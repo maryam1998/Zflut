@@ -5985,15 +5985,29 @@ public class BubbleService extends Service {
             if (!fullLoop || my != fullToken) return;
             if (!ok) { stopFullText(); return; }
             // 🌐 بعد از متنِ اصلی، ترجمه‌ی زبانِ مبدأ (مادری)
-            final String comp = nativeCompanion(e, e.srcLang, "src");
-            if (comp == null) { fullIdx++; speakFull(my, 0); return; }
-            PanelTts.speak(this, comp, targetLang(), 1.0f, ok2 -> {
+            speakFullCompanions(e, companionLangs(), 0, my);
+        });
+    }
+
+    /** 🌐 ترجمه‌ی زبان‌های همراه (مادری + انتخابی‌ها) بعد از متنِ اصلی در «خواندنِ کل متن»؛ بعد از آخری به جمله‌ی بعد می‌رود. */
+    private void speakFullCompanions(final Entry e, final ArrayList<String> langs, final int i, final int my) {
+        if (!fullLoop || my != fullToken) return;
+        int k = i;
+        while (k < langs.size()) {
+            final String nat = langs.get(k);
+            if (!PanelTts.readLangOn(this, nat)) { k++; continue; }
+            final String comp = nativeCompanion(e, e.srcLang, "src", nat);
+            if (comp == null) { k++; continue; }
+            final int next = k + 1;
+            PanelTts.speak(this, comp, nat, 1.0f, ok2 -> {
                 if (!fullLoop || my != fullToken) return;
                 if (!ok2) { stopFullText(); return; }
-                fullIdx++;
-                speakFull(my, 0);
+                speakFullCompanions(e, langs, next, my);
             });
-        });
+            return;
+        }
+        fullIdx++;
+        speakFull(my, 0);
     }
 
     private void stopFullText() {
