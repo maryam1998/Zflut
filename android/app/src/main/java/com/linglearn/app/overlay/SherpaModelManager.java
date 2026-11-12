@@ -218,6 +218,8 @@ final class SherpaModelManager {
             {"zm_yunyang", "Yunyang · M", "52"},
     };
     private static final int SUPERTONIC_VOICES = 10;
+    /** صدای سبکِ انگلیسی (Piper low، حدود ۶۰ مگ؛ بسیار سریع‌تر از Kokoro). */
+    static final String EN_LIGHT_VOICE = "en_US-lessac-low";
     // نام‌های نمایشیِ صداهای Supertonic (به ترتیبِ sid ۰..۹). ترتیبِ واقعیِ voice.bin: ۵ زن (F1..F5) و بعد ۵ مرد (M1..M5).
     // ⚠️ برچسب‌ها قبلاً برعکس بود (sid ۰..۴ در واقع زن‌اند). فقط برچسب عوض شده؛ شناسه‌ها (st-0..st-9) و sid ثابت مانده‌اند.
     private static final String[] SUPERTONIC_NAMES = {
@@ -232,6 +234,8 @@ final class SherpaModelManager {
         FA_LABELS.put("fa_IR-ganji-medium", "Kamran · M");
         FA_LABELS.put("fa_IR-ganji_adabi-medium", "Bahram · M");
         FA_LABELS.put("fa_IR-reza_ibrahim-medium", "Pouya · M");
+        // انگلیسیِ سبک (Piper low): برچسب مثلِ بقیه‌ی صداهای en؛ رده‌ی «low» را خودِ getTtsVoices بعدش اضافه می‌کند
+        FA_LABELS.put(EN_LIGHT_VOICE, "Lessac · US · F");
     }
 
     private static final Map<String, List<TtsVoice>> TTS_VOICES;
@@ -267,6 +271,17 @@ final class SherpaModelManager {
                 if (dup) continue;
                 fa.add(new TtsVoice(pid, voiceLabel(pid), new TtsSpec(
                         "csukuangfj/vits-piper-" + pid, pid + ".onnx", "tokens.txt", "espeak-ng-data"), false));
+            }
+        }
+        // انگلیسی: علاوه بر Kokoro، یک گزینه‌ی سبک و سریع (Piper low). پیش‌فرض همان Kokoro می‌ماند (isDefault=false).
+        List<TtsVoice> en = vm.get("en");
+        if (en != null) {
+            boolean dup = false;
+            for (TtsVoice v : en) if (v.id.equals(EN_LIGHT_VOICE)) { dup = true; break; }
+            if (!dup) {
+                en.add(new TtsVoice(EN_LIGHT_VOICE, voiceLabel(EN_LIGHT_VOICE), new TtsSpec(
+                        "csukuangfj/vits-piper-" + EN_LIGHT_VOICE, EN_LIGHT_VOICE + ".onnx",
+                        "tokens.txt", "espeak-ng-data"), false));
             }
         }
         for (Map.Entry<String, List<TtsVoice>> e : vm.entrySet()) {
@@ -705,18 +720,36 @@ final class SherpaModelManager {
     private static final String[] LEGACY_PIPER_LANGS =
             {"en", "es", "de", "fr", "it", "hi", "tr", "ar", "zh", "ru", "ko", "ja", "he"};
 
+    /** نامِ پوشه‌ی یکی از صداهای Piper ی «فعلی» (غیرِ بسته‌ی مشترک) است؟ */
+    private static boolean isCurrentPiperDir(String name) {
+        for (Map.Entry<String, List<TtsVoice>> e : TTS_VOICES.entrySet()) {
+            for (TtsVoice v : e.getValue()) {
+                if (v.spec.pkg != null) continue;
+                String d = v.isDefault ? e.getKey() : e.getKey() + "__" + v.id;
+                if (d.equals(name)) return true;
+            }
+        }
+        return false;
+    }
+
     static void cleanupLegacyTts(Context ctx) {
         if (LEGACY_DONE) return;
         LEGACY_DONE = true;
         try {
             File root = ttsRoot(ctx);
-            if (!root.isDirectory()) return;
             File marker = new File(root, "legacy-piper-removed.v1");
+            if (!root.isDirectory()) {
+                // نصبِ تازه: چیزی برای پاک‌کردن نیست. marker همین‌جا ساخته می‌شود، وگرنه بعدِ دانلودِ صدای Piper ی انگلیسی
+                // در اجرای بعدی این پاک‌سازی آن را (و en.active را) به‌عنوانِ «قدیمی» پاک می‌کرد.
+                if (root.mkdirs()) { try { marker.createNewFile(); } catch (Throwable ignored) {} }
+                return;
+            }
             if (marker.isFile()) return;
             File[] fs = root.listFiles();
             if (fs != null) {
                 for (File f : fs) {
                     String n = f.getName();
+                    if (isCurrentPiperDir(n)) continue;   // صداهای Piper ی فعلی (مثلاً en__en_US-lessac-low) قدیمی نیستند
                     for (String lg : LEGACY_PIPER_LANGS) {
                         if (n.equals(lg) || n.startsWith(lg + "__") || n.equals(lg + ".active")) {
                             deleteRecursive(f);
