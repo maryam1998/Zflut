@@ -180,7 +180,7 @@ final class TtsEngine {
     // باعث می‌شد با هر جمله، تولیدِ صدا CPU رو از UI/WebView بگیره و هایلایت و اسکرول لگ کنن.
     // پخشِ صدا (tts-play) همچنان با اولویتِ AUDIO اجرا می‌شه. اگه صدا قطع‌وصل شد، این رو
     // به Process.THREAD_PRIORITY_FOREGROUND (یا بالاتر) برگردون.
-    private static final int GEN_PRIORITY = Process.THREAD_PRIORITY_FOREGROUND;
+    private static final int GEN_PRIORITY = Process.THREAD_PRIORITY_DISPLAY;   // -4: بین FOREGROUND(-2) و URGENT_AUDIO(-16)
     // ⚡ صفِ تولیدِ صدا «اولویت‌دار» است: خوانشِ جمله‌ی فعلی (PRIO_SPEAK) همیشه جلوتر از prefetch (PRIO_PREFETCH)
     // اجرا می‌شود. قبلاً صف FIFO بود و اگر prefetchِ جمله‌ی بعد در حالِ ساخت بود، دو prefetchِ بعدی هم
     // قبل از خوانشِ جمله‌ی فعلی اجرا می‌شدند → بینِ جمله‌ها چند ثانیه سکوتِ غیرطبیعی می‌افتاد.
@@ -1040,9 +1040,13 @@ final class TtsEngine {
      * مزیت: پخش بعد از ساختنِ «تکه‌ی اول» شروع می‌شود (نه کلِ جمله) و مکثِ بینِ تکه‌ها دقیقاً کنترل می‌شود.
      * اعداد مثل 1,5 (بدون فاصله بعد از ویرگول) شکسته نمی‌شوند.
      */
+    private static final int SPLIT_MIN_WORDS = 14;   // کمتر از این → اصلاً سرِ ویرگول نشکن
     private static java.util.List<Clause> splitClauses(String t) {
         java.util.ArrayList<Clause> out = new java.util.ArrayList<>();
         if (t == null) return out;
+        // ⚡ جمله‌ی کوتاه/متوسط یک‌تکه ساخته می‌شود (هر تکه‌ی اضافه = یک اجرای جدای مدل + هزینه‌ی ثابت + مکثِ مصنوعی).
+        // فقط جمله‌ی واقعاً بلند سرِ ویرگول شکسته می‌شود.
+        if (wordCount(t) <= SPLIT_MIN_WORDS) { out.add(new Clause(t, 0)); return out; }
         int start = 0;
         final int n = t.length();
         for (int i = 0; i < n - 1; i++) {
@@ -1056,7 +1060,7 @@ final class TtsEngine {
             if (!Character.isWhitespace(t.charAt(i + 1))) continue;
             String head = t.substring(start, i + 1).trim();
             String rest = t.substring(i + 1).trim();
-            if (wordCount(head) < 4 || wordCount(rest) < 3) continue;
+            if (wordCount(head) < 6 || wordCount(rest) < 5) continue;
             out.add(new Clause(head, pause));
             start = i + 1;
         }
@@ -1149,7 +1153,7 @@ final class TtsEngine {
         final VoiceEq eq = new VoiceEq(skipEq ? 0 : sampleRate);
         java.util.List<Clause> clauses = splitClauses(t);
         // جمله‌ی بلند بدون ویرگول: تکه‌تکه ساخته شود تا پخش زودتر شروع شود (Supertonic استریم نمی‌کند)
-        clauses = chunkLong(clauses, 12, 8);    // همه‌ی موتورها: تکه‌های کوتاه → شروعِ زودترِ پخش
+        clauses = chunkLong(clauses, 22, 14);    // همه‌ی موتورها: تکه‌های کوتاه → شروعِ زودترِ پخش
         final ArrayList<float[]> all = new ArrayList<>();
         int total = 0;
         for (int ci = 0; ci < clauses.size(); ci++) {
@@ -1353,6 +1357,54 @@ final class TtsEngine {
         }
     }
 
+    // ♻️ یک AudioTrack برای همه‌ی جمله‌ها (ساختنِ track برای هر جمله ده‌ها ms و گاهی بیشتر طول می‌کشد)
+    private final Object trackLock = new Object();
+    private AudioTrack spareTrack = null;
+    private boolean spareRateSet = false;     // روی track ی سپر، PlaybackParams غیرِ ۱× ست شده؟
+
+    private AudioTrack takeTrack() {
+        synchronized (trackLock) {
+            AudioTrack t = spareTrack;
+            if (t != null) {
+                spareTrack = null;
+                try {
+                    if (t.getState() == AudioTrack.STATE_INITIALIZED) return t;
+                } catch (Throwable ignored) {}
+                try { t.release(); } catch (Throwable ignored) {}
+            }
+        }
+        spareRateSet = false;
+        return buildTrack();
+    }
+
+    /** track را بعد از پخش نگه می‌دارد تا جمله‌ی بعد دوباره استفاده کند؛ اگر نشد آزاد می‌کند. */
+    private void giveBackTrack(AudioTrack t, boolean reusable) {
+        if (t == null) return;
+        boolean kept = false;
+        if (reusable && !released) {
+            try {
+                t.pause();
+                t.flush();
+                t.stop();
+                synchronized (trackLock) {
+                    if (spareTrack == null && !released) { spareTrack = t; kept = true; }
+                }
+            } catch (Throwable ignored) {}
+        }
+        if (!kept) {
+            try { t.pause(); } catch (Throwable ignored) {}
+            try { t.flush(); } catch (Throwable ignored) {}
+            try { t.stop(); } catch (Throwable ignored) {}
+            try { t.release(); } catch (Throwable ignored) {}
+        }
+    }
+
+    private void dropSpareTrack() {
+        AudioTrack t;
+        synchronized (trackLock) { t = spareTrack; spareTrack = null; }
+        if (t != null) { try { t.release(); } catch (Throwable ignored) {} }
+    }
+
     private AudioTrack buildTrack() {
         int minBuf = AudioTrack.getMinBufferSize(
                 sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
@@ -1381,7 +1433,19 @@ final class TtsEngine {
     private void applyRate(AudioTrack track, float rate) {
         if (!stretchOk || track == null) return;
         // سرعتِ عادی (۱×): بدونِ PlaybackParams → مسیرِ time-stretch فعال نمی‌شود (بدونِ تأخیر و سکوتِ ابتدایی)
-        if (Math.abs(rate - 1.0f) < 0.01f) return;
+        if (Math.abs(rate - 1.0f) < 0.01f) {
+            if (spareRateSet) {   // track ی دوباره‌استفاده‌شده قبلاً با سرعتِ دیگری پخش شده
+                try {
+                    android.media.PlaybackParams p1 = new android.media.PlaybackParams();
+                    p1.setSpeed(1.0f);
+                    p1.setPitch(1.0f);
+                    track.setPlaybackParams(p1);
+                } catch (Throwable ignored) {}
+                spareRateSet = false;
+            }
+            return;
+        }
+        spareRateSet = true;
         try {
             android.media.PlaybackParams pp = new android.media.PlaybackParams();
             pp.setSpeed(rate);
@@ -1402,8 +1466,10 @@ final class TtsEngine {
         boolean cancelled = false;
         boolean started = false;
         long frames = 0;
+        long headBase = 0;
         try {
-            track = buildTrack();
+            track = takeTrack();
+            headBase = track.getPlaybackHeadPosition() & 0xFFFFFFFFL;
             if (epoch.get() != myEpoch || released) {
                 cancelled = true;
             } else {
@@ -1457,7 +1523,7 @@ final class TtsEngine {
                 while (SystemClock.uptimeMillis() < deadline) {
                     if (epoch.get() != myEpoch || released) { cancelled = true; break; }
                     long head = track.getPlaybackHeadPosition() & 0xFFFFFFFFL;
-                    if (head >= frames) break;
+                    if (head - headBase >= frames) break;
                     Thread.sleep(15);
                 }
                 // head یعنی «به mixer رسید»، نه «از بلندگو درآمد»؛ چند ده میلی‌ثانیه صبر می‌کنیم
@@ -1480,10 +1546,7 @@ final class TtsEngine {
         } finally {
             if (track != null) {
                 if (currentTrack == track) currentTrack = null;
-                try { track.pause(); } catch (Throwable ignored) {}
-                try { track.flush(); } catch (Throwable ignored) {}
-                try { track.stop(); } catch (Throwable ignored) {}
-                try { track.release(); } catch (Throwable ignored) {}
+                giveBackTrack(track, ok && !cancelled);   // خطا/لغو → آزاد؛ پخشِ سالم → برای جمله‌ی بعد نگه دار
             }
             once.onDone(cancelled || ok);
         }
@@ -1507,6 +1570,7 @@ final class TtsEngine {
         if (released) return;
         released = true;
         haltPlayback();
+        dropSpareTrack();
         try {
             // release رو بعد از تولیدِ در حالِ اجرا انجام بده (وگرنه کرشِ native)
             gen(() -> { try { synchronized (NATIVE_LOCK) { tts.release(); } } catch (Throwable ignored) {} }, PRIO_SPEAK);
