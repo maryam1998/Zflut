@@ -53,20 +53,52 @@ const Map<String, Map<String, String>> _tx = {
     'ar': 'إظهار شريط الأدوات (المكبّرة، الترجمة الفورية، يوتيوب) على الحافة اليمنى',
   },
   'title': {
-    'fa': 'ابزارهای هوشمندت آماده‌اند',
-    'en': 'Your smart tools are ready',
-    'es': 'Tus herramientas inteligentes están listas',
-    'de': 'Deine smarten Tools sind bereit',
-    'fr': 'Tes outils intelligents sont prêts',
-    'ar': 'أدواتك الذكية جاهزة',
+    'fa': 'فقط یک اپ لغت نیست؛ زبان را از هر چیزِ روی گوشی‌ات یاد بگیر',
+    'en': 'Not just a word app — learn from everything on your phone',
+    'es': 'No es solo una app de vocabulario: aprende de todo lo que hay en tu móvil',
+    'de': 'Keine gewöhnliche Vokabel-App – lerne aus allem auf deinem Handy',
+    'fr': 'Pas juste une appli de vocabulaire : apprends avec tout ce qu’il y a sur ton téléphone',
+    'ar': 'ليس مجرد تطبيق مفردات — تعلّم من كل ما على هاتفك',
   },
   'body': {
-    'fa': 'ذره‌بین، ترجمه‌ی زنده و زیرنویس یوتیوب روی هر برنامه‌ای کار می‌کنند. با یک لمس هر سه را روشن کن.',
-    'en': 'Magnifier, live translation and YouTube subtitles work over any app. Turn all three on with one tap.',
-    'es': 'La lupa, la traducción en vivo y los subtítulos de YouTube funcionan sobre cualquier app. Actívalos con un toque.',
-    'de': 'Lupe, Live-Übersetzung und YouTube-Untertitel funktionieren über jeder App. Schalte alle drei mit einem Tipp ein.',
-    'fr': 'La loupe, la traduction en direct et les sous-titres YouTube fonctionnent sur toutes les applis. Active les trois d’un geste.',
-    'ar': 'المكبّرة والترجمة الفورية وترجمة يوتيوب تعمل فوق أي تطبيق. فعّلها جميعًا بلمسة واحدة.',
+    'fa': 'این ابزارها روی هر برنامه‌ای کار می‌کنند؛ بدون کپی‌کردن و بدون جابه‌جایی بین برنامه‌ها.',
+    'en': 'These tools work on top of any app — no copy-paste, no switching between apps.',
+    'es': 'Estas herramientas funcionan sobre cualquier app: sin copiar y pegar, sin cambiar de app.',
+    'de': 'Diese Tools funktionieren über jeder App – ohne Kopieren und ohne App-Wechsel.',
+    'fr': 'Ces outils fonctionnent par-dessus n’importe quelle appli : sans copier-coller, sans changer d’appli.',
+    'ar': 'تعمل هذه الأدوات فوق أي تطبيق — بلا نسخ ولصق وبلا تبديل بين التطبيقات.',
+  },
+  'p1': {
+    'fa': 'ذره‌بین: روی هر متنِ هر برنامه بزن؛ ترجمه و تلفظ همان لحظه.',
+    'en': 'Magnifier: tap any text in any app — instant translation and pronunciation.',
+    'es': 'Lupa: toca cualquier texto de cualquier app: traducción y pronunciación al instante.',
+    'de': 'Lupe: Tippe auf Text in jeder App – sofort Übersetzung und Aussprache.',
+    'fr': 'Loupe : touche n’importe quel texte dans n’importe quelle appli — traduction et prononciation instantanées.',
+    'ar': 'المكبّرة: المس أي نص في أي تطبيق — ترجمة ونطق فوريان.',
+  },
+  'p2': {
+    'fa': 'ترجمه‌ی زنده: هر ویدیو، پادکست یا تماس را همزمان با زیرنویسِ ترجمه‌شده دنبال کن.',
+    'en': 'Live translation: follow any video, podcast or call with real-time translated subtitles.',
+    'es': 'Traducción en vivo: sigue cualquier vídeo, pódcast o llamada con subtítulos traducidos en tiempo real.',
+    'de': 'Live-Übersetzung: Folge jedem Video, Podcast oder Anruf mit übersetzten Untertiteln in Echtzeit.',
+    'fr': 'Traduction en direct : suis n’importe quelle vidéo, podcast ou appel avec des sous-titres traduits en temps réel.',
+    'ar': 'الترجمة الفورية: تابع أي فيديو أو بودكاست أو مكالمة مع ترجمة مكتوبة لحظة بلحظة.',
+  },
+  'p3': {
+    'fa': 'یوتیوب: زیرنویسِ ویدیوها به زبانِ خودت؛ هر کلمه را بزن و ذخیره کن.',
+    'en': 'YouTube: subtitles in your language — tap any word to save it.',
+    'es': 'YouTube: subtítulos en tu idioma; toca cualquier palabra para guardarla.',
+    'de': 'YouTube: Untertitel in deiner Sprache – tippe ein Wort, um es zu speichern.',
+    'fr': 'YouTube : des sous-titres dans ta langue — touche un mot pour l’enregistrer.',
+    'ar': 'يوتيوب: ترجمة الفيديوهات بلغتك — المس أي كلمة لحفظها.',
+  },
+  'p4': {
+    'fa': 'شنیدنِ ترجمه‌ها: هر زبانی را که انتخاب کنی بعد از متن با صدا می‌خواند، حتی وقتی در برنامه‌ی دیگری هستی.',
+    'en': 'Hear translations: every language you pick is read aloud after the text, even while you’re in another app.',
+    'es': 'Escucha las traducciones: cada idioma que elijas se lee en voz alta tras el texto, incluso en otra app.',
+    'de': 'Übersetzungen hören: Jede gewählte Sprache wird nach dem Text vorgelesen – auch in einer anderen App.',
+    'fr': 'Écoute les traductions : chaque langue choisie est lue à voix haute après le texte, même dans une autre appli.',
+    'ar': 'استمع إلى الترجمات: تُقرأ كل لغة تختارها بصوت عالٍ بعد النص، حتى وأنت في تطبيق آخر.',
   },
   'all': {
     'fa': 'فعال‌سازی همه',
@@ -189,7 +221,7 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
       _in.forward();
       if (_first) {
         _pulse.repeat(reverse: true);
-        _armCollapse(14);
+        _armCollapse(60); // کارتِ معرفی بلندتر شده؛ کاربر وقتِ خواندن داشته باشد
       }
       _refresh();
     });
@@ -517,7 +549,7 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
     final size = MediaQuery.of(context).size;
 
     final pill = _buildPill(c);
-    final tipW = (size.width - _pillW - 24).clamp(180.0, 250.0).toDouble();
+    final tipW = (size.width - _pillW - 24).clamp(180.0, 300.0).toDouble();
 
     return Positioned(
       right: 0,
@@ -556,10 +588,29 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
   }
 
   Widget _buildTip(AppThemeColorsExt c, double w) {
-    final chips = <Widget>[
-      _chip(c, Icons.search_rounded, _s('mag')),
-      _chip(c, Icons.translate_rounded, _s('live')),
-      _chip(c, Icons.smart_display_rounded, _s('yt')),
+    Widget point(IconData icon, String key) => Padding(
+          padding: const EdgeInsets.only(bottom: 7),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(color: c.goldSoft, shape: BoxShape.circle),
+                child: Icon(icon, size: 14, color: c.gold),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(_s(key),
+                    style: TextStyle(color: c.ink, fontSize: 12, height: 1.55)),
+              ),
+            ],
+          ),
+        );
+    final points = <Widget>[
+      point(Icons.search_rounded, 'p1'),
+      point(Icons.translate_rounded, 'p2'),
+      point(Icons.smart_display_rounded, 'p3'),
+      point(Icons.volume_up_rounded, 'p4'),
     ];
     return Directionality(
       key: const ValueKey('tip'),
@@ -571,12 +622,15 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
         borderRadius: BorderRadius.circular(18),
         child: Container(
           width: w,
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6),
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: c.gold.withOpacity(0.55)),
           ),
-          child: Column(
+          child: SingleChildScrollView(
+           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -591,8 +645,8 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
                   style:
                       TextStyle(color: c.inkSoft, fontSize: 12.2, height: 1.65)),
               const SizedBox(height: 8),
-              Wrap(spacing: 6, runSpacing: 6, children: chips),
-              const SizedBox(height: 10),
+              ...points,
+              const SizedBox(height: 4),
               Row(
                 children: [
                   Expanded(
@@ -619,6 +673,7 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
                 ],
               ),
             ],
+           ),
           ),
         ),
       ),
