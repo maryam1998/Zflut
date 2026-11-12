@@ -259,13 +259,16 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   /// (به‌ترتیبِ هدر، بدون تکرار، بدون زبانِ خودِ همین ترک که همین الان خوانده شد).
   List<String> _transTrackLangs(String trackCode) {
     final sel = ref.read(languageSelectionProvider);
+    final off = _bgOffLangs();
     final out = <String>[];
     for (final c in [
       if (!sel.targets.contains(sel.native)) sel.native,
       ...sel.targets,
     ]) {
       final t = c.trim().toLowerCase();
-      if (t.isNotEmpty && t != trackCode && !out.contains(t)) out.add(t);
+      if (t.isNotEmpty && t != trackCode && !out.contains(t) && !off.contains(t)) {
+        out.add(t);
+      }
     }
     return out;
   }
@@ -390,12 +393,29 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   /// زبان‌هایی که ترجمه‌شان خوانده می‌شود: مبدأ + همه‌ی مقصدها (بدون زبانِ خودِ متن، بدون تکرار)
   List<String> _fgLangs(String mainCode) {
     final sel = ref.read(languageSelectionProvider);
+    final off = _bgOffLangs();
     final out = <String>[];
     for (final c in [if (!sel.targets.contains(sel.native)) sel.native, ...sel.targets]) {
       final t = c.trim().toLowerCase();
-      if (t.isNotEmpty && t != mainCode && !out.contains(t)) out.add(t);
+      if (t.isNotEmpty && t != mainCode && !out.contains(t) && !off.contains(t)) {
+        out.add(t);
+      }
     }
     return out;
+  }
+
+  /// 🌐 چیپ‌های زبانِ تنظیمات («خواندن ترجمه‌ها در پس‌زمینه»): زبان‌های خاموش — فقط وقتی اپ در پس‌زمینه است اعمال می‌شود.
+  Set<String> _bgOffLangs() {
+    if (!_inBackground()) return const <String>{};
+    try {
+      return (ref.read(sharedPrefsProvider).getString('zflut-read-trans-bg-off') ?? '')
+          .split(',')
+          .map((e) => e.trim().toLowerCase())
+          .where((e) => e.isNotEmpty)
+          .toSet();
+    } catch (_) {
+      return const <String>{};
+    }
   }
 
   bool _inBackground() {

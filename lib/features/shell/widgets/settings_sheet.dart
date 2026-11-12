@@ -15,6 +15,7 @@ import '../../../core/mascot/mascot_pin_provider.dart';
 import '../../../core/models/text_prefs.dart';
 import '../../../core/native/native_bridge.dart';
 import '../../../core/providers/app_prefs_provider.dart';
+import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/providers/linlearn_provider.dart';
 import '../../../core/providers/native_sync_provider.dart';
 import '../../../core/providers/text_prefs_provider.dart';
@@ -2433,12 +2434,91 @@ class _ReadTransBgSection extends ConsumerStatefulWidget {
 
 class _ReadTransBgSectionState extends ConsumerState<_ReadTransBgSection> {
   static const String _key = 'zflut-read-trans-bg';
+  // چیپ‌های زبان: زبان‌های «خاموش» (ذخیره می‌شود؛ پیش‌فرض همه‌ی زبان‌های هدر روشن)
+  static const String _offKey = 'zflut-read-trans-bg-off';
   late bool _on;
+  late Set<String> _off;
 
   @override
   void initState() {
     super.initState();
     _on = ref.read(sharedPrefsProvider).getBool(_key) ?? true;
+    _off = (ref.read(sharedPrefsProvider).getString(_offKey) ?? '')
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .where((e) => e.isNotEmpty)
+        .toSet();
+  }
+
+  void _toggleLang(String code) {
+    setState(() {
+      if (!_off.remove(code)) _off.add(code);
+    });
+    ref.read(sharedPrefsProvider).setString(_offKey, _off.join(','));
+  }
+
+  Widget _langChips(AppThemeColorsExt c, bool fa) {
+    final sel = ref.watch(languageSelectionProvider);
+    final codes = <String>[];
+    for (final x in [
+      if (!sel.targets.contains(sel.native)) sel.native,
+      ...sel.targets,
+    ]) {
+      final t = x.trim().toLowerCase();
+      if (t.isNotEmpty && !codes.contains(t)) codes.add(t);
+    }
+    String abbr(String code) {
+      for (final l in kSupportedLanguages) {
+        if (l.code == code) return l.abbr;
+      }
+      return code.toUpperCase();
+    }
+
+    String name(String code) {
+      for (final l in kSupportedLanguages) {
+        if (l.code == code) return fa ? l.faLabel : l.enLabel;
+      }
+      return code.toUpperCase();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        textDirection: TextDirection.ltr,
+        children: [
+          for (final code in codes)
+            Tooltip(
+              message: name(code),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => _toggleLang(code),
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 46),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: _off.contains(code) ? Colors.transparent : c.gold,
+                    border: Border.all(
+                        color: _off.contains(code) ? c.cardBorder : c.gold),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    abbr(code),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _off.contains(code) ? c.inkSoft : Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -2447,7 +2527,10 @@ class _ReadTransBgSectionState extends ConsumerState<_ReadTransBgSection> {
     final fa = Localizations.localeOf(context).languageCode == 'fa';
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 12),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
         children: [
           Expanded(
             child: Column(
@@ -2461,8 +2544,8 @@ class _ReadTransBgSectionState extends ConsumerState<_ReadTransBgSection> {
                 const SizedBox(height: 3),
                 Text(
                   fa
-                      ? 'هنگام پخش با اپ بسته/قفل‌شده، بعد از هر جمله ترجمه‌اش هم خوانده می‌شود (فقط اگر ترجمه شده باشد).'
-                      : 'When playing with the app in background, each line\'s translation is read too (only if already translated).',
+                      ? 'هنگام پخش با اپ بسته/قفل‌شده و در حبابِ شناور/ذره‌بین، بعد از هر جمله ترجمه‌ی زبان‌هایی که پایین روشن کرده‌ای به‌ترتیب خوانده می‌شود (فقط اگر ترجمه شده باشد).'
+                      : 'When playing in the background or from the floating bubble/magnifier, each line\'s translations in the languages enabled below are read in order (only if already translated).',
                   style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.6),
                 ),
               ],
@@ -2476,6 +2559,9 @@ class _ReadTransBgSectionState extends ConsumerState<_ReadTransBgSection> {
               ref.read(sharedPrefsProvider).setBool(_key, v);
             },
           ),
+        ],
+      ),
+          if (_on) _langChips(c, fa),
         ],
       ),
     );

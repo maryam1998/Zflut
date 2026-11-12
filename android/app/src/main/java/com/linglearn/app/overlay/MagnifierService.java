@@ -2332,25 +2332,35 @@ public class MagnifierService extends Service {
     /** ردیف‌های ترجمه‌ی همین لحظه‌ی کادرِ لغت (برای خوانشِ ترجمه‌ی زبانِ مبدأ بعد از متن). */
     private List<String[]> cardRowsRef = null;
 
-    /** {زبانِ مبدأ(مادری)، ترجمه}‌ی همین متن در ردیف‌های [rows] — اگر گزینه‌ی «خواندن ترجمه‌ها در پس‌زمینه» روشن و ترجمه آماده باشد. */
-    private String[] companionFor(String spokenLang, List<String[]> rows) {
+    /** {زبان، ترجمه}‌ی همه‌ی زبان‌های انتخابی (به‌ترتیب؛ طبقِ چیپ‌های تنظیمات) برای همین متن — اگر گزینه‌ی «خواندن ترجمه‌ها در پس‌زمینه» روشن و ترجمه آماده باشد. */
+    private List<String[]> companionFor(String spokenLang, List<String[]> rows) {
+        final ArrayList<String[]> out = new ArrayList<>();
         try {
-            if (rows == null || !PanelTts.readTransBg(this)) return null;
-            final String nat = prefs().getString("target", "fa");
-            if (nat == null || nat.isEmpty() || nat.equalsIgnoreCase(spokenLang)) return null;
-            for (String[] r : new ArrayList<>(rows)) {
-                if (r != null && r.length > 1 && nat.equalsIgnoreCase(r[0])
-                        && r[1] != null && !r[1].trim().isEmpty()
-                        && !"…".equals(r[1]) && !"—".equals(r[1])) return new String[]{nat, r[1]};
-            }
-            // زبانِ مبدأ همان زبانِ متنِ اصلی است ← خودِ متنِ اصلی (کادرِ لغت یا نتیجه‌ی انتخاب) خوانده شود
+            if (rows == null || !PanelTts.readTransBg(this)) return out;
+            final String nat0 = prefs().getString("target", "fa");
+            final ArrayList<String> langs = new ArrayList<>();
+            final ArrayList<String> picked = pickedTargets();
+            if (nat0 != null && !nat0.isEmpty() && !picked.contains(nat0.toLowerCase(Locale.ROOT))) langs.add(nat0.toLowerCase(Locale.ROOT));
+            for (String t : picked) if (!langs.contains(t)) langs.add(t);
             final boolean cardRows = rows == cardRowsRef;
             final String sl = cardRows ? cardLang : selSrc;
             final String st = cardRows ? cardWord : selOrig;
-            if (sl != null && nat.equalsIgnoreCase(sl) && st != null && !st.trim().isEmpty()
-                    && !"…".equals(st) && !"—".equals(st)) return new String[]{nat, st};
+            for (String nat : langs) {
+                if (nat == null || nat.isEmpty() || nat.equalsIgnoreCase(spokenLang)) continue;
+                if (!PanelTts.readLangOn(this, nat)) continue;
+                String found = null;
+                for (String[] r : new ArrayList<>(rows)) {
+                    if (r != null && r.length > 1 && nat.equalsIgnoreCase(r[0])
+                            && r[1] != null && !r[1].trim().isEmpty()
+                            && !"…".equals(r[1]) && !"—".equals(r[1])) { found = r[1]; break; }
+                }
+                // این زبان همان زبانِ متنِ اصلی است ← خودِ متنِ اصلی (کادرِ لغت یا نتیجه‌ی انتخاب) خوانده شود
+                if (found == null && sl != null && nat.equalsIgnoreCase(sl) && st != null && !st.trim().isEmpty()
+                        && !"…".equals(st) && !"—".equals(st)) found = st;
+                if (found != null) out.add(new String[]{nat, found});
+            }
         } catch (Throwable ignored) {}
-        return null;
+        return out;
     }
 
     private void toggleSpeak(final TextView b, String text, String lang) {
@@ -2368,7 +2378,7 @@ public class MagnifierService extends Service {
     }
 
     private void speakLoop(final TextView b, final String text, final String lang, final int token,
-                           final int done, final String[] comp) {
+                           final int done, final List<String[]> comp) {
         PanelTts.speak(this, text, lang, 1.0f, ok -> main.post(() -> {
             if (token != speakTok) return;
             int rep = repeatSetting();
@@ -2376,18 +2386,23 @@ public class MagnifierService extends Service {
             final int n = done + 1;
             if (ok && n < cap) {
                 main.postDelayed(() -> { if (token == speakTok) speakLoop(b, text, lang, token, n, comp); }, 700);
-            } else if (ok && comp != null) {
-                // 🌐 بعد از متن، ترجمه‌ی زبانِ مبدأ (مادری)
-                main.postDelayed(() -> {
-                    if (token != speakTok) return;
-                    PanelTts.speak(this, comp[1], comp[0], 1.0f, ok2 -> main.post(() -> {
-                        if (token != speakTok) return;
-                        finishSpeakUi();
-                    }));
-                }, 500);
+            } else if (ok && comp != null && !comp.isEmpty()) {
+                // 🌐 بعد از متن، ترجمه‌ی همه‌ی زبان‌های انتخابی به‌ترتیب
+                main.postDelayed(() -> speakComps(comp, 0, token), 300);
             } else {
                 finishSpeakUi();
             }
+        }));
+    }
+
+    private void speakComps(final List<String[]> comp, final int i, final int token) {
+        if (token != speakTok) return;
+        if (i >= comp.size()) { finishSpeakUi(); return; }
+        final String[] c = comp.get(i);
+        PanelTts.speak(this, c[1], c[0], 1.0f, ok2 -> main.post(() -> {
+            if (token != speakTok) return;
+            if (!ok2) { finishSpeakUi(); return; }
+            speakComps(comp, i + 1, token);
         }));
     }
 

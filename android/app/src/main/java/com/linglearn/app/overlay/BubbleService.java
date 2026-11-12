@@ -2732,7 +2732,7 @@ public class BubbleService extends Service {
 
     private final class SpeakRun {
         Entry ent; String kind; TextView btn; TextView hl; String text; String lang;
-        ArrayList<int[]> segs; int unitStart = 0; int rep = 0; int my; boolean compDone = false;
+        ArrayList<int[]> segs; int unitStart = 0; int rep = 0; int my; int compIdx = 0;
     }
 
     private void loadRepeatPref() {
@@ -2858,11 +2858,8 @@ public class BubbleService extends Service {
 
     /** بخش‌های این جمله تمام شد: اگر تکرار روشن است برو سراغِ جمله‌ی بعدیِ همان نوع، وگرنه تمام. */
     private void advanceOrFinish(final SpeakRun r) {
-        // 🌐 بعد از متنِ جمله، ترجمه‌ی زبانِ مبدأ (مادری) هم خوانده می‌شود (گزینه‌ی «خواندن ترجمه‌ها در پس‌زمینه»)
-        if (!r.compDone) {
-            r.compDone = true;
-            if (speakCompanion(r)) return;
-        }
+        // 🌐 بعد از متنِ جمله، ترجمه‌ی همه‌ی زبان‌های انتخابی (به‌ترتیب؛ طبقِ چیپ‌های تنظیمات) خوانده می‌شود
+        if (speakCompanion(r)) return;
         Entry n = repeatSetting == 0 ? null : nextEntryFor(r.ent, r.kind);
         if (n == null) { finishSpeak(r.btn, r.my); return; }
         TextView nb = "src".equals(r.kind) ? n.srcSpeakBtn : n.rowSpeakBtn.get(r.kind);
@@ -2874,7 +2871,7 @@ public class BubbleService extends Service {
         refreshRecentEntries();
         String t = entryText(n, r.kind);
         if (t.trim().isEmpty()) { finishSpeak(r.btn, r.my); return; }
-        r.ent = n; r.btn = nb; r.hl = nh; r.text = t; r.compDone = false;
+        r.ent = n; r.btn = nb; r.hl = nh; r.text = t; r.compIdx = 0;
         r.lang = "src".equals(r.kind) ? n.srcLang : r.kind;
         r.segs = splitSegments(t);
         r.unitStart = 0; r.rep = 0;
@@ -2884,14 +2881,23 @@ public class BubbleService extends Service {
         speakSegment(r, 0);
     }
 
-    /** ترجمه‌ی زبانِ مبدأ (مادری) همین جمله که باید بعدِ خوانشِ [spokenLang]/[kind] خوانده شود؛ null = لازم نیست/آماده نیست. */
-    private String nativeCompanion(Entry e, String spokenLang, String kind) {
+    /** زبان‌هایی که ترجمه‌شان بعد از متن خوانده می‌شود: مادری (اگر جزو انتخابی‌ها نبود) اول، بعد انتخابی‌ها به ترتیب. */
+    private ArrayList<String> companionLangs() {
+        ArrayList<String> out = new ArrayList<>();
+        if (!PanelTts.readTransBg(this)) return out;
+        String nat = targetLang();
+        ArrayList<String> picked = pickedTargets();
+        if (nat != null && !nat.isEmpty() && !picked.contains(nat.toLowerCase(Locale.ROOT))) out.add(nat.toLowerCase(Locale.ROOT));
+        for (String t : picked) if (!out.contains(t)) out.add(t);
+        return out;
+    }
+
+    /** ترجمه‌ی زبانِ [nat] همین جمله که باید بعدِ خوانشِ [spokenLang]/[kind] خوانده شود؛ null = لازم نیست/آماده نیست. */
+    private String nativeCompanion(Entry e, String spokenLang, String kind, String nat) {
         try {
-            if (e == null || !PanelTts.readTransBg(this)) return null;
-            final String nat = targetLang();
-            if (nat == null || nat.isEmpty()) return null;
+            if (e == null || nat == null || nat.isEmpty()) return null;
             if (nat.equalsIgnoreCase(spokenLang) || nat.equals(kind)) return null;
-            // 🔊 روی ترجمه‌ی یک زبانِ دیگر و زبانِ مبدأ همان زبانِ متنِ اصلی است ← خودِ متنِ اصلی خوانده شود
+            // 🔊 روی ترجمه‌ی یک زبانِ دیگر و این زبان همان زبانِ متنِ اصلی است ← خودِ متنِ اصلی خوانده شود
             if (!"src".equals(kind) && e.srcLang != null && nat.equalsIgnoreCase(e.srcLang)) {
                 final String s0 = e.src == null ? "" : e.src.trim();
                 return s0.isEmpty() ? null : s0;
@@ -2904,23 +2910,28 @@ public class BubbleService extends Service {
     }
 
     private boolean speakCompanion(final SpeakRun r) {
-        final String t = nativeCompanion(r.ent, r.lang, r.kind);
-        if (t == null) return false;
-        final String nat = targetLang();
-        final TextView nh = r.ent.rowText.get(nat);
-        if (nh != null) {
-            if (r.hl != null && r.hl != cardSrcTv && r.hl != nh) clearHighlight(r.hl);
-            r.hl = nh;
-            speakTv = nh;
-            updateScrollFreeze();
-            highlightSpeak(nh, t, 0, t.length());
+        final ArrayList<String> langs = companionLangs();
+        while (r.compIdx < langs.size()) {
+            final String nat = langs.get(r.compIdx++);
+            if (!PanelTts.readLangOn(this, nat)) continue;
+            final String t = nativeCompanion(r.ent, r.lang, r.kind, nat);
+            if (t == null) continue;
+            final TextView nh = r.ent.rowText.get(nat);
+            if (nh != null) {
+                if (r.hl != null && r.hl != cardSrcTv && r.hl != nh) clearHighlight(r.hl);
+                r.hl = nh;
+                speakTv = nh;
+                updateScrollFreeze();
+                highlightSpeak(nh, t, 0, t.length());
+            }
+            PanelTts.speak(this, t, nat, 1.0f, ok -> {
+                if (r.my != speakToken || run != r) return;
+                if (!ok) { finishSpeak(r.btn, r.my); return; }
+                advanceOrFinish(r);
+            });
+            return true;
         }
-        PanelTts.speak(this, t, nat, 1.0f, ok -> {
-            if (r.my != speakToken || run != r) return;
-            if (!ok) { finishSpeak(r.btn, r.my); return; }
-            advanceOrFinish(r);
-        });
-        return true;
+        return false;
     }
 
     private void finishSpeak(TextView b, int my) {

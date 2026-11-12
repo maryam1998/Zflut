@@ -32,6 +32,24 @@ final class PanelTts {
         } catch (Throwable t) { return false; }
     }
 
+    /**
+     * 🌐 چیپ‌های زبانِ تنظیمات («خواندن ترجمه‌ها در پس‌زمینه»): زبان‌هایی که کاربر خاموش کرده
+     * (کلید zflut-read-trans-bg-off، فهرستِ جداشده با ویرگول). پیش‌فرض: همه‌ی زبان‌های انتخابی روشن.
+     */
+    static boolean readLangOn(Context ctx, String lang) {
+        try {
+            if (lang == null) return false;
+            String off = ctx.getApplicationContext()
+                    .getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                    .getString("flutter.zflut-read-trans-bg-off", "");
+            if (off == null || off.isEmpty()) return true;
+            for (String t : off.split(",")) {
+                if (t.trim().equalsIgnoreCase(lang.trim())) return false;
+            }
+            return true;
+        } catch (Throwable t) { return true; }
+    }
+
     static void stop(Context ctx) {
         SEQ.incrementAndGet();
         try { TtsClient.stop(); } catch (Throwable ignored) {}
