@@ -744,7 +744,13 @@ class SpeechController extends StateNotifier<SpeechState> {
       // ⚡ جمله‌ای که صدای Piperش هنوز ساخته نشده (سرد) و گوشی برای این زبان صدا دارد:
       // همین الان با صدای گوشی خوانده می‌شود (بدون انتظار)؛ در همین حین صدای Piper جمله‌های
       // بعدی ساخته می‌شود تا آن‌ها با صدای اپ و بدون تأخیر پخش شوند.
+      // 🎭 خطی که صدای مخصوصِ گوینده (می‌شنوی/می‌گی) دارد و Piperش در راه است، با صدای گوشی
+      // خوانده نمی‌شود (وگرنه دو گوینده یک صدا می‌شدند)؛ فقط اولین خطِ سرد فوراً با گوشی می‌رود.
+      final speakerVoice = _voiceFor(idx);
+      final keepPiperVoice = speakerVoice != null &&
+          NativeTtsBridge.wasPrefetched(cleanText, code, state.rate);
       if (ready &&
+          !keepPiperVoice &&
           !NativeTtsBridge.isPrefetchWarm(cleanText, code, state.rate) &&
           sysOk) {
         if (myGen != _generation) return;

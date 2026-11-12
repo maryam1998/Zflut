@@ -560,12 +560,15 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       itemsBuilder: () => openSc == null
           ? const <SyncItem>[]
           : [
-              for (var i = 0; i < openSc.speakerA.length; i++)
-                if (_lvOk(openSc.speakerA[i].level))
+              // ترتیبِ خوانش = ترتیبِ نمایش: هر جمله‌ی «می‌شنوی» و بلافاصله جوابش «می‌گی»
+              for (var i = 0;
+                  i < math.max(openSc.speakerA.length, openSc.speakerB.length);
+                  i++) ...[
+                if (i < openSc.speakerA.length && _lvOk(openSc.speakerA[i].level))
                   SyncItem('a$i', openSc.speakerA[i].en),
-              for (var i = 0; i < openSc.speakerB.length; i++)
-                if (_lvOk(openSc.speakerB[i].level))
+                if (i < openSc.speakerB.length && _lvOk(openSc.speakerB[i].level))
                   SyncItem('b$i', openSc.speakerB[i].en),
+              ],
             ],
       child: SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 90),
@@ -982,20 +985,10 @@ class _ScenarioCard extends StatelessWidget {
           ),
           if (isOpen) ...[
             const Divider(height: 1),
-            if (scenario.speakerA.isNotEmpty)
-              _SpeakerBox(
-                  title: context.l10n.dialogs_you_hear,
-                  idPrefix: 'a',
-                  color: c.teal,
-                  levelFilter: levelFilter,
-                  lines: scenario.speakerA),
-            if (scenario.speakerB.isNotEmpty)
-              _SpeakerBox(
-                  title: context.l10n.dialogs_you_say,
-                  idPrefix: 'b',
-                  color: c.gold,
-                  levelFilter: levelFilter,
-                  lines: scenario.speakerB),
+            _DialogueBox(
+                levelFilter: levelFilter,
+                hear: scenario.speakerA,
+                say: scenario.speakerB),
             const SizedBox(height: 10),
           ],
         ],
@@ -1005,59 +998,78 @@ class _ScenarioCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-class _SpeakerBox extends ConsumerWidget {
-  final String title;
-
-  /// 'a' (می‌شنوی) یا 'b' (می‌گی) — شناسه‌ی هر خط = '$idPrefix$index'
-  final String idPrefix;
-  final Color color;
+class _DialogueBox extends ConsumerWidget {
   final Set<String> levelFilter;
-  final List<ConversationLine> lines;
 
-  const _SpeakerBox({
-    required this.title,
-    required this.idPrefix,
-    required this.color,
+  /// «می‌شنوی» (شناسه‌ی هر خط = 'a$index') و جوابش «می‌گی' (شناسه‌ی 'b$index')
+  final List<ConversationLine> hear;
+  final List<ConversationLine> say;
+
+  const _DialogueBox({
     required this.levelFilter,
-    required this.lines,
+    required this.hear,
+    required this.say,
   });
+
+  bool _ok(ConversationLine l) =>
+      levelFilter.isEmpty || levelFilter.contains(l.level);
+
+  Widget _tagged(BuildContext context, String title, Color color, Widget row,
+      {double indent = 0}) {
+    return Padding(
+      padding: EdgeInsetsDirectional.only(start: indent, bottom: 4),
+      child: Container(
+        padding: const EdgeInsetsDirectional.only(start: 8),
+        decoration: BoxDecoration(
+          border: BorderDirectional(start: BorderSide(color: color, width: 3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: TextStyle(
+                    color: color, fontSize: 11.5, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 2),
+            row,
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.appColors;
-
-    // فقط جمله‌های سطحِ انتخاب‌شده (شناسه‌ها همان ایندکسِ اصلی می‌مانند)
-    final shown = <int>[
-      for (var i = 0; i < lines.length; i++)
-        if (levelFilter.isEmpty || levelFilter.contains(lines[i].level)) i
-    ];
-    if (shown.isEmpty) return const SizedBox.shrink();
-
+    final L = context.l10n;
+    final n = math.max(hear.length, say.length);
+    final kids = <Widget>[];
+    for (var i = 0; i < n; i++) {
+      final hasHear = i < hear.length && _ok(hear[i]);
+      final hasSay = i < say.length && _ok(say[i]);
+      if (!hasHear && !hasSay) continue;
+      kids.add(Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (hasHear)
+              _tagged(context, L.dialogs_you_hear, c.teal,
+                  _LineRow(line: hear[i], id: 'a$i')),
+            // جوابِ همین جمله دقیقاً زیرِ آن (کمی تورفته)
+            if (hasSay)
+              _tagged(context, L.dialogs_you_say, c.gold,
+                  _LineRow(line: say[i], id: 'b$i'),
+                  indent: 16),
+          ],
+        ),
+      ));
+    }
+    if (kids.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                    color: color, borderRadius: BorderRadius.circular(4)),
-              ),
-              const SizedBox(width: 6),
-              Text(title,
-                  style: TextStyle(
-                      color: c.ink,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          for (final i in shown)
-            _LineRow(line: lines[i], id: '$idPrefix$i'),
-        ],
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: kids,
       ),
     );
   }
