@@ -49,6 +49,9 @@ class NativeTtsBridge {
   static final Map<String, DateTime> _readyAt = {};
   static final Map<String, DateTime> _notReadyAt = {};
 
+  /// قبلاً در همین اجرا مدلِ این زبان «آماده» دیده شده؟ (برای وقتی که جوابِ پرسش دیر می‌رسد)
+  static bool wasEverReady(String lang) => _readyAt.containsKey(lang);
+
   static Future<bool> isModelReady(String lang) async {
     if (!isAvailable) return false;
     // ⚡ بدون رفت‌وبرگشتِ اضافه به نیتیو برای هر جمله: جوابِ «آماده» ۳۰ ثانیه کش می‌شود

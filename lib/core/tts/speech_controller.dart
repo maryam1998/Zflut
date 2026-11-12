@@ -113,6 +113,9 @@ class SpeechController extends StateNotifier<SpeechState> {
   /// خوانشِ قبلی (متوقف‌شده) حساب می‌شه، نه خوانش فعلی.
   static const _staleDoneGuard = Duration(milliseconds: 150);
 
+  /// تعداد تلاش با خودِ مدلِ اپ قبل از اینکه (فقط در شکستِ واقعی) به صدای گوشی برگردیم.
+  static const _modelMaxAttempts = 3;
+
   // صف: لیست متن‌های هم‌زبان (مثلاً خطوط یک مکالمه) تا «قبلی/بعدی» در لبه‌ی
   // جمله‌ها به آیتم قبلی/بعدی برود.
   List<String> _queue = [];
@@ -732,8 +735,11 @@ class SpeechController extends StateNotifier<SpeechState> {
       final phoneOnly = _preferPhoneVoice?.call() ?? false;
       final ready = phoneOnly
           ? false
-          : await NativeTtsBridge.isModelReady(code)
-              .timeout(const Duration(milliseconds: 2000), onTimeout: () => false);
+          : await NativeTtsBridge.isModelReady(code).timeout(
+              const Duration(milliseconds: 2000),
+              // جوابِ دیر ≠ «مدل نصب نیست»: اگر قبلاً آماده دیده شده، همچنان آماده حساب می‌شود
+              // (قبلاً یک تأخیرِ لحظه‌ای باعث می‌شد جمله با صدای گوشی خوانده شود)
+              onTimeout: () => NativeTtsBridge.wasEverReady(code));
       if (myGen != _generation) return;
       // 📥 صدای اپ برای این زبان نصب نیست → خودکار دانلود شود (تا آماده شدن با صدای گوشی)
       if (!ready && !phoneOnly && (_autoDownloadModels?.call() ?? true)) {
@@ -742,11 +748,28 @@ class SpeechController extends StateNotifier<SpeechState> {
       // 🎙 کیفیتِ صدا: وقتی صدای اپ (Piper/Supertonic) آماده است همیشه همان خوانده می‌شود —
       // جمله‌ی اول هم. فقط اگر موتور گیر کند (نرسیدنِ «پایان» تا مهلت) همان جمله با صدای گوشی خوانده می‌شود.
       if (ready) {
-        final ok = await _playNative(idx, cleanText, code, myGen);
-        // ✅ اگر وسط کار pause/stop/seek شد، هرگز سراغ موتور بعدی نرو
-        // (قبلاً بعد از pause، موتور بعدی خوانش قدیمی را ناخواسته پخش می‌کرد)
-        if (myGen != _generation) return;
-        if (ok) return;
+        // 🔒 فقط مدل: تا وقتی مدلِ اپ آماده است، هرگز وسطِ خوانش به صدای گوشی نمی‌رویم.
+        // اگر مدل دیر جواب داد/گیر کرد، همان جمله (یا فقط باقیمانده‌اش) دوباره با خودِ مدل
+        // امتحان می‌شود. فقط اگر چند بار پشت‌سرهم شکست بخورد (مثلاً موتور واقعاً کرش کرده)
+        // به صدای گوشی می‌رویم تا خوانش برای همیشه بی‌صدا نماند.
+        var text = cleanText;
+        for (var attempt = 0; attempt < _modelMaxAttempts; attempt++) {
+          final ok = await _playNative(idx, text, code, myGen,
+              stallExtraSecs: attempt * 10);
+          // ✅ اگر وسط کار pause/stop/seek شد، هرگز سراغ موتور بعدی نرو
+          // (قبلاً بعد از pause، موتور بعدی خوانش قدیمی را ناخواسته پخش می‌کرد)
+          if (myGen != _generation) return;
+          if (ok) return;
+          final r = _nativeRest;
+          _nativeRest = null;
+          if (r != null && RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(r)) {
+            text = r; // بخشِ خوانده‌شده تکرار نشود
+          }
+          await Future.delayed(const Duration(milliseconds: 250));
+          if (myGen != _generation) return;
+        }
+        debugPrint('⚠️ مدلِ اپ بعد از $_modelMaxAttempts تلاش جواب نداد → صدای گوشی');
+        _nativeRest = text == cleanText ? null : text;
       }
 
       // ۲. TTS خود گوشی
@@ -778,6 +801,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     bool detectSilent = false,
     double gapScale = 1.0,
     bool stallFallback = false,
+    int stallExtraSecs = 0,
   }) async {
     try {
       final id = 'f${++_utteranceSeq}';
@@ -808,7 +832,10 @@ class SpeechController extends StateNotifier<SpeechState> {
       // موتورِ اپ (Piper…): اگر تا «مدتِ خوانشِ تخمینی + ۱۰ ثانیه» خبرِ پایان نیامد یعنی گیر کرده →
       // قطع و همان جمله با صدای گوشی. (قبلاً تا ۳۰ ثانیه منتظر می‌ماند و بعد بی‌صدا رد می‌شد.)
       var stalled = false;
-      final stallSecs = 10 + (text.length * 0.12 / state.rate.clamp(0.25, 3.0)).ceil();
+      // مدل گاهی دیر شروع می‌کند (ساختنِ صدا/بارگذاری) → مهلتِ بیشتر قبل از اینکه «گیر کرده» حساب شود
+      final stallSecs = 20 +
+          stallExtraSecs +
+          (text.length * 0.12 / state.rate.clamp(0.25, 3.0)).ceil();
       final finished = await waiter.future.timeout(
         stallFallback
             ? Duration(seconds: stallSecs)
@@ -852,7 +879,8 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
   }
 
-  Future<bool> _playNative(int idx, String text, String code, int myGen) {
+  Future<bool> _playNative(int idx, String text, String code, int myGen,
+      {int stallExtraSecs = 0}) {
     return _speakNativeAndWait(
       speakFn: (id) => NativeTtsBridge.speak(text, code, state.rate,
           id: id, voice: _voiceFor(idx)),
@@ -862,6 +890,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       // صدای Piper خودش مکثِ آخرِ جمله را دارد؛ مکثِ اضافه‌ی اپ نصف می‌شود تا بینِ جمله‌ها سکوتِ طولانی نیفتد
       gapScale: 0.5,
       stallFallback: true,
+      stallExtraSecs: stallExtraSecs,
       // جمله‌ی بعدی را همین حین که این یکی پخش می‌شود آماده کن (بعد از شروعِ پخش، تا خوانشِ فعلی کند نشود)
       onStarted: () => _prefetchNext(idx, _currentCode ?? code),
     );
