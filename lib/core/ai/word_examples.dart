@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/supported_languages.dart';
+import '../storage/durable_store.dart';
 import '../storage/local_storage.dart';
 import '../translate/translation_service.dart';
 import 'ai_gateway.dart';
@@ -65,8 +66,13 @@ class WordExamplesStore {
     }
   }
 
-  Future<void> _write(Map<String, dynamic> all) =>
-      _sp.setString(kWordExamplesKey, jsonEncode(all));
+  /// مثال‌ها هم در prefs و هم بلافاصله در نسخه‌ی دائمیِ دستگاه (DurableStore) ذخیره می‌شوند
+  /// تا با بستنِ اپ، خروج از حساب یا خالی‌شدنِ prefs از بین نروند.
+  Future<void> _write(Map<String, dynamic> all) async {
+    await _sp.setString(kWordExamplesKey, jsonEncode(all));
+    DurableStore.instance.schedule(_sp);
+    await DurableStore.instance.flush();
+  }
 
   List<WordExample> load(String word, String lang) {
     final list = _all()[_key(word, lang)];

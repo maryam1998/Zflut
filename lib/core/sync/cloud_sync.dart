@@ -23,6 +23,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../bridge/linlearn_bridge.dart';
 import '../constants/supported_languages.dart';
 import '../native/native_bridge.dart';
+import '../ai/word_examples.dart' show kWordExamplesKey;
 import '../storage/durable_store.dart';
 import '../storage/local_storage.dart' show sharedPrefsProvider;
 import 'app_restarter.dart';
@@ -37,6 +38,13 @@ const String _kTable = 'user_sync';
 /// می‌مانند و به Supabase نمی‌روند / از آن برنمی‌گردند. (Supabase فقط برای ورود
 /// با حساب است.) اگر روزی سرور داشتی، این را true کن.
 const bool _kSyncUserData = false;
+
+/// حتی وقتی _kSyncUserData خاموش است، این کلیدها با حساب همگام می‌شوند:
+/// مثال‌های مثال‌ساز (AI) با خروج از حساب/نصبِ دوباره گم نشوند.
+const Set<String> _kAlwaysSyncKeys = {kWordExamplesKey};
+
+bool _shouldSync(String k) =>
+    _kSyncUserData ? _syncable(k) : _kAlwaysSyncKeys.contains(k);
 
 /// مدل‌هایی که در حساب هستند ولی روی این دستگاه دانلود نشده‌اند (برای دیالوگِ بازیابی).
 final missingPacksProvider = StateProvider<List<String>>((ref) => const <String>[]);
@@ -230,7 +238,7 @@ class CloudSync with WidgetsBindingObserver {
   // ───────────────────────── داده‌ها ─────────────────────────
   Map<String, String> _collectData() {
     final sp = _sp;
-    final keys = sp.getKeys().where(_syncable).toList()..sort();
+    final keys = sp.getKeys().where(_shouldSync).toList()..sort();
     final out = <String, String>{};
     for (final k in keys) {
       final v = sp.get(k);
@@ -246,7 +254,7 @@ class CloudSync with WidgetsBindingObserver {
     for (final e in v.entries) {
       final k = e.key.toString();
       final val = e.value;
-      if (val is! String || !_syncable(k)) continue;
+      if (val is! String || !_shouldSync(k)) continue;
       final cur = _sp.getString(k);
       final next = cur == null ? val : mergeSyncValue(cur, val);
       if (cur != next) {
@@ -306,7 +314,7 @@ class CloudSync with WidgetsBindingObserver {
     _deviceId(meta);
     var applied = false;
 
-    if (_kSyncUserData && dataRow != null) {
+    if (dataRow != null) {
       final cloudAt = DateTime.tryParse('${dataRow['updated_at']}');
       final lastSync = DateTime.tryParse('${meta['lastSyncAt']}');
       final sameUser = meta['userId'] == uid;
@@ -397,9 +405,9 @@ class CloudSync with WidgetsBindingObserver {
       final deviceId = _deviceId(meta);
       final now = DateTime.now().toUtc().toIso8601String();
 
-      var data = _kSyncUserData ? _collectData() : <String, String>{};
-      var h = _kSyncUserData ? _fnv1a(jsonEncode(data)).toString() : '';
-      if (_kSyncUserData && (force || meta['lastHash'] != h)) {
+      var data = _collectData();
+      var h = _fnv1a(jsonEncode(data)).toString();
+      if (data.isNotEmpty && (force || meta['lastHash'] != h)) {
         // ۱) اگر بعد از آخرین همگام‌سازیِ ما چیزی در ابر عوض شده (دستگاهِ دیگر یا
         //    بکاپِ قدیمیِ همین دستگاه)، اول ادغام کن؛ بازنویسی نکن.
         final heads = await c
