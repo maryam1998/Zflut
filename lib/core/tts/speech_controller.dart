@@ -44,9 +44,11 @@ class SpeechController extends StateNotifier<SpeechState> {
     String? Function(String lang)? voicePref,
     void Function(ChunkPlayedEvent e)? onChunkPlayed,
     bool Function()? preferPhoneVoice,
+    bool Function()? autoDownloadModels,
   })  : _voicePref = voicePref,
         _onChunkPlayed = onChunkPlayed,
         _preferPhoneVoice = preferPhoneVoice,
+        _autoDownloadModels = autoDownloadModels,
         super(const SpeechState()) {
     _initLocalTts();
     // فهرست صداها پیش از اولین تپ در پس‌زمینه گرم شود (خوانشِ ترجمه‌ها تأخیر نداشته باشد)
@@ -62,6 +64,8 @@ class SpeechController extends StateNotifier<SpeechState> {
   final void Function(ChunkPlayedEvent e)? _onChunkPlayed;
   /// تنظیمات ← «صدای خوانش»: true = همیشه TTS خودِ گوشی (نه بسته‌ی Piper)
   final bool Function()? _preferPhoneVoice;
+  /// دانلودِ خودکارِ مدلِ نصب‌نشده (null = مثل قبل، فعال)
+  final bool Function()? _autoDownloadModels;
   List<Map<String, String>> _voices = [];
 
   // صدایی که برای هر زبان واقعاً شنیده شد (اولویتِ اول دفعه‌ی بعد) و صداهایی
@@ -725,7 +729,9 @@ class SpeechController extends StateNotifier<SpeechState> {
           : await NativeTtsBridge.isModelReady(code);
       if (myGen != _generation) return;
       // 📥 صدای اپ برای این زبان نصب نیست → خودکار دانلود شود (تا آماده شدن با صدای گوشی)
-      if (!ready && !(_preferPhoneVoice?.call() ?? false)) {
+      if (!ready &&
+          !(_preferPhoneVoice?.call() ?? false) &&
+          (_autoDownloadModels?.call() ?? true)) {
         unawaited(NativeTtsBridge.ensureModelDownload(code));
       }
       if (ready) {

@@ -2149,9 +2149,9 @@ bool get _isAndroidApp =>
 /// انتخابِ موتورِ صدا ('model' = صدای اپ، 'phone' = صدای گوشی) — بین
 /// «انتخابگر» و «لیستِ دانلود/راهنما» مشترک است تا با هر تغییر بلافاصله عوض شوند.
 final _voiceEnginePrefProvider = StateProvider<String>((ref) =>
-    ref.read(sharedPrefsProvider).getString('voiceEnginePref') == 'model'
-        ? 'model'
-        : 'phone');
+    ref.read(sharedPrefsProvider).getString('voiceEnginePref') == 'phone'
+        ? 'phone'
+        : 'model');
 
 class _VoiceEngineSection extends ConsumerStatefulWidget {
   const _VoiceEngineSection();
@@ -2163,7 +2163,7 @@ class _VoiceEngineSection extends ConsumerStatefulWidget {
 
 class _VoiceEngineSectionState extends ConsumerState<_VoiceEngineSection> {
   static const String _key = 'voiceEnginePref';
-  // پیش‌فرض = صدای گوشی؛ فقط اگر کاربر خودش «صدای اپ» را زده باشد 'model' است.
+  // پیش‌فرض = صدای اپ (در صورت دانلود بودن مدل)؛ فقط اگر کاربر خودش «صدای گوشی» را زده باشد 'phone' است.
   String get _pref => ref.watch(_voiceEnginePrefProvider);
 
   void _set(String v) {

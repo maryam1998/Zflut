@@ -17,9 +17,13 @@ final speechControllerProvider =
   final ctl = SpeechController(
     // صدای انتخاب‌شده‌ی کاربر برای هر زبان (در صورت وجود)
     voicePref: (lang) => ref.read(voicePrefsProvider)[lang],
-    // پیش‌فرض = صدای خودِ گوشی؛ فقط اگر کاربر خودش «صدای اپ» را انتخاب کرده باشد.
+    // ⚡ پیش‌فرض = «خودکار»: اگر مدلِ صدای اپ برای آن زبان دانلود شده باشد (سریع‌تر و بدون تأخیر)
+    // همان استفاده می‌شود؛ فقط اگر کاربر خودش «صدای گوشی» را انتخاب کرده باشد صدای گوشی.
     preferPhoneVoice: () =>
-        ref.read(sharedPrefsProvider).getString('voiceEnginePref') != 'model',
+        ref.read(sharedPrefsProvider).getString('voiceEnginePref') == 'phone',
+    // دانلودِ خودکارِ مدل فقط وقتی کاربر صریحاً «صدای اپ» را انتخاب کرده (حالتِ خودکار حجمی دانلود نمی‌کند)
+    autoDownloadModels: () =>
+        ref.read(sharedPrefsProvider).getString('voiceEnginePref') == 'model',
     // 🧬 هر بار که یک لغت/جمله با پلیر کامل خوانده شد → یک تکرار در «مسیر عصبی»
     onChunkPlayed: (e) => _recordNeuralFromPlayback(ref, e),
   );
