@@ -412,9 +412,13 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   String _nativeCode() =>
       ref.read(languageSelectionProvider).native.trim().toLowerCase();
 
+  /// درخواست‌های ترجمه‌ی در حال انجام — پیش‌گرم‌کردن و صفِ خوانش برای یک متن/زبان
+  /// یک درخواستِ مشترک دارند (قبلاً دومی ته صف می‌رفت و بعد از ۸ ثانیه رد می‌شد).
+  final Map<String, Future<String?>> _trInflight = {};
+
   /// ترجمه‌ی آیتم: اول آنچه روی صفحه آماده شده، بعد کشِ ترجمه/داده‌های اپ، و اگر نبود همان لحظه ترجمه می‌کند.
   Future<String?> _translationText(String id, String from, String to,
-      {Duration timeout = const Duration(seconds: 8)}) async {
+      {Duration timeout = const Duration(seconds: 15)}) async {
     final local = _notifier.translationFor(id, to);
     if (local != null) return local;
     final src = _notifier.itemText(id)?.trim();
@@ -424,16 +428,21 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       final hit =
           svc.peekCached(src, from, to) ?? KnownTranslations.get(src, from, to);
       if (hit != null && hit.trim().isNotEmpty) return hit.trim();
-      final r = (await svc
-              .translate(
+      final k = '$from>$to|$src';
+      final fut = _trInflight.putIfAbsent(k, () {
+        final f = () async {
+          final r = (await svc.translate(
                   text: src,
                   targetLang: to,
                   sourceLang: from,
-                  aiSettings: ref.read(aiSettingsProvider))
-              .timeout(timeout))
-          .trim();
-      if (r.isEmpty || r.toLowerCase() == src.toLowerCase()) return null;
-      return r;
+                  aiSettings: ref.read(aiSettingsProvider)))
+              .trim();
+          if (r.isEmpty || r.toLowerCase() == src.toLowerCase()) return null;
+          return r;
+        }();
+        return f.whenComplete(() => _trInflight.remove(k));
+      });
+      return await fut.timeout(timeout, onTimeout: () => null);
     } catch (_) {
       return null;
     }
@@ -660,7 +669,10 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       for (final st in steps) {
         final text = (await st.text())?.trim();
         if (!mounted || token != _bgToken) return;
-        if (text == null || text.isEmpty) continue; // ترجمه‌ای نبود → رد شو
+        if (text == null || text.isEmpty) {
+          debugPrint('⏭ خوانش ترجمه رد شد (متن آماده نشد): ${st.code}');
+          continue; // ترجمه‌ای نبود → رد شو
+        }
         // مکث یا پخشِ چیزِ دیگر صف را کنسل نمی‌کند؛ صبر می‌کنیم تا آزاد شود و ادامه می‌دهیم
         if (!await _bgWaitFree(token, first ? expectKey : null)) return;
         final key = PlayerTrack.keyFor(st.code, text);

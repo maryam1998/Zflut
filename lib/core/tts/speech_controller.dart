@@ -734,6 +734,18 @@ class SpeechController extends StateNotifier<SpeechState> {
           (_autoDownloadModels?.call() ?? true)) {
         unawaited(NativeTtsBridge.ensureModelDownload(code));
       }
+      // ⚡ جمله‌ای که صدای Piperش هنوز ساخته نشده (سرد) و گوشی برای این زبان صدا دارد:
+      // همین الان با صدای گوشی خوانده می‌شود (بدون انتظار)؛ در همین حین صدای Piper جمله‌های
+      // بعدی ساخته می‌شود تا آن‌ها با صدای اپ و بدون تأخیر پخش شوند.
+      if (ready &&
+          !NativeTtsBridge.wasPrefetched(cleanText, code, state.rate) &&
+          await NativeTtsBridge.systemAvailable(code)) {
+        if (myGen != _generation) return;
+        _prefetchNext(idx, _currentCode ?? code);
+        final okFast = await _playSystemTts(idx, cleanText, code, myGen);
+        if (myGen != _generation) return;
+        if (okFast) return;
+      }
       if (ready) {
         final ok = await _playNative(idx, cleanText, code, myGen);
         // ✅ اگر وسط کار pause/stop/seek شد، هرگز سراغ موتور بعدی نرو
@@ -1252,7 +1264,16 @@ class SpeechController extends StateNotifier<SpeechState> {
         debugPrint('onChunkPlayed error: $e');
       }
     }
-    final gap = (_gapMs(chunk: text, rate: state.rate) * gapScale).round();
+    var gap = (_gapMs(chunk: text, rate: state.rate) * gapScale).round();
+    // آخرین جمله‌ی یک متنِ تکی (مثلاً ترجمه‌ای که صفِ خوانش می‌خواند) و بدون تکرار/لوپ:
+    // بعدش مرحله‌ی بعدیِ صف شروع می‌شود، پس مکثِ اضافه فقط تأخیر است.
+    if (idx + 1 >= _chunks.length &&
+        !_loop &&
+        state.globalRepeat == 0 &&
+        _abState == 'idle' &&
+        gap > 30) {
+      gap = 30;
+    }
     if (gap > 0) await Future.delayed(Duration(milliseconds: gap));
     if (myGen != _generation || _disposed) return;
 

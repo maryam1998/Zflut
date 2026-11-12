@@ -79,9 +79,45 @@ class NativeTtsBridge {
   static Future<void> prefetch(String text, String lang, double rate,
       {String? voice}) async {
     if (!isAvailable) return;
+    _markPrefetched(text, lang, rate);
     try {
       await _b.prefetchTts(text: text, lang: lang, speed: rate, voice: voice);
     } catch (_) {}
+  }
+
+  // ⚡ جمله‌هایی که برایشان prefetch فرستاده شده (صدای Piper‌شان ساخته شده یا در حال ساخته‌شدن است)
+  static final Set<String> _prefetched = <String>{};
+
+  static String _pfKey(String text, String lang, double rate) =>
+      '$lang|$rate|$text';
+
+  static void _markPrefetched(String text, String lang, double rate) {
+    if (_prefetched.length > 400) _prefetched.clear();
+    _prefetched.add(_pfKey(text, lang, rate));
+  }
+
+  /// آیا برای این جمله قبلاً prefetch فرستاده شده؟ (false = «سرد»؛ ساختنِ صدای Piper تأخیر دارد)
+  static bool wasPrefetched(String text, String lang, double rate) =>
+      _prefetched.contains(_pfKey(text, lang, rate));
+
+  static final Map<String, ({bool ok, DateTime at})> _sysAvail = {};
+
+  /// آیا TTS خودِ گوشی برای این زبان صدا دارد؟ (۶۰ ثانیه کش می‌شود)
+  static Future<bool> systemAvailable(String lang) async {
+    if (!isAvailable) return false;
+    final c = _sysAvail[lang];
+    if (c != null &&
+        DateTime.now().difference(c.at) < const Duration(seconds: 60)) {
+      return c.ok;
+    }
+    try {
+      final r = await _b.checkSystemTts(lang: lang);
+      final ok = r['available'] == true;
+      _sysAvail[lang] = (ok: ok, at: DateTime.now());
+      return ok;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// زبان‌هایی که در همین اجرا درخواستِ دانلودِ خودکارشان فرستاده شده (تکراری نشود).
