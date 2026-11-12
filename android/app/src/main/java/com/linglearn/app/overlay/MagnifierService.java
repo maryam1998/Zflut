@@ -174,6 +174,7 @@ public class MagnifierService extends Service {
     private static final int REPEAT_INF = -1;                 // همان مقدارِ حبابِ ترجمه‌ی زنده
     private LinearLayout rowsBox, wordCard, wordRows, opacityRow;
     private LinearLayout langRow, fontRow;
+    private ReadLangChips readChips;
     private TextView tvLangPill, tvFontBtn;
     private SeekBar opacityBar;
     private MaxHScroll bodyScroll;
@@ -1412,7 +1413,7 @@ public class MagnifierService extends Service {
         hideCloseTarget();
         rowsBox = null; wordCard = null; wordRows = null; opacityRow = null;
         langRow = null; fontRow = null; tvLangPill = null; tvFontBtn = null; opacityBar = null; bodyScroll = null;
-        langChips.clear(); appFontChips.clear();
+        langChips.clear(); appFontChips.clear(); readChips = null;
         cardTerm = null; termSpeak = null; wordTerm = null; wordSpeak = null; tvRepeat = null; popupBg = null;
     }
 
@@ -2331,6 +2332,7 @@ public class MagnifierService extends Service {
 
     /** ردیف‌های ترجمه‌ی همین لحظه‌ی کادرِ لغت (برای خوانشِ ترجمه‌ی زبانِ مبدأ بعد از متن). */
     private List<String[]> cardRowsRef = null;
+    private List<String[]> speakRows = null;
 
     /** {زبان، ترجمه}‌ی همه‌ی زبان‌های انتخابی (به‌ترتیب؛ طبقِ چیپ‌های تنظیمات) برای همین متن — اگر گزینه‌ی «خواندن ترجمه‌ها در پس‌زمینه» روشن و ترجمه آماده باشد. */
     private List<String[]> companionFor(String spokenLang, List<String[]> rows) {
@@ -2374,21 +2376,24 @@ public class MagnifierService extends Service {
         speakingBtn = b;
         b.setText("\u23F9");
         b.setTextColor(COLOR_GOLD);
-        speakLoop(b, text, lang, ++speakTok, 0, companionFor(lang, rows));
+        speakRows = rows;
+        speakLoop(b, text, lang, ++speakTok, 0, null);
     }
 
     private void speakLoop(final TextView b, final String text, final String lang, final int token,
                            final int done, final List<String[]> comp) {
         PanelTts.speak(this, text, lang, 1.0f, ok -> main.post(() -> {
             if (token != speakTok) return;
+            List<String[]> comp0;
             int rep = repeatSetting();
             int cap = rep == 0 ? 1 : rep == REPEAT_INF ? Integer.MAX_VALUE : rep;
             final int n = done + 1;
             if (ok && n < cap) {
                 main.postDelayed(() -> { if (token == speakTok) speakLoop(b, text, lang, token, n, comp); }, 700);
-            } else if (ok && comp != null && !comp.isEmpty()) {
-                // 🌐 بعد از متن، ترجمه‌ی همه‌ی زبان‌های انتخابی به‌ترتیب
-                main.postDelayed(() -> speakComps(comp, 0, token), 300);
+            } else if (ok && !(comp0 = companionFor(lang, speakRows)).isEmpty()) {
+                // 🌐 بعد از متن، ترجمه‌ی زبان‌های روشنِ چیپ‌های خوانش (همان لحظه محاسبه می‌شود تا ترجمه‌های تازه‌رسیده هم خوانده شوند)
+                final List<String[]> comp1 = comp0;
+                main.post(() -> speakComps(comp1, 0, token));
             } else {
                 finishSpeakUi();
             }
@@ -2620,6 +2625,17 @@ public class MagnifierService extends Service {
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         langRow.addView(hs, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        // 🔊 چیپ‌های «زبان‌های خوانش»: کاربر انتخاب می‌کند کدام ترجمه‌ها بعد از متن (در پس‌زمینه) خوانده شوند
+        readChips = new ReadLangChips(this, () -> {
+            final ArrayList<String> o = new ArrayList<>();
+            final String nat = prefs().getString("target", "fa");
+            final ArrayList<String> pk = pickedTargets();
+            if (nat != null && !nat.isEmpty() && !pk.contains(nat.toLowerCase(Locale.ROOT))) o.add(nat.toLowerCase(Locale.ROOT));
+            for (String t : pk) if (!o.contains(t)) o.add(t);
+            return o;
+        }, COLOR_GOLD, COLOR_INK, null);
+        langRow.addView(readChips.view(), new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         paintLangChips();
         return langRow;
     }
@@ -2640,6 +2656,7 @@ public class MagnifierService extends Service {
 
     /** روشن = طلایی؛ خاموش = شیشه‌ای؛ زبانِ خودِ متن کم‌رنگ (ترجمه‌ی هم‌زبان بی‌معنی است). */
     private void paintLangChips() {
+        if (readChips != null) readChips.refresh();      // چیپ‌های خوانش با زبان‌های انتخابی هماهنگ بمانند
         if (langChips.isEmpty()) return;
         final List<String> picked = pickedTargets();
         for (TextView c : langChips) {

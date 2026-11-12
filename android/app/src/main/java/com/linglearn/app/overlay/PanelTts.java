@@ -50,6 +50,32 @@ final class PanelTts {
         } catch (Throwable t) { return true; }
     }
 
+    private static android.content.SharedPreferences fp(Context ctx) {
+        return ctx.getApplicationContext().getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE);
+    }
+
+    /** کلیدِ اصلیِ «خواندن ترجمه‌ها در پس‌زمینه» (همان کلیدِ تنظیماتِ اپ). */
+    static void setReadTransBg(Context ctx, boolean on) {
+        try { fp(ctx).edit().putBoolean("flutter.zflut-read-trans-bg", on).apply(); } catch (Throwable ignored) {}
+    }
+
+    /** روشن/خاموش‌کردنِ خوانشِ ترجمه‌ی یک زبان (فهرستِ خاموش‌ها در zflut-read-trans-bg-off). */
+    static void setReadLang(Context ctx, String lang, boolean on) {
+        try {
+            if (lang == null) return;
+            final String code = lang.trim().toLowerCase(java.util.Locale.ROOT);
+            if (code.isEmpty()) return;
+            final java.util.LinkedHashSet<String> off = new java.util.LinkedHashSet<>();
+            String cur = fp(ctx).getString("flutter.zflut-read-trans-bg-off", "");
+            if (cur != null) for (String t : cur.split(",")) {
+                t = t.trim().toLowerCase(java.util.Locale.ROOT);
+                if (!t.isEmpty()) off.add(t);
+            }
+            if (on) off.remove(code); else off.add(code);
+            fp(ctx).edit().putString("flutter.zflut-read-trans-bg-off", android.text.TextUtils.join(",", off)).apply();
+        } catch (Throwable ignored) {}
+    }
+
     static void stop(Context ctx) {
         SEQ.incrementAndGet();
         try { TtsClient.stop(); } catch (Throwable ignored) {}
