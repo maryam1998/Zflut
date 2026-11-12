@@ -724,9 +724,16 @@ class SpeechController extends StateNotifier<SpeechState> {
 
     if (NativeTtsBridge.isAvailable) {
       // ۱. Piper نیتیو
-      final ready = (_preferPhoneVoice?.call() ?? false)
-          ? false
-          : await NativeTtsBridge.isModelReady(code);
+      // ⚡ دو پرسش از نیتیو هم‌زمان و با مهلتِ کوتاه — جواب دیر آمد = «آماده نیست» و فوراً صدای گوشی
+      final phoneOnly = _preferPhoneVoice?.call() ?? false;
+      final readyF = phoneOnly
+          ? Future<bool>.value(false)
+          : NativeTtsBridge.isModelReady(code)
+              .timeout(const Duration(milliseconds: 600), onTimeout: () => false);
+      final sysF = NativeTtsBridge.systemAvailable(code)
+          .timeout(const Duration(milliseconds: 600), onTimeout: () => false);
+      final ready = await readyF;
+      final sysOk = await sysF;
       if (myGen != _generation) return;
       // 📥 صدای اپ برای این زبان نصب نیست → خودکار دانلود شود (تا آماده شدن با صدای گوشی)
       if (!ready &&
@@ -738,8 +745,8 @@ class SpeechController extends StateNotifier<SpeechState> {
       // همین الان با صدای گوشی خوانده می‌شود (بدون انتظار)؛ در همین حین صدای Piper جمله‌های
       // بعدی ساخته می‌شود تا آن‌ها با صدای اپ و بدون تأخیر پخش شوند.
       if (ready &&
-          !NativeTtsBridge.wasPrefetched(cleanText, code, state.rate) &&
-          await NativeTtsBridge.systemAvailable(code)) {
+          !NativeTtsBridge.isPrefetchWarm(cleanText, code, state.rate) &&
+          sysOk) {
         if (myGen != _generation) return;
         _prefetchNext(idx, _currentCode ?? code);
         final okFast = await _playSystemTts(idx, cleanText, code, myGen);

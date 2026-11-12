@@ -9,13 +9,29 @@ class SentenceSplitter {
   /// [boundaries]: آفست‌های شروعِ «آیتم»ها (مثلاً هر خطِ مکالمه) — مثل
   /// sentenceBoundaries در Hope تضمین می‌کند دو آیتمِ جدا، حتی اگر علامت
   /// نگارشی وسطشان نباشد/قاطی شود، هرگز در یک جمله (chunk) ادغام نشوند.
+  static final RegExp _abbr = RegExp(
+      r'\b(Dr|Mr|Mrs|Ms|Mx|Prof|Sr|Sra|Srta|Jr|St|Mt|Dra|Lic|Ing|Gen|Col|Capt|Lt|Sgt|Rev|Hon|Fr|Hr|Hrn|Fam|Nr|Mme|Mlle)\.(?=\s)');
+
   static List<TextChunk> split(String text, {List<int>? boundaries}) {
     if (text.isEmpty) return [];
 
     // نقطه‌ی بین دو رقم (3.5 / 1.200) پایان جمله نیست: با یک نویسه‌ی هم‌طول جایگزین
     // می‌شود تا آفست‌ها دست‌نخورده بمانند. «…» و «؟/？/।/۔» هم پایانِ جمله حساب می‌شوند.
-    final prot = text.replaceAllMapped(
+    var prot = text.replaceAllMapped(
         RegExp(r'(\d)\.(?=\d)'), (m) => '${m[1]}\u0001');
+    // نقطه‌ی اختصارها (Dr. Mr. Mrs. Prof. Sr. ... / e.g. i.e. / U.S. / J. K. Rowling) پایان جمله نیست؛
+    // قبلاً «Dr.» یک تکه‌ی جدا می‌شد و هر تکه یک ساخت‌صدا + مکثِ جدا داشت → تأخیرِ بعد از نقطه.
+    prot = prot.replaceAllMapped(_abbr, (m) => '${m[1]}\u0001');
+    prot = prot.replaceAllMapped(
+        RegExp(r'(?<=^|[\s(\u0001])([A-HJ-Z])\.(?=\s+[A-Z])'),
+        (m) => '${m[1]}\u0001');
+    prot = prot.replaceAllMapped(
+        RegExp(r'\b((?:[A-Za-z]\.){1,3}[A-Za-z])\.(?=\s+[a-z])'),
+        (m) => m[0]!.replaceAll('.', '\u0001'));
+    prot = prot.replaceAllMapped(
+        RegExp(r'\b(?:e\.g|i\.e|U\.S|U\.K|a\.m|p\.m|z\.B|d\.h)\.',
+            caseSensitive: false),
+        (m) => m[0]!.replaceAll('.', '\u0001'));
     final re = RegExp(r'[^.!?؟。！？…।۔]+[.!?؟。！？…।۔]*');
     var out = <TextChunk>[];
 

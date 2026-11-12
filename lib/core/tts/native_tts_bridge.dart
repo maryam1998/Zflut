@@ -86,19 +86,29 @@ class NativeTtsBridge {
   }
 
   // ⚡ جمله‌هایی که برایشان prefetch فرستاده شده (صدای Piper‌شان ساخته شده یا در حال ساخته‌شدن است)
-  static final Set<String> _prefetched = <String>{};
+  static final Map<String, DateTime> _prefetched = <String, DateTime>{};
 
   static String _pfKey(String text, String lang, double rate) =>
       '$lang|$rate|$text';
 
   static void _markPrefetched(String text, String lang, double rate) {
     if (_prefetched.length > 400) _prefetched.clear();
-    _prefetched.add(_pfKey(text, lang, rate));
+    _prefetched.putIfAbsent(_pfKey(text, lang, rate), () => DateTime.now());
+  }
+
+  /// ⚡ صدای Piperِ این جمله «احتمالاً ساخته شده» است؟ (prefetch فرستاده شده و به‌اندازه‌ی کافی
+  /// گذشته). نیتیو prefetch را فوری resolve می‌کند و خبرِ پایانِ ساخت نمی‌دهد؛ پس اگر تازه فرستاده
+  /// شده، سرد حساب می‌شود و همان لحظه با صدای گوشی خوانده می‌شود (بدون انتظار برای Piper).
+  static bool isPrefetchWarm(String text, String lang, double rate) {
+    final t = _prefetched[_pfKey(text, lang, rate)];
+    if (t == null) return false;
+    final need = (300 + text.length * 12).clamp(300, 1500);
+    return DateTime.now().difference(t).inMilliseconds >= need;
   }
 
   /// آیا برای این جمله قبلاً prefetch فرستاده شده؟ (false = «سرد»؛ ساختنِ صدای Piper تأخیر دارد)
   static bool wasPrefetched(String text, String lang, double rate) =>
-      _prefetched.contains(_pfKey(text, lang, rate));
+      _prefetched.containsKey(_pfKey(text, lang, rate));
 
   static final Map<String, ({bool ok, DateTime at})> _sysAvail = {};
 
