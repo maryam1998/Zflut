@@ -372,50 +372,97 @@ class SpeakingPersonaBar extends StatelessWidget {
 
     Widget seg(bool call, IconData icon, String label) {
       final active = callMode == call;
-      return GestureDetector(
-        onTap: busy ? null : () => onModeChanged(call),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: active ? c.gold : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 15, color: active ? c.headerTo : c.inkSoft),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: active ? c.headerTo : c.inkSoft,
-                  fontSize: 12,
-                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+      return Expanded(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: busy ? null : () => onModeChanged(call),
+          child: Container(
+            height: 40,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon,
+                    size: 17, color: active ? c.headerTo : c.inkSoft),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: active ? c.headerTo : c.inkSoft,
+                    fontSize: 13,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       );
     }
 
-    return Row(
-      children: [
-        Expanded(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: c.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── مربی: آواتار + اسم + نقش + تغییر ──
+          InkWell(
+            borderRadius: BorderRadius.circular(16),
             onTap: busy ? null : onPickPersona,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: c.cardBorder),
-              ),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
               child: Row(
                 children: [
-                  _EmojiAvatar(persona: persona, size: 34),
-                  const SizedBox(width: 8),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(2.5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [c.gold, c.gold.withOpacity(0.35)],
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle, color: c.surface),
+                          child: _EmojiAvatar(persona: persona, size: 44),
+                        ),
+                      ),
+                      PositionedDirectional(
+                        bottom: 1,
+                        end: 1,
+                        child: Container(
+                          width: 13,
+                          height: 13,
+                          decoration: BoxDecoration(
+                            color: busy
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFF22C55E),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: c.surface, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -425,41 +472,96 @@ class SpeakingPersonaBar extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                                 color: c.ink,
-                                fontSize: 13,
+                                fontSize: 15.5,
                                 fontWeight: FontWeight.w800)),
                         if (role.isNotEmpty)
-                          Text(role,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style:
-                                  TextStyle(color: c.inkSoft, fontSize: 10.5)),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 1),
+                            child: Text(role,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: c.inkSoft, fontSize: 12)),
+                          ),
                       ],
                     ),
                   ),
-                  Icon(Icons.unfold_more, size: 18, color: c.inkSoft),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: c.goldSoft,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.swap_horiz_rounded,
+                            size: 17, color: c.gold),
+                        const SizedBox(width: 3),
+                        Icon(Icons.keyboard_arrow_down_rounded,
+                            size: 17, color: c.gold),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: c.paperDark,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: c.cardBorder),
+          const SizedBox(height: 10),
+          // ── سوئیچِ چت / ویدیو کال با نشانگرِ لغزنده ──
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: c.paperDark,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: c.cardBorder),
+            ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    alignment: callMode
+                        ? AlignmentDirectional.centerEnd
+                        : AlignmentDirectional.centerStart,
+                    child: FractionallySizedBox(
+                      widthFactor: 0.5,
+                      heightFactor: 1,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [c.gold, c.gold.withOpacity(0.78)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: c.gold.withOpacity(0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    seg(false, Icons.chat_bubble_rounded,
+                        _tr(context, 'چت', 'Chat')),
+                    seg(true, Icons.videocam_rounded,
+                        _tr(context, 'ویدیو کال', 'Call')),
+                  ],
+                ),
+              ],
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              seg(false, Icons.chat_bubble_outline, _tr(context, 'چت', 'Chat')),
-              seg(true, Icons.videocam_outlined,
-                  _tr(context, 'ویدیو کال', 'Call')),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

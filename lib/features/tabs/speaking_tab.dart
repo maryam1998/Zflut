@@ -1427,32 +1427,46 @@ Now respond to: "$sentence"
 
     final parts = <Widget>[
       // ── زبان تمرین + اکشن‌ها ──
-      Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
-        runSpacing: 4,
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (!_embedded)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(context.l10n.speaking_practice_language,
-                    style: TextStyle(color: c.inkSoft, fontSize: 12)),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: c.cardBorder),
+            Container(
+              padding: const EdgeInsetsDirectional.fromSTEB(14, 4, 8, 4),
+              decoration: BoxDecoration(
+                color: c.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: c.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.translate_rounded, size: 18, color: c.gold),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      context.l10n.speaking_practice_language
+                          .replaceAll(RegExp(r'[:：]\s*$'), '')
+                          .trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: c.inkSoft,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600),
+                    ),
                   ),
-                  child: DropdownButtonHideUnderline(
+                  DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: lang,
                       isDense: true,
-                      style: TextStyle(color: c.ink, fontSize: 13),
-                      dropdownColor: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      icon: Icon(Icons.keyboard_arrow_down_rounded,
+                          color: c.gold),
+                      style: TextStyle(
+                          color: c.ink,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800),
+                      dropdownColor: c.surface,
                       items: [
                         for (final code in options)
                           DropdownMenuItem(
@@ -1465,41 +1479,48 @@ Now respond to: "$sentence"
                       },
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          Wrap(
-            spacing: 14,
-            runSpacing: 2,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              if (hasReal && !_selectMode && !_loading)
-                HopeTextAction(
-                  icon: Icons.checklist_rounded,
-                  label: context.l10n.grammar_select_delete,
-                  color: c.rose,
-                  onTap: () => _enterSelect(),
-                ),
-              if (!_embedded && !_callMode)
-                HopeTextAction(
-                  icon: _autoReadOn
-                      ? Icons.check_box_rounded
-                      : Icons.check_box_outline_blank_rounded,
-                  label: Localizations.localeOf(context).languageCode == 'fa'
-                      ? 'خوانش خودکار'
-                      : 'Auto-read',
-                  color: _autoReadOn ? c.gold : c.inkSoft,
-                  onTap: () => _setAutoRead(!_autoReadOn),
-                ),
-              if (!_embedded && _messages.isNotEmpty)
-                HopeTextAction(
-                  icon: Icons.delete_outline,
-                  label: context.l10n.speaking_clear_chat,
-                  color: c.rose,
-                  onTap: _clearChat,
-                ),
-            ],
-          ),
+          if ((hasReal && !_selectMode && !_loading) ||
+              (!_embedded && !_callMode) ||
+              (!_embedded && _messages.isNotEmpty))
+            Padding(
+              padding: EdgeInsets.only(top: _embedded ? 0 : 10),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (hasReal && !_selectMode && !_loading)
+                    _ToolChip(
+                      icon: Icons.checklist_rounded,
+                      label: context.l10n.grammar_select_delete,
+                      color: c.rose,
+                      onTap: () => _enterSelect(),
+                    ),
+                  if (!_embedded && !_callMode)
+                    _ToolChip(
+                      icon: _autoReadOn
+                          ? Icons.volume_up_rounded
+                          : Icons.volume_off_rounded,
+                      label: Localizations.localeOf(context).languageCode ==
+                              'fa'
+                          ? 'خوانش خودکار'
+                          : 'Auto-read',
+                      color: _autoReadOn ? c.gold : c.inkSoft,
+                      active: _autoReadOn,
+                      onTap: () => _setAutoRead(!_autoReadOn),
+                    ),
+                  if (!_embedded && _messages.isNotEmpty)
+                    _ToolChip(
+                      icon: Icons.delete_outline_rounded,
+                      label: context.l10n.speaking_clear_chat,
+                      color: c.rose,
+                      onTap: _clearChat,
+                    ),
+                ],
+              ),
+            ),
         ],
       ),
 
@@ -1694,9 +1715,16 @@ Now respond to: "$sentence"
     return Container(
       constraints: const BoxConstraints(minHeight: 200),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: c.surface,
         border: Border.all(color: c.cardBorder),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: LayoutBuilder(
         builder: (context, bc) {
@@ -1719,21 +1747,32 @@ Now respond to: "$sentence"
               if (_loading)
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: c.gold,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: Color.alphaBlend(
+                          c.gold.withOpacity(0.10), c.surface),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: c.gold.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: c.gold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(context.l10n.speaking_checking,
-                          style: TextStyle(color: c.inkSoft, fontSize: 13)),
-                    ],
+                        const SizedBox(width: 8),
+                        Text(context.l10n.speaking_checking,
+                            style:
+                                TextStyle(color: c.inkSoft, fontSize: 13)),
+                      ],
+                    ),
                   ),
                 ),
               if (_error.isNotEmpty)
@@ -1926,17 +1965,53 @@ Now respond to: "$sentence"
               ? CrossAxisAlignment.stretch
               : (isUser ? CrossAxisAlignment.start : CrossAxisAlignment.end),
           children: [
+            if (!isUser && !editing && _persona.name.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(
+                    start: 6, end: 6, bottom: 3),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                          color: c.gold, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(_persona.name,
+                        style: TextStyle(
+                            color: c.gold,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800)),
+                  ],
+                ),
+              ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isUser ? c.paper : c.goldSoft,
-                borderRadius: BorderRadius.circular(12),
+                color: isUser
+                    ? Color.alphaBlend(c.teal.withOpacity(0.10), c.surface)
+                    : Color.alphaBlend(c.gold.withOpacity(0.10), c.surface),
+                borderRadius: BorderRadiusDirectional.only(
+                  topStart: Radius.circular(isUser ? 5 : 18),
+                  topEnd: Radius.circular(isUser ? 18 : 5),
+                  bottomStart: const Radius.circular(18),
+                  bottomEnd: const Radius.circular(18),
+                ),
                 border: Border.all(
                   color: _selectMode && _sel.contains(idx)
                       ? c.gold
-                      : c.cardBorder,
+                      : (isUser ? c.teal : c.gold).withOpacity(0.28),
                   width: _selectMode && _sel.contains(idx) ? 2 : 1,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: content,
             ),
@@ -2031,11 +2106,19 @@ Now respond to: "$sentence"
   Widget _inputBar(AppThemeColorsExt c) {
     final canSend = !_loading && _input.text.trim().isNotEmpty;
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.fromLTRB(16, 5, 5, 5),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: c.teal, width: 1.5),
-        borderRadius: BorderRadius.circular(12),
+        color: c.surface,
+        border: Border.all(
+            color: canSend ? c.teal : c.cardBorder, width: 1.5),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: c.teal.withOpacity(canSend ? 0.18 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         textDirection: TextDirection.ltr, // دکمه‌ی ارسال سمتِ راست
@@ -2047,37 +2130,100 @@ Now respond to: "$sentence"
               minLines: 1,
               maxLines: 5,
               onChanged: (_) => setState(() {}),
-              style: TextStyle(color: c.ink, fontSize: 13, height: 1.6),
+              style: TextStyle(color: c.ink, fontSize: 14, height: 1.6),
               decoration: InputDecoration(
                 hintText: context.l10n.speaking_input_placeholder,
                 hintStyle: TextStyle(
                   color: c.inkSoft.withOpacity(0.6),
-                  fontSize: 13,
+                  fontSize: 14,
                 ),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    const EdgeInsets.symmetric(vertical: 11, horizontal: 2),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          Opacity(
-            opacity: canSend ? 1 : 0.5,
+          AnimatedScale(
+            scale: canSend ? 1 : 0.92,
+            duration: const Duration(milliseconds: 150),
             child: Material(
-              color: c.teal,
-              borderRadius: BorderRadius.circular(10),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: canSend ? _send : null,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                  child: Icon(Icons.send_rounded, size: 17, color: Colors.white),
+              color: Colors.transparent,
+              child: Ink(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: canSend
+                        ? [c.teal, Color.lerp(c.teal, Colors.black, 0.25)!]
+                        : [c.cardBorder, c.cardBorder],
+                  ),
+                ),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: canSend ? _send : null,
+                  child: const SizedBox(
+                    width: 42,
+                    height: 42,
+                    child: Icon(Icons.send_rounded,
+                        size: 19, color: Colors.white),
+                  ),
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// چیپِ اکشنِ گردِ نوارِ بالای چت (انتخاب/حذف، خوانش خودکار، پاک‌کردن).
+class _ToolChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool active;
+  final VoidCallback? onTap;
+  const _ToolChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.active = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return Material(
+      color: active ? color.withOpacity(0.16) : c.surface,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+                color: color.withOpacity(active ? 0.6 : 0.35)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Text(label,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
       ),
     );
   }
