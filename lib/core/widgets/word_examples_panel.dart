@@ -104,6 +104,10 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
       final list = await ref
           .read(wordExamplesStoreProvider)
           .add(widget.word, widget.langCode, text);
+      // ⭐ ذخیره‌ی خودکار در علاقه‌مندی‌ها
+      await ref
+          .read(exampleFavoritesProvider.notifier)
+          .ensure(text, widget.langCode, widget.word);
       if (!mounted) return;
       setState(() => _examples = list);
       ref.read(speechControllerProvider.notifier).warmUp(text, widget.langCode);
@@ -137,6 +141,10 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
       final list = await ref
           .read(wordExamplesStoreProvider)
           .replace(widget.word, widget.langCode, id, text);
+      // ⭐ ذخیره‌ی خودکار در علاقه‌مندی‌ها
+      await ref
+          .read(exampleFavoritesProvider.notifier)
+          .ensure(text, widget.langCode, widget.word);
       if (!mounted) return;
       setState(() => _examples = list);
       ref.read(speechControllerProvider.notifier).warmUp(text, widget.langCode);

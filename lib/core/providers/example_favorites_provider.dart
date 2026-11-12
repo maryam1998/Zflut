@@ -99,6 +99,32 @@ class ExampleFavoritesNotifier extends StateNotifier<List<ExampleFav>> {
     await _save(next);
   }
 
+  /// مثالِ تازه‌ساخته‌شده با مثال‌ساز (AI) خودکار به ⭐ها اضافه می‌شود.
+  /// اگر از قبل ⭐ دارد، دست نمی‌زند (برعکسِ toggle هیچ‌وقت برش نمی‌دارد).
+  Future<void> ensure(
+    String text,
+    String lang,
+    String word, {
+    Map<String, String> translations = const {},
+  }) async {
+    final t = text.trim();
+    if (t.isEmpty) return;
+    if (state.any((f) => f.key == '$lang::$t')) return;
+    await _save([
+      ExampleFav(
+        text: t,
+        lang: lang,
+        word: word,
+        translations: {
+          for (final e in translations.entries)
+            if (e.value.trim().isNotEmpty && e.key != lang)
+              e.key: e.value.trim(),
+        },
+      ),
+      ...state,
+    ]);
+  }
+
   /// ترجمه‌ای که بعد از ⭐ آمد (یا در تبِ علاقه‌مندی‌ها ساخته شد) به همان مثال اضافه می‌شود.
   Future<void> setTranslation(
       String text, String lang, String target, String translation) async {
