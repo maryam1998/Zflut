@@ -474,9 +474,10 @@ final class SherpaModelManager {
                 if (v != null) return v;
             }
         } catch (Throwable ignored) {}
-        // فارسی: وقتی کاربر صدایی انتخاب نکرده، صدای پیش‌فرض «کامران» (مرد) است، نه سارا (Mana)
-        if ("fa".equals(l)) {
-            TtsVoice pv = findVoice(l, FA_PREFERRED_VOICE);
+        // وقتی کاربر صدایی انتخاب نکرده: صدای پیش‌فرضِ هر زبان (فارسی: «کامران»؛ بقیه: مدل سبکِ low — جدول PREFERRED_VOICE)
+        String prefId = PREFERRED_VOICE.get(l);
+        if (prefId != null) {
+            TtsVoice pv = findVoice(l, prefId);
             if (pv != null) return pv;
         }
         return list.get(0);
@@ -485,10 +486,30 @@ final class SherpaModelManager {
     /** صدای پیش‌فرضِ فارسی (وقتی انتخابی ثبت نشده). */
     static final String FA_PREFERRED_VOICE = "fa_IR-ganji-medium";
 
-    /** برچسبِ «پیش‌فرض» در فهرستِ صداها (فارسی: آرمان؛ بقیه: صدای اول). */
+    /**
+     * ⭐ صدای پیش‌فرضِ هر زبان (وقتی کاربر چیزی انتخاب نکرده). فقط همین‌جا را عوض کنید تا پیش‌فرض عوض شود.
+     * مدل‌های low سریع‌ترند. زبان‌هایی که مدل low ندارند (ru, tr, hi, ko, ja) اینجا نیستند و همان صدای اول (Supertonic) می‌مانند.
+     * اگر مدلِ پیش‌فرض دانلود نشده باشد ولی Kokoro/Supertonic از قبل آماده باشد، getReadyVoice به همان برمی‌گردد.
+     */
+    private static final Map<String, String> PREFERRED_VOICE;
+    static {
+        Map<String, String> pm = new LinkedHashMap<>();
+        pm.put("fa", FA_PREFERRED_VOICE);                 // فارسی بدون تغییر
+        pm.put("en", EN_LIGHT_VOICE);                     // en_US-lessac-low
+        pm.put("de", "de_DE-thorsten-low");
+        pm.put("fr", "fr_FR-siwis-low");
+        pm.put("es", "es_ES-carlfm-x_low");
+        pm.put("it", "it_IT-riccardo-x_low");
+        pm.put("ar", "ar_JO-kareem-low");
+        pm.put("zh", "zh_CN-huayan-x_low");
+        PREFERRED_VOICE = Collections.unmodifiableMap(pm);
+    }
+
+    /** برچسبِ «پیش‌فرض» در فهرستِ صداها (صدای PREFERRED_VOICE؛ اگر برای زبان تعریف نشده: صدای اول). */
     static boolean isShownDefault(String lang, TtsVoice v) {
         if (v == null) return false;
-        return "fa".equals(normalize(lang)) ? FA_PREFERRED_VOICE.equals(v.id) : v.isDefault;
+        String pid = PREFERRED_VOICE.get(normalize(lang));
+        return pid != null ? pid.equals(v.id) : v.isDefault;
     }
 
     static void setActiveVoice(Context ctx, String lang, String vid) {
@@ -499,9 +520,11 @@ final class SherpaModelManager {
             if (!root.isDirectory()) root.mkdirs();
             File f = new File(root, l + ".active");
             TtsVoice v = findVoice(l, vid);
-            // پیش‌فرض = بدون فایل. فارسی: پیش‌فرض آرمان است، پس انتخابِ صریحِ سارا باید در فایل بماند
-            if (v == null || (v.isDefault && !"fa".equals(l))) { f.delete(); return; }
-            if ("fa".equals(l) && FA_PREFERRED_VOICE.equals(v.id)) { f.delete(); return; }
+            // پیش‌فرض = بدون فایل. اگر برای زبان PREFERRED_VOICE تعریف شده، پیش‌فرض همان است
+            // و انتخابِ صریحِ صدای دیگر (مثلاً Kokoro یا سارا) باید در فایل بماند
+            if (v == null) { f.delete(); return; }
+            String prefId = PREFERRED_VOICE.get(l);
+            if (prefId != null ? prefId.equals(v.id) : v.isDefault) { f.delete(); return; }
             try (FileOutputStream out = new FileOutputStream(f, false)) {
                 out.write(v.id.getBytes("UTF-8"));
             }
@@ -1418,7 +1441,7 @@ final class SherpaModelManager {
             return;
         }
         deleteRecursive(ttsDirFor(ctx, l, v));
-        if (active != null && active.id.equals(v.id) && (!v.isDefault || "fa".equals(l))) setActiveVoice(ctx, l, null);
+        if (active != null && active.id.equals(v.id) && (!v.isDefault || PREFERRED_VOICE.containsKey(l))) setActiveVoice(ctx, l, null);
     }
 
     /**
