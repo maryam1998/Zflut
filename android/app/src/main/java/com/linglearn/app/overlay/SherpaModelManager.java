@@ -275,6 +275,22 @@ final class SherpaModelManager {
         TTS_VOICES = Collections.unmodifiableMap(vm);
     }
 
+    /**
+     * رده‌ی کیفیت/اندازه‌ی مدل برای نمایش در تنظیمات: low / medium / high.
+     * Piper: از پسوند نامِ مدل (x_low و low → low). Kokoro (~۴۲۰MB) → high. Supertonic int8 (~۱۴۶MB) → medium.
+     * (رده‌بندی بر اساس اندازه‌ی مدل است؛ مدلِ بزرگ‌تر معمولاً باکیفیت‌تر ولی کندتر است.)
+     */
+    static String tierOf(TtsVoice v) {
+        if (v == null || v.spec == null) return "medium";
+        if (ENG_KOKORO.equals(v.spec.engine)) return "high";
+        if (ENG_SUPERTONIC.equals(v.spec.engine)) return "medium";
+        String f = v.spec.modelFile == null ? "" : v.spec.modelFile.toLowerCase(java.util.Locale.ROOT);
+        if (f.endsWith(".onnx")) f = f.substring(0, f.length() - 5);
+        if (f.endsWith("x_low") || f.endsWith("-low")) return "low";
+        if (f.endsWith("-high")) return "high";
+        return "medium";
+    }
+
     private static String piperIdOf(TtsSpec s) {
         String f = s.modelFile;
         if (f == null) return s.pkg != null ? s.pkg.id : "";
