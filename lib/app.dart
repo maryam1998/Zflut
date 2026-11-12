@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'core/constants/app_font_sizes.dart';
 import 'core/constants/app_fonts.dart';
 import 'core/constants/app_themes.dart';
+import 'core/native/auto_models.dart';
 import 'core/providers/app_prefs_provider.dart';
 import 'core/providers/native_sync_provider.dart';
 import 'core/providers/preload.dart';
@@ -29,6 +30,8 @@ class LingoLearnApp extends ConsumerWidget {
     startDataPreload(ProviderScope.containerOf(context, listen: false));
     // 🔗 هماهنگی با بخش اندروید (لغات حباب، زیرنویس‌های ذخیره‌شده، وضعیت حباب)
     ref.watch(nativeSyncProvider);
+    // 📦 همه‌ی مدل‌های آفلاین (صدا، تشخیص گفتار، همگام‌سازی) بی‌صدا و خودکار دانلود می‌شوند
+    AutoModels.start(ProviderScope.containerOf(context, listen: false));
     // ☁️ همگام‌سازی داده‌ها و فهرست مدل‌های دانلودشده با حساب کاربر (فقط وقتی وارد شده)
     ref.watch(cloudSyncProvider);
     // ⏱ ثبتِ زمانِ گوش‌دادن (یوتیوب/صوت/پلیر) برای نمودارِ هفتگی — فقط ساخته می‌شود، rebuild نمی‌دهد

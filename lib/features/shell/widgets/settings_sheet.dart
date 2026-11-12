@@ -1309,29 +1309,14 @@ class _FloatingBubbleSectionState
     if (pack == null || pack['downloaded'] == true) return true;
     if (!mounted) return false;
     if (pack['downloading'] == true) {
-      _toast(context.l10n.st_pack_wait);
+      _toast(_packPreparingMsg(context));
       return false;
     }
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => _dirDialog(ctx, AlertDialog(
-        title: Text(context.l10n.st_speech_pack_title),
-        content: Text(
-            context.l10n.st_speech_pack_body('${_srcLangs[_src]}')),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(context.l10n.st_no)),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(context.l10n.settings_download)),
-        ],
-      )),
-    );
-    if (yes == true) {
-      await LinLearnBridge.packDownload(packKind, _src);
-      _toast(afterDownload);
-      if (mounted) setState(() => _packEpoch++);
+    // ⬇️ بدونِ دیالوگ: بی‌صدا شروع می‌شود و فقط پیامِ «در حال آماده‌سازی» نشان داده می‌شود
+    await LinLearnBridge.packDownload(packKind, _src);
+    if (mounted) {
+      _toast(_packPreparingMsg(context));
+      setState(() => _packEpoch++);
     }
     return false;
   }
@@ -1346,31 +1331,15 @@ class _FloatingBubbleSectionState
       if (st['downloaded'] == true) return true;
       if (id == 'base') baseSt = st;
       if (st['downloading'] == true) {
-        if (mounted) _toast(context.l10n.st_pack_wait);
+        if (mounted) _toast(_packPreparingMsg(context));
         return false;
       }
     }
     if (baseSt == null || !mounted) return false;
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => _dirDialog(ctx, AlertDialog(
-        title: Text(context.l10n.st_speech_pack_title),
-        content: Text(context.l10n.st_speech_pack_body(langName ??
-            context.l10n.settings_lang_auto.replaceFirst('🌐 ', ''))),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(context.l10n.st_no)),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(context.l10n.settings_download)),
-        ],
-      )),
-    );
-    if (yes == true) {
-      await LinLearnBridge.packDownload('song', 'base');
-      _toast(afterDownload);
-      if (mounted) setState(() => _packEpoch++);
+    await LinLearnBridge.packDownload('song', 'base');
+    if (mounted) {
+      _toast(_packPreparingMsg(context));
+      setState(() => _packEpoch++);
     }
     return false;
   }
@@ -2143,6 +2112,12 @@ class _SpeechEngineSectionState extends ConsumerState<_SpeechEngineSection> {
 // پیش‌فرض: صدای خودِ گوشی. بسته‌های باکیفیت فقط با دکمه‌ی خودِ کاربر دانلود
 // می‌شوند (هیچ دانلود خودکاری وجود ندارد).
 // ═══════════════════════════════════════════════════════════════════
+/// پیامِ دوستانه وقتی مدلِ تشخیص گفتار هنوز در حال آماده‌سازیِ خودکار است (بدونِ اشاره به «دانلود»).
+String _packPreparingMsg(BuildContext context) =>
+    Localizations.localeOf(context).languageCode == 'fa'
+        ? 'دستیار تشخیص گفتار در حال آماده‌سازیِ نهایی است ✨ چند دقیقه‌ی دیگه دوباره امتحان کن.'
+        : 'Speech recognition is getting ready ✨ Please try again in a few minutes.';
+
 bool get _isAndroidApp =>
     !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 

@@ -21,9 +21,9 @@ final speechControllerProvider =
     // همان استفاده می‌شود؛ فقط اگر کاربر خودش «صدای گوشی» را انتخاب کرده باشد صدای گوشی.
     preferPhoneVoice: () =>
         ref.read(sharedPrefsProvider).getString('voiceEnginePref') == 'phone',
-    // دانلودِ خودکارِ مدل فقط وقتی کاربر صریحاً «صدای اپ» را انتخاب کرده (حالتِ خودکار حجمی دانلود نمی‌کند)
+    // مدل‌ها بی‌صدا و خودکار دانلود می‌شوند (مگر کاربر صریحاً «صدای گوشی» را خواسته باشد)
     autoDownloadModels: () =>
-        ref.read(sharedPrefsProvider).getString('voiceEnginePref') == 'model',
+        ref.read(sharedPrefsProvider).getString('voiceEnginePref') != 'phone',
     // 🧬 هر بار که یک لغت/جمله با پلیر کامل خوانده شد → یک تکرار در «مسیر عصبی»
     onChunkPlayed: (e) => _recordNeuralFromPlayback(ref, e),
   );

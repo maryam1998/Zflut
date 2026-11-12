@@ -118,6 +118,13 @@ const Map<String, Map<String, String>> _tx = {
   },
 };
 
+
+/// پیامِ دوستانه وقتی مدلِ تشخیص گفتار هنوز در حال آماده‌سازیِ خودکار است (بدونِ اشاره به «دانلود»).
+String _packPreparingMsg(BuildContext context) =>
+    Localizations.localeOf(context).languageCode == 'fa'
+        ? 'دستیار تشخیص گفتار در حال آماده‌سازیِ نهایی است ✨ چند دقیقه‌ی دیگه دوباره امتحان کن.'
+        : 'Speech recognition is getting ready ✨ Please try again in a few minutes.';
+
 class FeatureDock extends ConsumerStatefulWidget {
   const FeatureDock({super.key});
 
@@ -371,13 +378,11 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
     if (pack == null || pack['downloaded'] == true) return true;
     if (!mounted) return false;
     if (pack['downloading'] == true) {
-      _toast(context.l10n.st_pack_wait);
+      _toast(_packPreparingMsg(context));
       return false;
     }
-    if (await _askPack(_srcNames[src]!)) {
-      await LinLearnBridge.packDownload(packKind, src);
-      _toast(context.l10n.st_live_download_started);
-    }
+    await LinLearnBridge.packDownload(packKind, src);
+    if (mounted) _toast(_packPreparingMsg(context));
     return false;
   }
 
@@ -390,41 +395,14 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
       if (st['downloaded'] == true) return true;
       if (id == 'base') baseSt = st;
       if (st['downloading'] == true) {
-        if (mounted) _toast(context.l10n.st_pack_wait);
+        if (mounted) _toast(_packPreparingMsg(context));
         return false;
       }
     }
     if (baseSt == null || !mounted) return false;
-    final name =
-        langName ?? context.l10n.settings_lang_auto.replaceFirst('🌐 ', '');
-    if (await _askPack(name)) {
-      await LinLearnBridge.packDownload('song', 'base');
-      _toast(context.l10n.st_live_download_started);
-    }
+    await LinLearnBridge.packDownload('song', 'base');
+    if (mounted) _toast(_packPreparingMsg(context));
     return false;
-  }
-
-  Future<bool> _askPack(String langName) async {
-    if (!mounted) return false;
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: _rtl ? TextDirection.rtl : TextDirection.ltr,
-        child: AlertDialog(
-          title: Text(context.l10n.st_speech_pack_title),
-          content: Text(context.l10n.st_speech_pack_body(langName)),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(context.l10n.st_no)),
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: Text(context.l10n.settings_download)),
-          ],
-        ),
-      ),
-    );
-    return yes == true;
   }
 
   /// زبان‌ها + رنگ/حالتِ نمایشِ ذخیره‌شده‌ی کاربر را به حباب می‌رساند.

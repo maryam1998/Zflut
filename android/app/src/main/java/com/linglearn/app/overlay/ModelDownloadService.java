@@ -29,7 +29,7 @@ import java.util.List;
 public class ModelDownloadService extends Service {
 
     static final String ACTION_STOP = "com.linglearn.app.STOP_MODEL_DOWNLOAD";
-    private static final String CHANNEL_ID = "model_download";
+    private static final String CHANNEL_ID = "model_download_quiet";
     private static final int NOTIF_ID = 4711;
     private static final int DONE_NOTIF_ID = 4712;
 
@@ -102,28 +102,19 @@ public class ModelDownloadService extends Service {
         }
         try { stopForeground(true); } catch (Throwable ignored) {}
         if (!all) { stopSelf(); return; }
-        try {
-            NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
-                    .setSmallIcon(android.R.drawable.stat_sys_download_done)
-                    .setContentTitle("LingoLearn")
-                    .setContentText("دانلود صداها تمام شد")
-                    .setAutoCancel(true)
-                    .setContentIntent(openAppIntent());
-            NotificationManagerCompat.from(this).notify(DONE_NOTIF_ID, b.build());
-        } catch (Throwable ignored) {}
+        // پایان بی‌صدا: نوتیفیکیشنِ «دانلود تمام شد» نشان داده نمی‌شود
         stopSelf();
     }
 
     private Notification buildNotification(int count, long mb) {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.stat_sys_download)
-                .setContentTitle("در حال دانلود صداهای آفلاین")
-                .setContentText(count + " صدا · " + mb + " MB")
+                .setSmallIcon(android.R.drawable.ic_popup_sync)
+                .setContentTitle("LingoLearn")
+                .setContentText("در حال آماده‌سازی دستیار صوتی…")
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
-                .setProgress(0, 0, true)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
                 .setContentIntent(openAppIntent())
-                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "توقف", stopIntent())
                 .build();
     }
 
@@ -147,7 +138,7 @@ public class ModelDownloadService extends Service {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (nm != null && nm.getNotificationChannel(CHANNEL_ID) == null) {
                 nm.createNotificationChannel(new NotificationChannel(
-                        CHANNEL_ID, "دانلود صداها", NotificationManager.IMPORTANCE_LOW));
+                        CHANNEL_ID, "آماده‌سازی", NotificationManager.IMPORTANCE_MIN));
             }
         }
     }

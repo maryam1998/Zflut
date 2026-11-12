@@ -2214,6 +2214,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           _needModel = true;
           _phase = _Phase.ready;
         });
+        // ⬇️ بی‌صدا شروع می‌شود؛ کاربر فقط پیامِ «در حال آماده‌سازی» را می‌بیند
+        unawaited(_downloadModel());
       }
       return;
     } catch (_) {
@@ -2363,8 +2365,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           setState(() {
             _dlRunning = false;
             _needModel = false;
-            _info = _tr(context, 'آماده شد! حالا میکروفون رو بزن.',
-                'Ready! Tap the mic now.');
+            _info = _tr(context, 'دستیار صوتی آماده شد! حالا میکروفون رو بزن.',
+                'Your voice assistant is ready! Tap the mic now.');
           });
         }
       } else if (e.name == 'whisperDownloadError') {
@@ -2372,8 +2374,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         if (mounted) {
           setState(() {
             _dlRunning = false;
-            _error = _tr(context, 'دانلود ناموفق بود. اینترنت رو چک کن.',
-                'Download failed. Check your connection.');
+            _error = _tr(context, 'آماده‌سازی دستیار کامل نشد؛ چند دقیقه‌ی دیگه خودکار دوباره تلاش می‌شه.',
+                'The assistant is not ready yet; it will retry automatically in a few minutes.');
           });
         }
       }
@@ -2392,7 +2394,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       if (mounted) {
         setState(() {
           _dlRunning = false;
-          _error = _tr(context, 'دانلود شروع نشد.', 'Could not start the download.');
+          _error = _tr(context, 'دستیار هنوز آماده نیست؛ کمی بعد دوباره امتحان کن.', 'The assistant is not ready yet; please try again shortly.');
         });
       }
     }
@@ -2968,7 +2970,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
             ),
           ),
 
-        // ── بسته‌ی تشخیصِ گفتار ──
+        // ── دستیار صوتی هنوز آماده نیست: بدونِ هیچ اشاره‌ای به «دانلود» ──
         if (_needModel)
           Container(
             margin: const EdgeInsets.only(top: 8),
@@ -2978,34 +2980,20 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               border: Border.all(color: c.gold),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Row(
               children: [
-                Text(
-                  _tr(
-                    context,
-                    'برای این‌که صدات رو بفهمم، یک بسته‌ی صوتی باید روی گوشی باشه${_approxMb > 0 ? ' (حدود $_approxMb مگابایت)' : ''}. فقط یک بار دانلود می‌شه و بعدش بدونِ اینترنت کار می‌کنه.',
-                    'To understand your voice I need a voice pack on your device${_approxMb > 0 ? ' (about $_approxMb MB)' : ''}. It downloads once and then works offline.',
-                  ),
-                  style: TextStyle(color: c.ink, fontSize: 12.5, height: 1.5),
-                ),
-                const SizedBox(height: 8),
-                if (_dlRunning)
-                  LinearProgressIndicator(
-                    value: _dlFrac > 0 ? _dlFrac : null,
-                    color: c.teal,
-                    backgroundColor: Colors.white,
-                  )
-                else
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: c.teal,
-                      foregroundColor: Colors.white,
+                const Text('✨', style: TextStyle(fontSize: 18)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _tr(
+                      context,
+                      'دستیار صوتی در حال آماده‌سازیِ نهایی است و تا چند دقیقه‌ی دیگه فعال می‌شه. تا اون موقع می‌تونی با دکمه‌ی کیبورد تایپ کنی و گفتگو رو ادامه بدی.',
+                      'Your voice assistant is getting its final touches and will be ready in a few minutes. Meanwhile you can keep chatting by typing with the keyboard button.',
                     ),
-                    onPressed: _downloadModel,
-                    icon: const Icon(Icons.download, size: 18),
-                    label: Text(_tr(context, 'دانلودِ بسته', 'Download pack')),
+                    style: TextStyle(color: c.ink, fontSize: 12.5, height: 1.5),
                   ),
+                ),
               ],
             ),
           ),
