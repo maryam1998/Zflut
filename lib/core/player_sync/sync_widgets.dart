@@ -703,7 +703,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         unawaited(() async {
           final t = await _translationText(id, track.code, l,
               timeout: const Duration(seconds: 20));
-          if (t == null || !mounted || k > i + 1) return;
+          if (t == null || !mounted || k > i + 3) return;
           final clean = SentenceSplitter.sanitize(t);
           if (clean.isNotEmpty) {
             unawaited(NativeTtsBridge.prefetch(
@@ -788,7 +788,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
           sp.status == SpeechStatus.playing) {
         return true;
       }
-      await Future.delayed(const Duration(milliseconds: 400));
+      await Future.delayed(const Duration(milliseconds: 50));
     }
   }
 

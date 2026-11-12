@@ -19,6 +19,9 @@ import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig;
 import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -158,6 +161,9 @@ final class TtsEngine {
     private final AtomicInteger epoch = new AtomicInteger(0);
     // با هر speak ی غیرِ هم‌کلید بالا می‌ره؛ prefetch های در صف/در حالِ اجرا کنسل می‌شن
     private final AtomicInteger pfAbort = new AtomicInteger(0);
+    // ⚡ فقط prefetchِ «در حالِ ساخت» را کنسل می‌کند (وقتی خوانشِ واقعی که از قبل آماده نیست می‌رسد)؛
+    // prefetchهای «در صف» دست‌نخورده می‌مانند و دور ریخته نمی‌شوند (قبلاً همه با pfAbort لغو می‌شدند).
+    private final AtomicInteger pfRunAbort = new AtomicInteger(0);
 
     private final LinkedHashMap<String, float[]> cache =
             new LinkedHashMap<String, float[]>(16, 0.75f, true) {
@@ -576,6 +582,7 @@ final class TtsEngine {
             TtsEngine created = new TtsEngine(engine, sr, lang, voice.sid,
                     SherpaModelManager.ENG_SUPERTONIC.equals(eng) ? lang : null);
             created.bindVoice(eng, voice.spec.pkg == null ? null : voice.spec.pkg.id);
+            created.bindDisk(ctx, dir.getAbsolutePath());
             created.charFrontend = voice.spec.charFrontend;
             created.threadsUsed = threads;
             dbg("TTS loaded: " + lang + " " + eng + " thr=" + threads + " load=" + (SystemClock.uptimeMillis() - t0) + "ms");
@@ -637,14 +644,143 @@ final class TtsEngine {
     private String keyOf(String t, float sp, int rs, String rl) { return (stretchOk ? 1.0f : sp) + "|" + rs + "|" + rl + "|" + t; }
 
     private float[] cacheGet(String key) {
-        synchronized (cache) { return cache.get(key); }
+        float[] v;
+        synchronized (cache) { v = cache.get(key); }
+        if (v != null) return v;
+        v = diskRead(key);           // 💾 کشِ دیسک: صدای ساخته‌شده در دفعه‌های قبل
+        if (v != null) { synchronized (cache) { cache.put(key, v); } }
+        return v;
     }
     private boolean cacheHas(String key) {
-        synchronized (cache) { return cache.containsKey(key); }
+        synchronized (cache) { if (cache.containsKey(key)) return true; }
+        return diskHas(key);
     }
     private void cachePut(String key, float[] v) {
         if (v == null || v.length == 0) return;
         synchronized (cache) { cache.put(key, v); }
+        diskWriteAsync(key, v);
+    }
+
+    // ================= 💾 کشِ صدا روی دیسک =================
+    // صدای هر جمله (متن + زبان + گوینده + مدل) یک بار ساخته و روی دیسک ذخیره می‌شود؛ دفعه‌ی بعد (حتی بعد از
+    // بستنِ برنامه) بدونِ هیچ محاسبه‌ای و فوری پخش می‌شود. حجمِ کل محدود است و قدیمی‌ترین‌ها پاک می‌شوند.
+    // اگر پارامترهای ساختِ صدا (گام‌ها/نویز/EQ) عوض شد، DISK_VER را عوض کن تا کشِ قبلی کنار برود.
+    private static final String DISK_VER = "v1";
+    private static final long DISK_MAX = 500L * 1024 * 1024;
+    private static final AtomicInteger diskWrites = new AtomicInteger(0);
+    private static final ExecutorService diskPool = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "tts-disk");
+        t.setDaemon(true);
+        t.setPriority(Thread.MIN_PRIORITY);
+        return t;
+    });
+    private volatile File diskDir = null;
+    private volatile String diskId = "";
+
+    /** هویتِ مدل/گوینده برای کلیدِ کشِ دیسک (بعد از bindVoice صدا زده می‌شود). */
+    void bindDisk(Context ctx, String voiceDir) {
+        try {
+            File d = new File(ctx.getCacheDir(), "tts_audio");
+            if (!d.exists()) d.mkdirs();
+            if (d.isDirectory()) diskDir = d;
+            diskId = DISK_VER + "|" + voiceDir + "|" + engineKind + "|" + pkgId + "|" + sampleRate;
+        } catch (Throwable ignored) {
+            diskDir = null;
+        }
+    }
+
+    private File diskFile(String key) {
+        final File d = diskDir;
+        if (d == null) return null;
+        try {
+            byte[] h = MessageDigest.getInstance("SHA-1").digest((diskId + "\n" + key).getBytes("UTF-8"));
+            StringBuilder sb = new StringBuilder(44);
+            for (byte b : h) sb.append(String.format("%02x", b));
+            return new File(d, sb.append(".pcm").toString());
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private boolean diskHas(String key) {
+        try {
+            File f = diskFile(key);
+            return f != null && f.isFile() && f.length() > 8;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private float[] diskRead(String key) {
+        try {
+            File f = diskFile(key);
+            if (f == null || !f.isFile() || f.length() <= 8) return null;
+            byte[] b = new byte[(int) f.length()];
+            try (java.io.FileInputStream in = new java.io.FileInputStream(f)) {
+                int off = 0;
+                while (off < b.length) {
+                    int n = in.read(b, off, b.length - off);
+                    if (n < 0) break;
+                    off += n;
+                }
+                if (off < b.length) return null;
+            }
+            ByteBuffer bb = ByteBuffer.wrap(b).order(ByteOrder.LITTLE_ENDIAN);
+            int sr = bb.getInt(0);
+            int n = bb.getInt(4);
+            if (sr != sampleRate || n <= 0 || 8L + 2L * n != b.length) return null;   // ناقص/خراب
+            float[] out = new float[n];
+            for (int i = 0; i < n; i++) out[i] = bb.getShort(8 + 2 * i) / 32767f;
+            try { f.setLastModified(System.currentTimeMillis()); } catch (Throwable ignored) {}
+            return out;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private void diskWriteAsync(String key, final float[] v) {
+        final File f = diskFile(key);
+        final File d = diskDir;
+        if (f == null || d == null) return;
+        try {
+            diskPool.execute(() -> {
+                try {
+                    final int n = v.length;
+                    if (f.isFile() && f.length() == 8L + 2L * n) return;   // سالم و موجود
+                    ByteBuffer bb = ByteBuffer.allocate(8 + 2 * n).order(ByteOrder.LITTLE_ENDIAN);
+                    bb.putInt(sampleRate);
+                    bb.putInt(n);
+                    for (int i = 0; i < n; i++) {
+                        float s = v[i];
+                        if (s > 1f) s = 1f; else if (s < -1f) s = -1f;
+                        bb.putShort((short) (s * 32767));
+                    }
+                    File tmp = new File(d, f.getName() + ".tmp");
+                    try (java.io.FileOutputStream out = new java.io.FileOutputStream(tmp)) {
+                        out.write(bb.array());
+                    }
+                    if (!tmp.renameTo(f)) { f.delete(); if (!tmp.renameTo(f)) tmp.delete(); }
+                    if (diskWrites.getAndIncrement() % 40 == 0) pruneDisk(d);
+                } catch (Throwable ignored) {}
+            });
+        } catch (Throwable ignored) {}
+    }
+
+    private static void pruneDisk(File d) {
+        try {
+            File[] fs = d.listFiles();
+            if (fs == null) return;
+            long total = 0;
+            for (File x : fs) total += x.length();
+            if (total <= DISK_MAX) return;
+            java.util.Arrays.sort(fs, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+            final long target = DISK_MAX * 8 / 10;
+            for (File x : fs) {
+                if (total <= target) break;
+                long len = x.length();
+                if (x.delete()) total -= len;
+            }
+        } catch (Throwable ignored) {}
     }
 
     private static short[] toPcm16(float[] samples) {
@@ -1053,6 +1189,7 @@ final class TtsEngine {
         final int g = pfAbort.get();
         try {
             final Runnable[] self = new Runnable[1];
+            final int[] tries = {0};
             self[0] = () -> {
                 if (released || pfAbort.get() != g || cacheHas(key)) return;
                 // ⚡ خوانشِ واقعی در راه است: کوتاه صبر کن تا کارش وارد صف شود، بعد خودت را «پشتِ» او بگذار
@@ -1070,15 +1207,22 @@ final class TtsEngine {
                 curSid = reqSid; curLang = reqLang;
                 inflightPrefetchKey = key;
                 final boolean pl = plain; // یک‌بار بخون تا بینِ crumb و synth عوض نشه
+                final int rg = pfRunAbort.get();
+                boolean requeue = false;
                 try {
                     TtsCrumb.mark((pl ? "prefetchp:" : "prefetch:") + lang + ":" + t.length() + ":" + TtsCrumb.brief(t));
-                    float[] audio = synth(t, sp, pl, s -> !released && pfAbort.get() == g);
+                    float[] audio = synth(t, sp, pl, s -> !released && pfAbort.get() == g && pfRunAbort.get() == rg);
                     TtsCrumb.mark("idle");
                     if (audio != null) cachePut(key, audio);
+                    // خوانشِ واقعی وسطِ ساخت آمد و این prefetch را قطع کرد → دوباره ته‌ِ صف (کارش دور ریخته نشود)
+                    else if (!released && pfAbort.get() == g && pfRunAbort.get() != rg && tries[0]++ < 3) requeue = true;
                 } catch (Throwable e) {
                     Log.w(TAG, "prefetch failed", e);
                 } finally {
                     inflightPrefetchKey = null;
+                }
+                if (requeue) {
+                    try { gen(self[0], PRIO_PREFETCH); } catch (Throwable ignored) {}
                 }
             };
             gen(self[0], PRIO_PREFETCH);
@@ -1113,7 +1257,7 @@ final class TtsEngine {
 
         // اگه prefetchِ در حالِ اجرا مالِ همین متن نیست (و خودِ این متن هم از قبل ساخته نشده)، کنسلش کن
         // تا این پخش معطل نشه. اگه کش شده باشه لازم نیست prefetchِ جمله‌های بعدی هدر بره.
-        if (!key.equals(inflightPrefetchKey) && !cacheHas(key)) pfAbort.incrementAndGet();
+        if (!key.equals(inflightPrefetchKey) && !cacheHas(key)) pfRunAbort.incrementAndGet();
         haltPlayback();
         final int myEpoch = epoch.get();
 

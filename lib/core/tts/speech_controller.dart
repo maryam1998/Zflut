@@ -729,7 +729,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       final ready = phoneOnly
           ? false
           : await NativeTtsBridge.isModelReady(code)
-              .timeout(const Duration(milliseconds: 800), onTimeout: () => false);
+              .timeout(const Duration(milliseconds: 2000), onTimeout: () => false);
       if (myGen != _generation) return;
       // 📥 صدای اپ برای این زبان نصب نیست → خودکار دانلود شود (تا آماده شدن با صدای گوشی)
       if (!ready && !phoneOnly && (_autoDownloadModels?.call() ?? true)) {
