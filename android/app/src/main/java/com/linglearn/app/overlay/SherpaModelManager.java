@@ -284,6 +284,29 @@ final class SherpaModelManager {
                         "tokens.txt", "espeak-ng-data"), false));
             }
         }
+        // 🪶 صداهای سبک و سریعِ Piper (low / x_low، ~۵ تا ۶۰ مگ) برای بقیه‌ی زبان‌ها — کنارِ مدلِ پیش‌فرض (Kokoro/Supertonic)
+        // تا خوانش بدون تأخیر باشد. پیش‌فرض عوض نمی‌شود (isDefault=false). فارسی اضافه‌ای لازم ندارد.
+        String[][] lightExtra = {
+                {"en", "en_US-amy-low"}, {"en", "en_US-danny-low"}, {"en", "en_US-kathleen-low"},
+                {"en", "en_GB-alan-low"}, {"en", "en_GB-southern_english_female-low"},
+                {"de", "de_DE-thorsten-low"}, {"de", "de_DE-karlsson-low"}, {"de", "de_DE-kerstin-low"},
+                {"de", "de_DE-ramona-low"}, {"de", "de_DE-pavoque-low"},
+                {"fr", "fr_FR-siwis-low"}, {"fr", "fr_FR-gilles-low"},
+                {"es", "es_ES-carlfm-x_low"},
+                {"it", "it_IT-riccardo-x_low"},
+                {"ar", "ar_JO-kareem-low"},
+                {"zh", "zh_CN-huayan-x_low"},
+        };
+        for (String[] x : lightExtra) {
+            List<TtsVoice> lst = vm.get(x[0]);
+            if (lst == null) continue;
+            final String pid = x[1];
+            boolean dup = false;
+            for (TtsVoice v : lst) if (v.id.equals(pid)) { dup = true; break; }
+            if (dup) continue;
+            lst.add(new TtsVoice(pid, voiceLabel(pid), new TtsSpec(
+                    "csukuangfj/vits-piper-" + pid, pid + ".onnx", "tokens.txt", "espeak-ng-data"), false));
+        }
         for (Map.Entry<String, List<TtsVoice>> e : vm.entrySet()) {
             e.setValue(Collections.unmodifiableList(e.getValue()));
         }
