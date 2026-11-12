@@ -17,7 +17,7 @@
 //   LIMIT_AI / LIMIT_TTS / LIMIT_MISC = سقفِ روزانه‌ی هر کاربر (پیش‌فرض ۶۰۰ / ۴۰۰۰ / ۳۰۰۰)
 // ---------------------------------------------------------------------------
 
-import { featureGate, isPro } from "./usage.js";
+import { featureGate, isPro, isVipEmail } from "./usage.js";
 
 const enc = new TextEncoder();
 const SESSION_TTL_SEC = 14 * 24 * 3600;
@@ -173,7 +173,8 @@ export async function authGate(request, env, url, cors) {
     return jsonResp({ error: "login required" }, 401, cors);
   }
   const bucket = bucketOf(url.pathname);
-  if (!(await underLimit(env, p.sub, bucket))) {
+  // 👑 VIP (VIP_EMAILS) = بدونِ هیچ سقفی، سقفِ روزانه هم ندارد
+  if (!isVipEmail(env, p.em) && !(await underLimit(env, p.sub, bucket))) {
     if (!enforce) { console.log("auth(log): over limit", bucket); return null; }
     return jsonResp({ error: "daily limit reached, try again tomorrow" }, 429, cors);
   }

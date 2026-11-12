@@ -70,7 +70,7 @@ export function normEmail(e) {
   return s;
 }
 
-function isVipEmail(env, email) {
+export function isVipEmail(env, email) {
   if (!email) return false;
   const want = normEmail(email);
   return String(env.VIP_EMAILS || "")
