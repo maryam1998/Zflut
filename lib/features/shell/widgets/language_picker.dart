@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart' show DelayedMultiDragGestureRecognizer, MultiDragGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -225,7 +226,7 @@ class _CircleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ReorderableDelayedDragStartListener(
+    return _QuickDragStartListener(
       index: index,
       child: GestureDetector(
         onTap: onTap,
@@ -328,7 +329,7 @@ class _OrderChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    return ReorderableDelayedDragStartListener(
+    return _QuickDragStartListener(
       index: index,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
@@ -371,6 +372,25 @@ class _OrderChip extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+/// شروعِ جابجایی با نگه‌داشتنِ کوتاه (۱۵۰ms) به‌جای لمسِ طولانیِ پیش‌فرض (۵۰۰ms)،
+/// تا کاربر با یک «نگه‌دار و بکش» ساده دایره را جابه‌جا کند.
+/// اسکرولِ معمولیِ ردیف (کشیدنِ سریع) همچنان کار می‌کند.
+class _QuickDragStartListener extends ReorderableDragStartListener {
+  const _QuickDragStartListener({
+    required super.child,
+    required super.index,
+  });
+
+  @override
+  MultiDragGestureRecognizer createRecognizer() {
+    return DelayedMultiDragGestureRecognizer(
+      delay: const Duration(milliseconds: 150),
+      debugOwner: this,
     );
   }
 }
