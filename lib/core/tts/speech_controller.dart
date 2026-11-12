@@ -101,6 +101,10 @@ class SpeechController extends StateNotifier<SpeechState> {
   // منتظرهای «پایان خوانش» — هر کدوم مخصوص یک خوانش‌اند و با stop/pause
   // کنسل می‌شن تا هیچ زنجیره‌ی قدیمی‌ای بعداً ناخواسته چیزی پخش نکنه.
   Completer<bool>? _nativeWaiter;
+
+  /// بعد از شکستِ جزئیِ Piper: بخشی از جمله قبلاً با صدای اپ خوانده شده و فقط این باقیمانده مانده.
+  /// موتورِ بعدی (TTS گوشی) فقط همین را می‌خواند تا جمله دوباره از اول خوانده نشود.
+  String? _nativeRest;
   Completer<bool>? _webWaiter;
   Completer<bool>? _onlineWaiter;
   int _utteranceSeq = 0;
@@ -746,7 +750,14 @@ class SpeechController extends StateNotifier<SpeechState> {
       }
 
       // ۲. TTS خود گوشی
-      final okSys = await _playSystemTts(idx, cleanText, code, myGen);
+      // اگر Piper بخشی از جمله را خوانده بود، فقط باقیمانده را بخوان (نه کلِ جمله را از اول)
+      final rest = _nativeRest;
+      _nativeRest = null;
+      final sysText = (rest != null &&
+              RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(rest))
+          ? rest
+          : cleanText;
+      final okSys = await _playSystemTts(idx, sysText, code, myGen);
       if (myGen != _generation) return;
       if (okSys) return;
     }
@@ -784,6 +795,7 @@ class SpeechController extends StateNotifier<SpeechState> {
         waiter.complete(ok);
       });
 
+      _nativeRest = null;
       final started = await speakFn(id);
       if (myGen != _generation) return false;
       if (!started) return false;
@@ -813,7 +825,10 @@ class SpeechController extends StateNotifier<SpeechState> {
         await NativeTtsBridge.stop();
         return false;
       }
-      if (!finished) return false;
+      if (!finished) {
+        _nativeRest = NativeTtsBridge.takeRest(id);
+        return false;
+      }
 
       // موتورِ گوشی گاهی (مثلاً وقتی زبان/خطِ جمله را نمی‌شناسد) «تمام شد» را تقریباً
       // فوری می‌فرستد بی‌آنکه صدایی پخش شود؛ قبلاً همین جمله بی‌صدا رد می‌شد.

@@ -102,7 +102,11 @@ final class PanelTts {
                 TtsClient.speakWith(piperLang, text, speed, id, (l, t, i, ok) -> {
                     if (my != SEQ.get()) return;                 // پخشِ تازه‌تری شروع شده
                     if (ok) done(end, true);
-                    else systemSpeak(ctx, text, lang, speed, my, end);   // Piper شکست خورد → TTS گوشی
+                    else {
+                        // Piper شکست خورد → TTS گوشی؛ اگر بخشی از جمله قبلاً با Piper خوانده شده، فقط باقیمانده
+                        String rest = TtsClient.peekRest(i);
+                        systemSpeak(ctx, (rest != null && !rest.trim().isEmpty()) ? rest : text, lang, speed, my, end);
+                    }
                 });
                 return;
             } catch (Throwable t) { /* می‌افتیم روی TTS گوشی */ }

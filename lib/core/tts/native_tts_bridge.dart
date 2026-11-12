@@ -25,11 +25,22 @@ class NativeTtsBridge {
   static void Function(String? id, bool ok)? _doneHandler;
   static StreamSubscription<Map<String, dynamic>>? _sub;
 
+  static final Map<String, String> _restById = <String, String>{};
+
+  /// باقیمانده‌ی نخوانده‌ی خوانشِ [id] (بعد از شکستِ جزئیِ Piper) — یک‌بار مصرف؛ وگرنه null.
+  static String? takeRest(String id) => _restById.remove(id);
+
   static void _ensureListening() {
     _sub ??= _b.on('ttsSpeakDone').listen((d) {
       final h = _doneHandler;
       if (h == null) return;
       final rawId = d['id']?.toString();
+      // اگر بخشی از جمله با مدلِ اپ خوانده شده و بقیه شکست خورده، نیتیو فقط «باقیمانده» را می‌فرستد
+      final rest = d['rest']?.toString();
+      if (rawId != null && rawId.isNotEmpty && rest != null && rest.isNotEmpty) {
+        if (_restById.length > 50) _restById.clear();
+        _restById[rawId] = rest;
+      }
       h((rawId == null || rawId.isEmpty) ? null : rawId, d['ok'] != false);
     }, onError: (Object e) => debugPrint('ttsSpeakDone stream error: $e'));
   }

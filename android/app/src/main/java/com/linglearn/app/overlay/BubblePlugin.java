@@ -43,6 +43,10 @@ public class BubblePlugin extends Plugin {
         ret.put("text", text);
         if (id != null) ret.put("id", id);
         ret.put("ok", ok);
+        if (!ok && id != null) {
+            String rest = TtsClient.peekRest(id);
+            if (rest != null) ret.put("rest", rest);   // فقط باقیمانده‌ی نخوانده؛ اپ کلِ جمله را تکرار نکند
+        }
         notifyListeners("ttsSpeakDone", ret);
     }
 

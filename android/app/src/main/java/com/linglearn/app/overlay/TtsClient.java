@@ -43,6 +43,13 @@ final class TtsClient {
     // id → {lang, text}
     private static final ConcurrentHashMap<String, String[]> PENDING = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Integer> CRASHES = new ConcurrentHashMap<>();
+    // id → باقیمانده‌ی متن که بعد از پخشِ بخشی از جمله با مدلِ اپ هنوز خوانده نشده (فقط برای ok=false)
+    private static final ConcurrentHashMap<String, String> REST = new ConcurrentHashMap<>();
+
+    /** باقیمانده‌ی نخوانده‌ی این خوانش (فقط داخلِ callbackِ همین emit معتبر است) یا null. */
+    static String peekRest(String id) {
+        return (id == null || id.isEmpty()) ? null : REST.get(id);
+    }
 
     // زبان‌هایی که مسیرِ callback کرش کرده → generate() ی ساده
     private static final java.util.Set<String> PLAIN = ConcurrentHashMap.newKeySet();
@@ -360,6 +367,8 @@ final class TtsClient {
         boolean ok = b.getBoolean("ok", false);
         String lang = b.getString("lang", "");
         String err = b.getString("err");
+        String rest = b.getString("rest");
+        if (!ok && rest != null && !rest.isEmpty() && !id.isEmpty()) REST.put(id, rest);
         String[] v = id.isEmpty() ? null : PENDING.remove(id);
         if (ok) {
             resetCrash(lang);
@@ -378,8 +387,13 @@ final class TtsClient {
             }
         }
         Listener l = listener;
-        if (l == null) return;
-        try { l.onDone(lang, text, id, ok); } catch (Throwable t) { Log.w(TAG, "listener failed", t); }
+        try {
+            if (l != null) l.onDone(lang, text, id, ok);
+        } catch (Throwable t) {
+            Log.w(TAG, "listener failed", t);
+        } finally {
+            if (id != null && !id.isEmpty()) REST.remove(id);
+        }
     }
 
     /** برای وقتی که Piper غیرفعاله: همون لحظه شکست اعلام می‌شه تا JS فوراً fallback کنه. */

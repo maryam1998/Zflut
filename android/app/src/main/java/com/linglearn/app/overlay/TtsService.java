@@ -243,7 +243,7 @@ public class TtsService extends Service {
             TtsEngine engine = obtainEngine(s.lang, true);
             if (engine == null) {
                 String err = TtsEngine.lastCreateError;
-                replyDone(reqLang, id, false, err == null ? "failed to load TTS engine" : err);
+                replyFail(reqLang, id, segs, i, err == null ? "failed to load TTS engine" : err);
                 return;
             }
             engine.plain = plain;
@@ -269,18 +269,18 @@ public class TtsService extends Service {
                 } catch (Throwable ignored) {}
             }
             engine.speakAsync(s.text, speed, sidFor(s.lang, reqLang, voice), s.lang, ok -> {
-                if (!ok) { replyDone(reqLang, id, false, null); return; }
+                if (!ok) { replyFail(reqLang, id, segs, i, null); return; }
                 if (i + 1 >= segs.size()) { replyDone(reqLang, id, true, null); return; }
                 // لودِ موتورِ تکه‌ی بعد ممکنه کند باشه → روی thread ی loader (نه thread ی پلیر)
                 try {
                     speaker.execute(() -> speakSegment(segs, i + 1, reqLang, speed, id, mySeq, plain, voice));
                 } catch (Throwable t) {
-                    replyDone(reqLang, id, false, String.valueOf(t));
+                    replyFail(reqLang, id, segs, i + 1, String.valueOf(t));
                 }
             });
         } catch (Throwable e) {
             Log.e(TAG, "speakSegment failed", e);
-            replyDone(reqLang, id, false, String.valueOf(e));
+            replyFail(reqLang, id, segs, i, String.valueOf(e));
         }
     }
 
@@ -382,7 +382,27 @@ public class TtsService extends Service {
         return e;
     }
 
+    /**
+     * شکستِ تکه‌ی i از یک متنِ چندتکه‌ای.
+     * اگر i == 0 هنوز هیچ صدایی پخش نشده → شکستِ واقعی (سمتِ اپ کلِ جمله را با TTS گوشی می‌خواند).
+     * اگر i > 0 تکه‌های قبلی با مدلِ اپ خوانده شده‌اند → «کلِ جمله» دوباره با TTS گوشی نخوانَد؛
+     * فقط باقیمانده (از تکه‌ی i به بعد) در بسته‌ی پاسخ به‌صورت rest می‌رود.
+     */
+    private void replyFail(String lang, String id, java.util.List<TtsSegmenter.Seg> segs, int i, String err) {
+        String rest = null;
+        if (i > 0 && segs != null && i < segs.size()) {
+            StringBuilder sb = new StringBuilder();
+            for (int k = i; k < segs.size(); k++) sb.append(segs.get(k).text);
+            rest = sb.toString();
+        }
+        replyDone(lang, id, false, err, rest);
+    }
+
     private void replyDone(String lang, String id, boolean ok, String err) {
+        replyDone(lang, id, ok, err, null);
+    }
+
+    private void replyDone(String lang, String id, boolean ok, String err, String rest) {
         Messenger c = client;
         if (c == null) return;
         try {
@@ -392,6 +412,7 @@ public class TtsService extends Service {
             b.putString("id", id);
             b.putBoolean("ok", ok);
             if (err != null) b.putString("err", err);
+            if (rest != null) b.putString("rest", rest);
             r.setData(b);
             c.send(r);
         } catch (RemoteException ignored) {
