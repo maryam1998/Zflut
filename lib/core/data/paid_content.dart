@@ -122,7 +122,7 @@ class PaidContent {
         }
       }
 
-      await Future.wait([worker(), worker()]);
+      await Future.wait([worker(), worker(), worker(), worker()]);
     } finally {
       _prefetching = false;
     }

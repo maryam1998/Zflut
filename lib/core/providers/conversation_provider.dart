@@ -18,7 +18,11 @@ final conversationLoaderProvider = FutureProvider<void>((ref) async {
   // 💎 با Pro شدن / به‌روزشدنِ محتوای پولی دوباره بارگذاری می‌شود
   ref.watch(isProProvider);
   ref.watch(paidRevisionProvider);
-  await ref.watch(conversationRepoProvider).load(force: true);
+  final repo = ref.watch(conversationRepoProvider);
+  // ⚡ فهرستِ موضوع‌ها (فایلِ کوچکِ داخلِ اپ) فقط یک‌بار خوانده می‌شود؛
+  // با Pro شدن/به‌روزشدن فقط حافظه‌ی متنِ موضوع‌ها خالی می‌شود (نه بارگذاریِ دوباره‌ی همه‌چیز).
+  await repo.load();
+  repo.resetTopics();
 });
 
 final allTopicsProvider = Provider<List<ConversationTopic>>((ref) {

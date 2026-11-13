@@ -39,6 +39,18 @@ class ConversationRepository {
 
   Future<void>? _inflight;
 
+  /// ⚡ فقط حافظه‌ی موضوع‌ها را خالی می‌کند (فهرستِ موضوع‌ها دوباره خوانده نمی‌شود).
+  /// وقتی Pro شد/محتوای پولی عوض شد صدا زده می‌شود؛ بسیار سریع است و باعث
+  /// «چرخیدنِ طولانیِ» تبِ Talk نمی‌شود.
+  void resetTopics() {
+    _cache.clear();
+    _pending.clear();
+    if (_loaded && ProStatus.isPro) {
+      final ids = [for (final t in _all) t.id];
+      unawaited(PaidContent.prefetchTopics(ids));
+    }
+  }
+
   /// فقط یک‌بار اجرا می‌شود؛ فراخوانی‌های هم‌زمان همان Future را می‌گیرند.
   /// [force] = دوباره (وقتی Pro شد/محتوای پولی به‌روز شد): حافظه‌ی موضوع‌ها خالی می‌شود.
   Future<void> load({bool force = false}) {
@@ -73,7 +85,7 @@ class ConversationRepository {
       // 🚀 Pro: متنِ موضوع‌ها را در پس‌زمینه پیش‌دانلود کن تا با لمس فوری باز شوند
       if (ProStatus.isPro) {
         final ids = [for (final t in _all) t.id];
-        Future.delayed(const Duration(seconds: 2),
+        Future.delayed(const Duration(milliseconds: 300),
             () => unawaited(PaidContent.prefetchTopics(ids)));
       }
     } catch (e) {
