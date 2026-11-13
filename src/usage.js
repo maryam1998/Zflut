@@ -11,6 +11,13 @@
 //   FREE_LIMIT            = "2"            سقفِ پیش‌فرضِ هر بخش
 //   FREE_LIMIT_<FEATURE>  = "5"            سقفِ اختصاصیِ یک بخش (مثلاً FREE_LIMIT_STORY)
 //   VIP_EMAILS            = "a@gmail.com, b@gmail.com"
+//   DAILY_<FEATURE>       = "30"           سقفِ روزانه‌ی هر بخش — پیش‌فرض فقط برای کاربرِ رایگان
+//   DAILY_APPLY_TO_PRO    = "1"            (اختیاری) سقفِ روزانه‌ی بالا برای Pro/VIP هم اعمال شود
+//
+// سیاستِ «کل عمر» (برای کاربرِ رایگان): جدول‌های feature_usage و feature_session کلیدشان
+// (user_id, feature) است، بدونِ تاریخ ← یعنی FREE_LIMIT_VIDEOCALL = تعدادِ جلسه در «کل عمر».
+// بعد از تمام‌شدنِ آن، جلسه‌ی تازه هیچ‌وقت مجاز نیست (۴۰۲)، چه ۳۰ دقیقه بگذرد چه یک ماه.
+// سقفِ روزانه (feature_daily) جداست و کلیدش (user_id, feature, day) است.
 // ---------------------------------------------------------------------------
 
 /**
@@ -179,13 +186,30 @@ export async function consume(env, userId, feature, useId) {
   }
 }
 
+// فقط این بخش‌ها اجازه دارند با هدرِ X-Feature روی /api/generate بیایند (همه‌ی بخش‌های AI یک مسیر دارند،
+// پس تشخیصِ بخش از روی مسیر ممکن نیست). بقیه (ytsub، live، magnifier) هرگز از هدر پذیرفته نمی‌شوند.
+const HEADER_FEATURES = {
+  "/api/generate": new Set(["example", "grammar", "story", "chat", "videocall"]),
+};
+
+/**
+ * بخشِ یک درخواست. مسیر حاکم است:
+ *  - مسیری که در PATH_FEATURE هست → همان بخش (هدر نادیده گرفته می‌شود)
+ *  - مسیری که در HEADER_FEATURES هست → هدر فقط اگر جزو بخش‌های مجازِ همان مسیر باشد
+ *  - هر مسیرِ دیگر → null (شمرده نمی‌شود)
+ * این‌طور کاربرِ رایگان نمی‌تواند با X-Feature: ytsub (که سقفِ کل‌عمر ندارد) روی /api/generate
+ * سقفِ مثال/گرامر/چت را دور بزند، و هدرِ اشتباه روی مسیرِ یوتیوب شمارنده‌ی بخشِ دیگر را مصرف نمی‌کند.
+ */
 export function featureOf(request, url) {
+  const byPath = PATH_FEATURE[url.pathname];
+  if (byPath) return byPath;
+  const allowed = HEADER_FEATURES[url.pathname];
+  if (!allowed) return null;
   const h = (request.headers.get("X-Feature") || "").trim().toLowerCase();
-  if (h && FEATURES[h]) return h;
-  return PATH_FEATURE[url.pathname] || null;
+  return allowed.has(h) ? h : null;
 }
 
-/** سقفِ روزانه‌ی یک بخش برای هر کاربر (Pro/VIP و رایگان). DAILY_<FEATURE> در wrangler.toml؛ نبود/۰ = بدونِ سقف. */
+/** سقفِ روزانه‌ی یک بخش. DAILY_<FEATURE> در wrangler.toml؛ نبود/۰ = بدونِ سقف. */
 export function dailyLimitOf(env, feature) {
   const v = Number(env[`DAILY_${feature.toUpperCase()}`]);
   return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
@@ -227,6 +251,14 @@ export async function consumeDaily(env, userId, feature, useId) {
     console.log("consumeDaily error", String(e));
     return { ok: true, used: 0, limit };
   }
+}
+
+/**
+ * پیش‌فرض: سقفِ روزانه‌ی هر بخش فقط برای کاربرِ رایگان است؛ Pro/VIP فقط سقفِ کلیِ روزانه‌ی auth.js
+ * (LIMIT_AI / LIMIT_TTS / LIMIT_MISC) را دارند. با DAILY_APPLY_TO_PRO="1" به Pro/VIP هم اعمال می‌شود.
+ */
+function dailyAppliesToPro(env) {
+  return ["1", "true", "on", "yes"].includes(String(env.DAILY_APPLY_TO_PRO || "").trim().toLowerCase());
 }
 
 function dailyResponse(feature, limit, cors) {
@@ -280,9 +312,11 @@ export async function featureGate(request, env, url, session, cors) {
       return jsonResp({ error: MSG_FA, code: "free_session_over", feature }, 402, cors);
     }
   }
-  // 📅 سقفِ روزانه‌ی هر بخش — برای همه (Pro/VIP/رایگان)، سمتِ سرور
-  const d = await consumeDaily(env, session.sub, feature, useId);
-  if (!d.ok) return dailyResponse(feature, d.limit, cors);
+  // 📅 سقفِ روزانه‌ی هر بخش — سمتِ سرور؛ پیش‌فرض فقط رایگان (Pro/VIP فقط با DAILY_APPLY_TO_PRO)
+  if (!pro || dailyAppliesToPro(env)) {
+    const d = await consumeDaily(env, session.sub, feature, useId);
+    if (!d.ok) return dailyResponse(feature, d.limit, cors);
+  }
   return null;
 }
 
@@ -317,8 +351,10 @@ export async function handleUsage(request, env, url, cors, session) {
     const feature = String(body.feature || "").toLowerCase();
     if (!FEATURES[feature]) return jsonResp({ error: "unknown feature" }, 400, cors);
     const bid = String(body.id || "").slice(0, 64);
-    const dd = await consumeDaily(env, session.sub, feature, bid);
-    if (!dd.ok) return dailyResponse(feature, dd.limit, cors);
+    if (!pro || dailyAppliesToPro(env)) {
+      const dd = await consumeDaily(env, session.sub, feature, bid);
+      if (!dd.ok) return dailyResponse(feature, dd.limit, cors);
+    }
     if (pro) return jsonResp({ ok: true, pro: true }, 200, cors);
     const r = await consume(env, session.sub, feature, bid);
     if (!r.ok) return limitResponse(feature, r.limit, cors);
