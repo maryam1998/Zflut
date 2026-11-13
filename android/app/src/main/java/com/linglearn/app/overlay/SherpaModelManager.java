@@ -254,10 +254,11 @@ final class SherpaModelManager {
         FA_LABELS.put("fa_IR-ganji_adabi-medium", "Bahram · M");
         FA_LABELS.put("fa_IR-reza_ibrahim-medium", "Pouya · M");
         // انگلیسیِ سبک (Piper low): برچسب مثلِ بقیه‌ی صداهای en؛ رده‌ی «low» را خودِ getTtsVoices بعدش اضافه می‌کند
-        FA_LABELS.put(EN_LIGHT_VOICE, "Lessac · US · F");
+        FA_LABELS.put(EN_LIGHT_VOICE, "Chloe · US · F");
         // دو صدای مردِ Piper انگلیسی: نام‌های باقی‌مانده‌ی لیست
         FA_LABELS.put("en_US-danny-low", "Gordon · US · M");
         FA_LABELS.put("en_GB-alan-low", "Miles · UK · M");
+        FA_LABELS.put("en_GB-southern_english_female-low", "Poppy · UK · F");
     }
 
     private static final Map<String, List<TtsVoice>> TTS_VOICES;
