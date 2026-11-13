@@ -173,8 +173,8 @@ export async function authGate(request, env, url, cors) {
     return jsonResp({ error: "login required" }, 401, cors);
   }
   const bucket = bucketOf(url.pathname);
-  // 👑 VIP (VIP_EMAILS) = بدونِ هیچ سقفی، سقفِ روزانه هم ندارد
-  if (!isVipEmail(env, p.em) && !(await underLimit(env, p.sub, bucket))) {
+  // 👑 VIP هم مثلِ Pro سقفِ روزانه دارد (فقط سقفِ «کل عمر» برداشته شده) — برای سنجشِ مصرفِ واقعی
+  if (!(await underLimit(env, p.sub, bucket))) {
     if (!enforce) { console.log("auth(log): over limit", bucket); return null; }
     return jsonResp({ error: "daily limit reached, try again tomorrow" }, 429, cors);
   }
