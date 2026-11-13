@@ -1,4 +1,7 @@
+import 'dart:async';
 import '../../core/usage/free_limit.dart';
+import '../../core/usage/pro_status.dart';
+import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -33,6 +36,71 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
   String? _expanded;
   bool _selectMode = false;
   final Set<String> _selected = {};
+
+  static const String _kSampleSeedKey = 'zflut_free_grammar_samples_v1';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _seedFreeSamples());
+  }
+
+  /// 🎁 کاربر رایگان (و فقط یک‌بار، وقتی هنوز هیچ یادداشتی ندارد): دو نمونه پرسش‌وپاسخ
+  /// هم‌قالبِ پرامپتِ پیگیریِ AI (جواب به زبانِ مادری، مثال‌ها انگلیسی + ترجمه‌ی کوتاه، زیر ~۱۵۰ کلمه).
+  void _seedFreeSamples() {
+    if (!mounted || ProStatus.isPro) return;
+    final prefs = ref.read(sharedPrefsProvider);
+    if (prefs.getString(_kSampleSeedKey) != null) return;
+    unawaited(prefs.setString(_kSampleSeedKey, '1'));
+    if (ref.read(grammarNotesProvider).isNotEmpty) return;
+    final now = DateTime.now();
+    final notifier = ref.read(grammarNotesProvider.notifier);
+    // addNote جدیدترین را بالا می‌گذارد؛ پس اول نمونه‌ی دوم
+    notifier.addNote(GrammarNote(
+      id: 'sample-grammar-2',
+      word: 'If I were you',
+      sentence: 'If I were you, I would call him now.',
+      markdown: '## 🧩 If I were you\n\n**جمله:** If I were you, I would call him now.'
+          '\n\n**ترجمه:**\n- FA: اگر جای تو بودم، همین حالا به او زنگ می‌زدم.',
+      langCode: 'en',
+      savedAt: now.subtract(const Duration(minutes: 1)),
+      thread: const [
+        GrammarThreadItem(
+          question: 'چرا بعد از I از were استفاده شده و was نیامده؟',
+          answer: 'چون این جمله یک شرطِ فرضی (غیرواقعی) است: چیزی که الان درست نیست و فقط تصورش می‌کنیم. '
+              'در این حالت، برای همه‌ی ضمیرها (I, he, she, it هم) از were استفاده می‌کنیم.\n\n'
+              'ساختار: If + were/گذشته‌ی ساده ، would + فعل ساده\n\n'
+              'If I were you, I would study more. (اگر جای تو بودم، بیشتر درس می‌خواندم.)\n'
+              'If she were here, she would help us. (اگر او اینجا بود، به ما کمک می‌کرد.)\n\n'
+              'نکته: در مکالمه‌ی روزمره If I was you هم شنیده می‌شود، ولی were هم درست‌تر است '
+              'و هم در آزمون‌ها و نوشته‌ی رسمی همان را می‌خواهند.',
+        ),
+      ],
+    ));
+    notifier.addNote(GrammarNote(
+      id: 'sample-grammar-1',
+      word: 'used to',
+      sentence: 'I used to live in a small village.',
+      markdown: '## 🧩 used to\n\n**جمله:** I used to live in a small village.'
+          '\n\n**ترجمه:**\n- FA: قبلاً در یک روستای کوچک زندگی می‌کردم.',
+      langCode: 'en',
+      savedAt: now,
+      thread: const [
+        GrammarThreadItem(
+          question: 'used to با would چه فرقی دارد؟',
+          answer: 'هر دو درباره‌ی گذشته‌اند، ولی used to کاربردِ بازتری دارد.\n\n'
+              '۱) used to هم برای عادت‌های گذشته و هم برای حالت‌ها (زندگی کردن، داشتن، بودن) درست است:\n'
+              'I used to live in a small village. (قبلاً در یک روستای کوچک زندگی می‌کردم.)\n'
+              'I used to be shy. (قبلاً خجالتی بودم.)\n\n'
+              '۲) would فقط برای کارهای تکرارشونده‌ی گذشته می‌آید، نه برای حالت‌ها:\n'
+              'Every summer, we would swim in the river. (هر تابستان در رودخانه شنا می‌کردیم.)\n'
+              'نمی‌گوییم: I would be shy.\n\n'
+              'اگر مطمئن نیستی، used to انتخابِ امن‌تری است. در سؤال و منفی d حذف می‌شود: '
+              'Did you use to...? / I didn\'t use to...',
+        ),
+      ],
+    ));
+  }
 
   static String _two(int n) => n.toString().padLeft(2, '0');
   // کلیدِ گروه‌بندی/مرتب‌سازی (مستقل از زبان)

@@ -1370,6 +1370,9 @@ Now respond to: "$sentence"
 
   /// سلامِ شخصیت وقتی تماس وصل شد (به چت هم اضافه می‌شود).
   Future<String?> _callGreeting() async {
+    // فقط یک‌بار: اگر در همین گفتگو قبلاً سلام/معرفی یا هر پیامِ واقعی‌ای هست،
+    // با هر بار وارد شدن دوباره معرفیِ خودش را نگوید و در چت هم ننویسد.
+    if (_messages.any((m) => !m.isWelcome)) return null;
     final lang = _activeLang();
     final langLabel = _enName(lang);
     final native = _enName(ref.read(languageSelectionProvider).native);
