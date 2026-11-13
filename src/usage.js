@@ -140,7 +140,7 @@ export async function isPro(env, userId, email) {
     ).bind(userId).first();
     pro = !!row && row.plan === "pro" && (!row.pro_until || row.pro_until > Date.now());
   } catch (e) {
-    console.log("isPro error", String(e));
+    console.error("[FAIL-OPEN] isPro error", String(e));
   }
   proCache.set(userId, { pro, t: Date.now() });
   return pro;
@@ -181,7 +181,7 @@ export async function consume(env, userId, feature, useId) {
     if (!r) return { ok: false, used: row ? row.n : limit, limit };
     return { ok: true, used: r.n, limit, fresh: true };
   } catch (e) {
-    console.log("consume error", String(e));
+    console.error("[FAIL-OPEN] consume error — سقفِ کل‌عمر بی‌صدا خاموش شد", String(e));
     return { ok: true, used: 0, limit };
   }
 }
@@ -248,7 +248,7 @@ export async function consumeDaily(env, userId, feature, useId) {
     }
     return { ok: true, used: r.n, limit };
   } catch (e) {
-    console.log("consumeDaily error", String(e));
+    console.error("[FAIL-OPEN] consumeDaily error — سقفِ روزانه بی‌صدا خاموش شد", String(e));
     return { ok: true, used: 0, limit };
   }
 }
@@ -259,6 +259,17 @@ export async function consumeDaily(env, userId, feature, useId) {
  */
 function dailyAppliesToPro(env) {
   return ["1", "true", "on", "yes"].includes(String(env.DAILY_APPLY_TO_PRO || "").trim().toLowerCase());
+}
+
+/**
+ * 🌐 سقفِ روزانه برای «درخواست‌های بدونِ بخش» (ترجمه و هر درخواستِ /api/generate بدونِ X-Feature معتبر)
+ * و /api/translate-text. فقط وقتی صدا زده می‌شود که کش (D1) جواب نداشته و واقعاً به AI می‌رود؛
+ * پس ترجمه‌های کش‌شده هیچ سهمیه‌ای مصرف نمی‌کنند. برای همه‌ی کاربران (رایگان/Pro/VIP).
+ * DAILY_TRANSLATE در wrangler.toml؛ نبود/۰ = بدونِ سقف. null = اجازه، وگرنه Response ۴۲۹.
+ */
+export async function aiMissGate(env, userId, cors) {
+  const d = await consumeDaily(env, userId, "translate", "");
+  return d.ok ? null : dailyResponse("translate", d.limit, cors);
 }
 
 function dailyResponse(feature, limit, cors) {
@@ -292,7 +303,7 @@ async function sessionTimeOk(env, userId, feature, fresh) {
     if (!row) return true;
     return now - row.start_at <= secs * 1000;
   } catch (e) {
-    console.log("sessionTimeOk error", String(e));
+    console.error("[FAIL-OPEN] sessionTimeOk error — سقفِ طولِ جلسه خاموش شد", String(e));
     return true;
   }
 }

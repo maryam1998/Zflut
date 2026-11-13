@@ -27,6 +27,7 @@ AUTH_MODE = "on"
 LIMIT_AI = "600"      # ترجمه/زیرنویس/تشخیص گفتار — در روزِ هر کاربر
 LIMIT_TTS = "4000"    # صدای آنلاین
 LIMIT_MISC = "3000"
+LIMIT_TRANSLATE = "4000"   # ترجمه‌ی لمسی (/api/translate-text) — شاملِ کش‌ها؛ هزینه‌ی AI با DAILY_TRANSLATE کنترل می‌شود
 
 # 💎 نسخه‌ی رایگان: سقفِ «کل عمر» برای هر بخش (مثال‌ساز، گرامر، چت، ویدیوکال، داستان، ترجمه‌ی زنده، ذره‌بین، ترجمه‌ی یوتیوب)
 FREE_LIMIT = "2"
@@ -46,6 +47,9 @@ DAILY_STORY = "5"
 DAILY_CHAT = "20"
 DAILY_VIDEOCALL = "10"
 DAILY_YTSUB = "10"
+# 🌐 ترجمه و درخواست‌های بدونِ بخش — برای همه‌ی کاربران (حتی Pro/VIP)، و فقط «کش‌نشده‌ها» (واقعاً AI) حساب می‌شوند؛
+#    ترجمه‌ی کش‌شده (حافظه‌ی گوشی/کشِ مشترکِ D1) هیچ سهمیه‌ای مصرف نمی‌کند. ۰ = بدونِ سقف.
+DAILY_TRANSLATE = "150"
 # سقفِ اختصاصیِ یک بخش (اختیاری):  FREE_LIMIT_STORY = "3"
 # 📊 گزارشِ مصرفِ AI (اختیاری) — پنل: https://<worker>/admin/usage-report?key=<ADMIN_KEY>
 #   ADMIN_KEY را secret بگذار:  npx wrangler secret put ADMIN_KEY

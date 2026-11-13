@@ -105,14 +105,15 @@ function bucketOf(pathname) {
   if (
     pathname === "/api/generate" ||
     pathname === "/api/transcribe" ||
-    pathname === "/api/translate-subtitles" ||
-    pathname === "/api/translate-text"
+    pathname === "/api/translate-subtitles"
   ) return "ai";
+  // ترجمه‌ی لمسی/متنِ کوتاه: سقفِ کلیِ جدا (کش‌ها هم شمرده می‌شوند ولی ارزان‌اند)؛ هزینه‌ی واقعیِ AI را DAILY_TRANSLATE (فقط کش‌نشده‌ها) کنترل می‌کند
+  if (pathname === "/api/translate-text") return "translate";
   return "misc";
 }
 
 function limitFor(env, bucket) {
-  const dflt = { ai: 600, tts: 4000, misc: 3000 }[bucket];
+  const dflt = { ai: 600, tts: 4000, misc: 3000, translate: 4000 }[bucket];
   const v = Number(env["LIMIT_" + bucket.toUpperCase()]);
   return Number.isFinite(v) && v > 0 ? v : dflt;
 }
@@ -136,7 +137,8 @@ async function underLimit(env, userId, bucket) {
       await env.TR_DB.prepare("DELETE FROM rate_limit WHERE k < ?1").bind(old).run();
     }
     return !row || row.n <= limitFor(env, bucket);
-  } catch {
+  } catch (e) {
+    console.error("[FAIL-OPEN] rate_limit error — سقفِ کلیِ روزانه بی‌صدا خاموش شد", String(e));
     return true;
   }
 }
@@ -176,7 +178,7 @@ export async function authGate(request, env, url, cors) {
   // 👑 VIP هم مثلِ Pro سقفِ روزانه دارد (فقط سقفِ «کل عمر» برداشته شده) — برای سنجشِ مصرفِ واقعی
   if (!(await underLimit(env, p.sub, bucket))) {
     if (!enforce) { console.log("auth(log): over limit", bucket); return null; }
-    return jsonResp({ error: "daily limit reached, try again tomorrow" }, 429, cors);
+    return jsonResp({ error: "daily limit reached, try again tomorrow", code: "daily_limit", bucket }, 429, cors);
   }
   // 💎 سقفِ «کل عمر» برای هر بخشِ نسخه‌ی رایگان (۴۰۲ اگر تمام شده)
   const gated = await featureGate(request, env, url, p, cors);

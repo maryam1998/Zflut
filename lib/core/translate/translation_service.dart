@@ -765,6 +765,14 @@ class TranslationService {
           if (errBody is Map && errBody['error'] != null) {
             detail = errBody['error'].toString();
           }
+          // سقفِ روزانه‌ی سرور پر شده → بدونِ صبر و تلاشِ دوباره، فوراً پیامِ روشن
+          final errCode = errBody is Map ? errBody['code']?.toString() : null;
+          if (isRateLimited &&
+              (errCode == 'daily_feature_limit' || errCode == 'daily_limit')) {
+            kLastAiError = 'HTTP 429 — $errCode';
+            throw _AiBackendError(
+                'سقف استفاده‌ی امروز تمام شد. فردا دوباره امتحان کن.');
+          }
           final maxAttempts = isRateLimited ? (retries > 1 ? retries : 1) : retries;
           if ((!isClientError || isRateLimited) && attempt < maxAttempts) {
             final m = RegExp(r'try again in\s+(\d+(?:\.\d+)?)s',

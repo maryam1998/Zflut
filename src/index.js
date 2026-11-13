@@ -5,7 +5,7 @@
 
 import { handleTranscribe } from "./transcribe.js";
 import { authGate, handleSession, verifySessionToken } from "./auth.js";
-import { handleUsage } from "./usage.js";
+import { handleUsage, featureOf, aiMissGate } from "./usage.js";
 import { handleContent } from "./content.js";
 import { recordUsage, handleAdminReport } from "./metrics.js";
 
@@ -199,6 +199,12 @@ export default {
         }
       }
 
+      // 🌐 درخواستِ بدونِ X-Feature معتبر (ترجمه/تأیید/کلاینتِ دست‌ساز) فقط وقتی که کش جواب نداشت سقفِ روزانه‌ی خودش را مصرف می‌کند
+      if (!featureOf(request, url)) {
+        const over = await missGate(request, env);
+        if (over) return over;
+      }
+
       const chain = getProviderChain(env);
       const errors = [];
       // سقفِ زمانِ هر پرووایدر: یکی که کند/بی‌صدا شد، کلِ درخواست را معطل نکند و
@@ -225,6 +231,13 @@ export default {
     return json({ error: "Not found" }, 404);
   },
 };
+
+// سقفِ روزانه‌ی درخواست‌های کش‌نشده‌ی بدونِ بخش (ترجمه). فقط در AUTH_MODE=on اعمال می‌شود.
+async function missGate(request, env) {
+  if (String(env.AUTH_MODE || "on").toLowerCase() !== "on") return null;
+  const sess = await verifySessionToken(env, request.headers.get("X-App-Token"));
+  return sess ? aiMissGate(env, sess.sub, CORS_HEADERS) : null;
+}
 
 // --- /api/translate-text -----------------------------------------------------
 // ورودی: { text, source_lang_code ("auto" هم می‌شود), target_lang_code } → خروجی: { text, provider, cached }
@@ -255,6 +268,10 @@ async function handleTranslateText(request, env, ctx) {
     ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
     return json({ text: hit, provider: "cache", cached: true });
   }
+
+  // 🌐 فقط ترجمه‌ی کش‌نشده (واقعاً AI) از سقفِ روزانه‌ی DAILY_TRANSLATE مصرف می‌کند
+  const over = await missGate(request, env);
+  if (over) return over;
 
   const label = TT_LANGS[target];
   const prompt =
