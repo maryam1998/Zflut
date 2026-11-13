@@ -57,6 +57,8 @@ final class YtSubtitles {
     private static final long TICK_MS = 150;
     private static final int MAX_FAILS = 2;
 
+    /** false = ترجمه‌ی یوتیوب رایگان‌محور است (AI فقط برای خط‌های مشکوک). true = قدیمی: کلِ chunk با AI روی سرور. */
+    private static final boolean USE_SERVER_CHUNK = false;
     private static final String CAPTIONS_PATH = "/api/youtube-captions";
     private static final String TRANSLATE_PATH = "/api/translate-subtitles";
     private static final String RESOLVE_PATH = "/api/youtube-resolve";
@@ -785,12 +787,16 @@ final class YtSubtitles {
 
         netChunk.execute(() -> {
             String[] out = null;
-            try {
-                out = requestChunk(lines, before, after, title, src, srcName, lang, tgtName, tone);
-                out = reviewAll(lines, out, src, lang);          // 🔎 خروجیِ سرور هم بازبینی می‌شود
-            } catch (Exception e) {
-                Log.w(TAG, "chunk request failed (" + e + "); falling back to per-sentence translation");
-                out = null;
+            // 💸 پیش‌فرض: رایگان (کش ← سرویس‌های رایگان) و فقط ترجمه‌ی مشکوک/کند با AI بازبینی می‌شود.
+            // مسیرِ قدیمیِ «کلِ chunk با AI روی سرور» فقط با USE_SERVER_CHUNK=true فعال می‌شود.
+            if (USE_SERVER_CHUNK) {
+                try {
+                    out = requestChunk(lines, before, after, title, src, srcName, lang, tgtName, tone);
+                    out = reviewAll(lines, out, src, lang);          // 🔎 خروجیِ سرور هم بازبینی می‌شود
+                } catch (Exception e) {
+                    Log.w(TAG, "chunk request failed (" + e + "); falling back to per-sentence translation");
+                    out = null;
+                }
             }
             if (out == null) {
                 // رایگان ← (مشکوک؟) AI، با کشِ تأییدشده؛ همان مسیرِ ترجمه‌ی زنده

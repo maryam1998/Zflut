@@ -169,6 +169,11 @@ export default {
       }
     }
 
+    // 🗄️ ترجمه‌ی متنِ کوتاه با کشِ مشترکِ همه‌ی کاربرها (اپ اول همین را صدا می‌زند)
+    if (url.pathname === "/api/translate-text" && request.method === "POST") {
+      return handleTranslateText(request, env, ctx);
+    }
+
     if (url.pathname === "/api/generate" && request.method === "POST") {
       let body;
       try {
@@ -220,6 +225,62 @@ export default {
     return json({ error: "Not found" }, 404);
   },
 };
+
+// --- /api/translate-text -----------------------------------------------------
+// ورودی: { text, source_lang_code ("auto" هم می‌شود), target_lang_code } → خروجی: { text, provider, cached }
+// کش: همان جدولِ gen_cache (کلیدِ جدا از پرامپت‌های generate). مسیر/زنجیره‌ی پرووایدرها مثلِ generate است.
+const TT_LANGS = {
+  fa: "Persian", en: "English", it: "Italian", hi: "Hindi", tr: "Turkish", ar: "Arabic",
+  es: "Spanish", de: "German", fr: "French", zh: "Chinese", ko: "Korean", ru: "Russian", ja: "Japanese",
+};
+
+async function handleTranslateText(request, env, ctx) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+  const text = String(body?.text ?? "").trim();
+  const target = String(body?.target_lang_code ?? "").toLowerCase();
+  const source = String(body?.source_lang_code ?? "auto").toLowerCase() || "auto";
+  if (!text) return json({ error: "text is required" }, 400);
+  if (text.length > 300) return json({ error: "text too long" }, 400);
+  if (!TT_LANGS[target]) return json({ error: "unsupported target language" }, 400);
+  if (source !== "auto" && !TT_LANGS[source]) return json({ error: "unsupported source language" }, 400);
+
+  const cacheKey = await genCacheKey(`translate-text|${source}|${target}|${text}`, 0);
+  const hit = await genCacheGet(env, cacheKey);
+  if (hit) {
+    ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
+    return json({ text: hit, provider: "cache", cached: true });
+  }
+
+  const label = TT_LANGS[target];
+  const prompt =
+    `Translate the following text into ${label}. ` +
+    "Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.\n\n" +
+    `Text: ${text}`;
+  const maxTokens = Math.min(Math.max(Math.floor(text.length / 2) + 96, 128), 600);
+  const perProviderMs = Math.min(20000, 4000 + maxTokens * 10);
+  const errors = [];
+  for (const provider of getProviderChain(env)) {
+    try {
+      const raw = await withTimeout(callProvider(provider, prompt, maxTokens, env), perProviderMs, provider);
+      let out = sanitizeAiText(raw).trim();
+      // گیومه‌ی دورِ خروجی را بردار
+      out = out.replace(/^["“”«»]+|["“”«»]+$/g, "").trim();
+      const bad = badAiOutputReason(out, prompt);
+      if (bad) throw new Error(`unusable output (${bad})`);
+      ctx.waitUntil(genCachePut(env, cacheKey, out, provider));
+      ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider, cached: false, prompt, text: out }));
+      return json({ text: out, provider });
+    } catch (e) {
+      errors.push(`${provider}: ${e.message}`);
+    }
+  }
+  return json({ error: errors.join(" | ") }, 502);
+}
 
 // --- کشِ مشترکِ D1 برای /api/generate (مثال‌ساز و ...) ---------------------
 // اگر binding با نام TR_DB تنظیم نشده باشد، همه‌ی این توابع بی‌صدا هیچ‌کاری نمی‌کنند.

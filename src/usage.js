@@ -36,6 +36,9 @@ const PATH_FEATURE = {
   "/api/youtube-resolve": "ytsub",
 };
 
+// 🆓 بخش‌هایی که سقفِ «کل عمر» ندارند (رایگانِ همیشگی)؛ فقط سقفِ روزانه‌ی سرور روشان اعمال می‌شود.
+const LIFETIME_EXEMPT = new Set(["ytsub"]);
+
 const MSG_FA = "سقف استفاده‌ی رایگان از این بخش تمام شده. برای استفاده‌ی نامحدود، نسخه‌ی Pro را بخرید.";
 
 function jsonResp(data, status, cors) {
@@ -97,6 +100,21 @@ async function ensureTables(env) {
         "source TEXT, note TEXT, updated INTEGER NOT NULL DEFAULT 0)"
     ),
   ]);
+  await env.TR_DB.batch([
+    // 📅 سقفِ روزانه‌ی هر بخش — سمتِ سرور (identity, feature, day, count)
+    env.TR_DB.prepare(
+      "CREATE TABLE IF NOT EXISTS feature_daily (" +
+        "user_id TEXT NOT NULL, feature TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, " +
+        "last_at INTEGER NOT NULL DEFAULT 0, last_use TEXT NOT NULL DEFAULT '', " +
+        "PRIMARY KEY (user_id, feature, day))"
+    ),
+    // ⏱️ شروعِ نشستِ رایگانِ تماس (برای محدودیتِ طولِ جلسه)
+    env.TR_DB.prepare(
+      "CREATE TABLE IF NOT EXISTS feature_session (" +
+        "user_id TEXT NOT NULL, feature TEXT NOT NULL, start_at INTEGER NOT NULL, " +
+        "PRIMARY KEY (user_id, feature))"
+    ),
+  ]);
   tablesReady = true;
 }
 
@@ -136,13 +154,13 @@ export async function consume(env, userId, feature, useId) {
 
     if (row) {
       // تلاشِ دوباره‌ی همان درخواست (retry) دوباره حساب نمی‌شود
-      if (useId && row.last_use === useId) return { ok: true, used: row.n, limit };
+      if (useId && row.last_use === useId) return { ok: true, used: row.n, limit, fresh: false };
       // ادامه‌ی همان نشست
       if (win > 0 && row.n > 0 && now - row.last_at < win) {
         await env.TR_DB.prepare(
           "UPDATE feature_usage SET last_at = ?3 WHERE user_id = ?1 AND feature = ?2"
         ).bind(userId, feature, now).run();
-        return { ok: true, used: row.n, limit };
+        return { ok: true, used: row.n, limit, fresh: false };
       }
     }
     if (limit <= 0) return { ok: false, used: row ? row.n : 0, limit };
@@ -154,7 +172,7 @@ export async function consume(env, userId, feature, useId) {
         "RETURNING n"
     ).bind(userId, feature, now, useId || "", limit).first();
     if (!r) return { ok: false, used: row ? row.n : limit, limit };
-    return { ok: true, used: r.n, limit };
+    return { ok: true, used: r.n, limit, fresh: true };
   } catch (e) {
     console.log("consume error", String(e));
     return { ok: true, used: 0, limit };
@@ -167,14 +185,105 @@ export function featureOf(request, url) {
   return PATH_FEATURE[url.pathname] || null;
 }
 
-/** داخلِ authGate صدا زده می‌شود. null = اجازه، وگرنه Response 402. */
+/** سقفِ روزانه‌ی یک بخش برای هر کاربر (Pro/VIP و رایگان). DAILY_<FEATURE> در wrangler.toml؛ نبود/۰ = بدونِ سقف. */
+export function dailyLimitOf(env, feature) {
+  const v = Number(env[`DAILY_${feature.toUpperCase()}`]);
+  return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
+}
+
+/** {ok, used, limit}. هر «استفاده‌ی جدید» یک بار حساب می‌شود (retry و ادامه‌ی نشست حساب نمی‌شود). سمتِ سرور و اتمیک. */
+export async function consumeDaily(env, userId, feature, useId) {
+  const limit = dailyLimitOf(env, feature);
+  if (!limit || !env.TR_DB) return { ok: true, used: 0, limit };
+  try {
+    await ensureTables(env);
+    const now = Date.now();
+    const day = new Date(now).toISOString().slice(0, 10);
+    const win = (FEATURES[feature]?.window || 0) * 60000;
+    const row = await env.TR_DB.prepare(
+      "SELECT n, last_at, last_use FROM feature_daily WHERE user_id = ?1 AND feature = ?2 AND day = ?3"
+    ).bind(userId, feature, day).first();
+    if (row) {
+      if (useId && row.last_use === useId) return { ok: true, used: row.n, limit };
+      if (win > 0 && row.n > 0 && now - row.last_at < win) {
+        await env.TR_DB.prepare(
+          "UPDATE feature_daily SET last_at = ?4 WHERE user_id = ?1 AND feature = ?2 AND day = ?3"
+        ).bind(userId, feature, day, now).run();
+        return { ok: true, used: row.n, limit };
+      }
+    }
+    const r = await env.TR_DB.prepare(
+      "INSERT INTO feature_daily (user_id, feature, day, n, last_at, last_use) VALUES (?1, ?2, ?3, 1, ?4, ?5) " +
+        "ON CONFLICT(user_id, feature, day) DO UPDATE SET n = n + 1, last_at = ?4, last_use = ?5 WHERE n < ?6 " +
+        "RETURNING n"
+    ).bind(userId, feature, day, now, useId || "", limit).first();
+    if (!r) return { ok: false, used: row ? row.n : limit, limit };
+    if (Math.random() < 0.01) {
+      const old = new Date(now - 7 * 86400000).toISOString().slice(0, 10);
+      await env.TR_DB.prepare("DELETE FROM feature_daily WHERE day < ?1").bind(old).run();
+    }
+    return { ok: true, used: r.n, limit };
+  } catch (e) {
+    console.log("consumeDaily error", String(e));
+    return { ok: true, used: 0, limit };
+  }
+}
+
+function dailyResponse(feature, limit, cors) {
+  return jsonResp({ error: "daily limit reached, try again tomorrow", code: "daily_feature_limit", feature, limit }, 429, cors);
+}
+
+// ⏱️ طولِ جلسه‌ی رایگانِ تماس (ثانیه). FREE_CALL_SECONDS در wrangler.toml؛ ۰/نبود = بدونِ محدودیتِ طول.
+const SESSION_LIMITED = new Set(["videocall"]);
+function freeSessionSeconds(env) {
+  const v = Number(env.FREE_CALL_SECONDS);
+  return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
+}
+
+/** برای کاربرِ رایگان: true = هنوز در سقفِ زمانیِ جلسه. fresh=true یعنی جلسه‌ی تازه شروع شده. */
+async function sessionTimeOk(env, userId, feature, fresh) {
+  const secs = freeSessionSeconds(env);
+  if (!secs || !SESSION_LIMITED.has(feature) || !env.TR_DB) return true;
+  try {
+    await ensureTables(env);
+    const now = Date.now();
+    if (fresh) {
+      await env.TR_DB.prepare(
+        "INSERT INTO feature_session (user_id, feature, start_at) VALUES (?1, ?2, ?3) " +
+          "ON CONFLICT(user_id, feature) DO UPDATE SET start_at = ?3"
+      ).bind(userId, feature, now).run();
+      return true;
+    }
+    const row = await env.TR_DB.prepare(
+      "SELECT start_at FROM feature_session WHERE user_id = ?1 AND feature = ?2"
+    ).bind(userId, feature).first();
+    if (!row) return true;
+    return now - row.start_at <= secs * 1000;
+  } catch (e) {
+    console.log("sessionTimeOk error", String(e));
+    return true;
+  }
+}
+
+/** داخلِ authGate صدا زده می‌شود. null = اجازه، وگرنه Response (402 رایگان / 429 سقفِ روزانه). */
 export async function featureGate(request, env, url, session, cors) {
   const feature = featureOf(request, url);
   if (!feature) return null;
-  if (await isPro(env, session.sub, session.em)) return null;
   const useId = (request.headers.get("X-Use-Id") || "").slice(0, 64);
-  const r = await consume(env, session.sub, feature, useId);
-  return r.ok ? null : limitResponse(feature, r.limit, cors);
+  const pro = await isPro(env, session.sub, session.em);
+
+  if (!pro && !LIFETIME_EXEMPT.has(feature)) {
+    // سقفِ «کل عمر» + سقفِ طولِ جلسه (رایگان)
+    const r = await consume(env, session.sub, feature, useId);
+    if (!r.ok) return limitResponse(feature, r.limit, cors);
+    if (!(await sessionTimeOk(env, session.sub, feature, r.fresh === true))) {
+      return jsonResp({ error: MSG_FA, code: "free_session_over", feature }, 402, cors);
+    }
+  }
+  // 📅 سقفِ روزانه‌ی هر بخش — برای همه (Pro/VIP/رایگان)، سمتِ سرور
+  const d = await consumeDaily(env, session.sub, feature, useId);
+  if (!d.ok) return dailyResponse(feature, d.limit, cors);
+  return null;
 }
 
 /**
@@ -207,8 +316,11 @@ export async function handleUsage(request, env, url, cors, session) {
     try { body = await request.json(); } catch { /* خالی */ }
     const feature = String(body.feature || "").toLowerCase();
     if (!FEATURES[feature]) return jsonResp({ error: "unknown feature" }, 400, cors);
+    const bid = String(body.id || "").slice(0, 64);
+    const dd = await consumeDaily(env, session.sub, feature, bid);
+    if (!dd.ok) return dailyResponse(feature, dd.limit, cors);
     if (pro) return jsonResp({ ok: true, pro: true }, 200, cors);
-    const r = await consume(env, session.sub, feature, String(body.id || "").slice(0, 64));
+    const r = await consume(env, session.sub, feature, bid);
     if (!r.ok) return limitResponse(feature, r.limit, cors);
     return jsonResp({ ok: true, used: r.used, limit: r.limit }, 200, cors);
   }

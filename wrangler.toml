@@ -30,6 +30,18 @@ LIMIT_MISC = "3000"
 
 # 💎 نسخه‌ی رایگان: سقفِ «کل عمر» برای هر بخش (مثال‌ساز، گرامر، چت، ویدیوکال، داستان، ترجمه‌ی زنده، ذره‌بین، ترجمه‌ی یوتیوب)
 FREE_LIMIT = "2"
+# 📞 تماس صوتی/تصویری رایگان: ۱ جلسه‌ی محدود به FREE_CALL_SECONDS ثانیه (سمتِ سرور اعمال می‌شود)
+FREE_LIMIT_VIDEOCALL = "1"
+FREE_CALL_SECONDS = "180"
+
+# 📅 سقفِ روزانه‌ی هر بخش (برای همه‌ی کاربران، سمتِ سرور/D1). عدد = تعداد «استفاده» در روز؛ حذف یا ۰ = بدونِ سقف.
+# (چت/تماس/یوتیوب هر نشستِ ۳۰/۳۰/۶۰ دقیقه‌ای یک استفاده حساب می‌شود). پیش‌فرض‌ها را بعد از دیدنِ آمارِ واقعی تنظیم کن.
+DAILY_EXAMPLE = "60"
+DAILY_GRAMMAR = "30"
+DAILY_STORY = "5"
+DAILY_CHAT = "20"
+DAILY_VIDEOCALL = "10"
+DAILY_YTSUB = "10"
 # سقفِ اختصاصیِ یک بخش (اختیاری):  FREE_LIMIT_STORY = "3"
 # 📊 گزارشِ مصرفِ AI (اختیاری) — پنل: https://<worker>/admin/usage-report?key=<ADMIN_KEY>
 #   ADMIN_KEY را secret بگذار:  npx wrangler secret put ADMIN_KEY
