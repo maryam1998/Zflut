@@ -4,6 +4,7 @@
 // ---------------------------------------------------------------------------
 
 import { handleTranscribe } from "./transcribe.js";
+import { handleWordExample } from "./examples.js";
 import { authGate, handleSession, verifySessionToken } from "./auth.js";
 import { handleUsage, featureOf, aiMissGate } from "./usage.js";
 import { handleContent } from "./content.js";
@@ -76,6 +77,16 @@ export default {
         (url.pathname === "/api/transcribe" || url.pathname === "/api/translate-subtitles")) {
       ctx.waitUntil(recordUsage(env, request, {
         feature: url.pathname === "/api/transcribe" ? "stt" : "ytsub", provider: "n/a" }));
+    }
+
+    // 🧩 مثال‌سازِ مشترکِ Pro (کشِ سراسریِ مثال‌ها در D1؛ AI فقط وقتی مثالِ تازه لازم است)
+    if (url.pathname === "/api/word-example") {
+      const sess = await verifySessionToken(env, request.headers.get("X-App-Token"));
+      if (!sess) return json({ error: "login required" }, 401);
+      return handleWordExample(request, env, ctx, CORS_HEADERS, sess, {
+        buildPrompt: buildExamplePrompt,
+        getProviderChain, callProvider, withTimeout, sanitizeAiText, badAiOutputReason, recordUsage,
+      });
     }
 
     // ⭐ NEW: تبدیل صدا به متن با Whisper (Cloudflare Workers AI)
@@ -241,6 +252,24 @@ export default {
     return json({ error: "Not found" }, 404);
   },
 };
+
+// پرامپتِ مثال‌ساز (همان متنِ پرامپتِ اپ در word_examples.dart)
+function buildExamplePrompt({ word, lang, meaning, nativeLabel, used }) {
+  const langNames = { en: "English", fa: "Persian", ar: "Arabic", de: "German", fr: "French", es: "Spanish", it: "Italian", tr: "Turkish", ru: "Russian" };
+  const langLabel = langNames[lang.split("-")[0]] || lang;
+  const avoid = used.length
+    ? "Do NOT reuse or closely paraphrase any of these already-used examples for this same word:\n" +
+      used.slice(0, 20).map((u, i) => `${i + 1}. ${String(u).slice(0, 300)}`).join("\n") + "\n\n"
+    : "";
+  const mean = meaning ? ` (its ${nativeLabel || "native-language"} meaning is: "${meaning}")` : "";
+  return (
+    `Write exactly ONE natural example sentence in ${langLabel} that uses the word/expression "${word}"${mean} ` +
+    "in a way that reflects REAL, current, everyday usage — the kind of sentence a native speaker might actually say or write today. " +
+    "Avoid textbook-sounding, generic sentences. " +
+    "Keep it natural length (roughly 8-20 words), grammatically correct, and appropriate for a language learner to study.\n\n" +
+    `${avoid}Respond with ONLY the example sentence itself in ${langLabel} — no quotes, no translation, no numbering, no explanation, nothing else.`
+  );
+}
 
 // سقفِ روزانه‌ی درخواست‌های کش‌نشده‌ی بدونِ بخش (ترجمه). فقط در AUTH_MODE=on اعمال می‌شود.
 async function missGate(request, env) {

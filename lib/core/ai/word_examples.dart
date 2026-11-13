@@ -1,13 +1,19 @@
 import '../usage/free_limit.dart';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/services.dart' show rootBundle;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../auth/worker_auth.dart';
 import '../constants/supported_languages.dart';
 import '../storage/durable_store.dart';
 import '../storage/local_storage.dart';
 import '../translate/translation_service.dart';
+import '../tts/tts_config.dart';
 import 'ai_gateway.dart';
 
 // پورتِ app/words/wordExamples.js — همان کلیدِ وب، پس ساختار یکی است.
@@ -180,4 +186,92 @@ Future<String> generateWordExample({
       .trim();
   if (s.isEmpty) throw const AiOutputException('empty');
   return s;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// 🧩 مثال‌سازِ مشترک (Pro) + مثال‌های آماده (رایگان)
+// ═══════════════════════════════════════════════════════════════════
+
+/// Worker گفت این بخش مخصوص Pro است (کد 403 pro_required).
+class ProRequiredException implements Exception {
+  const ProRequiredException();
+  @override
+  String toString() => 'ProRequiredException';
+}
+
+class SharedExampleResult {
+  /// مثالِ تازه برای این کاربر؛ null یعنی exhausted
+  final String? text;
+
+  /// true = همه‌ی مثال‌های ذخیره‌شده‌ی این لغت را دیده و سقفِ ذخیره هم پر است
+  final bool exhausted;
+  const SharedExampleResult({this.text, this.exhausted = false});
+}
+
+final Dio _exDio = Dio();
+
+/// از Worker یک مثالِ «دیده‌نشده» برای این لغت می‌گیرد: اول از کشِ سراسریِ مثال‌های بقیه‌ی کاربران؛
+/// فقط اگر کم بود، Worker با AI یکی می‌سازد و برای بقیه هم ذخیره می‌کند. فقط Pro.
+Future<SharedExampleResult> fetchSharedWordExample({
+  required String word,
+  required String langCode,
+  required List<String> have,
+  String meaningNative = '',
+  String nativeLabel = '',
+}) async {
+  Future<Response<dynamic>> once() => _exDio.post<dynamic>(
+        '${TtsConfig.backendUrl}/api/word-example',
+        data: {
+          'word': word,
+          'lang': langCode,
+          'have': have,
+          if (meaningNative.isNotEmpty) 'meaning': meaningNative,
+          if (nativeLabel.isNotEmpty) 'nativeLabel': nativeLabel,
+        },
+        options: Options(
+          headers: WorkerAuth.headers,
+          contentType: 'application/json',
+          sendTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 30),
+          validateStatus: (_) => true,
+        ),
+      );
+  await WorkerAuth.ensureFresh();
+  var res = await once();
+  if (res.statusCode == 401) {
+    await WorkerAuth.refresh();
+    res = await once();
+  }
+  if (res.statusCode == 403) throw const ProRequiredException();
+  final data = res.data;
+  if (res.statusCode != 200 || data is! Map) {
+    throw Exception('word-example HTTP ${res.statusCode}');
+  }
+  if (data['exhausted'] == true) return const SharedExampleResult(exhausted: true);
+  final t = (data['text'] ?? '').toString().trim();
+  if (t.isEmpty) throw const AiOutputException('empty');
+  return SharedExampleResult(text: t);
+}
+
+Map<String, List<String>>? _seedExamples;
+
+/// مثال‌های آمادهِ لغات رایگان (assets/data/seed_examples.json) — بدونِ اینترنت و بدونِ AI.
+/// فقط انگلیسی (لغاتِ اپ انگلیسی‌اند).
+Future<List<String>> seedExamplesFor(String word, String langCode) async {
+  if (langCode.split('-').first != 'en') return const [];
+  if (_seedExamples == null) {
+    try {
+      final raw = await rootBundle.loadString('assets/data/seed_examples.json');
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      _seedExamples = {
+        for (final e in m.entries)
+          e.key: [for (final x in (e.value as List)) x.toString()],
+      };
+    } catch (e) {
+      debugPrint('seedExamples load failed: $e');
+      _seedExamples = {};
+    }
+  }
+  return _seedExamples![word.trim().toLowerCase()] ?? const [];
 }

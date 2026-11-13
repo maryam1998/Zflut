@@ -73,7 +73,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
         .read(wordExamplesStoreProvider)
         .load(widget.word, widget.langCode);
     if (_examples.isEmpty) {
-      // 💎 کاربر رایگان: مثال فقط با زدنِ دکمه ساخته می‌شود (تا سهمیه الکی خرج نشود)
+      // 💎 Pro: مثالِ اول خودکار می‌آید (اول از کشِ سراسری). رایگان: با زدنِ دکمه، مثال‌های آماده نشان داده می‌شود
       if (ProStatus.isPro) _generate(auto: true);
     } else {
       // ⚡ صدای اولین مثال از قبل ساخته شود تا تپ روی 🔊 بدون تأخیر باشد
@@ -83,24 +83,83 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
     }
   }
 
-  Future<void> _generate({bool auto = false}) async {
-    if (_generating) return;
+  bool get _fa => Localizations.localeOf(context).languageCode == 'fa';
+
+  String get _exhaustedMsg => _fa
+      ? 'همه‌ی مثال‌های این لغت را دیده‌ای. مثال‌های بیشتر به‌زودی اضافه می‌شود.'
+      : "You've seen all the examples for this word. More will be added soon.";
+
+  /// 🆓 کاربر رایگان: مثال‌های آماده‌ی همین لغت (بدونِ AI). بار دوم → پیامِ «مخصوص Pro».
+  Future<void> _showSeeds() async {
     setState(() {
       _generating = true;
       _err = '';
     });
     try {
-      final text = await generateWordExample(
-        svc: ref.read(translationServiceProvider),
-        settings: ref.read(aiSettingsProvider),
+      final store = ref.read(wordExamplesStoreProvider);
+      final seeds = await seedExamplesFor(widget.word, widget.langCode);
+      final cur = store.load(widget.word, widget.langCode);
+      final have = cur.map((e) => e.text.trim().toLowerCase()).toSet();
+      final fresh =
+          seeds.where((t) => !have.contains(t.trim().toLowerCase())).toList();
+      if (fresh.isEmpty) {
+        FreeLimit.reportLocked();
+        if (mounted) {
+          setState(() => _err = FreeLimit.lockedMessage(_fa ? 'fa' : 'en'));
+        }
+        return;
+      }
+      var list = cur;
+      // add() هر مثال را اول لیست می‌گذارد؛ برعکس اضافه می‌کنیم تا ترتیبِ فایل حفظ شود
+      for (final t in fresh.reversed) {
+        list = await store.add(widget.word, widget.langCode, t);
+      }
+      if (!mounted) return;
+      setState(() => _examples = list);
+      ref
+          .read(speechControllerProvider.notifier)
+          .warmUp(list.first.text, widget.langCode);
+    } catch (_) {
+      if (mounted) setState(() => _err = context.l10n.word_examples_failed);
+    } finally {
+      if (mounted) setState(() => _generating = false);
+    }
+  }
+
+  void _onProError(Object e, {required bool auto}) {
+    if (!mounted) return;
+    if (e is ProRequiredException || e is FreeLimitException) {
+      if (!auto) FreeLimit.reportLocked();
+      setState(() => _err = FreeLimit.lockedMessage(_fa ? 'fa' : 'en'));
+    } else {
+      setState(() => _err = context.l10n.word_examples_failed);
+    }
+  }
+
+  Future<void> _generate({bool auto = false}) async {
+    if (_generating) return;
+    // 🆓 رایگان: مثال‌های آماده
+    if (!ProStatus.isPro) {
+      if (!auto) await _showSeeds();
+      return;
+    }
+    setState(() {
+      _generating = true;
+      _err = '';
+    });
+    try {
+      final r = await fetchSharedWordExample(
         word: widget.word,
         langCode: widget.langCode,
+        have: _examples.map((e) => e.text).toList(),
         meaningNative: widget.meaningNative,
         nativeLabel: _nativeLabel,
-        existing: _examples.map((e) => e.text).toList(),
-        // ساختِ خودکارِ اولین مثال (با باز شدنِ کارت) پنجره‌ی «سقف تمام شد» را باز نمی‌کند
-        reportLimit: !auto,
       );
+      if (r.text == null) {
+        if (mounted) setState(() => _err = _exhaustedMsg);
+        return;
+      }
+      final text = r.text!;
       final list = await ref
           .read(wordExamplesStoreProvider)
           .add(widget.word, widget.langCode, text);
@@ -108,10 +167,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
       setState(() => _examples = list);
       ref.read(speechControllerProvider.notifier).warmUp(text, widget.langCode);
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _err = e is FreeLimitException
-          ? FreeLimit.message(Localizations.localeOf(context).languageCode)
-          : context.l10n.word_examples_failed);
+      _onProError(e, auto: auto);
     } finally {
       if (mounted) setState(() => _generating = false);
     }
@@ -119,21 +175,29 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
 
   Future<void> _refresh(String id) async {
     if (_refreshingId != null) return;
+    if (!ProStatus.isPro) {
+      FreeLimit.reportLocked();
+      setState(() => _err = FreeLimit.lockedMessage(_fa ? 'fa' : 'en'));
+      return;
+    }
     setState(() {
       _refreshingId = id;
       _err = '';
     });
     try {
-      final text = await generateWordExample(
-        svc: ref.read(translationServiceProvider),
-        settings: ref.read(aiSettingsProvider),
+      final r = await fetchSharedWordExample(
         word: widget.word,
         langCode: widget.langCode,
+        // همه‌ی مثال‌های فعلی (از جمله خودِ این یکی) تا مثالِ دیگری برگردد
+        have: _examples.map((e) => e.text).toList(),
         meaningNative: widget.meaningNative,
         nativeLabel: _nativeLabel,
-        existing:
-            _examples.where((e) => e.id != id).map((e) => e.text).toList(),
       );
+      if (r.text == null) {
+        if (mounted) setState(() => _err = _exhaustedMsg);
+        return;
+      }
+      final text = r.text!;
       final list = await ref
           .read(wordExamplesStoreProvider)
           .replace(widget.word, widget.langCode, id, text);
@@ -141,10 +205,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
       setState(() => _examples = list);
       ref.read(speechControllerProvider.notifier).warmUp(text, widget.langCode);
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _err = e is FreeLimitException
-          ? FreeLimit.message(Localizations.localeOf(context).languageCode)
-          : context.l10n.word_examples_failed);
+      _onProError(e, auto: false);
     } finally {
       if (mounted) setState(() => _refreshingId = null);
     }
