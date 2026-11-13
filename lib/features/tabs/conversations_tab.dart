@@ -173,7 +173,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     return n;
   }
   int _rangeFrom = 1;
-  int _rangeTo = 60;
+  int _rangeTo = 65;
 
   /// جای اسکرولِ لیستِ موضوع‌ها — وقتی موضوعی باز می‌شود ذخیره و با «بازگشت»
   /// دقیقاً همان‌جا برگردانده می‌شود (نه بالای لیست).
@@ -325,7 +325,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           onChanged: (v) => setState(() {
             _levels = v;
             _rangeFrom = 1;
-            _rangeTo = 60;
+            _rangeTo = 65;
           }),
         ),
       );
