@@ -1,3 +1,4 @@
+import '../../core/usage/pro_status.dart';
 import '../../core/usage/free_limit.dart';
 import 'dart:async';
 import 'dart:typed_data';
@@ -341,7 +342,29 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _consumeDraft(d);
       });
+    } else {
+      _seedFreeDefaults();
     }
+  }
+
+  /// 🎁 کاربر رایگان: ژانر (خنده‌دار) و چند لغتِ آماده از اول در صفحه هست؛
+  /// با زدنِ «داستان بساز» همان لغات در داستان می‌آیند.
+  static const Map<String, List<String>> _kFreeStarterWords = {
+    'en': ['suitcase', 'neighbor', 'borrow', 'hilarious', 'surprise', 'lost'],
+    'es': ['maleta', 'vecino', 'prestar', 'divertido', 'sorpresa', 'perdido'],
+    'de': ['Koffer', 'Nachbar', 'leihen', 'lustig', 'Überraschung', 'verloren'],
+  };
+
+  void _seedFreeDefaults() {
+    if (ProStatus.isPro || _words.isNotEmpty) return;
+    final targets = ref.read(languageSelectionProvider).targets;
+    final lang = (targets.isNotEmpty && _kFreeStarterWords.containsKey(targets.first))
+        ? targets.first
+        : 'en';
+    _storyLang = lang;
+    _langTouched = true;
+    _contentType = 'funny';
+    _words.addAll(_kFreeStarterWords[lang]!);
   }
 
   /// بازگرداندنِ داستانِ (ذخیره‌شده/ساخته‌شده) که پخش از آن شروع شده بود.
