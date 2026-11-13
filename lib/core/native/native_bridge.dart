@@ -225,8 +225,8 @@ class NativeBridge {
   Future<Map<String, dynamic>> checkSystemTts({String? lang}) =>
       _call('checkSystemTts', {if (lang != null) 'lang': lang});
 
-  Future<Map<String, dynamic>> speakSystem({String? text, String? lang, String? id, num? speed}) =>
-      _call('speakSystem', {if (text != null) 'text': text, if (lang != null) 'lang': lang, if (id != null) 'id': id, if (speed != null) 'speed': speed});
+  Future<Map<String, dynamic>> speakSystem({String? text, String? lang, String? id, num? speed, String? gender}) =>
+      _call('speakSystem', {if (text != null) 'text': text, if (lang != null) 'lang': lang, if (id != null) 'id': id, if (speed != null) 'speed': speed, if (gender != null) 'gender': gender});
 
   Future<Map<String, dynamic>> stopSpeaking() => _call('stopSpeaking');
 

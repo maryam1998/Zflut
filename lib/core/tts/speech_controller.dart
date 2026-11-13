@@ -151,8 +151,56 @@ class SpeechController extends StateNotifier<SpeechState> {
     final lead = c.text.length - c.text.trimLeft().length;
     for (final r in _voiceResolvers) {
       final v = r(state.key, c.start + lead);
-      if (v != null && v.isNotEmpty) return v;
+      // «gender:male/female» فقط راهنمای جنسیت است، نه شناسه‌ی صدای نیتیو
+      if (v != null && v.isNotEmpty && !v.startsWith('gender:')) return v;
     }
+    return null;
+  }
+
+  /// 🎭 جنسیتِ خواسته‌شده برای این جمله ('male' / 'female' / null). وقتی صدای مخصوصِ
+  /// آن جنسیت نصب نیست، صدای گوشی/مرورگر (و Edge) با همین راهنما انتخاب می‌شود.
+  String? _genderFor(int idx) {
+    if (_voiceResolvers.isEmpty || idx < 0 || idx >= _chunks.length) {
+      return null;
+    }
+    final c = _chunks[idx];
+    final lead = c.text.length - c.text.trimLeft().length;
+    for (final r in _voiceResolvers) {
+      final v = r(state.key, c.start + lead);
+      if (v != null && v.startsWith('gender:')) {
+        final g = v.substring(7);
+        if (g == 'male' || g == 'female') return g;
+      }
+    }
+    return null;
+  }
+
+  /// حدسِ جنسیتِ یک صدای سیستم/مرورگر از روی اسمش (null = نامعلوم)
+  static String? _voiceGender(String name) {
+    final n = name.toLowerCase();
+    if (RegExp(r'female|woman|\bfem\b|#f_').hasMatch(n)) return 'female';
+    if (RegExp(r'\bmale\b|\bman\b|#m_').hasMatch(n)) return 'male';
+    const fem = [
+      'samantha', 'victoria', 'karen', 'moira', 'tessa', 'fiona', 'zira', 'aria',
+      'jenny', 'michelle', 'emma', 'hazel', 'susan', 'heera', 'ava', 'allison',
+      'joanna', 'salli', 'kimberly', 'nicole', 'amy', 'libby', 'sonia', 'natasha',
+      'neerja', 'linda', 'catherine', 'sara', 'zoe', 'serena', 'kate', 'ivy',
+      'katja', 'elvira', 'denise', 'xiaoxiao', 'nanami', 'svetlana', 'elsa',
+      'sunhi', 'swara', 'dilara', 'zariyah', 'salma', 'paulina', 'monica',
+      'amelie', 'anna', 'helena', 'laura', 'lucia', 'milena', 'yuna', 'kyoko',
+    ];
+    const mal = [
+      'alex', 'daniel', 'fred', 'tom', 'oliver', 'david', 'mark', 'george',
+      'guy', 'ryan', 'james', 'ravi', 'rishi', 'aaron', 'arthur', 'gordon',
+      'matthew', 'joey', 'justin', 'brian', 'russell', 'davis', 'christopher',
+      'eric', 'roger', 'thomas', 'reed', 'conrad', 'alvaro', 'henri', 'xiaoyi',
+      'yunxi', 'keita', 'dmitry', 'diego', 'injoon', 'madhur', 'farid', 'hamed',
+      'jorge', 'diego', 'luca', 'yuri', 'ichiro', 'otoya', 'hemant',
+    ];
+    // اسمِ کامل (نه زیررشته): مثلاً «eric» در «american» نیافتد
+    final toks = n.split(RegExp(r'[^a-z]+')).toSet();
+    if (fem.any(toks.contains)) return 'female';
+    if (mal.any(toks.contains)) return 'male';
     return null;
   }
 
@@ -912,7 +960,8 @@ class SpeechController extends StateNotifier<SpeechState> {
   Future<bool> _playSystemTts(int idx, String text, String code, int myGen) {
     return _speakNativeAndWait(
       speakFn: (id) =>
-          NativeTtsBridge.speakSystem(text, code, state.rate, id: id),
+          NativeTtsBridge.speakSystem(text, code, state.rate,
+              id: id, gender: _genderFor(idx)),
       idx: idx,
       text: text,
       myGen: myGen,
@@ -986,7 +1035,8 @@ class SpeechController extends StateNotifier<SpeechState> {
   /// null = فهرست صداها نامعلوم (هنوز خالی)؛ لیست خالی = مطمئنیم صدایی
   /// برای این زبان نیست.
   Future<List<Map<String, String>>?> _voiceCandidates(
-      String locale, String code) async {
+      String locale, String code,
+      {String? gender}) async {
     var voices = await _loadVoices();
     // فقط اگر فهرست هنوز کاملاً خالیه (ثانیه‌های اول) کوتاه صبر می‌کنیم
     for (var i = 0; i < 3 && voices.isEmpty; i++) {
@@ -1030,6 +1080,15 @@ class SpeechController extends StateNotifier<SpeechState> {
       final name = v['name']!;
       final n = name.toLowerCase();
       var s = 0;
+      if (gender != null) {
+        // 🎭 جنسیتِ خواسته‌شده بر همه‌چیز می‌چربد؛ صدای هم‌جنسِ دیگر آخر می‌رود
+        final g = _voiceGender(name);
+        if (g == gender) {
+          s -= 50000;
+        } else if (g != null) {
+          s += 50000;
+        }
+      }
       if (good != null && name == good) s -= 10000;
       if (saved != null && saved.isNotEmpty && name == saved) s -= 9000;
       if (_normLocale(v['locale']!) == wanted) s -= 5;
@@ -1165,7 +1224,8 @@ class SpeechController extends StateNotifier<SpeechState> {
       // اگر صدای اولی بی‌صدا یا بی‌شروع بود (مثلاً صدای آنلاین بدون
       // اینترنت)، همان لحظه صدای بعدیِ همان زبان را امتحان می‌کنیم؛ صدایی که
       // کار کرد برای دفعه‌های بعد حفظ می‌شود تا ترجمه‌ها بدون تأخیر بخوانند.
-      final candidates = await _voiceCandidates(locale, code);
+      final gender = _genderFor(idx);
+      final candidates = await _voiceCandidates(locale, code, gender: gender);
       if (myGen != _generation) return _WebResult.cancelled;
       if (candidates != null && candidates.isEmpty) return _WebResult.noVoice;
 
@@ -1180,7 +1240,8 @@ class SpeechController extends StateNotifier<SpeechState> {
           return _WebResult.cancelled;
         }
         if (r == _Once.ok) {
-          if (voice != null) _goodVoice[code] = voice['name']!;
+          // صدای انتخاب‌شده برای جنسیتِ خاص، «صدای خوبِ» عمومیِ این زبان نمی‌شود
+          if (voice != null && gender == null) _goodVoice[code] = voice['name']!;
           await _gapThenNext(idx, text, myGen);
           return _WebResult.done;
         }
@@ -1245,7 +1306,9 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
 
     // Edge TTS از Worker
-    final voice = TtsConfig.edgeVoice[code] ?? 'en-US-AriaNeural';
+    final voice = (_genderFor(idx) == 'male' ? TtsConfig.edgeVoiceMale[code] : null) ??
+        TtsConfig.edgeVoice[code] ??
+        'en-US-AriaNeural';
     final url = '${TtsConfig.backendUrl}/api/tts'
         '?voice=${Uri.encodeComponent(voice)}'
         '&text=${Uri.encodeComponent(text)}';

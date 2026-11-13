@@ -112,12 +112,15 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   /// A («می‌شنوی») = مرد، B («می‌گی») = زن
   String? _voiceFor(String itemId, String lang) {
     if (!RegExp(r'^[ab]\d+$').hasMatch(itemId)) return null;
+    final male = itemId.startsWith('a');
     final p = _langVoices[lang.trim().toLowerCase()];
     if (p == null) {
       unawaited(_loadVoices()); // زبانِ تازه (مثلاً هدر تازه عوض شده) → صدایش را پیدا کن
-      return null;
     }
-    return itemId.startsWith('a') ? p.male : p.female;
+    final v = p == null ? null : (male ? p.male : p.female);
+    // صدای اختصاصیِ مرد/زن نصب نیست (یا وب/صدای گوشی است) → فقط جنسیت را اعلام کن
+    // تا موتورِ صدا از بینِ صداهای گوشی/مرورگر/Edge صدای هم‌جنس را انتخاب کند.
+    return v ?? (male ? 'gender:male' : 'gender:female');
   }
 
   String? _voiceForTrans(String itemId, String lang) => _voiceFor(itemId, lang);

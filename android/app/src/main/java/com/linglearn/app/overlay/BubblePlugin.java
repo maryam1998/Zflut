@@ -1253,6 +1253,7 @@ public class BubblePlugin extends Plugin {
         final String text = call.getString("text");
         final String lang = call.getString("lang", "en");
         final String id = call.getString("id");
+        final String gender = call.getString("gender"); // 'male' | 'female' | null
         Double sp = call.getDouble("speed", 1.0);
         final float speed = (sp == null || sp <= 0) ? 1.0f : sp.floatValue();
         if (text == null || text.trim().isEmpty()) {
@@ -1263,7 +1264,7 @@ public class BubblePlugin extends Plugin {
         final int mySeq = SPEAK_SEQ.incrementAndGet();
         new Thread(() -> {
             if (mySeq != SPEAK_SEQ.get()) { emitSpeakDone(lang, text, id, true); return; }
-            sys(ctx).speak(text, lang, speed, id, ok -> emitSpeakDone(lang, text, id, ok));
+            sys(ctx).speak(text, lang, speed, id, gender, ok -> emitSpeakDone(lang, text, id, ok));
         }, "sys-tts-speak").start();
     }
 

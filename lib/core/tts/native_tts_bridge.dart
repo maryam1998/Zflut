@@ -187,11 +187,13 @@ class NativeTtsBridge {
     String lang,
     double rate, {
     String? id,
+    String? gender, // 'male' | 'female' | null
   }) async {
     if (!isAvailable) return false;
     _ensureListening();
     try {
-      await _b.speakSystem(text: text, lang: lang, speed: rate, id: id);
+      await _b.speakSystem(
+          text: text, lang: lang, speed: rate, id: id, gender: gender);
       return true;
     } catch (e) {
       debugPrint('speakSystem error: $e');
