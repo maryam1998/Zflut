@@ -28,7 +28,9 @@ class PaidContent {
   /// با هر به‌روزرسانی/پاک‌شدنِ کش زیاد می‌شود (providerها به آن گوش می‌دهند).
   static final ValueNotifier<int> revision = ValueNotifier<int>(0);
 
-  static final Dio _dio = Dio();
+  static final Dio _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 10),
+  ));
   static const List<String> _keys = [
     'words:daily',
     'words:slang',
@@ -64,7 +66,13 @@ class PaidContent {
         have = m['version']?.toString();
         final t = m['topic'];
         if (t is Map<String, dynamic>) {
-          unawaited(_refreshTopic(id, have));
+          // بررسیِ نسخه فقط هر ۱۰ دقیقه برای هر موضوع (قبلاً با هر بازکردن یک درخواست بود)
+          final last = _topicChecked[id];
+          if (last == null ||
+              DateTime.now().difference(last) > const Duration(minutes: 10)) {
+            _topicChecked[id] = DateTime.now();
+            unawaited(_refreshTopic(id, have));
+          }
           return t;
         }
       }
@@ -81,7 +89,46 @@ class PaidContent {
     return File('${d.path}/$id.json');
   }
 
-  static Future<Map<String, dynamic>?> _downloadTopic(
+  static final Map<String, DateTime> _topicChecked = {};
+  static final Map<String, Future<Map<String, dynamic>?>> _dlInflight = {};
+
+  /// دانلودِ هم‌زمانِ یک موضوع یک‌بار انجام می‌شود (پیش‌دانلود و بازکردنِ کاربر یک درخواست را شریک می‌شوند).
+  static Future<Map<String, dynamic>?> _downloadTopic(String id, String? have) {
+    return _dlInflight[id] ??=
+        _downloadTopicRaw(id, have).whenComplete(() => _dlInflight.remove(id));
+  }
+
+  static bool _prefetching = false;
+
+  /// 🚀 موضوع‌هایی که هنوز در گوشی نیستند را در پس‌زمینه (۲ تا هم‌زمان) می‌گیرد تا بازشدنشان فوری باشد.
+  static Future<void> prefetchTopics(List<String> ids) async {
+    if (_prefetching || !ProStatus.isPro) return;
+    _prefetching = true;
+    try {
+      final todo = <String>[];
+      for (final id in ids) {
+        if (id.isEmpty) continue;
+        if (!await (await _convFile(id)).exists()) todo.add(id);
+      }
+      var next = 0;
+      Future<void> worker() async {
+        while (next < todo.length && ProStatus.isPro) {
+          final id = todo[next++];
+          try {
+            await _downloadTopic(id, null);
+          } catch (e) {
+            debugPrint('PaidContent.prefetch($id): $e');
+          }
+        }
+      }
+
+      await Future.wait([worker(), worker()]);
+    } finally {
+      _prefetching = false;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> _downloadTopicRaw(
       String id, String? have) async {
     final r = await _fetch(
         '/api/content/conversation?id=${Uri.encodeQueryComponent(id)}', have);
@@ -154,13 +201,19 @@ class PaidContent {
           options: Options(
             headers: WorkerAuth.headers,
             responseType: ResponseType.plain,
-            sendTimeout: const Duration(seconds: 20),
-            receiveTimeout: const Duration(seconds: 60),
+            sendTimeout: const Duration(seconds: 15),
+            receiveTimeout: const Duration(seconds: 30),
             validateStatus: (_) => true,
           ),
         );
     await WorkerAuth.ensureFresh();
-    var res = await once();
+    Response<String> res;
+    try {
+      res = await once();
+    } on DioException {
+      // یک بار دوباره (شبکه‌ی ضعیف / بیدار شدنِ سرور)
+      res = await once();
+    }
     if (res.statusCode == 401) {
       await WorkerAuth.refresh();
       res = await once();

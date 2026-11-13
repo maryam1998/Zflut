@@ -70,6 +70,12 @@ class ConversationRepository {
       ];
       _loaded = true;
       _error = null;
+      // 🚀 Pro: متنِ موضوع‌ها را در پس‌زمینه پیش‌دانلود کن تا با لمس فوری باز شوند
+      if (ProStatus.isPro) {
+        final ids = [for (final t in _all) t.id];
+        Future.delayed(const Duration(seconds: 2),
+            () => unawaited(PaidContent.prefetchTopics(ids)));
+      }
     } catch (e) {
       _error = e.toString();
       _loaded = false;
