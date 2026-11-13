@@ -2690,27 +2690,27 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       final pos = ms % phraseLen;
       if (pos < phraseLen - 350) {
         // هجاها: طولِ ~۱۵۰–۲۴۰ms (تقریباً ۴–۶ هجا در ثانیه)
-        final k = ms ~/ 150;
+        final k = ms ~/ 230;
         final h = _visemeHash(k);
         final span = 1 + (h % 3 == 0 ? 1 : 0); // بعضی هجاها کشیده‌ترند
-        final seg = ((ms ~/ 150) ~/ span);
+        final seg = ((ms ~/ 230) ~/ span);
         final hs = _visemeHash(seg + 31);
-        final dur = 150.0 * span;
-        final ph = (ms % (150 * span)) / dur;
-        const amps = [0.34, 0.50, 0.26, 0.58, 0.40, 0.20, 0.46];
+        final dur = 230.0 * span;
+        final ph = (ms % (230 * span)) / dur;
+        const amps = [0.24, 0.34, 0.20, 0.38, 0.28, 0.16, 0.32];
         final amp = amps[hs % amps.length];
-        final e = math.pow(math.sin(ph * math.pi), 0.75).toDouble();
-        const lo = 0.07; // بینِ هجاها کاملاً بسته نمی‌شود
+        final e = math.pow(math.sin(ph * math.pi), 1.0).toDouble();
+        const lo = 0.05; // بینِ هجاها کاملاً بسته نمی‌شود
         tOpen = lo + (amp - lo) * e;
         // «او/وو» فقط گاهی و ملایم
-        const rounds = [0.0, 0.0, 0.30, 0.0, 0.12, 0.0, 0.0];
+        const rounds = [0.0, 0.0, 0.18, 0.0, 0.08, 0.0, 0.0];
         tRound = rounds[(hs >> 4) % rounds.length] * e;
       }
     }
-    final tau = tOpen > _pmOpen ? 45.0 : 75.0;
+    final tau = tOpen > _pmOpen ? 85.0 : 130.0;
     final a = 1 - math.exp(-dt / tau);
     _pmOpen += (tOpen - _pmOpen) * a;
-    _pmRound += (tRound - _pmRound) * (1 - math.exp(-dt / 90.0));
+    _pmRound += (tRound - _pmRound) * (1 - math.exp(-dt / 140.0));
     if (!speaking && _pmOpen < 0.01 && _pmRound < 0.01) {
       _pmOpen = 0;
       _pmRound = 0;

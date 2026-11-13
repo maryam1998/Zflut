@@ -351,7 +351,10 @@ class _PhotoFacePainter extends CustomPainter {
     }
 
     // داخلِ دهان: بینِ لبه‌ی پایینِ بالا و لبه‌ی بالایِ فک (کمی زیرِ مش‌ها می‌رود)
-    if (d > 0.3) {
+    // وقتی دهان فقط کمی باز است داخلِ تیره مثلِ «یک خطِ باریک» دیده می‌شد؛
+    // پس تا حدِ مشخصی اصلاً کشیده نمی‌شود و بعد نرم محو/آشکار می‌شود.
+    final inner = ((d / k - 2.0) / 5.0).clamp(0.0, 1.0).toDouble();
+    if (inner > 0.01) {
       final path = Path();
       for (var i = 0; i < cols; i++) {
         final p = (i * rowsPerCol + nUp) * 2;
@@ -374,7 +377,11 @@ class _PhotoFacePainter extends CustomPainter {
           ..shader = ui.Gradient.linear(
             Offset(cx, seamC),
             Offset(cx, seamC + d + 1),
-            const [Color(0xFF241210), Color(0xFF331816), Color(0xFF5A2B28)],
+            [
+              const Color(0xFF241210).withOpacity(inner),
+              const Color(0xFF331816).withOpacity(inner),
+              const Color(0xFF5A2B28).withOpacity(inner),
+            ],
             const [0.0, 0.5, 1.0],
           )
           // لبه‌ی نرم تا داخلِ دهان مثلِ برشِ تیز/مصنوعی دیده نشود
