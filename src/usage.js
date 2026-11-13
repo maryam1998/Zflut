@@ -117,7 +117,7 @@ async function ensureTables(env) {
     ),
     // 🔁 شناسه‌ی «استفاده» (X-Use-Id) برای تشخیصِ retry — تعدادِ retryِ رایگان محدود و زمان‌دار است
     env.TR_DB.prepare(
-      "CREATE TABLE IF NOT EXISTS use_ids (k TEXT PRIMARY KEY, n INTEGER NOT NULL, t INTEGER NOT NULL)"
+      "CREATE TABLE IF NOT EXISTS use_log (k TEXT PRIMARY KEY, ph TEXT NOT NULL DEFAULT '', n INTEGER NOT NULL, t INTEGER NOT NULL)"
     ),
     // ⏱️ شروعِ نشستِ رایگانِ تماس (برای محدودیتِ طولِ جلسه)
     env.TR_DB.prepare(
@@ -154,37 +154,39 @@ export async function isPro(env, userId, email) {
 // قبلاً هر درخواستی که X-Use-Id آخرین استفاده را تکرار می‌کرد «retry» حساب می‌شد و بی‌نهایت رایگان بود
 // (کافی بود با curl همیشه یک id ثابت بفرستند). حالا هر استفاده‌ی شمرده‌شده حداکثر RETRY_FREE_MAX
 // تکرارِ رایگان، آن هم فقط تا RETRY_WINDOW_MS بعد از شمارش، دارد؛ بعدش دوباره شمرده می‌شود.
+// 🔗 retry فقط وقتی رایگان است که «همان پرامپت» (هش) با همان X-Use-Id بیاید؛ پرامپتِ متفاوت با id تکراری
+// یک استفاده‌ی جدید است و شمرده می‌شود. (جوابِ retry هم از کشِ مشترکِ پرامپت در D1 می‌آید، نه AI.)
 // (کلاینتِ اپ حداکثر ۲ بار تلاشِ دوباره می‌زند و هر تلاش چند ثانیه فاصله دارد.)
 const RETRY_FREE_MAX = 2;
-const RETRY_WINDOW_MS = 120000;
+const RETRY_WINDOW_MS = 300000;
 
 function useKey(scope, userId, feature, useId) {
   return `${scope}|${userId}|${feature}|${useId}`;
 }
 
 /** true = این درخواست retryِ یک استفاده‌ی قبلاً شمرده‌شده است (اتمیک؛ شمارنده‌ی retry را زیاد می‌کند). */
-async function isFreeRetry(env, scope, userId, feature, useId, now) {
+async function isFreeRetry(env, scope, userId, feature, useId, ph, now) {
   if (!useId) return false;
   const r = await env.TR_DB.prepare(
-    "UPDATE use_ids SET n = n + 1 WHERE k = ?1 AND t > ?2 AND n <= ?3 RETURNING n"
-  ).bind(useKey(scope, userId, feature, useId), now - RETRY_WINDOW_MS, RETRY_FREE_MAX).first();
+    "UPDATE use_log SET n = n + 1 WHERE k = ?1 AND ph = ?2 AND t > ?3 AND n <= ?4 RETURNING n"
+  ).bind(useKey(scope, userId, feature, useId), ph || "", now - RETRY_WINDOW_MS, RETRY_FREE_MAX).first();
   return !!r;
 }
 
 /** بعد از هر «شمارشِ واقعی» صدا زده می‌شود تا retryهای بعدیِ همین id رایگان باشند (محدود). */
-async function markUse(env, scope, userId, feature, useId, now) {
+async function markUse(env, scope, userId, feature, useId, ph, now) {
   if (!useId) return;
   await env.TR_DB.prepare(
-    "INSERT INTO use_ids (k, n, t) VALUES (?1, 1, ?2) ON CONFLICT(k) DO UPDATE SET n = 1, t = ?2"
-  ).bind(useKey(scope, userId, feature, useId), now).run();
+    "INSERT INTO use_log (k, ph, n, t) VALUES (?1, ?2, 1, ?3) ON CONFLICT(k) DO UPDATE SET ph = ?2, n = 1, t = ?3"
+  ).bind(useKey(scope, userId, feature, useId), ph || "", now).run();
   if (Math.random() < 0.01) {
-    await env.TR_DB.prepare("DELETE FROM use_ids WHERE t < ?1").bind(now - 3600000).run();
+    await env.TR_DB.prepare("DELETE FROM use_log WHERE t < ?1").bind(now - 3600000).run();
   }
 }
 
 // ───────────── مصرفِ یک بار ─────────────
 /** {ok, used, limit}. اگر D1 خراب/نبود → ok (نباید کاربر را الکی قفل کند). */
-export async function consume(env, userId, feature, useId) {
+export async function consume(env, userId, feature, useId, ph = "") {
   const limit = limitOf(env, feature);
   if (!env.TR_DB) return { ok: true, used: 0, limit };
   try {
@@ -197,7 +199,7 @@ export async function consume(env, userId, feature, useId) {
 
     if (row) {
       // تلاشِ دوباره‌ی همان درخواست (retry) دوباره حساب نمی‌شود
-      if (useId && (await isFreeRetry(env, "life", userId, feature, useId, now))) {
+      if (useId && (await isFreeRetry(env, "life", userId, feature, useId, ph, now))) {
         return { ok: true, used: row.n, limit, fresh: false };
       }
       // ادامه‌ی همان نشست
@@ -217,7 +219,7 @@ export async function consume(env, userId, feature, useId) {
         "RETURNING n"
     ).bind(userId, feature, now, useId || "", limit).first();
     if (!r) return { ok: false, used: row ? row.n : limit, limit };
-    await markUse(env, "life", userId, feature, useId, now);
+    await markUse(env, "life", userId, feature, useId, ph, now);
     return { ok: true, used: r.n, limit, fresh: true };
   } catch (e) {
     console.error("[FAIL-OPEN] consume error — سقفِ کل‌عمر بی‌صدا خاموش شد", String(e));
@@ -255,7 +257,7 @@ export function dailyLimitOf(env, feature) {
 }
 
 /** {ok, used, limit}. هر «استفاده‌ی جدید» یک بار حساب می‌شود (retry و ادامه‌ی نشست حساب نمی‌شود). سمتِ سرور و اتمیک. */
-export async function consumeDaily(env, userId, feature, useId) {
+export async function consumeDaily(env, userId, feature, useId, ph = "") {
   const limit = dailyLimitOf(env, feature);
   if (!limit || !env.TR_DB) return { ok: true, used: 0, limit };
   try {
@@ -267,7 +269,7 @@ export async function consumeDaily(env, userId, feature, useId) {
       "SELECT n, last_at, last_use FROM feature_daily WHERE user_id = ?1 AND feature = ?2 AND day = ?3"
     ).bind(userId, feature, day).first();
     if (row) {
-      if (useId && (await isFreeRetry(env, "day", userId, feature, useId, now))) {
+      if (useId && (await isFreeRetry(env, "day", userId, feature, useId, ph, now))) {
         return { ok: true, used: row.n, limit };
       }
       if (win > 0 && row.n > 0 && now - row.last_at < win) {
@@ -283,7 +285,7 @@ export async function consumeDaily(env, userId, feature, useId) {
         "RETURNING n"
     ).bind(userId, feature, day, now, useId || "", limit).first();
     if (!r) return { ok: false, used: row ? row.n : limit, limit };
-    await markUse(env, "day", userId, feature, useId, now);
+    await markUse(env, "day", userId, feature, useId, ph, now);
     if (Math.random() < 0.01) {
       const old = new Date(now - 7 * 86400000).toISOString().slice(0, 10);
       await env.TR_DB.prepare("DELETE FROM feature_daily WHERE day < ?1").bind(old).run();
@@ -352,16 +354,37 @@ async function sessionTimeOk(env, userId, feature, fresh) {
   }
 }
 
+/** هشِ (prompt + maxTokens) بدنه‌ی /api/generate؛ اگر بدنه خراب بود "" (بدونِ اینکه بدنه‌ی اصلی مصرف شود). */
+async function promptHash(request) {
+  try {
+    const b = await request.clone().json();
+    const data = new TextEncoder().encode(JSON.stringify([String(b?.prompt ?? ""), Number(b?.maxTokens) || 0]));
+    const dg = new Uint8Array(await crypto.subtle.digest("SHA-256", data));
+    return [...dg.slice(0, 12)].map((x) => x.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return "";
+  }
+}
+
 /** داخلِ authGate صدا زده می‌شود. null = اجازه، وگرنه Response (402 رایگان / 429 سقفِ روزانه). */
 export async function featureGate(request, env, url, session, cors) {
   const feature = featureOf(request, url);
   if (!feature) return null;
   const useId = (request.headers.get("X-Use-Id") || "").slice(0, 64);
+  // 🔗 هشِ پرامپت (فقط برای /api/generate): retry باید «همان پرامپت» باشد
+  let ph = "";
+  if (useId && url.pathname === "/api/generate") {
+    const len = Number(request.headers.get("Content-Length") || 0);
+    if (len > 250000) {
+      return jsonResp({ error: "prompt too long", code: "prompt_too_long" }, 413, cors);
+    }
+    ph = await promptHash(request);
+  }
   const pro = await isPro(env, session.sub, session.em);
 
   if (!pro && !LIFETIME_EXEMPT.has(feature)) {
     // سقفِ «کل عمر» + سقفِ طولِ جلسه (رایگان)
-    const r = await consume(env, session.sub, feature, useId);
+    const r = await consume(env, session.sub, feature, useId, ph);
     if (!r.ok) {
       console.warn(`[LIMIT] free_limit user=${session.sub} feature=${feature} limit=${r.limit} used=${r.used}`);
       return limitResponse(feature, r.limit, cors);
@@ -373,7 +396,7 @@ export async function featureGate(request, env, url, session, cors) {
   }
   // 📅 سقفِ روزانه‌ی هر بخش — سمتِ سرور؛ پیش‌فرض فقط رایگان (Pro/VIP فقط با DAILY_APPLY_TO_PRO)
   if (!pro || dailyAppliesToPro(env)) {
-    const d = await consumeDaily(env, session.sub, feature, useId);
+    const d = await consumeDaily(env, session.sub, feature, useId, ph);
     if (!d.ok) {
       console.warn(`[LIMIT] daily_feature_limit user=${session.sub} feature=${feature} limit=${d.limit}`);
       return dailyResponse(feature, d.limit, cors);
