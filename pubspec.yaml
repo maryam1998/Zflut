@@ -60,4 +60,5 @@ flutter:
     - assets/data/
     - assets/data/conversations/
     - assets/licenses/
+    - assets/personas/
     - assets/tessdata_config.json

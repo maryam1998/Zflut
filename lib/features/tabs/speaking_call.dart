@@ -20,6 +20,7 @@ import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/tts/speech_controller.dart';
 import '../../core/tts/speech_state.dart';
+import 'photo_talking_face.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // تمرین مکالمه — «شخصیتِ هوش مصنوعی» + «ویدیو کال»
@@ -55,6 +56,10 @@ class AiPersona {
 
   /// عکسِ دلخواه (برش‌خورده، base64 PNG)؛ خالی = از ایموجی استفاده می‌شود
   final String image;
+
+  /// عکسِ آماده‌ی داخلِ اپ (مثلاً assets/personas/ryan.jpg) که در ویدیو کال تمام‌قاب
+  /// نشان داده می‌شود و لب‌هایش حرکت می‌کنند؛ باید در kPhotoFaces ثبت شده باشد.
+  final String asset;
   final int color;
   final String role;
   final String roleFa;
@@ -70,6 +75,7 @@ class AiPersona {
     required this.name,
     required this.emoji,
     this.image = '',
+    this.asset = '',
     required this.color,
     this.role = '',
     this.roleFa = '',
@@ -82,6 +88,9 @@ class AiPersona {
   static const String jimmyId = 'jimmy';
 
   bool get isDefault => id == jimmyId;
+
+  /// مشخصاتِ عکسِ سخنگو (اگر این شخصیت عکسِ آماده دارد)
+  PhotoFaceSpec? get photoFace => asset.isEmpty ? null : kPhotoFaces[asset];
   Color get colorValue => Color(color);
 
   static String _s(String v) =>
@@ -137,6 +146,7 @@ class AiPersona {
         name: name ?? this.name,
         emoji: emoji ?? this.emoji,
         image: image ?? this.image,
+        asset: asset,
         color: color ?? this.color,
         role: role ?? this.role,
         roleFa: '',
@@ -187,6 +197,18 @@ class PersonaStore {
       color: 0xFF0F766E,
       role: 'your conversation coach',
       roleFa: 'مربی مکالمه‌ی تو',
+      builtIn: true,
+    ),
+    AiPersona(
+      id: 'ryan',
+      name: 'Ryan',
+      emoji: '🧔',
+      asset: 'assets/personas/ryan.jpg',
+      color: 0xFF1E3A5F,
+      role: 'a friendly, easygoing friend on a video call',
+      roleFa: 'دوستِ صمیمی در ویدیو کال',
+      personality: 'warm, upbeat, curious, speaks naturally like a real friend',
+      scenario: 'a relaxed video call catching up about everyday life, work and hobbies',
       builtIn: true,
     ),
     AiPersona(
@@ -591,6 +613,7 @@ class _EmojiAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final base = persona.colorValue;
     final img = _avatarBytes(persona.image);
+    final face = persona.photoFace;
     return Container(
       width: size,
       height: size,
@@ -604,10 +627,16 @@ class _EmojiAvatar extends StatelessWidget {
           colors: [base, Color.lerp(base, Colors.black, 0.45)!],
         ),
       ),
-      child: img != null
-          ? Image.memory(img,
+      child: face != null
+          ? Image.asset(face.avatar,
               width: size, height: size, fit: BoxFit.cover, gaplessPlayback: true)
-          : Text(persona.emoji, style: TextStyle(fontSize: size * 0.52)),
+          : img != null
+              ? Image.memory(img,
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true)
+              : Text(persona.emoji, style: TextStyle(fontSize: size * 0.52)),
     );
   }
 }
@@ -2626,6 +2655,23 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     );
   }
 
+  /// شخصیتِ عکس‌دار: عکسِ تمام‌قاب + حرکتِ لب/فک هنگامِ حرف‌زدن (هر فریم دوباره ساخته می‌شود)
+  Widget _photoFace(PhotoFaceSpec spec) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_pulse, _level]),
+      builder: (_, __) {
+        final speaking = _phase == _Phase.speaking;
+        final talk = _talkShape(speaking);
+        return PhotoTalkingFace(
+          spec: spec,
+          mouth: talk == null ? null : MouthShape(talk.open, talk.round),
+          speaking: speaking,
+          time: DateTime.now().millisecondsSinceEpoch / 1000.0,
+        );
+      },
+    );
+  }
+
   static const List<_Viseme> _visemes = [
     _Viseme(0.30, 0.012, 1.0), // لبخندِ بسته
     _Viseme(0.13, 0.115, 0.0), // «او» گرد (دایره‌ی تو‌پُر)
@@ -2758,6 +2804,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         _phase == _Phase.error ||
         _phase == _Phase.recording ||
         _phase == _Phase.speaking;
+    final photoFace = p.photoFace;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2779,16 +2826,64 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           ),
           child: Stack(
             children: [
-              // پس‌زمینه‌ی مخصوصِ هر شخصیت
-              Positioned.fill(
-                child: RepaintBoundary(
-                  child: CustomPaint(
-                    painter: _CallBackdropPainter(p.id, base,
-                        hint: '${p.role} ${p.scenario} ${p.personality} ${p.name} ${p.emoji}'),
+              if (photoFace != null) ...[
+                // شخصیتِ عکس‌دار: عکس تمام‌قابِ ویدیو است و لب‌هایش حرکت می‌کند
+                Positioned.fill(
+                  child: RepaintBoundary(child: _photoFace(photoFace)),
+                ),
+                // سایه‌ی بالا و پایین تا متن‌ها روی عکس خوانا بمانند
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  height: 90,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.55),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              Align(alignment: const Alignment(0, -0.28), child: _avatar()),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 120,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.5),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                // پس‌زمینه‌ی مخصوصِ هر شخصیت
+                Positioned.fill(
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _CallBackdropPainter(p.id, base,
+                          hint: '${p.role} ${p.scenario} ${p.personality} ${p.name} ${p.emoji}'),
+                    ),
+                  ),
+                ),
+                Align(alignment: const Alignment(0, -0.28), child: _avatar()),
+              ],
               // بالا: اسم + وضعیت + زمان
               Positioned(
                 left: 14,
@@ -2841,7 +2936,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   ],
                 ),
               ),
-              Align(alignment: const Alignment(0, 0.3), child: _bars()),
+              if (photoFace == null)
+                Align(alignment: const Alignment(0, 0.3), child: _bars()),
               // پایین: زیرنویس
               Positioned(
                 left: 10,
