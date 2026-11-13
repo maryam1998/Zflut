@@ -47,7 +47,8 @@ class ConversationRepository {
     _pending.clear();
     if (_loaded && ProStatus.isPro) {
       final ids = [for (final t in _all) t.id];
-      unawaited(PaidContent.prefetchTopics(ids));
+      Future.delayed(const Duration(seconds: 6),
+          () => unawaited(PaidContent.prefetchTopics(ids)));
     }
   }
 
@@ -85,7 +86,7 @@ class ConversationRepository {
       // 🚀 Pro: متنِ موضوع‌ها را در پس‌زمینه پیش‌دانلود کن تا با لمس فوری باز شوند
       if (ProStatus.isPro) {
         final ids = [for (final t in _all) t.id];
-        Future.delayed(const Duration(milliseconds: 300),
+        Future.delayed(const Duration(seconds: 6),
             () => unawaited(PaidContent.prefetchTopics(ids)));
       }
     } catch (e) {

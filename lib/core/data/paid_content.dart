@@ -76,7 +76,15 @@ class PaidContent {
           return t;
         }
       }
-      return await _downloadTopic(id, have);
+      // ⚡ کاربر منتظر است: پیش‌دانلودِ پس‌زمینه کنار می‌رود و حداکثر ۱۰ ثانیه صبر می‌کنیم
+      // (دانلود در پس‌زمینه ادامه می‌یابد و کش می‌شود؛ «تلاش دوباره» همان درخواست را می‌گیرد).
+      _userWaiting++;
+      try {
+        return await _downloadTopic(id, have)
+            .timeout(const Duration(seconds: 10), onTimeout: () => null);
+      } finally {
+        _userWaiting--;
+      }
     } catch (e) {
       debugPrint('PaidContent.conversationTopic($id): $e');
       return null;
@@ -100,6 +108,9 @@ class PaidContent {
 
   static bool _prefetching = false;
 
+  /// تعدادِ موضوع‌هایی که کاربر همین الان منتظرشان است (پیش‌دانلود در این مدت مکث می‌کند)
+  static int _userWaiting = 0;
+
   /// 🚀 موضوع‌هایی که هنوز در گوشی نیستند را در پس‌زمینه (۲ تا هم‌زمان) می‌گیرد تا بازشدنشان فوری باشد.
   static Future<void> prefetchTopics(List<String> ids) async {
     if (_prefetching || !ProStatus.isPro) return;
@@ -113,6 +124,10 @@ class PaidContent {
       var next = 0;
       Future<void> worker() async {
         while (next < todo.length && ProStatus.isPro) {
+          // کاربر منتظرِ یک موضوع است → شبکه را برایش خالی بگذار
+          while (_userWaiting > 0) {
+            await Future<void>.delayed(const Duration(milliseconds: 400));
+          }
           final id = todo[next++];
           try {
             await _downloadTopic(id, null);
@@ -122,7 +137,7 @@ class PaidContent {
         }
       }
 
-      await Future.wait([worker(), worker(), worker(), worker()]);
+      await Future.wait([worker(), worker()]);
     } finally {
       _prefetching = false;
     }
