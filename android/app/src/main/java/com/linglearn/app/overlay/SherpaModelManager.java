@@ -206,16 +206,16 @@ final class SherpaModelManager {
 
     // {id, برچسب, sid}  — ترتیبِ sid در Kokoro v1.0 (۵۳ گوینده، الفبایی). پیش‌فرض = اولی.
     private static final String[][] KOKORO_EN = {
-            {"af_bella", "Bella · US · F", "2"}, {"af_nicole", "Nicole · US · F", "6"},
-            {"af_heart", "Heart · US · F", "3"}, {"af_sarah", "Sarah · US · F", "9"},
-            {"am_michael", "Michael · US · M", "16"}, {"am_adam", "Adam · US · M", "11"},
-            {"bf_emma", "Emma · UK · F", "21"}, {"bm_george", "George · UK · M", "26"},
+            {"af_bella", "Alicia · US · F", "2"}, {"af_nicole", "Amara · US · F", "6"},
+            {"af_heart", "Ariana · US · F", "3"}, {"af_sarah", "Daisy · US · F", "9"},
+            {"am_michael", "Caleb · US · M", "16"}, {"am_adam", "Daniel · US · M", "11"},
+            {"bf_emma", "Josie · UK · F", "21"}, {"bm_george", "Edmund · UK · M", "26"},
     };
     private static final String[][] KOKORO_ZH = {
-            {"zf_xiaoxiao", "Xiaoxiao · F", "47"}, {"zf_xiaobei", "Xiaobei · F", "45"},
-            {"zf_xiaoni", "Xiaoni · F", "46"}, {"zf_xiaoyi", "Xiaoyi · F", "48"},
-            {"zm_yunxi", "Yunxi · M", "50"}, {"zm_yunjian", "Yunjian · M", "49"},
-            {"zm_yunyang", "Yunyang · M", "52"},
+            {"zf_xiaoxiao", "Jiao · F", "47"}, {"zf_xiaobei", "Yuxan · F", "45"},
+            {"zf_xiaoni", "Mei · F", "46"}, {"zf_xiaoyi", "Lian · F", "48"},
+            {"zm_yunxi", "Tao · M", "50"}, {"zm_yunjian", "Wei · M", "49"},
+            {"zm_yunyang", "Hao · M", "52"},
     };
     private static final int SUPERTONIC_VOICES = 10;
     /** صدای سبکِ انگلیسی (Piper low، حدود ۶۰ مگ؛ بسیار سریع‌تر از Kokoro). */
@@ -226,6 +226,25 @@ final class SherpaModelManager {
             "Aria · F", "Clara · F", "Luna · F", "Mila · F", "Nora · F",
             "Adrian · M", "Felix · M", "Leo · M", "Oscar · M", "Theo · M",
     };
+    // نام‌های نمایشیِ صداهای Supertonic برای هر زبان (۵ زن اول، ۵ مرد بعد؛ به ترتیبِ sid ۰..۹). زبانِ ناموجود → SUPERTONIC_NAMES بالا.
+    private static final Map<String, String[]> SUPERTONIC_NAMES_BY_LANG = new LinkedHashMap<>();
+    static {
+        SUPERTONIC_NAMES_BY_LANG.put("fr", new String[]{"Adélie", "Justine", "Diya", "Camille", "Margaux", "Axel", "Guillaume", "Carlos", "Hugo", "Lucas"});
+        SUPERTONIC_NAMES_BY_LANG.put("de", new String[]{"Josephine", "Lara", "Diya", "Heidi", "Greta", "Björn", "Matthias", "Ralf", "Carlos", "Jonas"});
+        SUPERTONIC_NAMES_BY_LANG.put("es", new String[]{"Carmen", "Luisa", "Valeria", "Lara", "Sofia", "Carlos", "Axel", "Javier", "Joshua", "Mateo"});
+        SUPERTONIC_NAMES_BY_LANG.put("it", new String[]{"Greta", "Diya", "Giulia", "Chiara", "Elena", "Angelo", "Vincenzo", "Javier", "Carlos", "Marco"});
+        SUPERTONIC_NAMES_BY_LANG.put("ru", new String[]{"Anya", "Natasha", "Olga", "Irina", "Katya", "Dmitri", "Ivan", "Sergei", "Pavel", "Nikolai"});
+        SUPERTONIC_NAMES_BY_LANG.put("tr", new String[]{"Diya", "Heidi", "Namrita", "Elif", "Selin", "Abhinav", "Bertie", "Jonathan", "Emre", "Mert"});
+        SUPERTONIC_NAMES_BY_LANG.put("ar", new String[]{"Layla", "Noor", "Salma", "Yasmin", "Huda", "Omar", "Karim", "Tariq", "Samir", "Zayd"});
+        SUPERTONIC_NAMES_BY_LANG.put("hi", new String[]{"Ayushi", "Khyati", "Shweta", "Sunaina", "Priya", "Aman", "Karan", "Aarav", "Abhinav", "Rohan"});
+        SUPERTONIC_NAMES_BY_LANG.put("ko", new String[]{"Jangmi", "Minseo", "Soyeon", "Hyejin", "Yuna", "Gyeong", "Hwan", "Jong-su", "Seok", "Minho"});
+        SUPERTONIC_NAMES_BY_LANG.put("ja", new String[]{"Kimi", "Minseo", "Haruka", "Sakura", "Yui", "Denki", "Kenji", "Hiroshi", "Takeshi", "Ren"});
+    }
+    private static String supertonicName(String lang, int i) {
+        String[] n = SUPERTONIC_NAMES_BY_LANG.get(lang);
+        if (n == null || i < 0 || i >= n.length) return SUPERTONIC_NAMES[i];
+        return n[i] + (i < 5 ? " · F" : " · M");
+    }
     // نام‌های نمایشیِ صداهای فارسی (فقط برچسب؛ شناسه‌ی مدل‌ها عوض نمی‌شود) — لاتین + F/M مثلِ بقیه‌ی زبان‌ها، تا در همه‌ی زبان‌های رابط ترجمه‌شده باشد
     private static final Map<String, String> FA_LABELS = new LinkedHashMap<>();
     static {
@@ -236,6 +255,9 @@ final class SherpaModelManager {
         FA_LABELS.put("fa_IR-reza_ibrahim-medium", "Pouya · M");
         // انگلیسیِ سبک (Piper low): برچسب مثلِ بقیه‌ی صداهای en؛ رده‌ی «low» را خودِ getTtsVoices بعدش اضافه می‌کند
         FA_LABELS.put(EN_LIGHT_VOICE, "Lessac · US · F");
+        // دو صدای مردِ Piper انگلیسی: نام‌های باقی‌مانده‌ی لیست
+        FA_LABELS.put("en_US-danny-low", "Gordon · US · M");
+        FA_LABELS.put("en_GB-alan-low", "Miles · UK · M");
     }
 
     private static final Map<String, List<TtsVoice>> TTS_VOICES;
@@ -255,7 +277,7 @@ final class SherpaModelManager {
                 }
             } else {
                 for (int i = 0; i < SUPERTONIC_VOICES; i++) {
-                    list.add(new TtsVoice("st-" + i, SUPERTONIC_NAMES[i], sp, i == 0, i));
+                    list.add(new TtsVoice("st-" + i, supertonicName(lg, i), sp, i == 0, i));
                 }
             }
             vm.put(lg, list);
