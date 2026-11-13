@@ -42,6 +42,9 @@ class PhotoFaceSpec {
   /// نقطه‌ای از عکس که باید وسطِ قاب بیفتد (حوالیِ بینی) و جای آن در ارتفاعِ قاب (۰..۱)
   final double focusX, focusY, focusAt;
 
+  /// بزرگ‌نمایی قاب (برای عکس‌هایی که صورتشان کوچک است)
+  final double zoom;
+
   const PhotoFaceSpec({
     required this.asset,
     required this.avatar,
@@ -59,6 +62,7 @@ class PhotoFaceSpec {
     required this.focusX,
     required this.focusY,
     this.focusAt = 0.46,
+    this.zoom = 1.045,
   });
 }
 
@@ -119,10 +123,51 @@ const PhotoFaceSpec kAnnaFace = PhotoFaceSpec(
   focusY: 400,
 );
 
+/// «Sofia» — عکسِ assets/personas/sofia.jpg (۱۰۲۴×۱۰۲۴)
+const PhotoFaceSpec kSofiaFace = PhotoFaceSpec(
+  asset: 'assets/personas/sofia.jpg',
+  avatar: 'assets/personas/sofia_avatar.jpg',
+  refW: 1024,
+  refH: 1024,
+  mouthX: 516,
+  mouthHalfW: 52,
+  cornerY: 429,
+  seamY: 434,
+  patchLeft: 436,
+  patchRight: 596,
+  patchTop: 412,
+  patchBottom: 498,
+  maxOpen: 17,
+  focusX: 516,
+  focusY: 380,
+  zoom: 1.45,
+);
+
+/// «Daniel» — عکسِ assets/personas/daniel.jpg (۱۰۲۴×۱۰۲۴)
+const PhotoFaceSpec kDanielFace = PhotoFaceSpec(
+  asset: 'assets/personas/daniel.jpg',
+  avatar: 'assets/personas/daniel_avatar.jpg',
+  refW: 1024,
+  refH: 1024,
+  mouthX: 521,
+  mouthHalfW: 80,
+  cornerY: 583,
+  seamY: 592,
+  patchLeft: 395,
+  patchRight: 647,
+  patchTop: 566,
+  patchBottom: 700,
+  maxOpen: 22,
+  focusX: 520,
+  focusY: 500,
+);
+
 const Map<String, PhotoFaceSpec> kPhotoFaces = {
   'assets/personas/ryan.jpg': kRyanFace,
   'assets/personas/sara.jpg': kSaraFace,
   'assets/personas/anna.jpg': kAnnaFace,
+  'assets/personas/sofia.jpg': kSofiaFace,
+  'assets/personas/daniel.jpg': kDanielFace,
 };
 
 /// حالتِ دهان در یک لحظه: open = بازشدگیِ فک (۰..۱)، round = گردیِ لب مثلِ «او» (۰..۱)
@@ -263,7 +308,7 @@ class _PhotoFacePainter extends CustomPainter {
     final iw = image.width.toDouble(), ih = image.height.toDouble();
 
     // ── قاب: «cover» با کمی زوم، و صورت دور از زیرنویسِ پایین ──
-    const zoom = 1.045; // ثابت: عکس هیچ تکان/زومِ ریزی نمی‌خورد
+    final zoom = sp.zoom; // ثابت: عکس هیچ تکان/زومِ ریزی نمی‌خورد
     final s = math.max(size.width / iw, size.height / ih) * zoom;
     final fx = sp.focusX * k, fy = sp.focusY * k;
     var ox = size.width * 0.5 - fx * s;
