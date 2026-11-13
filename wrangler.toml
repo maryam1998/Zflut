@@ -31,6 +31,13 @@ LIMIT_MISC = "3000"
 # 💎 نسخه‌ی رایگان: سقفِ «کل عمر» برای هر بخش (مثال‌ساز، گرامر، چت، ویدیوکال، داستان، ترجمه‌ی زنده، ذره‌بین، ترجمه‌ی یوتیوب)
 FREE_LIMIT = "2"
 # سقفِ اختصاصیِ یک بخش (اختیاری):  FREE_LIMIT_STORY = "3"
+# 📊 گزارشِ مصرفِ AI (اختیاری) — پنل: https://<worker>/admin/usage-report?key=<ADMIN_KEY>
+#   ADMIN_KEY را secret بگذار:  npx wrangler secret put ADMIN_KEY
+#   تعرفه (دلار برای هر ۱M توکن [ورودی, خروجی]) و آستانه‌ی هشدار؛ بدونِ تعرفه هزینه ۰ ثبت می‌شود:
+# AI_PRICING = '{"gemini":[0.30,2.50],"deepseek":[0.28,0.42],"default":[0,0]}'
+# AI_ALERT_COST_USD = "0.50"
+# AI_ALERT_CALLS = "400"
+
 # 👑 جیمیل‌هایی که همیشه Pro (بدونِ محدودیت) هستند؛ با ویرگول جدا کن. (نقطه و +‌ی جیمیل نادیده گرفته می‌شود)
 VIP_EMAILS = "maryam.s.sharifiyan@gmail.com"
 

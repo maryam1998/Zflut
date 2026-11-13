@@ -7,6 +7,7 @@ import { handleTranscribe } from "./transcribe.js";
 import { authGate, handleSession, verifySessionToken } from "./auth.js";
 import { handleUsage } from "./usage.js";
 import { handleContent } from "./content.js";
+import { recordUsage, handleAdminReport } from "./metrics.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +38,11 @@ export default {
       });
     }
 
+    // 📊 پنلِ گزارشِ مصرفِ AI (با ADMIN_KEY؛ جدا از /api/*)
+    if (url.pathname === "/admin/usage-report" && request.method === "GET") {
+      return handleAdminReport(request, env, url);
+    }
+
     // 🔐 ورود: توکنِ Supabase → توکنِ نشستِ امضاشده (فقط همین مسیر بدونِ X-App-Token است)
     if (url.pathname === "/api/session" && request.method === "POST") {
       return handleSession(request, env, CORS_HEADERS);
@@ -63,6 +69,13 @@ export default {
     if (url.pathname.startsWith("/api/")) {
       const denied = await authGate(request, env, url, CORS_HEADERS);
       if (denied) return denied;
+    }
+
+    // 📊 ثبتِ مصرف (فقط شمارش؛ تبدیلِ گفتار و ترجمه‌ی زیرنویس)
+    if (request.method === "POST" &&
+        (url.pathname === "/api/transcribe" || url.pathname === "/api/translate-subtitles")) {
+      ctx.waitUntil(recordUsage(env, request, {
+        feature: url.pathname === "/api/transcribe" ? "stt" : "ytsub", provider: "n/a" }));
     }
 
     // ⭐ NEW: تبدیل صدا به متن با Whisper (Cloudflare Workers AI)
@@ -175,7 +188,10 @@ export default {
       const cacheKey = useCache ? await genCacheKey(prompt, capped) : null;
       if (cacheKey) {
         const hit = await genCacheGet(env, cacheKey);
-        if (hit) return json({ text: hit, provider: "cache", cached: true });
+        if (hit) {
+          ctx.waitUntil(recordUsage(env, request, { feature: "other", provider: "cache", cached: true }));
+          return json({ text: hit, provider: "cache", cached: true });
+        }
       }
 
       const chain = getProviderChain(env);
@@ -192,6 +208,7 @@ export default {
           const bad = badAiOutputReason(text, prompt);
           if (bad) throw new Error(`unusable output (${bad})`);
           if (cacheKey) ctx.waitUntil(genCachePut(env, cacheKey, text, provider));
+          ctx.waitUntil(recordUsage(env, request, { feature: "other", provider, cached: false, prompt, text }));
           return json({ text, provider });
         } catch (e) {
           errors.push(`${provider}: ${e.message}`);
