@@ -115,6 +115,10 @@ async function ensureTables(env) {
         "last_at INTEGER NOT NULL DEFAULT 0, last_use TEXT NOT NULL DEFAULT '', " +
         "PRIMARY KEY (user_id, feature, day))"
     ),
+    // 🔁 شناسه‌ی «استفاده» (X-Use-Id) برای تشخیصِ retry — تعدادِ retryِ رایگان محدود و زمان‌دار است
+    env.TR_DB.prepare(
+      "CREATE TABLE IF NOT EXISTS use_ids (k TEXT PRIMARY KEY, n INTEGER NOT NULL, t INTEGER NOT NULL)"
+    ),
     // ⏱️ شروعِ نشستِ رایگانِ تماس (برای محدودیتِ طولِ جلسه)
     env.TR_DB.prepare(
       "CREATE TABLE IF NOT EXISTS feature_session (" +
@@ -146,6 +150,38 @@ export async function isPro(env, userId, email) {
   return pro;
 }
 
+// ───────────── retry (X-Use-Id) ─────────────
+// قبلاً هر درخواستی که X-Use-Id آخرین استفاده را تکرار می‌کرد «retry» حساب می‌شد و بی‌نهایت رایگان بود
+// (کافی بود با curl همیشه یک id ثابت بفرستند). حالا هر استفاده‌ی شمرده‌شده حداکثر RETRY_FREE_MAX
+// تکرارِ رایگان، آن هم فقط تا RETRY_WINDOW_MS بعد از شمارش، دارد؛ بعدش دوباره شمرده می‌شود.
+// (کلاینتِ اپ حداکثر ۲ بار تلاشِ دوباره می‌زند و هر تلاش چند ثانیه فاصله دارد.)
+const RETRY_FREE_MAX = 2;
+const RETRY_WINDOW_MS = 120000;
+
+function useKey(scope, userId, feature, useId) {
+  return `${scope}|${userId}|${feature}|${useId}`;
+}
+
+/** true = این درخواست retryِ یک استفاده‌ی قبلاً شمرده‌شده است (اتمیک؛ شمارنده‌ی retry را زیاد می‌کند). */
+async function isFreeRetry(env, scope, userId, feature, useId, now) {
+  if (!useId) return false;
+  const r = await env.TR_DB.prepare(
+    "UPDATE use_ids SET n = n + 1 WHERE k = ?1 AND t > ?2 AND n <= ?3 RETURNING n"
+  ).bind(useKey(scope, userId, feature, useId), now - RETRY_WINDOW_MS, RETRY_FREE_MAX).first();
+  return !!r;
+}
+
+/** بعد از هر «شمارشِ واقعی» صدا زده می‌شود تا retryهای بعدیِ همین id رایگان باشند (محدود). */
+async function markUse(env, scope, userId, feature, useId, now) {
+  if (!useId) return;
+  await env.TR_DB.prepare(
+    "INSERT INTO use_ids (k, n, t) VALUES (?1, 1, ?2) ON CONFLICT(k) DO UPDATE SET n = 1, t = ?2"
+  ).bind(useKey(scope, userId, feature, useId), now).run();
+  if (Math.random() < 0.01) {
+    await env.TR_DB.prepare("DELETE FROM use_ids WHERE t < ?1").bind(now - 3600000).run();
+  }
+}
+
 // ───────────── مصرفِ یک بار ─────────────
 /** {ok, used, limit}. اگر D1 خراب/نبود → ok (نباید کاربر را الکی قفل کند). */
 export async function consume(env, userId, feature, useId) {
@@ -161,7 +197,9 @@ export async function consume(env, userId, feature, useId) {
 
     if (row) {
       // تلاشِ دوباره‌ی همان درخواست (retry) دوباره حساب نمی‌شود
-      if (useId && row.last_use === useId) return { ok: true, used: row.n, limit, fresh: false };
+      if (useId && (await isFreeRetry(env, "life", userId, feature, useId, now))) {
+        return { ok: true, used: row.n, limit, fresh: false };
+      }
       // ادامه‌ی همان نشست
       if (win > 0 && row.n > 0 && now - row.last_at < win) {
         await env.TR_DB.prepare(
@@ -179,6 +217,7 @@ export async function consume(env, userId, feature, useId) {
         "RETURNING n"
     ).bind(userId, feature, now, useId || "", limit).first();
     if (!r) return { ok: false, used: row ? row.n : limit, limit };
+    await markUse(env, "life", userId, feature, useId, now);
     return { ok: true, used: r.n, limit, fresh: true };
   } catch (e) {
     console.error("[FAIL-OPEN] consume error — سقفِ کل‌عمر بی‌صدا خاموش شد", String(e));
@@ -228,7 +267,9 @@ export async function consumeDaily(env, userId, feature, useId) {
       "SELECT n, last_at, last_use FROM feature_daily WHERE user_id = ?1 AND feature = ?2 AND day = ?3"
     ).bind(userId, feature, day).first();
     if (row) {
-      if (useId && row.last_use === useId) return { ok: true, used: row.n, limit };
+      if (useId && (await isFreeRetry(env, "day", userId, feature, useId, now))) {
+        return { ok: true, used: row.n, limit };
+      }
       if (win > 0 && row.n > 0 && now - row.last_at < win) {
         await env.TR_DB.prepare(
           "UPDATE feature_daily SET last_at = ?4 WHERE user_id = ?1 AND feature = ?2 AND day = ?3"
@@ -242,6 +283,7 @@ export async function consumeDaily(env, userId, feature, useId) {
         "RETURNING n"
     ).bind(userId, feature, day, now, useId || "", limit).first();
     if (!r) return { ok: false, used: row ? row.n : limit, limit };
+    await markUse(env, "day", userId, feature, useId, now);
     if (Math.random() < 0.01) {
       const old = new Date(now - 7 * 86400000).toISOString().slice(0, 10);
       await env.TR_DB.prepare("DELETE FROM feature_daily WHERE day < ?1").bind(old).run();
@@ -269,7 +311,9 @@ function dailyAppliesToPro(env) {
  */
 export async function aiMissGate(env, userId, cors) {
   const d = await consumeDaily(env, userId, "translate", "");
-  return d.ok ? null : dailyResponse("translate", d.limit, cors);
+  if (d.ok) return null;
+  console.warn(`[LIMIT] daily_feature_limit user=${userId} feature=translate limit=${d.limit}`);
+  return dailyResponse("translate", d.limit, cors);
 }
 
 function dailyResponse(feature, limit, cors) {
@@ -318,15 +362,22 @@ export async function featureGate(request, env, url, session, cors) {
   if (!pro && !LIFETIME_EXEMPT.has(feature)) {
     // سقفِ «کل عمر» + سقفِ طولِ جلسه (رایگان)
     const r = await consume(env, session.sub, feature, useId);
-    if (!r.ok) return limitResponse(feature, r.limit, cors);
+    if (!r.ok) {
+      console.warn(`[LIMIT] free_limit user=${session.sub} feature=${feature} limit=${r.limit} used=${r.used}`);
+      return limitResponse(feature, r.limit, cors);
+    }
     if (!(await sessionTimeOk(env, session.sub, feature, r.fresh === true))) {
+      console.warn(`[LIMIT] free_session_over user=${session.sub} feature=${feature}`);
       return jsonResp({ error: MSG_FA, code: "free_session_over", feature }, 402, cors);
     }
   }
   // 📅 سقفِ روزانه‌ی هر بخش — سمتِ سرور؛ پیش‌فرض فقط رایگان (Pro/VIP فقط با DAILY_APPLY_TO_PRO)
   if (!pro || dailyAppliesToPro(env)) {
     const d = await consumeDaily(env, session.sub, feature, useId);
-    if (!d.ok) return dailyResponse(feature, d.limit, cors);
+    if (!d.ok) {
+      console.warn(`[LIMIT] daily_feature_limit user=${session.sub} feature=${feature} limit=${d.limit}`);
+      return dailyResponse(feature, d.limit, cors);
+    }
   }
   return null;
 }

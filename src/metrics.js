@@ -91,7 +91,12 @@ function table(title, head, rows) {
 export async function handleAdminReport(request, env, url) {
   const plain = (t, s) => new Response(t, { status: s, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   if (!env.ADMIN_KEY) return plain("not found", 404);
-  if (url.searchParams.get("key") !== env.ADMIN_KEY) return plain("forbidden", 403);
+  // مقایسه‌ی زمان‌ثابت (در برابر timing attack)
+  const given = String(url.searchParams.get("key") || "");
+  const want = String(env.ADMIN_KEY);
+  let diff = given.length ^ want.length;
+  for (let i = 0; i < want.length; i++) diff |= (given.charCodeAt(i) || 0) ^ want.charCodeAt(i);
+  if (diff !== 0) return plain("forbidden", 403);
   if (!env.TR_DB) return plain("D1 not configured", 500);
   try {
     await ensure(env);

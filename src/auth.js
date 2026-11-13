@@ -153,9 +153,14 @@ export async function handleSession(request, env, cors) {
   let user = null;
   try { user = await verifySupabaseUser(env, m[1]); } catch (e) { console.log("session: verify error", String(e)); }
   if (!user) return jsonResp({ error: "invalid login" }, 401, cors);
-  const { token, exp } = await issueSessionToken(env, user.id, user.email);
+  // 🔒 ایمیلِ تأییدنشده نباید VIP/Pro بدهد (کسی با ایمیلِ VIP ثبت‌نام کند). گوگل همیشه تأییدشده است.
+  const verified = !!(user.email_confirmed_at || user.confirmed_at) ||
+    String(user.app_metadata?.provider || "").toLowerCase() === "google";
+  const email = verified ? user.email : "";
+  if (!verified && user.email) console.warn("[SECURITY] session: unverified email, VIP/Pro by email disabled", user.id);
+  const { token, exp } = await issueSessionToken(env, user.id, email);
   let pro = false;
-  try { pro = await isPro(env, user.id, user.email); } catch { /* ignore */ }
+  try { pro = await isPro(env, user.id, email); } catch { /* ignore */ }
   return jsonResp({ token, exp, pro }, 200, cors);
 }
 
@@ -177,6 +182,7 @@ export async function authGate(request, env, url, cors) {
   const bucket = bucketOf(url.pathname);
   // 👑 VIP هم مثلِ Pro سقفِ روزانه دارد (فقط سقفِ «کل عمر» برداشته شده) — برای سنجشِ مصرفِ واقعی
   if (!(await underLimit(env, p.sub, bucket))) {
+    console.warn(`[LIMIT] daily_limit user=${p.sub} bucket=${bucket}`);
     if (!enforce) { console.log("auth(log): over limit", bucket); return null; }
     return jsonResp({ error: "daily limit reached, try again tomorrow", code: "daily_limit", bucket }, 429, cors);
   }

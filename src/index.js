@@ -87,6 +87,8 @@ export default {
       const text = (url.searchParams.get("text") || "").trim();
       const voice = url.searchParams.get("voice") || "en-US-AriaNeural";
       if (!text) return json({ error: "text is required" }, 400);
+      // 🔒 voice داخلِ SSML می‌نشیند → فقط نامِ صدای معتبر (جلوگیری از تزریقِ SSML)
+      if (!/^[A-Za-z0-9-]{1,64}$/.test(voice)) return json({ error: "invalid voice" }, 400);
       const langPrefix = voice.split("-")[0].toLowerCase();
       if (langPrefix === "fa" || langPrefix === "ar") {
         try {
@@ -119,6 +121,7 @@ export default {
       const text = (url.searchParams.get("text") || "").trim();
       const voice = url.searchParams.get("voice") || "Kore";
       if (!text) return json({ error: "text is required" }, 400);
+      if (!/^[A-Za-z0-9_-]{1,32}$/.test(voice)) return json({ error: "invalid voice" }, 400);
       try {
         const wavBytes = await fetchGeminiTtsAudio(text, voice, env);
         return new Response(wavBytes, {
@@ -133,6 +136,9 @@ export default {
       const videoId = (url.searchParams.get("videoId") || "").trim();
       const lang = (url.searchParams.get("lang") || "en").trim();
       if (!videoId) return json({ error: "videoId is required" }, 400);
+      if (!/^[A-Za-z0-9_-]{5,32}$/.test(videoId) || !/^[A-Za-z0-9_-]{1,16}$/.test(lang)) {
+        return json({ error: "invalid videoId or lang" }, 400);
+      }
       try {
         const result = await fetchYoutubeCaptions(videoId, lang);
         return json(result);
@@ -158,8 +164,8 @@ export default {
 
     // 📺 وقتی MediaSession آی‌دی ویدیو نمی‌ده، از روی عنوان (+مدت و کانال) آی‌دی رو پیدا می‌کنه
     if (url.pathname === "/api/youtube-resolve" && request.method === "GET") {
-      const title = (url.searchParams.get("title") || "").trim();
-      const channel = (url.searchParams.get("channel") || "").trim();
+      const title = (url.searchParams.get("title") || "").trim().slice(0, 200);
+      const channel = (url.searchParams.get("channel") || "").trim().slice(0, 100);
       const durationSec = Number(url.searchParams.get("durationSec") || 0) || 0;
       if (!title) return json({ error: "title is required" }, 400);
       try {
@@ -186,6 +192,9 @@ export default {
         return json({ error: "prompt (string) is required" }, 400);
       }
       const capped = Math.min(Math.max(Number(maxTokens) || 1000, 1), 8192);
+      // 🔒 سقفِ طولِ پرامپت (هزینه‌ی توکنِ ورودی). env.MAX_PROMPT_CHARS قابلِ تنظیم؛ پیش‌فرض ۳۰٬۰۰۰ نویسه.
+      const maxPrompt = Number(env.MAX_PROMPT_CHARS) > 0 ? Number(env.MAX_PROMPT_CHARS) : 30000;
+      if (prompt.length > maxPrompt) return json({ error: "prompt too long", code: "prompt_too_long", max: maxPrompt }, 413);
 
       // کشِ مشترکِ D1: همان پرامپت (با همان سقفِ توکن) دوباره به هوش مصنوعی نمی‌رود.
       // برای «مثالِ جدید/بازتولید» کلاینت می‌تواند { "noCache": true } بفرستد.
@@ -225,6 +234,7 @@ export default {
           errors.push(`${provider}: ${e.message}`);
         }
       }
+      console.error("[AI-FAIL] /api/generate همه‌ی پرووایدرها خطا دادند:", errors.join(" | ").slice(0, 900));
       return json({ error: errors.join(" | ") }, 502);
     }
 
@@ -296,6 +306,7 @@ async function handleTranslateText(request, env, ctx) {
       errors.push(`${provider}: ${e.message}`);
     }
   }
+  console.error("[AI-FAIL] /api/translate-text همه‌ی پرووایدرها خطا دادند:", errors.join(" | ").slice(0, 900));
   return json({ error: errors.join(" | ") }, 502);
 }
 
@@ -600,7 +611,7 @@ function pickCaptionTrack(tracks, wantLang) {
 // می‌شه ترجمه‌ی خط‌های نیمه‌کاره (که یوتیوب وسطِ جمله می‌بره) دقیق‌تر بشه.
 async function translateSubtitleChunk(body, env, ctx) {
   const subs = Array.isArray(body?.subtitles)
-    ? body.subtitles.map((s) => (typeof s === "string" ? s : String(s?.text ?? "")))
+    ? body.subtitles.map((s) => (typeof s === "string" ? s : String(s?.text ?? "")).slice(0, 500))
     : [];
   if (!subs.length) throw new Error("subtitles (array) is required");
   if (subs.length > 30) throw new Error("too many subtitles in one chunk");
