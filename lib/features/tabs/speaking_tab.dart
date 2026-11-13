@@ -827,12 +827,18 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   }
 
   void _setChatLang(String v) {
+    if (v == _chatLang || !mounted) return;
     setState(() {
       _chatLang = v;
       if (_messages.length <= 1) _messages = [_welcome(v)];
     });
-    unawaited(ref.read(localStorageProvider).writeJson(_kLangKey, {'lang': v}));
-    _persist(history: false);
+    // نوشتن در حافظه بعد از اتمامِ فریم تا انتخابِ زبان لحظه‌ای بماند
+    Future.microtask(() {
+      if (!mounted) return;
+      unawaited(
+          ref.read(localStorageProvider).writeJson(_kLangKey, {'lang': v}));
+      _persist(history: false);
+    });
   }
 
   @override
@@ -1452,28 +1458,57 @@ Now respond to: "$sentence"
                           fontWeight: FontWeight.w600),
                     ),
                   ),
-                  DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: lang,
-                      isDense: true,
-                      borderRadius: BorderRadius.circular(14),
-                      icon: Icon(Icons.keyboard_arrow_down_rounded,
-                          color: c.gold),
-                      style: TextStyle(
-                          color: c.ink,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800),
-                      dropdownColor: c.surface,
-                      items: [
-                        for (final code in options)
-                          DropdownMenuItem(
-                            value: code,
-                            child: Text(langDisplayName(context, code)),
+                  // منوی زبان: PopupMenuButton (همیشه داخل صفحه جا می‌گیرد) به‌جای DropdownButton.
+                  // انتخاب بعد از بسته‌شدنِ منو و در فریمِ بعد اعمال می‌شود تا هنگ نکند.
+                  PopupMenuButton<String>(
+                    tooltip: '',
+                    padding: EdgeInsets.zero,
+                    position: PopupMenuPosition.under,
+                    color: c.surface,
+                    surfaceTintColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    initialValue: lang,
+                    onSelected: (v) {
+                      if (v == lang) return;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) _setChatLang(v);
+                      });
+                    },
+                    itemBuilder: (ctx) => [
+                      for (final code in options.toSet())
+                        PopupMenuItem<String>(
+                          value: code,
+                          height: 40,
+                          child: Text(
+                            langDisplayName(ctx, code),
+                            style: TextStyle(
+                                color: c.ink,
+                                fontSize: 14,
+                                fontWeight: code == lang
+                                    ? FontWeight.w800
+                                    : FontWeight.w600),
                           ),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) _setChatLang(v);
-                      },
+                        ),
+                    ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            langDisplayName(context, lang),
+                            style: TextStyle(
+                                color: c.ink,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.keyboard_arrow_down_rounded,
+                              color: c.gold),
+                        ],
+                      ),
                     ),
                   ),
                 ],
