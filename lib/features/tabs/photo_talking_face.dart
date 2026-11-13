@@ -374,9 +374,11 @@ class _PhotoFacePainter extends CustomPainter {
           ..shader = ui.Gradient.linear(
             Offset(cx, seamC),
             Offset(cx, seamC + d + 1),
-            const [Color(0xFF2A1612), Color(0xFF2A1612), Color(0xFF6B3431)],
-            const [0.0, 0.55, 1.0],
-          ),
+            const [Color(0xFF241210), Color(0xFF331816), Color(0xFF5A2B28)],
+            const [0.0, 0.5, 1.0],
+          )
+          // لبه‌ی نرم تا داخلِ دهان مثلِ برشِ تیز/مصنوعی دیده نشود
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.9),
       );
     }
 

@@ -2664,12 +2664,59 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         final talk = _talkShape(speaking);
         return PhotoTalkingFace(
           spec: spec,
-          mouth: talk == null ? null : MouthShape(talk.open, talk.round),
+          mouth: _photoMouth(speaking),
           speaking: speaking,
           time: DateTime.now().millisecondsSinceEpoch / 1000.0,
         );
       },
     );
+  }
+
+  // ── دهانِ شخصیتِ عکس‌دار (Ryan و …): حرکتِ کوچک، نرم و نامنظم مثلِ گفتارِ واقعی ──
+  double _pmOpen = 0, _pmRound = 0;
+  int _pmLastMs = 0;
+
+  /// فکِ پایین موقعِ حرفِ پیوسته کاملاً بسته نمی‌شود، دامنه‌ی هر هجا فرق دارد،
+  /// بینِ عبارت‌ها مکثِ کوتاه می‌آید و مقدارها با نرم‌کننده (attack سریع/release کندتر) می‌آیند.
+  MouthShape? _photoMouth(bool speaking) {
+    final ms = DateTime.now().millisecondsSinceEpoch;
+    final dt = _pmLastMs == 0 ? 16 : (ms - _pmLastMs).clamp(1, 80);
+    _pmLastMs = ms;
+    var tOpen = 0.0, tRound = 0.0;
+    if (speaking) {
+      // هر عبارت ~۲٫۴–۳٫۸ ثانیه؛ ته‌ش یک مکثِ ~۳۵۰ms
+      final phrase = _visemeHash(ms ~/ 3100 + 7) % 1400; // ۰..۱۴۰۰ → طولِ ۲٫۴–۳٫۸s
+      final phraseLen = 2400 + phrase;
+      final pos = ms % phraseLen;
+      if (pos < phraseLen - 350) {
+        // هجاها: طولِ ~۱۵۰–۲۴۰ms (تقریباً ۴–۶ هجا در ثانیه)
+        final k = ms ~/ 150;
+        final h = _visemeHash(k);
+        final span = 1 + (h % 3 == 0 ? 1 : 0); // بعضی هجاها کشیده‌ترند
+        final seg = ((ms ~/ 150) ~/ span);
+        final hs = _visemeHash(seg + 31);
+        final dur = 150.0 * span;
+        final ph = (ms % (150 * span)) / dur;
+        const amps = [0.34, 0.50, 0.26, 0.58, 0.40, 0.20, 0.46];
+        final amp = amps[hs % amps.length];
+        final e = math.pow(math.sin(ph * math.pi), 0.75).toDouble();
+        const lo = 0.07; // بینِ هجاها کاملاً بسته نمی‌شود
+        tOpen = lo + (amp - lo) * e;
+        // «او/وو» فقط گاهی و ملایم
+        const rounds = [0.0, 0.0, 0.30, 0.0, 0.12, 0.0, 0.0];
+        tRound = rounds[(hs >> 4) % rounds.length] * e;
+      }
+    }
+    final tau = tOpen > _pmOpen ? 45.0 : 75.0;
+    final a = 1 - math.exp(-dt / tau);
+    _pmOpen += (tOpen - _pmOpen) * a;
+    _pmRound += (tRound - _pmRound) * (1 - math.exp(-dt / 90.0));
+    if (!speaking && _pmOpen < 0.01 && _pmRound < 0.01) {
+      _pmOpen = 0;
+      _pmRound = 0;
+      return null;
+    }
+    return MouthShape(_pmOpen, _pmRound);
   }
 
   static const List<_Viseme> _visemes = [
