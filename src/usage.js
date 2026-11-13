@@ -257,8 +257,8 @@ export function dailyLimitOf(env, feature) {
 }
 
 /** {ok, used, limit}. هر «استفاده‌ی جدید» یک بار حساب می‌شود (retry و ادامه‌ی نشست حساب نمی‌شود). سمتِ سرور و اتمیک. */
-export async function consumeDaily(env, userId, feature, useId, ph = "") {
-  const limit = dailyLimitOf(env, feature);
+export async function consumeDaily(env, userId, feature, useId, ph = "", limitOverride = 0) {
+  const limit = limitOverride > 0 ? limitOverride : dailyLimitOf(env, feature);
   if (!limit || !env.TR_DB) return { ok: true, used: 0, limit };
   try {
     await ensureTables(env);
@@ -295,6 +295,12 @@ export async function consumeDaily(env, userId, feature, useId, ph = "") {
     console.error("[FAIL-OPEN] consumeDaily error — سقفِ روزانه بی‌صدا خاموش شد", String(e));
     return { ok: true, used: 0, limit };
   }
+}
+
+/** سقفِ روزانه‌ی اختصاصیِ Pro/VIP برای یک بخش. PRO_DAILY_<FEATURE> در wrangler.toml؛ نبود/۰ = بدونِ سقف. */
+export function proDailyLimitOf(env, feature) {
+  const v = Number(env[`PRO_DAILY_${feature.toUpperCase()}`]);
+  return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
 }
 
 /**
@@ -400,6 +406,16 @@ export async function featureGate(request, env, url, session, cors) {
     if (!d.ok) {
       console.warn(`[LIMIT] daily_feature_limit user=${session.sub} feature=${feature} limit=${d.limit}`);
       return dailyResponse(feature, d.limit, cors);
+    }
+  } else {
+    // 💎 سقفِ روزانه‌ی اختصاصیِ Pro/VIP (فقط بخش‌هایی که PRO_DAILY_<FEATURE> دارند، مثلاً PRO_DAILY_STORY)
+    const pl = proDailyLimitOf(env, feature);
+    if (pl > 0) {
+      const d = await consumeDaily(env, session.sub, feature, useId, ph, pl);
+      if (!d.ok) {
+        console.warn(`[LIMIT] pro_daily_feature_limit user=${session.sub} feature=${feature} limit=${d.limit}`);
+        return dailyResponse(feature, d.limit, cors);
+      }
     }
   }
   return null;

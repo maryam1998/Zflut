@@ -86,8 +86,17 @@ export async function handleWordExample(request, env, ctx, cors, session, helper
     const nativeLabel = String(body?.nativeLabel || "").slice(0, 40);
     const used = [...new Set([...pool, ...(Array.isArray(body?.have) ? body.have.slice(0, 30).map(String) : [])])];
     const prompt = helpers.buildPrompt({ word, lang, meaning, nativeLabel, used });
+    // ⚖️ سقفِ سراسریِ روزانه + همزمانیِ Pro. پر بود → فقط از استخر (مثالِ تازه ساخته نمی‌شود)
+    let gate = { deny: null, release: async () => {} };
+    if (helpers.beginAi) {
+      gate = await helpers.beginAi("ai");
+      if (gate.deny) {
+        return gate.capped ? jsonResp({ exhausted: true, total: pool.length }, 200, cors) : gate.deny;
+      }
+    }
     const chain = helpers.getProviderChain(env);
     const errors = [];
+    try {
     for (const provider of chain) {
       try {
         const raw = await helpers.withTimeout(helpers.callProvider(provider, prompt, 200, env), 12000, provider);
@@ -109,6 +118,9 @@ export async function handleWordExample(request, env, ctx, cors, session, helper
     }
     console.error("[AI-FAIL] /api/word-example:", errors.join(" | ").slice(0, 600));
     return jsonResp({ error: "generation failed", code: "ai_failed" }, 502, cors);
+    } finally {
+      await gate.release();
+    }
   } catch (e) {
     console.error("word-example error", String(e));
     return jsonResp({ error: "word-example error", code: "not_ready" }, 503, cors);

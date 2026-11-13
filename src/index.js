@@ -9,6 +9,7 @@ import { authGate, handleSession, verifySessionToken } from "./auth.js";
 import { handleUsage, featureOf, aiMissGate } from "./usage.js";
 import { handleContent } from "./content.js";
 import { recordUsage, handleAdminReport } from "./metrics.js";
+import { beginAi } from "./load.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -86,12 +87,20 @@ export default {
       return handleWordExample(request, env, ctx, CORS_HEADERS, sess, {
         buildPrompt: buildExamplePrompt,
         getProviderChain, callProvider, withTimeout, sanitizeAiText, badAiOutputReason, recordUsage,
+        beginAi: (kind, opts) => beginAi(request, env, kind, CORS_HEADERS, opts),
       });
     }
 
     // ⭐ NEW: تبدیل صدا به متن با Whisper (Cloudflare Workers AI)
     if (url.pathname === "/api/transcribe" && request.method === "POST") {
-      return handleTranscribe(request, env);
+      // ⚖️ همزمانیِ Pro + سقفِ سراسریِ روزانه‌ی Whisper
+      const gate = await beginAi(request, env, "whisper", CORS_HEADERS);
+      if (gate.deny) return gate.deny;
+      try {
+        return await handleTranscribe(request, env);
+      } finally {
+        await gate.release();
+      }
     }
 
     if (url.pathname === "/api/tts" && request.method === "GET") {
@@ -167,8 +176,10 @@ export default {
         return json({ error: "Invalid JSON body" }, 400);
       }
       try {
-        return json(await translateSubtitleChunk(body, env, ctx));
+        return json(await translateSubtitleChunk(body, env, ctx,
+          () => beginAi(request, env, "ai", CORS_HEADERS, { queue: false })));
       } catch (e) {
+        if (e && e.gateResponse) return e.gateResponse; // سقفِ سراسریِ روزانه
         return json({ error: e.message || "subtitle translation failed" }, 502);
       }
     }
@@ -225,28 +236,35 @@ export default {
         if (over) return over;
       }
 
-      const chain = getProviderChain(env);
-      const errors = [];
-      // سقفِ زمانِ هر پرووایدر: یکی که کند/بی‌صدا شد، کلِ درخواست را معطل نکند و
-      // زنجیره سریع برود سراغِ بعدی. متنِ کوتاه ≈ ۵ ثانیه؛ متنِ بلند (داستان) بیشتر.
-      const perProviderMs = Math.min(45000, 4000 + capped * 10);
-      for (const provider of chain) {
-        try {
-          const raw = await withTimeout(callProvider(provider, prompt, capped, env), perProviderMs, provider);
-          // خروجیِ «فکرکردن»/«گارد (User Safety: safe)»/پرامپتِ برگشتی جواب نیست؛
-          // به‌جای فرستادنش به اپ، همین‌جا رد می‌شود و پرووایدرِ بعدی امتحان می‌شود.
-          const text = sanitizeAiText(raw);
-          const bad = badAiOutputReason(text, prompt);
-          if (bad) throw new Error(`unusable output (${bad})`);
-          if (cacheKey) ctx.waitUntil(genCachePut(env, cacheKey, text, provider));
-          ctx.waitUntil(recordUsage(env, request, { feature: "other", provider, cached: false, prompt, text }));
-          return json({ text, provider });
-        } catch (e) {
-          errors.push(`${provider}: ${e.message}`);
+      // ⚖️ همزمانیِ Pro (حداکثر ۲ هم‌زمان، بقیه در صفِ FIFO) + سقفِ سراسریِ روزانه — فقط وقتی کش جواب نداشت
+      const gate = await beginAi(request, env, "ai", CORS_HEADERS);
+      if (gate.deny) return gate.deny;
+      try {
+        const chain = getProviderChain(env);
+        const errors = [];
+        // سقفِ زمانِ هر پرووایدر: یکی که کند/بی‌صدا شد، کلِ درخواست را معطل نکند و
+        // زنجیره سریع برود سراغِ بعدی. متنِ کوتاه ≈ ۵ ثانیه؛ متنِ بلند (داستان) بیشتر.
+        const perProviderMs = Math.min(45000, 4000 + capped * 10);
+        for (const provider of chain) {
+          try {
+            const raw = await withTimeout(callProvider(provider, prompt, capped, env), perProviderMs, provider);
+            // خروجیِ «فکرکردن»/«گارد (User Safety: safe)»/پرامپتِ برگشتی جواب نیست؛
+            // به‌جای فرستادنش به اپ، همین‌جا رد می‌شود و پرووایدرِ بعدی امتحان می‌شود.
+            const text = sanitizeAiText(raw);
+            const bad = badAiOutputReason(text, prompt);
+            if (bad) throw new Error(`unusable output (${bad})`);
+            if (cacheKey) ctx.waitUntil(genCachePut(env, cacheKey, text, provider));
+            ctx.waitUntil(recordUsage(env, request, { feature: "other", provider, cached: false, prompt, text }));
+            return json({ text, provider });
+          } catch (e) {
+            errors.push(`${provider}: ${e.message}`);
+          }
         }
+        console.error("[AI-FAIL] /api/generate همه‌ی پرووایدرها خطا دادند:", errors.join(" | ").slice(0, 900));
+        return json({ error: errors.join(" | ") }, 502);
+      } finally {
+        await gate.release();
       }
-      console.error("[AI-FAIL] /api/generate همه‌ی پرووایدرها خطا دادند:", errors.join(" | ").slice(0, 900));
-      return json({ error: errors.join(" | ") }, 502);
     }
 
     return json({ error: "Not found" }, 404);
@@ -311,6 +329,9 @@ async function handleTranslateText(request, env, ctx) {
   // 🌐 فقط ترجمه‌ی کش‌نشده (واقعاً AI) از سقفِ روزانه‌ی DAILY_TRANSLATE مصرف می‌کند
   const over = await missGate(request, env);
   if (over) return over;
+  // ⚖️ سقفِ سراسریِ روزانه (فقط کش‌نشده‌ها؛ بدونِ صف چون ترجمه‌های کوتاه موازی می‌آیند)
+  const capGate = await beginAi(request, env, "ai", CORS_HEADERS, { queue: false });
+  if (capGate.deny) return capGate.deny;
 
   const label = TT_LANGS[target];
   const prompt =
@@ -638,7 +659,7 @@ function pickCaptionTrack(tracks, wantLang) {
 // خروجی: { ok: true, translations: [...] } — دقیقاً به تعدادِ subtitles.
 // جمله‌های همسایه فقط برای فهمیدنِ معنی داده می‌شن و ترجمه نمی‌شن؛ همین باعث
 // می‌شه ترجمه‌ی خط‌های نیمه‌کاره (که یوتیوب وسطِ جمله می‌بره) دقیق‌تر بشه.
-async function translateSubtitleChunk(body, env, ctx) {
+async function translateSubtitleChunk(body, env, ctx, gateFn) {
   const subs = Array.isArray(body?.subtitles)
     ? body.subtitles.map((s) => (typeof s === "string" ? s : String(s?.text ?? "")).slice(0, 500))
     : [];
@@ -692,6 +713,16 @@ async function translateSubtitleChunk(body, env, ctx) {
       }
     } catch {
       cacheReq = null;
+    }
+  }
+
+  // ⚖️ کش جواب نداشت و واقعاً به AI می‌رود → سقفِ سراسریِ روزانه
+  if (gateFn) {
+    const g = await gateFn();
+    if (g && g.deny) {
+      const err = new Error("global daily cap");
+      err.gateResponse = g.deny;
+      throw err;
     }
   }
 

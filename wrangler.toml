@@ -56,6 +56,20 @@ DAILY_YTSUB = "10"
 # 🌐 ترجمه و درخواست‌های بدونِ بخش — برای همه‌ی کاربران (حتی Pro/VIP)، و فقط «کش‌نشده‌ها» (واقعاً AI) حساب می‌شوند؛
 #    ترجمه‌ی کش‌شده (حافظه‌ی گوشی/کشِ مشترکِ D1) هیچ سهمیه‌ای مصرف نمی‌کند. ۰ = بدونِ سقف.
 DAILY_TRANSLATE = "150"
+# 💎 سقفِ روزانه‌ی اختصاصیِ Pro/VIP برای یک بخش (جدا از DAILY_APPLY_TO_PRO؛ فقط همان بخش). حذف یا ۰ = بدونِ سقف.
+#    داستان‌ساز: حتی Pro هم روزی حداکثر ۶ داستان. (شمارش روی /api/generate با X-Feature: story؛ retryِ همان استفاده رایگان است)
+PRO_DAILY_STORY = "6"
+
+# ⚖️ مدیریتِ بار (src/load.js) — ۰ = خاموش
+#   همزمانیِ هر کاربرِ Pro: حداکثر PRO_MAX_CONCURRENT درخواستِ AI هم‌زمان؛ بیشتر → صفِ FIFO؛ صف > PRO_QUEUE_MAX یا
+#   انتظار > PRO_QUEUE_WAIT_MS → ۴۲۹ «الان شلوغه، چند لحظه دیگه».
+PRO_MAX_CONCURRENT = "2"
+PRO_QUEUE_MAX = "10"
+PRO_QUEUE_WAIT_MS = "60000"
+#   سقفِ سراسریِ روزانه (همه‌ی کاربران، حتی Pro) — فقط درخواست‌هایی که واقعاً به AI/Whisper می‌رسند (نه کش/استخر).
+#   پر شد → فقط از کش و استخر جواب داده می‌شود. شمارنده در D1 (جدول global_daily) و هر روز (UTC) صفر می‌شود.
+GLOBAL_DAILY_AI = "5000"
+GLOBAL_DAILY_WHISPER = "3000"
 # سقفِ اختصاصیِ یک بخش (اختیاری):  FREE_LIMIT_STORY = "3"
 # 📊 گزارشِ مصرفِ AI (اختیاری) — پنل: https://<worker>/admin/usage-report?key=<ADMIN_KEY>
 #   ADMIN_KEY را secret بگذار:  npx wrangler secret put ADMIN_KEY
