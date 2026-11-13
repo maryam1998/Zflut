@@ -91,7 +91,10 @@ class _Msg {
   });
 
   bool get isWelcome =>
-      welcome || (role == 'ai' && text.startsWith("Hey there! I'm Jimmy"));
+      welcome ||
+          (role == 'ai' &&
+              (text.startsWith("Hey there! I'm Sara") ||
+                  text.startsWith("Hey there! I'm Jimmy")));
 
   _Msg copyWith({bool? savedToGrammar}) => _Msg(
         role: role,
@@ -944,7 +947,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
       : _Msg(
         role: 'ai',
         welcome: true,
-        text: "Hey there! I'm Jimmy, your conversation coach. Let's practice "
+        text: "Hey there! I'm Sara, your conversation coach. Let's practice "
             '${_enName(lang)} together.\n\n'
             "I'll help you with grammar, vocabulary, and natural expressions. "
             "Feel free to write anything you'd like to talk about!\n\n"

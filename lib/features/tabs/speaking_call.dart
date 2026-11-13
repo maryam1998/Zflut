@@ -113,13 +113,13 @@ class AiPersona {
 
   /// جمله‌ی اولِ پرامپتِ «معلم + اصلاح». برای Jimmy دقیقاً همان متنِ قبلی.
   String coachIntro(String langLabel) => isDefault
-      ? 'You are Jimmy, a friendly patient $langLabel coach.'
+      ? 'You are Sara, a friendly patient $langLabel coach.'
       : '${_character()} You are also a friendly, patient $langLabel coach for the '
           'learner: stay in character in the chat part of your reply.$_levelRule';
 
   /// جمله‌ی اولِ پرامپتِ «ادامه‌ی گفتگو». برای Jimmy دقیقاً همان متنِ قبلی.
   String partnerIntro(String langLabel) => isDefault
-      ? 'You are Jimmy, a friendly $langLabel conversation partner.'
+      ? 'You are Sara, a friendly $langLabel conversation partner.'
       : '${_character()} You are chatting with a $langLabel learner and you stay '
           'in character.$_levelRule';
 
@@ -192,8 +192,9 @@ class PersonaStore {
   static const List<AiPersona> builtIns = [
     AiPersona(
       id: AiPersona.jimmyId,
-      name: 'Jimmy',
-      emoji: '🧑‍🏫',
+      name: 'Sara',
+      emoji: '👩‍🏫',
+      asset: 'assets/personas/sara.jpg',
       color: 0xFF0F766E,
       role: 'your conversation coach',
       roleFa: 'مربی مکالمه‌ی تو',
@@ -246,8 +247,9 @@ class PersonaStore {
     ),
     AiPersona(
       id: 'alex',
-      name: 'Alex',
+      name: 'Anna',
       emoji: '😎',
+      asset: 'assets/personas/anna.jpg',
       color: 0xFF0E7490,
       role: 'a friendly local who just became the learner\'s friend',
       roleFa: 'یک دوستِ صمیمی و خودمونی',

@@ -81,8 +81,48 @@ const PhotoFaceSpec kRyanFace = PhotoFaceSpec(
   focusY: 400,
 );
 
+/// «Sara» — عکسِ assets/personas/sara.jpg (۱۰۲۴×۱۰۲۴)
+const PhotoFaceSpec kSaraFace = PhotoFaceSpec(
+  asset: 'assets/personas/sara.jpg',
+  avatar: 'assets/personas/sara_avatar.jpg',
+  refW: 1024,
+  refH: 1024,
+  mouthX: 501,
+  mouthHalfW: 81,
+  cornerY: 544,
+  seamY: 563,
+  patchLeft: 372,
+  patchRight: 630,
+  patchTop: 528,
+  patchBottom: 655,
+  maxOpen: 25,
+  focusX: 500,
+  focusY: 470,
+);
+
+/// «Anna» — عکسِ assets/personas/anna.jpg (۱۰۲۴×۱۰۲۴)
+const PhotoFaceSpec kAnnaFace = PhotoFaceSpec(
+  asset: 'assets/personas/anna.jpg',
+  avatar: 'assets/personas/anna_avatar.jpg',
+  refW: 1024,
+  refH: 1024,
+  mouthX: 506,
+  mouthHalfW: 66,
+  cornerY: 481,
+  seamY: 488,
+  patchLeft: 386,
+  patchRight: 626,
+  patchTop: 455,
+  patchBottom: 568,
+  maxOpen: 22,
+  focusX: 500,
+  focusY: 400,
+);
+
 const Map<String, PhotoFaceSpec> kPhotoFaces = {
   'assets/personas/ryan.jpg': kRyanFace,
+  'assets/personas/sara.jpg': kSaraFace,
+  'assets/personas/anna.jpg': kAnnaFace,
 };
 
 /// حالتِ دهان در یک لحظه: open = بازشدگیِ فک (۰..۱)، round = گردیِ لب مثلِ «او» (۰..۱)
@@ -223,7 +263,7 @@ class _PhotoFacePainter extends CustomPainter {
     final iw = image.width.toDouble(), ih = image.height.toDouble();
 
     // ── قاب: «cover» با کمی زوم، و صورت دور از زیرنویسِ پایین ──
-    final zoom = 1.045 * (1.0 + 0.005 * math.sin(t * 1.3)); // نفس کشیدن
+    const zoom = 1.045; // ثابت: عکس هیچ تکان/زومِ ریزی نمی‌خورد
     final s = math.max(size.width / iw, size.height / ih) * zoom;
     final fx = sp.focusX * k, fy = sp.focusY * k;
     var ox = size.width * 0.5 - fx * s;
@@ -233,19 +273,9 @@ class _PhotoFacePainter extends CustomPainter {
 
     final m = mouth;
     final open = m == null ? 0.0 : m.open.clamp(0.0, 1.0).toDouble();
-    // تکانِ ظریفِ سر: موقعِ حرف‌زدن کمی بیشتر
-    final sway = speaking
-        ? 0.010 * math.sin(t * 2.3) + 0.004 * math.sin(t * 5.1)
-        : 0.004 * math.sin(t * 0.9);
-    final bobY = speaking ? open * 1.4 + 0.8 * math.sin(t * 3.1) : 0.0;
-    final bobX = speaking ? 1.0 * math.sin(t * 1.7) : 0.0;
-
     canvas.save();
     canvas.clipRect(Offset.zero & size);
-    canvas.translate(ox + bobX, oy + bobY);
-    canvas.translate(fx * s, fy * s);
-    canvas.rotate(sway);
-    canvas.translate(-fx * s, -fy * s);
+    canvas.translate(ox, oy);
     canvas.scale(s);
 
     // عکسِ پایه (با همان شیدرِ مش تا لبه‌ی ناحیه دیده نشود)

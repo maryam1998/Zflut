@@ -41,7 +41,7 @@ String cleanAiText(String raw) {
   var t = stripAIReasoning(raw);
   // برچسب نقش اول متن
   t = t.replaceFirst(
-      RegExp(r'^\s*(assistant|teacher|jimmy|answer|response)\s*:\s*',
+      RegExp(r'^\s*(assistant|teacher|jimmy|sara|anna|answer|response)\s*:\s*',
           caseSensitive: false),
       '');
   return t.trim();
