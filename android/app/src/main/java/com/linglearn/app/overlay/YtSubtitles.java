@@ -767,6 +767,20 @@ final class YtSubtitles {
         return res;
     }
 
+    /**
+     * 💸 زیرنویس: اول فقط «کش ← ML Kit آفلاین ← MyMemory» (بدونِ AI، حتی اگر کند باشد).
+     * فقط وقتی این‌ها شکست خورد یا نتیجه مشکوک بود (خالی، همان متنِ مبدأ، رسم‌الخطِ اشتباه، …) AI صدا زده می‌شود.
+     */
+    private String translateFreeFirst(String line, String src, String lang) throws Exception {
+        try {
+            return LiveTranslator.translate(app, httpFast, line, src, lang, null);
+        } catch (Exception free) {
+            if (host.ai() == null) throw free;
+            Log.d(TAG, "free translators failed/suspicious → AI: " + free);
+            return LiveTranslator.translate(app, httpFast, line, src, lang, host.ai());
+        }
+    }
+
     private void startChunk(final int chunk, final String lang) {
         final String key = lang + "#" + chunk;
         running.add(key);
@@ -802,7 +816,7 @@ final class YtSubtitles {
                 // رایگان ← (مشکوک؟) AI، با کشِ تأییدشده؛ همان مسیرِ ترجمه‌ی زنده
                 out = new String[lines.size()];
                 for (int i = 0; i < lines.size(); i++) {
-                    try { out[i] = LiveTranslator.translate(app, httpFast, lines.get(i), src, lang, host.ai()); }
+                    try { out[i] = translateFreeFirst(lines.get(i), src, lang); }
                     catch (Exception e) { break; }     // شبکه/سرویس‌ها پایین‌ان؛ بقیه رو الکی منتظر نمون
                 }
             }
