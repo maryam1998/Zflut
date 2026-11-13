@@ -162,12 +162,32 @@ const PhotoFaceSpec kDanielFace = PhotoFaceSpec(
   focusY: 500,
 );
 
+/// «Liam» (باریستا) — عکسِ assets/personas/liam.jpg (۱۰۲۴×۱۰۲۴)
+const PhotoFaceSpec kLiamFace = PhotoFaceSpec(
+  asset: 'assets/personas/liam.jpg',
+  avatar: 'assets/personas/liam_avatar.jpg',
+  refW: 1024,
+  refH: 1024,
+  mouthX: 528,
+  mouthHalfW: 58,
+  cornerY: 417,
+  seamY: 421,
+  patchLeft: 430,
+  patchRight: 626,
+  patchTop: 398,
+  patchBottom: 505,
+  maxOpen: 19,
+  focusX: 528,
+  focusY: 340,
+);
+
 const Map<String, PhotoFaceSpec> kPhotoFaces = {
   'assets/personas/ryan.jpg': kRyanFace,
   'assets/personas/sara.jpg': kSaraFace,
   'assets/personas/anna.jpg': kAnnaFace,
   'assets/personas/sofia.jpg': kSofiaFace,
   'assets/personas/daniel.jpg': kDanielFace,
+  'assets/personas/liam.jpg': kLiamFace,
 };
 
 /// حالتِ دهان در یک لحظه: open = بازشدگیِ فک (۰..۱)، round = گردیِ لب مثلِ «او» (۰..۱)

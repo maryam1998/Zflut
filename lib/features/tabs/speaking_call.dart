@@ -216,6 +216,7 @@ class PersonaStore {
       id: 'emma',
       name: 'Liam',
       emoji: '👨‍🍳',
+      asset: 'assets/personas/liam.jpg',
       color: 0xFF9A3412,
       role: 'a barista in a busy coffee shop',
       roleFa: 'باریستای کافه',
