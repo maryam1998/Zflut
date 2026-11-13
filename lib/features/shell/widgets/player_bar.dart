@@ -20,6 +20,7 @@ import '../../../core/tts/sentence_splitter.dart';
 import '../../../core/tts/speech_controller.dart';
 import '../../../core/tts/speech_state.dart';
 import 'my_voice_recorder.dart';
+import 'spotlight_tour.dart' show TourTarget;
 
 /// تخمینِ زمانِ نمایشی (میلی‌ثانیه به‌ازای هر کاراکتر) — مثل TTS_MS_PER_CHAR در Hope.
 const double _kMsPerChar = 90;
@@ -180,7 +181,7 @@ class PlayerBar extends ConsumerWidget {
                         const SizedBox(width: 10),
                         _UserSeekAmountControl(ua: ua!),
                       ] else ...[
-                        Expanded(child: _SpeedControl(rate: state.rate)),
+                        Expanded(child: TourTarget(id: 'speed', child: _SpeedControl(rate: state.rate))),
                         const SizedBox(width: 10),
                         const _SeekAmountControl(),
                       ],
@@ -196,7 +197,7 @@ class PlayerBar extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     // ضبط صدا (تمرینِ shadowing)
-                    const MyVoiceRecorder(),
+                    const TourTarget(id: 'rec', child: MyVoiceRecorder()),
 
                     // بی‌صدا
                     _IconBtn(
@@ -210,14 +211,15 @@ class PlayerBar extends ConsumerWidget {
                     ),
 
                     // 🔁 تکرار  |  صدای اپلودی: ↺ شروع از ابتدای صوت
-                    if (userMode)
-                      _IconBtn(
+                    TourTarget(
+                      id: 'repeat',
+                      child: userMode
+                      ? _IconBtn(
                         icon: Icons.restart_alt,
                         color: c.gold,
                         onTap: ua!.restart,
                       )
-                    else
-                      _IconBtn(
+                      : _IconBtn(
                         icon: Icons.repeat,
                         color: state.globalRepeat != 0 ? c.gold : c.inkSoft,
                         onTap: ctrl.cycleRepeat,
@@ -229,9 +231,12 @@ class PlayerBar extends ConsumerWidget {
                                 ? null
                                 : '${state.globalRepeat}'),
                       ),
+                    ),
 
                     // A-B — همیشه فعال؛ اگر چیزی پخش نمی‌شود اول متنِ صفحه را شروع می‌کند
-                    _ABBtn(
+                    TourTarget(
+                      id: 'ab',
+                      child: _ABBtn(
                       abState: userMode ? ua!.abState.name : state.abState,
                       color: c.gold,
                       idleColor: c.ink,
@@ -246,10 +251,12 @@ class PlayerBar extends ConsumerWidget {
                         }
                         ctrl.markAB();
                       },
-                    ),
+                    )),
 
                     // بعدی — تپ: جمله‌ی بعد | نگه‌داشتن: پرشِ N ثانیه‌ای جلو
-                    _HoldSeekBtn(
+                    TourTarget(
+                      id: 'next',
+                      child: _HoldSeekBtn(
                       icon: Icons.skip_next,
                       color: c.ink,
                       onTap: () async {
@@ -266,10 +273,12 @@ class PlayerBar extends ConsumerWidget {
                       onStep: () => userMode
                           ? ua!.skip(ref.read(seekAmountProvider))
                           : _seekStep(ref, 1),
-                    ),
+                    )),
 
                     // پخش/توقف — همیشه فعال
-                    _PlayBtn(
+                    TourTarget(
+                      id: 'play',
+                      child: _PlayBtn(
                       isPlaying: userMode ? ua!.isPlaying : isPlaying,
                       onTap: () async {
                         if (userMode) {
@@ -281,7 +290,7 @@ class PlayerBar extends ConsumerWidget {
                       },
                       // نگه‌داشتنِ چندثانیه‌ای = رفتن به همان تب و همان خطی که در حال خواندن است
                       onLongPress: () => _goToPlaying(context, ref, userMode),
-                    ),
+                    )),
 
                     // قبلی — تپ: جمله‌ی قبل | نگه‌داشتن: پرشِ N ثانیه‌ای عقب
                     _HoldSeekBtn(

@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app.dart';
 import '../../../core/bridge/linlearn_bridge.dart';
 import '../../../core/native/native_bridge.dart';
+import 'spotlight_tour.dart' show TourTarget, SpotlightTour;
 import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/providers/linlearn_provider.dart';
 import '../../../core/providers/native_sync_provider.dart';
@@ -210,6 +211,7 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
           ref.read(sharedPrefsProvider).getBool(FeatureDock.hiddenKey) ?? false;
     } catch (_) {}
     FeatureDock.hidden.addListener(_onHidden);
+    SpotlightTour.dockExpand.addListener(_onTourExpand);
     // کمی بعد از بالا آمدنِ صفحه، تا ورودِ اسلایدی کاملاً دیده شود
     Future<void>.delayed(const Duration(milliseconds: 1200), () {
       if (!mounted) return;
@@ -232,11 +234,17 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
     if (mounted) setState(() {});
   }
 
+  /// تورِ معرفی: هنگامِ رسیدن به مرحله‌ی «ابزارهای شناور» داک را باز می‌کند.
+  void _onTourExpand() {
+    if (mounted && _supported && _ready && !_expanded) _expand();
+  }
+
   @override
   void dispose() {
     if (_supported) {
       WidgetsBinding.instance.removeObserver(this);
       FeatureDock.hidden.removeListener(_onHidden);
+      SpotlightTour.dockExpand.removeListener(_onTourExpand);
     }
     _poll?.cancel();
     _collapseTimer?.cancel();
@@ -745,7 +753,10 @@ class _FeatureDockState extends ConsumerState<FeatureDock>
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _expanded ? null : _expand,
-        child: AbsorbPointer(absorbing: !_expanded, child: pill),
+        child: TourTarget(
+          id: 'dock',
+          child: AbsorbPointer(absorbing: !_expanded, child: pill),
+        ),
       ),
     );
   }

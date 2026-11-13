@@ -7,6 +7,7 @@ import 'account_header.dart';
 import 'header_tabs.dart';
 import 'language_picker.dart';
 import 'settings_sheet.dart';
+import 'spotlight_tour.dart' show TourTarget;
 import 'sub_tabs_row.dart';
 
 /// هدر + زبان‌ها + گروه‌ها + زیرتب‌ها.
@@ -61,17 +62,17 @@ class ShellHeader extends StatelessWidget {
       child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AccountHeader(
+        TourTarget(id: 'account', child: AccountHeader(
           onMenuTap: () => SettingsSheet.show(context),
           onAvatarTap: () => SettingsSheet.show(context),
           userName: null,
-        ),
-        const LanguagePicker(),
-        HeaderTabs(
+        )),
+        const TourTarget(id: 'lang', child: LanguagePicker()),
+        TourTarget(id: 'tabs', child: HeaderTabs(
           activeGroupKey: currentGroup.key,
           onGroupSelected: (group) => context.go(routeOf(group.tabs.first)),
           onSettingsTap: () => SettingsSheet.show(context),
-        ),
+        )),
         if (hasSubtabs)
           SubTabsRow(
             group: currentGroup,

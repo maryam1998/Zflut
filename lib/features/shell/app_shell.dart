@@ -19,6 +19,7 @@ import '../grammar/widgets/practice_sheet.dart';
 import 'widgets/feature_dock.dart';
 import 'widgets/lingova_mascot.dart';
 import 'widgets/player_bar.dart';
+import 'widgets/spotlight_tour.dart';
 
 /// 🔕 پنل «تمرین جمله‌سازی و گرامر» فعلاً مخفی است. کدش (PracticeSheet در
 /// features/grammar/widgets/practice_sheet.dart) دست‌نخورده مانده؛ برای
@@ -170,6 +171,8 @@ class _AppShellState extends ConsumerState<AppShell> {
               const Positioned.fill(child: LingovaMascotLayer()),
               // ═══ داکِ ابزارها (ذره‌بین / ترجمه‌ی زنده / یوتیوب) — اسلاید از راست، فقط اندروید ═══
               const FeatureDock(),
+              // ═══ تورِ معرفیِ بار اول (نورافکن + حلقه‌ی چشمک‌زن) — همیشه آخرین لایه ═══
+              const SpotlightTour(),
             ],
           ),
         ),

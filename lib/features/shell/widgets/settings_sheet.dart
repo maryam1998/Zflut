@@ -30,6 +30,7 @@ import 'credits_page.dart';
 import 'feature_dock.dart' show FeatureDockToggleRow;
 import 'help_center.dart';
 import 'settings_packs.dart';
+import 'spotlight_tour.dart' show TourReplayButton;
 
 // ═══════════════════════════════════════════════════════════════════
 // تنظیمات — پنلِ کوچکِ کشویی از سمتِ چپ (مثل Hope)، یک صفحه‌ی واحد بدونِ پوشه
@@ -140,6 +141,8 @@ class _SettingsSheetState extends ConsumerState<SettingsSheet> {
                   const _OfflineWordsButton(),
                   gap(),
                   const HelpCenterButton(),
+                  const SizedBox(height: 8),
+                  const TourReplayButton(),
                   const SizedBox(height: 8),
                   const ContactUsButton(),
                   const SizedBox(height: 8),
