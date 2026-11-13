@@ -72,6 +72,9 @@ class PlayerSyncNotifier extends StateNotifier<PlayerSyncState> {
     return null;
   }
 
+  /// ترکِ زبانِ [code] (اگر null: ترکِ اصلی) — برای ادامه‌ی خوانش بعد از ترکِ تب.
+  PlayerTrack? trackFor(String? code) => state.tracks[code ?? state.mainCode];
+
   /// ترکِ اصلیِ فعلی، یا (اگر لیست وسطِ پخش بزرگ شده) ترکِ قدیمیِ در حال پخش با این کلید.
   PlayerTrack? mainTrackForKey(String? key) {
     if (key == null) return null;

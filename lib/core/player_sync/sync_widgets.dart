@@ -170,8 +170,23 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         mainCode: widget.mainCode);
   }
 
+  /// 🔁 تب وسطِ «لغت ← ترجمه‌ها/مثال‌ها ← لغتِ بعد» ترک شد: این صف به خودِ تب بسته است و با
+  /// بسته‌شدنش می‌مُرد؛ بعد از تمام شدنِ همان ترجمه/مثال هیچ‌چیز ادامه نمی‌یافت و خوانش قطع می‌شد.
+  /// اینجا ادامه‌ی خوانشِ همان لیست (از آیتمِ بعد) به کنترلرِ صدا سپرده می‌شود.
+  void _handOffReadingIfNeeded() {
+    try {
+      final id = _resumeSpanId;
+      if (id == null || !(_bgActive || _resumeFromHook)) return;
+      final track = _notifier.trackFor(_resumeCode);
+      final span = track?.byId[id];
+      if (track == null || span == null) return;
+      _resumeAfterLeaving(_ctrl, track, span.start);
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
+    _handOffReadingIfNeeded();
     _bgCancel();
     _ctrl.removeChunkAdvanceHook(_chunkHook);
     _ctrl.removeChunkVoiceResolver(_voiceResolver);
@@ -1303,4 +1318,66 @@ class _BgStep {
       {this.retry});
 
   Future<String?> text() => _fixed != null ? Future.value(_fixed) : (_fut ?? Future.value(null));
+}
+
+
+/// بعد از ترکِ تب: وقتی آیتمِ در حال خواندن (ترجمه/مثال) تمام شد، خوانشِ لیست از آیتمِ بعد
+/// ادامه پیدا می‌کند. اگر کاربر در این فاصله توقفِ کامل کرد یا چیزِ دیگری پخش کرد، کاری نمی‌کند.
+void _resumeAfterLeaving(SpeechController ctrl, PlayerTrack track, int start) {
+  void Function()? remove;
+  Timer? guard;
+  var done = false;
+  var first = true;
+  String? watchKey;
+
+  void resume() {
+    unawaited(ctrl.toggle(
+      track.fullText,
+      track.code,
+      startCharOffset: start,
+      loop: true,
+      sentenceBoundaries: track.boundaries,
+    ));
+  }
+
+  void finish() {
+    if (done) return;
+    done = true;
+    guard?.cancel();
+    try {
+      remove?.call();
+    } catch (_) {}
+  }
+
+  remove = ctrl.addListener((SpeechState s) {
+    if (done) return;
+    if (first) {
+      first = false;
+      if (s.key == null) {
+        finish(); // چیزی پخش نمی‌شد / کاربر کامل متوقف کرده بود
+        return;
+      }
+      if (s.status == SpeechStatus.idle) {
+        finish(); // بینِ دو مرحله‌ی صف بود → همین حالا از آیتمِ بعد ادامه بده
+        if (s.error == null) resume();
+        return;
+      }
+      watchKey = s.key;
+      return;
+    }
+    if (s.key != watchKey) {
+      finish(); // چیزِ دیگری پخش شد یا توقفِ کامل
+      return;
+    }
+    if (s.status == SpeechStatus.idle) {
+      finish();
+      if (s.error == null) resume();
+    }
+  }, fireImmediately: true);
+  if (done) {
+    try {
+      remove?.call();
+    } catch (_) {}
+  }
+  guard = Timer(const Duration(minutes: 5), finish);
 }
