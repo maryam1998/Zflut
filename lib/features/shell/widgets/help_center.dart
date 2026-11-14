@@ -194,10 +194,28 @@ const List<_Article> _articles = [
     'data',
     {'en': 'Offline models: what can I download?', 'fa': 'مدل‌های آفلاین: چه چیزهایی دانلود می‌شود؟'},
     {
-      'en': 'Settings has three optional downloads:\n• Offline voices (App voice): high-quality reading voices, one pack per language.\n• Offline words: vocabulary lists you can search without internet.\n• Text ↔ audio sync pack: lets the “Sync” button on a story’s audio bar work offline on your phone (one-time download; if it fails, check your connection/VPN and resume — finished files are kept).\nDownloads can be deleted any time to free space.',
-      'fa': 'در تنظیمات سه دانلود اختیاری وجود دارد:\n• صداهای آفلاین (صدای برنامه): صدای خوانش باکیفیت، برای هر زبان یک بسته.\n• لغات آفلاین: لیست‌های لغت که بدون اینترنت قابل جستجو هستند.\n• بسته‌ی همگام‌سازی متن و صدا: باعث می‌شود دکمه‌ی «همگام‌سازی» نوار صدای داستان روی گوشی و آفلاین کار کند (دانلود یک‌باره؛ اگر قطع شد، اتصال/VPN را چک کن و ادامه بده — فایل‌های کامل‌شده حفظ می‌شوند).\nهر زمان بخواهی می‌توانی دانلودها را برای آزاد شدن فضا پاک کنی.',
+      'en': 'Settings has optional downloads so the app works without internet:\n• Offline voices (App voice): natural reading voices, one pack per language.\n• Offline words: vocabulary lists you can search without internet.\n• Text ↔ audio sync pack: lets the “Sync” button on a story’s audio bar work offline on your phone (one-time download; if it fails, check your connection/VPN and resume — finished files are kept).\n• Speech recognition packs (for live translation): choose the level that fits your phone.\nDownloads can be deleted any time to free space.',
+      'fa': 'در تنظیمات چند دانلود اختیاری وجود دارد تا برنامه بدون اینترنت هم کار کند:\n• صداهای آفلاین (صدای برنامه): صدای خوانش طبیعی، برای هر زبان یک بسته.\n• لغات آفلاین: لیست‌های لغت که بدون اینترنت قابل جستجو هستند.\n• بسته‌ی همگام‌سازی متن و صدا: باعث می‌شود دکمه‌ی «همگام‌سازی» نوار صدای داستان روی گوشی و آفلاین کار کند (دانلود یک‌باره؛ اگر قطع شد، اتصال/VPN را چک کن و ادامه بده — فایل‌های کامل‌شده حفظ می‌شوند).\n• بسته‌های تشخیص گفتار (برای ترجمه‌ی زنده): سطحِ مناسبِ گوشی‌ات را انتخاب کن.\nهر زمان بخواهی می‌توانی دانلودها را برای آزاد شدن فضا پاک کنی.',
     },
     'offline download model voice words sync pack space آفلاین دانلود مدل صدا لغات همگام فضا حجم',
+  ),
+  _Article(
+    'data',
+    {'en': 'Which quality level should I choose? (High / Low)', 'fa': 'کدام سطح کیفیت را انتخاب کنم؟ (High / Low)'},
+    {
+      'en': 'Offline packs come in two levels:\n• High — the best accuracy and the most natural result. It needs a powerful, recent phone (more RAM and a fast processor) and uses more storage and battery.\n• Low — lighter and faster, with a smaller download. It is made for mid-range and older phones and runs smoothly where High would lag.\nNot sure? Start with High; if the app feels slow, gets warm or closes by itself, switch to Low. You can change the level at any time, and the other pack can be deleted to free space.',
+      'fa': 'بسته‌های آفلاین در دو سطح عرضه می‌شوند:\n• High (کیفیت بالا) — بیشترین دقت و طبیعی‌ترین نتیجه. مخصوص گوشی‌های قدرتمند و جدید (رم بیشتر و پردازنده‌ی سریع) است و حجم و مصرف باتری بیشتری دارد.\n• Low (سبک) — سبک‌تر و سریع‌تر، با حجم دانلود کمتر. مخصوص گوشی‌های متوسط و قدیمی‌تر است و جایی که High کند می‌شود روان کار می‌کند.\nمطمئن نیستی؟ با High شروع کن؛ اگر برنامه کند شد، گوشی داغ کرد یا خودبه‌خود بسته شد، به Low برگرد. هر زمان می‌توانی سطح را عوض کنی و بسته‌ی دیگر را برای آزاد شدن فضا پاک کنی.',
+    },
+    'high low quality fast light weak powerful phone ram slow lag کیفیت بالا پایین سبک سریع ضعیف قوی گوشی کند هنگ',
+  ),
+  _Article(
+    'start',
+    {'en': 'Floating tools: privacy and what they do', 'fa': 'ابزارهای شناور: چه می‌کنند و حریم خصوصی'},
+    {
+      'en': 'Floating tools (Android) work on top of any other app, with no copy-paste:\n• Magnifier: translate and hear any text on your screen.\n• Live translation: translated subtitles for the audio playing on your phone (videos, podcasts, clips).\n• YouTube subtitles in your language.\nText reading and speech recognition run locally on your own phone. Your screen and audio are never recorded, sent to a server or stored. Only the translated text you choose to save is kept, and only you can see it. Turning the tools off cuts the screen permission completely.',
+      'fa': 'ابزارهای شناور (اندروید) روی هر برنامه‌ی دیگری کار می‌کنند، بدون کپی‌کردن:\n• ذره‌بین: ترجمه و تلفظِ هر متنی که روی صفحه می‌بینی.\n• ترجمه‌ی زنده: زیرنویسِ ترجمه‌شده برای صدایی که روی گوشی پخش می‌شود (ویدیو، پادکست، کلیپ).\n• زیرنویسِ یوتیوب به زبان خودت.\nخواندنِ متن و تشخیصِ گفتار کاملاً روی خودِ گوشیِ تو انجام می‌شود. تصویرِ صفحه و صدا ضبط، به سرور ارسال یا ذخیره نمی‌شود. فقط متنِ ترجمه‌شده‌ای که خودت ذخیره کنی نگه‌داری می‌شود و فقط خودت به آن دسترسی داری. با خاموش‌کردنِ ابزارها، دسترسیِ ضبطِ صفحه کاملاً قطع می‌شود.',
+    },
+    'floating tools bubble magnifier live translation privacy local private youtube ابزار شناور حباب ذره بین ترجمه زنده حریم خصوصی محلی گوشی ذخیره',
   ),
 
   // ── حل مشکل ──

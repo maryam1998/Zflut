@@ -117,8 +117,8 @@ const List<_Step> _steps = [
     Icons.layers_rounded,
     {'en': 'Floating tools (Android)', 'fa': 'ابزارهای شناور (اندروید)'},
     {
-      'en': 'They work on top of any other app, with no copy-paste: Magnifier (translate and hear any text), live translation of videos and calls, and YouTube subtitles. Tap this edge tab to open it.',
-      'fa': 'روی هر برنامه‌ی دیگری هم کار می‌کنند، بدون کپی‌کردن: ذره‌بین (ترجمه و تلفظِ هر متن)، ترجمه‌ی زنده‌ی ویدیو و تماس، و زیرنویسِ یوتیوب. این زبانه‌ی کنارِ صفحه را لمس کن تا باز شود.',
+      'en': 'They work on top of any other app, with no copy-paste: Magnifier (translate and hear any text), live translation of the audio playing on your phone (videos, podcasts, clips) and YouTube subtitles. Everything is processed locally on your own phone — your screen and audio are never recorded, sent or stored. Tap this edge tab to open it.',
+      'fa': 'روی هر برنامه‌ی دیگری هم کار می‌کنند، بدون کپی‌کردن: ذره‌بین (ترجمه و تلفظِ هر متن)، ترجمه‌ی زنده‌ی صدایی که روی گوشی پخش می‌شود (ویدیو، پادکست، کلیپ) و زیرنویسِ یوتیوب. تشخیصِ متن و گفتار کاملاً روی خودِ گوشیِ شماست؛ تصویرِ صفحه و صدا ضبط، ارسال یا ذخیره نمی‌شود. این زبانه‌ی کنارِ صفحه را لمس کن تا باز شود.',
     },
   ),
   _Step(

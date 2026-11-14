@@ -78,12 +78,12 @@ const Map<String, Map<String, String>> _tx = {
     'ar': 'المكبّرة: المس أي نص في أي تطبيق — ترجمة ونطق فوريان.',
   },
   'p2': {
-    'fa': 'ترجمه‌ی زنده: هر ویدیو، پادکست یا تماس را همزمان با زیرنویسِ ترجمه‌شده دنبال کن.',
-    'en': 'Live translation: follow any video, podcast or call with real-time translated subtitles.',
-    'es': 'Traducción en vivo: sigue cualquier vídeo, pódcast o llamada con subtítulos traducidos en tiempo real.',
-    'de': 'Live-Übersetzung: Folge jedem Video, Podcast oder Anruf mit übersetzten Untertiteln in Echtzeit.',
-    'fr': 'Traduction en direct : suis n’importe quelle vidéo, podcast ou appel avec des sous-titres traduits en temps réel.',
-    'ar': 'الترجمة الفورية: تابع أي فيديو أو بودكاست أو مكالمة مع ترجمة مكتوبة لحظة بلحظة.',
+    'fa': 'ترجمه‌ی زنده: صدای هر ویدیو، پادکست یا کلیپی که روی گوشی پخش می‌شود را همزمان با زیرنویسِ ترجمه‌شده دنبال کن.',
+    'en': 'Live translation: follow the audio of any video, podcast or clip playing on your phone with real-time translated subtitles.',
+    'es': 'Traducción en vivo: sigue el audio de cualquier vídeo, pódcast o clip que se reproduzca en tu móvil con subtítulos traducidos en tiempo real.',
+    'de': 'Live-Übersetzung: Folge dem Ton jedes Videos, Podcasts oder Clips, der auf deinem Handy läuft, mit übersetzten Untertiteln in Echtzeit.',
+    'fr': 'Traduction en direct : suis le son de n’importe quelle vidéo, podcast ou clip lu sur ton téléphone avec des sous-titres traduits en temps réel.',
+    'ar': 'الترجمة الفورية: تابع صوت أي فيديو أو بودكاست أو مقطع يُشغَّل على هاتفك مع ترجمة مكتوبة لحظة بلحظة.',
   },
   'p3': {
     'fa': 'یوتیوب: زیرنویسِ ویدیوها به زبانِ خودت؛ هر کلمه را بزن و ذخیره کن.',
