@@ -335,7 +335,14 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     // کمی صبر تا دکمه‌های زیرتبِ ایمپورت روی صفحه بنشینند
     _importTimer?.cancel();
     _importTimer = Timer(const Duration(milliseconds: 500), () {
-      if (mounted && !_active) _begin(group: 'import');
+      if (!mounted || _active) return;
+      _begin(group: 'import');
+      // اگر دکمه‌ها هنوز روی صفحه ننشسته بودند، یک بارِ دیگر (کمی دیرتر) امتحان کن
+      if (!_active) {
+        _importTimer = Timer(const Duration(milliseconds: 900), () {
+          if (mounted && !_active) _begin(group: 'import');
+        });
+      }
     });
   }
 
