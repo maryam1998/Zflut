@@ -668,6 +668,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       bool loops, String word, List<String> texts) {
     final langs = _fgLangs(track.code);
     if (langs.isEmpty) return false;
+    debugPrint('🌐 صفِ ترجمه: زبان‌ها=$langs (متن=${track.code})');
     _bgCancel();
     _resumeFromHook = true;
     _resumeSpanId =
@@ -747,6 +748,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
           debugPrint('⏭ خوانش ترجمه رد شد (متن آماده نشد): ${st.code}');
           continue; // ترجمه‌ای نبود → رد شو
         }
+        debugPrint('🌐 خوانش ${st.code} (${steps.indexOf(st) + 1}/${steps.length})');
         // مکث یا پخشِ چیزِ دیگر صف را کنسل نمی‌کند؛ صبر می‌کنیم تا آزاد شود و ادامه می‌دهیم
         if (!await _bgWaitFree(token, first ? expectKey : null)) return;
         final key = PlayerTrack.keyFor(st.code, text);
@@ -813,11 +815,19 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     if (w == null || w.isCompleted || key == null) return;
     if (next.key == key) {
       _bgSeen = true;
+      // ⛔ خطای همین مرحله (مثلاً صدای آن زبان روی گوشی نصب نیست / بسته‌ی صوتی نیست):
+      // بلافاصله برو سراغ زبانِ بعد؛ قبلاً تا ۲۵+ ثانیه گیر می‌کرد و کاربر فکر می‌کرد
+      // فقط زبانِ اول خوانده می‌شود.
+      if (next.status == SpeechStatus.idle && next.error != null) {
+        debugPrint('🌐 مرحله‌ی خوانش رد شد (خطا: ${next.error})');
+        w.complete(true);
+        return;
+      }
       if (prev != null &&
           prev.key == key &&
-          prev.status == SpeechStatus.playing &&
+          prev.status != SpeechStatus.idle &&
           next.status == SpeechStatus.idle) {
-        w.complete(true); // پایانِ همین مرحله (یا خطا → رد می‌شود)
+        w.complete(true); // پایانِ همین مرحله (هر نوع پایان، نه فقط از حالتِ playing)
       }
       return;
     }
