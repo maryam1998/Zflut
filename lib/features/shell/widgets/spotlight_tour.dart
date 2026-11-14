@@ -23,6 +23,7 @@ import '../../../core/theme/app_theme_colors.dart';
 
 const String _kTourSeenKey = 'zflut-tour-seen-v1';
 const String _kImportTourSeenKey = 'zflut-tour-import-seen-v1';
+const String _kStoryTourSeenKey = 'zflut-tour-story-seen-v1';
 
 final Map<String, _TourTargetState> _targets = {};
 
@@ -198,6 +199,55 @@ const List<_Step> _steps = [
   ),
 ];
 
+/// تورِ تبِ «داستان‌ساز» — بارِ اولِ ورود به تب.
+const List<_Step> _storySteps = [
+  _Step(
+    'st_modes',
+    Icons.auto_stories_rounded,
+    {'en': 'Four ways to work with stories', 'fa': 'چهار راه برای کار با داستان'},
+    {
+      'en': 'Create an AI story from your own words, import a PDF, photo or link to read, open your saved library, or keep words for the next story.',
+      'fa': 'با هوش مصنوعی از لغاتِ خودت داستان بساز، PDF و عکس و لینک را برای خواندن وارد کن، کتابخانه‌ی داستان‌های ذخیره‌شده‌ات را باز کن، یا لغت‌ها را برای داستانِ بعدی نگه دار.',
+    },
+  ),
+  _Step(
+    'st_settings',
+    Icons.tune_rounded,
+    {'en': 'Language, level and style', 'fa': 'زبان، سطح و سبکِ داستان'},
+    {
+      'en': 'Choose the language of the story, your level (A1–C2), the kind of content and how long it should be.',
+      'fa': 'زبانِ داستان، سطحِ خودت (A1 تا C2)، نوعِ محتوا و طولِ داستان را انتخاب کن.',
+    },
+  ),
+  _Step(
+    'st_words',
+    Icons.spellcheck_rounded,
+    {'en': 'Choose your words', 'fa': 'لغاتت را انتخاب کن'},
+    {
+      'en': 'Type the words you want to learn, or search among your saved words. The story is written around them.',
+      'fa': 'لغاتی که می‌خواهی یاد بگیری را بنویس یا از بینِ لغاتِ ذخیره‌شده‌ات جستجو کن. داستان دورِ همین لغت‌ها نوشته می‌شود.',
+    },
+  ),
+  _Step(
+    'st_trans',
+    Icons.translate_rounded,
+    {'en': 'Translations', 'fa': 'ترجمه‌ها'},
+    {
+      'en': 'Pick the languages you want the story translated into, shown together with the text.',
+      'fa': 'زبان‌هایی که می‌خواهی داستان به آن‌ها ترجمه شود را انتخاب کن؛ ترجمه‌ها کنارِ متن نشان داده می‌شوند.',
+    },
+  ),
+  _Step(
+    'st_generate',
+    Icons.auto_awesome_rounded,
+    {'en': 'Create the story', 'fa': 'ساختِ داستان'},
+    {
+      'en': 'With at least one word added, tap here. Your story is written for you — read it, listen to it and save it to your library.',
+      'fa': 'وقتی دستِ‌کم یک لغت اضافه کرده‌ای، اینجا را لمس کن. داستانت برایت نوشته می‌شود؛ می‌توانی بخوانی، گوش بدهی و در کتابخانه‌ات ذخیره کنی.',
+    },
+  ),
+];
+
 /// تورِ زیرتبِ «ایمپورت و خواندن» (داستان‌ساز) — بار اولِ ورود و با دکمه‌ی راهنمای همان بخش.
 const List<_Step> _importSteps = [
   _Step(
@@ -272,6 +322,15 @@ class SpotlightTour extends ConsumerStatefulWidget {
   /// نمایشِ دوباره‌ی تور (از تنظیمات).
   static void replay() => _replayTick.value++;
 
+  static final ValueNotifier<int> _storyTick = ValueNotifier<int>(0);
+  static bool _storyForce = false;
+
+  /// تورِ تبِ «داستان‌ساز». force=true → همیشه؛ وگرنه فقط بارِ اولِ ورود به تب.
+  static void startStory({bool force = false}) {
+    _storyForce = force;
+    _storyTick.value++;
+  }
+
   static final ValueNotifier<int> _importTick = ValueNotifier<int>(0);
   static bool _importForce = false;
 
@@ -296,13 +355,16 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
       vsync: this, duration: const Duration(milliseconds: 380), value: 1);
 
   bool _active = false;
-  String _group = 'main'; // 'main' | 'import'
-  List<_Step> get _list => _group == 'import' ? _importSteps : _steps;
+  String _group = 'main'; // 'main' | 'import' | 'story'
+  List<_Step> get _list => _group == 'import'
+      ? _importSteps
+      : (_group == 'story' ? _storySteps : _steps);
   int _i = -1;
   Rect? _prev;
   Rect? _last;
   Timer? _startTimer;
   Timer? _importTimer;
+  Timer? _storyTimer;
 
   @override
   void initState() {
@@ -316,6 +378,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     }
     SpotlightTour._replayTick.addListener(_onReplay);
     SpotlightTour._importTick.addListener(_onImportTick);
+    SpotlightTour._storyTick.addListener(_onStoryTick);
   }
 
   @override
@@ -323,6 +386,8 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     _startTimer?.cancel();
     SpotlightTour._replayTick.removeListener(_onReplay);
     SpotlightTour._importTick.removeListener(_onImportTick);
+    SpotlightTour._storyTick.removeListener(_onStoryTick);
+    _storyTimer?.cancel();
     _importTimer?.cancel();
     _pulse.dispose();
     _move.dispose();
@@ -332,6 +397,26 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   void _onReplay() {
     _startTimer?.cancel();
     _begin();
+  }
+
+  void _onStoryTick() {
+    if (_active) return;
+    var seen = true;
+    try {
+      seen = ref.read(sharedPrefsProvider).getBool(_kStoryTourSeenKey) ?? false;
+    } catch (_) {}
+    if (seen && !SpotlightTour._storyForce) return;
+    // کمی صبر تا کارت‌های تب روی صفحه بنشینند
+    _storyTimer?.cancel();
+    _storyTimer = Timer(const Duration(milliseconds: 700), () {
+      if (!mounted || _active) return;
+      _begin(group: 'story');
+      if (!_active) {
+        _storyTimer = Timer(const Duration(milliseconds: 900), () {
+          if (mounted && !_active) _begin(group: 'story');
+        });
+      }
+    });
   }
 
   void _onImportTick() {
@@ -382,7 +467,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   bool _advance() {
     final size = MediaQuery.of(context).size;
     for (var j = _i + 1; j < _list.length; j++) {
-      if (_group == 'import') _targets[_list[j].id]?._reveal();
+      if (_group != 'main') _targets[_list[j].id]?._reveal();
       final r = _usableRect(_list[j].id, size);
       if (r != null) {
         setState(() {
@@ -400,7 +485,10 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   void _finish() {
     try {
       ref.read(sharedPrefsProvider).setBool(
-          _group == 'import' ? _kImportTourSeenKey : _kTourSeenKey, true);
+          _group == 'import'
+              ? _kImportTourSeenKey
+              : (_group == 'story' ? _kStoryTourSeenKey : _kTourSeenKey),
+          true);
     } catch (_) {}
     _pulse.stop();
     if (mounted) setState(() => _active = false);
@@ -481,7 +569,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   bool _hasLater(Size size) {
     for (var j = _i + 1; j < _list.length; j++) {
       // ایمپورت: هدفِ ثبت‌شده کافی است (در _advance به صفحه آورده می‌شود)
-      if (_group == 'import'
+      if (_group != 'main'
           ? _targets[_list[j].id]?._rect != null
           : _usableRect(_list[j].id, size) != null) return true;
     }

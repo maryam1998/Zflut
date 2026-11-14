@@ -339,6 +339,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       if (mounted) _applyPlayRestore(ref.read(tabRestoreProvider));
     });
     unawaited(cleanOcrTemp());
+    // 🎓 بارِ اولِ ورود به تب: تورِ معرفیِ داستان‌ساز
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) SpotlightTour.startStory();
+    });
     final d = ref.read(storyDraftProvider);
     if (d != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1691,10 +1695,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           ..._importSection(c),
           if (_reading != null) _readingCard(c),
         ] else ...[
-          _settingsCard(c, lang, options),
-          _wordsCard(c, lang),
-          _translationLangsCard(c),
-          _generateButton(c, lang),
+          TourTarget(id: 'st_settings', child: _settingsCard(c, lang, options)),
+          TourTarget(id: 'st_words', child: _wordsCard(c, lang)),
+          TourTarget(id: 'st_trans', child: _translationLangsCard(c)),
+          TourTarget(id: 'st_generate', child: _generateButton(c, lang)),
           if (_error.isNotEmpty)
             Text(_error, style: TextStyle(color: c.rose, fontSize: 13)),
           if (_result != null) _resultCard(c, _result!),
@@ -1748,7 +1752,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         subtitle: FeatureCardTexts.of(context, 'story_saved'),
       ),
     ];
-    return FeatureSwitchCards(
+    return TourTarget(
+      id: 'st_modes',
+      child: FeatureSwitchCards(
       items: items,
       selected: order.indexOf(cur),
       onSelect: (i) {
@@ -1762,7 +1768,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           _clearCreateView();
         });
       },
-    );
+    ));
   }
 
   Widget _settingsCard(
