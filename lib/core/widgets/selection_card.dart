@@ -25,7 +25,7 @@ import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart';
 import '../tts/speech_state.dart';
 import '../tts/tts_config.dart';
-import '../usage/free_limit.dart';
+import '../usage/pro_status.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // SelectionCard — «کارت مشترکِ انتخاب» (معادل GlobalAddToStorySelection
@@ -196,29 +196,7 @@ VoidCallback? _closeActiveCard;
 
 /// کارتِ مشترک را کنار [anchor] (مستطیلِ سراسریِ متنِ انتخاب‌شده) باز می‌کند.
 /// Future وقتی تمام می‌شود که کارت بسته شود.
-///
-/// 💎 نسخه‌ی رایگان: فقط ۳ بارِ «کل عمر» (هر بار باز شدنِ کارت = یک استفاده)؛ از بارِ چهارم
-/// به‌جای کارت، پنجره‌ی Pro نشان داده می‌شود. Pro/VIP نامحدود.
 Future<void> showSelectionCard(
-  BuildContext context, {
-  required String text,
-  required String langCode,
-  String? sentence,
-  Rect? anchor,
-}) async {
-  if (text.trim().isEmpty) return;
-  if (!await FreeLimit.useOrBlock(Feature.popup)) return;
-  if (!context.mounted) return;
-  return _showSelectionCardImpl(
-    context,
-    text: text,
-    langCode: langCode,
-    sentence: sentence,
-    anchor: anchor,
-  );
-}
-
-Future<void> _showSelectionCardImpl(
   BuildContext context, {
   required String text,
   required String langCode,
@@ -511,6 +489,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
     final lang = widget.langCode;
     final langs = selectionCardLangs(sel, lang);
 
+    final pro = ref.watch(isProProvider);
     final storySaved = ref.watch(savedWordsProvider.select((l) => l.any(
         (w) => w.langCode == lang && normWord(w.word) == normWord(_text))));
     final grammarSaved = ref.watch(grammarNotesProvider.select((l) => l.any(
@@ -650,6 +629,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                 emoji: '🔖',
                 label: _s(ui, storySaved ? 'storyDone' : 'story'),
                 active: storySaved,
+                locked: !pro && !storySaved, // 🔒 فقط Pro
                 onTap: () {
                   _markActed();
                   ref.read(savedWordsProvider.notifier).toggleSave(
@@ -667,6 +647,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                 emoji: '🧩',
                 label: _s(ui, grammarSaved ? 'grammarDone' : 'grammar'),
                 active: grammarSaved,
+                locked: !pro && !grammarSaved, // 🔒 فقط Pro
                 onTap: () {
                   _markActed();
                   if (grammarSaved) return;
@@ -687,6 +668,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                 icon: Icons.style_outlined,
                 label: _s(ui, leitnerAdded ? 'leitnerDone' : 'leitner'),
                 active: leitnerAdded,
+                locked: !pro && !leitnerAdded, // 🔒 فقط Pro
                 onTap: () {
                   _markActed();
                   if (leitnerAdded) return;
@@ -1163,12 +1145,16 @@ class _ActionButton extends StatelessWidget {
   final bool active;
   final VoidCallback onTap;
 
+  /// true = قفلِ Pro: با آیکنِ 🔒 و کم‌رنگ نشان داده می‌شود و لمسش کاری نمی‌کند (بدونِ پنجره‌ی Pro).
+  final bool locked;
+
   const _ActionButton({
     this.emoji = '',
     this.icon,
     required this.label,
     required this.active,
     required this.onTap,
+    this.locked = false,
   });
 
   @override
@@ -1176,8 +1162,10 @@ class _ActionButton extends StatelessWidget {
     final fg = active ? kCardBorderGold : Colors.white;
     return Padding(
       padding: const EdgeInsets.only(top: 6),
-      child: InkWell(
-        onTap: onTap,
+      child: Opacity(
+        opacity: locked ? 0.55 : 1,
+        child: InkWell(
+        onTap: locked ? null : onTap,
         borderRadius: BorderRadius.circular(11),
         child: Container(
           width: double.infinity,
@@ -1208,13 +1196,16 @@ class _ActionButton extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                icon != null
-                    ? Icon(icon, size: 18, color: fg)
-                    : Text(emoji,
-                        style: const TextStyle(fontSize: 15, height: 1.1)),
+                locked
+                    ? Icon(Icons.lock_rounded, size: 18, color: fg)
+                    : icon != null
+                        ? Icon(icon, size: 18, color: fg)
+                        : Text(emoji,
+                            style: const TextStyle(fontSize: 15, height: 1.1)),
               ],
             ),
           ),
+        ),
         ),
       ),
     );

@@ -37,8 +37,6 @@ FREE_LIMIT_LIVE = "2"
 FREE_LIMIT_MAGNIFIER = "2"
 # 📥 ایمپورتِ تبِ داستان‌ساز (PDF / عکس / SRT / لینک / متن): ۲ بارِ «کل عمر»؛ بارِ سوم → Pro
 FREE_LIMIT_IMPORT = "2"
-# 🪟 کادرِ پاپِ انتخابِ لغت/محدوده (ذخیره برای داستان بعدی و…): ۳ بارِ «کل عمر»؛ بعدش → Pro
-FREE_LIMIT_POPUP = "3"
 # 🔒 داستان‌ساز و گرامرِ AI: کلاً Pro (۰ = هیچ استفاده‌ی رایگانی)
 FREE_LIMIT_STORY = "0"
 FREE_LIMIT_GRAMMAR = "0"

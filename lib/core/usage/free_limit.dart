@@ -18,7 +18,6 @@ class Feature {
   static const live = 'live'; // ترجمه‌ی زنده
   static const magnifier = 'magnifier'; // ذره‌بین
   static const storyImport = 'import'; // ایمپورتِ تبِ داستان‌ساز (PDF/عکس/SRT/لینک/متن) — ۲ بارِ رایگان
-  static const popup = 'popup'; // کادرِ پاپِ انتخابِ لغت/محدوده (ذخیره برای داستان بعدی و…) — ۳ بارِ رایگان
   // ترجمه‌ی یوتیوب: Worker خودش از رویِ مسیرِ درخواست‌ها تشخیص می‌دهد.
 }
 
