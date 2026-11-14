@@ -749,12 +749,12 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
           continue; // ترجمه‌ای نبود → رد شو
         }
         debugPrint('🌐 خوانش ${st.code} (${steps.indexOf(st) + 1}/${steps.length})');
-        // مکث یا پخشِ چیزِ دیگر صف را کنسل نمی‌کند؛ صبر می‌کنیم تا آزاد شود و ادامه می‌دهیم
+        // مکثِ کاربر بین مرحله‌ها فقط تأخیر می‌اندازد؛ توقفِ کامل صف را تمام می‌کند
         if (!await _bgWaitFree(token, first ? expectKey : null)) return;
         final key = PlayerTrack.keyFor(st.code, text);
         _bgKey = key;
         _bgSeen = false;
-        final w = _bgWait = Completer<bool>();
+        _bgWait = null; // ✅ پایانِ مرحله دیگر با «رویداد» نیست؛ وضعیتِ واقعیِ پخش را می‌خوانیم
         SpeechController.translationReadKey = st.isTrans ? key : null;
         _trVoiceKey = st.isTrans ? key : null;
         _trVoiceItem = st.isTrans ? st.idFor(text) : null;
@@ -764,7 +764,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         unawaited(_ctrl.toggle(text, st.code));
         first = false;
         expectKey = key;
-        if (!await _bgWaitDone(w, key, text)) return;
+        if (!await _awaitFinish(key, text, token)) return;
         if (!mounted || token != _bgToken) return;
       }
       completed = true;
@@ -776,6 +776,52 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       }
     }
     if (completed && mounted && token == _bgToken) _resumeMain();
+  }
+
+  /// ⏱ پایانِ یک مرحله‌ی صف را از «وضعیتِ واقعیِ پخش» می‌فهمد (هر ۶۰ms)، نه از رویدادِ
+  /// گذرِ playing→idle که اگر از دست می‌رفت زبانِ بعد هیچ‌وقت خوانده نمی‌شد.
+  ///   true  = این مرحله تمام شد/رد شد → مرحله‌ی بعد
+  ///   false = کاربر توقفِ کامل کرد یا صف لغو شد → پایانِ صف
+  Future<bool> _awaitFinish(String key, String text, int token) async {
+    final started = DateTime.now();
+    var deadline = started.add(Duration(seconds: 25 + text.length ~/ 4));
+    var seenActive = false;
+    DateTime? idleSince;
+    while (true) {
+      if (!mounted || token != _bgToken) return false;
+      final sp = ref.read(speechControllerProvider);
+      final now = DateTime.now();
+      if (sp.key == key) {
+        if (sp.status == SpeechStatus.paused) {
+          deadline = deadline.add(const Duration(milliseconds: 60)); // مکثِ کاربر
+          idleSince = null;
+          seenActive = true;
+        } else if (sp.status == SpeechStatus.playing) {
+          seenActive = true;
+          idleSince = null;
+        } else {
+          // idle
+          if (seenActive || sp.error != null) {
+            if (sp.error != null) debugPrint('🌐 مرحله رد شد (خطا: ${sp.error})');
+            return true; // تمام شد (یا خطا) → زبانِ بعد
+          }
+          idleSince ??= now;
+          if (now.difference(idleSince) > const Duration(seconds: 3)) {
+            debugPrint('🌐 مرحله هیچ‌وقت شروع نشد؛ رد می‌شود');
+            return true;
+          }
+        }
+      } else if (sp.key == null) {
+        if (now.difference(started) > const Duration(milliseconds: 1500)) {
+          return false; // توقفِ کاملِ کاربر
+        }
+      } else if (now.difference(started) > const Duration(seconds: 4)) {
+        // چیزِ دیگری جایش را گرفت
+        return seenActive;
+      }
+      if (now.isAfter(deadline)) return true;
+      await Future.delayed(const Duration(milliseconds: 60));
+    }
   }
 
   Future<bool> _bgWaitDone(Completer<bool> w, String key, String text) async {
