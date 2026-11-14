@@ -66,23 +66,23 @@ class PhotoFaceSpec {
   });
 }
 
-/// «Ryan» — عکسِ assets/personas/ryan.jpg (۱۳۴۴×۸۹۶)
+/// «Ryan» — عکسِ assets/personas/ryan.jpg (۱۰۲۴×۱۰۲۴)
 const PhotoFaceSpec kRyanFace = PhotoFaceSpec(
   asset: 'assets/personas/ryan.jpg',
   avatar: 'assets/personas/ryan_avatar.jpg',
-  refW: 1344,
-  refH: 896,
-  mouthX: 737,
-  mouthHalfW: 78,
-  cornerY: 476,
-  seamY: 495,
-  patchLeft: 590,
-  patchRight: 885,
-  patchTop: 425,
-  patchBottom: 575,
+  refW: 1024,
+  refH: 1024,
+  mouthX: 534,
+  mouthHalfW: 93,
+  cornerY: 591,
+  seamY: 603,
+  patchLeft: 388,
+  patchRight: 682,
+  patchTop: 575,
+  patchBottom: 712,
   maxOpen: 26,
-  focusX: 735,
-  focusY: 400,
+  focusX: 528,
+  focusY: 505,
 );
 
 /// «Sara» — عکسِ assets/personas/sara.jpg (۱۰۲۴×۱۰۲۴)
