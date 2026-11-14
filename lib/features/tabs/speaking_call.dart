@@ -20,6 +20,7 @@ import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/tts/speech_controller.dart';
 import '../../core/tts/speech_state.dart';
+import '../../core/tts/tts_config.dart';
 import 'photo_talking_face.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -92,6 +93,22 @@ class AiPersona {
   /// مشخصاتِ عکسِ سخنگو (اگر این شخصیت عکسِ آماده دارد)
   PhotoFaceSpec? get photoFace => asset.isEmpty ? null : kPhotoFaces[asset];
   Color get colorValue => Color(color);
+
+  /// جنسیتِ صدای این شخصیت: 'male' / 'female' / null (نامعلوم → همان صدای فعالِ کاربر).
+  /// شخصیت‌های آماده ثابت‌اند؛ شخصیتِ سفارشی از روی ایموجی حدس زده می‌شود.
+  String? get voiceGender {
+    if (id == jimmyId || id == 'sofia' || id == 'alex') return 'female';
+    if (id == 'ryan' || id == 'emma' || id == 'daniel' || id == 'drlee') {
+      return 'male';
+    }
+    for (final f in const ['👩', '👧', '👵', '🧕', '🤶', '👸']) {
+      if (emoji.contains(f)) return 'female';
+    }
+    for (final m in const ['👨', '🧔', '👦', '👴', '🤴', '🎅']) {
+      if (emoji.contains(m)) return 'male';
+    }
+    return null;
+  }
 
   static String _s(String v) =>
       v.trim().replaceAll(RegExp(r'[\s.]+$'), '').replaceAll('\n', ' ');
@@ -183,6 +200,57 @@ class AiPersona {
       scenario: (j['scenario'] ?? '').toString(),
       level: (j['level'] ?? 'auto').toString(),
     );
+  }
+}
+
+/// 🎭 صدای هم‌جنسِ شخصیت: اگر برای این زبان صدای دانلودشده‌ی هم‌جنس (برچسبِ «· F» / «· M») باشد
+/// همان خوانده می‌شود؛ وگرنه (یا جنسیت نامعلوم) همان صدای فعالِ کاربر. چیزی دانلود نمی‌شود.
+class PersonaVoice {
+  static String? Function(String?, int)? _resolver;
+
+  static Future<String?> _idFor(String lang, String gender) async {
+    if (!NativeBridge.instance.isSupported) return null;
+    try {
+      final r = await NativeBridge.instance.getTtsVoices(lang: lang);
+      final raw = r['voices'];
+      if (raw is! List) return null;
+      final want = gender == 'male' ? 'M' : 'F';
+      // برچسب مثلِ «Chloe · US · F · low» است؛ نشانِ F/M بینِ بخش‌ها می‌آید
+      final re = RegExp(r'·\s*' + want + r'(\s*·|\s*$)');
+      Map? first;
+      for (final e in raw) {
+        if (e is! Map || e['downloaded'] != true || '${e['id']}'.isEmpty) {
+          continue;
+        }
+        if (!re.hasMatch('${e['label']}')) continue;
+        if (e['active'] == true) return '${e['id']}';
+        first ??= e;
+      }
+      return first == null ? null : '${first['id']}';
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// همان toggle(text, lang)، با صدای هم‌جنسِ شخصیت فقط برای همین متن.
+  static Future<String> speak(
+      SpeechController ctl, AiPersona p, String text, String lang) async {
+    final old = _resolver;
+    if (old != null) {
+      ctl.removeChunkVoiceResolver(old);
+      _resolver = null;
+    }
+    final g = p.voiceGender;
+    if (g != null) {
+      final vid = await _idFor(lang, g);
+      if (vid != null) {
+        final key = '${TtsConfig.locale[lang] ?? 'en-US'}::$text';
+        String? res(String? k, int o) => k == key ? vid : null;
+        _resolver = res;
+        ctl.addChunkVoiceResolver(res);
+      }
+    }
+    return ctl.toggle(text, lang);
   }
 }
 
@@ -2109,7 +2177,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     });
     try {
       await _ctl.stop();
-      await _ctl.toggle(t, widget.langCode);
+      await PersonaVoice.speak(_ctl, widget.persona, t, widget.langCode);
       await done.future.timeout(const Duration(seconds: 150), onTimeout: () {});
     } catch (_) {
     } finally {

@@ -993,8 +993,8 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
         .replaceAll(RegExp(r'\n{3,}'), '\n\n')
         .trim();
     if (t.isEmpty) return;
-    unawaited(
-        ref.read(speechControllerProvider.notifier).toggle(t, _activeLang()));
+    unawaited(PersonaVoice.speak(
+        ref.read(speechControllerProvider.notifier), _persona, t, _activeLang()));
   }
 
   void _setAutoRead(bool v) {
