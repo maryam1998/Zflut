@@ -10,6 +10,7 @@
 //   GET /api/content/words?list=daily|slang|vocab  → {version, words:[…]}
 //   GET /api/content/conversations?kind=daily|thematic → {version, topics:[…]}
 //   GET /api/content/conversation?id=<شناسه>        → {version, topic:{…}}   (لود تنبل: فقط یک موضوع)
+//   GET /api/content/key                           → {key}  (کلیدِ AES برای conv_enc داخلِ اپ)
 //   پارامترِ اختیاریِ v=<نسخه‌ی کشِ گوشی>: اگر یکی باشد فقط {notModified:true, version} برمی‌گردد.
 // غیرِ Pro: 403 {code:"pro_required"}
 // ---------------------------------------------------------------------------
@@ -40,6 +41,12 @@ export async function handleContent(request, env, url, cors, session) {
   if (request.method !== "GET") return jsonResp({ error: "method not allowed" }, 405, cors);
   if (!(await isPro(env, session.sub, session.em))) {
     return jsonResp({ error: MSG_FA, code: "pro_required" }, 403, cors);
+  }
+  // 🔑 کلیدِ رمزگشاییِ مکالمه‌های رمزشده‌ی داخلِ اپ (فقط Pro؛ ۳۲ بایت base64).
+  //   تنظیم:  npx wrangler secret put CONV_KEY   (همان مقداری که scripts/encrypt-conversations.mjs چاپ کرد)
+  if (url.pathname === "/api/content/key") {
+    if (!env.CONV_KEY) return jsonResp({ error: "key not set", code: "not_ready" }, 503, cors);
+    return jsonResp({ key: String(env.CONV_KEY).trim() }, 200, cors);
   }
   if (!env.TR_DB) return jsonResp({ error: "content store unavailable", code: "not_ready" }, 503, cors);
 
@@ -97,6 +104,24 @@ export async function handleContent(request, env, url, cors, session) {
       if (!row) return jsonResp({ error: "topic not found", code: "not_found" }, 404, cors);
       if (have && have === row.version) return jsonResp({ notModified: true, version: row.version }, 200, cors);
       return jsonResp(`{"version":${JSON.stringify(row.version)},"topic":${row.data}}`, 200, cors);
+    }
+
+    // 📦 همه‌ی موضوع‌های مکالمه با «یک درخواست» (پیش‌دانلودِ گوشی؛ یک کوئری D1)
+    //   → {version, count, topics:{<id>:{version, topic}}}  ·  v=<نسخه> یکی باشد → {notModified:true}
+    if (path === "/api/content/conv-bundle") {
+      const { results } = await env.TR_DB.prepare(
+        "SELECT id, version, data FROM paid_conv_topics ORDER BY kind, idx"
+      ).all();
+      const rows = results || [];
+      let h = 5381;
+      const sig = rows.map((r) => r.id + ":" + r.version).join("|");
+      for (let i = 0; i < sig.length; i++) h = ((h * 33) ^ sig.charCodeAt(i)) >>> 0;
+      const version = h.toString(16) + "-" + rows.length;
+      if (have && have === version) return jsonResp({ notModified: true, version }, 200, cors);
+      const body = rows
+        .map((r) => `${JSON.stringify(r.id)}:{"version":${JSON.stringify(r.version)},"topic":${r.data}}`)
+        .join(",");
+      return jsonResp(`{"version":${JSON.stringify(version)},"count":${rows.length},"topics":{${body}}}`, 200, cors);
     }
 
     return jsonResp({ error: "not found" }, 404, cors);

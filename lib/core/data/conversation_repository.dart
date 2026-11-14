@@ -46,9 +46,8 @@ class ConversationRepository {
     _cache.clear();
     _pending.clear();
     if (_loaded && ProStatus.isPro) {
-      unawaited(PaidContent.prewarmKey());
       final ids = [for (final t in _all) t.id];
-      Future.delayed(const Duration(seconds: 6),
+      Future.delayed(const Duration(seconds: 1),
           () => unawaited(PaidContent.prefetchTopics(ids)));
     }
   }
@@ -86,9 +85,8 @@ class ConversationRepository {
       _error = null;
       // 🚀 Pro: متنِ موضوع‌ها را در پس‌زمینه پیش‌دانلود کن تا با لمس فوری باز شوند
       if (ProStatus.isPro) {
-        unawaited(PaidContent.prewarmKey()); // 🔑 کلیدِ کوچک: همین الان، تا لمسِ اول فوری باشد
         final ids = [for (final t in _all) t.id];
-        Future.delayed(const Duration(seconds: 6),
+        Future.delayed(const Duration(seconds: 1),
             () => unawaited(PaidContent.prefetchTopics(ids)));
       }
     } catch (e) {
