@@ -187,6 +187,15 @@ const List<_Step> _steps = [
       'fa': 'برای شنیدنِ تک‌تکِ کلمه‌ها صدا را کند کن، و وقتی آماده شدی تندترش کن.',
     },
   ),
+  _Step(
+    'top',
+    Icons.vertical_align_top_rounded,
+    {'en': 'Back to top', 'fa': 'رفتن به بالای صفحه'},
+    {
+      'en': 'In a long list or a long text, one tap takes you straight back to the top of the page.',
+      'fa': 'وقتی در یک لیستِ بلند یا متنِ طولانی پایین رفته‌ای، با یک لمس مستقیم به بالای صفحه برمی‌گردی.',
+    },
+  ),
 ];
 
 /// تورِ زیرتبِ «ایمپورت و خواندن» (داستان‌ساز) — بار اولِ ورود و با دکمه‌ی راهنمای همان بخش.

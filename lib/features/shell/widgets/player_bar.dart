@@ -322,10 +322,13 @@ class PlayerBar extends ConsumerWidget {
                     ),
 
                     // ↻ رفتن به بالای صفحه
-                    _IconBtn(
-                      icon: Icons.vertical_align_top_rounded,
-                      color: c.gold,
-                      onTap: () => GlobalScroll.toTop(),
+                    TourTarget(
+                      id: 'top',
+                      child: _IconBtn(
+                        icon: Icons.vertical_align_top_rounded,
+                        color: c.gold,
+                        onTap: () => GlobalScroll.toTop(),
+                      ),
                     ),
                   ],
                 ),
