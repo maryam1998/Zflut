@@ -372,42 +372,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 6),
-                    Divider(color: c.cardBorder, thickness: 1),
-                    const SizedBox(height: 10),
-
-                    // ═══ مهمان ═══
-                    SizedBox(
-                      height: 50,
-                      child: OutlinedButton.icon(
-                        onPressed: _busy ? null : _guest,
-                        icon: Icon(Icons.person_outline, color: c.ink),
-                        label: Text(L.auth_continue_as_guest,
-                            style: TextStyle(
-                                color: c.ink,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700)),
-                        style: OutlinedButton.styleFrom(
-                          shape: const StadiumBorder(),
-                          side: BorderSide(color: c.cardBorder, width: 1.4),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      L.auth_guest_note,
-                      style: TextStyle(
-                          color: c.inkSoft, fontSize: 11.5, height: 1.6),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      L.auth_sync_note,
-                      style: TextStyle(
-                          color: c.inkSoft, fontSize: 11.5, height: 1.6),
-                      textAlign: TextAlign.center,
-                    ),
                   ],
                 ),
               ),
