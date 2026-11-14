@@ -1414,6 +1414,7 @@ Future<String?> showPersonaSheet(
     BuildContext context, LocalStorage ls, String activeId) {
   return showModalBottomSheet<String>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _PersonaSheet(ls: ls, activeId: activeId),
@@ -1433,6 +1434,7 @@ class _PersonaSheetState extends State<_PersonaSheet> {
   Future<void> _edit(AiPersona? initial) async {
     final res = await showModalBottomSheet<AiPersona>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _PersonaEditor(initial: initial),
