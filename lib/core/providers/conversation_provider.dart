@@ -33,14 +33,18 @@ final allTopicsProvider = Provider<List<ConversationTopic>>((ref) {
 /// 📚 متنِ کاملِ یک موضوع (لود تنبل) — با نامِ موضوع کلید می‌خورد.
 /// با Pro شدن/به‌روزشدنِ محتوا دوباره ساخته می‌شود.
 final conversationTopicProvider =
-    FutureProvider.family<ConversationTopic?, String>((ref, name) async {
+    StreamProvider.family<ConversationTopic?, String>((ref, name) async* {
   ref.watch(isProProvider);
   ref.watch(paidRevisionProvider);
   await ref.watch(conversationLoaderProvider.future);
   final repo = ref.watch(conversationRepoProvider);
   final stub = repo.all.where((t) => t.topic == name).firstOrNull;
-  if (stub == null) return null;
-  return repo.loadTopic(stub);
+  if (stub == null) {
+    yield null;
+    return;
+  }
+  // ⚡ اول نسخه‌ی داخلِ اپ (فوری)، بعد نسخه‌ی کاملِ Pro
+  yield* repo.watchTopic(stub);
 });
 
 // ═══════════════════════════════════════════════════════════════════

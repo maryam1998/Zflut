@@ -46,6 +46,7 @@ class ConversationRepository {
     _cache.clear();
     _pending.clear();
     if (_loaded && ProStatus.isPro) {
+      unawaited(PaidContent.prewarmKey());
       final ids = [for (final t in _all) t.id];
       Future.delayed(const Duration(seconds: 6),
           () => unawaited(PaidContent.prefetchTopics(ids)));
@@ -85,6 +86,7 @@ class ConversationRepository {
       _error = null;
       // 🚀 Pro: متنِ موضوع‌ها را در پس‌زمینه پیش‌دانلود کن تا با لمس فوری باز شوند
       if (ProStatus.isPro) {
+        unawaited(PaidContent.prewarmKey()); // 🔑 کلیدِ کوچک: همین الان، تا لمسِ اول فوری باشد
         final ids = [for (final t in _all) t.id];
         Future.delayed(const Duration(seconds: 6),
             () => unawaited(PaidContent.prefetchTopics(ids)));
@@ -106,6 +108,46 @@ class ConversationRepository {
     });
   }
 
+  /// ⚡ نمایشِ تدریجی: اول نسخه‌ی داخلِ اپ (فوری)، بعد نسخه‌ی کاملِ Pro (کش/شبکه) جایگزین می‌شود.
+  /// کاربر هیچ‌وقت اسپینرِ طولانی نمی‌بیند مگر موضوعی که نسخه‌ی داخلِ اپ ندارد.
+  Stream<ConversationTopic?> watchTopic(ConversationTopic stub) async* {
+    if (stub.id.isEmpty) {
+      yield stub;
+      return;
+    }
+    final hit = _cache[stub.id];
+    if (hit != null) {
+      yield hit;
+      return;
+    }
+    ConversationTopic? preview;
+    final a = await _readAsset(stub.id);
+    if (a != null) {
+      preview = ConversationTopic.fromJson(a, id: stub.id, kind: stub.kind);
+      yield preview; // ← فوری
+    }
+    if (!ProStatus.isPro) {
+      if (preview != null) _cache[stub.id] = preview;
+      if (preview == null) yield null;
+      return;
+    }
+    final full = await PaidContent.conversationTopic(stub.id);
+    if (full != null) {
+      try {
+        final t =
+            ConversationTopic.fromJson(full, id: stub.id, kind: stub.kind);
+        _cache[stub.id] = t;
+        yield t; // ← نسخه‌ی کامل جایگزین می‌شود
+      } catch (e) {
+        // 🛟 ساختارِ ناسازگار (مثلاً محتوای سرور جدیدتر از اپ): نسخه‌ی پیش‌نمایش بماند
+        debugPrint('ConversationRepository parse ${stub.id}: $e');
+        if (preview == null) yield null;
+      }
+    } else if (preview == null) {
+      yield null; // نه داخل اپ هست نه شبکه → «تلاش دوباره»
+    }
+  }
+
   Future<ConversationTopic?> _loadTopic(ConversationTopic stub) async {
     Map<String, dynamic>? j;
     if (ProStatus.isPro) {
@@ -114,9 +156,14 @@ class ConversationRepository {
     // رایگان (یا Pro بدونِ اینترنت/کش): نسخه‌ی داخلِ اپ — فقط موضوع‌های رایگان آن را دارند
     j ??= await _readAsset(stub.id);
     if (j == null) return null;
-    final t = ConversationTopic.fromJson(j, id: stub.id, kind: stub.kind);
-    _cache[stub.id] = t;
-    return t;
+    try {
+      final t = ConversationTopic.fromJson(j, id: stub.id, kind: stub.kind);
+      _cache[stub.id] = t;
+      return t;
+    } catch (e) {
+      debugPrint('ConversationRepository parse ${stub.id}: $e');
+      return null;
+    }
   }
 
   Future<Map<String, dynamic>?> _readAsset(String id) async {

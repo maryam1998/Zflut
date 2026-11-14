@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cryptography/cryptography.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle, AssetManifest;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,38 +58,91 @@ class PaidContent {
   /// 💎 یک موضوعِ کاملِ مکالمه (لود تنبل) — null اگر Pro نیستی/در دسترس نیست.
   /// کش: <پوشه‌ی اپ>/paid_content/conv/<id>.json (نسخه داخلِ خودِ فایل است).
   /// اگر کش بود فوراً برمی‌گردد و نسخه در پس‌زمینه چک می‌شود (بازشدنِ بعدی تازه است).
-  static Future<Map<String, dynamic>?> conversationTopic(String id) async {
-    if (!ProStatus.isPro) return null;
+  static Future<Map<String, dynamic>?> conversationTopic(String id) {
+    if (!ProStatus.isPro) return Future.value(null);
+    // ⏱ سقفِ کلِ باز کردنِ محتوا: ۶ ثانیه (کلید ۴ ثانیه داخلِ همین ۶ ثانیه است)
+    return _conversationTopicInner(id)
+        .timeout(const Duration(seconds: 6), onTimeout: () => null);
+  }
+
+  static Future<Map<String, dynamic>?> _conversationTopicInner(
+      String id) async {
     try {
+      await _ensureCacheMatchesApp();
       final f = await _convFile(id);
       String? have;
       if (await f.exists()) {
-        final m = await compute(_decodeMap, await f.readAsString());
-        have = m['version']?.toString();
-        final t = m['topic'];
-        if (t is Map<String, dynamic>) {
-          // بررسیِ نسخه فقط هر ۱۰ دقیقه برای هر موضوع (قبلاً با هر بازکردن یک درخواست بود)
-          final last = _topicChecked[id];
-          if (last == null ||
-              DateTime.now().difference(last) > const Duration(minutes: 10)) {
-            _topicChecked[id] = DateTime.now();
-            unawaited(_refreshTopic(id, have));
+        try {
+          final m = await compute(_decodeMap, await f.readAsString());
+          have = m['version']?.toString();
+          final t = m['topic'];
+          if (t is Map<String, dynamic>) {
+            // بررسیِ نسخه فقط هر ۱۰ دقیقه برای هر موضوع
+            final last = _topicChecked[id];
+            if (last == null ||
+                DateTime.now().difference(last) > const Duration(minutes: 10)) {
+              _topicChecked[id] = DateTime.now();
+              unawaited(_refreshTopic(id, have));
+            }
+            return t;
           }
-          return t;
+        } catch (e) {
+          // 🛟 فایلِ کشِ خراب/ناقص (قطعیِ برق، آپدیتِ اپ…) → پاک و ادامه با نسخه‌ی داخلِ اپ/شبکه
+          debugPrint('PaidContent.cache($id) corrupt: $e');
+          have = null;
+          try {
+            await f.delete();
+          } catch (_) {}
         }
       }
-      // ⚡ کاربر منتظر است: پیش‌دانلودِ پس‌زمینه کنار می‌رود و حداکثر ۱۰ ثانیه صبر می‌کنیم
-      // (دانلود در پس‌زمینه ادامه می‌یابد و کش می‌شود؛ «تلاش دوباره» همان درخواست را می‌گیرد).
+      // 🔐 نسخه‌ی رمزشده‌ی داخلِ اپ: فوری. فقط کلیدِ کوچک ممکن است شبکه بخواهد؛
+      // حداکثر ۶ ثانیه صبر می‌کنیم تا هیچ‌وقت اسپینرِ بی‌پایان نداشته باشیم.
+      final bundled = await _bundledTopic(id)
+          .timeout(const Duration(seconds: 6), onTimeout: () => null);
+      if (bundled != null) return bundled;
+      // ⚡ کاربر منتظر است: پیش‌دانلودِ پس‌زمینه کنار می‌رود و حداکثر ۶ ثانیه صبر می‌کنیم
       _userWaiting++;
       try {
         return await _downloadTopic(id, have)
-            .timeout(const Duration(seconds: 10), onTimeout: () => null);
+            .timeout(const Duration(seconds: 6), onTimeout: () => null);
       } finally {
         _userWaiting--;
       }
     } catch (e) {
       debugPrint('PaidContent.conversationTopic($id): $e');
       return null;
+    }
+  }
+
+  // ───────────── 🛟 ایمنی در آپدیتِ اپ (مایکت/بازار/پلی‌استور) ─────────────
+  // کشِ دانلودی با «اثرانگشتِ محتوای داخلِ APK» برچسب می‌خورد. اگر نسخه‌ی جدیدِ اپ
+  // با محتوای عوض‌شده نصب شود، اثرانگشت فرق می‌کند و کشِ قدیمی پاک می‌شود تا
+  // محتوای تازه‌ی APK دیده شود (کشِ قدیمی نسخه‌ی جدید را پنهان نکند).
+  static const String _fpPref = 'conv_cache_fp_v1';
+  static Future<void>? _fpCheck;
+
+  static Future<void> _ensureCacheMatchesApp() =>
+      _fpCheck ??= _doEnsureCacheMatchesApp();
+
+  static Future<void> _doEnsureCacheMatchesApp() async {
+    try {
+      final raw =
+          await rootBundle.loadString('assets/data/conversations_index.json');
+      var h = 5381;
+      for (final u in raw.codeUnits) {
+        h = ((h * 33) ^ u) & 0x7fffffff;
+      }
+      final fp = '$h:${raw.length}';
+      final p = await SharedPreferences.getInstance();
+      if (p.getString(_fpPref) != fp) {
+        final d = Directory('${(await _dir()).path}/conv');
+        if (await d.exists()) await d.delete(recursive: true);
+        await p.setString(_fpPref, fp);
+        _topicChecked.clear();
+      }
+    } catch (e) {
+      debugPrint('PaidContent.fp: $e');
+      _fpCheck = null; // دفعه‌ی بعد دوباره تلاش شود
     }
   }
 
@@ -106,6 +161,89 @@ class PaidContent {
         _downloadTopicRaw(id, have).whenComplete(() => _dlInflight.remove(id));
   }
 
+  // ───────────── 🔐 مکالمه‌های رمزشده‌ی داخلِ اپ ─────────────
+  // فایل‌ها: assets/data/conv_enc/<id>.bin = nonce(12) + ciphertext + tag(16)  (AES-256-GCM)
+  // کلید: فقط برای Pro از Worker (/api/content/key) گرفته و روی گوشی ذخیره می‌شود؛ داخلِ کدِ اپ نیست.
+  static const String _keyPref = 'conv_key_v1';
+  static const String _encDir = 'assets/data/conv_enc/';
+  static String? _convKeyB64;
+  static Future<String?>? _keyInflight;
+  static Set<String>? _bundledIds;
+
+  static Future<Set<String>> _bundled() async {
+    if (_bundledIds != null) return _bundledIds!;
+    try {
+      final m = await AssetManifest.loadFromAssetBundle(rootBundle);
+      _bundledIds = {
+        for (final a in m.listAssets())
+          if (a.startsWith(_encDir) && a.endsWith('.bin'))
+            a.substring(_encDir.length, a.length - 4),
+      };
+    } catch (_) {
+      _bundledIds = <String>{};
+    }
+    return _bundledIds!;
+  }
+
+  /// کلید را زودتر بگیر (تا اولین لمسِ کاربر فوری باشد).
+  static Future<void> prewarmKey() async {
+    if (!ProStatus.isPro) return;
+    await _convKey();
+  }
+
+  static Future<String?> _convKey() async {
+    if (_convKeyB64 != null) return _convKeyB64;
+    return _keyInflight ??= _loadKey().whenComplete(() => _keyInflight = null);
+  }
+
+  static Future<String?> _loadKey() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final saved = p.getString(_keyPref);
+      if (saved != null && saved.isNotEmpty) return _convKeyB64 = saved;
+      final r = await _fetch('/api/content/key', null)
+          .timeout(const Duration(seconds: 4), onTimeout: () => null);
+      final k = r?['key']?.toString();
+      if (k == null || k.isEmpty) return null;
+      await p.setString(_keyPref, k);
+      return _convKeyB64 = k;
+    } catch (e) {
+      debugPrint('PaidContent.key: $e');
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> _bundledTopic(String id,
+      {bool retry = true}) async {
+    if (!(await _bundled()).contains(id)) return null;
+    try {
+      final bd = await rootBundle.load('$_encDir$id.bin');
+      final k = await _convKey();
+      if (k == null) return null;
+      final b = bd.buffer.asUint8List(bd.offsetInBytes, bd.lengthInBytes);
+      if (b.length < 29) return null;
+      final box = SecretBox(
+        b.sublist(12, b.length - 16),
+        nonce: b.sublist(0, 12),
+        mac: Mac(b.sublist(b.length - 16)),
+      );
+      final clear = await AesGcm.with256bits()
+          .decrypt(box, secretKey: SecretKey(base64Decode(k)));
+      return jsonDecode(utf8.decode(clear)) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('PaidContent.bundled($id): $e');
+      if (retry) {
+        // شاید کلید در سرور عوض شده: کلیدِ ذخیره‌شده را پاک کن و یک‌بار دوباره بگیر
+        _convKeyB64 = null;
+        try {
+          (await SharedPreferences.getInstance()).remove(_keyPref);
+        } catch (_) {}
+        return _bundledTopic(id, retry: false);
+      }
+      return null;
+    }
+  }
+
   static bool _prefetching = false;
 
   /// تعدادِ موضوع‌هایی که کاربر همین الان منتظرشان است (پیش‌دانلود در این مدت مکث می‌کند)
@@ -117,8 +255,9 @@ class PaidContent {
     _prefetching = true;
     try {
       final todo = <String>[];
+      final inApp = await _bundled();
       for (final id in ids) {
-        if (id.isEmpty) continue;
+        if (id.isEmpty || inApp.contains(id)) continue; // داخلِ اپ هست؛ دانلود لازم نیست
         if (!await (await _convFile(id)).exists()) todo.add(id);
       }
       var next = 0;
@@ -150,7 +289,10 @@ class PaidContent {
     if (r == null || r['notModified'] == true) return null;
     final t = r['topic'];
     if (t is! Map<String, dynamic>) return null;
-    await (await _convFile(id)).writeAsString(r['__raw'] as String, flush: true);
+    final f = await _convFile(id);
+    final tmp = File('${f.path}.tmp');
+    await tmp.writeAsString(r['__raw'] as String, flush: true);
+    await tmp.rename(f.path); // اتمی: فایلِ نیمه‌کاره هیچ‌وقت خوانده نمی‌شود
     return t;
   }
 

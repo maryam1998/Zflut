@@ -180,6 +180,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   ScrollController _gridScroll = ScrollController();
   double _gridOffset = 0;
 
+  /// ⏩ نمایشِ تدریجیِ سناریوها: اول چند کارت (فوری)، بقیه در فریم‌های بعدی
+  int _reveal = 4;
+
   @override
   void initState() {
     super.initState();
@@ -202,6 +205,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final sc = r.extra['scenario'];
     if (_gridScroll.hasClients) _gridOffset = _gridScroll.offset;
     setState(() {
+      _reveal = 4;
       _activeTopic = t;
       _openScenario = sc is int ? sc : 0;
     });
@@ -228,6 +232,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     }
     if (_gridScroll.hasClients) _gridOffset = _gridScroll.offset;
     setState(() {
+      _reveal = 4;
       _activeTopic = topic;
       _openScenario = 0;
     });
@@ -476,11 +481,25 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           padding: const EdgeInsets.all(40),
           child: Center(
             child: loading
-                ? SizedBox(
-                    width: 26,
-                    height: 26,
-                    child:
-                        CircularProgressIndicator(strokeWidth: 2.4, color: c.gold),
+                ? Column(
+                    children: [
+                      for (var i = 0; i < 4; i++)
+                        Container(
+                          height: 64,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: c.inkSoft.withOpacity(0.10),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.2, color: c.gold),
+                      ),
+                    ],
                   )
                 : Column(
                     children: [
@@ -515,6 +534,15 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     // سناریوی بازشده = «متنِ کاملِ» پلیر (اول «می‌شنوی»، بعد «می‌گی» — همان
     // ترتیبِ Hope). همین یک ویجتِ مشترک هایلایت/اسکرول/پرش را برای همه‌ی
     // تب‌ها یکسان انجام می‌دهد.
+    // ⏩ تدریجی: حداقل ۴ کارت (و سناریوی بازشده)، بقیه ۴تا۴تا در فریم‌های بعدی
+    final totalScenarios = topic.scenarios.length;
+    final shownScenarios = math.min(
+        totalScenarios, math.max(_reveal, (_openScenario ?? -1) + 1));
+    if (shownScenarios < totalScenarios) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _reveal += 4);
+      });
+    }
     final openIdx = _openScenario;
     final openSc = (openIdx != null && openIdx < topic.scenarios.length)
         ? topic.scenarios[openIdx]
@@ -584,7 +612,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           ],
         ),
         const SizedBox(height: 12),
-        ...List.generate(topic.scenarios.length, (i) {
+        ...List.generate(shownScenarios, (i) {
           final sc = topic.scenarios[i];
           if (_effLevels.isNotEmpty &&
               !(sc.speakerA.any((l) => _lvOk(l.level)) ||
@@ -604,7 +632,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             onToggleRead: () => scenarioReadN.toggle(readKey),
           );
         }),
-        if (topicCounts != null && lockedHere > 0) ...[
+        if (shownScenarios >= totalScenarios && topicCounts != null && lockedHere > 0) ...[
           const SizedBox(height: 4),
           LockedConversationCard(
             locked: lockedHere,
