@@ -14,7 +14,7 @@ const int kFreeWordsPerGroup = 10;
 /// «دیکشنری من»: در کلِ تب (همه‌ی موضوع‌ها و سطح‌ها روی هم) فقط این‌قدر لغت برای کاربرِ رایگان باز است؛
 /// بقیه قفل‌اند و فقط شمارشان نشان داده می‌شود. لغاتِ باز از بینِ موضوع‌ها پخش می‌شوند
 /// (و ساده‌ترها ــ A1 ــ اول)، تا کاربر هر موضوع را کمی بچشد.
-const int kFreeDictionaryWords = 20;
+const int kFreeDictionaryWords = 10;
 
 /// (قدیمی — دیگر استفاده نمی‌شود؛ جایش kFreeWordsPerGroup است)
 const int kFreeWordCount = 30;

@@ -1070,7 +1070,11 @@ async function edgeTtsSecMsGec() {
     .toUpperCase();
 }
 
+// ⛔ غیرفعال: این مسیر غیررسمی است و در حجمِ بالا خطرِ بن‌شدنِ IP دارد. برای فعال‌کردنِ دوباره false را true کن.
+const EDGE_TTS_ENABLED = false;
+
 async function fetchEdgeTtsAudio(text, voice) {
+  if (!EDGE_TTS_ENABLED) throw new Error("edge-tts disabled");
   const sanitized = String(text).slice(0, 600);
   const gec = await edgeTtsSecMsGec();
   const connId = edgeTtsUuid();
