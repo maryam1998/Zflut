@@ -360,10 +360,28 @@ final class TtsEngine {
         this.pkgId = pkgId;
     }
 
+    // Kokoro: موتور با/بدونِ فایل‌های چینی ساخته شده؛ اگر وضعیتِ دیسک بعداً عوض شود (چینی دانلود/حذف شد) باید دوباره ساخته شود
+    private volatile Context zhCtx = null;
+    private volatile SherpaModelManager.Pkg zhPkg = null;
+    private volatile boolean zhLoaded = false;
+
+    void bindZh(Context ctx, SherpaModelManager.Pkg pkg, boolean loaded) {
+        this.zhCtx = ctx;
+        this.zhPkg = pkg;
+        this.zhLoaded = loaded;
+    }
+
+    /** وضعیتِ فایل‌های چینی روی دیسک با زمانِ ساختِ این موتور فرق کرده؟ */
+    boolean zhStale() {
+        Context c = zhCtx;
+        SherpaModelManager.Pkg p = zhPkg;
+        return c != null && p != null && zhLoaded != SherpaModelManager.zhExtrasReady(c, p);
+    }
+
     /** صدای جدید از «همین بسته‌ی مشترک» است (فقط شماره‌ی گوینده فرق دارد) → بدون لودِ دوباره قابل‌تعویض است. */
     boolean canReuseFor(SherpaModelManager.TtsVoice v) {
         return !released && v != null && v.spec.pkg != null
-                && v.spec.pkg.id.equals(pkgId) && v.spec.engine.equals(engineKind);
+                && v.spec.pkg.id.equals(pkgId) && v.spec.engine.equals(engineKind) && !zhStale();
     }
 
     /** تعویضِ گوینده روی موتورِ لودشده (فوری؛ بدون لودِ چندثانیه‌ایِ مدل). */
@@ -404,6 +422,14 @@ final class TtsEngine {
                     } catch (Throwable e) {
                         return "cannot read " + n;
                     }
+                }
+            }
+            // فایل‌های مخصوصِ همین زبان (چینیِ Kokoro)
+            for (String n : SherpaModelManager.extraFilesFor(voice.spec.pkg, SherpaModelManager.normalize(lang))) {
+                File f = new File(dir, n);
+                if (!f.isFile() || f.length() == 0) {
+                    SherpaModelManager.invalidatePackage(ctx, voice.spec.pkg);
+                    return "package file missing: " + n;
                 }
             }
             if (SherpaModelManager.ENG_KOKORO.equals(eng)) {
@@ -510,6 +536,7 @@ final class TtsEngine {
             } catch (Throwable ignored) {}
 
             final String eng = voice.spec.engine;
+            boolean zhIncluded = false;
             int cores = Runtime.getRuntime().availableProcessors();
             int threads = Math.max(2, Math.min(4, cores / 2));
             // Supertonic چهار مدل پشت‌سرهم دارد؛ نخ‌های بیشتر = تأخیر کمتر
@@ -541,11 +568,16 @@ final class TtsEngine {
                 k.setTokens(new File(dir, "tokens.txt").getAbsolutePath());
                 k.setDataDir(SherpaModelManager.getEspeakDataDir(ctx).getAbsolutePath());
                 setOpt(k, "setDictDir", new File(dir, "dict").getAbsolutePath());
-                setOpt(k, "setLexicon", new File(dir, "lexicon-us-en.txt").getAbsolutePath()
-                        + "," + new File(dir, "lexicon-zh.txt").getAbsolutePath());
+                // فایل‌های چینی فقط وقتی دانلود شده باشند در تنظیمات می‌آیند (کاربرِ فقط‌انگلیسی آن‌ها را ندارد)
+                zhIncluded = SherpaModelManager.zhExtrasReady(ctx, voice.spec.pkg);
+                String lex = new File(dir, "lexicon-us-en.txt").getAbsolutePath();
+                if (zhIncluded) lex += "," + new File(dir, "lexicon-zh.txt").getAbsolutePath();
+                setOpt(k, "setLexicon", lex);
                 modelConfig.setKokoro(k);
-                setOpt(config, "setRuleFsts", new File(dir, "date-zh.fst").getAbsolutePath()
-                        + "," + new File(dir, "number-zh.fst").getAbsolutePath());
+                if (zhIncluded) {
+                    setOpt(config, "setRuleFsts", new File(dir, "date-zh.fst").getAbsolutePath()
+                            + "," + new File(dir, "number-zh.fst").getAbsolutePath());
+                }
             } else {
                 // فارسی (Piper/VITS + espeak-ng) — بدون تغییر
                 OfflineTtsVitsModelConfig vitsConfig = new OfflineTtsVitsModelConfig();
@@ -582,6 +614,7 @@ final class TtsEngine {
             TtsEngine created = new TtsEngine(engine, sr, lang, voice.sid,
                     SherpaModelManager.ENG_SUPERTONIC.equals(eng) ? lang : null);
             created.bindVoice(eng, voice.spec.pkg == null ? null : voice.spec.pkg.id);
+            if (SherpaModelManager.ENG_KOKORO.equals(eng)) created.bindZh(ctx.getApplicationContext(), voice.spec.pkg, zhIncluded);
             created.bindDisk(ctx, dir.getAbsolutePath());
             created.charFrontend = voice.spec.charFrontend;
             created.threadsUsed = threads;

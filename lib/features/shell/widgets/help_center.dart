@@ -126,8 +126,8 @@ const List<_Article> _articles = [
     'audio',
     {'en': 'App voice vs Phone’s voice', 'fa': 'صدای برنامه یا صدای گوشی؟'},
     {
-      'en': 'Settings › Reading voice. “App voice” is higher quality and needs a one-time download per language; “Phone’s voice” uses the voice installed on your device. When App voice is on, tapping 🔊 on a language that is not installed starts its download automatically (the phone voice is used until it finishes).',
-      'fa': 'تنظیمات › صدای خوانش. «صدای برنامه» کیفیت بهتری دارد و برای هر زبان یک‌بار دانلود می‌شود؛ «صدای گوشی» از صدای نصب‌شده روی دستگاهت استفاده می‌کند. وقتی صدای برنامه فعال است، با زدن 🔊 روی زبانی که نصب نیست، دانلودش خودکار شروع می‌شود (تا آماده شدن با صدای گوشی خوانده می‌شود).',
+      'en': 'Settings › Reading voice. “App voice” is higher quality and needs a one-time download per language; “Phone’s voice” uses the voice installed on your device. When App voice is on, tapping 🔊 on a language that is not installed starts its download automatically (the phone voice is used until it finishes). Voices marked High have a larger download size.',
+      'fa': 'تنظیمات › صدای خوانش. «صدای برنامه» کیفیت بهتری دارد و برای هر زبان یک‌بار دانلود می‌شود؛ «صدای گوشی» از صدای نصب‌شده روی دستگاهت استفاده می‌کند. وقتی صدای برنامه فعال است، با زدن 🔊 روی زبانی که نصب نیست، دانلودش خودکار شروع می‌شود (تا آماده شدن با صدای گوشی خوانده می‌شود). صداهای High حجم بیشتری دارند.',
     },
     'tts voice download offline piper صدا دانلود آفلاین',
   ),

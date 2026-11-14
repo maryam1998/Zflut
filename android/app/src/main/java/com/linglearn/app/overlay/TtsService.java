@@ -321,14 +321,14 @@ public class TtsService extends Service {
         for (int attempt = 0; attempt < 2; attempt++) {
             synchronized (this) {
                 TtsEngine e = engines.get(key);
-                if (e != null && e.isReleased()) { engines.remove(key); e = null; }
+                if (e != null && (e.isReleased() || e.zhStale())) { engines.remove(key); if (shared == e) shared = null; if (!e.isReleased()) e.release(); e = null; }
                 if (e != null) return reuseLoaded(e, key, lang, forSpeak);
             }
             synchronized (lk) {
                 final int gen0;
                 synchronized (this) {
                     TtsEngine e = engines.get(key);
-                    if (e != null && e.isReleased()) { engines.remove(key); e = null; }
+                    if (e != null && (e.isReleased() || e.zhStale())) { engines.remove(key); if (shared == e) shared = null; if (!e.isReleased()) e.release(); e = null; }
                     if (e != null) return reuseLoaded(e, key, lang, forSpeak);
                     if (!forSpeak && engines.size() >= MAX_ENGINES) return null;
                     gen0 = releaseGen.get();

@@ -103,8 +103,13 @@ final class SherpaModelManager {
         final String[] files;      // فایل‌های ریشه‌ی مخزن
         final String[] dirs;       // پوشه‌هایی که کاملاً از مخزن کپی می‌شوند
         final long approxBytes;    // فقط برای نوار پیشرفت
+        final String[] zhFiles;    // فایل‌های مخصوصِ چینی؛ فقط وقتی زبان zh دانلود می‌شود گرفته می‌شوند
         Pkg(String id, String repo, String[] files, String[] dirs, long approxBytes) {
+            this(id, repo, files, dirs, approxBytes, new String[0]);
+        }
+        Pkg(String id, String repo, String[] files, String[] dirs, long approxBytes, String[] zhFiles) {
             this.id = id; this.repo = repo; this.files = files; this.dirs = dirs; this.approxBytes = approxBytes;
+            this.zhFiles = zhFiles;
         }
     }
 
@@ -120,10 +125,10 @@ final class SherpaModelManager {
     static final Pkg PKG_KOKORO = new Pkg(
             "kokoro-multi-lang-v1_0",
             "csukuangfj/kokoro-multi-lang-v1_0",
-            new String[]{"model.onnx", "voices.bin", "tokens.txt",
-                    "lexicon-us-en.txt", "lexicon-zh.txt", "date-zh.fst", "number-zh.fst"},
+            new String[]{"model.onnx", "voices.bin", "tokens.txt", "lexicon-us-en.txt"},
             new String[]{"dict"},
-            420_000_000L);
+            420_000_000L,
+            new String[]{"lexicon-zh.txt", "date-zh.fst", "number-zh.fst"});
 
     static final class TtsSpec {
         final String repo;         // مخزن HuggingFace
@@ -464,6 +469,30 @@ final class SherpaModelManager {
         return true;
     }
 
+    /** فایل‌های اضافه‌ی مخصوصِ یک زبان از بسته‌ی مشترک (فعلاً فقط چینیِ Kokoro). */
+    static String[] extraFilesFor(Pkg p, String l) {
+        return "zh".equals(l) ? p.zhFiles : new String[0];
+    }
+
+    private static boolean extrasReady(Context ctx, Pkg p, String l) {
+        File d = pkgDir(ctx, p);
+        for (String f : extraFilesFor(p, l)) {
+            File x = new File(d, f);
+            if (!x.isFile() || x.length() == 0) return false;
+        }
+        return true;
+    }
+
+    /** بسته‌ی مشترک + فایل‌های مخصوصِ همین زبان کامل است؟ */
+    private static boolean pkgReady(Context ctx, Pkg p, String l) {
+        return pkgReady(ctx, p) && extrasReady(ctx, p, l);
+    }
+
+    /** فایلِ چینی دانلود شده؟ (TtsEngine برای ساختنِ تنظیماتِ موتور می‌پرسد) */
+    static boolean zhExtrasReady(Context ctx, Pkg p) {
+        return p.zhFiles.length > 0 && extrasReady(ctx, p, "zh");
+    }
+
     /** فایلِ خراب پیدا شد: marker پاک می‌شود تا دانلودِ بعدی کم‌وکسرها را دوباره بگیرد. */
     static void invalidatePackage(Context ctx, Pkg p) {
         try { new File(pkgDir(ctx, p), "ready.ok").delete(); } catch (Throwable ignored) {}
@@ -560,7 +589,7 @@ final class SherpaModelManager {
         if (v == null) return false;
         if (v.spec.pkg != null) {
             if (isLangOff(ctx, l)) return false;   // این زبان توسط کاربر پاک شده (بسته‌ی مشترک سر جایش است)
-            if (!pkgReady(ctx, v.spec.pkg)) return false;
+            if (!pkgReady(ctx, v.spec.pkg, l)) return false;
             // Kokoro برای کلماتِ خارج از لغت‌نامه به espeak-ng-data نیاز دارد
             return !ENG_KOKORO.equals(v.spec.engine) || isEspeakReady(ctx);
         }
@@ -627,7 +656,7 @@ final class SherpaModelManager {
         TtsVoice v = vid == null || vid.isEmpty() ? activeVoice(ctx, l) : findVoice(l, vid);
         if (v == null) return 0;
         if (v.spec.pkg != null) {
-            if (pkgReady(ctx, v.spec.pkg)) return 0;
+            if (pkgReady(ctx, v.spec.pkg, l)) return 0;
             long sum = 0;
             File[] fs = pkgDir(ctx, v.spec.pkg).listFiles();
             if (fs != null) for (File f : fs) if (f.isFile() && !f.getName().equals("ready.ok")) sum += f.length();
@@ -1159,6 +1188,17 @@ final class SherpaModelManager {
                 File ok = new File(dir, "ready.ok");
                 if (!ok.exists() && !ok.createNewFile()) throw new java.io.IOException("cannot create ready.ok");
             }
+            // فایل‌های مخصوصِ همین زبان (چینیِ Kokoro): فقط وقتی zh دانلود می‌شود؛ ready.ok دست نمی‌خورد
+            // تا انگلیسی در حینِ دانلودِ چینی از دسترس خارج نشود.
+            File pdir = pkgDir(app, p);
+            for (String name : extraFilesFor(p, l)) {
+                checkCancel(l);
+                File target = new File(pdir, name);
+                if (!target.isFile() || target.length() == 0) {
+                    downloadFile(HF_BASE + p.repo + "/resolve/main/" + name, target,
+                            offsetCb(cb, 0, p.approxBytes), l);
+                }
+            }
         } finally {
             if (lock.isHeldByCurrentThread()) lock.unlock();
         }
@@ -1474,6 +1514,10 @@ final class SherpaModelManager {
     private static void deletePkgLanguage(Context ctx, String l, Pkg p) {
         setLangOff(ctx, l, true);
         try { new File(ttsRoot(ctx), l + ".active").delete(); } catch (Throwable ignored) {}
+        // فایل‌های مخصوصِ این زبان (چینیِ Kokoro) مالِ زبان‌های دیگر نیست؛ برای آزادشدنِ فضا پاک می‌شوند
+        for (String name : extraFilesFor(p, l)) {
+            try { new File(pkgDir(ctx, p), name).delete(); } catch (Throwable ignored) {}
+        }
         for (Map.Entry<String, TtsSpec> e : TTS_SPECS.entrySet()) {
             if (e.getValue().pkg != p || e.getKey().equals(l)) continue;
             if (!isLangOff(ctx, e.getKey()) || TTS_ACTIVE.contains(e.getKey())) return;   // زبانِ دیگری هنوز از بسته استفاده می‌کند
