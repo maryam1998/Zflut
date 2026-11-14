@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../auth/worker_auth.dart';
+import 'pro_status.dart';
 import '../tts/tts_config.dart';
 
 /// بخش‌هایی که در نسخه‌ی رایگان سقفِ «کل عمر» دارند (نامِ بخش = همان کلیدِ Worker).
@@ -16,6 +17,8 @@ class Feature {
   static const videocall = 'videocall'; // ویدیوکال AI
   static const live = 'live'; // ترجمه‌ی زنده
   static const magnifier = 'magnifier'; // ذره‌بین
+  static const storyImport = 'import'; // ایمپورتِ تبِ داستان‌ساز (PDF/عکس/SRT/لینک/متن) — ۲ بارِ رایگان
+  static const popup = 'popup'; // کادرِ پاپِ انتخابِ لغت/محدوده (ذخیره برای داستان بعدی و…) — ۳ بارِ رایگان
   // ترجمه‌ی یوتیوب: Worker خودش از رویِ مسیرِ درخواست‌ها تشخیص می‌دهد.
 }
 
@@ -65,6 +68,32 @@ class FreeLimit {
 
   static final Dio _dio = Dio();
 
+  /// بخش‌هایی که سقفشان در همین اجرای اپ تمام‌شده‌اند (برای اینکه قبل از باز کردنِ فایل‌انتخاب‌گر هم بشود پنجره‌ی Pro را نشان داد).
+  static final Set<String> _exhausted = <String>{};
+
+  /// بخش‌هایی که «کلاً Pro» هستند (داستان‌ساز، گرامرِ AI): true = کاربر Pro نیست،
+  /// پنجره‌ی «مخصوص Pro» نشان داده شد و کار باید متوقف شود.
+  static bool blockUnlessPro() {
+    if (ProStatus.isPro) return false;
+    reportLocked();
+    return true;
+  }
+
+  /// فقط چک (بدونِ شمارش): اگر سقفِ رایگانِ این بخش قبلاً تمام شده، پنجره را نشان می‌دهد و true برمی‌گرداند.
+  static bool blockIfExhausted(String feature) {
+    if (ProStatus.isPro || !_exhausted.contains(feature)) return false;
+    report(feature);
+    return true;
+  }
+
+  /// یک «استفاده» از بخشِ دارایِ سهمیه‌ی رایگان (ایمپورت، کادرِ پاپ). Pro/VIP همیشه مجاز.
+  /// true = مجاز؛ false = سقف تمام شده و پنجره‌ی Pro نشان داده شد.
+  static Future<bool> useOrBlock(String feature) async {
+    if (ProStatus.isPro) return true;
+    if (blockIfExhausted(feature)) return false;
+    return consume(feature);
+  }
+
   /// شروعِ یک استفاده برای بخش‌هایی که درخواستِ AI ندارند (ذره‌بین، ترجمه‌ی زنده).
   /// true = مجاز؛ false = سقف تمام شده (پنجره‌ی پیام خودکار نشان داده می‌شود).
   /// اگر اینترنت/سرور مشکل داشت، کاربر الکی قفل نمی‌شود (true).
@@ -88,6 +117,7 @@ class FreeLimit {
         res = await once();
       }
       if (res.statusCode == 402) {
+        _exhausted.add(feature);
         report(feature);
         return false;
       }

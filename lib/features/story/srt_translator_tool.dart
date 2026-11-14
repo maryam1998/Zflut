@@ -16,6 +16,7 @@ import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/usage/free_limit.dart';
 
 class SrtTranslatorTool extends ConsumerStatefulWidget {
   const SrtTranslatorTool({super.key});
@@ -43,6 +44,7 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
   }
 
   Future<void> _pick() async {
+    if (FreeLimit.blockIfExhausted(Feature.storyImport)) return; // 📥 ۲ بارِ رایگان
     setState(() {
       _error = '';
       _info = '';
@@ -64,6 +66,8 @@ class _SrtTranslatorToolState extends ConsumerState<SrtTranslatorTool> {
         });
         return;
       }
+      if (!await FreeLimit.useOrBlock(Feature.storyImport)) return; // 📥 ۲ بارِ رایگان
+      if (!mounted) return;
       setState(() {
         _fileName = f.name;
         _entries = parsed;

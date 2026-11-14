@@ -25,6 +25,7 @@ import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart';
 import '../tts/speech_state.dart';
 import '../tts/tts_config.dart';
+import '../usage/free_limit.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // SelectionCard — «کارت مشترکِ انتخاب» (معادل GlobalAddToStorySelection
@@ -195,7 +196,29 @@ VoidCallback? _closeActiveCard;
 
 /// کارتِ مشترک را کنار [anchor] (مستطیلِ سراسریِ متنِ انتخاب‌شده) باز می‌کند.
 /// Future وقتی تمام می‌شود که کارت بسته شود.
+///
+/// 💎 نسخه‌ی رایگان: فقط ۳ بارِ «کل عمر» (هر بار باز شدنِ کارت = یک استفاده)؛ از بارِ چهارم
+/// به‌جای کارت، پنجره‌ی Pro نشان داده می‌شود. Pro/VIP نامحدود.
 Future<void> showSelectionCard(
+  BuildContext context, {
+  required String text,
+  required String langCode,
+  String? sentence,
+  Rect? anchor,
+}) async {
+  if (text.trim().isEmpty) return;
+  if (!await FreeLimit.useOrBlock(Feature.popup)) return;
+  if (!context.mounted) return;
+  return _showSelectionCardImpl(
+    context,
+    text: text,
+    langCode: langCode,
+    sentence: sentence,
+    anchor: anchor,
+  );
+}
+
+Future<void> _showSelectionCardImpl(
   BuildContext context, {
   required String text,
   required String langCode,

@@ -559,6 +559,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   /// اولین بار که «ساخت داستان» زده می‌شود، دکمه روشن و توضیح داده می‌شود.
   Future<void> _generateWithCoach(String lang) async {
     if (_words.isEmpty || _generating) return;
+    if (FreeLimit.blockUnlessPro()) return; // 🔒 داستان‌ساز: فقط Pro
     final go = await showFeatureCoach(context, ref,
         id: CoachId.generateStory, target: _generateKey);
     if (!go || !mounted) return;
@@ -567,6 +568,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
   Future<void> _generate(String lang) async {
     if (_words.isEmpty || _generating) return;
+    if (FreeLimit.blockUnlessPro()) return; // 🔒 داستان‌ساز: فقط Pro
     _clearCreateView();
     setState(() {
       _generating = true;
@@ -1033,6 +1035,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   void _importPasted() {
     final raw = _pasteCtrl.text.trim();
     if (raw.isEmpty) return;
+    unawaited(_importPastedGated(raw));
+  }
+
+  Future<void> _importPastedGated(String raw) async {
+    if (!await FreeLimit.useOrBlock(Feature.storyImport)) return; // 📥 ۲ بارِ رایگان
+    if (!mounted) return;
     setState(() => _importError = '');
     _importForReading(raw);
     _pasteCtrl.clear();
@@ -1092,6 +1100,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
   Future<void> _importPdfForReading() async {
     if (_pdfReadBusy) return;
+    if (FreeLimit.blockIfExhausted(Feature.storyImport)) return; // 📥
     List<PickedFile> files;
     try {
       files = await pickFiles(accept: 'application/pdf');
@@ -1100,6 +1109,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       return;
     }
     if (files.isEmpty) return;
+    if (!await FreeLimit.useOrBlock(Feature.storyImport)) return; // 📥 ۲ بارِ رایگان
+    if (!mounted) return;
     final f = files.first;
     setState(() {
       _pdfReadBusy = true;
@@ -1160,6 +1171,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
   Future<void> _importImagesForReading() async {
     if (_imgReadBusy) return;
+    if (FreeLimit.blockIfExhausted(Feature.storyImport)) return; // 📥
     List<PickedFile> files;
     try {
       files = await pickFiles(accept: 'image/*', multiple: true);
@@ -1168,6 +1180,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       return;
     }
     if (files.isEmpty) return;
+    if (!await FreeLimit.useOrBlock(Feature.storyImport)) return; // 📥 ۲ بارِ رایگان
+    if (!mounted) return;
     setState(() {
       _imgReadBusy = true;
       _importError = '';
@@ -1244,6 +1258,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
   Future<void> _openPdfView() async {
     if (_pdfViewBusy) return;
+    if (FreeLimit.blockIfExhausted(Feature.storyImport)) return; // 📥
     List<PickedFile> files;
     try {
       files = await pickFiles(accept: 'application/pdf');
@@ -1252,6 +1267,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       return;
     }
     if (files.isEmpty) return;
+    if (!await FreeLimit.useOrBlock(Feature.storyImport)) return; // 📥 ۲ بارِ رایگان
+    if (!mounted) return;
     final f = files.first;
     setState(() {
       _pdfViewBusy = true;
@@ -1540,6 +1557,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       _linkBusy = true;
       _importError = '';
     });
+    if (!await FreeLimit.useOrBlock(Feature.storyImport)) { // 📥 ۲ بارِ رایگان
+      if (mounted) setState(() => _linkBusy = false);
+      return;
+    }
     try {
       final dio = Dio(BaseOptions(
         responseType: ResponseType.plain,

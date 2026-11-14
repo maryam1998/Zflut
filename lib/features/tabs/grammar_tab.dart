@@ -462,6 +462,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
   Future<void> _ask([String? retryQuestion, int? index]) async {
     final question = (retryQuestion ?? _ctrl.text).trim();
     if (question.isEmpty || _loading) return;
+    if (FreeLimit.blockUnlessPro()) return; // 🔒 گرامرِ AI: فقط Pro
     final target = retryQuestion == null ? null : index;
     if (retryQuestion == null) _ctrl.clear();
     _editIndex = null;

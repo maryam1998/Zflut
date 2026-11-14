@@ -256,6 +256,7 @@ class _GrammarPracticeContentState
   }
 
   Future<void> _ask(String sentence, List<_ChatMsg> history) async {
+    if (FreeLimit.blockUnlessPro()) return; // 🔒 گرامرِ AI: فقط Pro
     final sel = ref.read(languageSelectionProvider);
     final langCode = _chatLang ?? sel.primaryTarget ?? 'en';
     setState(() {
