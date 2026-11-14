@@ -1294,63 +1294,15 @@ class SpeechController extends StateNotifier<SpeechState> {
         break;
     }
 
-    // ⛔ فارسی/عربی: مسیر Edge TTS غیرفعال است (مجوز تجاری). صدای این دو زبان فقط از
-    // بسته‌ی آفلاینِ اپ یا TTS خودِ گوشی می‌آید. برای فعال‌کردنِ دوباره این بلاک را بردار.
-    if (TtsConfig.onlineOnly.contains(code)) {
-      if (_skipFailedChunk(idx, myGen)) return;
-      state = state.copyWith(
-        status: SpeechStatus.idle,
-        error: 'tts_err_need_pack', // کلیدِ ترجمه — در player_bar ترجمه می‌شود
-      );
-      return;
-    }
-
-    // Edge TTS از Worker
-    final voice = (_genderFor(idx) == 'male' ? TtsConfig.edgeVoiceMale[code] : null) ??
-        TtsConfig.edgeVoice[code] ??
-        'en-US-AriaNeural';
-    final url = '${TtsConfig.backendUrl}/api/tts'
-        '?voice=${Uri.encodeComponent(voice)}'
-        '&text=${Uri.encodeComponent(text)}';
-
-    StreamSubscription<PlayerState>? sub;
-    _onlineUseSeq++;
-    try {
-      await _onlinePlayer.stop();
-      await WorkerAuth.ensureFresh();
-      await _onlinePlayer.setUrl(url, headers: WorkerAuth.headers);
-      await _onlinePlayer.setSpeed(state.rate);
-      await _onlinePlayer.setVolume(state.muted ? 0.0 : 1.0);
-
-      if (myGen != _generation) return;
-
-      final waiter = Completer<bool>();
-      _onlineWaiter = waiter;
-      sub = _onlinePlayer.playerStateStream.listen((ps) {
-        if (ps.processingState == ProcessingState.completed &&
-            !waiter.isCompleted) {
-          waiter.complete(true);
-        }
-      });
-
-      unawaited(_onlinePlayer.play());
-      final finished = await waiter.future;
-      if (identical(_onlineWaiter, waiter)) _onlineWaiter = null;
-      if (myGen != _generation) return;
-      if (!finished) return;
-
-      await _gapThenNext(idx, text, myGen);
-    } catch (e) {
-      debugPrint('Online TTS error: $e');
-      if (myGen != _generation) return;
-      if (_skipFailedChunk(idx, myGen)) return;
-      state = state.copyWith(
-        status: SpeechStatus.idle,
-        error: 'خطا در پخش صدا',
-      );
-    } finally {
-      await sub?.cancel();
-    }
+    // 🔇 TTS آنلاین (Edge/HuggingFace روی Worker) برای همه‌ی زبان‌ها حذف شد.
+    // صدا فقط از بسته‌ی آفلاین یا TTS خودِ گوشی می‌آید؛ اگر نبود/شکست خورد → پیامِ دانلودِ بسته.
+    if (_skipFailedChunk(idx, myGen)) return;
+    state = state.copyWith(
+      status: SpeechStatus.idle,
+      error: TtsConfig.onlineOnly.contains(code)
+          ? 'tts_err_need_pack'
+          : 'tts_err_no_voice', // کلیدِ ترجمه — در player_bar ترجمه می‌شود
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════

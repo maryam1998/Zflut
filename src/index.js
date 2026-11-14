@@ -103,53 +103,9 @@ export default {
       }
     }
 
-    if (url.pathname === "/api/tts" && request.method === "GET") {
-      const text = (url.searchParams.get("text") || "").trim();
-      const voice = url.searchParams.get("voice") || "en-US-AriaNeural";
-      if (!text) return json({ error: "text is required" }, 400);
-      // 🔒 voice داخلِ SSML می‌نشیند → فقط نامِ صدای معتبر (جلوگیری از تزریقِ SSML)
-      if (!/^[A-Za-z0-9-]{1,64}$/.test(voice)) return json({ error: "invalid voice" }, 400);
-      const langPrefix = voice.split("-")[0].toLowerCase();
-      if (langPrefix === "fa" || langPrefix === "ar") {
-        try {
-          const { bytes, contentType } = await fetchHuggingFaceTtsAudio(text, langPrefix, env);
-          return new Response(bytes, {
-            headers: { "Content-Type": contentType, "Cache-Control": "public, max-age=86400", ...CORS_HEADERS },
-          });
-        } catch (hfErr) {
-          try {
-            const audioBytes = await fetchEdgeTtsAudio(text, voice);
-            return new Response(audioBytes, {
-              headers: { "Content-Type": "audio/mpeg", "Cache-Control": "public, max-age=86400", ...CORS_HEADERS },
-            });
-          } catch (edgeErr) {
-            return json({ error: `hf-tts: ${hfErr.message || hfErr} | edge-tts: ${edgeErr.message || edgeErr}` }, 502);
-          }
-        }
-      }
-      try {
-        const audioBytes = await fetchEdgeTtsAudio(text, voice);
-        return new Response(audioBytes, {
-          headers: { "Content-Type": "audio/mpeg", "Cache-Control": "public, max-age=86400", ...CORS_HEADERS },
-        });
-      } catch (e) {
-        return json({ error: e.message || "edge-tts failed" }, 502);
-      }
-    }
-
-    if (url.pathname === "/api/tts-gemini" && request.method === "GET") {
-      const text = (url.searchParams.get("text") || "").trim();
-      const voice = url.searchParams.get("voice") || "Kore";
-      if (!text) return json({ error: "text is required" }, 400);
-      if (!/^[A-Za-z0-9_-]{1,32}$/.test(voice)) return json({ error: "invalid voice" }, 400);
-      try {
-        const wavBytes = await fetchGeminiTtsAudio(text, voice, env);
-        return new Response(wavBytes, {
-          headers: { "Content-Type": "audio/wav", "Cache-Control": "public, max-age=86400", ...CORS_HEADERS },
-        });
-      } catch (e) {
-        return json({ error: e.message || "gemini-tts failed" }, 502);
-      }
+    // 🔇 TTS آنلاین حذف شد (هزینه + مجوز). صدا فقط آفلاین: بسته‌ی صوتی اپ یا TTS خودِ گوشی.
+    if (url.pathname === "/api/tts" || url.pathname === "/api/tts-gemini") {
+      return json({ error: "online TTS removed; use offline voice", code: "tts_removed" }, 410);
     }
 
     if (url.pathname === "/api/youtube-captions" && request.method === "GET") {

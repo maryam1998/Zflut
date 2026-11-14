@@ -361,6 +361,46 @@ async function sessionTimeOk(env, userId, feature, fresh) {
   }
 }
 
+/**
+ * ⏱️ سقفِ «دقیقه‌ی تماس در روز» برای Pro/VIP (PRO_CALL_MINUTES در wrangler.toml؛ ۰/نبود = بدونِ سقف).
+ * هر درخواستِ ویدیوکال = یک نوبتِ گفتگو؛ فاصله‌ی دو درخواستِ پشت‌سرهم (حداکثر ۶۰ثانیه) به مصرفِ روز
+ * اضافه می‌شود، و شروعِ تماس/وقفه‌ی طولانی ≈ ۲۰ثانیه. روز بر اساس UTC صفر می‌شود.
+ * خطای دیتابیس → اجازه (fail-open) تا تماس بی‌دلیل قطع نشود.
+ */
+let callTableReady = false;
+export async function proCallMinutesGate(env, userId) {
+  const mins = Number(env.PRO_CALL_MINUTES);
+  if (!Number.isFinite(mins) || mins <= 0 || !env.TR_DB) return { ok: true, limit: 0 };
+  try {
+    if (!callTableReady) {
+      await env.TR_DB.prepare(
+        "CREATE TABLE IF NOT EXISTS call_seconds (" +
+          "user_id TEXT NOT NULL, day TEXT NOT NULL, secs INTEGER NOT NULL DEFAULT 0, " +
+          "last_at INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, day))"
+      ).run();
+      callTableReady = true;
+    }
+    const now = Date.now();
+    const day = new Date(now).toISOString().slice(0, 10);
+    const row = await env.TR_DB.prepare(
+      "SELECT secs, last_at FROM call_seconds WHERE user_id = ?1 AND day = ?2"
+    ).bind(userId, day).first();
+    const cap = Math.floor(mins * 60);
+    const used = row ? row.secs : 0;
+    if (used >= cap) return { ok: false, limit: Math.floor(mins) };
+    const gap = row && row.last_at ? (now - row.last_at) / 1000 : Infinity;
+    const add = gap <= 60 ? Math.max(1, Math.round(gap)) : 20;
+    await env.TR_DB.prepare(
+      "INSERT INTO call_seconds (user_id, day, secs, last_at) VALUES (?1, ?2, ?3, ?4) " +
+        "ON CONFLICT(user_id, day) DO UPDATE SET secs = secs + ?3, last_at = ?4"
+    ).bind(userId, day, add, now).run();
+    return { ok: true, limit: Math.floor(mins) };
+  } catch (e) {
+    console.error("[FAIL-OPEN] proCallMinutesGate error", String(e));
+    return { ok: true, limit: 0 };
+  }
+}
+
 /** هشِ (prompt + maxTokens) بدنه‌ی /api/generate؛ اگر بدنه خراب بود "" (بدونِ اینکه بدنه‌ی اصلی مصرف شود). */
 async function promptHash(request) {
   try {
@@ -388,6 +428,15 @@ export async function featureGate(request, env, url, session, cors) {
     ph = await promptHash(request);
   }
   const pro = await isPro(env, session.sub, session.em);
+
+  // ⏱️ Pro/VIP: سقفِ دقیقه‌ی ویدیوکال در روز
+  if (pro && feature === "videocall") {
+    const cg = await proCallMinutesGate(env, session.sub);
+    if (!cg.ok) {
+      console.warn(`[LIMIT] pro_call_minutes user=${session.sub} limit=${cg.limit}min`);
+      return dailyResponse(feature, cg.limit, cors);
+    }
+  }
 
   if (!pro && !LIFETIME_EXEMPT.has(feature)) {
     // سقفِ «کل عمر» + سقفِ طولِ جلسه (رایگان)

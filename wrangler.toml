@@ -64,6 +64,8 @@ DAILY_TRANSLATE = "150"
 # 💎 سقفِ روزانه‌ی اختصاصیِ Pro/VIP برای یک بخش (جدا از DAILY_APPLY_TO_PRO؛ فقط همان بخش). حذف یا ۰ = بدونِ سقف.
 #    داستان‌ساز: حتی Pro هم روزی حداکثر ۶ داستان. (شمارش روی /api/generate با X-Feature: story؛ retryِ همان استفاده رایگان است)
 PRO_DAILY_STORY = "6"
+# ⏱️ ویدیوکالِ Pro/VIP: حداکثر دقیقه در روز (UTC). ۰ یا حذف = بدونِ سقف.
+PRO_CALL_MINUTES = "60"
 
 # ⚖️ مدیریتِ بار (src/load.js) — ۰ = خاموش
 #   همزمانیِ هر کاربرِ Pro: حداکثر PRO_MAX_CONCURRENT درخواستِ AI هم‌زمان؛ بیشتر → صفِ FIFO؛ صف > PRO_QUEUE_MAX یا
