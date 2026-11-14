@@ -180,7 +180,13 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       final track = _notifier.trackFor(_resumeCode);
       final span = track?.byId[id];
       if (track == null || span == null) return;
-      _resumeAfterLeaving(_ctrl, track, span.start);
+      // کلیدِ همه‌ی متن‌های همین اسکوپ: اگر موقعِ ترک، پلیر هنوز روی یکی از آن‌هاست ولی
+      // صفِ ترجمه/مثال (که مالِ همین تب بود) دیگر زنده نیست، خوانش باید همان لحظه ادامه پیدا کند.
+      final ownKeys = <String>{track.key};
+      final mainTrack = _notifier.trackFor(null);
+      if (mainTrack != null) ownKeys.add(mainTrack.key);
+      _resumeAfterLeaving(_ctrl, track, span.start,
+          ownKeys: ownKeys, eager: _bgActive);
     } catch (_) {}
   }
 
@@ -1324,18 +1330,13 @@ Future<bool> syncPlayPause(WidgetRef ref) async {
   final st = ref.read(speechControllerProvider);
   final ctrl = ref.read(speechControllerProvider.notifier);
   final tracks = ref.read(playerSyncProvider).tracks;
-  final hasPageText = tracks.values.any((t) => t.fullText.isNotEmpty);
 
-  final ad = ref.read(adhocSyncProvider);
-  final adhocHere = ad != null && ad.key == st.key;
   if (st.key != null && st.status != SpeechStatus.idle) {
-    // متنِ در حال پخش/مکث مالِ همین صفحه است (یا این صفحه متنی ندارد) → پخش/توقف
-    if (!hasPageText || adhocHere || tracks.values.any((t) => t.key == st.key)) {
-      await ctrl.togglePlayPause();
-      return true;
-    }
-    // متنِ صفحه‌ی قبلی هنوز در پلیر است → متنِ همین صفحه از اول خوانده شود
-    return syncPlayMainTrack(ref);
+    // چیزی در حال پخش/مکث است (از هر تب/زیرتبی که شروع شده باشد) → فقط پخش/توقفِ همان.
+    // بعد از جابه‌جایی بین تب‌ها پلیر نباید متنِ تبِ تازه را جایش بخواند؛
+    // برای شروعِ لیستِ این تب، 🔊 کنارِ هر آیتم را بزن.
+    await ctrl.togglePlayPause();
+    return true;
   }
 
   final key = st.key;
@@ -1379,14 +1380,21 @@ class _BgStep {
 
 /// بعد از ترکِ تب: وقتی آیتمِ در حال خواندن (ترجمه/مثال) تمام شد، خوانشِ لیست از آیتمِ بعد
 /// ادامه پیدا می‌کند. اگر کاربر در این فاصله توقفِ کامل کرد یا چیزِ دیگری پخش کرد، کاری نمی‌کند.
-void _resumeAfterLeaving(SpeechController ctrl, PlayerTrack track, int start) {
+void _resumeAfterLeaving(SpeechController ctrl, PlayerTrack track, int start,
+    {Set<String> ownKeys = const <String>{}, bool eager = false}) {
   void Function()? remove;
   Timer? guard;
   var done = false;
   var first = true;
   String? watchKey;
 
-  void resume() {
+  void resume(SpeechState cur) {
+    // اگر همین متن الان «در حال پخش» ثبت شده (کنترلر منتظرِ صفِ تبِ بسته‌شده مانده بود)،
+    // toggle آن را مکث می‌کرد؛ پس مستقیم به جمله‌ی بعد می‌رویم.
+    if (cur.key == track.key && cur.status != SpeechStatus.idle) {
+      unawaited(ctrl.seekToChunk(ctrl.chunkIndexForOffset(start)));
+      return;
+    }
     unawaited(ctrl.toggle(
       track.fullText,
       track.code,
@@ -1415,7 +1423,14 @@ void _resumeAfterLeaving(SpeechController ctrl, PlayerTrack track, int start) {
       }
       if (s.status == SpeechStatus.idle) {
         finish(); // بینِ دو مرحله‌ی صف بود → همین حالا از آیتمِ بعد ادامه بده
-        if (s.error == null) resume();
+        if (s.error == null) resume(s);
+        return;
+      }
+      // ⛓ صفِ ترجمه/مثال هنوز اولین مرحله‌اش را شروع نکرده بود (کنترلر «در حال پخش» نشان
+      // می‌دهد ولی بی‌صداست و منتظرِ صفی است که با بسته‌شدنِ تب مرده) → همین حالا ادامه بده
+      if (eager && s.status == SpeechStatus.playing && ownKeys.contains(s.key)) {
+        finish();
+        if (s.error == null) resume(s);
         return;
       }
       watchKey = s.key;
@@ -1427,7 +1442,7 @@ void _resumeAfterLeaving(SpeechController ctrl, PlayerTrack track, int start) {
     }
     if (s.status == SpeechStatus.idle) {
       finish();
-      if (s.error == null) resume();
+      if (s.error == null) resume(s);
     }
   }, fireImmediately: true);
   if (done) {

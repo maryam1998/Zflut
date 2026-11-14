@@ -390,10 +390,14 @@ class PlayerBar extends ConsumerWidget {
 
     final st = ref.read(speechControllerProvider);
     final origin = ref.read(playbackOriginProvider);
+    // وقتی پلیر ترجمه/مثالِ همان لیست را می‌خواند، کلیدِ پخش مالِ متنِ تکیِ ترجمه است نه
+    // متنِ کاملِ لیست؛ آن هم «همان پخش» حساب می‌شود (قبلاً اینجا «چیزی نمی‌خواند» می‌گفت).
+    final ad = ref.read(adhocSyncProvider);
+    final adhocPlaying = ad != null && ad.key == st.key;
     if (st.key == null ||
         st.status == SpeechStatus.idle ||
         origin == null ||
-        origin.key != st.key) {
+        (origin.key != st.key && !adhocPlaying)) {
       _toastNothingPlaying(context);
       return;
     }
@@ -413,6 +417,14 @@ class PlayerBar extends ConsumerWidget {
     container.read(tabRestoreProvider.notifier).state = origin;
     final cur = router.routeInformationProvider.value.uri.path;
     if (cur != origin.route) router.go(origin.route);
+    // تبِ مقصد (یا همان تبی که از قبل باز بود) بعد از بازگردانیِ موضوع/سناریو یک بار دیگر
+    // به خطِ در حال پخش اسکرول کند.
+    Future.delayed(const Duration(milliseconds: 450), () {
+      try {
+        final n = container.read(revealActiveTickProvider.notifier);
+        n.state = n.state + 1;
+      } catch (_) {}
+    });
     // اگر تبی درخواست را برنداشت، بعداً اشتباهی اعمال نشود
     Future.delayed(const Duration(seconds: 2), () {
       try {
@@ -436,12 +448,9 @@ class PlayerBar extends ConsumerWidget {
 
   bool _isActive(WidgetRef ref) {
     final s = ref.read(speechControllerProvider);
-    if (s.status == SpeechStatus.idle || s.key == null) return false;
-    // فقط وقتی متنِ در حال پخش مالِ همین صفحه است «جمله‌ی بعد/قبل» کار کند؛
-    // اگر متنِ صفحه‌ی قبلی است، متنِ همین صفحه از اول شروع می‌شود.
-    final tracks = ref.read(playerSyncProvider).tracks;
-    if (!tracks.values.any((t) => t.fullText.isNotEmpty)) return true;
-    return tracks.values.any((t) => t.key == s.key);
+    // هر چیزی که پخش/مکث است (از هر تب/زیرتب) «فعال» است؛ بعد/قبل/A-B روی همان کار می‌کنند
+    // و با جابه‌جایی بین تب‌ها خوانشِ جاری عوض نمی‌شود.
+    return s.status != SpeechStatus.idle && s.key != null;
   }
 
   Future<bool> _startMain(BuildContext context, WidgetRef ref) async {
