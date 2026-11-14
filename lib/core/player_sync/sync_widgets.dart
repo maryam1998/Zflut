@@ -744,10 +744,20 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     var completed = false;
     try {
       for (final st in steps) {
-        var text = (await st.text())?.trim();
+        // ⏱ منتظرِ ترجمه‌ی طولانی نمی‌مانیم: اگر آماده نشد، رد می‌شویم و خوانش به آیتمِ بعد می‌رود
+        // (ترجمه در پس‌زمینه ادامه پیدا می‌کند و برای دفعه‌ی بعد کش می‌شود).
+        var timedOut = false;
+        var text = (await st.text().timeout(const Duration(seconds: 5),
+                onTimeout: () {
+          timedOut = true;
+          return null;
+        }))
+            ?.trim();
         if (!mounted || token != _bgToken) return;
-        if ((text == null || text.isEmpty) && st.retry != null) {
-          text = (await st.retry!())?.trim();
+        if ((text == null || text.isEmpty) && !timedOut && st.retry != null) {
+          text = (await st.retry!().timeout(const Duration(seconds: 5),
+                  onTimeout: () => null))
+              ?.trim();
           if (!mounted || token != _bgToken) return;
         }
         if (text == null || text.isEmpty) {

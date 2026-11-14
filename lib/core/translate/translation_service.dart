@@ -123,6 +123,34 @@ String stripAIReasoning(String text) {
       .trim();
 }
 
+/// لغت‌های هم‌شکل بین زبان‌های لاتین (hospital ← es، hotel، animal، ...): ترجمه‌ی درست
+/// عیناً همان لغت است و نباید «ترجمه نشده» حساب شود. فقط وقتی که یک مترجمِ واقعی
+/// (ML Kit / سرویس) همین نتیجه را داده، یا از کشِ دائمی آمده باشد تأیید می‌شود؛
+/// تا شکستِ کاملِ ترجمه (که خودِ متن برمی‌گردد) سالم به‌نظر نیاید.
+final Set<String> _confirmedSame = {};
+
+String _sameKey(String src, String target) =>
+    '$target|${src.trim().toLowerCase()}';
+
+bool _latinPair(String from, String to) =>
+    _latinLangs.contains(to) && _latinLangs.contains(from);
+
+/// اگر [out] عیناً [src] است و جفت‌زبان لاتین است، به‌عنوانِ «ترجمه‌ی هم‌شکلِ درست» ثبت می‌شود.
+/// strict=true (خروجیِ سرویس‌های آنلاین): فقط یک کلمه‌ی ساده. ML Kit قابل‌اعتماد است (strict=false).
+void _markCognate(String src, String out, String target, String source,
+    {bool strict = true}) {
+  final a = src.trim();
+  final b = out.trim();
+  if (a.isEmpty || a.toLowerCase() != b.toLowerCase()) return;
+  if (!_latinPair(source, target) || source == target) return;
+  if (a.length > 40) return;
+  if (strict &&
+      (a.length < 3 || RegExp(r'[\s\d]').hasMatch(a))) {
+    return;
+  }
+  _confirmedSame.add(_sameKey(a, target));
+}
+
 /// کنترل کیفیتِ سبک — همان looksLikelyMistranslated وب
 bool looksLikelyMistranslated(
   String sourceText,
@@ -140,7 +168,8 @@ bool looksLikelyMistranslated(
   if (sourceLang.isNotEmpty &&
       sourceLang != 'auto' &&
       sourceLang != targetLang &&
-      out.toLowerCase() == src.toLowerCase()) {
+      out.toLowerCase() == src.toLowerCase() &&
+      !_confirmedSame.contains(_sameKey(src, targetLang))) {
     return true;
   }
 
@@ -312,7 +341,12 @@ class TranslationService {
 
   Future<String?> _cacheGet(String text, String from, String to) {
     final v = _db.get(_cacheKey(text, from, to));
-    return v.then((s) => (s != null && s.isNotEmpty) ? s : null);
+    return v.then((s) {
+      if (s == null || s.isEmpty) return null;
+      // مقدارِ هم‌شکلِ ذخیره‌شده فقط بعد از تأییدِ یک مترجمِ واقعی در کش نوشته شده
+      _markCognate(text, s, to, from, strict: false);
+      return s;
+    });
   }
 
   /// خواندنِ سریع و همگام از کش (برای اسکرولِ روان: بدون await و بدون فلیکر).
@@ -321,6 +355,7 @@ class TranslationService {
     if (text.trim().isEmpty || to.isEmpty) return null;
     final v = _db.peek(_cacheKey(text, from, to));
     if (v == null || v.isEmpty) return null;
+    _markCognate(text, v, to, from, strict: false);
     return looksLikelyMistranslated(text, v, to, sourceLang: from) ? null : v;
   }
 
@@ -401,6 +436,14 @@ class TranslationService {
         prev != null && prev.isNotEmpty && r.trim() == prev;
 
     Future<String> run() async {
+      // ۰. ML Kit (فقط برای تشخیصِ لغتِ هم‌شکل مثل hospital؛ نتیجه‌اش جایگزین نمی‌شود)
+      try {
+        final ml = await _viaMlKit(text, targetLang, sourceLang);
+        if (ml != null) {
+          _markCognate(text, ml, targetLang, sourceLang, strict: false);
+        }
+      } catch (_) {}
+
       // ۱. مترجم‌های رایگان (بدون کش)
       final providers = _freeProviders();
       var result = '';
@@ -408,6 +451,9 @@ class TranslationService {
         final winner =
             await _raceProviders(providers, text, targetLang, sourceLang);
         result = winner?.result ?? '';
+        if (result.isNotEmpty) {
+          _markCognate(text, result, targetLang, sourceLang);
+        }
       } catch (_) {}
 
       // ۲. ناظر AI: فقط اگر مشکوک بود یا همان ترجمه‌ی قبلی تکرار شد
@@ -456,6 +502,9 @@ class TranslationService {
     //    دانلود در پس‌زمینه شروع می‌شود و همین‌بار از مسیر معمولِ زیر ترجمه می‌شود.
     if (!forceVerify) {
       final ml = await _viaMlKit(text, targetLang, sourceLang);
+      if (ml != null) {
+        _markCognate(text, ml, targetLang, sourceLang, strict: false);
+      }
       if (ml != null &&
           ml.trim().isNotEmpty &&
           !looksLikelyMistranslated(text, ml, targetLang,
@@ -472,6 +521,7 @@ class TranslationService {
 
     if (winner != null) {
       var result = winner.result;
+      _markCognate(text, result, targetLang, sourceLang);
 
       // فقط اگر مشکوک بود (یا forceVerify) با AI بررسی/اصلاح کن
       if (aiSettings != null &&
