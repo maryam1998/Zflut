@@ -22,6 +22,7 @@ import '../../../core/theme/app_theme_colors.dart';
 // ═══════════════════════════════════════════════════════════════════
 
 const String _kTourSeenKey = 'zflut-tour-seen-v1';
+const String _kImportTourSeenKey = 'zflut-tour-import-seen-v1';
 
 final Map<String, _TourTargetState> _targets = {};
 
@@ -58,6 +59,15 @@ class _TourTargetState extends State<TourTarget> {
     } catch (_) {
       return null;
     }
+  }
+
+  /// هدف را (اگر داخلِ لیستِ اسکرول‌شونده است) فوراً به صفحه می‌آورد.
+  void _reveal() {
+    try {
+      if (!mounted) return;
+      Scrollable.ensureVisible(context,
+          alignment: 0.4, duration: Duration.zero);
+    } catch (_) {}
   }
 
   @override
@@ -179,6 +189,64 @@ const List<_Step> _steps = [
   ),
 ];
 
+/// تورِ زیرتبِ «ایمپورت و خواندن» (داستان‌ساز) — بار اولِ ورود و با دکمه‌ی راهنمای همان بخش.
+const List<_Step> _importSteps = [
+  _Step(
+    'imp_pdf',
+    Icons.menu_book_rounded,
+    {'en': 'Import a PDF to read', 'fa': 'ایمپورتِ PDF برای خواندن'},
+    {
+      'en': 'Pick a text PDF and the app turns it into a reading page, sentence by sentence. Tap any word or select a phrase to see its translation in any language you choose.',
+      'fa': 'یک PDFِ متنی انتخاب کن تا برنامه آن را جمله‌به‌جمله برای خواندن آماده کند. روی هر لغت بزن یا یک عبارت را انتخاب کن تا ترجمه‌اش را به هر زبانی که می‌خواهی ببینی.',
+    },
+  ),
+  _Step(
+    'imp_img',
+    Icons.image_rounded,
+    {'en': 'Import photos', 'fa': 'ایمپورتِ عکس'},
+    {
+      'en': 'A page of a book, a sign, a screenshot… the app reads the text from the photo and you can translate it into any language.',
+      'fa': 'صفحه‌ی یک کتاب، یک تابلو، اسکرین‌شات… برنامه متنِ داخلِ عکس را می‌خواند و می‌توانی آن را به هر زبانی ترجمه کنی.',
+    },
+  ),
+  _Step(
+    'imp_view',
+    Icons.auto_stories_rounded,
+    {'en': 'View a PDF with translation', 'fa': 'دیدنِ PDF با ترجمه'},
+    {
+      'en': 'Open a PDF with its original look (also scanned books). The translation is drawn on the page itself, and you can switch the target language any time.',
+      'fa': 'یک PDF را با ظاهرِ اصلی‌اش باز کن (کتابِ اسکن‌شده هم). ترجمه روی خودِ صفحه نقش می‌بندد و هر وقت خواستی زبانِ مقصد را عوض می‌کنی.',
+    },
+  ),
+  _Step(
+    'imp_link',
+    Icons.link_rounded,
+    {'en': 'Import from a link', 'fa': 'ایمپورت از لینک'},
+    {
+      'en': 'Paste the address of an article or web page and its text is brought in, ready to read and translate.',
+      'fa': 'آدرسِ یک مقاله یا صفحه‌ی وب را بگذار تا متنش وارد شود و برای خواندن و ترجمه آماده باشد.',
+    },
+  ),
+  _Step(
+    'imp_paste',
+    Icons.content_paste_rounded,
+    {'en': 'Paste any text', 'fa': 'متنِ دلخواه'},
+    {
+      'en': 'Copy any text from anywhere, paste it here, and read it with translations in any language.',
+      'fa': 'هر متنی را از هر جا کپی کن، اینجا بگذار و با ترجمه به هر زبانی بخوانش.',
+    },
+  ),
+  _Step(
+    'imp_srt',
+    Icons.subtitles_rounded,
+    {'en': 'Translate subtitle files (SRT)', 'fa': 'ترجمه‌ی فایلِ زیرنویس (SRT)'},
+    {
+      'en': 'Load an .srt file, translate it into any language and save the new file. This one is free, with no limit — the other imports are free twice, then need Pro.',
+      'fa': 'فایلِ .srt را بارگذاری کن، به هر زبانی ترجمه کن و فایلِ جدید را ذخیره کن. این بخش رایگان و بدونِ محدودیت است؛ بقیه‌ی ایمپورت‌ها دو بار رایگان‌اند و بعدش Pro می‌خواهند.',
+    },
+  ),
+];
+
 const Map<String, Map<String, String>> _ui = {
   'skip': {'en': 'Skip', 'fa': 'رد کردن'},
   'next': {'en': 'Next', 'fa': 'بعدی'},
@@ -195,6 +263,15 @@ class SpotlightTour extends ConsumerStatefulWidget {
   /// نمایشِ دوباره‌ی تور (از تنظیمات).
   static void replay() => _replayTick.value++;
 
+  static final ValueNotifier<int> _importTick = ValueNotifier<int>(0);
+  static bool _importForce = false;
+
+  /// تورِ زیرتبِ «ایمپورت و خواندن». force=true (دکمه‌ی راهنما) → همیشه؛ وگرنه فقط بارِ اول.
+  static void startImport({bool force = false}) {
+    _importForce = force;
+    _importTick.value++;
+  }
+
   /// مرحله‌ی «ابزارهای شناور»: به داک (FeatureDock) می‌گوید باز شود.
   static final ValueNotifier<int> dockExpand = ValueNotifier<int>(0);
 
@@ -210,10 +287,13 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
       vsync: this, duration: const Duration(milliseconds: 380), value: 1);
 
   bool _active = false;
+  String _group = 'main'; // 'main' | 'import'
+  List<_Step> get _list => _group == 'import' ? _importSteps : _steps;
   int _i = -1;
   Rect? _prev;
   Rect? _last;
   Timer? _startTimer;
+  Timer? _importTimer;
 
   @override
   void initState() {
@@ -226,12 +306,15 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
       _startTimer = Timer(const Duration(milliseconds: 2200), _begin);
     }
     SpotlightTour._replayTick.addListener(_onReplay);
+    SpotlightTour._importTick.addListener(_onImportTick);
   }
 
   @override
   void dispose() {
     _startTimer?.cancel();
     SpotlightTour._replayTick.removeListener(_onReplay);
+    SpotlightTour._importTick.removeListener(_onImportTick);
+    _importTimer?.cancel();
     _pulse.dispose();
     _move.dispose();
     super.dispose();
@@ -242,6 +325,20 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     _begin();
   }
 
+  void _onImportTick() {
+    if (_active) return;
+    var seen = true;
+    try {
+      seen = ref.read(sharedPrefsProvider).getBool(_kImportTourSeenKey) ?? false;
+    } catch (_) {}
+    if (seen && !SpotlightTour._importForce) return;
+    // کمی صبر تا دکمه‌های زیرتبِ ایمپورت روی صفحه بنشینند
+    _importTimer?.cancel();
+    _importTimer = Timer(const Duration(milliseconds: 500), () {
+      if (mounted && !_active) _begin(group: 'import');
+    });
+  }
+
   Rect? _usableRect(String id, Size size) {
     final r = _targets[id]?._rect;
     if (r == null) return null;
@@ -250,8 +347,9 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     return vis;
   }
 
-  void _begin() {
+  void _begin({String group = 'main'}) {
     if (!mounted) return;
+    _group = group;
     _prev = null;
     _last = null;
     _i = -1;
@@ -267,15 +365,16 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
 
   bool _advance() {
     final size = MediaQuery.of(context).size;
-    for (var j = _i + 1; j < _steps.length; j++) {
-      final r = _usableRect(_steps[j].id, size);
+    for (var j = _i + 1; j < _list.length; j++) {
+      if (_group == 'import') _targets[_list[j].id]?._reveal();
+      final r = _usableRect(_list[j].id, size);
       if (r != null) {
         setState(() {
           _prev = _last;
           _i = j;
         });
         _move.forward(from: 0);
-        if (_steps[j].id == 'dock') SpotlightTour.dockExpand.value++;
+        if (_list[j].id == 'dock') SpotlightTour.dockExpand.value++;
         return true;
       }
     }
@@ -284,7 +383,8 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
 
   void _finish() {
     try {
-      ref.read(sharedPrefsProvider).setBool(_kTourSeenKey, true);
+      ref.read(sharedPrefsProvider).setBool(
+          _group == 'import' ? _kImportTourSeenKey : _kTourSeenKey, true);
     } catch (_) {}
     _pulse.stop();
     if (mounted) setState(() => _active = false);
@@ -301,7 +401,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     final lang = ref.watch(appPrefsProvider).uiLang;
     String t(Map<String, String> m) => m[lang] ?? m['en']!;
     final rtl = lang == 'fa' || lang == 'ar';
-    final step = _steps[_i];
+    final step = _list[_i];
     final size = MediaQuery.of(context).size;
     final lastStep = !_hasLater(size);
 
@@ -363,8 +463,11 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
 
   /// آیا بعد از مرحله‌ی فعلی مرحله‌ی قابل‌نمایشی هست؟
   bool _hasLater(Size size) {
-    for (var j = _i + 1; j < _steps.length; j++) {
-      if (_usableRect(_steps[j].id, size) != null) return true;
+    for (var j = _i + 1; j < _list.length; j++) {
+      // ایمپورت: هدفِ ثبت‌شده کافی است (در _advance به صفحه آورده می‌شود)
+      if (_group == 'import'
+          ? _targets[_list[j].id]?._rect != null
+          : _usableRect(_list[j].id, size) != null) return true;
     }
     return false;
   }
@@ -372,7 +475,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   Widget _card(AppThemeColorsExt c, _Step step, String Function(Map<String, String>) t,
       bool lastStep,
       {Key? key}) {
-    final shown = _steps.indexOf(step) + 1;
+    final shown = _list.indexOf(step) + 1;
     return Container(
       key: key,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
@@ -405,7 +508,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
                       color: c.ink, fontSize: 17, fontWeight: FontWeight.w800),
                 ),
               ),
-              Text('$shown/${_steps.length}',
+              Text('$shown/${_list.length}',
                   style: TextStyle(color: c.inkSoft, fontSize: 12)),
             ],
           ),

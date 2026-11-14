@@ -1,4 +1,5 @@
 import '../../core/usage/pro_status.dart';
+import '../shell/widgets/spotlight_tour.dart' show TourTarget, SpotlightTour;
 import '../../core/usage/free_limit.dart';
 import 'dart:async';
 import 'dart:typed_data';
@@ -1756,6 +1757,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           _showLibrary = mode == 1;
           _showSaved = mode == 2;
           _showImport = mode == 3;
+          if (mode == 3) SpotlightTour.startImport(); // 🎓 بارِ اول: تورِ ایمپورت
           // هر بار که به «ساخت داستان» می‌آییم یا از آن می‌رویم، داستانِ قبلی پاک می‌شود
           _clearCreateView();
         });
@@ -2884,32 +2886,54 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     String lbl(bool busy, String idle) =>
         busy ? (_importProgress.isEmpty ? L.story_busy_processing : _importProgress) : idle;
     return [
-      _importButton(
-        c,
-        emoji: '📖',
-        label: lbl(_pdfReadBusy, L.story_import_pdf),
-        onTap: busyAny ? () {} : _importPdfForReading,
+      Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: HopeTextAction(
+          label: Localizations.localeOf(context).languageCode == 'fa'
+              ? '🎓 راهنمای این بخش'
+              : '🎓 Guide',
+          color: c.teal,
+          onTap: () => SpotlightTour.startImport(force: true),
+        ),
       ),
-      _importButton(
-        c,
-        emoji: '🖼️',
-        label: lbl(_imgReadBusy, L.story_import_images),
-        onTap: busyAny ? () {} : _importImagesForReading,
+      TourTarget(
+        id: 'imp_pdf',
+        child: _importButton(
+          c,
+          emoji: '📖',
+          label: lbl(_pdfReadBusy, L.story_import_pdf),
+          onTap: busyAny ? () {} : _importPdfForReading,
+        ),
       ),
-      _importButton(
-        c,
-        emoji: '📑',
-        label: _pdfViewBusy
-            ? L.story_pdf_opening
-            : L.story_pdf_view_btn,
-        onTap: busyAny ? () {} : _openPdfView,
+      TourTarget(
+        id: 'imp_img',
+        child: _importButton(
+          c,
+          emoji: '🖼️',
+          label: lbl(_imgReadBusy, L.story_import_images),
+          onTap: busyAny ? () {} : _importImagesForReading,
+        ),
+      ),
+      TourTarget(
+        id: 'imp_view',
+        child: _importButton(
+          c,
+          emoji: '📑',
+          label: _pdfViewBusy
+              ? L.story_pdf_opening
+              : L.story_pdf_view_btn,
+          onTap: busyAny ? () {} : _openPdfView,
+        ),
       ),
       if (_pdfDoc != null) _pdfViewer(c),
-      _importButton(
-        c,
-        emoji: '🔗',
-        label: _showLink ? L.story_link_close : L.story_link_open,
-        onTap: () => setState(() => _showLink = !_showLink),
+      TourTarget(
+        id: 'imp_link',
+        child: _importButton(
+          c,
+          emoji: '🔗',
+          label: _showLink ? L.story_link_close : L.story_link_open,
+          onTap: () => setState(() => _showLink = !_showLink),
+        ),
       ),
       if (_showLink)
         Column(
@@ -2937,11 +2961,14 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             ),
           ],
         ),
-      _importButton(
-        c,
-        emoji: '📋',
-        label: _showPaste ? L.story_paste_close : L.story_paste_open,
-        onTap: () => setState(() => _showPaste = !_showPaste),
+      TourTarget(
+        id: 'imp_paste',
+        child: _importButton(
+          c,
+          emoji: '📋',
+          label: _showPaste ? L.story_paste_close : L.story_paste_open,
+          onTap: () => setState(() => _showPaste = !_showPaste),
+        ),
       ),
       if (_showPaste)
         Column(
@@ -2966,7 +2993,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         ),
       if (_importError.isNotEmpty)
         Text(_importError, style: TextStyle(color: c.rose, fontSize: 12)),
-      const SrtTranslatorTool(),
+      const TourTarget(id: 'imp_srt', child: SrtTranslatorTool()),
     ];
   }
 
