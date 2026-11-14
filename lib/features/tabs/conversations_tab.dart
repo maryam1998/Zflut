@@ -48,9 +48,12 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   bool _voicesBusy = false;
   bool _voicesDirty = false;
 
-  /// برچسبِ صدا به F/M ختم می‌شود (مثلاً «Nicole · US · F»).
-  static bool _isFemale(String label) => label.trim().endsWith('F');
-  static bool _isMale(String label) => label.trim().endsWith('M');
+  /// برچسبِ صدا نشانِ F/M دارد (مثلاً «Nicole · US · F»)؛ برای صداهای برنامه بعدش رده‌ی
+  /// کیفیت هم می‌آید («Chloe · US · F · low»)، پس فقط به آخرِ برچسب تکیه نمی‌کنیم.
+  static bool _isFemale(String label) =>
+      RegExp(r'·\s*F(\s*·|\s*$)').hasMatch(label);
+  static bool _isMale(String label) =>
+      RegExp(r'·\s*M(\s*·|\s*$)').hasMatch(label);
 
   /// زبانِ متنِ اصلی + مبدأ + همه‌ی مقصدهای انتخاب‌شده در هدر
   Set<String> _wantedLangs() {
