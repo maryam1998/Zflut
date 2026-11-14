@@ -44,6 +44,7 @@ import '../../core/book/page_translate_engine.dart';
 import '../../core/story/long_text_prep.dart';
 import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/web/ocr_block.dart';
+import '../../core/widgets/feature_coach.dart';
 import '../../core/widgets/feature_switch_cards.dart';
 import '../story/story_i18n.dart';
 import '../story/book_translate_bar.dart';
@@ -553,6 +554,17 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   }
 
   // ───────────── ساخت داستان ─────────────
+  final GlobalKey _generateKey = GlobalKey();
+
+  /// اولین بار که «ساخت داستان» زده می‌شود، دکمه روشن و توضیح داده می‌شود.
+  Future<void> _generateWithCoach(String lang) async {
+    if (_words.isEmpty || _generating) return;
+    final go = await showFeatureCoach(context, ref,
+        id: CoachId.generateStory, target: _generateKey);
+    if (!go || !mounted) return;
+    await _generate(lang);
+  }
+
   Future<void> _generate(String lang) async {
     if (_words.isEmpty || _generating) return;
     _clearCreateView();
@@ -2939,14 +2951,16 @@ class _StoryTabState extends ConsumerState<StoryTab> {
 
   Widget _generateButton(AppThemeColorsExt c, String lang) {
     final disabled = _words.isEmpty || _generating;
-    return Opacity(
+    return KeyedSubtree(
+      key: _generateKey,
+      child: Opacity(
       opacity: disabled ? 0.6 : 1,
       child: Material(
         color: c.gold,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: disabled ? null : () => _generate(lang),
+          onTap: disabled ? null : () => _generateWithCoach(lang),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -2976,6 +2990,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

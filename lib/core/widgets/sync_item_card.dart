@@ -17,6 +17,7 @@ import '../translate/translation_service.dart';
 
 import '../../features/reader/widgets/neural_path_dialog.dart';
 import 'selection_card.dart';
+import 'feature_coach.dart';
 import 'word_examples_panel.dart';
 import '../providers/language_selection_provider.dart';
 
@@ -440,6 +441,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
   bool _failed = false;
   bool _retrying = false;
   bool _retryFailed = false;
+  final GlobalKey _refreshKey = GlobalKey();
   int _gen = 0;
 
   @override
@@ -547,6 +549,15 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
     }
 
     setState(() => _failed = true);
+  }
+
+  /// اولین بار که کاربر دکمه‌ی رفرش را می‌زند، همان دکمه روشن و توضیح داده می‌شود.
+  Future<void> _retryWithCoach() async {
+    if (_retrying) return;
+    final go = await showFeatureCoach(context, ref,
+        id: CoachId.refreshTranslation, target: _refreshKey);
+    if (!go || !mounted) return;
+    await _retry();
   }
 
   Future<void> _retry() async {
@@ -685,19 +696,22 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                   ),
                 ),
               if (canRetry)
-                _IconBtn(
-                  onTap: _retrying ? null : _retry,
-                  size: 16,
-                  color: c.inkSoft.withOpacity(0.7),
-                  child: _retrying
-                      ? SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 1.6, color: c.inkSoft),
-                        )
-                      : null,
-                  icon: Icons.refresh,
+                KeyedSubtree(
+                  key: _refreshKey,
+                  child: _IconBtn(
+                    onTap: _retrying ? null : _retryWithCoach,
+                    size: 16,
+                    color: c.inkSoft.withOpacity(0.7),
+                    child: _retrying
+                        ? SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 1.6, color: c.inkSoft),
+                          )
+                        : null,
+                    icon: Icons.refresh,
+                  ),
                 ),
               // 🧬 مسیر عصبیِ همین زبان؛ تقویمش با بقیه‌ی زبان‌های همین آیتم مشترک است
               if (text != null)
