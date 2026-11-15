@@ -510,6 +510,24 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           if (r.isNotEmpty) t = r;
         } catch (_) {}
       }
+      // 🕵️ بازبینِ AI: اصطلاح/محاوره/عبارتِ ثابت را مترجم‌ها (آفلاین و آنلاین) کلمه‌به‌کلمه برمی‌گردانند
+      // (مثلاً «don't break»). برای جمله‌/عبارت (≥۲ کلمه) یا وقتی لغتِ تک‌کلمه‌ای ترجمه‌ی چندکلمه‌ای شده،
+      // معادلِ درست را از AI می‌گیریم تا داستان با معنای واقعی ساخته شود.
+      if (t.isNotEmpty && norm(t) != norm(raw)) {
+        int words(String x) =>
+            x.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).length;
+        if (words(raw) >= 2 || words(t) >= 2) {
+          final reviewed = (await svc.reviewTranslation(
+            source: raw,
+            translation: t,
+            targetLang: lang,
+            sourceLang: guessedSrc,
+            aiSettings: ai,
+          ))
+              .trim();
+          if (reviewed.isNotEmpty) t = reviewed;
+        }
+      }
       if (t.isNotEmpty) word = t;
     } catch (_) {}
     if (!mounted) return;

@@ -921,6 +921,54 @@ class TranslationService {
     return cleaned;
   }
 
+  /// 🕵️ بازبینِ AI برای ترجمه‌ی مشکوک (اصطلاح/محاوره/عبارتِ ثابت که مترجم‌ها کلمه‌به‌کلمه ترجمه می‌کنند،
+  /// مثلاً یک اصطلاحِ فارسی که «don't break» می‌شود). ترجمه‌ی ماشینی را می‌گیرد و اگر تحت‌اللفظی/غیرطبیعی
+  /// بود، معادلِ طبیعیِ همان معنا را در زبانِ مقصد برمی‌گرداند؛ وگرنه همان ترجمه.
+  /// هیچ‌وقت نمی‌اندازد: در هر خطا/خروجیِ نامعتبر همان [translation] برمی‌گردد.
+  /// (سقفِ «کل عمر» را مصرف نمی‌کند؛ پرامپتِ یکسان از کشِ سرور هم جواب می‌گیرد.)
+  Future<String> reviewTranslation({
+    required String source,
+    required String translation,
+    required String targetLang,
+    String sourceLang = 'auto',
+    required AiSettings? aiSettings,
+  }) async {
+    final src = source.trim();
+    final tr = translation.trim();
+    if (aiSettings == null || src.isEmpty || tr.isEmpty) return translation;
+    if (src.length > 300) return translation; // متنِ بلند = داستان/متن، نه لغت/عبارت
+    final tgt = englishLangName(targetLang);
+    final from = (sourceLang.isEmpty || sourceLang == 'auto')
+        ? 'its original language'
+        : englishLangName(sourceLang);
+    final prompt =
+        'You are a strict translation reviewer for a language-learning app. '
+        'A learner typed a word or phrase in $from: "$src"\n'
+        'A machine translation into $tgt gave: "$tr"\n\n'
+        'Decide whether that translation is a literal, word-for-word rendering that is wrong, '
+        'unnatural or loses the real meaning of an idiom, slang, colloquial or fixed expression '
+        '(for example a figurative phrase translated by its separate words).\n'
+        '- If it is correct and natural, output it unchanged.\n'
+        '- If not, output the natural $tgt equivalent a native speaker would actually say '
+        '(an idiom or common phrase with the same meaning and register; keep it short).\n'
+        'Output ONLY the final $tgt text on a single line — no quotes, no explanation, no notes.';
+    try {
+      final tokens = (tr.length ~/ 2 + 64).clamp(96, 240).toInt();
+      var out = _stripQuotes(stripAIReasoning(await callAI(
+          prompt: prompt, maxTokens: tokens, retries: 1, settings: aiSettings)));
+      out = out.split('\n').first.trim();
+      if (out.isEmpty ||
+          looksLikeAIReasoning(out) ||
+          looksLikeGuardOutput(out) ||
+          out.length > tr.length * 3 + 40) {
+        return translation;
+      }
+      return out;
+    } catch (_) {
+      return translation;
+    }
+  }
+
   /// ترجمه‌ی متنِ کوتاه از طریقِ Worker با کشِ مشترکِ همه‌ی کاربرها (/api/translate-text).
   /// null = استفاده نشد یا نشد (متنِ بلند، زبانِ پشتیبانی‌نشده، خطای شبکه/سرور) → مسیرِ قبلیِ AI ادامه می‌یابد.
   Future<String?> _viaSharedCache(
