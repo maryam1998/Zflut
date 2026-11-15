@@ -18,6 +18,11 @@ compatibility_date = "2026-08-01"
 # رو نداری.
 [vars]
 AI_PROVIDER = "groq,gemini,cerebras,mistral,nvidianim,cloudflareai,ollamacloud,ovhcloud,llm7,openrouter,siliconflow,zai,cohere,aionlabs,modelscope,grok,avalai,deepseek,openai,huggingface,kilocode"
+# 🎚️ مسیریابیِ هزینه: AI_PROVIDER بالا = زنجیره‌ی «سبک/ارزان» برای همه‌ی کارهای ساده
+# (چت، تصحیح، سؤال شروع، گرامر، ترجمه). فقط «داستان» از زنجیره‌ی زیر استفاده می‌کند
+# (ترتیبِ پیشنهادی؛ بر اساسِ کلیدهایی که واقعاً داری و هزینه‌ی واقعی تنظیمش کن).
+# برای زنجیره‌ی جدا برای کارهای ساده هم می‌توانی AI_PROVIDER_LIGHT را ست کنی.
+AI_PROVIDER_STRONG = "gemini,mistral,nvidianim,groq,cerebras,openrouter,cloudflareai,ollamacloud,zai,cohere,grok,deepseek,openai,avalai,siliconflow,ovhcloud,llm7,aionlabs,modelscope,huggingface,kilocode"
 GEMINI_MODEL = "gemini-3.6-flash"
 HF_MODEL = "openai/gpt-oss-120b"
 

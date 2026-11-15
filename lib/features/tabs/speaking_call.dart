@@ -39,14 +39,13 @@ String _tr(BuildContext c, String fa, String en) =>
 
 /// قانون‌های اضافه برای پرامپت وقتی مکالمه «تماس صوتی» است.
 const String kCallRules =
-    '\nThis is a LIVE VOICE VIDEO CALL. The learner\'s sentence comes from automatic '
-    'speech recognition, so IGNORE capitalization, punctuation and tiny spelling '
-    'differences — never list those as mistakes; only real grammar, word-choice or '
-    'unnatural-phrasing mistakes. Your reply will be read aloud: keep it to 1-3 short '
-    'spoken sentences, no emojis, no lists, no stage directions. If there was at least '
-    'one FIX line, begin your reply with ONE short, natural spoken sentence in the '
-    'target language that gently says the corrected version (the way a friend would), '
-    'then continue the conversation in character.\n';
+    '\nLIVE VOICE CALL: the learner\'s sentence comes from speech recognition, so '
+    'IGNORE capitalization, punctuation and tiny spelling differences; only flag real '
+    'grammar, word-choice or unnatural-phrasing mistakes. Your reply is read aloud: '
+    '1-3 short spoken sentences, no emojis, lists or stage directions. If there was a '
+    'FIX line, start your reply with ONE short natural spoken sentence in the target '
+    'language saying the corrected version (like a friend would), then continue in '
+    'character.\n';
 
 // ───────────────────────────── مدل ─────────────────────────────
 

@@ -202,7 +202,10 @@ export default {
       const gate = await beginAi(request, env, "ai", CORS_HEADERS);
       if (gate.deny) return gate.deny;
       try {
-        const chain = getProviderChain(env);
+        // 🎚️ زنجیره‌ی ارزان برای کارهای ساده (چت/تصحیح/گرامر/ترجمه/...) و زنجیره‌ی
+        // قوی فقط برای داستان؛ اگر AI_PROVIDER_LIGHT / AI_PROVIDER_STRONG ست نشده
+        // باشد همان AI_PROVIDER قبلی استفاده می‌شود (رفتارِ فعلی بدونِ تغییر).
+        const chain = getProviderChainFor(env, featureOf(request, url));
         const errors = [];
         // سقفِ زمانِ هر پرووایدر: یکی که کند/بی‌صدا شد، کلِ درخواست را معطل نکند و
         // زنجیره سریع برود سراغِ بعدی. متنِ کوتاه ≈ ۵ ثانیه؛ متنِ بلند (داستان) بیشتر.
@@ -1200,6 +1203,21 @@ function getProviderChain(env) {
     .map((p) => p.trim())
     .filter((p) => VALID_PROVIDERS.includes(p));
   return chain.length ? chain : ["openrouter"];
+}
+
+// 🎚️ زنجیره بر اساسِ نوعِ کار: story → AI_PROVIDER_STRONG، بقیه → AI_PROVIDER_LIGHT.
+// متغیرِ ست‌نشده/نامعتبر = همان getProviderChain (بدونِ تغییرِ رفتار).
+function getProviderChainFor(env, feature) {
+  const raw = feature === "story" ? env.AI_PROVIDER_STRONG : env.AI_PROVIDER_LIGHT;
+  if (raw) {
+    const chain = String(raw)
+      .toLowerCase()
+      .split(",")
+      .map((p) => p.trim())
+      .filter((p) => VALID_PROVIDERS.includes(p));
+    if (chain.length) return chain;
+  }
+  return getProviderChain(env);
 }
 
 async function callProvider(provider, prompt, maxTokens, env) {

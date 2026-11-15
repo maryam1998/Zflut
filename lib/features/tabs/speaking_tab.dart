@@ -1333,7 +1333,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
         '$prompt\n\nIMPORTANT: Output ONLY the final reply itself, exactly in '
         'the requested format. No analysis, no thinking aloud, no restating '
         'or quoting these instructions.',
-        math.max(maxTokens * 3, 420),
+        math.max(maxTokens * 2, 420),
         0,
       );
     }
@@ -1370,14 +1370,12 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     final nativeLabel = _enName(native);
     final prompt = '''
 ${_persona.coachIntro(langLabel)} Learner's native language: $nativeLabel.
-They just wrote${writtenInNative ? ' (in $nativeLabel, not $langLabel)' : ''}: "$sentence"
+They wrote${writtenInNative ? ' (in $nativeLabel, not $langLabel)' : ''}: "$sentence"
 
 Rules:
-- If they wrote in $langLabel with mistakes, list each one on its own line at the very top, using EXACTLY this tag — keep the word FIX and the => symbol in English even though everything else you write is in $langLabel, do NOT translate this tag:
-FIX: <what they wrote> => <the correct version>
-(one FIX line per mistake, using their exact wording for "what they wrote")
-- If they wrote in $nativeLabel instead of $langLabel (not a mistake, just the wrong language), use ONE such line: FIX: <what they wrote in $nativeLabel> => <$langLabel equivalent>
-- After the FIX line(s) — or immediately if there were no mistakes — leave a blank line, then continue the chat: reply ENTIRELY in $langLabel, plain text only (no markdown/asterisks), naturally and briefly — react, ask a follow-up, like a real conversation, not a report. Do NOT explain the mistakes yourself in prose; the FIX lines above are enough.
+- Mistakes in $langLabel: one line per mistake at the very top, EXACTLY: FIX: <what they wrote> => <correct version> (use their exact wording; keep "FIX" and "=>" in English, never translate the tag).
+- If they wrote in $nativeLabel instead of $langLabel (not a mistake): ONE line: FIX: <what they wrote> => <$langLabel equivalent>.
+- Then a blank line and your chat reply ENTIRELY in $langLabel: plain text, no markdown, brief and natural; react and/or ask a follow-up like a real conversation, not a report. Never explain the mistakes in prose.
 
 ${_callMode ? kCallRules : ''}
 ${_questionStyle()}
@@ -1386,7 +1384,7 @@ ${_historyText(history)}
 
 Now respond to: "$sentence"
 ''';
-    final result = await _callAi(prompt, 550);
+    final result = await _callAi(prompt, 400);
     return _extractCorrections(result);
   }
 
@@ -1406,7 +1404,7 @@ Now respond to: "$sentence"
         '${_callMode ? kCallRules : ''}\n'
         '${_questionStyle()}'
         'Recent conversation:\n${_historyText(history)}\n';
-    final result = await _callAi(prompt, 180);
+    final result = await _callAi(prompt, 160);
     return _normalizeAiText(result);
   }
 
