@@ -459,7 +459,100 @@ class _TtsPackRowState extends State<TtsPackRow> {
     }
   }
 
+  /// اولین باری که کاربر یک صدای «High» را دانلود می‌کند، یک کادرِ اطلاع‌رسانی
+  /// نشان داده می‌شود (فقط یک‌بار). خروجی false = کاربر انصراف داد.
+  Future<bool> _confirmHighVoice(String id) async {
+    try {
+      var high = false;
+      for (final v in _voices) {
+        if ('${v['id']}' == id && '${v['tier']}'.toLowerCase() == 'high') {
+          high = true;
+        }
+      }
+      if (!high) return true;
+      final sp = ProviderScope.containerOf(context, listen: false)
+          .read(sharedPrefsProvider);
+      if (sp.getBool('highVoiceNoticeSeen') == true) return true;
+      final code = Localizations.localeOf(context).languageCode;
+      const t = <String, List<String>>{
+        'fa': [
+          'صدای کیفیت بالا ✨',
+          'این صدا برای شنیدنی طبیعی‌تر و غنی‌تر آماده می‌شود؛ به همین خاطر '
+              'در دانلود و اولین پخش ممکن است کمی تأخیر داشته باشد. '
+              'کمی صبر کنید، تجربه‌اش ارزشش را دارد.',
+          'انصراف',
+          'ادامه و دانلود',
+        ],
+        'en': [
+          'High-quality voice ✨',
+          'This voice is crafted for a richer, more natural sound, so the '
+              'download and the first playback may take a little longer than '
+              'usual. A moment of patience — it is worth it.',
+          'Cancel',
+          'Continue & download',
+        ],
+        'ar': [
+          'صوت عالي الجودة ✨',
+          'تم إعداد هذا الصوت ليكون أغنى وأكثر طبيعية، لذلك قد يستغرق التنزيل '
+              'والتشغيل الأول وقتًا أطول قليلًا. القليل من الصبر، فالتجربة تستحق.',
+          'إلغاء',
+          'متابعة وتنزيل',
+        ],
+        'de': [
+          'Stimme in Premium-Qualität ✨',
+          'Diese Stimme klingt besonders natürlich und voll – deshalb können '
+              'Download und erste Wiedergabe etwas länger dauern. Ein '
+              'kleiner Moment Geduld, es lohnt sich.',
+          'Abbrechen',
+          'Weiter & herunterladen',
+        ],
+        'es': [
+          'Voz de alta calidad ✨',
+          'Esta voz está pensada para sonar más natural y rica, por eso la '
+              'descarga y la primera reproducción pueden tardar un poco más. '
+              'Un momento de paciencia: merece la pena.',
+          'Cancelar',
+          'Continuar y descargar',
+        ],
+        'fr': [
+          'Voix haute qualité ✨',
+          'Cette voix offre un rendu plus riche et plus naturel : le '
+              'téléchargement et la première lecture peuvent donc prendre un '
+              'peu plus de temps. Un instant de patience, cela en vaut la peine.',
+          'Annuler',
+          'Continuer et télécharger',
+        ],
+      };
+      final x = t[code] ?? t['en']!;
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => _dirDialog(
+          ctx,
+          AlertDialog(
+            title: Text(x[0]),
+            content: Text(x[1], style: const TextStyle(height: 1.6)),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(x[2])),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(x[3])),
+            ],
+          ),
+        ),
+      );
+      if (go != true) return false;
+      unawaited(sp.setBool('highVoiceNoticeSeen', true));
+      return true;
+    } catch (_) {
+      return true;
+    }
+  }
+
   Future<void> _voiceDownload(String id) async {
+    if (!await _confirmHighVoice(id)) return;
+    if (!mounted) return;
     // اگر دانلودِ دیگری در جریان است، این صدا در صف می‌رود
     if (_dlVoice.isNotEmpty || _queue.isNotEmpty) {
       if (_dlVoice == id || _queue.contains(id)) return;
