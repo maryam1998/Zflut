@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../auth/worker_auth.dart';
 import '../native/native_bridge.dart';
 import '../storage/translation_cache_db.dart';
+import 'shared_translations.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // Translation Service — پورتِ دقیقِ translateService.js + callAI.js وب‌اپ
@@ -393,6 +394,15 @@ class TranslationService {
       return cached;
     }
 
+    // ۱.۵ کشِ مشترکِ همه‌ی کاربرها (ترجمه‌های اصلاح‌شده) — رایگان و سریع؛ نتیجه روی گوشی هم ذخیره می‌شود
+    final base = aiSettings?.baseUrl ?? kDefaultBackendUrl;
+    final shared =
+        await SharedTranslations.fetchOne(base, sourceLang, targetLang, text);
+    if (shared != null) {
+      await cachePut(text, sourceLang, targetLang, shared);
+      return shared;
+    }
+
     // ۲. صفِ سراسری؛ تایمر ۱۵ثانیه‌ای فقط از لحظه‌ی «اجرا» شروع می‌شود
     return _queueJob(() {
       final done = Completer<String>();
@@ -463,6 +473,8 @@ class TranslationService {
       }
       if (result.trim().isNotEmpty && !bad(result) && !same(result)) {
         await cachePut(text, sourceLang, targetLang, result);
+        SharedTranslations.share(ai?.baseUrl ?? kDefaultBackendUrl, text,
+            sourceLang, targetLang, result);
         return result;
       }
 
@@ -473,6 +485,7 @@ class TranslationService {
               useShared: false);
           if (!bad(r)) {
             await cachePut(text, sourceLang, targetLang, r);
+            SharedTranslations.share(ai.baseUrl, text, sourceLang, targetLang, r);
             return r;
           }
         } catch (_) {}

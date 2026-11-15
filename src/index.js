@@ -10,6 +10,7 @@ import { handleUsage, featureOf, aiMissGate } from "./usage.js";
 import { handleContent } from "./content.js";
 import { recordUsage, handleAdminReport } from "./metrics.js";
 import { beginAi } from "./load.js";
+import { handleTrShare } from "./trshare.js";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -156,6 +157,11 @@ export default {
     // 🗄️ ترجمه‌ی متنِ کوتاه با کشِ مشترکِ همه‌ی کاربرها (اپ اول همین را صدا می‌زند)
     if (url.pathname === "/api/translate-text" && request.method === "POST") {
       return handleTranslateText(request, env, ctx);
+    }
+
+    // 🗄️ کشِ مشترکِ ترجمه‌های اصلاح‌شده (↻ کاربرها) — بدونِ AI، فقط D1
+    if (url.pathname === "/api/tr-share" && request.method === "POST") {
+      return handleTrShare(request, env, ctx, CORS_HEADERS, { genCacheKey, genCacheGet, genCachePut });
     }
 
     if (url.pathname === "/api/generate" && request.method === "POST") {

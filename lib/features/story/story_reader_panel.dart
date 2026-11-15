@@ -18,6 +18,9 @@ import '../../core/providers/text_prefs_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/translate/shared_translations.dart';
+import '../../core/translate/translation_service.dart'
+    show TranslationService;
 import '../../core/widgets/selection_card.dart' show SelectableSyncText;
 import '../../core/widgets/sync_item_card.dart' show NeuralPathButton;
 import '../reader/widgets/neural_path_dialog.dart' show showNeuralPath;
@@ -42,6 +45,13 @@ class _P {
   final List<String> sents;
   final int firstGi;
   const _P(this.text, this.sents, this.firstGi);
+}
+
+class _ParaUpdate {
+  final String lang;
+  final int pi;
+  final String text;
+  const _ParaUpdate(this.lang, this.pi, this.text);
 }
 
 class _Job {
@@ -274,6 +284,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
       for (final p in _structure()) ...(_mode == 1 ? [p.text] : p.sents),
     ];
     final jobs = <_Job>[];
+    final svc = ref.read(translationServiceProvider);
+    var fromCache = false;
     for (final lang in langs) {
       for (final src in units) {
         final key = _k(lang, src);
@@ -282,16 +294,69 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
             _failed.contains(key)) {
           continue;
         }
+        // ترجمه‌ی درستِ ذخیره‌شده روی گوشی (مثلاً از ↻ در حالتِ جمله‌به‌جمله) → فوری، بدونِ فلیکر
+        final hit = svc.peekCached(src, widget.langCode, lang)?.trim() ?? '';
+        if (hit.isNotEmpty && hit != src.trim()) {
+          _tr[key] = hit;
+          fromCache = true;
+          continue;
+        }
         _inflight.add(key);
         jobs.add(_Job(lang, src, key));
       }
     }
+    if (fromCache) setState(() {});
     if (jobs.isNotEmpty) unawaited(_run(jobs));
   }
 
-  Future<void> _run(List<_Job> jobs) async {
+  /// کشِ مشترکِ همه‌ی کاربرها (ترجمه‌های اصلاح‌شده): یک درخواستِ گروهی برای هر زبان.
+  /// مواردِ پیداشده همین‌جا پُر و روی گوشی ذخیره می‌شوند؛ بقیه برای ترجمه‌ی عادی برمی‌گردند.
+  Future<List<_Job>> _applyShared(
+      TranslationService svc, String baseUrl, List<_Job> jobs) async {
+    final byLang = <String, List<_Job>>{};
+    for (final j in jobs) {
+      byLang.putIfAbsent(j.lang, () => []).add(j);
+    }
+    final left = <_Job>[];
+    for (final e in byLang.entries) {
+      final found = await SharedTranslations.fetchMany(
+          baseUrl, widget.langCode, e.key, [for (final j in e.value) j.src]);
+      if (!mounted) return const [];
+      final hits = <_Job, String>{};
+      for (final j in e.value) {
+        final r = found[j.src];
+        if (r != null && r.isNotEmpty) {
+          hits[j] = r;
+        } else {
+          left.add(j);
+        }
+      }
+      if (hits.isEmpty) continue;
+      for (final h in hits.entries) {
+        unawaited(svc.cachePut(h.key.src, widget.langCode, e.key, h.value));
+      }
+      setState(() {
+        for (final h in hits.entries) {
+          _inflight.remove(h.key.key);
+          _failed.remove(h.key.key);
+          _tr[h.key.key] = h.value;
+          _linkUnits(e.key, h.key.src, h.value, overwrite: false);
+        }
+      });
+    }
+    return left;
+  }
+
+  Future<void> _run(List<_Job> allJobs) async {
     final svc = ref.read(translationServiceProvider);
     final ai = ref.read(aiSettingsProvider);
+    var jobs = allJobs;
+    try {
+      jobs = await _applyShared(svc, ai.baseUrl, allJobs);
+    } catch (_) {
+      jobs = allJobs;
+    }
+    if (!mounted) return;
     var next = 0;
     Future<void> worker() async {
       while (mounted) {
@@ -315,12 +380,69 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
             _failed.add(j.key);
           } else {
             _tr[j.key] = r;
+            _linkUnits(j.lang, j.src, r, overwrite: false);
           }
         });
       }
     }
 
     await Future.wait([worker(), worker(), worker()]);
+  }
+
+  static const Set<String> _noSpaceLangs = {'zh', 'ja'};
+
+  /// اتصالِ ترجمه‌ی جمله‌ها و پاراگراف‌ها به هم (باید داخلِ setState صدا زده شود):
+  ///  • اگر [src] یک جمله است و همه‌ی جمله‌های آن پاراگراف ترجمه دارند → ترجمه‌ی پاراگراف
+  ///    از کنارِ هم گذاشتنِ ترجمه‌ی جمله‌ها ساخته می‌شود (و روی گوشی کش می‌شود)
+  ///  • اگر [src] یک پاراگراف است و تعدادِ جمله‌های ترجمه با مبدأ برابر است → ترجمه‌ی
+  ///    هر جمله از روی آن پر می‌شود (و کش می‌شود)
+  /// [overwrite] = true (↻ کاربر): جایگزینِ ترجمه‌ی قبلیِ حالتِ دیگر؛ false: فقط جای خالی را پر می‌کند.
+  /// خروجی: پاراگراف‌هایی که (فقط در حالتِ overwrite) تغییر کرده‌اند تا در داستان ذخیره شوند.
+  List<_ParaUpdate> _linkUnits(String lang, String src, String tr,
+      {required bool overwrite}) {
+    final updates = <_ParaUpdate>[];
+    final svc = ref.read(translationServiceProvider);
+    final paras = _structure();
+    for (var pi = 0; pi < paras.length; pi++) {
+      final p = paras[pi];
+      if (p.sents.length < 2) continue;
+
+      if (p.sents.contains(src)) {
+        // جمله → پاراگراف
+        final parts = <String>[];
+        var complete = true;
+        for (final s in p.sents) {
+          final t = _tr[_k(lang, s)]?.trim() ?? '';
+          if (t.isEmpty) {
+            complete = false;
+            break;
+          }
+          parts.add(t);
+        }
+        if (!complete) continue;
+        final pk = _k(lang, p.text);
+        if (!overwrite && _tr.containsKey(pk)) continue;
+        final joined = parts.join(_noSpaceLangs.contains(lang) ? '' : ' ');
+        _tr[pk] = joined;
+        _failed.remove(pk);
+        unawaited(svc.cachePut(p.text, widget.langCode, lang, joined));
+        if (overwrite) updates.add(_ParaUpdate(lang, pi, joined));
+      } else if (p.text == src) {
+        // پاراگراف → جمله‌ها (فقط اگر تعدادِ جمله‌ها برابر باشد)
+        final ts = widget.splitSentences(tr);
+        if (ts.length != p.sents.length) continue;
+        for (var k = 0; k < ts.length; k++) {
+          final sk = _k(lang, p.sents[k]);
+          final t = ts[k].trim();
+          if (t.isEmpty) continue;
+          if (!overwrite && _tr.containsKey(sk)) continue;
+          _tr[sk] = t;
+          _failed.remove(sk);
+          unawaited(svc.cachePut(p.sents[k], widget.langCode, lang, t));
+        }
+      }
+    }
+    return updates;
   }
 
   Future<void> _retry(String lang, String src, {int? paraIdx}) async {
@@ -337,13 +459,24 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
           .trim();
       if (!mounted) return;
       if (r.isNotEmpty && r != src.trim()) {
+        var linked = const <_ParaUpdate>[];
         setState(() {
           _tr[key] = r;
           _failed.remove(key);
+          // ↻ در یک حالت = اصلاحِ دستیِ کاربر → در حالتِ دیگر هم همین ترجمه جایگزین می‌شود
+          linked = _linkUnits(lang, src, r, overwrite: true);
         });
         if (paraIdx != null) {
           widget.onParagraphRetranslated?.call(lang, paraIdx, r);
         }
+        // پاراگرافِ ساخته‌شده از جمله‌ها هم در داستان ذخیره می‌شود
+        for (final u in linked) {
+          if (u.pi == paraIdx && u.lang == lang) continue;
+          widget.onParagraphRetranslated?.call(u.lang, u.pi, u.text);
+        }
+        // برای بقیه‌ی کاربرها هم ذخیره شود (فقط ترجمه‌ای که خودِ کاربر با ↻ اصلاح کرده)
+        SharedTranslations.share(
+            ref.read(aiSettingsProvider).baseUrl, src, widget.langCode, lang, r);
       } else if (!_tr.containsKey(key)) {
         setState(() => _failed.add(key));
       }
