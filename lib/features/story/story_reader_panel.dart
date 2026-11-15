@@ -473,6 +473,19 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     return dv.voiceFor(male: _spkMaleBySent[gi], lang: lang);
   }
 
+  // ثبتِ صوتِ آپلودیِ این داستان در پلیرِ اصلیِ پایین (معادلِ onUserAudioStateChange در Hope)
+  late final ProviderContainer _pc;
+
+  void _registerAudio() {
+    if (!mounted) return;
+    final a = widget.audio;
+    if (a == null) return;
+    if (!identical(_pc.read(storyUserAudioProvider), a)) {
+      _pc.read(storyPlaybackModeProvider.notifier).state = 'tts';
+      _pc.read(storyUserAudioProvider.notifier).state = a;
+    }
+  }
+
   @override
   void didUpdateWidget(covariant StoryReaderPanel old) {
     super.didUpdateWidget(old);
