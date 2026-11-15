@@ -130,6 +130,12 @@ class SentenceSplitter {
         .replaceAll(RegExp(r'[«»‹›„‟""]'), '')
         .replaceAll(RegExp(r'[*_~`]'), '')
         .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        // 🗣 برچسبِ گوینده‌ی مکالمه («A:» / «B:» / «ب:» / «الف:») فقط در نمایش می‌ماند و خوانده نمی‌شود
+        .replaceFirst(_speakerLabel, '')
         .trim();
   }
+
+  static final RegExp _speakerLabel = RegExp(
+      r'^[\s"“”«»‹›„‟\x27‘’]*(?:[AB]|ب|الف|آ)\s*[:：]\s*');
 }
