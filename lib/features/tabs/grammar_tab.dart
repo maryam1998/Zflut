@@ -445,11 +445,8 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
     final sel = ref.read(languageSelectionProvider);
     final label = englishLangName(sel.native);
     final langLabel = englishLangName(note.langCode);
-    final others = sel.targets
-        .where((c) => c != note.langCode && c != sel.native)
-        .map(englishLangName)
-        .join(', ');
-    final otherLangs = others.isEmpty ? 'None' : others;
+    // 🗄️ عمداً هیچ اطلاعاتِ شخصیِ کاربر (مثلاً «زبان‌های دیگرش») در پرامپت نیست
+    // تا کشِ سراسریِ سرور (D1) بینِ همه‌ی کاربرها یک جوابِ مشترک بدهد.
 
     // توکن‌ها: هر پیام کوتاه می‌شود، پاسخ‌های خراب (گارد/خالی) اصلاً نمی‌روند،
     // و فقط یادداشتِ اصلی + ۲ نوبتِ آخر فرستاده می‌شود.
@@ -474,7 +471,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
     ];
 
     return "You are a friendly $langLabel tutor in a language-learning app. "
-        "Learner's native language: $label. Practicing: $langLabel. Also studies: $otherLangs.\n\n"
+        "Learner's native language: $label. Practicing: $langLabel.\n\n"
         "Context:\n${history.join('\n')}\n\n"
         "Learner asks: \"${clip(question, 400)}\"\n\n"
         "Answer this follow-up directly in $label, without redoing the full breakdown. "

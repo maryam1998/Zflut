@@ -1,4 +1,5 @@
 import '../../core/usage/free_limit.dart';
+import '../../core/usage/pro_status.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -42,6 +43,146 @@ const String _kHistKey = 'zflut-speaking-history-v1';
 const String _kAutoReadKey = 'zflut-speaking-autoread-v1';
 // معرفیِ اولیه فقط یک‌بار در کلِ عمرِ برنامه؛ بعد از آن شروعِ گفتگو تصادفی است
 const String _kIntroKey = 'zflut-speaking-intro-v1';
+
+// ───────────── بانکِ سؤالِ شروعِ گفتگو (محلی، بدونِ AI، برای کاربرِ رایگان) ─────────────
+const Map<String, List<String>> _kLocalOpeners = {
+  'en': [
+    'Hey! How are you doing today?',
+    "Hi! What's up?",
+    "How's your day going so far?",
+    'What have you been up to lately?',
+    'Hey, what are you doing right now?',
+    'Hi there! Did anything fun happen today?',
+    'How was your day?',
+    'Hey! How have you been?',
+  ],
+  'fa': [
+    'سلام! خوبی؟ چه خبر؟',
+    'امروزت چطور گذشت؟',
+    'چیکار می‌کنی؟',
+    'کجا بودی این روزا؟',
+    'چه خبرا؟ همه‌چی خوبه؟',
+    'امروز کار خاصی کردی؟',
+    'هفته‌ات چطور بود؟',
+    'سلام! حالت چطوره؟',
+  ],
+  'es': [
+    '¡Hola! ¿Cómo estás?',
+    '¿Qué tal tu día?',
+    '¿Qué haces ahora?',
+    '¿Qué hay de nuevo?',
+    '¿Dónde andabas? ¡Cuánto tiempo!',
+    '¿Cómo ha ido tu semana?',
+    '¿Hiciste algo divertido hoy?',
+    '¿Cómo te fue hoy?',
+  ],
+  'de': [
+    "Hallo! Wie geht's dir?",
+    "Was gibt's Neues?",
+    'Was machst du gerade?',
+    'Wie war dein Tag?',
+    'Wo warst du in letzter Zeit?',
+    'Wie läuft deine Woche?',
+    'Hast du heute etwas Schönes gemacht?',
+    "Na, wie geht's?",
+  ],
+  'fr': [
+    'Salut ! Comment ça va ?',
+    'Quoi de neuf ?',
+    "Qu'est-ce que tu fais en ce moment ?",
+    'Comment s’est passée ta journée ?',
+    'Tu étais où ces derniers temps ?',
+    'Comment se passe ta semaine ?',
+    'Tu as fait quelque chose d’amusant aujourd’hui ?',
+    'Ça va ? Raconte-moi un peu !',
+  ],
+  'it': [
+    'Ciao! Come stai?',
+    'Che novità?',
+    'Cosa stai facendo adesso?',
+    'Com’è andata la giornata?',
+    'Dove sei stato in questi giorni?',
+    'Com’è la tua settimana?',
+    'Hai fatto qualcosa di bello oggi?',
+    'Ehi, come va?',
+  ],
+  'ar': [
+    'مرحبًا! كيف حالك؟',
+    'ما الأخبار؟',
+    'ماذا تفعل الآن؟',
+    'كيف كان يومك؟',
+    'أين كنت هذه الأيام؟',
+    'كيف أسبوعك حتى الآن؟',
+    'هل فعلت شيئًا ممتعًا اليوم؟',
+    'أهلًا! كيف الحال؟',
+  ],
+  'tr': [
+    'Merhaba! Nasılsın?',
+    'Naber?',
+    'Şu an ne yapıyorsun?',
+    'Günün nasıl geçti?',
+    'Bu aralar neler yapıyorsun?',
+    'Haftan nasıl gidiyor?',
+    'Bugün eğlenceli bir şey yaptın mı?',
+    'Selam! Her şey yolunda mı?',
+  ],
+  'ru': [
+    'Привет! Как дела?',
+    'Что нового?',
+    'Что делаешь сейчас?',
+    'Как прошёл твой день?',
+    'Где ты пропадал в последнее время?',
+    'Как проходит твоя неделя?',
+    'Сегодня было что-нибудь интересное?',
+    'Привет! Как настроение?',
+  ],
+  'hi': [
+    'नमस्ते! आप कैसे हैं?',
+    'क्या चल रहा है?',
+    'अभी आप क्या कर रहे हैं?',
+    'आपका दिन कैसा रहा?',
+    'आजकल कहाँ व्यस्त थे?',
+    'आपका हफ़्ता कैसा चल रहा है?',
+    'आज कुछ मज़ेदार हुआ क्या?',
+    'हेलो! सब ठीक है?',
+  ],
+  'zh': [
+    '你好！你今天怎么样？',
+    '最近有什么新鲜事吗？',
+    '你现在在做什么？',
+    '今天过得怎么样？',
+    '最近都在忙什么呢？',
+    '这周过得还好吗？',
+    '今天有什么有趣的事吗？',
+    '嗨！最近好吗？',
+  ],
+  'ja': [
+    'こんにちは！今日はどうですか？',
+    '最近どう？',
+    '今、何をしていますか？',
+    '今日はどんな一日でしたか？',
+    '最近、何をしていましたか？',
+    '今週はどうですか？',
+    '今日、何か楽しいことはありましたか？',
+    '元気ですか？',
+  ],
+  'ko': [
+    '안녕하세요! 오늘 어때요?',
+    '요즘 어떻게 지내요?',
+    '지금 뭐 하고 있어요?',
+    '오늘 하루 어땠어요?',
+    '요즘 뭐 하고 지냈어요?',
+    '이번 주는 어때요?',
+    '오늘 재미있는 일 있었어요?',
+    '안녕하세요! 잘 지냈어요?',
+  ],
+};
+
+String _localOpener(String langCode) {
+  final list = _kLocalOpeners[langCode.split('-').first.toLowerCase()] ??
+      _kLocalOpeners['en']!;
+  return list[math.Random().nextInt(list.length)];
+}
 const Color _kMistake = Color(0xFFC81E1E);
 const Color _kCorrection = Color(0xFF166534);
 
@@ -882,7 +1023,15 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   bool _openerBusy = false;
 
   /// یک سؤالِ کوتاهِ معمولیِ آدم‌ها برای شروعِ گفتگو (احوال‌پرسی و...).
+  /// کاربرِ رایگان: بانکِ محلی (بدونِ AI و بدونِ مصرفِ سهمیه). Pro: AI، و اگر
+  /// خطا داد همان بانکِ محلی.
   Future<String?> _smallTalkOpener() async {
+    if (!ProStatus.isPro) return _localOpener(_activeLang());
+    final ai = await _aiSmallTalkOpener();
+    return ai ?? _localOpener(_activeLang());
+  }
+
+  Future<String?> _aiSmallTalkOpener() async {
     final langLabel = _enName(_activeLang());
     final native = _enName(ref.read(languageSelectionProvider).native);
     const topics = <String>[
