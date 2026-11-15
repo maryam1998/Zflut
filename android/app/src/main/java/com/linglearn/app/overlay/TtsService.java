@@ -35,6 +35,8 @@ public class TtsService extends Service {
     static final int MSG_RELEASE_LANG = 6;
     // پیام‌های سرویس → کلاینت
     static final int REPLY_DONE = 100;
+    /** 🔊 «صدا واقعاً شروع شد / تمام شد» (on=true/false) — فقط برای لبِ آواتار */
+    static final int REPLY_PLAY = 101;
 
     private static final int MAX_ENGINES = 3;   // VITS(فارسی) + Supertonic(چند زبان) + Kokoro(en/zh)
 
@@ -268,9 +270,11 @@ public class TtsService extends Service {
                     });
                 } catch (Throwable ignored) {}
             }
+            engine.playStartCb = () -> { if (mySeq == speakSeq.get()) replyPlay(reqLang, id, true); };
             engine.speakAsync(s.text, speed, sidFor(s.lang, reqLang, voice), s.lang, ok -> {
                 if (!ok) { replyFail(reqLang, id, segs, i, null); return; }
                 if (i + 1 >= segs.size()) { replyDone(reqLang, id, true, null); return; }
+                replyPlay(reqLang, id, false); // مکثِ بینِ تکه‌ها (مثلاً فارسی↔انگلیسی): لب بسته
                 // لودِ موتورِ تکه‌ی بعد ممکنه کند باشه → روی thread ی loader (نه thread ی پلیر)
                 try {
                     speaker.execute(() -> speakSegment(segs, i + 1, reqLang, speed, id, mySeq, plain, voice));
@@ -400,6 +404,20 @@ public class TtsService extends Service {
 
     private void replyDone(String lang, String id, boolean ok, String err) {
         replyDone(lang, id, ok, err, null);
+    }
+
+    private void replyPlay(String lang, String id, boolean on) {
+        Messenger c = client;
+        if (c == null || id == null || id.isEmpty()) return;
+        try {
+            Message r = Message.obtain(null, REPLY_PLAY);
+            Bundle b = new Bundle();
+            b.putString("lang", lang);
+            b.putString("id", id);
+            b.putBoolean("on", on);
+            r.setData(b);
+            c.send(r);
+        } catch (Throwable ignored) {}
     }
 
     private void replyDone(String lang, String id, boolean ok, String err, String rest) {

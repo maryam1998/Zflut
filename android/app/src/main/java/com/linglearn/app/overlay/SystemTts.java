@@ -17,6 +17,11 @@ final class SystemTts {
 
     interface Done { void onDone(boolean ok); }
 
+    /** 🔊 صدا «واقعاً» شروع به پخش شد (onStart موتورِ گوشی) — برای حرکتِ لبِ آواتار. */
+    interface Play { void onPlay(String id); }
+
+    volatile Play playCb;
+
     private static final String TAG = "SystemTts";
 
     private final Context app;
@@ -51,7 +56,10 @@ final class SystemTts {
                     }
                 });
                 tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-                    @Override public void onStart(String id) {}
+                    @Override public void onStart(String id) {
+                        Play p = playCb;
+                        if (p != null && id != null) { try { p.onPlay(id); } catch (Throwable ignored) {} }
+                    }
                     @Override public void onDone(String id) { finish(id, true); }
                     @Override public void onError(String id) { finish(id, false); }
                     @Override public void onError(String id, int code) { finish(id, false); }

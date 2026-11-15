@@ -876,10 +876,19 @@ class SpeechController extends StateNotifier<SpeechState> {
       });
 
       _nativeRest = null;
+      // 🔊 لب فقط وقتی صدا «واقعاً» پخش می‌شود: نیتیو (Piper / TTS گوشی) با رویداد ttsPlaying
+      // خبر می‌دهد. قبلاً بعد از فرستادنِ دستورِ speak فوراً true می‌شد و لب وسطِ ساختنِ صدا
+      // (و آماده‌شدنِ جمله‌ی بعد) هم تکان می‌خورد. handler باید قبل از speak ثبت شود تا
+      // رویدادِ شروعِ جمله‌های کش‌شده (که فوری می‌رسد) از دست نرود.
+      _sounding = false;
+      NativeTtsBridge.onPlaying((pid, on) {
+        if (!identical(_nativeWaiter, waiter) || waiter.isCompleted) return;
+        if (pid != null && pid != id) return; // مالِ خوانشِ قبلی
+        _sounding = on;
+      });
       final started = await speakFn(id);
       if (myGen != _generation) return false;
       if (!started) return false;
-      _sounding = true;
       if (onStarted != null) {
         try {
           onStarted();

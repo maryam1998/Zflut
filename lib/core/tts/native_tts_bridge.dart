@@ -45,6 +45,23 @@ class NativeTtsBridge {
     }, onError: (Object e) => debugPrint('ttsSpeakDone stream error: $e'));
   }
 
+  // 🔊 «صدا واقعاً شروع شد / مکث شد» (رویداد ttsPlaying با { id, on }) — برای لبِ آواتارِ ویدیوکال
+  static void Function(String? id, bool on)? _playingHandler;
+  static StreamSubscription<Map<String, dynamic>>? _playingSub;
+
+  /// فقط وقتی صدا واقعاً از بلندگو پخش می‌شود on=true می‌آید (نه وقتی دستورِ speak فرستاده شده
+  /// و مدل هنوز دارد صدا را می‌سازد). مکثِ بینِ تکه‌های یک خوانش on=false می‌فرستد.
+  static void onPlaying(void Function(String? id, bool on)? handler) {
+    if (!isAvailable) return;
+    _playingHandler = handler;
+    _playingSub ??= _b.on('ttsPlaying').listen((d) {
+      final h = _playingHandler;
+      if (h == null) return;
+      final rawId = d['id']?.toString();
+      h((rawId == null || rawId.isEmpty) ? null : rawId, d['on'] == true);
+    }, onError: (Object e) => debugPrint('ttsPlaying stream error: $e'));
+  }
+
   /// آیا بسته‌ی آفلاینِ (Piper) این زبان نصب شده؟
   static final Map<String, DateTime> _readyAt = {};
   static final Map<String, DateTime> _notReadyAt = {};

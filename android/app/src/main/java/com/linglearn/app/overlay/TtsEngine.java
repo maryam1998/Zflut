@@ -78,6 +78,15 @@ final class TtsEngine {
     /** نتیجه‌ی پخش: ok=false یعنی شکستِ واقعی (برای fallback)؛ لغو شدن ok=true حساب می‌شه. */
     interface DoneCallback { void onDone(boolean ok); }
 
+    /** 🔊 یک‌بار مصرف: درست لحظه‌ای که پخشِ واقعیِ صدا (track.play) شروع می‌شود صدا زده می‌شود.
+     *  TtsService درست قبل از speakAsync ست می‌کند؛ speakAsync همان لحظه برش می‌دارد و null می‌کند. */
+    volatile Runnable playStartCb = null;
+
+    private static void firePlayStart(Runnable r) {
+        if (r == null) return;
+        try { r.run(); } catch (Throwable ignored) {}
+    }
+
     private interface Sink { boolean accept(float[] samples); } // false → توقفِ تولید
 
     // true → به‌جای generateWithCallback از generate() ی ساده استفاده می‌شه (اگه مسیرِ callback کرش می‌کرد)
@@ -1275,6 +1284,8 @@ final class TtsEngine {
     }
 
     void speakAsync(String text, float speed, final int reqSid, final String reqLang, final DoneCallback cb) {
+        final Runnable psCb = playStartCb;
+        playStartCb = null;
         if (text == null || text.trim().isEmpty()) {
             if (cb != null) cb.onDone(true);
             return;
@@ -1308,7 +1319,7 @@ final class TtsEngine {
 
         final float rateF = Math.max(0.25f, Math.min(2.0f, sp));
         // پلیر اول شروع می‌شه: ساختنِ AudioTrack هم‌زمان با تولیدِ صدا انجام می‌شه
-        Thread player = new Thread(() -> runPlayer(q, myEpoch, rateF, genFailed, gotAudio, once), "tts-play");
+        Thread player = new Thread(() -> runPlayer(q, myEpoch, rateF, genFailed, gotAudio, once, psCb), "tts-play");
         player.setDaemon(true);
         player.start();
 
@@ -1492,7 +1503,7 @@ final class TtsEngine {
     }
 
     private void runPlayer(LinkedBlockingQueue<short[]> q, int myEpoch, final float rateNow,
-                           AtomicBoolean genFailed, AtomicBoolean gotAudio, DoneCallback once) {
+                           AtomicBoolean genFailed, AtomicBoolean gotAudio, DoneCallback once, final Runnable psCb) {
         try { Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO); } catch (Throwable ignored) {}
         AudioTrack track = null;
         boolean ok = true;
@@ -1526,7 +1537,7 @@ final class TtsEngine {
                     if (n < 0) { ok = false; break loop; }
                     if (n == 0) {
                         // بافر پر است: اگر هنوز play نشده، همین حالا شروع کن تا خالی شود
-                        if (!started) { applyRate(track, rateNow); track.play(); started = true; }
+                        if (!started) { applyRate(track, rateNow); track.play(); started = true; firePlayStart(psCb); }
                         else Thread.sleep(5);
                         continue;
                     }
@@ -1536,6 +1547,7 @@ final class TtsEngine {
                         applyRate(track, rateNow);
                         track.play();
                         started = true;
+                        firePlayStart(psCb);
                     }
                 }
             }
@@ -1543,6 +1555,7 @@ final class TtsEngine {
                 applyRate(track, rateNow);
                 track.play();
                 started = true;
+                firePlayStart(psCb);
             }
             // رفعِ باگِ «لغات و جمله‌های کوتاه خونده نمی‌شن»:
             // توی AudioTrack حالتِ MODE_STREAM، پخش تا وقتی بافر کاملاً پر نشده شروع نمی‌شه

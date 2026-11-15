@@ -37,6 +37,13 @@ final class TtsClient {
 
     interface Listener { void onDone(String lang, String text, String id, boolean ok); }
 
+    /** 🔊 «الان واقعاً صدا پخش می‌شود؟» (on=true شروعِ پخش، on=false مکثِ بینِ تکه‌ها) — برای لبِ آواتار. */
+    interface PlayListener { void onPlay(String lang, String id, boolean on); }
+
+    private static volatile PlayListener playListener;
+
+    static void setPlayListener(PlayListener l) { playListener = l; }
+
     private static final Object LOCK = new Object();
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final ArrayList<Message> OUTBOX = new ArrayList<>();
@@ -360,6 +367,16 @@ final class TtsClient {
     // ================= پاسخ‌ها =================
 
     private static boolean handleReply(Message m) {
+        if (m.what == TtsService.REPLY_PLAY) {
+            Bundle pb = m.getData();
+            PlayListener pl = playListener;
+            if (pb != null && pl != null) {
+                try {
+                    pl.onPlay(pb.getString("lang", ""), pb.getString("id", ""), pb.getBoolean("on", false));
+                } catch (Throwable t) { Log.w(TAG, "play listener failed", t); }
+            }
+            return true;
+        }
         if (m.what != TtsService.REPLY_DONE) return false;
         Bundle b = m.getData();
         if (b == null) return true;

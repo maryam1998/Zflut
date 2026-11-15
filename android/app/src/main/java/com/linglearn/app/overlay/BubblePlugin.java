@@ -37,6 +37,15 @@ public class BubblePlugin extends Plugin {
         } catch (Throwable ignored) {}
     }
 
+    /** 🔊 «صدا واقعاً شروع شد / مکث شد» → رویداد ttsPlaying با { id, on } (برای لبِ آواتارِ ویدیوکال). */
+    private void emitSpeakPlaying(String id, boolean on) {
+        if (id == null || id.isEmpty()) return;
+        JSObject ret = new JSObject();
+        ret.put("id", id);
+        ret.put("on", on);
+        notifyListeners("ttsPlaying", ret);
+    }
+
     private void emitSpeakDone(String lang, String text, String id, boolean ok) {
         JSObject ret = new JSObject();
         ret.put("lang", lang);
@@ -157,6 +166,7 @@ public class BubblePlugin extends Plugin {
         try {
             TtsClient.init(getContext(), (lang, text, id, ok) ->
                     emitSpeakDone(lang, text, id.isEmpty() ? null : id, ok));
+            TtsClient.setPlayListener((lang, id, on) -> emitSpeakPlaying(id, on));
         } catch (Throwable ignored) {}
         try {
             if (getActivity() != null) dispatchAuthIntent(getActivity().getIntent());
@@ -1227,7 +1237,14 @@ public class BubblePlugin extends Plugin {
         SystemTts s = systemTts;
         if (s == null) {
             synchronized (BubblePlugin.class) {
-                if (systemTts == null) systemTts = new SystemTts(ctx.getApplicationContext());
+                if (systemTts == null) {
+                    SystemTts ns = new SystemTts(ctx.getApplicationContext());
+                    ns.playCb = id -> {
+                        BubblePlugin p = inst;
+                        if (p != null) p.emitSpeakPlaying(id, true);
+                    };
+                    systemTts = ns;
+                }
                 s = systemTts;
             }
         }
