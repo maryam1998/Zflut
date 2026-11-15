@@ -94,7 +94,7 @@ const List<_Opt> _kContentTypes = [
   _Opt('scientific', 'علمی',
       'a narrative popular-science explainer. A character meets a scientific concept through an everyday event. Explain the science accurately but simply, using analogies, without sounding like a textbook'),
   _Opt('conversational', 'مکالمه‌ای',
-      'a story told almost entirely through natural dialogue between two characters. No long descriptive paragraphs; reveal the plot and the personalities only through conversation'),
+      'a story told almost entirely through natural dialogue between two characters. No long descriptive paragraphs; reveal the plot and the personalities only through conversation. Format: every paragraph is exactly one turn spoken by one character, and the two characters strictly alternate (first character, second character, first character, ...); no speaker labels, no narration or "he said" tags between turns'),
   _Opt('philosophical', 'فلسفی',
       'a thought-provoking philosophical reflection. Put a character in a situation that awakens a deep question about life, time, or reality, and end with an open question rather than a final answer'),
   _Opt('metaphysical', 'متافیزیکی',
@@ -1031,6 +1031,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           targetLangs: langs,
           paraTranslations: trans,
           highlightWords: s.words,
+          dialogue: s.contentType == 'conversational', // 🎭 دو صدا (مرد/زن)
           splitSentences: _splitSentences,
           onReorderLangs: _moveTransLang,
           audio: ctrl,
@@ -3174,6 +3175,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       targetLangs: langs,
       paraTranslations: s.translations,
       highlightWords: s.words,
+      dialogue: s.contentType == 'conversational', // 🎭 دو صدا (مرد/زن)
       splitSentences: _splitSentences,
       onReorderLangs: _moveTransLang,
       audio: ctrl,

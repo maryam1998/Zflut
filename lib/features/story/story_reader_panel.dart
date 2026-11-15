@@ -13,6 +13,8 @@ import '../../core/player_sync/player_track.dart' show SyncItem, TrackMode;
 import '../../core/player_sync/sync_widgets.dart'
     show SyncAnchor, SyncPlayScope, SyncSpeakButton, syncReportTranslation;
 import '../../core/providers/ai_settings_provider.dart';
+import '../../core/providers/language_selection_provider.dart';
+import '../../core/tts/dialogue_voices.dart';
 import '../../core/providers/reader_providers.dart' show savedWordsProvider;
 import '../../core/providers/story_user_audio_provider.dart';
 import '../../core/providers/text_prefs_provider.dart';
@@ -116,6 +118,10 @@ class StoryReaderPanel extends ConsumerStatefulWidget {
   /// لغت‌هایی که هنگامِ ساختِ داستان انتخاب شده‌اند؛ داخلِ متن بولد می‌شوند (توسطِ خودِ اپ)
   final List<String> highlightWords;
 
+  /// 🎭 داستانِ مکالمه‌ای: گوینده‌ی اول = صدای مرد، گوینده‌ی دوم = صدای زن
+  /// (هم برای متنِ اصلی و هم برای ترجمه‌ها، مثلِ تبِ «مکالمه»)
+  final bool dialogue;
+
   const StoryReaderPanel({
     super.key,
     required this.storyId,
@@ -136,6 +142,7 @@ class StoryReaderPanel extends ConsumerStatefulWidget {
     this.onParagraphRetranslated,
     this.onReorderLangs,
     this.highlightWords = const [],
+    this.dialogue = false,
   });
 
   @override
@@ -353,6 +360,87 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     _seed();
     _sig = _signature();
     WidgetsBinding.instance.addPostFrameCallback((_) => _ensure());
+    _dvEnsure();
+  }
+
+  // ───────────── 🎭 دو صدا برای داستانِ مکالمه‌ای ─────────────
+  DialogueVoices? _dv;
+
+  void _dvEnsure() {
+    if (!widget.dialogue || _dv != null) return;
+    _dv = DialogueVoices(
+      ref: ref,
+      mainLang: () => widget.langCode,
+      isMounted: () => mounted,
+    )..start();
+  }
+
+  String _spkSig = '';
+  List<bool> _spkMale = const []; // اندیسِ پاراگراف ← true = مرد (گوینده‌ی اول)
+  List<int> _spkGiPara = const []; // اندیسِ جمله ← اندیسِ پاراگراف
+
+  static final RegExp _spkLabel = RegExp(
+      r"^\s*(?:\*\*)?(\p{L}[\p{L}\p{N}'’\-]*(?:\s\p{L}[\p{L}\p{N}'’\-]*){0,2})(?:\*\*)?\s*[:：]\s*\S",
+      unicode: true);
+
+  /// گوینده‌ی هر پاراگراف: اگر متن «نام: جمله» برچسب دارد (۲ تا ۳ نامِ متفاوت) بر اساسِ نام،
+  /// وگرنه هر پاراگراف یک نوبتِ گفتگو است و گوینده‌ها به‌نوبت عوض می‌شوند (۱ مرد، ۲ زن، ۳ مرد، …).
+  void _spkEnsure() {
+    final sig = '${widget.text.hashCode}';
+    if (sig == _spkSig) return;
+    final paras = _structure();
+    final names = <String>[];
+    final labelOf = <String?>[];
+    var labeled = 0;
+    for (final p in paras) {
+      final m = _spkLabel.firstMatch(p.text);
+      final n = m?.group(1)?.toLowerCase();
+      labelOf.add(n);
+      if (n != null) {
+        labeled++;
+        if (!names.contains(n)) names.add(n);
+      }
+    }
+    final useLabels = paras.length >= 2 &&
+        labeled >= 2 &&
+        labeled * 10 >= paras.length * 6 &&
+        names.length >= 2 &&
+        names.length <= 3;
+    final male = <bool>[];
+    var prev = true;
+    for (var i = 0; i < paras.length; i++) {
+      if (useLabels) {
+        final n = labelOf[i];
+        if (n != null) prev = names.indexOf(n).isEven;
+        male.add(prev);
+      } else {
+        male.add(i.isEven);
+      }
+    }
+    final giPara = <int>[
+      for (var i = 0; i < paras.length; i++)
+        for (var k = 0; k < paras[i].sents.length; k++) i,
+    ];
+    _spkSig = sig;
+    _spkMale = male;
+    _spkGiPara = giPara;
+  }
+
+  /// شناسه‌ی آیتم ('<id>-s<gi>' یا '<id>-p<pi>') ← صدای مرد/زن برای همان زبان
+  String? _dialogueVoice(String itemId, String lang) {
+    if (!widget.dialogue) return null;
+    _dvEnsure();
+    final dv = _dv;
+    if (dv == null) return null;
+    final m = RegExp(r'-([sp])(\d+)$').firstMatch(itemId);
+    if (m == null) return null;
+    _spkEnsure();
+    final n = int.tryParse(m.group(2)!) ?? -1;
+    final pi = m.group(1) == 'p'
+        ? n
+        : (n >= 0 && n < _spkGiPara.length ? _spkGiPara[n] : -1);
+    if (pi < 0 || pi >= _spkMale.length) return null;
+    return dv.voiceFor(male: _spkMale[pi], lang: lang);
   }
 
   // ثبتِ صوتِ آپلودیِ این داستان در پلیرِ اصلیِ پایین (معادلِ onUserAudioStateChange در Hope)
@@ -387,6 +475,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
 
   @override
   void dispose() {
+    _dv?.dispose();
+    _dv = null;
     final a = widget.audio;
     final pc = _pc;
     Future.microtask(() {
@@ -786,6 +876,11 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     final audio = widget.audio;
     // ref.watch فقط همین‌جا (داخلِ build) — نه داخلِ builderِ فرزند
     final tp = ref.watch(textPrefsProvider);
+    // 🎭 هدرِ زبان عوض شد → صدای مرد/زنِ زبان‌های تازه دوباره پیدا شود
+    if (widget.dialogue) {
+      ref.listen(languageSelectionProvider,
+          (_, __) => unawaited(_dv?.load() ?? Future<void>.value()));
+    }
     // لمسِ طولانیِ دکمه‌ی پخش (صدای اپلودی): به پاراگرافِ در حال خواندن برو
     ref.listen<int>(revealActiveTickProvider, (prev, next) {
       if (prev != next) _revealAudioLine();
@@ -849,6 +944,10 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
       },
       mode: TrackMode.lines,
       mainCode: widget.langCode,
+      voiceForItem: widget.dialogue
+          ? (id) => _dialogueVoice(id, widget.langCode)
+          : null,
+      voiceForTrans: widget.dialogue ? _dialogueVoice : null,
       itemsBuilder: () => _editing ? const <SyncItem>[] : _syncItems(),
       child: Directionality(
       textDirection: TextDirection.rtl,
