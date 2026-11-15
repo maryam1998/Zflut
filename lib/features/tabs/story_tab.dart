@@ -77,30 +77,28 @@ class _Opt {
 }
 
 const List<_Opt> _kContentTypes = [
-  _Opt('general', 'عمومی', 'a general, everyday short story'),
-  _Opt('news', 'خبری', 'a short news-style report, written like a news article'),
+  _Opt('general', 'عمومی',
+      'a relatable, slice-of-life short story. Focus on one simple everyday situation with a clear beginning, middle, and end. Keep the tone casual and realistic'),
+  _Opt('news', 'خبری',
+      'a professional news report about an entirely fictional event (invented people and places, no real names). Use an inverted pyramid structure and include one realistic quote from a witness. Keep the tone objective and journalistic'),
   _Opt('psychology', 'روان‌شناسی',
-      'a short piece exploring a psychology or self-understanding theme'),
-  _Opt('children', 'کودکانه', "a simple, gentle children's story"),
+      'a character-driven story exploring a psychological theme (such as fear or self-understanding). Focus on the character\'s inner monologue and emotional arc, and show the mental struggle through their actions'),
+  _Opt('children', 'کودکانه',
+      "a gentle, innocent children's story, usually with an animal or toy as the main character. The conflict must be mild and resolved happily. Use simple sentences and a warm tone"),
   _Opt('funny', 'خنده‌دار',
-      'a genuinely hilarious comedy story that makes the reader laugh out loud. '
-      'Build it on an absurd but relatable situation, a character with a ridiculous '
-      'obsession or flaw, escalating mishaps, snappy deadpan dialogue, one running '
-      'gag that comes back at the end, and a surprising punchline twist. '
-      'Show the humor through events and dialogue, never say that something is funny, '
-      'no moral lesson, no cliches; keep the jokes understandable at the given level'),
+      'a genuinely hilarious, absurd comedy that makes the reader laugh out loud. Start with a normal situation that escalates into a chaotic domino effect. Give the main character a ridiculous obsession or flaw, use snappy deadpan dialogue and one running gag that returns at the end, and finish with a surprising punchline twist. Show the humor through events and dialogue, never say that something is funny, no moral lesson, no cliches; keep the jokes understandable at the given level'),
   _Opt('mystery', 'رازآلود و ترسناک',
-      'a suspenseful, mysterious, slightly scary story with an eerie atmosphere'),
+      'a suspenseful, eerie story. Start with a normal setting that slowly turns unsettling, use sensory details (shadows, strange sounds), build tension, and end with an unresolved mystery or an unsettling revelation. Never show the monster or blood directly; let the reader\'s imagination work'),
   _Opt('crime', 'جنایی',
-      'a crime/detective story involving an investigation or mystery to solve'),
+      'a suspenseful crime or mystery story. Focus on the investigation, the discovery of clues, and the solving of the case. Plant one fair clue early that pays off at the end, and give it a logical, satisfying ending. Avoid the cliche of a lineup of suspects'),
   _Opt('scientific', 'علمی',
-      'a short popular-science explainer written as a narrative'),
+      'a narrative popular-science explainer. A character meets a scientific concept through an everyday event. Explain the science accurately but simply, using analogies, without sounding like a textbook'),
   _Opt('conversational', 'مکالمه‌ای',
-      'a natural back-and-forth dialogue between two people'),
+      'a story told almost entirely through natural dialogue between two characters. No long descriptive paragraphs; reveal the plot and the personalities only through conversation'),
   _Opt('philosophical', 'فلسفی',
-      'a short philosophical reflection or thought experiment'),
+      'a thought-provoking philosophical reflection. Put a character in a situation that awakens a deep question about life, time, or reality, and end with an open question rather than a final answer'),
   _Opt('metaphysical', 'متافیزیکی',
-      'a short metaphysical/speculative piece about existence, mind, or reality'),
+      'a surreal, speculative story that bends the rules of reality (for example parallel universes or time loops). Keep the reality-defying elements mysterious and unexplained to create a sense of wonder'),
 ];
 
 class _Len {
@@ -113,13 +111,24 @@ class _Len {
 }
 
 const List<_Len> _kLengths = [
-  _Len('short', 'کوتاه', '1-2', 'short, roughly 4-6 sentences per paragraph',
-      800),
-  _Len('medium', 'متوسط', '2-3', 'medium length, roughly 5-8 sentences per paragraph',
-      1400),
-  _Len('long', 'بلند', '4-6', 'long, roughly 6-10 sentences per paragraph',
-      2400),
+  _Len('short', 'کوتاه', '1-2',
+      'about 150 words in total, roughly 4-6 sentences per paragraph', 700),
+  _Len('medium', 'متوسط', '2-3',
+      'about 300 words in total, roughly 5-8 sentences per paragraph', 1100),
+  _Len('long', 'بلند', '4-6',
+      'about 550 words in total, roughly 6-10 sentences per paragraph', 1800),
 ];
+
+/// راهنمای کوتاهِ هر سطحِ CEFR (برای کنترلِ دقیقِ سطح با کمترین توکن)
+const Map<String, String> _kLevelHints = {
+  'A1': 'very short simple sentences of at most 8 words, mostly present tense, only the most common everyday words',
+  'A2': 'short simple sentences of at most 12 words, simple past/present/future, everyday vocabulary',
+  'B1': 'clear sentences of up to about 18 words, common tenses, simple linking words, mostly everyday vocabulary',
+  'B2': 'varied sentence structures, natural phrasing, a wider vocabulary and some complex clauses',
+  'C1': 'sophisticated vocabulary, complex sentences, nuance and idiom, as for an educated reader',
+  'C2': 'near-native fluency: rich, precise vocabulary, subtle style, idioms and any sentence structure',
+};
+
 
 String _enName(String code) {
   for (final l in kSupportedLanguages) {
@@ -600,13 +609,16 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     final ct = _kContentTypes.firstWhere((c) => c.key == _contentType);
     final ln = _kLengths.firstWhere((l) => l.key == _length);
     final langLabel = _enName(lang);
-    final prompt = 'Write ${ct.prompt} in $langLabel at CEFR level $_level.\n'
+    final lvHint = _kLevelHints[_level] ?? '';
+    final prompt = 'Write ${ct.prompt} in $langLabel at CEFR level $_level'
+        '${lvHint.isEmpty ? '' : ' ($lvHint)'}.\n'
         'Length: ${ln.paragraphs} paragraphs, ${ln.hint}.\n'
-        'You MUST naturally use ALL of these words/phrases (in the exact form given): '
+        'Use ALL of these words/phrases at least once, in the given form where '
+        'possible (change only tense or plural if the sentence needs it): '
         '${_words.join(', ')}.\n'
-        'Output format: the first line must be "TITLE: <a short title in $langLabel>", '
-        'then the story text. Plain text only — paragraphs separated by a blank line, '
-        'no markdown, no translations, no notes, no word lists.';
+        'Start directly with the text — no title. Plain text only: paragraphs '
+        'separated by a blank line, no markdown, no translations, no notes, no word '
+        'lists. Do not add a moral, summary, or explanation after the ending.';
     try {
       final raw = await ref.read(translationServiceProvider).callAI(
             prompt: prompt,
@@ -638,8 +650,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           .replaceAll(RegExp(r'^#+\s*', multiLine: true), '')
           .trim();
       if (title.isEmpty) {
+        // عنوان را AI نمی‌سازد (صرفه‌جویی در توکن): چند کلمه‌ی اولِ متن، بدونِ علامت‌های دورش
         final first = text.split(RegExp(r'\s+')).take(6).join(' ');
-        title = first;
+        title = first
+            .replaceAll(RegExp(r'^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$', unicode: true), '')
+            .trim();
+        if (title.isEmpty) title = first;
       }
       final story = SavedStory(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -1014,6 +1030,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           langCode: s.langCode,
           targetLangs: langs,
           paraTranslations: trans,
+          highlightWords: s.words,
           splitSentences: _splitSentences,
           onReorderLangs: _moveTransLang,
           audio: ctrl,
@@ -3156,6 +3173,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       langCode: s.langCode,
       targetLangs: langs,
       paraTranslations: s.translations,
+      highlightWords: s.words,
       splitSentences: _splitSentences,
       onReorderLangs: _moveTransLang,
       audio: ctrl,

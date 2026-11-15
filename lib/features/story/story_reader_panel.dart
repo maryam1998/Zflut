@@ -27,6 +27,7 @@ import '../reader/widgets/neural_path_dialog.dart' show showNeuralPath;
 import '../tabs/_hope_panel.dart'
     show HopeChoiceChip, autoDir, uiContentDirection;
 import 'story_i18n.dart';
+import 'word_highlight.dart';
 
 // ═══════════════════════════════════════════════════════════════════
 // پنل خواندنِ داستان — هم‌شکل StoryReaderPanel.jsx در Hope
@@ -108,6 +109,9 @@ class StoryReaderPanel extends ConsumerStatefulWidget {
   /// کشیدنِ برچسبِ زبانِ یک ترجمه روی ترجمه‌ی دیگر → جابه‌جایی (from به جای to)
   final void Function(String from, String to)? onReorderLangs;
 
+  /// لغت‌هایی که هنگامِ ساختِ داستان انتخاب شده‌اند؛ داخلِ متن بولد می‌شوند (توسطِ خودِ اپ)
+  final List<String> highlightWords;
+
   const StoryReaderPanel({
     super.key,
     required this.storyId,
@@ -127,6 +131,7 @@ class StoryReaderPanel extends ConsumerStatefulWidget {
     this.notes = '',
     this.onParagraphRetranslated,
     this.onReorderLangs,
+    this.highlightWords = const [],
   });
 
   @override
@@ -1054,6 +1059,12 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                     id: id,
                     text: _tidy(src),
                     sentence: _tidy(src),
+                    runs: highlightRuns(
+                      _tidy(src),
+                      widget.highlightWords,
+                      widget.langCode,
+                      const TextStyle(fontWeight: FontWeight.w900),
+                    ),
                     style: TextStyle(
                       color: c.ink,
                       fontSize: 15 * tp.scaleFactor,

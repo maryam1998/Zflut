@@ -36,6 +36,11 @@ class SharedTranslations {
   static int _fails = 0;
   static int _pausedUntil = 0;
 
+  static void _noteMiss(String from, String to, String t) {
+    if (_missed.length > 5000) _missed.clear();
+    _missed.add(_mk(from, to, t));
+  }
+
   static bool _paused() =>
       DateTime.now().millisecondsSinceEpoch < _pausedUntil;
 
@@ -50,6 +55,23 @@ class SharedTranslations {
     }
   }
 
+  // مواردی که در این نشست در کشِ مشترک نبودند؛ دوباره نپرس
+  static final Set<String> _missed = {};
+  static String _mk(String from, String to, String t) =>
+      '${_src(from)}>$to|${t.trim()}';
+
+  /// یک متن (برای مسیرِ عمومیِ ترجمه در همه‌ی تب‌ها). null = نبود/نشد.
+  static Future<String?> fetchOne(
+      String baseUrl, String from, String to, String text) async {
+    final t = text.trim();
+    if (!eligible(t) || !RegExp(r'\p{L}', unicode: true).hasMatch(t)) {
+      return null;
+    }
+    if (_missed.contains(_mk(from, to, t))) return null;
+    final r = await fetchMany(baseUrl, from, to, [t], quick: true);
+    return r[t];
+  }
+
   static bool eligible(String text) {
     final t = text.trim();
     return t.isNotEmpty && t.length <= _kMaxChars;
@@ -62,11 +84,16 @@ class SharedTranslations {
     String baseUrl,
     String from,
     String to,
-    List<String> texts,
-  ) async {
+    List<String> texts, {
+    bool quick = false,
+  }) async {
     final out = <String, String>{};
     if (to.isEmpty || _paused()) return out;
-    final list = texts.where(eligible).toSet().toList();
+    final list = texts
+        .where(eligible)
+        .where((t) => !_missed.contains(_mk(from, to, t)))
+        .toSet()
+        .toList();
     for (var i = 0; i < list.length; i += _kBatch) {
       if (_paused()) break;
       final chunk = list.sublist(
@@ -81,7 +108,7 @@ class SharedTranslations {
             'items': [for (final t in chunk) {'text': t.trim()}],
           },
           options: Options(contentType: 'application/json'),
-        ).timeout(const Duration(seconds: 10));
+        ).timeout(Duration(seconds: quick ? 3 : 10));
         final status = res.statusCode ?? 0;
         if (status < 200 || status >= 300) {
           _bad();
@@ -93,9 +120,12 @@ class SharedTranslations {
         if (results is! List) continue;
         for (var k = 0; k < chunk.length && k < results.length; k++) {
           final r = results[k];
-          if (r is! String) continue;
-          final tr = r.trim();
           final src = chunk[k].trim();
+          if (r is! String) {
+            _noteMiss(from, to, src);
+            continue;
+          }
+          final tr = r.trim();
           if (tr.isEmpty || tr.toLowerCase() == src.toLowerCase()) continue;
           if (looksLikelyMistranslated(src, tr, to, sourceLang: from)) {
             continue;
@@ -117,6 +147,7 @@ class SharedTranslations {
     if (!eligible(src) || t.isEmpty || to.isEmpty || _paused()) return;
     if (t.toLowerCase() == src.toLowerCase()) return;
     if (looksLikelyMistranslated(src, t, to, sourceLang: from)) return;
+    _missed.remove(_mk(from, to, src));
     unawaited(() async {
       try {
         final res = await _dio.post(
