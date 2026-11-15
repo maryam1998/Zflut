@@ -21,6 +21,10 @@ import '../../core/theme/app_theme_colors.dart';
 import '../../core/utils/html_entities.dart';
 import '../../core/widgets/ai_answer_tools.dart';
 import '../../core/widgets/selection_card.dart' show SelectableSyncText;
+import '../../core/constants/app_languages.dart' show CalendarSystem;
+import '../../core/neural/neural_dates.dart'
+    show faDigits, gregorianToJalali, kPersianMonths, kPersianMonthsLatin;
+import '../../core/providers/app_prefs_provider.dart';
 import '_hope_panel.dart';
 
 /// تب «گرامر» — هم‌شکل GrammarPanel در Hope.
@@ -108,13 +112,34 @@ class _GrammarTabState extends ConsumerState<GrammarTab> {
       '${d.year}/${_two(d.month)}/${_two(d.day)}';
 
   // برچسب‌های نمایشی بر اساس زبانِ رابط کاربری (مثل Hope: «Sun, 18 Oct 2026» و «07:52 AM»)
+  // 📅 سرتیترِ روز طبقِ «تقویم» در تنظیمات: شمسی / میلادی / هر دو
   String _dayLabel(DateTime d) {
     final loc = Localizations.localeOf(context).toString();
+    final cs = ref.watch(appPrefsProvider.select((p) => p.calendarSystem));
+    String greg;
     try {
-      return DateFormat.yMMMEd(loc).format(d);
+      greg = DateFormat.yMMMEd(loc).format(d);
     } catch (_) {
-      return _dayKey(d);
+      greg = _dayKey(d);
     }
+    if (cs == CalendarSystem.gregorian) return greg;
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    final j = gregorianToJalali(d.year, d.month, d.day);
+    String wd;
+    if (fa) {
+      const names = ['دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه', 'یکشنبه'];
+      wd = names[d.weekday - 1];
+    } else {
+      try {
+        wd = DateFormat.E(loc).format(d);
+      } catch (_) {
+        wd = '';
+      }
+    }
+    final jal = fa
+        ? '$wd ${faDigits(j[2])} ${kPersianMonths[j[1] - 1]} ${faDigits(j[0])}'
+        : '${wd.isEmpty ? '' : '$wd, '}${j[2]} ${kPersianMonthsLatin[j[1] - 1]} ${j[0]}';
+    return cs == CalendarSystem.both ? '$jal ($greg)' : jal;
   }
 
   String _timeLabel(DateTime d) {
