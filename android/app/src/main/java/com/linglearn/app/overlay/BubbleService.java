@@ -817,7 +817,7 @@ public class BubbleService extends Service {
                 "Close", pi).build();
         return new Notification.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-                .setContentTitle("LingoLearn")
+                .setContentTitle("AllLingOne")
                 .setContentText("Live translation bubble is active")
                 .setOngoing(true)
                 .addAction(close)
@@ -1001,7 +1001,7 @@ public class BubbleService extends Service {
         bubbleSize = dp(60);
 
         bubble = new BubbleView(this);
-        bubble.setContentDescription("LingoLearn");
+        bubble.setContentDescription("AllLingOne");
 
         bubbleLp = new WindowManager.LayoutParams(
                 bubbleSize, bubbleSize,

@@ -79,12 +79,12 @@
             </intent-filter>
         </activity>
 
-        <!-- ✂️ «ترجمه با LingoLearn» در منوی انتخابِ متنِ اندروید (بدونِ هیچ مجوزِ ویژه؛ فقط متنی که کاربر خودش انتخاب کرده) -->
+        <!-- ✂️ «ترجمه با AllLingOne» در منوی انتخابِ متنِ اندروید (بدونِ هیچ مجوزِ ویژه؛ فقط متنی که کاربر خودش انتخاب کرده) -->
         <activity
             android:name=".overlay.ProcessTextActivity"
             android:excludeFromRecents="true"
             android:exported="true"
-            android:label="ترجمه با LingoLearn"
+            android:label="ترجمه با AllLingOne"
             android:launchMode="singleTask"
             android:noHistory="true"
             android:taskAffinity=""
@@ -156,7 +156,7 @@
         </service>
 
         <!-- ♿ سرویسِ دسترسی‌پذیری (SpeedAccessibilityService) عمداً از این نسخه حذف شده تا Play Protect حساس نشود.
-             فارسی/عربی در ذره‌بین از راهِ «ترجمه با LingoLearn» (منوی انتخابِ متن) کار می‌کند. -->
+             فارسی/عربی در ذره‌بین از راهِ «ترجمه با AllLingOne» (منوی انتخابِ متن) کار می‌کند. -->
 
         <!-- 🔍 حبابِ ذره‌بین: ضربه روی متن ← ترجمه (عکسِ صفحه فقط به‌درخواستِ کاربر و فقط برای خواندنِ متنِ کنارِ انگشت؛ ذخیره یا ارسال نمی‌شود) -->
         <service

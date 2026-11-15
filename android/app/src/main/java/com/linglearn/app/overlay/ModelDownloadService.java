@@ -109,7 +109,7 @@ public class ModelDownloadService extends Service {
     private Notification buildNotification(int count, long mb) {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_popup_sync)
-                .setContentTitle("LingoLearn")
+                .setContentTitle("AllLingOne")
                 .setContentText("در حال آماده‌سازی دستیار صوتی…")
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)

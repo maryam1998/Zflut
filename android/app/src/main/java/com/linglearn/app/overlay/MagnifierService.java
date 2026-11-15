@@ -316,7 +316,7 @@ public class MagnifierService extends Service {
                 msg("بستن", "Close"), pi).build();
         return new Notification.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_menu_search)
-                .setContentTitle("LingoLearn")
+                .setContentTitle("AllLingOne")
                 .setContentText(msg("ذره‌بین فعال است", "Magnifier is active"))
                 .setOngoing(true)
                 .addAction(close)
@@ -1074,8 +1074,8 @@ public class MagnifierService extends Service {
                 if (ocrGarbage) {
                     // OCR چیزِ بی‌معنی خواند → احتمالاً فارسی/عربی است
                     if (noA11y) {
-                        finish(msg("متنِ فارسی/عربی را انتخاب کنید و از منوی انتخاب «ترجمه با LingoLearn» را بزنید",
-                                "For Persian/Arabic: select the text and tap “Translate with LingoLearn” in the selection menu"));
+                        finish(msg("متنِ فارسی/عربی را انتخاب کنید و از منوی انتخاب «ترجمه با AllLingOne» را بزنید",
+                                "For Persian/Arabic: select the text and tap “Translate with AllLingOne” in the selection menu"));
                     } else {
                         if (!prefs().getBoolean("a11yAsked", false)) {
                             prefs().edit().putBoolean("a11yAsked", true).apply();
@@ -1085,8 +1085,8 @@ public class MagnifierService extends Service {
                                 "To read Persian/Arabic text, turn on this app's Accessibility service"));
                     }
                 } else if (noA11y) {
-                    finish(msg("زیرِ ذره‌بین متنی پیدا نشد؛ ذره‌بین را دقیقاً روی متن رها کنید (برای فارسی/عربی متن را انتخاب و «ترجمه با LingoLearn» را بزنید)",
-                            "No text found under the magnifier — release it right on the text (for Persian/Arabic select the text and tap “Translate with LingoLearn”)"));
+                    finish(msg("زیرِ ذره‌بین متنی پیدا نشد؛ ذره‌بین را دقیقاً روی متن رها کنید (برای فارسی/عربی متن را انتخاب و «ترجمه با AllLingOne» را بزنید)",
+                            "No text found under the magnifier — release it right on the text (for Persian/Arabic select the text and tap “Translate with AllLingOne”)"));
                 } else {
                     // OCR متنی پیدا نکرد (ذره‌بین روی متن نیست، یا متن خیلی کوچک/کم‌رنگ است)
                     finish(msg("زیرِ ذره‌بین متنی پیدا نشد؛ ذره‌بین را دقیقاً روی متن رها کنید (برای فارسی/عربی «دسترسی‌پذیری» لازم است)",
