@@ -1299,14 +1299,17 @@ class SyncText extends ConsumerWidget {
         .select((a) => a != null && a.code == code && a.id == id));
     final pref = ref.watch(appPrefsProvider.select((p) => p.highlightColor));
     final hl = syncHighlightColor(pref);
+    // 🖍 محدوده‌ی خوانده‌شده از نمودارِ گوش‌دادن: 0 = نه، 1 = پررنگ، 2 = در حالِ محو شدن
+    final rh = ref.watch(readHighlightProvider.select((h) =>
+        h == null || !h.ids.contains(id) ? 0 : (h.fading ? 2 : 1)));
 
-    final Color target = (hl != null && active)
+    final Color target = (hl != null && (active || rh == 1))
         ? hl
         : (hl ?? kReadMarkerColor).withOpacity(0);
 
     return TweenAnimationBuilder<Color?>(
       tween: ColorTween(end: target),
-      duration: duration,
+      duration: rh == 2 ? const Duration(milliseconds: 3000) : duration,
       builder: (_, bg, __) => Text(
         text,
         textDirection: textDirection,

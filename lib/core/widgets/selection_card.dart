@@ -12,6 +12,7 @@ import '../constants/supported_languages.dart';
 import '../models/grammar_note.dart';
 import '../models/language_selection.dart';
 import '../models/saved_word.dart';
+import '../player_sync/playback_origin.dart' show readHighlightProvider;
 import '../player_sync/player_sync_provider.dart';
 import '../player_sync/sync_widgets.dart' show syncHighlightColor, kReadMarkerColor;
 import '../providers/ai_settings_provider.dart';
@@ -1462,8 +1463,11 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
         (a) => a != null && a.code == widget.code && a.id == widget.id));
     final pref = ref.watch(appPrefsProvider.select((p) => p.highlightColor));
     final hl = syncHighlightColor(pref);
+    // 🖍 محدوده‌ی خوانده‌شده از نمودارِ گوش‌دادن: 0 = نه، 1 = پررنگ، 2 = در حالِ محو شدن
+    final rh = ref.watch(readHighlightProvider.select((h) =>
+        h == null || !h.ids.contains(widget.id) ? 0 : (h.fading ? 2 : 1)));
 
-    final Color target = (hl != null && active)
+    final Color target = (hl != null && (active || rh == 1))
         ? hl
         : (hl ?? kReadMarkerColor).withOpacity(0);
 
@@ -1471,7 +1475,7 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
 
     return TweenAnimationBuilder<Color?>(
       tween: ColorTween(end: target),
-      duration: widget.duration,
+      duration: rh == 2 ? const Duration(milliseconds: 3000) : widget.duration,
       builder: (_, bg, __) {
         final base = widget.style.copyWith(backgroundColor: bg);
         final r = _hl;

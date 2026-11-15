@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/topic_titles.dart' show topicTitle;
 import '../../../core/native/native_bridge.dart';
 import '../../../core/neural/neural_dates.dart' show gregorianToJalali, kPersianMonths;
 import '../../../core/player_sync/playback_origin.dart';
+import '../../../core/providers/story_library_provider.dart'
+    show storyLibraryProvider;
 import '../../../core/stats/listening_tracker.dart';
 import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../../core/theme/app_theme_colors.dart';
@@ -43,7 +46,10 @@ const Map<String, Map<String, String>> _kT = {
     'down': 'کمتر از هفته‌ی قبل',
     'yt': 'یوتیوب',
     'audio': 'فایل صوتی',
-    'tts': 'پلیر برنامه',
+    'tts': 'پلیر برنامه (سایر)',
+    'scn': 'سناریو',
+    'items': 'مورد',
+    'holdhint': 'روی هر رنگِ ستون نگه دار (لمسِ طولانی) تا به همان تب و همان خط‌هایی که خواندی بروی؛ محدوده‌ی خوانده‌شده چند ثانیه رنگی می‌شود و محو می‌شود.',
     'empty': 'این هفته هنوز چیزی گوش نداده‌ای.\nیک ویدیوی یوتیوب یا فایل صوتی پخش کن 🎧',
     'access': 'برای ثبتِ ساعت‌های یوتیوب، «دسترسی به اعلان‌ها» را روشن کن.',
     'enable': 'فعال‌سازی',
@@ -80,7 +86,10 @@ const Map<String, Map<String, String>> _kT = {
     'down': 'less than last week',
     'yt': 'YouTube',
     'audio': 'Audio file',
-    'tts': 'App player',
+    'tts': 'App player (other)',
+    'scn': 'Scenario',
+    'items': 'items',
+    'holdhint': 'Long-press a colour in a bar to jump to the exact tab and lines you read; the range is highlighted for a few seconds, then fades.',
     'empty':
         "You haven't listened to anything this week yet.\nPlay a YouTube video or an audio file 🎧",
     'access': 'Turn on notification access to track YouTube listening time.',
@@ -119,6 +128,9 @@ const Map<String, Map<String, String>> _kT = {
     'yt': 'يوتيوب',
     'audio': 'ملف صوتي',
     'tts': 'مشغّل التطبيق',
+    'scn': 'السيناريو',
+    'items': 'عناصر',
+    'holdhint': 'اضغط مطولًا على أي لون في العمود للانتقال إلى التبويب والأسطر التي قرأتها؛ يُظهَر النطاق بضع ثوانٍ ثم يتلاشى.',
     'empty': 'لم تستمع إلى أي شيء هذا الأسبوع بعد.\nشغّل فيديو يوتيوب أو ملفًا صوتيًا 🎧',
     'access': 'فعّل «الوصول إلى الإشعارات» لتسجيل وقت يوتيوب.',
     'enable': 'تفعيل',
@@ -815,6 +827,7 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
         segs: segs[selIdx],
         onFocus: (k) => setState(() => _src = _src == k ? null : k),
         onOpen: (r) => _openRoute(r, days[selIdx].last[r]),
+        onOpenRead: (r, cx) => _openRoute(r, null, ctx: cx),
         title: selDate == today
             ? context.lt('today')
             : '${_fullDay(context, selDate)} ${context.rvNum(selIdx + 1)} ${m.monthName}',
@@ -841,10 +854,16 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
   }
 
   /// 📍 رفتن به همان تب و همان جمله‌ای که آخرین بار گوش دادی.
-  void _openRoute(String route, ListenPoint? p) {
+  void _openRoute(String route, ListenPoint? p, {ReadCtx? ctx}) {
     try {
       final container = ProviderScope.containerOf(context, listen: false);
       final router = GoRouter.of(context);
+      if (ctx != null) {
+        // 📖 همان موضوع/سناریو/داستان + اسکرول به اولین جمله‌ی خوانده‌شده + هایلایتِ کلِ محدوده
+        p = ListenPoint(ctx.ids.isEmpty ? null : ctx.ids.first, ctx.extra);
+        showReadHighlight(container, ctx.ids,
+            startAfter: const Duration(milliseconds: 1000));
+      }
       if (p != null) {
         final origin = PlaybackOrigin(route, '', p.extra);
         container.read(tabRestoreProvider.notifier).state = origin;
@@ -1100,6 +1119,46 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
                       _sel = i;
                     });
                   },
+                  // 📖 لمسِ طولانیِ یک رنگِ ستون: رفتن به همان تب و همان خط‌های خوانده‌شده
+                  onLongPressStart: (d) {
+                    final w = box.maxWidth - _kGutter;
+                    final x = isRtl
+                        ? (box.maxWidth - _kGutter) - d.localPosition.dx
+                        : d.localPosition.dx - _kGutter;
+                    if (x < 0 || x > w) return;
+                    final i = (x / (w / 7)).floor().clamp(0, 6).toInt();
+                    final dd = days[i];
+                    if (dd.total <= 0 || segs[i].isEmpty) return;
+                    final (top, _) = _ListenBarsPainter._scale(maxSec);
+                    const chartTop = 8.0;
+                    final chartH = 168.0 - chartTop;
+                    final bottom = chartTop + chartH - 1.4;
+                    final h = math.max((dd.total / top) * chartH, 6.0);
+                    final f = (bottom - d.localPosition.dy) / h;
+                    if (f < 0 || f > 1) return;
+                    String? hit;
+                    var acc = 0.0;
+                    for (final e in segs[i]) {
+                      acc += e.$2 / dd.total;
+                      if (f < acc) {
+                        hit = e.$1;
+                        break;
+                      }
+                    }
+                    hit ??= segs[i].last.$1;
+                    if (!hit.startsWith('/')) return;
+                    final route = hit;
+                    setState(() {
+                      _sel = i;
+                      _src = route;
+                    });
+                    final ctxs = dd.reads[route];
+                    if (ctxs != null && ctxs.isNotEmpty) {
+                      _openRoute(route, null, ctx: ctxs.last);
+                    } else {
+                      _openRoute(route, dd.last[route]);
+                    }
+                  },
                   child: TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0, end: 1),
                     duration: const Duration(milliseconds: 650),
@@ -1160,6 +1219,7 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
               segs: segs[selIdx],
               onFocus: (k) => setState(() => _src = _src == k ? null : k),
               onOpen: (r) => _openRoute(r, sel.last[r]),
+              onOpenRead: (r, cx) => _openRoute(r, null, ctx: cx),
               title: isToday
                   ? context.lt('today')
                   : _fullDay(context, dates[selIdx]),
@@ -1356,6 +1416,32 @@ class _EmptyListen extends StatelessWidget {
   }
 }
 
+/// نامِ خوانا برای «چه چیزی خوانده شد»: موضوع/سناریوی مکالمه، عنوانِ داستان، یا نامِ تب.
+String _ctxLabel(BuildContext context, String route, ReadCtx cx) {
+  final lang = Localizations.localeOf(context).languageCode;
+  try {
+    if (route == '/conversations') {
+      final t = cx.extra['topic'];
+      final sc = cx.extra['scenario'];
+      final parts = <String>[
+        if (t is String && t.isNotEmpty) topicTitle(t, lang),
+        if (sc is num) '${context.lt('scn')} ${context.rvNum(sc.toInt() + 1)}',
+      ];
+      if (parts.isNotEmpty) return parts.join(' · ');
+    } else if (route == '/story') {
+      final sid = cx.extra['storyId'];
+      if (sid is String) {
+        final list = ProviderScope.containerOf(context, listen: false)
+            .read(storyLibraryProvider);
+        for (final st in list) {
+          if (st.id == sid) return st.title;
+        }
+      }
+    }
+  } catch (_) {}
+  return context.lsrcLabel(route);
+}
+
 class _DayDetail extends StatelessWidget {
   final String title;
   final ListenDay day;
@@ -1365,10 +1451,12 @@ class _DayDetail extends StatelessWidget {
   final bool isRtl;
   final void Function(String)? onFocus;
   final void Function(String)? onOpen;
+  final void Function(String, ReadCtx)? onOpenRead;
   const _DayDetail({
     this.focus,
     this.onFocus,
     this.onOpen,
+    this.onOpenRead,
     this.isRtl = true,
     required this.segs,
     required this.title,
@@ -1424,6 +1512,45 @@ class _DayDetail extends StatelessWidget {
       );
     }
 
+    // 📖 زیرِ هر تب: چه موضوع/سناریو/داستانی و چند مورد خوانده شد (لمس = رفتن + هایلایت)
+    List<Widget> ctxRows(String id) {
+      final list = day.reads[id];
+      if (list == null || list.isEmpty) return const <Widget>[];
+      final col = context.lsrcColor(id);
+      return [
+        for (final cx in list.reversed)
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => onOpenRead?.call(id, cx),
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(start: 17, top: 5),
+              child: Row(children: [
+                Icon(Icons.subdirectory_arrow_right_rounded,
+                    size: 14, color: c.inkSoft),
+                const SizedBox(width: 4),
+                Expanded(
+                    child: Text(_ctxLabel(context, id, cx),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: c.inkSoft, fontSize: 11.5))),
+                const SizedBox(width: 6),
+                Text('${context.rvNum(cx.ids.length)} ${context.lt('items')}',
+                    style: TextStyle(
+                        color: c.ink,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700)),
+                Icon(
+                    isRtl
+                        ? Icons.chevron_left_rounded
+                        : Icons.chevron_right_rounded,
+                    size: 16,
+                    color: col),
+              ]),
+            ),
+          ),
+      ];
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -1444,7 +1571,16 @@ class _DayDetail extends StatelessWidget {
                 style: TextStyle(
                     color: c.ink, fontSize: 15, fontWeight: FontWeight.w800)),
           ]),
-          for (final e in segs) row(e.$1, e.$2),
+          for (final e in segs) ...[
+            row(e.$1, e.$2),
+            ...ctxRows(e.$1),
+          ],
+          if (day.reads.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(context.lt('holdhint'),
+                  style: TextStyle(color: c.inkSoft, fontSize: 11)),
+            ),
           if (day.total == 0)
             Padding(
               padding: const EdgeInsets.only(top: 4),
