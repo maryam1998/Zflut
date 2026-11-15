@@ -1,9 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/native/native_bridge.dart';
+import '../../../core/player_sync/playback_origin.dart';
 import '../../../core/stats/listening_tracker.dart';
+import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../../core/theme/app_theme_colors.dart';
 import '../review_i18n.dart';
 
@@ -12,6 +16,12 @@ import '../review_i18n.dart';
 // ═══════════════════════════════════════════════════════════════════
 const Map<String, Map<String, String>> _kT = {
   'fa': {
+    'goal': "هدف روزانه",
+    'streakd': "{n} روز پشت‌سرهم",
+    'streakn': "امروز گوش بده تا زنجیره شروع شود",
+    'goalto': "{t} تا هدف",
+    'goaldone': "هدف امروز انجام شد 🎉",
+    'goalpick': "هدف روزانه‌ی گوش‌دادن",
     'wtotal': "مجموعِ هفته",
     'thisweek': "این هفته",
     'lastweek': "هفته‌ی گذشته",
@@ -39,6 +49,12 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'روی هر ستون بزن تا جزئیاتِ آن روز را ببینی',
   },
   'en': {
+    'goal': "Daily goal",
+    'streakd': "{n} days in a row",
+    'streakn': "Listen today to start a streak",
+    'goalto': "{t} to goal",
+    'goaldone': "Today's goal reached 🎉",
+    'goalpick': "Daily listening goal",
     'wtotal': "Week total",
     'thisweek': "This week",
     'lastweek': "Last week",
@@ -67,6 +83,12 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'Tap a bar to see that day',
   },
   'ar': {
+    'goal': "الهدف اليومي",
+    'streakd': "{n} أيام متتالية",
+    'streakn': "استمع اليوم لتبدأ السلسلة",
+    'goalto': "{t} للوصول إلى الهدف",
+    'goaldone': "تم تحقيق هدف اليوم 🎉",
+    'goalpick': "هدف الاستماع اليومي",
     'wtotal': "إجمالي الأسبوع",
     'thisweek': "هذا الأسبوع",
     'lastweek': "الأسبوع الماضي",
@@ -94,6 +116,12 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'اضغط على أي عمود لرؤية تفاصيل اليوم',
   },
   'de': {
+    'goal': "Tagesziel",
+    'streakd': "{n} Tage in Folge",
+    'streakn': "Hör heute zu, um eine Serie zu starten",
+    'goalto': "Noch {t} bis zum Ziel",
+    'goaldone': "Tagesziel erreicht 🎉",
+    'goalpick': "Tägliches Hörziel",
     'wtotal': "Wochensumme",
     'thisweek': "Diese Woche",
     'lastweek': "Letzte Woche",
@@ -123,6 +151,12 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'Tippe auf einen Balken für Details',
   },
   'es': {
+    'goal': "Meta diaria",
+    'streakd': "{n} días seguidos",
+    'streakn': "Escucha hoy para empezar una racha",
+    'goalto': "{t} para la meta",
+    'goaldone': "Meta de hoy cumplida 🎉",
+    'goalpick': "Meta diaria de escucha",
     'wtotal': "Total de la semana",
     'thisweek': "Esta semana",
     'lastweek': "Semana pasada",
@@ -152,6 +186,12 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'Toca una barra para ver ese día',
   },
   'fr': {
+    'goal': "Objectif du jour",
+    'streakd': "{n} jours de suite",
+    'streakn': "Écoutez aujourd'hui pour lancer une série",
+    'goalto': "{t} avant l'objectif",
+    'goaldone': "Objectif du jour atteint 🎉",
+    'goalpick': "Objectif d'écoute quotidien",
     'wtotal': "Total de la semaine",
     'thisweek': "Cette semaine",
     'lastweek': "Semaine dernière",
@@ -192,7 +232,127 @@ const Map<String, List<String>> _kDays = {
   'fr': ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'],
 };
 
+/// نامِ زیرتب‌ها (مسیرِ تب → برچسب)
+const Map<String, Map<String, String>> _kRoute = {
+  'fa': {
+    '/words': 'دیکشنری من',
+    '/vocab-in-use': 'Vocab in use',
+    '/slang': 'Slang',
+    '/favorites': 'علاقه‌مندی‌ها',
+    '/conversations': 'مکالمه',
+    '/story': 'داستان',
+  },
+  'en': {
+    '/words': 'My dictionary',
+    '/vocab-in-use': 'Vocab in use',
+    '/slang': 'Slang',
+    '/favorites': 'Favorites',
+    '/conversations': 'Conversation',
+    '/story': 'Story',
+  },
+  'ar': {
+    '/words': 'قاموسي',
+    '/vocab-in-use': 'Vocab in use',
+    '/slang': 'Slang',
+    '/favorites': 'المفضلة',
+    '/conversations': 'المحادثة',
+    '/story': 'القصة',
+  },
+  'de': {
+    '/words': 'Mein Wörterbuch',
+    '/vocab-in-use': 'Vocab in use',
+    '/slang': 'Slang',
+    '/favorites': 'Favoriten',
+    '/conversations': 'Gespräch',
+    '/story': 'Geschichte',
+  },
+  'es': {
+    '/words': 'Mi diccionario',
+    '/vocab-in-use': 'Vocab in use',
+    '/slang': 'Slang',
+    '/favorites': 'Favoritos',
+    '/conversations': 'Conversación',
+    '/story': 'Historia',
+  },
+  'fr': {
+    '/words': 'Mon dictionnaire',
+    '/vocab-in-use': 'Vocab in use',
+    '/slang': 'Slang',
+    '/favorites': 'Favoris',
+    '/conversations': 'Conversation',
+    '/story': 'Histoire',
+  },
+};
+
+/// ترتیبِ ثابتِ تب‌ها در ستون (پایین → بالا) و در راهنمای رنگ
+const List<String> _kRouteOrder = [
+  '/words',
+  '/vocab-in-use',
+  '/slang',
+  '/favorites',
+  '/conversations',
+  '/story',
+];
+
+/// قطعه‌های رنگیِ یک روز: [(شناسه، ثانیه)]؛ شناسه = 'yt' | 'audio' | مسیرِ تب | 'tts'
+/// ('tts' = پلیرِ برنامه که تبش معلوم نیست، مثلاً دیتای قدیمی یا 🔊 کارتِ انتخاب)
+List<(String, int)> _segsOf(ListenDay d) {
+  final out = <(String, int)>[];
+  if (d.yt > 0) out.add(('yt', d.yt));
+  if (d.audio > 0) out.add(('audio', d.audio));
+  var used = 0;
+  final routes = [
+    ..._kRouteOrder.where(d.tabs.containsKey),
+    ...d.tabs.keys.where((k) => !_kRouteOrder.contains(k)),
+  ];
+  for (final r in routes) {
+    final v = d.tabs[r] ?? 0;
+    if (v > 0) {
+      out.add((r, v));
+      used += v;
+    }
+  }
+  final rest = d.tts - used;
+  if (rest > 0) out.add(('tts', rest));
+  return out;
+}
+
 extension _ListenI18n on BuildContext {
+  /// رنگِ هر منبع/زیرتب
+  Color lsrcColor(String id) {
+    final c = appColors;
+    switch (id) {
+      case 'yt':
+        return c.rose;
+      case 'audio':
+        return c.teal;
+      case '/words':
+        return c.gold;
+      case '/slang':
+        return const Color(0xFF8E5BB5);
+      case '/vocab-in-use':
+        return const Color(0xFF3F7FBF);
+      case '/favorites':
+        return const Color(0xFFD9774A);
+      case '/conversations':
+        return const Color(0xFF3F9B72);
+      case '/story':
+        return const Color(0xFF6B5B95);
+      case 'tts':
+        return const Color(0xFF8A8A8A);
+      default:
+        return const Color(0xFF8D6E4E);
+    }
+  }
+
+  String lsrcLabel(String id) {
+    if (id == 'yt') return lt('yt');
+    if (id == 'audio') return lt('audio');
+    if (id == 'tts') return lt('tts');
+    final lang = Localizations.localeOf(this).languageCode;
+    return (_kRoute[lang] ?? _kRoute['en']!)[id] ?? _kRoute['en']![id] ?? id;
+  }
+
   String lt(String k) {
     final lang = Localizations.localeOf(this).languageCode;
     return (_kT[lang] ?? _kT['en']!)[k] ?? _kT['en']![k] ?? k;
@@ -312,7 +472,8 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
     with WidgetsBindingObserver {
   int? _sel; // ایندکسِ ستونِ انتخاب‌شده؛ null = پیش‌فرض (امروز / بهترین روزِ هفته)
   int _off = 0; // ۰ = این هفته، -۱ = هفته‌ی قبل، …
-  int? _src; // منبعِ فوکوس‌شده: 0=یوتیوب، 1=فایل صوتی، 2=پلیر برنامه
+  int _goalMin = 15; // هدفِ روزانه (دقیقه)
+  String? _src; // منبعِ فوکوس‌شده ('yt' | 'audio' | مسیرِ تب | 'tts')
   bool _needAccess = false;
 
   @override
@@ -320,6 +481,61 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkAccess();
+    try {
+      final c = ProviderScope.containerOf(context, listen: false);
+      final g = c.read(sharedPrefsProvider).getInt(_kGoalKey);
+      if (g != null && g > 0) _goalMin = g;
+    } catch (_) {}
+  }
+
+  static const String _kGoalKey = 'zflut-listen-goal-min';
+
+  void _pickGoal() {
+    final c = context.appColors;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: c.paper,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(context.lt('goalpick'),
+                style: TextStyle(
+                    color: c.ink, fontSize: 15, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 14),
+            Wrap(spacing: 10, runSpacing: 10, children: [
+              for (final m in const [10, 15, 20, 30, 45, 60, 90])
+                GestureDetector(
+                  onTap: () {
+                    setState(() => _goalMin = m);
+                    try {
+                      ProviderScope.containerOf(context, listen: false)
+                          .read(sharedPrefsProvider)
+                          .setInt(_kGoalKey, m);
+                    } catch (_) {}
+                    Navigator.of(ctx).pop();
+                  },
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: m == _goalMin ? c.gold : c.goldSoft.withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(context.ldur(m * 60),
+                        style: TextStyle(
+                            color: m == _goalMin ? Colors.white : c.ink,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13)),
+                  ),
+                ),
+            ]),
+          ]),
+        ),
+      ),
+    );
   }
 
   @override
@@ -338,6 +554,32 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
     try {
       final r = await NativeBridge.instance.ytCheckAccess();
       if (mounted) setState(() => _needAccess = r['granted'] != true);
+    } catch (_) {}
+  }
+
+  /// 📍 رفتن به همان تب و همان جمله‌ای که آخرین بار گوش دادی.
+  void _openRoute(String route, ListenPoint? p) {
+    try {
+      final container = ProviderScope.containerOf(context, listen: false);
+      final router = GoRouter.of(context);
+      if (p != null) {
+        final origin = PlaybackOrigin(route, '', p.extra);
+        container.read(tabRestoreProvider.notifier).state = origin;
+        final id = p.id;
+        if (id != null) container.read(revealItemProvider.notifier).state = id;
+        // اگر تبی درخواست را برنداشت، بعداً اشتباهی اعمال نشود
+        Future.delayed(const Duration(seconds: 4), () {
+          try {
+            if (identical(container.read(tabRestoreProvider), origin)) {
+              container.read(tabRestoreProvider.notifier).state = null;
+            }
+            if (id != null && container.read(revealItemProvider) == id) {
+              container.read(revealItemProvider.notifier).state = null;
+            }
+          } catch (_) {}
+        });
+      }
+      router.go(route);
     } catch (_) {}
   }
 
@@ -376,6 +618,16 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
     final sel = days[selIdx];
     final isToday = _off == 0 && selIdx == back;
     final maxSec = days.fold<int>(0, (a, d) => math.max(a, d.total));
+    // 🔥 زنجیره‌ی گوش‌دادن: روزهای پشت‌سرهم با حداقل ۱ دقیقه (اگر امروز هنوز نشنیده‌ای از دیروز می‌شمارد)
+    var streak = 0;
+    var sd = today;
+    if (stats.day(sd).total < 60) sd = DateTime(sd.year, sd.month, sd.day - 1);
+    while (streak < 120 && stats.day(sd).total >= 60) {
+      streak++;
+      sd = DateTime(sd.year, sd.month, sd.day - 1);
+    }
+    final todaySec = stats.day(today).total;
+    final goalSec = _goalMin * 60;
     final weekLabel = _off == 0
         ? context.lt('thisweek')
         : _off == -1
@@ -398,13 +650,15 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
           ),
         );
 
-    final hasYt = days.any((d) => d.yt > 0);
-    final hasAudio = days.any((d) => d.audio > 0);
-    final hasTts = days.any((d) => d.tts > 0);
-
-    final ytC = c.rose;
-    final auC = c.teal;
-    final ttC = c.gold;
+    final segs = [for (final d in days) _segsOf(d)];
+    // منبع‌های این هفته به ترتیبِ ثابت (برای راهنمای رنگ)
+    final srcIds = <String>[
+      for (final id in ['yt', 'audio', ..._kRouteOrder, 'tts'])
+        if (segs.any((l) => l.any((e) => e.$1 == id))) id,
+      for (final l in segs)
+        for (final e in l)
+          if (!['yt', 'audio', 'tts', ..._kRouteOrder].contains(e.$1)) e.$1,
+    ].toSet().toList();
 
     Widget accessHint() => Container(
           margin: const EdgeInsets.only(top: 12),
@@ -480,6 +734,16 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
           ),
           const SizedBox(height: 14),
 
+          if (_off == 0) ...[
+            _GoalCard(
+              streak: streak,
+              todaySec: todaySec,
+              goalSec: goalSec,
+              onTap: _pickGoal,
+            ),
+            const SizedBox(height: 14),
+          ],
+
           // ── نمودار ──
           if (total == 0)
             _EmptyListen(text: context.lt('empty'))
@@ -497,10 +761,11 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
                     if (x < 0 || x > w) return;
                     final i = (x / (w / 7)).floor().clamp(0, 6).toInt();
                     // i=0 = اولین روزِ هفته (RTL: سمت راست)
-                    // اگر روی یکی از رنگ‌های ستون زده شد، همان منبع فوکوس می‌شود
-                    int? src;
+                    // روی یکی از رنگ‌های ستون زده شد؟ زیرتب ← مستقیم به همان تب و جمله؛
+                    // یوتیوب/فایل صوتی ← فقط هایلایت
+                    String? hit;
                     final dd = days[i];
-                    if (dd.total > 0) {
+                    if (dd.total > 0 && segs[i].isNotEmpty) {
                       final (top, _) = _ListenBarsPainter._scale(maxSec);
                       const chartTop = 8.0;
                       final chartH = 168.0 - chartTop;
@@ -508,23 +773,30 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
                       final h = math.max((dd.total / top) * chartH, 6.0);
                       final f = (bottom - d.localPosition.dy) / h;
                       if (f >= 0 && f <= 1) {
-                        final yEnd = dd.yt / dd.total;
-                        final aEnd = yEnd + dd.audio / dd.total;
-                        if (f < yEnd && dd.yt > 0) {
-                          src = 0;
-                        } else if (f < aEnd && dd.audio > 0) {
-                          src = 1;
-                        } else if (dd.tts > 0) {
-                          src = 2;
-                        } else if (dd.audio > 0) {
-                          src = 1;
-                        } else {
-                          src = 0;
+                        var acc = 0.0;
+                        for (final e in segs[i]) {
+                          acc += e.$2 / dd.total;
+                          if (f < acc) {
+                            hit = e.$1;
+                            break;
+                          }
                         }
+                        hit ??= segs[i].last.$1;
                       }
                     }
+                    final tapped = hit;
+                    if (tapped != null && tapped.startsWith('/')) {
+                      setState(() {
+                        _sel = i;
+                        _src = tapped;
+                      });
+                      _openRoute(tapped, dd.last[tapped]);
+                      return;
+                    }
                     setState(() {
-                      _src = (src != null && src == _src && i == selIdx) ? null : src;
+                      _src = (tapped != null && tapped == _src && i == selIdx)
+                          ? null
+                          : tapped;
                       _sel = i;
                     });
                   },
@@ -536,10 +808,11 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
                       size: Size(box.maxWidth, 168),
                       painter: _ListenBarsPainter(
                         days: days,
+                        segs: segs,
+                        colorOf: context.lsrcColor,
                         progress: t,
                         selected: selIdx,
                         focus: _src,
-                        colors: (ytC, auC, ttC),
                         grid: c.cardBorder,
                         text: c.inkSoft,
                         ink: c.ink,
@@ -583,14 +856,14 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
             // ── جزئیاتِ روزِ انتخاب‌شده ──
             _DayDetail(
               focus: _src,
+              isRtl: isRtl,
+              segs: segs[selIdx],
               onFocus: (k) => setState(() => _src = _src == k ? null : k),
+              onOpen: (r) => _openRoute(r, sel.last[r]),
               title: isToday
                   ? context.lt('today')
                   : _fullDay(context, dates[selIdx]),
               day: sel,
-              yt: (ytC, context.lt('yt')),
-              audio: (auC, context.lt('audio')),
-              tts: (ttC, context.lt('tts')),
               fmt: context.ldur,
             ),
             const SizedBox(height: 12),
@@ -618,24 +891,12 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
               spacing: 14,
               runSpacing: 6,
               children: [
-                if (hasYt)
+                for (final id in srcIds)
                   _Legend(
-                      color: ytC,
-                      label: context.lt('yt'),
-                      active: _src == 0,
-                      onTap: () => setState(() => _src = _src == 0 ? null : 0)),
-                if (hasAudio)
-                  _Legend(
-                      color: auC,
-                      label: context.lt('audio'),
-                      active: _src == 1,
-                      onTap: () => setState(() => _src = _src == 1 ? null : 1)),
-                if (hasTts)
-                  _Legend(
-                      color: ttC,
-                      label: context.lt('tts'),
-                      active: _src == 2,
-                      onTap: () => setState(() => _src = _src == 2 ? null : 2)),
+                      color: context.lsrcColor(id),
+                      label: context.lsrcLabel(id),
+                      active: _src == id,
+                      onTap: () => setState(() => _src = _src == id ? null : id)),
               ],
             ),
           ],
@@ -663,6 +924,85 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
 const double _kGutter = 36;
 
 // ───────────────────────────── اجزای کوچک ─────────────────────────────
+class _GoalCard extends StatelessWidget {
+  final int streak, todaySec, goalSec;
+  final VoidCallback onTap;
+  const _GoalCard({
+    required this.streak,
+    required this.todaySec,
+    required this.goalSec,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final done = todaySec >= goalSec;
+    final p = (todaySec / goalSec).clamp(0.0, 1.0).toDouble();
+    final col = done ? const Color(0xFF3F9B72) : c.gold;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: c.goldSoft.withOpacity(0.45),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Text(streak > 0 ? '🔥' : '🎧', style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  streak > 0
+                      ? context.lt('streakd').replaceAll('{n}', context.rvNum(streak))
+                      : context.lt('streakn'),
+                  style: TextStyle(
+                      color: c.ink, fontSize: 13.5, fontWeight: FontWeight.w800),
+                ),
+              ),
+              Icon(Icons.flag_rounded, size: 15, color: c.inkSoft),
+              const SizedBox(width: 3),
+              Text(context.ldur(goalSec),
+                  style: TextStyle(color: c.inkSoft, fontSize: 11.5)),
+            ]),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: p,
+                minHeight: 9,
+                backgroundColor: c.paperDark,
+                valueColor: AlwaysStoppedAnimation<Color>(col),
+              ),
+            ),
+            const SizedBox(height: 7),
+            Row(children: [
+              Expanded(
+                child: Text(
+                  done
+                      ? context.lt('goaldone')
+                      : context.lt('goalto').replaceAll('{t}', context.ldur(goalSec - todaySec)),
+                  style: TextStyle(
+                      color: done ? col : c.inkSoft,
+                      fontSize: 12,
+                      fontWeight: done ? FontWeight.w800 : FontWeight.w500),
+                ),
+              ),
+              Text(context.ldur(todaySec),
+                  style: TextStyle(
+                      color: c.ink, fontSize: 12, fontWeight: FontWeight.w800)),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DeltaChip extends StatelessWidget {
   final int total, prev;
   const _DeltaChip({required this.total, required this.prev});
@@ -719,56 +1059,70 @@ class _EmptyListen extends StatelessWidget {
 class _DayDetail extends StatelessWidget {
   final String title;
   final ListenDay day;
-  final (Color, String) yt, audio, tts;
+  final List<(String, int)> segs;
   final String Function(int) fmt;
-  final int? focus;
-  final void Function(int)? onFocus;
+  final String? focus;
+  final bool isRtl;
+  final void Function(String)? onFocus;
+  final void Function(String)? onOpen;
   const _DayDetail({
     this.focus,
     this.onFocus,
+    this.onOpen,
+    this.isRtl = true,
+    required this.segs,
     required this.title,
     required this.day,
-    required this.yt,
-    required this.audio,
-    required this.tts,
     required this.fmt,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    Widget row((Color, String) s, int sec, int k) => sec <= 0
-        ? const SizedBox.shrink()
-        : GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onFocus == null ? null : () => onFocus!(k),
-            child: Container(
-              margin: const EdgeInsets.only(top: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: focus == k ? s.$1.withOpacity(0.14) : Colors.transparent,
-                borderRadius: BorderRadius.circular(9),
-                border: Border.all(
-                    color: focus == k ? s.$1 : Colors.transparent, width: 1.2),
-              ),
-              child: Row(children: [
-                Container(
-                    width: 9,
-                    height: 9,
-                    decoration:
-                        BoxDecoration(color: s.$1, shape: BoxShape.circle)),
-                const SizedBox(width: 8),
-                Expanded(
-                    child: Text(s.$2,
-                        style: TextStyle(color: c.inkSoft, fontSize: 12.5))),
-                Text(fmt(sec),
-                    style: TextStyle(
-                        color: c.ink,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700)),
-              ]),
-            ),
-          );
+    Widget row(String id, int sec) {
+      final col = context.lsrcColor(id);
+      final isTab = id.startsWith('/');
+      // رفتن به تب فقط وقتی «آخرین جای» ثبت شده باشد
+      final canOpen = isTab && day.last.containsKey(id);
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (canOpen) {
+            onOpen?.call(id);
+          } else {
+            onFocus?.call(id);
+          }
+        },
+        child: Container(
+          margin: const EdgeInsets.only(top: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            color: focus == id ? col.withOpacity(0.14) : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(
+                color: focus == id ? col : Colors.transparent, width: 1.2),
+          ),
+          child: Row(children: [
+            Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(color: col, shape: BoxShape.circle)),
+            const SizedBox(width: 8),
+            Expanded(
+                child: Text(context.lsrcLabel(id),
+                    style: TextStyle(color: c.inkSoft, fontSize: 12.5))),
+            Text(fmt(sec),
+                style: TextStyle(
+                    color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            if (canOpen) ...[
+              const SizedBox(width: 4),
+              Icon(isRtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+                  size: 18, color: col),
+            ],
+          ]),
+        ),
+      );
+    }
 
     return Container(
       width: double.infinity,
@@ -790,9 +1144,7 @@ class _DayDetail extends StatelessWidget {
                 style: TextStyle(
                     color: c.ink, fontSize: 15, fontWeight: FontWeight.w800)),
           ]),
-          row(yt, day.yt, 0),
-          row(audio, day.audio, 1),
-          row(tts, day.tts, 2),
+          for (final e in segs) row(e.$1, e.$2),
           if (day.total == 0)
             Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -875,21 +1227,23 @@ class _Legend extends StatelessWidget {
 // Painter: ستون‌های انباشته (yt پایین، audio وسط، tts بالا) + خطوطِ راهنما
 // ═══════════════════════════════════════════════════════════════════
 class _ListenBarsPainter extends CustomPainter {
-  final List<ListenDay> days; // قدیمی‌ترین اول
+  final List<ListenDay> days; // اولین روزِ هفته اول
+  final List<List<(String, int)>> segs;
+  final Color Function(String) colorOf;
   final double progress;
   final int selected;
-  final int? focus;
-  final (Color, Color, Color) colors; // yt, audio, tts
+  final String? focus;
   final Color grid, text, ink;
   final bool isRtl;
   final String Function(int sec) axisLabel;
 
   _ListenBarsPainter({
     required this.days,
+    required this.segs,
+    required this.colorOf,
     required this.progress,
     required this.selected,
     this.focus,
-    required this.colors,
     required this.grid,
     required this.text,
     required this.ink,
@@ -969,7 +1323,7 @@ class _ListenBarsPainter extends CustomPainter {
             Rect.fromLTWH(cx - slot / 2 + 2, chartTop, slot - 4, chartH),
             const Radius.circular(10),
           ),
-          Paint()..color = colors.$3.withOpacity(0.10),
+          Paint()..color = grid.withOpacity(0.45),
         );
       }
 
@@ -995,20 +1349,15 @@ class _ListenBarsPainter extends CustomPainter {
       canvas.save();
       canvas.clipRRect(barRect);
       var y = bottom;
-      void seg(int sec, Color col, int k) {
-        if (sec <= 0) return;
-        final sh = h * (sec / d.total);
+      for (final e in segs[i]) {
+        final sh = h * (e.$2 / d.total);
         final op = focus == null
             ? (isSel ? 1.0 : 0.82)
-            : (focus == k ? 1.0 : 0.2);
+            : (focus == e.$1 ? 1.0 : 0.2);
         canvas.drawRect(Rect.fromLTWH(left, y - sh, barW, sh),
-            Paint()..color = col.withOpacity(op));
+            Paint()..color = colorOf(e.$1).withOpacity(op));
         y -= sh;
       }
-
-      seg(d.yt, colors.$1, 0);
-      seg(d.audio, colors.$2, 1);
-      seg(d.tts, colors.$3, 2);
       canvas.restore();
     }
   }
@@ -1028,6 +1377,7 @@ class _ListenBarsPainter extends CustomPainter {
       o.selected != selected ||
       o.focus != focus ||
       o.days != days ||
+      o.segs != segs ||
       o.isRtl != isRtl ||
       o.grid != grid;
 }
