@@ -40,6 +40,8 @@ const String _kChatKey = 'zflut-speaking-chat-v1';
 const String _kLangKey = 'zflut-speaking-lang-v1';
 const String _kHistKey = 'zflut-speaking-history-v1';
 const String _kAutoReadKey = 'zflut-speaking-autoread-v1';
+// معرفیِ اولیه فقط یک‌بار در کلِ عمرِ برنامه؛ بعد از آن شروعِ گفتگو تصادفی است
+const String _kIntroKey = 'zflut-speaking-intro-v1';
 const Color _kMistake = Color(0xFFC81E1E);
 const Color _kCorrection = Color(0xFF166534);
 
@@ -847,18 +849,99 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     _inHistory = hs != null;
     _syncedAt = hs?.updatedAt;
     // اگر فقط پیامِ خوش‌آمد هست، با زبانِ فعلی بازسازی شود
-    if (_messages.isEmpty ||
-        (_messages.length == 1 && _messages.first.role == 'ai')) {
-      _messages = [_welcome(_chatLang)];
-      _persist(history: false);
+    // کاربرِ قدیمی (که قبلاً گفتگو داشته) دیگر «بارِ اول» حساب نمی‌شود
+    if (!_introSeen &&
+        (_messages.any((m) => !m.isWelcome) ||
+            _HistoryStore.load(ls).isNotEmpty)) {
+      _markIntroSeen();
     }
+    if (_messages.isEmpty || _messages.every((m) => m.isWelcome)) {
+      _messages = _freshMessages(_chatLang);
+      _persist(history: false);
+      // از بارِ دوم به بعد: گاهی خودِ AI گفتگو را شروع می‌کند، گاهی منتظر می‌ماند
+      if (_introSeen) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _chatOpener());
+      }
+    }
+  }
+
+  bool get _introSeen =>
+      ref.read(localStorageProvider).readString(_kIntroKey) == '1';
+
+  void _markIntroSeen() {
+    final ls = ref.read(localStorageProvider);
+    if (ls.readString(_kIntroKey) != '1') {
+      unawaited(ls.writeString(_kIntroKey, '1'));
+    }
+  }
+
+  /// بارِ اول: پیامِ معرفی؛ بعد از آن: لیستِ خالی (بدونِ متنِ تکراری).
+  List<_Msg> _freshMessages(String lang) =>
+      _introSeen ? <_Msg>[] : [_welcome(lang)];
+
+  bool _openerBusy = false;
+
+  /// یک سؤالِ کوتاهِ معمولیِ آدم‌ها برای شروعِ گفتگو (احوال‌پرسی و...).
+  Future<String?> _smallTalkOpener() async {
+    final langLabel = _enName(_activeLang());
+    final native = _enName(ref.read(languageSelectionProvider).native);
+    const topics = <String>[
+      'how they are doing',
+      "what's up / any news",
+      'what they are doing right now',
+      'how their day has been so far',
+      'where they have been lately',
+      'whether they have eaten or what they plan for dinner',
+      'how their weekend or week is going',
+      'what they did today',
+      'how they slept or how they are feeling today',
+    ];
+    final topic = topics[math.Random().nextInt(topics.length)];
+    try {
+      final r = await _callAi(
+          '${_persona.partnerIntro(langLabel)}\n'
+          'You start the conversation yourself with a $langLabel learner '
+          '(native language: $native). Ask ONE short, casual small-talk '
+          'question in $langLabel, the kind people ask each other to begin a '
+          'chat, about: $topic. One sentence only, natural and friendly. Do '
+          'not introduce yourself and do not explain. Plain text only, no '
+          'markdown, no emojis.',
+          80);
+      final t = _normalizeAiText(r).trim();
+      return t.isEmpty ? null : t;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// چت: بعد از باز شدن (از بارِ دوم به بعد) گاهی AI خودش شروع می‌کند.
+  Future<void> _chatOpener() async {
+    if (!mounted || _embedded || _callMode || _loading || _openerBusy) return;
+    if (_messages.any((m) => !m.isWelcome)) return;
+    if (math.Random().nextInt(100) >= 55) return; // این بار منتظرِ کاربر
+    final sid = _sessionId;
+    _openerBusy = true;
+    String? t;
+    try {
+      t = await _smallTalkOpener();
+    } finally {
+      _openerBusy = false;
+    }
+    if (!mounted || t == null || _sessionId != sid || _callMode) return;
+    if (_messages.any((m) => !m.isWelcome)) return;
+    setState(() => _messages = [
+          ..._messages.where((m) => !m.isWelcome),
+          _Msg(role: 'ai', text: t!),
+        ]);
+    _persist();
+    _scrollDown();
   }
 
   void _setChatLang(String v) {
     if (v == _chatLang || !mounted) return;
     setState(() {
       _chatLang = v;
-      if (_messages.length <= 1) _messages = [_welcome(v)];
+      if (_messages.every((m) => m.isWelcome)) _messages = _freshMessages(v);
     });
     // نوشتن در حافظه بعد از اتمامِ فریم تا انتخابِ زبان لحظه‌ای بماند
     Future.microtask(() {
@@ -900,6 +983,8 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
         'sessionId': _sessionId,
         'items': _messages.map((m) => m.toJson()).toList(),
       }));
+      // اولین پیامِ واقعی (از کاربر یا AI) = معرفیِ اولیه انجام شده
+      if (_messages.any((m) => !m.isWelcome)) _markIntroSeen();
     }
     if (history && _inHistory) _syncHistory();
   }
@@ -952,7 +1037,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     }
     if (s.updatedAt == _syncedAt) return;
     setState(() {
-      _messages = [_welcome(s.lang), ...s.messages];
+      _messages = [..._freshMessages(s.lang), ...s.messages];
       _syncedAt = s.updatedAt;
       _selectMode = false;
       _sel.clear();
@@ -1066,7 +1151,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
       _failedText = null;
       _failedHistory = null;
       if (_messages.isEmpty && !_embedded) {
-        _messages = [_welcome(_activeLang())];
+        _messages = _freshMessages(_activeLang());
       }
     });
     _persist();
@@ -1336,7 +1421,7 @@ Now respond to: "$sentence"
       _syncedAt = null;
       _selectMode = false;
       _sel.clear();
-      _messages = [_welcome(_activeLang())];
+      _messages = _freshMessages(_activeLang());
       _editIdx = null;
       _corrections = [];
       _correctionsSaved = false;
@@ -1345,6 +1430,9 @@ Now respond to: "$sentence"
       _failedHistory = null;
     });
     _persist();
+    if (_introSeen && !_callMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _chatOpener());
+    }
   }
 
   void _saveToGrammar(List<_Correction> list) {
@@ -1376,7 +1464,9 @@ Now respond to: "$sentence"
     if (_inHistory) PersonaStore.setForSession(ls, _sessionId, p.id);
     setState(() {
       _persona = p;
-      if (_messages.length <= 1) _messages = [_welcome(_activeLang())];
+      if (_messages.every((m) => m.isWelcome)) {
+        _messages = _freshMessages(_activeLang());
+      }
     });
     _persist(history: false);
   }
@@ -1401,6 +1491,28 @@ Now respond to: "$sentence"
     // فقط یک‌بار: اگر در همین گفتگو قبلاً سلام/معرفی یا هر پیامِ واقعی‌ای هست،
     // با هر بار وارد شدن دوباره معرفیِ خودش را نگوید و در چت هم ننویسد.
     if (_messages.any((m) => !m.isWelcome)) return null;
+    if (_openerBusy) return null;
+    // از بارِ دوم به بعد: معرفیِ تکراری نداریم؛ گاهی AI با یک سؤالِ معمولی
+    // شروع می‌کند و گاهی ساکت منتظرِ حرفِ کاربر می‌ماند.
+    if (_introSeen) {
+      if (math.Random().nextInt(100) >= 60) return null;
+      _openerBusy = true;
+      String? o;
+      try {
+        o = await _smallTalkOpener();
+      } finally {
+        _openerBusy = false;
+      }
+      if (!mounted || o == null) return null;
+      if (_messages.any((m) => !m.isWelcome)) return null;
+      setState(() => _messages = [
+            ..._messages.where((m) => !m.isWelcome),
+            _Msg(role: 'ai', text: o!),
+          ]);
+      _persist();
+      _scrollDown();
+      return o;
+    }
     final lang = _activeLang();
     final langLabel = _enName(lang);
     final native = _enName(ref.read(languageSelectionProvider).native);
