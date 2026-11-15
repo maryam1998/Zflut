@@ -186,7 +186,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     if (!RegExp(r'^[ab]\d+$').hasMatch(itemId)) return null;
     final male = itemId.startsWith('a');
     final p = _langVoices[lang.trim().toLowerCase()];
-    if (p == null) {
+    if (p == null && mounted) {
       unawaited(_loadVoices()); // زبانِ تازه (مثلاً هدر تازه عوض شده) → صدایش را پیدا کن
     }
     final v = p == null ? null : (male ? p.male : p.female);

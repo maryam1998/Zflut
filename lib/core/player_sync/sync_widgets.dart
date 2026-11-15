@@ -197,12 +197,91 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     _bgCancel();
     _ctrl.removeChunkAdvanceHook(_chunkHook);
     _ctrl.removeChunkVoiceResolver(_voiceResolver);
+    _keepVoicesAfterLeaving();
     final n = _notifier;
     final id = _scopeId;
     Future.microtask(() {
       if (n.mounted) n.clearScope(id);
     });
     super.dispose();
+  }
+
+  // 🎭 صدای گوینده‌ها (مثلاً A مرد / B زن در مکالمه) بعد از ترکِ تب هم باید بماند.
+  // resolverِ اصلی به خودِ تب بسته است و با dispose برداشته می‌شود؛ پخش ولی ادامه دارد و با صدای
+  // پیش‌فرض می‌خواند. اینجا از جای هر جمله (در لحظه‌ی ترک) یک عکس برمی‌داریم و یک resolverِ مستقل
+  // ثبت می‌کنیم؛ با پخشِ متنِ دیگر خودکار برداشته می‌شود.
+  static String? Function(String?, int)? _detachedResolver;
+  static void Function()? _detachedUnlisten;
+
+  void _clearDetachedVoices() {
+    final r = _detachedResolver;
+    if (r != null) {
+      try {
+        _ctrl.removeChunkVoiceResolver(r);
+      } catch (_) {}
+    }
+    _detachedResolver = null;
+    try {
+      _detachedUnlisten?.call();
+    } catch (_) {}
+    _detachedUnlisten = null;
+  }
+
+  void _keepVoicesAfterLeaving() {
+    try {
+      _clearDetachedVoices();
+      final vf = widget.voiceForItem;
+      final vt = widget.voiceForTrans;
+      if (vf == null && vt == null) return;
+      final playing = ref.read(speechControllerProvider);
+      if (playing.key == null) return; // چیزی پخش نمی‌شود
+      final st = ref.read(playerSyncProvider);
+      if (st.scopeId != _scopeId) return;
+      final mainCode = st.mainCode;
+      final snap = <String, ({String code, List<TrackSpan> spans})>{};
+      void add(PlayerTrack t) {
+        snap[t.key] = (code: t.code, spans: List<TrackSpan>.of(t.spans));
+      }
+
+      st.tracks.values.forEach(add);
+      st.legacy.forEach(add);
+      final trKey = _trVoiceKey, trItem = _trVoiceItem, trLang = _trVoiceLang;
+      if (trKey != null) snap.putIfAbsent(trKey, () => (code: '', spans: const <TrackSpan>[]));
+      if (snap.isEmpty || !snap.containsKey(playing.key)) return;
+
+      String? resolver(String? key, int start) {
+        try {
+          if (key == null) return null;
+          if (vt != null &&
+              key == trKey &&
+              trItem != null &&
+              trLang != null) {
+            return vt(trItem, trLang);
+          }
+          final e = snap[key];
+          if (e == null || e.spans.isEmpty) return null;
+          TrackSpan? sp;
+          for (var i = e.spans.length - 1; i >= 0; i--) {
+            if (start >= e.spans[i].start) {
+              sp = e.spans[i];
+              break;
+            }
+          }
+          sp ??= e.spans.first;
+          if (e.code == mainCode) return vf?.call(sp.id);
+          return vt?.call(sp.id, e.code);
+        } catch (_) {
+          return null;
+        }
+      }
+
+      _detachedResolver = resolver;
+      _ctrl.addChunkVoiceResolver(resolver);
+      _detachedUnlisten = _ctrl.addListener((SpeechState s) {
+        // متنِ دیگری (نه مالِ این اسکوپ) شروع شد → دیگر لازم نیست
+        if (s.key != null && !snap.containsKey(s.key)) _clearDetachedVoices();
+      });
+    } catch (_) {}
   }
 
   /// 🎭 صدای جمله‌ی در حال خواندن (فقط وقتی متنِ پخش‌شده مالِ همین اسکوپ است).
