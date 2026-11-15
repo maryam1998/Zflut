@@ -376,54 +376,84 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
   }
 
   String _spkSig = '';
-  List<bool> _spkMale = const []; // اندیسِ پاراگراف ← true = مرد (گوینده‌ی اول)
-  List<int> _spkGiPara = const []; // اندیسِ جمله ← اندیسِ پاراگراف
+  List<bool> _spkMaleBySent = const []; // اندیسِ جمله ← true = مرد (گوینده‌ی اول)
+  List<int> _spkParaFirstGi = const []; // اندیسِ پاراگراف ← اندیسِ اولین جمله‌اش
 
   static final RegExp _spkLabel = RegExp(
       r"^\s*(?:\*\*)?(\p{L}[\p{L}\p{N}'’\-]*(?:\s\p{L}[\p{L}\p{N}'’\-]*){0,2})(?:\*\*)?\s*[:：]\s*\S",
       unicode: true);
+  static final RegExp _spkOpenQuote = RegExp('^\\s*[“"«„]');
 
-  /// گوینده‌ی هر پاراگراف: اگر متن «نام: جمله» برچسب دارد (۲ تا ۳ نامِ متفاوت) بر اساسِ نام،
-  /// وگرنه هر پاراگراف یک نوبتِ گفتگو است و گوینده‌ها به‌نوبت عوض می‌شوند (۱ مرد، ۲ زن، ۳ مرد، …).
+  /// گوینده‌ی هر «جمله»:
+  ///  • اگر متن «نام: جمله» برچسب دارد (۲ تا ۳ نامِ متفاوت) بر اساسِ نام؛
+  ///  • وگرنه نوبتِ گفتگو با هر پاراگراف، هر خطِ جدید (حتی بدونِ خطِ خالی)، یا هر جمله‌ای که با
+  ///    گیومه‌ی بازشو شروع شود عوض می‌شود و گوینده‌ها به‌نوبت می‌آیند (۱ مرد، ۲ زن، ۳ مرد، …).
   void _spkEnsure() {
     final sig = '${widget.text.hashCode}';
     if (sig == _spkSig) return;
     final paras = _structure();
+
+    // نوبت‌های هر جمله (شماره‌ی نوبت از ۰) + برچسب‌ها
+    final turnOf = <int>[];
+    final labelOfSent = <String?>[];
     final names = <String>[];
-    final labelOf = <String?>[];
-    var labeled = 0;
+    var labeledLines = 0;
+    var totalLines = 0;
+    var turn = -1;
     for (final p in paras) {
-      final m = _spkLabel.firstMatch(p.text);
-      final n = m?.group(1)?.toLowerCase();
-      labelOf.add(n);
-      if (n != null) {
-        labeled++;
-        if (!names.contains(n)) names.add(n);
+      turn++; // هر پاراگراف = نوبتِ تازه
+      var cursor = 0;
+      var first = true;
+      for (final sent in p.sents) {
+        final at = p.text.indexOf(sent.trim(), cursor);
+        var newTurn = false;
+        if (!first) {
+          if (at > cursor && p.text.substring(cursor, at).contains('\n')) {
+            newTurn = true;
+          } else if (_spkOpenQuote.hasMatch(sent)) {
+            newTurn = true;
+          }
+        }
+        if (newTurn) turn++;
+        String? label;
+        if (first || newTurn) {
+          totalLines++;
+          final m = _spkLabel.firstMatch(sent);
+          label = m?.group(1)?.toLowerCase();
+          if (label != null) {
+            labeledLines++;
+            if (!names.contains(label)) names.add(label);
+          }
+        }
+        turnOf.add(turn);
+        labelOfSent.add(label);
+        if (at >= 0) cursor = at + sent.trim().length;
+        first = false;
       }
     }
-    final useLabels = paras.length >= 2 &&
-        labeled >= 2 &&
-        labeled * 10 >= paras.length * 6 &&
+
+    final useLabels = totalLines >= 2 &&
+        labeledLines >= 2 &&
+        labeledLines * 10 >= totalLines * 6 &&
         names.length >= 2 &&
         names.length <= 3;
+
     final male = <bool>[];
-    var prev = true;
-    for (var i = 0; i < paras.length; i++) {
+    var prevTurn = -1;
+    var cur = true;
+    for (var i = 0; i < turnOf.length; i++) {
       if (useLabels) {
-        final n = labelOf[i];
-        if (n != null) prev = names.indexOf(n).isEven;
-        male.add(prev);
-      } else {
-        male.add(i.isEven);
+        final n = labelOfSent[i];
+        if (n != null) cur = names.indexOf(n).isEven;
+      } else if (turnOf[i] != prevTurn) {
+        cur = turnOf[i].isEven;
       }
+      prevTurn = turnOf[i];
+      male.add(cur);
     }
-    final giPara = <int>[
-      for (var i = 0; i < paras.length; i++)
-        for (var k = 0; k < paras[i].sents.length; k++) i,
-    ];
     _spkSig = sig;
-    _spkMale = male;
-    _spkGiPara = giPara;
+    _spkMaleBySent = male;
+    _spkParaFirstGi = [for (final p in paras) p.firstGi];
   }
 
   /// شناسه‌ی آیتم ('<id>-s<gi>' یا '<id>-p<pi>') ← صدای مرد/زن برای همان زبان
@@ -436,24 +466,11 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     if (m == null) return null;
     _spkEnsure();
     final n = int.tryParse(m.group(2)!) ?? -1;
-    final pi = m.group(1) == 'p'
-        ? n
-        : (n >= 0 && n < _spkGiPara.length ? _spkGiPara[n] : -1);
-    if (pi < 0 || pi >= _spkMale.length) return null;
-    return dv.voiceFor(male: _spkMale[pi], lang: lang);
-  }
-
-  // ثبتِ صوتِ آپلودیِ این داستان در پلیرِ اصلیِ پایین (معادلِ onUserAudioStateChange در Hope)
-  late final ProviderContainer _pc;
-
-  void _registerAudio() {
-    if (!mounted) return;
-    final a = widget.audio;
-    if (a == null) return;
-    if (!identical(_pc.read(storyUserAudioProvider), a)) {
-      _pc.read(storyPlaybackModeProvider.notifier).state = 'tts';
-      _pc.read(storyUserAudioProvider.notifier).state = a;
-    }
+    final gi = m.group(1) == 'p'
+        ? (n >= 0 && n < _spkParaFirstGi.length ? _spkParaFirstGi[n] : -1)
+        : n;
+    if (gi < 0 || gi >= _spkMaleBySent.length) return null;
+    return dv.voiceFor(male: _spkMaleBySent[gi], lang: lang);
   }
 
   @override

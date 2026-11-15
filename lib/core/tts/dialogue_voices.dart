@@ -30,6 +30,7 @@ class DialogueVoices {
   final Map<String, ({String? male, String? female})> _langVoices = {};
   bool _voicesBusy = false;
   bool _voicesDirty = false;
+  DateTime _lastLoad = DateTime.fromMillisecondsSinceEpoch(0);
 
   final Set<String> _autoVoiceAsked = <String>{}; // 'lang:gender'
   final Map<String, ({String? prevActive, String want})> _autoVoicePending = {};
@@ -104,6 +105,7 @@ class DialogueVoices {
         _langVoices
           ..clear()
           ..addAll(next);
+        _lastLoad = DateTime.now();
       } while (_voicesDirty);
     } catch (_) {
     } finally {
@@ -172,7 +174,13 @@ class DialogueVoices {
   /// صدای گوینده‌ی مرد (A) یا زن (B) برای یک زبان
   String voiceFor({required bool male, required String lang}) {
     final p = _langVoices[lang.trim().toLowerCase()];
-    if (p == null && isMounted()) {
+    // صدای فعالِ تنظیمات هر لحظه ممکن است عوض شود → فهرست هر چند ثانیه تازه می‌شود
+    // (تا صدا روی انتخابِ قدیمی قفل نماند).
+    if (isMounted() &&
+        !_voicesBusy &&
+        (p == null ||
+            DateTime.now().difference(_lastLoad) >
+                const Duration(seconds: 2))) {
       unawaited(load());
     }
     final v = p == null ? null : (male ? p.male : p.female);
