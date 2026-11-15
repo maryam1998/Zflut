@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/native/native_bridge.dart';
+import '../../../core/neural/neural_dates.dart' show gregorianToJalali, kPersianMonths;
 import '../../../core/player_sync/playback_origin.dart';
 import '../../../core/stats/listening_tracker.dart';
 import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
@@ -16,6 +17,10 @@ import '../review_i18n.dart';
 // ═══════════════════════════════════════════════════════════════════
 const Map<String, Map<String, String>> _kT = {
   'fa': {
+    'vweek': "هفته",
+    'vmonth': "ماه",
+    'activedays': "روزِ فعال",
+    'mtotal': "مجموعِ ماه",
     'goal': "هدف روزانه",
     'streakd': "{n} روز پشت‌سرهم",
     'streakn': "امروز گوش بده تا زنجیره شروع شود",
@@ -49,6 +54,10 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'روی هر ستون بزن تا جزئیاتِ آن روز را ببینی',
   },
   'en': {
+    'vweek': "Week",
+    'vmonth': "Month",
+    'activedays': "active days",
+    'mtotal': "Month total",
     'goal': "Daily goal",
     'streakd': "{n} days in a row",
     'streakn': "Listen today to start a streak",
@@ -83,6 +92,10 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'Tap a bar to see that day',
   },
   'ar': {
+    'vweek': "أسبوع",
+    'vmonth': "شهر",
+    'activedays': "أيام نشطة",
+    'mtotal': "إجمالي الشهر",
     'goal': "الهدف اليومي",
     'streakd': "{n} أيام متتالية",
     'streakn': "استمع اليوم لتبدأ السلسلة",
@@ -116,6 +129,10 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'اضغط على أي عمود لرؤية تفاصيل اليوم',
   },
   'de': {
+    'vweek': "Woche",
+    'vmonth': "Monat",
+    'activedays': "aktive Tage",
+    'mtotal': "Monatssumme",
     'goal': "Tagesziel",
     'streakd': "{n} Tage in Folge",
     'streakn': "Hör heute zu, um eine Serie zu starten",
@@ -151,6 +168,10 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'Tippe auf einen Balken für Details',
   },
   'es': {
+    'vweek': "Semana",
+    'vmonth': "Mes",
+    'activedays': "días activos",
+    'mtotal': "Total del mes",
     'goal': "Meta diaria",
     'streakd': "{n} días seguidos",
     'streakn': "Escucha hoy para empezar una racha",
@@ -186,6 +207,10 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'Toca una barra para ver ese día',
   },
   'fr': {
+    'vweek': "Semaine",
+    'vmonth': "Mois",
+    'activedays': "jours actifs",
+    'mtotal': "Total du mois",
     'goal': "Objectif du jour",
     'streakd': "{n} jours de suite",
     'streakn': "Écoutez aujourd'hui pour lancer une série",
@@ -283,6 +308,55 @@ const Map<String, Map<String, String>> _kRoute = {
     '/story': 'Histoire',
   },
 };
+
+/// نامِ ماه‌های میلادی (برای زبان‌هایی که ماهِ شمسی ندارند)
+const Map<String, List<String>> _kMonthsG = {
+  'en': ['January','February','March','April','May','June','July','August','September','October','November','December'],
+  'ar': ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'],
+  'de': ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
+  'es': ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'],
+  'fr': ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'],
+};
+
+/// ماهِ نمایش‌داده‌شده: اولین روز، تعداد روز، عنوان و نامِ ماه
+class _MonthInfo {
+  final DateTime first;
+  final int days;
+  final String title;
+  final String monthName;
+  const _MonthInfo(this.first, this.days, this.title, this.monthName);
+}
+
+DateTime _addDays(DateTime d, int n) => DateTime(d.year, d.month, d.day + n);
+
+/// [off] = ۰ ماهِ جاری، -۱ ماهِ قبل … ؛ فارسی ← ماهِ شمسی، بقیه ← میلادی
+_MonthInfo _monthAt(int off, String lang, DateTime today, String Function(Object) fmtNum) {
+  if (lang == 'fa') {
+    var jt = gregorianToJalali(today.year, today.month, today.day);
+    var first = _addDays(today, -(jt[2] - 1));
+    for (var i = 0; i < -off; i++) {
+      final last = _addDays(first, -1);
+      final jl = gregorianToJalali(last.year, last.month, last.day);
+      first = _addDays(last, -(jl[2] - 1));
+    }
+    final jf = gregorianToJalali(first.year, first.month, first.day);
+    var count = 1;
+    var cur = first;
+    while (count < 32) {
+      final nxt = _addDays(cur, 1);
+      if (gregorianToJalali(nxt.year, nxt.month, nxt.day)[1] != jf[1]) break;
+      count++;
+      cur = nxt;
+    }
+    final name = kPersianMonths[jf[1] - 1];
+    return _MonthInfo(first, count, '$name ${fmtNum(jf[0])}', name);
+  }
+  final first = DateTime(today.year, today.month + off, 1);
+  final days = DateTime(first.year, first.month + 1, 0).day;
+  final names = _kMonthsG[lang] ?? _kMonthsG['en']!;
+  final name = names[first.month - 1];
+  return _MonthInfo(first, days, '$name ${first.year}', name);
+}
 
 /// ترتیبِ ثابتِ تب‌ها در ستون (پایین → بالا) و در راهنمای رنگ
 const List<String> _kRouteOrder = [
@@ -473,6 +547,9 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
   int? _sel; // ایندکسِ ستونِ انتخاب‌شده؛ null = پیش‌فرض (امروز / بهترین روزِ هفته)
   int _off = 0; // ۰ = این هفته، -۱ = هفته‌ی قبل، …
   int _goalMin = 15; // هدفِ روزانه (دقیقه)
+  bool _month = false; // نمای ماهانه (فارسی: ماهِ شمسی)
+  int _moff = 0; // ۰ = ماهِ جاری
+  int? _msel; // روزِ انتخاب‌شده در ماه (۰-پایه)
   String? _src; // منبعِ فوکوس‌شده ('yt' | 'audio' | مسیرِ تب | 'tts')
   bool _needAccess = false;
 
@@ -555,6 +632,212 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
       final r = await NativeBridge.instance.ytCheckAccess();
       if (mounted) setState(() => _needAccess = r['granted'] != true);
     } catch (_) {}
+  }
+
+  Widget _modeToggle(BuildContext context) {
+    final c = context.appColors;
+    Widget chip(bool month, String label) {
+      final on = _month == month;
+      return Expanded(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() {
+            _month = month;
+            _src = null;
+          }),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            decoration: BoxDecoration(
+              color: on ? c.paper : Colors.transparent,
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(color: on ? c.gold : Colors.transparent),
+            ),
+            alignment: Alignment.center,
+            child: Text(label,
+                style: TextStyle(
+                    color: on ? c.ink : c.inkSoft,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800)),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: c.goldSoft.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(children: [
+        chip(false, context.lt('vweek')),
+        chip(true, context.lt('vmonth')),
+      ]),
+    );
+  }
+
+  /// 🗓 نمای ماهانه: نقشه‌ی حرارتیِ روزها (فارسی ← ماهِ شمسی) + جزئیاتِ روزِ انتخابی
+  List<Widget> _monthChildren(BuildContext context, ListenStats stats,
+      bool isRtl, String lang, DateTime today, int startWd) {
+    final c = context.appColors;
+    final m = _monthAt(_moff, lang, today, context.rvNum);
+    final cutoff = _addDays(today, -119);
+    final canPrev = !_addDays(m.first, -1).isBefore(cutoff);
+    final canNext = _moff < 0;
+    final dates = [for (var i = 0; i < m.days; i++) _addDays(m.first, i)];
+    final days = [for (final d in dates) stats.day(d)];
+    final segs = [for (final d in days) _segsOf(d)];
+    final lead = (m.first.weekday - startWd + 7) % 7;
+    final total = days.fold<int>(0, (a, d) => a + d.total);
+    final elapsed = _moff == 0
+        ? dates.where((d) => !d.isAfter(today)).length.clamp(1, 31).toInt()
+        : m.days;
+    final active = days.where((d) => d.total >= 60).length;
+    var bestIdx = 0;
+    for (var i = 1; i < days.length; i++) {
+      if (days[i].total > days[bestIdx].total) bestIdx = i;
+    }
+    final todayIdx = dates.indexWhere((d) => d == today);
+    final selIdx = (_msel != null && _msel! < m.days)
+        ? _msel!
+        : (todayIdx >= 0 ? todayIdx : bestIdx);
+    final maxSec = days.fold<int>(0, (a, d) => math.max(a, d.total));
+    final labels = context.rvWeekdayLetters;
+
+    Widget navBtn(IconData icon, bool on, VoidCallback f) => GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: on ? f : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Icon(icon,
+                size: 24, color: on ? c.ink : c.inkSoft.withOpacity(0.35)),
+          ),
+        );
+
+    Widget cell(int? i) {
+      if (i == null) return const Expanded(child: SizedBox(height: 40));
+      final d = dates[i];
+      final sec = days[i].total;
+      final future = d.isAfter(today);
+      final ratio = maxSec <= 0 ? 0.0 : (sec / maxSec).clamp(0.0, 1.0).toDouble();
+      final fill = sec <= 0
+          ? c.goldSoft.withOpacity(future ? 0.12 : 0.30)
+          : c.gold.withOpacity(0.25 + 0.75 * ratio);
+      final dark = sec > 0 && ratio > 0.55;
+      final isSel = i == selIdx;
+      final isTod = d == today;
+      return Expanded(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() {
+            _msel = i;
+            _src = null;
+          }),
+          child: Container(
+            height: 40,
+            margin: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: fill,
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: isSel ? c.ink : (isTod ? c.gold : Colors.transparent),
+                width: isSel ? 1.8 : 1.4,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(context.rvNum(i + 1),
+                style: TextStyle(
+                    color: dark ? Colors.white : (future ? c.inkSoft.withOpacity(0.5) : c.ink),
+                    fontSize: 12,
+                    fontWeight: isTod || isSel ? FontWeight.w800 : FontWeight.w500)),
+          ),
+        ),
+      );
+    }
+
+    final rows = <Widget>[];
+    final cells = <int?>[
+      for (var i = 0; i < lead; i++) null,
+      for (var i = 0; i < m.days; i++) i,
+    ];
+    while (cells.length % 7 != 0) {
+      cells.add(null);
+    }
+    for (var r = 0; r < cells.length ~/ 7; r++) {
+      rows.add(Row(children: [for (var k = 0; k < 7; k++) cell(cells[r * 7 + k])]));
+    }
+
+    final selDate = dates[selIdx];
+    return [
+      Row(children: [
+        navBtn(isRtl ? Icons.chevron_right_rounded : Icons.chevron_left_rounded,
+            canPrev, () => setState(() {
+                  _moff--;
+                  _msel = null;
+                  _src = null;
+                })),
+        Expanded(
+          child: Text(m.title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: c.ink, fontSize: 14, fontWeight: FontWeight.w800)),
+        ),
+        navBtn(isRtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+            canNext, () => setState(() {
+                  _moff++;
+                  _msel = null;
+                  _src = null;
+                })),
+      ]),
+      const SizedBox(height: 8),
+      Text(context.lt('mtotal'),
+          style: TextStyle(color: c.inkSoft, fontSize: 12)),
+      const SizedBox(height: 2),
+      Text(context.ldur(total),
+          style: TextStyle(
+              color: c.ink, fontSize: 24, fontWeight: FontWeight.w800, height: 1.2)),
+      const SizedBox(height: 12),
+      Row(children: [
+        for (var k = 0; k < 7; k++)
+          Expanded(
+            child: Text(labels[((startWd - 1 + k) % 7)],
+                textAlign: TextAlign.center,
+                style: TextStyle(color: c.inkSoft, fontSize: 11.5)),
+          ),
+      ]),
+      const SizedBox(height: 4),
+      ...rows,
+      const SizedBox(height: 14),
+      _DayDetail(
+        focus: _src,
+        isRtl: isRtl,
+        segs: segs[selIdx],
+        onFocus: (k) => setState(() => _src = _src == k ? null : k),
+        onOpen: (r) => _openRoute(r, days[selIdx].last[r]),
+        title: selDate == today
+            ? context.lt('today')
+            : '${_fullDay(context, selDate)} ${context.rvNum(selIdx + 1)} ${m.monthName}',
+        day: days[selIdx],
+        fmt: context.ldur,
+      ),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(
+            child: _Mini(
+                label: context.lt('avg'), value: context.ldur(total ~/ elapsed))),
+        const SizedBox(width: 8),
+        Expanded(
+            child: _Mini(
+                label: context.lt('best'),
+                value: context.ldur(days[bestIdx].total))),
+        const SizedBox(width: 8),
+        Expanded(
+            child: _Mini(
+                label: context.lt('activedays'),
+                value: context.rvNum(active))),
+      ]),
+    ];
   }
 
   /// 📍 رفتن به همان تب و همان جمله‌ای که آخرین بار گوش دادی.
@@ -688,11 +971,28 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
           ]),
         );
 
+    if (_month) {
+      return Directionality(
+        textDirection: dir,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _modeToggle(context),
+            const SizedBox(height: 12),
+            ..._monthChildren(context, stats, isRtl, lang, today, startWd),
+            if (_needAccess) accessHint(),
+          ],
+        ),
+      );
+    }
+
     return Directionality(
       textDirection: dir,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _modeToggle(context),
+          const SizedBox(height: 12),
           // ── ناوبریِ هفته‌ها ──
           Row(
             children: [
