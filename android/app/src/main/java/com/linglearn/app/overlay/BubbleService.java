@@ -1738,9 +1738,30 @@ public class BubbleService extends Service {
         loadViewPrefs();
         gripExtras.clear();
         panel = new LinearLayout(this) {
+            private boolean outDown;
+            private int outSeq;
+            private float outX, outY;
             @Override public boolean dispatchTouchEvent(MotionEvent ev) {
                 lastPanelTouchMs = SystemClock.elapsedRealtime();       // هر لمسِ کادر، شمارشِ جمع‌شدنِ کنترل‌ها را از نو می‌کند
-                return super.dispatchTouchEvent(ev);
+                final int a = ev.getActionMasked();
+                if (a == MotionEvent.ACTION_DOWN) {
+                    // ضربه داخلِ کادرِ ترجمه ولی بیرونِ کادرِ لغت (روی جای غیرِ دکمه) → کادرِ لغت بسته شود
+                    outDown = wordCard != null && wordCard.getVisibility() == View.VISIBLE
+                            && !rawInside(wordCard, ev) && !hitsClickable(this, ev.getRawX(), ev.getRawY());
+                    outSeq = cardSeq; outX = ev.getRawX(); outY = ev.getRawY();
+                }
+                final boolean res = super.dispatchTouchEvent(ev);
+                if (a == MotionEvent.ACTION_CANCEL) outDown = false;
+                if (a == MotionEvent.ACTION_UP && outDown) {
+                    outDown = false;
+                    final float slop = ViewConfiguration.get(BubbleService.this).getScaledTouchSlop();
+                    // اگر ضربه کادرِ لغتِ تازه‌ای باز کرد (cardSeq عوض شده)، چیزی بسته نمی‌شود
+                    if (Math.hypot(ev.getRawX() - outX, ev.getRawY() - outY) <= slop && cardSeq == outSeq
+                            && wordCard != null && wordCard.getVisibility() == View.VISIBLE) {
+                        main.post(() -> closeWordCard());
+                    }
+                }
+                return res;
             }
         };
         panel.setOrientation(LinearLayout.VERTICAL);
@@ -1972,6 +1993,10 @@ public class BubbleService extends Service {
         panel.setOnTouchListener((v, ev) -> {
             if (ev.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
                 boolean cardOpen = wordCard != null && wordCard.getVisibility() == View.VISIBLE;
+                if (cardOpen) {                                      // لمس بیرونِ کادر (روی برنامه‌ی زیرین) → کادرِ لغت بسته می‌شود
+                    main.post(this::closeWordCard);
+                    return false;
+                }
                 if (!cardOpen && !keepOpen && !panelDragging && panelShown && !fadingOut && !somethingPlaying(SystemClock.elapsedRealtime())) {
                     main.post(this::fadeOutPanelForIdle);
                 }
@@ -3512,6 +3537,33 @@ public class BubbleService extends Service {
     }
 
     private void setScrollCompact(boolean compact) { applyScrollMax(); }
+
+    private static boolean rawInside(View v, MotionEvent ev) {
+        int[] l = new int[2];
+        v.getLocationOnScreen(l);
+        float x = ev.getRawX(), y = ev.getRawY();
+        return x >= l[0] && x <= l[0] + v.getWidth() && y >= l[1] && y <= l[1] + v.getHeight();
+    }
+
+    /** آیا نقطه روی دکمه/آیتمِ قابل‌کلیک است؟ (آن لمس‌ها کادرِ لغت را نمی‌بندند) */
+    private static boolean hitsClickable(View root, float rx, float ry) {
+        View cur = root;
+        while (cur instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) cur;
+            View next = null;
+            for (int i = g.getChildCount() - 1; i >= 0; i--) {
+                View c = g.getChildAt(i);
+                if (c.getVisibility() != View.VISIBLE) continue;
+                int[] l = new int[2];
+                c.getLocationOnScreen(l);
+                if (rx >= l[0] && rx <= l[0] + c.getWidth() && ry >= l[1] && ry <= l[1] + c.getHeight()) { next = c; break; }
+            }
+            if (next == null) break;
+            if (next.isClickable()) return true;
+            cur = next;
+        }
+        return false;
+    }
 
     private void closeWordCard() {
         main.removeCallbacks(cardTick);
