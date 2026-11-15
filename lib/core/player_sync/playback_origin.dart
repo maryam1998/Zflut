@@ -28,3 +28,7 @@ final tabRestoreProvider = StateProvider<PlaybackOrigin?>((ref) => null);
 
 /// هر بار که زیاد شود، اسکوپِ فعال به خطِ در حال پخش اسکرول می‌کند.
 final revealActiveTickProvider = StateProvider<int>((ref) => 0);
+
+/// 📍 درخواستِ پرش به یک آیتمِ مشخص (شناسه‌ی آیتم) در تبِ باز؛ مثلاً از نمودارِ
+/// زمانِ گوش‌دادن. اسکوپی که آیتم را دارد اسکرول می‌کند و آن را null می‌کند.
+final revealItemProvider = StateProvider<String?>((ref) => null);

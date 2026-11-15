@@ -143,7 +143,32 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       _register();
       // برگشت به تب وسطِ پخش (remount) → همان لحظه به خطِ در حال پخش برو
       _onActive(ref.read(activeSyncProvider));
+      // پرش به جمله‌ای که از نمودارِ زمانِ گوش‌دادن درخواست شده
+      _tryRevealRequested();
     });
+  }
+
+  Timer? _revealTimer;
+
+  /// 📍 پرش به آیتمِ درخواست‌شده (revealItemProvider). تب تازه باز شده و آیتم‌ها
+  /// ممکن است چند فریم بعد ثبت شوند؛ پس چند بار تلاش می‌کند. اگر آیتم مالِ این
+  /// اسکوپ نبود درخواست را پاک نمی‌کند.
+  void _tryRevealRequested([int attempt = 0]) {
+    _revealTimer?.cancel();
+    if (!mounted) return;
+    final id = ref.read(revealItemProvider);
+    if (id == null) return;
+    if (_indexById.containsKey(id)) {
+      ref.read(revealItemProvider.notifier).state = null;
+      final a = ActiveSync(widget.mainCode, id);
+      _lastActive = a;
+      _scrollToken++;
+      _scrollTo(a, _scrollToken, 0);
+      return;
+    }
+    if (attempt >= 14) return;
+    _revealTimer = Timer(const Duration(milliseconds: 150),
+        () => _tryRevealRequested(attempt + 1));
   }
 
   @override
@@ -193,6 +218,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   @override
   void dispose() {
+    _revealTimer?.cancel();
     _handOffReadingIfNeeded();
     _bgCancel();
     _ctrl.removeChunkAdvanceHook(_chunkHook);
@@ -1175,6 +1201,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     // لمسِ طولانیِ دکمه‌ی پخش: دوباره به خطِ در حال پخش اسکرول کن
     ref.listen<int>(revealActiveTickProvider, (prev, next) {
       if (prev != next) _onActive(ref.read(activeSyncProvider));
+    });
+    ref.listen<String?>(revealItemProvider, (prev, next) {
+      if (next != null) _tryRevealRequested();
     });
     return _ScopeToken(scopeId: _scopeId, child: widget.child);
   }
