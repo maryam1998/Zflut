@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/app_prefs_provider.dart';
 import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
@@ -371,9 +372,12 @@ class SpotlightTour extends ConsumerStatefulWidget {
   }
 
   static final ValueNotifier<int> _transTick = ValueNotifier<int>(0);
+  static bool _transForce = false;
 
   /// تورِ «خوانشِ ترجمه‌ها»: فقط بارِ اول و فقط وقتی برنامه روی صفحه است.
-  static void startTranslationReading() {
+  /// force=true (از تنظیمات) → همیشه.
+  static void startTranslationReading({bool force = false}) {
+    _transForce = force;
     try {
       if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
         return;
@@ -453,7 +457,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     try {
       seen = ref.read(sharedPrefsProvider).getBool(_kTransTourSeenKey) ?? false;
     } catch (_) {}
-    if (seen) return;
+    if (seen && !SpotlightTour._transForce) return;
     // کمی صبر تا ردیفِ ترجمه‌ی در حال خوانش روی صفحه بنشیند
     _transTimer?.cancel();
     _transTimer = Timer(const Duration(milliseconds: 900), () {
@@ -812,6 +816,41 @@ class _SpotPainter extends CustomPainter {
 }
 
 /// دکمه‌ی «معرفیِ برنامه» برای تنظیمات: شیت را می‌بندد و تور را از اول نشان می‌دهد.
+/// آیا هدفِ تور همین الان روی صفحه دیده می‌شود؟
+bool _onScreen(String id) {
+  final list = _multi[id];
+  if (list == null || list.isEmpty) return false;
+  try {
+    final view = WidgetsBinding.instance.platformDispatcher.views.first;
+    final size = view.physicalSize / view.devicePixelRatio;
+    for (final t in list) {
+      final r = t._rect;
+      if (r == null) continue;
+      final vis = r.intersect(Offset.zero & size);
+      if (vis.width >= 6 && vis.height >= 6) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+/// تورِ مناسبِ جایی که کاربر هست: زیرتبِ ایمپورت ← تورِ ایمپورت، ردیفِ ترجمه‌ی در حال
+/// خوانش ← تورِ خوانشِ ترجمه، تبِ داستان ← تورِ داستان، بقیه‌ی تب‌ها ← تورِ اصلی.
+void _replayFor(String path) {
+  if (_importSteps.any((st) => st.id.startsWith('imp_') && _onScreen(st.id))) {
+    SpotlightTour.startImport(force: true);
+    return;
+  }
+  if (_onScreen('tr_refresh')) {
+    SpotlightTour.startTranslationReading(force: true);
+    return;
+  }
+  if (path == '/story') {
+    SpotlightTour.startStory(force: true);
+    return;
+  }
+  SpotlightTour.replay();
+}
+
 class TourReplayButton extends ConsumerWidget {
   const TourReplayButton({super.key});
 
@@ -830,9 +869,14 @@ class TourReplayButton extends ConsumerWidget {
       icon: Icon(Icons.tips_and_updates_outlined, color: c.gold),
       label: Text(label),
       onPressed: () {
+        // 🎓 تورِ همان تبی که کاربر الان در آن است (قبل از بسته‌شدنِ تنظیمات می‌خوانیم)
+        var path = '';
+        try {
+          path = GoRouter.of(context).routeInformationProvider.value.uri.path;
+        } catch (_) {}
         Navigator.of(context).pop();
         Future<void>.delayed(
-            const Duration(milliseconds: 450), SpotlightTour.replay);
+            const Duration(milliseconds: 450), () => _replayFor(path));
       },
     );
   }
