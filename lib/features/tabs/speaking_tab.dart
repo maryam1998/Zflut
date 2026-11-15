@@ -29,6 +29,7 @@ import '../../core/neural/neural_dates.dart'
     show faDigits, gregorianToJalali, kPersianMonths, kPersianMonthsLatin;
 import '../../core/providers/app_prefs_provider.dart';
 import '_hope_panel.dart';
+import 'ai_demo_sheet.dart';
 import 'speaking_call.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1066,6 +1067,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   /// چت: بعد از باز شدن (از بارِ دوم به بعد) گاهی AI خودش شروع می‌کند.
   Future<void> _chatOpener() async {
     if (!mounted || _embedded || _callMode || _loading || _openerBusy) return;
+    if (!ProStatus.isPro) return; // کاربرِ رایگان گفتگوی زنده ندارد
     if (_messages.any((m) => !m.isWelcome)) return;
     if (math.Random().nextInt(100) >= 55) return; // این بار منتظرِ کاربر
     final sid = _sessionId;
@@ -1479,6 +1481,7 @@ Now respond to: "$sentence"
   }
 
   Future<void> _ask(String text, List<_Msg> history) async {
+    if (FreeLimit.blockUnlessPro()) return; // 🔒 فقط Pro
     final lang = _activeLang();
     setState(() {
       _editIdx = null;
@@ -1522,6 +1525,8 @@ Now respond to: "$sentence"
   Future<void> _send() async {
     final text = _input.text.trim();
     if (text.isEmpty || _loading) return;
+    // 🔒 گفتگوی زنده با AI فقط Pro؛ کاربرِ رایگان «ببین چطور کار می‌کند» را دارد
+    if (FreeLimit.blockUnlessPro()) return;
     _input.clear();
     await _ask(text, _messages);
   }
@@ -1638,6 +1643,7 @@ Now respond to: "$sentence"
 
   void _setCallMode(bool v) {
     if (v == _callMode || _embedded) return;
+    if (v && FreeLimit.blockUnlessPro()) return; // 🔒 ویدیو کالِ زنده فقط Pro
     setState(() {
       _callMode = v;
       _editIdx = null;
@@ -1894,6 +1900,9 @@ Now respond to: "$sentence"
 
       // ── منطقه‌ی چت ──
       _chatArea(c),
+
+      // ── کاربرِ رایگان: نمونه‌ی آماده‌ی چت و تماس ──
+      if (!ProStatus.isPro && !_embedded) _demoButton(c),
 
       // ── نوار ورودی (در تماس، ورودیِ خودش را دارد) ──
       if (!_callMode || _embedded) _inputBar(c),
@@ -2440,6 +2449,23 @@ Now respond to: "$sentence"
     return GestureDetector(
       onLongPress: (_loading || editing) ? null : () => _enterSelect(idx),
       child: row,
+    );
+  }
+
+  Widget _demoButton(AppThemeColorsExt c) {
+    final fa = ref.watch(appPrefsProvider).uiLang == 'fa';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Center(
+        child: TextButton.icon(
+          onPressed: () => showAiDemoSheet(context),
+          icon: Icon(Icons.play_circle_outline_rounded, color: c.teal),
+          label: Text(
+            fa ? 'ببین چطور کار می‌کند' : 'See how it works',
+            style: TextStyle(color: c.teal, fontWeight: FontWeight.w800),
+          ),
+        ),
+      ),
     );
   }
 
