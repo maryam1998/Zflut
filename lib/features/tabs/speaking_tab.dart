@@ -1343,6 +1343,22 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     return text;
   }
 
+  /// فقط Pro: هر نوبت تصادفی تعیین می‌شود AI سؤالِ مرتبط با حرفِ کاربر بپرسد یا
+  /// فقط واکنش نشان بدهد؛ مثل گفتگوی واقعیِ آدم‌ها که همیشه سؤال نمی‌پرسند.
+  /// (بدونِ فراخوانیِ اضافه؛ فقط یک جمله به پرامپتِ همان پاسخ اضافه می‌شود.)
+  String _questionStyle() {
+    if (!ProStatus.isPro) return '';
+    if (math.Random().nextInt(100) < 40) {
+      return 'For THIS reply: end with ONE short, natural question that follows '
+          'from what they just said (specific to their message, never a generic '
+          'or scripted question). This overrides any earlier instruction about '
+          'follow-ups.\n';
+    }
+    return 'For THIS reply: do NOT end with a question. Just react naturally, '
+        'maybe add a short thought or detail of your own, and let them lead. '
+        'This overrides any earlier instruction about follow-ups.\n';
+  }
+
   Future<_Reply> _askTeacher({
     required String sentence,
     required String lang,
@@ -1364,6 +1380,7 @@ FIX: <what they wrote> => <the correct version>
 - After the FIX line(s) — or immediately if there were no mistakes — leave a blank line, then continue the chat: reply ENTIRELY in $langLabel, plain text only (no markdown/asterisks), naturally and briefly — react, ask a follow-up, like a real conversation, not a report. Do NOT explain the mistakes yourself in prose; the FIX lines above are enough.
 
 ${_callMode ? kCallRules : ''}
+${_questionStyle()}
 Recent conversation:
 ${_historyText(history)}
 
@@ -1387,6 +1404,7 @@ Now respond to: "$sentence"
         'react to what they said and/or ask a short follow-up question, like a real '
         'chat message. Plain text only, no markdown, no numbered lists.\n'
         '${_callMode ? kCallRules : ''}\n'
+        '${_questionStyle()}'
         'Recent conversation:\n${_historyText(history)}\n';
     final result = await _callAi(prompt, 180);
     return _normalizeAiText(result);
