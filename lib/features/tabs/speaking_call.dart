@@ -2647,9 +2647,11 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       builder: (_, __) {
         final listening = _phase == _Phase.recording;
         final speaking = _phase == _Phase.speaking;
+        // 👄 لب فقط وقتی واقعاً صدا پخش می‌شود حرکت می‌کند (نه در مکثِ بینِ جمله‌ها/pause/قبل از شروعِ صدا)
+        final talking = speaking && _ctl.isSounding;
         final ringing = _phase == _Phase.ringing;
         final wave = (math.sin(_pulse.value * math.pi * 2)).abs();
-        final mouth = _mouthViseme(speaking);
+        final mouth = _mouthViseme(talking);
         final photo = _avatarBytes(p.image);
         final lv = listening
             ? _level.value
@@ -2705,7 +2707,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                     : _EmojiTalkingFace(
                         emoji: p.emoji,
                         size: 70,
-                        talk: _talkShape(speaking),
+                        talk: _talkShape(talking),
                         // اگر تحلیلِ پیکسلیِ ایموجی ممکن نبود، همان روشِ قبلی
                         fallback: _TalkingJaw(
                           size: 70,
@@ -2736,11 +2738,12 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       animation: Listenable.merge([_pulse, _level]),
       builder: (_, __) {
         final speaking = _phase == _Phase.speaking;
-        final talk = _talkShape(speaking);
+        final talking = speaking && _ctl.isSounding; // 👄 لب فقط با صدای واقعی
+        final talk = _talkShape(talking);
         return PhotoTalkingFace(
           spec: spec,
-          mouth: _photoMouth(speaking),
-          speaking: speaking,
+          mouth: _photoMouth(talking),
+          speaking: talking,
           time: DateTime.now().millisecondsSinceEpoch / 1000.0,
         );
       },

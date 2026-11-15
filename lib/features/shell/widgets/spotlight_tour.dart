@@ -24,8 +24,13 @@ import '../../../core/theme/app_theme_colors.dart';
 const String _kTourSeenKey = 'zflut-tour-seen-v1';
 const String _kImportTourSeenKey = 'zflut-tour-import-seen-v1';
 const String _kStoryTourSeenKey = 'zflut-tour-story-seen-v1';
+const String _kTransTourSeenKey = 'zflut-tour-trans-seen-v1';
 
 final Map<String, _TourTargetState> _targets = {};
+
+/// چند ویجت می‌توانند یک id داشته باشند (مثلاً دکمه‌ی رفرشِ هر ردیفِ ترجمه)؛ تور اولین نمونه‌ی
+/// «قابل‌دیدن» را انتخاب می‌کند. برای idهای تک‌نمونه رفتار همان قبل است.
+final Map<String, Set<_TourTargetState>> _multi = {};
 
 /// ویجتی که یک جای صفحه را برای تور «ثبت» می‌کند (بدون GlobalKey، پس با
 /// انتقالِ صفحه‌ها تداخلی پیش نمی‌آید).
@@ -43,11 +48,14 @@ class _TourTargetState extends State<TourTarget> {
   void initState() {
     super.initState();
     _targets[widget.id] = this;
+    (_multi[widget.id] ??= <_TourTargetState>{}).add(this);
   }
 
   @override
   void dispose() {
     if (identical(_targets[widget.id], this)) _targets.remove(widget.id);
+    _multi[widget.id]?.remove(this);
+    if (_multi[widget.id]?.isEmpty ?? false) _multi.remove(widget.id);
     super.dispose();
   }
 
@@ -306,6 +314,28 @@ const List<_Step> _importSteps = [
   ),
 ];
 
+/// تورِ «خوانشِ ترجمه‌ها» — بارِ اولی که پلیر می‌خواهد ترجمه‌ها را بخواند.
+const List<_Step> _transSteps = [
+  _Step(
+    'tr_refresh',
+    Icons.refresh_rounded,
+    {'en': 'Not happy with a translation?', 'fa': 'ترجمه‌اش خوب نیست؟'},
+    {
+      'en': 'The player is now reading the translations too. If one is wrong or unnatural, tap this refresh button next to it — the AI translates it again, better, and the improved version is remembered.',
+      'fa': 'پلیر الان ترجمه‌ها را هم می‌خواند. اگر ترجمه‌ای اشتباه یا غیرطبیعی بود، دکمه‌ی رفرشِ کنارش را بزن تا دوباره و بهتر ترجمه شود؛ نسخه‌ی بهتر ذخیره می‌شود.',
+    },
+  ),
+  _Step(
+    'account',
+    Icons.volume_off_rounded,
+    {'en': 'Turn translation reading off', 'fa': 'خاموش‌کردنِ خوانشِ ترجمه'},
+    {
+      'en': 'Don\'t want translations read aloud? Open Settings from here and turn off «Read translations inside the app».',
+      'fa': 'نمی‌خواهی ترجمه‌ها خوانده شوند؟ از اینجا تنظیمات را باز کن و گزینه‌ی «خواندن ترجمه‌ها داخل برنامه» را خاموش کن.',
+    },
+  ),
+];
+
 const Map<String, Map<String, String>> _ui = {
   'skip': {'en': 'Skip', 'fa': 'رد کردن'},
   'next': {'en': 'Next', 'fa': 'بعدی'},
@@ -340,6 +370,18 @@ class SpotlightTour extends ConsumerStatefulWidget {
     _importTick.value++;
   }
 
+  static final ValueNotifier<int> _transTick = ValueNotifier<int>(0);
+
+  /// تورِ «خوانشِ ترجمه‌ها»: فقط بارِ اول و فقط وقتی برنامه روی صفحه است.
+  static void startTranslationReading() {
+    try {
+      if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+        return;
+      }
+    } catch (_) {}
+    _transTick.value++;
+  }
+
   /// مرحله‌ی «ابزارهای شناور»: به داک (FeatureDock) می‌گوید باز شود.
   static final ValueNotifier<int> dockExpand = ValueNotifier<int>(0);
 
@@ -358,13 +400,16 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   String _group = 'main'; // 'main' | 'import' | 'story'
   List<_Step> get _list => _group == 'import'
       ? _importSteps
-      : (_group == 'story' ? _storySteps : _steps);
+      : (_group == 'story'
+          ? _storySteps
+          : (_group == 'trans' ? _transSteps : _steps));
   int _i = -1;
   Rect? _prev;
   Rect? _last;
   Timer? _startTimer;
   Timer? _importTimer;
   Timer? _storyTimer;
+  Timer? _transTimer;
 
   @override
   void initState() {
@@ -379,6 +424,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     SpotlightTour._replayTick.addListener(_onReplay);
     SpotlightTour._importTick.addListener(_onImportTick);
     SpotlightTour._storyTick.addListener(_onStoryTick);
+    SpotlightTour._transTick.addListener(_onTransTick);
   }
 
   @override
@@ -387,6 +433,8 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     SpotlightTour._replayTick.removeListener(_onReplay);
     SpotlightTour._importTick.removeListener(_onImportTick);
     SpotlightTour._storyTick.removeListener(_onStoryTick);
+    SpotlightTour._transTick.removeListener(_onTransTick);
+    _transTimer?.cancel();
     _storyTimer?.cancel();
     _importTimer?.cancel();
     _pulse.dispose();
@@ -397,6 +445,21 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   void _onReplay() {
     _startTimer?.cancel();
     _begin();
+  }
+
+  void _onTransTick() {
+    if (_active) return;
+    var seen = true;
+    try {
+      seen = ref.read(sharedPrefsProvider).getBool(_kTransTourSeenKey) ?? false;
+    } catch (_) {}
+    if (seen) return;
+    // کمی صبر تا ردیفِ ترجمه‌ی در حال خوانش روی صفحه بنشیند
+    _transTimer?.cancel();
+    _transTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted || _active) return;
+      _begin(group: 'trans');
+    });
   }
 
   void _onStoryTick() {
@@ -441,6 +504,16 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   }
 
   Rect? _usableRect(String id, Size size) {
+    final cands = _multi[id];
+    if (cands != null && cands.length > 1) {
+      for (final t in cands) {
+        final r = t._rect;
+        if (r == null) continue;
+        final vis = r.intersect(Offset.zero & size);
+        if (vis.width >= 6 && vis.height >= 6) return vis;
+      }
+      return null;
+    }
     final r = _targets[id]?._rect;
     if (r == null) return null;
     final vis = r.intersect(Offset.zero & size);
@@ -467,7 +540,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   bool _advance() {
     final size = MediaQuery.of(context).size;
     for (var j = _i + 1; j < _list.length; j++) {
-      if (_group != 'main') _targets[_list[j].id]?._reveal();
+      if (_group == 'import' || _group == 'story') _targets[_list[j].id]?._reveal();
       final r = _usableRect(_list[j].id, size);
       if (r != null) {
         setState(() {
@@ -487,7 +560,9 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
       ref.read(sharedPrefsProvider).setBool(
           _group == 'import'
               ? _kImportTourSeenKey
-              : (_group == 'story' ? _kStoryTourSeenKey : _kTourSeenKey),
+              : (_group == 'story'
+                  ? _kStoryTourSeenKey
+                  : (_group == 'trans' ? _kTransTourSeenKey : _kTourSeenKey)),
           true);
     } catch (_) {}
     _pulse.stop();
@@ -569,7 +644,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   bool _hasLater(Size size) {
     for (var j = _i + 1; j < _list.length; j++) {
       // ایمپورت: هدفِ ثبت‌شده کافی است (در _advance به صفحه آورده می‌شود)
-      if (_group != 'main'
+      if (_group == 'import' || _group == 'story'
           ? _targets[_list[j].id]?._rect != null
           : _usableRect(_list[j].id, size) != null) return true;
     }

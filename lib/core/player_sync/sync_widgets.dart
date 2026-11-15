@@ -24,6 +24,7 @@ import 'examples_registry.dart';
 import 'playback_origin.dart';
 import 'player_sync_provider.dart';
 import 'player_track.dart';
+import '../../features/shell/widgets/spotlight_tour.dart' show SpotlightTour;
 
 // ═══════════════════════════════════════════════════════════════════
 // رنگ هایلایت — معادل highlightBg در theme.js
@@ -545,6 +546,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     ref.read(adhocSyncProvider.notifier).state =
         (key: key, active: ActiveSync(to, id));
     unawaited(_ctrl.toggle(text, to));
+    SpotlightTour.startTranslationReading(); // 🎓 بارِ اول: راهنمای خوانشِ ترجمه
     // اگر خوانشِ ترجمه به هر دلیل (خطا/شروع‌نشدن) تمام نشد، پلیر گیر نکند و ادامه بدهد
     Timer(Duration(seconds: 12 + text.length ~/ 6), () {
       if (!mounted || _resumeSpanId == null) return;
@@ -778,6 +780,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         ref.read(adhocSyncProvider.notifier).state =
             (key: key, active: ActiveSync(st.code, st.idFor(text)));
         unawaited(_ctrl.toggle(text, st.code));
+        if (st.isTrans) SpotlightTour.startTranslationReading(); // 🎓 بارِ اول: راهنمای خوانشِ ترجمه
         first = false;
         expectKey = key;
         if (!await _awaitFinish(key, text, token)) return;

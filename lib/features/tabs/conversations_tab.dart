@@ -22,6 +22,7 @@ import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/read_ids_provider.dart';
 import '../../core/router/back_handlers.dart';
+import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/widgets/level_chips.dart';
 import '../../core/widgets/range_card.dart';
@@ -47,6 +48,12 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   final Map<String, ({String? male, String? female})> _langVoices = {};
   bool _voicesBusy = false;
   bool _voicesDirty = false;
+
+  // 🎭 اگر برای یک زبان فقط صدای یک جنسیت نصب باشد (مثلاً فارسی: فقط «پویا»/«سارا»)، A و B با یک صدا
+  // خوانده می‌شدند. صدای جنسیتِ ناموجود یک‌بار خودکار دانلود می‌شود و صدای فعالِ قبلیِ کاربر سرِ جایش می‌ماند.
+  final Set<String> _autoVoiceAsked = <String>{}; // 'lang:gender'
+  final Map<String, ({String? prevActive, String want})> _autoVoicePending = {};
+  StreamSubscription<Map<String, dynamic>>? _dlSub;
 
   /// برچسبِ صدا نشانِ F/M دارد (مثلاً «Nicole · US · F»)؛ برای صداهای برنامه بعدش رده‌ی
   /// کیفیت هم می‌آید («Chloe · US · F · low»)، پس فقط به آخرِ برچسب تکیه نمی‌کنیم.
@@ -99,6 +106,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             }
 
             next[lang] = (male: pick(_isMale), female: pick(_isFemale));
+            _autoFetchMissingGender(lang, raw, next[lang]!, ok);
           } catch (_) {}
         }
         if (!mounted) return;
@@ -110,6 +118,67 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     } finally {
       _voicesBusy = false;
     }
+  }
+
+  /// صدای جنسیتِ ناموجود را (اگر در فهرستِ صداهای اپ هست) یک‌بار بی‌صدا دانلود می‌کند.
+  /// فقط وقتی کاربر «صدای گوشی» را انتخاب نکرده؛ مثل بقیه‌ی دانلودهای خودکارِ مدل‌ها.
+  void _autoFetchMissingGender(String lang, dynamic raw,
+      ({String? male, String? female}) have, List<Map<String, dynamic>> installed) {
+    try {
+      if (raw is! List || installed.isEmpty) return; // مدلِ اپ برای این زبان اصلاً نیست
+      final pref = ref.read(sharedPrefsProvider).getString('voiceEnginePref');
+      if (pref == 'phone') return;
+      String? prevActive;
+      for (final v in installed) {
+        if (v['active'] == true) prevActive = '${v['id']}';
+      }
+      void want(String gender, String? haveId, bool Function(String) isG) {
+        final key = '$lang:$gender';
+        if (haveId != null || _autoVoiceAsked.contains(key)) return;
+        for (final e in raw) {
+          if (e is! Map) continue;
+          if (e['downloaded'] == true || e['downloading'] == true) continue;
+          if (!isG('${e['label']}')) continue;
+          final id = '${e['id']}';
+          if (id.isEmpty) continue;
+          _autoVoiceAsked.add(key);
+          _autoVoicePending[lang] = (prevActive: prevActive, want: id);
+          unawaited(NativeBridge.instance
+              .downloadTtsModel(lang: lang, voice: id)
+              .catchError((_) => <String, dynamic>{}));
+          return;
+        }
+      }
+
+      want('male', have.male, _isMale);
+      want('female', have.female, _isFemale);
+    } catch (_) {}
+  }
+
+  /// پایانِ دانلودِ خودکار → صدای فعالِ قبلیِ کاربر برگردد (دانلودِ یک صدا آن را «فعال» می‌کند) و صداها دوباره خوانده شوند.
+  Future<void> _onVoiceDownloaded(Map<String, dynamic> d) async {
+    final lang = '${d['lang'] ?? ''}'.trim().toLowerCase();
+    final p = _autoVoicePending[lang];
+    if (p == null) return;
+    try {
+      final r = await NativeBridge.instance.getTtsVoices(lang: lang);
+      final list = r['voices'];
+      var installed = false;
+      if (list is List) {
+        for (final e in list) {
+          if (e is Map && '${e['id']}' == p.want && e['downloaded'] == true) {
+            installed = true;
+          }
+        }
+      }
+      if (!installed) return; // رویدادِ دانلودِ دیگری بود
+      _autoVoicePending.remove(lang);
+      final prev = p.prevActive;
+      if (prev != null && prev.isNotEmpty && prev != p.want) {
+        await NativeBridge.instance.setTtsVoice(lang: lang, voice: prev);
+      }
+    } catch (_) {}
+    if (mounted) unawaited(_loadVoices());
   }
 
   /// A («می‌شنوی») = مرد، B («می‌گی») = زن
@@ -193,6 +262,11 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     // اگر لیست باز بود، کار را به AppShell می‌سپارد (خروج از برنامه).
     BackHandlers.add(_onSystemBack);
     unawaited(_loadVoices()); // 🎭 صدای مرد/زن برای متنِ اصلی و زبان‌های هدر
+    if (NativeBridge.instance.isSupported) {
+      _dlSub = NativeBridge.instance
+          .on('ttsModelDownloadDone')
+          .listen((d) => unawaited(_onVoiceDownloaded(d)));
+    }
     // لمسِ طولانیِ دکمه‌ی پخش از تبِ دیگر: موضوع/سناریوی در حال پخش را باز کن
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _applyRestore(ref.read(tabRestoreProvider));
@@ -217,6 +291,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   @override
   void dispose() {
     BackHandlers.remove(_onSystemBack);
+    _dlSub?.cancel();
     _gridScroll.dispose();
     super.dispose();
   }

@@ -1,3 +1,4 @@
+import '../../features/shell/widgets/spotlight_tour.dart' show TourTarget;
 import '../translate/known_translations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -696,7 +697,9 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                   ),
                 ),
               if (canRetry)
-                KeyedSubtree(
+                TourTarget(
+                  id: 'tr_refresh',
+                  child: KeyedSubtree(
                   key: _refreshKey,
                   child: _IconBtn(
                     onTap: _retrying ? null : _retryWithCoach,
@@ -712,6 +715,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                         : null,
                     icon: Icons.refresh,
                   ),
+                ),
                 ),
               // 🧬 مسیر عصبیِ همین زبان؛ تقویمش با بقیه‌ی زبان‌های همین آیتم مشترک است
               if (text != null)

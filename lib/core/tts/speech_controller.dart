@@ -690,8 +690,15 @@ class SpeechController extends StateNotifier<SpeechState> {
   // داخلی
   // ═══════════════════════════════════════════════════════════════
 
+  /// 🔊 «الان واقعاً صدا پخش می‌شود؟» — برای حرکتِ لبِ آواتارِ ویدیوکال.
+  /// فقط بین شروعِ پخشِ یک جمله و پایانش true است؛ در مکثِ بینِ جمله‌ها، pause/stop،
+  /// خطا و قبل از شروعِ جمله‌ی بعد false می‌شود.
+  bool _sounding = false;
+  bool get isSounding => _sounding && state.status == SpeechStatus.playing;
+
   /// همه‌ی منتظرهای پایان خوانش را با false آزاد می‌کند.
   void _cancelWaiters() {
+    _sounding = false;
     for (final c in [_nativeWaiter, _webWaiter, _onlineWaiter]) {
       if (c != null && !c.isCompleted) c.complete(false);
     }
@@ -755,6 +762,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
 
     final myGen = _generation;
+    _sounding = false; // جمله‌ی تازه: تا شروعِ واقعیِ پخش لب بسته است
     _chunkIndex = idx;
     state = state.copyWith(
       chunkIndex: idx,
@@ -871,6 +879,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       final started = await speakFn(id);
       if (myGen != _generation) return false;
       if (!started) return false;
+      _sounding = true;
       if (onStarted != null) {
         try {
           onStarted();
@@ -1125,8 +1134,10 @@ class SpeechController extends StateNotifier<SpeechState> {
     // وب فعال نمی‌شد و تکرار، خوانش‌ها را پشت سر هم داخل صف مرورگر می‌ریخت).
     _localTts.setStartHandler(() {
       started = true;
+      if (identical(_webWaiter, waiter)) _sounding = true;
     });
     _localTts.setCompletionHandler(() {
+      if (identical(_webWaiter, waiter)) _sounding = false;
       if (waiter.isCompleted || !identical(_webWaiter, waiter)) return;
       waiter.complete(true);
     });
@@ -1313,6 +1324,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   // ═══════════════════════════════════════════════════════════════
   Future<void> _gapThenNext(int idx, String text, int myGen,
       {double gapScale = 1.0}) async {
+    _sounding = false; // مکثِ بینِ جمله‌ها: بی‌صدا
     if (myGen == _generation) _failStreak = 0;
     // 🧬 این جمله همین الان کامل خوانده شد (خوانش اول یا یکی از تکرارها) →
     // به «مسیر عصبی» خبر بده. قبل از مکثِ بینِ جمله‌ها، تا اگر کاربر وسطِ
