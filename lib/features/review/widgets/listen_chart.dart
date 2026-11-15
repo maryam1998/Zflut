@@ -12,6 +12,10 @@ import '../review_i18n.dart';
 // ═══════════════════════════════════════════════════════════════════
 const Map<String, Map<String, String>> _kT = {
   'fa': {
+    'wtotal': "مجموعِ هفته",
+    'thisweek': "این هفته",
+    'lastweek': "هفته‌ی گذشته",
+    'weeksago': "{n} هفته پیش",
     'hs': 'س',
     'ms': 'د',
     'listen': 'گوش‌دادن',
@@ -35,6 +39,10 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'روی هر ستون بزن تا جزئیاتِ آن روز را ببینی',
   },
   'en': {
+    'wtotal': "Week total",
+    'thisweek': "This week",
+    'lastweek': "Last week",
+    'weeksago': "{n} weeks ago",
     'hs': 'h',
     'ms': 'm',
     'listen': 'Listening',
@@ -59,6 +67,10 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'Tap a bar to see that day',
   },
   'ar': {
+    'wtotal': "إجمالي الأسبوع",
+    'thisweek': "هذا الأسبوع",
+    'lastweek': "الأسبوع الماضي",
+    'weeksago': "قبل {n} أسابيع",
     'hs': 'س',
     'ms': 'د',
     'listen': 'الاستماع',
@@ -82,6 +94,10 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'اضغط على أي عمود لرؤية تفاصيل اليوم',
   },
   'de': {
+    'wtotal': "Wochensumme",
+    'thisweek': "Diese Woche",
+    'lastweek': "Letzte Woche",
+    'weeksago': "Vor {n} Wochen",
     'hs': 'h',
     'ms': 'm',
     'listen': 'Hören',
@@ -107,6 +123,10 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'Tippe auf einen Balken für Details',
   },
   'es': {
+    'wtotal': "Total de la semana",
+    'thisweek': "Esta semana",
+    'lastweek': "Semana pasada",
+    'weeksago': "Hace {n} semanas",
     'hs': 'h',
     'ms': 'm',
     'listen': 'Escucha',
@@ -132,6 +152,10 @@ const Map<String, Map<String, String>> _kT = {
     'tap': 'Toca una barra para ver ese día',
   },
   'fr': {
+    'wtotal': "Total de la semaine",
+    'thisweek': "Cette semaine",
+    'lastweek': "Semaine dernière",
+    'weeksago': "Il y a {n} semaines",
     'hs': 'h',
     'ms': 'm',
     'listen': 'Écoute',
@@ -286,7 +310,9 @@ class ListenWeeklyView extends StatefulWidget {
 
 class _ListenWeeklyViewState extends State<ListenWeeklyView>
     with WidgetsBindingObserver {
-  int? _sel; // ایندکسِ ستونِ انتخاب‌شده؛ null = امروز
+  int? _sel; // ایندکسِ ستونِ انتخاب‌شده؛ null = پیش‌فرض (امروز / بهترین روزِ هفته)
+  int _off = 0; // ۰ = این هفته، -۱ = هفته‌ی قبل، …
+  int? _src; // منبعِ فوکوس‌شده: 0=یوتیوب، 1=فایل صوتی، 2=پلیر برنامه
   bool _needAccess = false;
 
   @override
@@ -321,20 +347,56 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
     final dir = uiContentDirection(context);
     final isRtl = dir == TextDirection.rtl;
     final stats = widget.stats;
+    final lang = Localizations.localeOf(context).languageCode;
     final now = DateTime.now();
-    final dates = stats.lastDates(now, n: 7);
+    final today = DateTime(now.year, now.month, now.day);
+    // شروعِ هفته بر اساسِ زبانِ برنامه: فارسی/عربی = شنبه، بقیه = دوشنبه
+    final startWd = (lang == 'fa' || lang == 'ar') ? DateTime.saturday : DateTime.monday;
+    final back = (today.weekday - startWd + 7) % 7;
+    final wkStart = DateTime(today.year, today.month, today.day - back + _off * 7);
+    final dates = [
+      for (var i = 0; i < 7; i++)
+        DateTime(wkStart.year, wkStart.month, wkStart.day + i)
+    ];
     final days = [for (final d in dates) stats.day(d)];
-    final prevDates = stats.lastDates(dates.first.subtract(const Duration(days: 1)), n: 7);
-    final prevTotal = prevDates.fold<int>(0, (a, d) => a + stats.day(d).total);
+    // روزهای گذشته‌ی همین هفته (برای مقایسه و میانگینِ منصفانه)
+    final elapsed = _off == 0 ? back + 1 : 7;
+    final prevTotal = [
+      for (var i = 0; i < elapsed; i++)
+        stats.day(DateTime(wkStart.year, wkStart.month, wkStart.day - 7 + i)).total
+    ].fold<int>(0, (a, b) => a + b);
     final total = days.fold<int>(0, (a, d) => a + d.total);
     final labels = context.rvWeekdayLetters;
-    final selIdx = _sel ?? (days.length - 1);
-    final sel = days[selIdx];
-    final avg = total ~/ 7;
+    final avg = total ~/ elapsed;
     var bestIdx = 0;
     for (var i = 1; i < days.length; i++) {
       if (days[i].total > days[bestIdx].total) bestIdx = i;
     }
+    final selIdx = _sel ?? (_off == 0 ? back : bestIdx);
+    final sel = days[selIdx];
+    final isToday = _off == 0 && selIdx == back;
+    final maxSec = days.fold<int>(0, (a, d) => math.max(a, d.total));
+    final weekLabel = _off == 0
+        ? context.lt('thisweek')
+        : _off == -1
+            ? context.lt('lastweek')
+            : context.lt('weeksago').replaceAll('{n}', context.rvNum(-_off));
+    final canPrev = _off > -16; // داده فقط ~۱۲۰ روز نگه داشته می‌شود
+    final canNext = _off < 0;
+    void goWeek(int delta) => setState(() {
+          _off = (_off + delta).clamp(-16, 0).toInt();
+          _sel = null;
+          _src = null;
+        });
+    Widget navBtn(IconData icon, bool on, VoidCallback f) => GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: on ? f : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Icon(icon,
+                size: 24, color: on ? c.ink : c.inkSoft.withOpacity(0.35)),
+          ),
+        );
 
     final hasYt = days.any((d) => d.yt > 0);
     final hasAudio = days.any((d) => d.audio > 0);
@@ -377,6 +439,22 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── ناوبریِ هفته‌ها ──
+          Row(
+            children: [
+              navBtn(isRtl ? Icons.chevron_right_rounded : Icons.chevron_left_rounded,
+                  canPrev, () => goWeek(-1)),
+              Expanded(
+                child: Text(weekLabel,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: c.ink, fontSize: 13, fontWeight: FontWeight.w800)),
+              ),
+              navBtn(isRtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+                  canNext, () => goWeek(1)),
+            ],
+          ),
+          const SizedBox(height: 8),
           // ── خلاصه: مجموعِ هفته + مقایسه با هفته‌ی قبل ──
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -385,7 +463,7 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(context.lt('total'),
+                    Text(context.lt(_off == 0 ? 'total' : 'wtotal'),
                         style: TextStyle(color: c.inkSoft, fontSize: 12)),
                     const SizedBox(height: 2),
                     Text(context.ldur(total),
@@ -418,8 +496,37 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
                         : d.localPosition.dx - _kGutter;
                     if (x < 0 || x > w) return;
                     final i = (x / (w / 7)).floor().clamp(0, 6).toInt();
-                    // RTL: i=0 سمت راست = قدیمی‌ترین
-                    setState(() => _sel = i);
+                    // i=0 = اولین روزِ هفته (RTL: سمت راست)
+                    // اگر روی یکی از رنگ‌های ستون زده شد، همان منبع فوکوس می‌شود
+                    int? src;
+                    final dd = days[i];
+                    if (dd.total > 0) {
+                      final (top, _) = _ListenBarsPainter._scale(maxSec);
+                      const chartTop = 8.0;
+                      final chartH = 168.0 - chartTop;
+                      final bottom = chartTop + chartH - 1.4;
+                      final h = math.max((dd.total / top) * chartH, 6.0);
+                      final f = (bottom - d.localPosition.dy) / h;
+                      if (f >= 0 && f <= 1) {
+                        final yEnd = dd.yt / dd.total;
+                        final aEnd = yEnd + dd.audio / dd.total;
+                        if (f < yEnd && dd.yt > 0) {
+                          src = 0;
+                        } else if (f < aEnd && dd.audio > 0) {
+                          src = 1;
+                        } else if (dd.tts > 0) {
+                          src = 2;
+                        } else if (dd.audio > 0) {
+                          src = 1;
+                        } else {
+                          src = 0;
+                        }
+                      }
+                    }
+                    setState(() {
+                      _src = (src != null && src == _src && i == selIdx) ? null : src;
+                      _sel = i;
+                    });
                   },
                   child: TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0, end: 1),
@@ -431,6 +538,7 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
                         days: days,
                         progress: t,
                         selected: selIdx,
+                        focus: _src,
                         colors: (ytC, auC, ttC),
                         grid: c.cardBorder,
                         text: c.inkSoft,
@@ -452,7 +560,10 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
                     Expanded(
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => setState(() => _sel = i),
+                        onTap: () => setState(() {
+                          _sel = i;
+                          _src = null;
+                        }),
                         child: Text(
                           labels[dates[i].weekday - 1],
                           textAlign: TextAlign.center,
@@ -471,7 +582,9 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
 
             // ── جزئیاتِ روزِ انتخاب‌شده ──
             _DayDetail(
-              title: selIdx == days.length - 1
+              focus: _src,
+              onFocus: (k) => setState(() => _src = _src == k ? null : k),
+              title: isToday
                   ? context.lt('today')
                   : _fullDay(context, dates[selIdx]),
               day: sel,
@@ -487,7 +600,7 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
               Expanded(
                   child: _Mini(
                       label: context.lt('today'),
-                      value: context.ldur(days.last.total))),
+                      value: context.ldur(stats.day(today).total))),
               const SizedBox(width: 8),
               Expanded(
                   child: _Mini(
@@ -505,9 +618,24 @@ class _ListenWeeklyViewState extends State<ListenWeeklyView>
               spacing: 14,
               runSpacing: 6,
               children: [
-                if (hasYt) _Legend(color: ytC, label: context.lt('yt')),
-                if (hasAudio) _Legend(color: auC, label: context.lt('audio')),
-                if (hasTts) _Legend(color: ttC, label: context.lt('tts')),
+                if (hasYt)
+                  _Legend(
+                      color: ytC,
+                      label: context.lt('yt'),
+                      active: _src == 0,
+                      onTap: () => setState(() => _src = _src == 0 ? null : 0)),
+                if (hasAudio)
+                  _Legend(
+                      color: auC,
+                      label: context.lt('audio'),
+                      active: _src == 1,
+                      onTap: () => setState(() => _src = _src == 1 ? null : 1)),
+                if (hasTts)
+                  _Legend(
+                      color: ttC,
+                      label: context.lt('tts'),
+                      active: _src == 2,
+                      onTap: () => setState(() => _src = _src == 2 ? null : 2)),
               ],
             ),
           ],
@@ -593,7 +721,11 @@ class _DayDetail extends StatelessWidget {
   final ListenDay day;
   final (Color, String) yt, audio, tts;
   final String Function(int) fmt;
+  final int? focus;
+  final void Function(int)? onFocus;
   const _DayDetail({
+    this.focus,
+    this.onFocus,
     required this.title,
     required this.day,
     required this.yt,
@@ -605,23 +737,37 @@ class _DayDetail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    Widget row((Color, String) s, int sec) => sec <= 0
+    Widget row((Color, String) s, int sec, int k) => sec <= 0
         ? const SizedBox.shrink()
-        : Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Row(children: [
-              Container(
-                  width: 9,
-                  height: 9,
-                  decoration: BoxDecoration(color: s.$1, shape: BoxShape.circle)),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: Text(s.$2,
-                      style: TextStyle(color: c.inkSoft, fontSize: 12.5))),
-              Text(fmt(sec),
-                  style: TextStyle(
-                      color: c.ink, fontSize: 12.5, fontWeight: FontWeight.w700)),
-            ]),
+        : GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onFocus == null ? null : () => onFocus!(k),
+            child: Container(
+              margin: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: focus == k ? s.$1.withOpacity(0.14) : Colors.transparent,
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(
+                    color: focus == k ? s.$1 : Colors.transparent, width: 1.2),
+              ),
+              child: Row(children: [
+                Container(
+                    width: 9,
+                    height: 9,
+                    decoration:
+                        BoxDecoration(color: s.$1, shape: BoxShape.circle)),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: Text(s.$2,
+                        style: TextStyle(color: c.inkSoft, fontSize: 12.5))),
+                Text(fmt(sec),
+                    style: TextStyle(
+                        color: c.ink,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700)),
+              ]),
+            ),
           );
 
     return Container(
@@ -644,9 +790,9 @@ class _DayDetail extends StatelessWidget {
                 style: TextStyle(
                     color: c.ink, fontSize: 15, fontWeight: FontWeight.w800)),
           ]),
-          row(yt, day.yt),
-          row(audio, day.audio),
-          row(tts, day.tts),
+          row(yt, day.yt, 0),
+          row(audio, day.audio, 1),
+          row(tts, day.tts, 2),
           if (day.total == 0)
             Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -691,19 +837,38 @@ class _Mini extends StatelessWidget {
 class _Legend extends StatelessWidget {
   final Color color;
   final String label;
-  const _Legend({required this.color, required this.label});
+  final bool active;
+  final VoidCallback? onTap;
+  const _Legend({
+    required this.color,
+    required this.label,
+    this.active = false,
+    this.onTap,
+  });
 
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-                color: color, borderRadius: BorderRadius.circular(3))),
-        const SizedBox(width: 6),
-        Text(label,
-            style: TextStyle(color: context.appColors.inkSoft, fontSize: 11.5)),
-      ]);
+  Widget build(BuildContext context) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                    color: color, borderRadius: BorderRadius.circular(3))),
+            const SizedBox(width: 6),
+            Text(label,
+                style: TextStyle(
+                    color: active
+                        ? context.appColors.ink
+                        : context.appColors.inkSoft,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w400,
+                    fontSize: 11.5)),
+          ]),
+        ),
+      );
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -713,6 +878,7 @@ class _ListenBarsPainter extends CustomPainter {
   final List<ListenDay> days; // قدیمی‌ترین اول
   final double progress;
   final int selected;
+  final int? focus;
   final (Color, Color, Color) colors; // yt, audio, tts
   final Color grid, text, ink;
   final bool isRtl;
@@ -722,6 +888,7 @@ class _ListenBarsPainter extends CustomPainter {
     required this.days,
     required this.progress,
     required this.selected,
+    this.focus,
     required this.colors,
     required this.grid,
     required this.text,
@@ -828,17 +995,20 @@ class _ListenBarsPainter extends CustomPainter {
       canvas.save();
       canvas.clipRRect(barRect);
       var y = bottom;
-      void seg(int sec, Color col) {
+      void seg(int sec, Color col, int k) {
         if (sec <= 0) return;
         final sh = h * (sec / d.total);
+        final op = focus == null
+            ? (isSel ? 1.0 : 0.82)
+            : (focus == k ? 1.0 : 0.2);
         canvas.drawRect(Rect.fromLTWH(left, y - sh, barW, sh),
-            Paint()..color = col.withOpacity(isSel ? 1 : 0.82));
+            Paint()..color = col.withOpacity(op));
         y -= sh;
       }
 
-      seg(d.yt, colors.$1);
-      seg(d.audio, colors.$2);
-      seg(d.tts, colors.$3);
+      seg(d.yt, colors.$1, 0);
+      seg(d.audio, colors.$2, 1);
+      seg(d.tts, colors.$3, 2);
       canvas.restore();
     }
   }
@@ -856,6 +1026,7 @@ class _ListenBarsPainter extends CustomPainter {
   bool shouldRepaint(_ListenBarsPainter o) =>
       o.progress != progress ||
       o.selected != selected ||
+      o.focus != focus ||
       o.days != days ||
       o.isRtl != isRtl ||
       o.grid != grid;
