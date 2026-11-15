@@ -13,20 +13,24 @@ import '../../core/player_sync/player_track.dart' show SyncItem, TrackMode;
 import '../../core/player_sync/sync_widgets.dart'
     show SyncAnchor, SyncPlayScope, SyncSpeakButton, syncReportTranslation;
 import '../../core/providers/ai_settings_provider.dart';
+import '../../core/providers/reader_providers.dart' show savedWordsProvider;
 import '../../core/providers/story_user_audio_provider.dart';
 import '../../core/providers/text_prefs_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/translate/known_translations.dart';
 import '../../core/translate/shared_translations.dart';
 import '../../core/translate/translation_service.dart'
     show TranslationService;
-import '../../core/widgets/selection_card.dart' show SelectableSyncText;
+import '../../core/widgets/selection_card.dart'
+    show SelectableRun, SelectableSyncText;
 import '../../core/widgets/sync_item_card.dart' show NeuralPathButton;
 import '../reader/widgets/neural_path_dialog.dart' show showNeuralPath;
 import '../tabs/_hope_panel.dart'
     show HopeChoiceChip, autoDir, uiContentDirection;
 import 'story_i18n.dart';
+import 'word_equivalents.dart';
 import 'word_highlight.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -163,6 +167,178 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
   final Map<int, GlobalKey> _pk = {};
 
   static String _k(String lang, String src) => '$lang\u0001$src';
+
+  // ───────────── بولدِ معادلِ لغت‌های انتخابی داخلِ ترجمه‌ها (توسط خودِ اپ، نه AI) ─────────────
+  // لغت‌های بولدِ متنِ داستان (highlightWords) را داخلِ ترجمه‌ی هر زبان هم پیدا و بولد می‌کند.
+  // معادل‌ها به ترتیبِ سرعت: ۱) دیکشنریِ اپ و لغاتِ ذخیره‌شده (آفلاین، فوری)
+  // ۲) ترجمه‌ی تک‌لغت (کش‌دار) ۳) ترجمه‌ی لغت «داخلِ همان جمله» — دو مرحله‌ی آخر فقط وقتی لازم است
+  // که معادلِ مرحله‌های قبل داخلِ ترجمه پیدا نشده باشد و پس‌زمینه و پشتِ‌هم اجرا می‌شوند.
+  final Map<String, List<String>> _eqWord = {}; // 'from>to|word' ← معادل‌ها
+  final Map<String, List<String>> _eqCtx = {}; // 'to␁src␁word' ← معادلِ داخلِ جمله
+  final Set<String> _eqTried = {};
+  final Set<String> _eqQueued = {};
+  final List<Future<void> Function()> _eqQueue = [];
+  bool _eqPumping = false;
+  int _eqVer = 0;
+  int _eqMemoVer = -1;
+  final Map<String, List<SelectableRun>?> _eqMemo = {};
+
+  static const TextStyle _eqBold = TextStyle(fontWeight: FontWeight.w900);
+
+  List<String> _eqCandidates(String w, String lang, String src) {
+    final lw = w.toLowerCase().trim();
+    final out = <String>[];
+    final k = KnownTranslations.get(w, widget.langCode, lang);
+    if (k != null && k.trim().isNotEmpty) out.add(k);
+    try {
+      for (final sw in ref.read(savedWordsProvider)) {
+        if (sw.langCode != widget.langCode) continue;
+        if (sw.word.toLowerCase().trim() != lw) continue;
+        final tr = sw.translations[lang];
+        if (tr != null && tr.trim().isNotEmpty) out.add(tr);
+      }
+    } catch (_) {}
+    out.addAll(_eqWord['${widget.langCode}>$lang|$lw'] ?? const <String>[]);
+    out.addAll(_eqCtx['$lang\u0001$src\u0001$lw'] ?? const <String>[]);
+    return out;
+  }
+
+  /// تکه‌های ترجمه با معادلِ لغت‌های انتخابی بولد؛ null = چیزی برای بولد نیست.
+  List<SelectableRun>? _eqRuns(String lang, String src, String t) {
+    if (widget.highlightWords.isEmpty || t.isEmpty) return null;
+    if (_eqMemoVer != _eqVer) {
+      _eqMemo.clear();
+      _eqMemoVer = _eqVer;
+    }
+    final mk =
+        '$lang\u0001$src\u0001${t.hashCode}\u0001${Object.hashAll(widget.highlightWords)}';
+    if (_eqMemo.containsKey(mk)) return _eqMemo[mk];
+    final byWord = <String, List<String>>{};
+    for (final w in widget.highlightWords) {
+      if (sourceForms(src, w, widget.langCode).isEmpty) continue; // این لغت در این جمله نیست
+      byWord[w] = _eqCandidates(w, lang, src);
+    }
+    if (byWord.isEmpty) {
+      _eqMemo[mk] = null;
+      return null;
+    }
+    final res = equivalentRuns(
+        text: t, lang: lang, equivByWord: byWord, boldStyle: _eqBold);
+    final missing = [
+      for (final w in byWord.keys)
+        if (!res.matched.contains(w)) w,
+    ];
+    if (missing.isNotEmpty) _eqSchedule(lang, src, missing);
+    _eqMemo[mk] = res.runs;
+    return res.runs;
+  }
+
+  void _eqSchedule(String lang, String src, List<String> missing) {
+    final job = '$lang\u0001$src\u0001${missing.join('\u0002')}';
+    if (!_eqQueued.add(job)) return;
+    _eqQueue.add(() => _eqRun(lang, src, missing));
+    if (_eqPumping) return;
+    _eqPumping = true;
+    Future<void>(() async {
+      try {
+        while (mounted && _eqQueue.isNotEmpty) {
+          final f = _eqQueue.removeAt(0);
+          try {
+            await f();
+          } catch (_) {}
+        }
+      } finally {
+        _eqPumping = false;
+      }
+    });
+  }
+
+  bool _eqMatchedNow(String lang, String src, String w) {
+    final t = _tr[_k(lang, src)];
+    if (t == null || t.isEmpty) return true; // ترجمه‌ای نیست/عوض شده؛ کاری نمی‌ماند
+    final r = equivalentRuns(
+      text: t,
+      lang: lang,
+      equivByWord: {w: _eqCandidates(w, lang, src)},
+      boldStyle: _eqBold,
+    );
+    return r.matched.contains(w);
+  }
+
+  /// جمله‌ای از [src] که [form] در آن است (برای ترجمه‌ی لغت داخلِ جمله؛ نه کلِ پاراگراف).
+  String? _eqSentenceWith(String src, String form) {
+    final lf = form.toLowerCase();
+    List<String> ss;
+    try {
+      ss = widget.splitSentences(src);
+    } catch (_) {
+      ss = const [];
+    }
+    if (ss.isEmpty) ss = [src];
+    for (final x in ss) {
+      if (x.toLowerCase().contains(lf)) return x;
+    }
+    return src.length <= 300 ? src : null;
+  }
+
+  Future<void> _eqRun(String lang, String src, List<String> missing) async {
+    final svc = ref.read(translationServiceProvider);
+    final ai = ref.read(aiSettingsProvider);
+    for (final w in missing) {
+      if (!mounted) return;
+      if (_eqMatchedNow(lang, src, w)) continue;
+      final lw = w.toLowerCase().trim();
+
+      // مرحله‌ی ۲: ترجمه‌ی تک‌لغت (در کشِ ترجمه می‌ماند و برای همه‌ی جمله‌ها مشترک است)
+      final wk = '${widget.langCode}>$lang|$lw';
+      if (_eqTried.add('w|$wk')) {
+        var r = '';
+        try {
+          r = (await svc.translate(
+            text: w,
+            targetLang: lang,
+            sourceLang: widget.langCode,
+            aiSettings: ai,
+          ))
+              .trim();
+        } catch (_) {}
+        if (!mounted) return;
+        if (r.isNotEmpty && r.toLowerCase() != lw) {
+          setState(() {
+            _eqWord[wk] = [r];
+            _eqVer++;
+          });
+        }
+        if (_eqMatchedNow(lang, src, w)) continue;
+      }
+
+      // مرحله‌ی ۳: معادلِ لغت «داخلِ همین جمله» (ترجمه با نشانگرِ ⟦ ⟧ و برداشتنِ همان تکه)
+      final ck = '$lang\u0001$src\u0001$lw';
+      if (_eqTried.add('c|$ck')) {
+        final forms = sourceForms(src, w, widget.langCode);
+        if (forms.isEmpty) continue;
+        final sent = _eqSentenceWith(src, forms.first);
+        if (sent == null) continue;
+        String? r;
+        try {
+          r = await svc.translateWordInContext(
+            sentenceText: sent,
+            word: forms.first,
+            sourceLang: widget.langCode,
+            targetLang: lang,
+            aiSettings: ai,
+          );
+        } catch (_) {}
+        if (!mounted) return;
+        if (r != null && r.trim().isNotEmpty) {
+          setState(() {
+            _eqCtx[ck] = [r!];
+            _eqVer++;
+          });
+        }
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -1114,6 +1290,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
       AppThemeColorsExt c, TargetTextPrefs tp, String lang, String src, String id, int? paraIdx) {
     final key = _k(lang, src);
     final t = _tr[key];
+    final eqRuns = t == null ? null : _eqRuns(lang, src, t);
     final failed = _failed.contains(key);
     final busy = _retrying.contains(key);
     final dir = dirFor(lang);
@@ -1189,6 +1366,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                             id: id,
                             text: t,
                             sentence: t,
+                            runs: eqRuns,
                             style: TextStyle(
                               color: _kTrColor,
                               fontSize: 15 * tp.scaleFactor,
