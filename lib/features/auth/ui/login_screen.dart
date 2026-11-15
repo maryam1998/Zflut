@@ -6,6 +6,11 @@ import '../../../app.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../providers/auth_provider.dart';
 
+// 🎨 رنگ‌های برندِ AllLingOne (هماهنگ با لوگو)
+const Color _kBrandNavy = Color(0xFF0B2B6B);
+const Color _kBrandTeal = Color(0xFF009E96);
+const Color _kBrandTealPressed = Color(0xFF007A74);
+
 /// صفحه‌ی ورود: گوگل · ایمیل/رمز (ورود و ساخت حساب + فراموشی رمز) · مهمان.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -157,11 +162,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  /// «ورود به AllLingOne» با رنگ‌های لوگو: All و One سرمه‌ای، Ling فیروزه‌ای.
+  Widget _brandTitle(String full, TextStyle? base, bool dark) {
+    const brand = 'AllLingOne';
+    final i = full.indexOf(brand);
+    if (i < 0) {
+      return Text(full, style: base, textAlign: TextAlign.center);
+    }
+    final navy = dark ? const Color(0xFF9DB7F5) : _kBrandNavy;
+    final teal = dark ? const Color(0xFF2EC4BC) : _kBrandTeal;
+    return Text.rich(
+      TextSpan(style: base, children: [
+        TextSpan(text: full.substring(0, i)),
+        TextSpan(text: 'All', style: TextStyle(color: navy)),
+        TextSpan(text: 'Ling', style: TextStyle(color: teal)),
+        TextSpan(text: 'One', style: TextStyle(color: navy)),
+        TextSpan(text: full.substring(i + brand.length)),
+      ]),
+      textAlign: TextAlign.center,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final L = context.l10n;
     final c = context.appColors;
     final text = Theme.of(context).textTheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: c.paper,
@@ -192,22 +219,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: Container(
                         width: 64,
                         height: 64,
-                        decoration:
-                            BoxDecoration(color: c.gold, shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                            color: dark ? _kBrandTeal : _kBrandNavy,
+                            shape: BoxShape.circle),
                         child: Icon(
                           _isSignup ? Icons.person_add_alt_1 : Icons.login,
-                          color: c.paper,
+                          color: Colors.white,
                           size: 30,
                         ),
                       ),
                     ),
                     const SizedBox(height: 18),
-                    Text(
-                      _isSignup ? L.auth_signup_title : L.auth_login_title,
-                      style: text.headlineSmall?.copyWith(
-                          color: c.ink, fontWeight: FontWeight.w800),
-                      textAlign: TextAlign.center,
-                    ),
+                    _isSignup
+                        ? Text(
+                            L.auth_signup_title,
+                            style: text.headlineSmall?.copyWith(
+                                color: c.ink, fontWeight: FontWeight.w800),
+                            textAlign: TextAlign.center,
+                          )
+                        : _brandTitle(
+                            L.auth_login_title,
+                            text.headlineSmall?.copyWith(
+                                color: c.ink, fontWeight: FontWeight.w800),
+                            dark),
                     const SizedBox(height: 8),
                     Text(
                       L.auth_login_subtitle,
@@ -326,18 +360,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: FilledButton(
                         onPressed: _busy ? null : _submit,
                         style: FilledButton.styleFrom(
-                          backgroundColor: c.headerFrom,
-                          foregroundColor: c.headerText,
+                          foregroundColor: Colors.white,
                           shape: const StadiumBorder(),
                           textStyle: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w700),
+                        ).copyWith(
+                          // فیروزه‌ای؛ موقعِ لمس یک پله تیره‌تر
+                          backgroundColor:
+                              MaterialStateProperty.resolveWith((states) {
+                            if (states.contains(MaterialState.disabled)) {
+                              return _kBrandTeal.withOpacity(0.5);
+                            }
+                            if (states.contains(MaterialState.pressed)) {
+                              return _kBrandTealPressed;
+                            }
+                            return _kBrandTeal;
+                          }),
                         ),
                         child: _busy
                             ? SizedBox(
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2.4, color: c.headerText))
+                                    strokeWidth: 2.4, color: Colors.white))
                             : Text(_isSignup
                                 ? L.auth_signup_submit
                                 : L.auth_login_submit),
@@ -361,7 +406,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     _infoMsg = null;
                                   }),
                           style: TextButton.styleFrom(
-                              foregroundColor: c.headerFrom,
+                              foregroundColor: dark ? _kBrandTeal : _kBrandNavy,
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 6)),
                           child: Text(
