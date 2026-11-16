@@ -33,6 +33,8 @@ class MediaNotificationSync {
   bool _disposed = false;
   String? _heldTitle; // آخرین عنوان/زیرعنوانِ «جمله‌ی اصلی» (برای زمانی که ترجمه خوانده می‌شود)
   String? _heldSub;
+  String? _heldCounter; // شماره‌ی جمله‌ی اصلی (مثلاً «4 / 21»)
+  String? _heldNative; // ترجمه‌ی زبانِ مبدأِ کاربر برای «جمله‌ی اصلی»
 
   void attach() {
     final nb = NativeBridge.instance;
@@ -87,9 +89,24 @@ class MediaNotificationSync {
     String sub;
     if (s.key != null && s.key == SpeechController.translationReadKey &&
         _heldTitle != null) {
-      // 🌐 پلیر دارد ترجمه را می‌خواند: نوتیفیکیشن همان جمله‌ی اصلی (با ترجمه‌اش زیرش) را نگه می‌دارد
-      title = _heldTitle!;
-      sub = _heldSub ?? '';
+      // 🌐 پلیر دارد یک ترجمه را می‌خواند. قانون: خط اول = متنِ همان زبانِ در حال پخش (برای زبانِ مبدأِ کاربر:
+      // متنِ اصلی)، خط دوم = ترجمه‌ی زبانِ مبدأِ کاربر. هیچ‌وقت دو متنِ تکراری نشان داده نمی‌شود.
+      final lang = _langOf(s);
+      final full = _keyText(s);
+      final counter = _heldCounter ?? '';
+      if (_targetsOf(lang).isEmpty) {
+        // ترجمه‌ی زبانِ مبدأِ کاربر (مثلاً فارسی) در حال پخش است ← خط اول: متنِ اصلی، خط دوم: همین ترجمه
+        title = _heldTitle!;
+        var nat = _clip(full, 140);
+        if (nat.isEmpty || nat == _clip(title, 140)) nat = _heldNative ?? '';
+        sub = counter.isEmpty ? nat : (nat.isEmpty ? counter : '$counter · $nat');
+      } else {
+        // ترجمه‌ی یکی از زبان‌های مقصد (مثلاً اسپانیایی) ← خط اول: متنِ همان زبان، خط دوم: ترجمه‌ی زبانِ مبدأِ کاربر
+        title = _clip(full, 90);
+        var nat = _heldNative ?? '';
+        if (nat.isEmpty) nat = _translationFor(full, s);
+        sub = counter.isEmpty ? nat : (nat.isEmpty ? counter : '$counter · $nat');
+      }
     } else {
       final text = _ctl.currentChunkText.trim();
       title = text.length > 90 ? '${text.substring(0, 90)}…' : text;
@@ -99,6 +116,8 @@ class MediaNotificationSync {
       sub = tr.isEmpty ? counter : (counter.isEmpty ? tr : '$counter · $tr');
       _heldTitle = title;
       _heldSub = sub;
+      _heldCounter = counter;
+      _heldNative = tr;
       // ⚡ ترجمه‌ی چند جمله‌ی بعدی از قبل آماده می‌شود تا در بارِ اول هم همراهِ جمله نشان داده شود
       _prefetchAhead(s);
     }
@@ -115,6 +134,27 @@ class MediaNotificationSync {
           next: true,
         )
         .catchError((_) => <String, dynamic>{}));
+  }
+
+  /// زبان‌های مقصدِ [from] (خالی = [from] خودش زبانِ مبدأِ کاربر است)
+  List<String> _targetsOf(String from) {
+    try {
+      return targets?.call(from) ?? const <String>[];
+    } catch (_) {
+      return const <String>[];
+    }
+  }
+
+  /// متنِ کاملِ کلیدِ پخش ('en-US::متن' → 'متن')
+  String _keyText(SpeechState s) {
+    final k = s.key ?? '';
+    final i = k.indexOf('::');
+    return (i < 0 ? k : k.substring(i + 2)).trim();
+  }
+
+  String _clip(String t, int max) {
+    final c = t.trim().replaceAll(RegExp(r'\s+'), ' ');
+    return c.length > max ? '${c.substring(0, max)}…' : c;
   }
 
   /// زبانِ متنِ در حال خوانش از روی کلیدِ پخش ('en-US::متن' → 'en')
@@ -214,7 +254,8 @@ class MediaNotificationSync {
       _remember(ck, r);
       // فقط اگر هنوز همین جمله در حال خوانش است نوتیفیکیشن را تازه کن
       final st = _lastState;
-      if (st != null && _ctl.currentChunkText.trim() == text) {
+      if (st != null &&
+          (_ctl.currentChunkText.trim() == text || _keyText(st) == text)) {
         _lastSig = '';
         _push(st);
       }
