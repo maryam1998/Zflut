@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart' show RenderBox;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/reader/widgets/neural_path_dialog.dart';
+import '../../features/shell/widgets/spotlight_tour.dart' show TourTarget, SpotlightTour;
 import '../neural/neural_store.dart';
 import '../constants/app_languages.dart';
 import '../constants/supported_languages.dart';
@@ -263,6 +264,8 @@ Future<void> showSelectionCard(
 
   _closeActiveCard = close;
   overlay.insert(entry);
+  // 🎓 بارِ اولی که کارت باز می‌شود، تورِ کارت نشان داده می‌شود
+  SpotlightTour.maybeStartCardTour(context);
   return done.future;
 }
 
@@ -383,18 +386,21 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
     _bar.addStatusListener((st) {
       if (st == AnimationStatus.dismissed && mounted) widget.onClose();
     });
+    SpotlightTour.cardTourActive.addListener(_arm);
     _arm();
   }
 
   @override
   void dispose() {
+    SpotlightTour.cardTourActive.removeListener(_arm);
     _bar.dispose();
     super.dispose();
   }
 
   void _arm() {
     if (!mounted) return;
-    if (_speaking) {
+    // تورِ کارت در جریان است → شمارشِ بستنِ خودکار متوقف
+    if (_speaking || SpotlightTour.cardTourActive.value) {
       _bar.stop();
       _bar.value = 1.0;
       return;
@@ -580,20 +586,26 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                       onTap: widget.onClose,
                     ),
                     // از راست به چپ: 🔊 ← 🧬 ← ✕
-                    _CardIconButton(
-                      icon: Icons.hub_outlined,
-                      color: Colors.white,
-                      size: 20,
-                      tooltip: _s(ui, 'neural'),
-                      onTap: () => _openNeural(_text, lang, null),
+                    TourTarget(
+                      id: 'pc_neural',
+                      child: _CardIconButton(
+                        icon: Icons.hub_outlined,
+                        color: Colors.white,
+                        size: 20,
+                        tooltip: _s(ui, 'neural'),
+                        onTap: () => _openNeural(_text, lang, null),
+                      ),
                     ),
-                    _SpeakIcon(
-                      text: _text,
-                      code: lang,
-                      color: Colors.white,
-                      size: 20,
-                      tooltip: _s(ui, 'speak'),
-                      hintBase: neuralBase(_text),
+                    TourTarget(
+                      id: 'pc_speak',
+                      child: _SpeakIcon(
+                        text: _text,
+                        code: lang,
+                        color: Colors.white,
+                        size: 20,
+                        tooltip: _s(ui, 'speak'),
+                        hintBase: neuralBase(_text),
+                      ),
                     ),
                   ],
                 ),
@@ -602,7 +614,9 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
 
               // ═══ ترجمه به همه‌ی زبان‌های انتخابیِ کاربر ═══
               Flexible(
-                child: SingleChildScrollView(
+                child: TourTarget(
+                  id: 'pc_trans',
+                  child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -621,12 +635,14 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                     ],
                   ),
                 ),
+                ),
               ),
 
               const SizedBox(height: 8),
 
               // ═══ دکمه‌ها ═══
               _ActionButton(
+                tourId: 'pc_story',
                 emoji: '🔖',
                 label: _s(ui, storySaved ? 'storyDone' : 'story'),
                 active: storySaved,
@@ -645,6 +661,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                 },
               ),
               _ActionButton(
+                tourId: 'pc_grammar',
                 emoji: '🧩',
                 label: _s(ui, grammarSaved ? 'grammarDone' : 'grammar'),
                 active: grammarSaved,
@@ -666,6 +683,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                 },
               ),
               _ActionButton(
+                tourId: 'pc_leitner',
                 icon: Icons.style_outlined,
                 label: _s(ui, leitnerAdded ? 'leitnerDone' : 'leitner'),
                 active: leitnerAdded,
@@ -926,13 +944,16 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
             Expanded(child: body),
             // از راست به چپ: 🔊 ← 🧬 ← رفرش
             if (res != null || _failed)
-              _CardIconButton(
-                icon: Icons.refresh,
-                color: Colors.white70,
-                size: 17,
-                tooltip: _s(widget.ui, res != null ? 'wrong' : 'retry'),
-                busy: _busy,
-                onTap: _busy ? null : () => _fetch(retry: true),
+              TourTarget(
+                id: 'pc_retry',
+                child: _CardIconButton(
+                  icon: Icons.refresh,
+                  color: Colors.white70,
+                  size: 17,
+                  tooltip: _s(widget.ui, res != null ? 'wrong' : 'retry'),
+                  busy: _busy,
+                  onTap: _busy ? null : () => _fetch(retry: true),
+                ),
               ),
             if (res != null)
               _CardIconButton(
@@ -1149,6 +1170,9 @@ class _ActionButton extends StatelessWidget {
   /// true = قفلِ Pro: با آیکنِ 🔒 و کم‌رنگ نشان داده می‌شود و لمسش کاری نمی‌کند (بدونِ پنجره‌ی Pro).
   final bool locked;
 
+  /// شناسه‌ی تور (اختیاری)
+  final String? tourId;
+
   const _ActionButton({
     this.emoji = '',
     this.icon,
@@ -1156,10 +1180,16 @@ class _ActionButton extends StatelessWidget {
     required this.active,
     required this.onTap,
     this.locked = false,
+    this.tourId,
   });
 
   @override
   Widget build(BuildContext context) {
+    final w = _content(context);
+    return tourId == null ? w : TourTarget(id: tourId!, child: w);
+  }
+
+  Widget _content(BuildContext context) {
     final fg = active ? kCardBorderGold : Colors.white;
     return Padding(
       padding: const EdgeInsets.only(top: 6),

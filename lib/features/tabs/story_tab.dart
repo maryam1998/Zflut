@@ -2903,16 +2903,6 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     String lbl(bool busy, String idle) =>
         busy ? (_importProgress.isEmpty ? L.story_busy_processing : _importProgress) : idle;
     return [
-      Align(
-        alignment: AlignmentDirectional.centerEnd,
-        child: HopeTextAction(
-          label: Localizations.localeOf(context).languageCode == 'fa'
-              ? '🎓 راهنمای این بخش'
-              : '🎓 Guide',
-          color: c.teal,
-          onTap: () => SpotlightTour.startImport(force: true),
-        ),
-      ),
       TourTarget(
         id: 'imp_pdf',
         child: _importButton(

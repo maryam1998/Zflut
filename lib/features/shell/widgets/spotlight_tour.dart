@@ -26,6 +26,7 @@ const String _kTourSeenKey = 'zflut-tour-seen-v1';
 const String _kImportTourSeenKey = 'zflut-tour-import-seen-v1';
 const String _kStoryTourSeenKey = 'zflut-tour-story-seen-v1';
 const String _kTransTourSeenKey = 'zflut-tour-trans-seen-v1';
+const String _kPopupTourSeenKey = 'zflut-tour-popup-seen-v1';
 
 final Map<String, _TourTargetState> _targets = {};
 
@@ -98,37 +99,28 @@ const List<_Step> _steps = [
   _Step(
     'account',
     Icons.menu_rounded,
-    {'en': 'Menu & settings', 'fa': 'منو و تنظیمات'},
+    {'en': 'Menu and settings', 'fa': 'منو و تنظیمات'},
     {
-      'en': 'Open settings from here: themes, fonts, offline voices, your account and the help center.',
-      'fa': 'از اینجا به تنظیمات می‌روی: تم و فونت، صداهای آفلاین، حساب کاربری و مرکز راهنما.',
+      'en': 'Themes, fonts, offline voices, your account and the help center are all here.',
+      'fa': 'تم، فونت، صداهای آفلاین، حساب کاربری و مرکز راهنما اینجاست.',
     },
   ),
   _Step(
     'lang',
     Icons.translate_rounded,
-    {'en': 'Pick your languages', 'fa': 'زبان‌هایت را انتخاب کن'},
+    {'en': 'Your languages', 'fa': 'زبان‌های تو'},
     {
-      'en': 'Choose your native language and one or more target languages. Every part of the app follows them.',
-      'fa': 'زبان مادری و یک یا چند زبانِ مقصد را اینجا انتخاب کن. همه‌ی بخش‌های برنامه از همین انتخاب پیروی می‌کنند.',
+      'en': 'Pick your native language, then tap the circles to choose one or more languages to learn. Translations appear in all of them, side by side.',
+      'fa': 'زبان مادری‌ات را انتخاب کن، بعد روی دایره‌ها بزن و یک یا چند زبان برای یادگیری انتخاب کن. ترجمه‌ها به همه‌ی آن زبان‌ها، کنار هم نشان داده می‌شود.',
     },
   ),
   _Step(
     'tabs',
     Icons.dashboard_rounded,
-    {'en': 'The four main sections', 'fa': 'چهار بخشِ اصلی'},
+    {'en': 'The four sections', 'fa': 'چهار بخش اصلی'},
     {
-      'en': 'Talk (conversations), Story (build and read stories), Words (vocabulary) and Practice (review).',
-      'fa': 'گفتگو، داستان (ساختن و خواندنِ داستان)، لغات و تمرین (مرور) — با یک لمس بین‌شان جابه‌جا شو.',
-    },
-  ),
-  _Step(
-    'dock',
-    Icons.layers_rounded,
-    {'en': 'Floating tools (Android)', 'fa': 'ابزارهای شناور (اندروید)'},
-    {
-      'en': 'They work on top of any other app, with no copy-paste: Magnifier (translate and hear any text), live translation of the audio playing on your phone (videos, podcasts, clips) and YouTube subtitles. Everything is processed locally on your own phone — your screen and audio are never recorded, sent or stored. Tap this edge tab to open it.',
-      'fa': 'روی هر برنامه‌ی دیگری هم کار می‌کنند، بدون کپی‌کردن: ذره‌بین (ترجمه و تلفظِ هر متن)، ترجمه‌ی زنده‌ی صدایی که روی گوشی پخش می‌شود (ویدیو، پادکست، کلیپ) و زیرنویسِ یوتیوب. تشخیصِ متن و گفتار کاملاً روی خودِ گوشیِ شماست؛ تصویرِ صفحه و صدا ضبط، ارسال یا ذخیره نمی‌شود. این زبانه‌ی کنارِ صفحه را لمس کن تا باز شود.',
+      'en': 'Talk: ready-made everyday conversations to practise. Story: build stories and read PDFs, photos and links. Words: your dictionary and saved words. Practice: review what you learned.',
+      'fa': 'گفتگو: مکالمه‌های پرکاربرد برای تمرین. داستان: ساخت داستان و خواندن PDF، عکس و لینک. لغات: دیکشنری و لغت‌های ذخیره‌شده. مرور: تمرین و مرور آنچه یاد گرفته‌ای.',
     },
   ),
   _Step(
@@ -136,24 +128,24 @@ const List<_Step> _steps = [
     Icons.play_arrow_rounded,
     {'en': 'Play / pause', 'fa': 'پخش و توقف'},
     {
-      'en': 'Tap to read the page aloud, sentence by sentence.',
-      'fa': 'با یک لمس، متنِ صفحه جمله‌به‌جمله خوانده می‌شود.',
+      'en': 'Reads the page aloud, one sentence at a time.',
+      'fa': 'متن صفحه را جمله‌به‌جمله می‌خواند.',
     },
     {
-      'en': 'Takes you exactly to the line and the tab that is being read.',
-      'fa': 'شما را دقیقاً به همان خط و همان تبی می‌برد که در حال خواندنش است.',
+      'en': 'Jumps to the line and tab that is being read.',
+      'fa': 'به همان خط و همان تبی می‌روی که در حال خواندن است.',
     },
   ),
   _Step(
     'next',
     Icons.skip_next_rounded,
-    {'en': 'Next / previous sentence', 'fa': 'جمله‌ی بعدی و قبلی'},
+    {'en': 'Next / previous sentence', 'fa': 'جمله‌ی بعد و قبل'},
     {
-      'en': 'Tap to move one sentence forward (the previous button moves one back).',
-      'fa': 'با یک لمس یک جمله جلو می‌روی (دکمه‌ی قبلی: یک جمله عقب).',
+      'en': 'Moves one sentence forward or back.',
+      'fa': 'یک جمله جلو یا عقب می‌روی.',
     },
     {
-      'en': 'Skips several seconds forward or back.',
+      'en': 'Skips a few seconds forward or back.',
       'fa': 'چند ثانیه جلو یا عقب می‌پرد.',
     },
   ),
@@ -163,47 +155,47 @@ const List<_Step> _steps = [
     {'en': 'Repeat', 'fa': 'تکرار'},
     {
       'en': 'Each tap changes the repeat mode.',
-      'fa': 'با هر لمس، حالتِ تکرار عوض می‌شود.',
+      'fa': 'با هر لمس، حالت تکرار عوض می‌شود.',
     },
     {
-      'en': 'Type exactly how many times you want to repeat.',
-      'fa': 'تعدادِ تکرارِ دلخواه را خودت وارد کن.',
+      'en': 'Enter exactly how many times to repeat.',
+      'fa': 'تعداد تکرار دلخواهت را وارد کن.',
     },
   ),
   _Step(
     'ab',
     Icons.linear_scale_rounded,
-    {'en': 'Loop a section (A-B)', 'fa': 'تکرارِ یک قسمت (A-B)'},
+    {'en': 'Loop a section (A-B)', 'fa': 'تکرار یک قسمت (A-B)'},
     {
-      'en': 'Mark where a section starts and ends, and the app loops just that part — great for hard sentences.',
-      'fa': 'ابتدا و انتهای یک قسمت را علامت بزن تا فقط همان قسمت تکرار شود؛ مناسبِ جمله‌های سخت.',
+      'en': 'Mark the start and end of a part and only that part repeats. Useful for hard sentences.',
+      'fa': 'شروع و پایان یک قسمت را علامت بزن تا فقط همان قسمت تکرار شود. برای جمله‌های سخت مناسب است.',
     },
   ),
   _Step(
     'rec',
     Icons.mic_rounded,
-    {'en': 'Practise your pronunciation', 'fa': 'تمرینِ تلفظ'},
+    {'en': 'Pronunciation practice', 'fa': 'تمرین تلفظ'},
     {
-      'en': 'Record your own voice and compare it with the original (shadowing).',
-      'fa': 'صدای خودت را ضبط کن و با تلفظِ اصلی مقایسه کن (روشِ شدوینگ).',
+      'en': 'Record your voice and compare it with the original.',
+      'fa': 'صدایت را ضبط کن و با تلفظ اصلی مقایسه کن.',
     },
   ),
   _Step(
     'speed',
     Icons.speed_rounded,
-    {'en': 'Speech speed', 'fa': 'سرعتِ صدا'},
+    {'en': 'Voice speed', 'fa': 'سرعت صدا'},
     {
-      'en': 'Slow the voice down to catch every word, or speed it up when you are ready.',
-      'fa': 'برای شنیدنِ تک‌تکِ کلمه‌ها صدا را کند کن، و وقتی آماده شدی تندترش کن.',
+      'en': 'Slow it down to hear every word, speed it up when it feels easy.',
+      'fa': 'برای شنیدن دقیق کلمه‌ها صدا را کند کن؛ وقتی راحت شدی تندترش کن.',
     },
   ),
   _Step(
     'top',
     Icons.vertical_align_top_rounded,
-    {'en': 'Back to top', 'fa': 'رفتن به بالای صفحه'},
+    {'en': 'Back to top', 'fa': 'رفتن به بالا'},
     {
-      'en': 'In a long list or a long text, one tap takes you straight back to the top of the page.',
-      'fa': 'وقتی در یک لیستِ بلند یا متنِ طولانی پایین رفته‌ای، با یک لمس مستقیم به بالای صفحه برمی‌گردی.',
+      'en': 'In a long list or text, one tap takes you back to the top.',
+      'fa': 'در لیست یا متن بلند، با یک لمس به بالای صفحه برمی‌گردی.',
     },
   ),
 ];
@@ -213,28 +205,28 @@ const List<_Step> _storySteps = [
   _Step(
     'st_modes',
     Icons.auto_stories_rounded,
-    {'en': 'Four ways to work with stories', 'fa': 'چهار راه برای کار با داستان'},
+    {'en': 'Four parts of Story', 'fa': 'چهار بخش داستان‌ساز'},
     {
-      'en': 'Create an AI story from your own words, import a PDF, photo or link to read, open your saved library, or keep words for the next story.',
-      'fa': 'با هوش مصنوعی از لغاتِ خودت داستان بساز، PDF و عکس و لینک را برای خواندن وارد کن، کتابخانه‌ی داستان‌های ذخیره‌شده‌ات را باز کن، یا لغت‌ها را برای داستانِ بعدی نگه دار.',
+      'en': 'Create story: an AI story built from your own words. Import and read: PDF, photo, link or text with translation. Saved: your stories and books. Save for next story: words you want in the next story.',
+      'fa': 'ساخت داستان: داستانی با لغت‌های خودت. ایمپورت و خواندن: PDF، عکس، لینک یا متن را با ترجمه می‌خوانی. ذخیره‌شده‌ها: داستان‌ها و کتاب‌هایت. ذخیره برای داستان بعدی: لغت‌هایی که می‌خواهی در داستان بعدی بیایند.',
     },
   ),
   _Step(
     'st_settings',
     Icons.tune_rounded,
-    {'en': 'Language, level and style', 'fa': 'زبان، سطح و سبکِ داستان'},
+    {'en': 'Story settings', 'fa': 'تنظیم داستان'},
     {
-      'en': 'Choose the language of the story, your level (A1–C2), the kind of content and how long it should be.',
-      'fa': 'زبانِ داستان، سطحِ خودت (A1 تا C2)، نوعِ محتوا و طولِ داستان را انتخاب کن.',
+      'en': 'Choose the story language, your level (A1 to C2), the type of content and the length.',
+      'fa': 'زبان داستان، سطح خودت (A1 تا C2)، نوع محتوا و طول داستان را انتخاب کن.',
     },
   ),
   _Step(
     'st_words',
     Icons.spellcheck_rounded,
-    {'en': 'Choose your words', 'fa': 'لغاتت را انتخاب کن'},
+    {'en': 'Your words', 'fa': 'لغت‌های تو'},
     {
-      'en': 'Type the words you want to learn, or search among your saved words. The story is written around them.',
-      'fa': 'لغاتی که می‌خواهی یاد بگیری را بنویس یا از بینِ لغاتِ ذخیره‌شده‌ات جستجو کن. داستان دورِ همین لغت‌ها نوشته می‌شود.',
+      'en': 'Type the words you want to learn, or pick from your saved words. The story is built around them.',
+      'fa': 'لغت‌هایی که می‌خواهی یاد بگیری را بنویس یا از لغت‌های ذخیره‌شده‌ات انتخاب کن. داستان با همین لغت‌ها ساخته می‌شود.',
     },
   ),
   _Step(
@@ -242,75 +234,75 @@ const List<_Step> _storySteps = [
     Icons.translate_rounded,
     {'en': 'Translations', 'fa': 'ترجمه‌ها'},
     {
-      'en': 'Pick the languages you want the story translated into, shown together with the text.',
-      'fa': 'زبان‌هایی که می‌خواهی داستان به آن‌ها ترجمه شود را انتخاب کن؛ ترجمه‌ها کنارِ متن نشان داده می‌شوند.',
+      'en': 'Choose the languages you want the story translated into. Translations appear next to the text.',
+      'fa': 'زبان‌هایی که می‌خواهی ترجمه‌ی داستان را به آن‌ها ببینی انتخاب کن. ترجمه‌ها کنار متن می‌آیند.',
     },
   ),
   _Step(
     'st_generate',
     Icons.auto_awesome_rounded,
-    {'en': 'Create the story', 'fa': 'ساختِ داستان'},
+    {'en': 'Create the story', 'fa': 'ساخت داستان'},
     {
-      'en': 'With at least one word added, tap here. Your story is written for you — read it, listen to it and save it to your library.',
-      'fa': 'وقتی دستِ‌کم یک لغت اضافه کرده‌ای، اینجا را لمس کن. داستانت برایت نوشته می‌شود؛ می‌توانی بخوانی، گوش بدهی و در کتابخانه‌ات ذخیره کنی.',
+      'en': 'After adding at least one word, tap here. Then you can read the story, listen to it and save it.',
+      'fa': 'بعد از افزودن حداقل یک لغت، این دکمه را بزن. بعد می‌توانی داستان را بخوانی، گوش بدهی و ذخیره کنی.',
     },
   ),
 ];
 
-/// تورِ زیرتبِ «ایمپورت و خواندن» (داستان‌ساز) — بار اولِ ورود و با دکمه‌ی راهنمای همان بخش.
+/// تورِ زیرتبِ «ایمپورت و خواندن» (داستان‌ساز) — بارِ اولی که کاربر «ایمپورت» را می‌زند.
 const List<_Step> _importSteps = [
   _Step(
     'imp_pdf',
     Icons.menu_book_rounded,
-    {'en': 'Import a PDF to read', 'fa': 'ایمپورتِ PDF برای خواندن'},
+    {'en': 'PDF to read', 'fa': 'PDF برای خواندن'},
     {
-      'en': 'Pick a text PDF and the app turns it into a reading page, sentence by sentence. Tap any word or select a phrase to see its translation in any language you choose.',
-      'fa': 'یک PDFِ متنی انتخاب کن تا برنامه آن را جمله‌به‌جمله برای خواندن آماده کند. روی هر لغت بزن یا یک عبارت را انتخاب کن تا ترجمه‌اش را به هر زبانی که می‌خواهی ببینی.',
+      'en': 'Pick a text PDF. It is prepared sentence by sentence for reading. Tap any word, or select a phrase, to see its translation.',
+      'fa': 'یک PDF متنی انتخاب کن. متنش جمله‌به‌جمله برای خواندن آماده می‌شود. روی هر لغت بزن یا چند کلمه را انتخاب کن تا ترجمه‌اش را ببینی.',
     },
   ),
   _Step(
     'imp_img',
     Icons.image_rounded,
-    {'en': 'Import photos', 'fa': 'ایمپورتِ عکس'},
+    {'en': 'Photos', 'fa': 'عکس'},
     {
-      'en': 'A page of a book, a sign, a screenshot… the app reads the text from the photo and you can translate it into any language.',
-      'fa': 'صفحه‌ی یک کتاب، یک تابلو، اسکرین‌شات… برنامه متنِ داخلِ عکس را می‌خواند و می‌توانی آن را به هر زبانی ترجمه کنی.',
+      'en': 'Choose a photo of a book page, a sign or a screenshot. The text inside the photo is read and you can translate it.',
+      'fa': 'عکس صفحه‌ی کتاب، تابلو یا اسکرین‌شات را انتخاب کن. متن داخل عکس خوانده می‌شود و می‌توانی ترجمه‌اش کنی.',
     },
   ),
   _Step(
     'imp_view',
     Icons.auto_stories_rounded,
-    {'en': 'View a PDF with translation', 'fa': 'دیدنِ PDF با ترجمه'},
+    {'en': 'PDF with original look + translation', 'fa': 'PDF با ظاهر اصلی + ترجمه'},
     {
-      'en': 'Open a PDF with its original look (also scanned books). The translation is drawn on the page itself, and you can switch the target language any time.',
-      'fa': 'یک PDF را با ظاهرِ اصلی‌اش باز کن (کتابِ اسکن‌شده هم). ترجمه روی خودِ صفحه نقش می‌بندد و هر وقت خواستی زبانِ مقصد را عوض می‌کنی.',
+      'en': 'Open a PDF with its original layout (scanned books too). The translation appears on the page itself and you can change its language any time.',
+      'fa': 'PDF را با همان ظاهر اصلی باز کن (کتاب اسکن‌شده هم). ترجمه روی خود صفحه می‌آید و هر وقت خواستی زبانش را عوض می‌کنی.',
     },
   ),
   _Step(
     'imp_link',
     Icons.link_rounded,
-    {'en': 'Import from a link', 'fa': 'ایمپورت از لینک'},
+    {'en': 'Link', 'fa': 'لینک'},
     {
-      'en': 'Paste the address of an article or web page and its text is brought in, ready to read and translate.',
-      'fa': 'آدرسِ یک مقاله یا صفحه‌ی وب را بگذار تا متنش وارد شود و برای خواندن و ترجمه آماده باشد.',
+      'en': 'Paste the address of an article or web page. Its text is brought in, ready to read and translate.',
+      'fa': 'آدرس یک مقاله یا صفحه‌ی وب را بگذار. متنش وارد می‌شود و برای خواندن و ترجمه آماده است.',
     },
   ),
   _Step(
     'imp_paste',
     Icons.content_paste_rounded,
-    {'en': 'Paste any text', 'fa': 'متنِ دلخواه'},
+    {'en': 'Any text', 'fa': 'متن دلخواه'},
     {
-      'en': 'Copy any text from anywhere, paste it here, and read it with translations in any language.',
-      'fa': 'هر متنی را از هر جا کپی کن، اینجا بگذار و با ترجمه به هر زبانی بخوانش.',
+      'en': 'Copy any text, paste it here and read it with translation.',
+      'fa': 'هر متنی را کپی کن، اینجا بگذار و با ترجمه بخوانش.',
     },
   ),
   _Step(
     'imp_srt',
     Icons.subtitles_rounded,
-    {'en': 'Translate subtitle files (SRT)', 'fa': 'ترجمه‌ی فایلِ زیرنویس (SRT)'},
+    {'en': 'Subtitle translation (SRT)', 'fa': 'ترجمه‌ی زیرنویس (SRT)'},
     {
-      'en': 'Load an .srt file, translate it into any language and save the new file. This one is free, with no limit — the other imports are free twice, then need Pro.',
-      'fa': 'فایلِ .srt را بارگذاری کن، به هر زبانی ترجمه کن و فایلِ جدید را ذخیره کن. این بخش رایگان و بدونِ محدودیت است؛ بقیه‌ی ایمپورت‌ها دو بار رایگان‌اند و بعدش Pro می‌خواهند.',
+      'en': 'Load an .srt file, translate it into any language and save the new file. This one is free with no limit. The other imports are free twice, then need Pro.',
+      'fa': 'فایل .srt را بارگذاری کن، به هر زبانی ترجمه کن و فایل جدید را ذخیره کن. این بخش رایگان و بدون محدودیت است. بقیه‌ی ایمپورت‌ها دو بار رایگان‌اند و بعد به Pro نیاز دارند.',
     },
   ),
 ];
@@ -320,19 +312,86 @@ const List<_Step> _transSteps = [
   _Step(
     'tr_refresh',
     Icons.refresh_rounded,
-    {'en': 'Not happy with a translation?', 'fa': 'ترجمه‌اش خوب نیست؟'},
+    {'en': 'Translation not right?', 'fa': 'ترجمه‌اش خوب نیست؟'},
     {
-      'en': 'The player is now reading the translations too. If one is wrong or unnatural, tap this refresh button next to it — the AI translates it again, better, and the improved version is remembered.',
-      'fa': 'پلیر الان ترجمه‌ها را هم می‌خواند. اگر ترجمه‌ای اشتباه یا غیرطبیعی بود، دکمه‌ی رفرشِ کنارش را بزن تا دوباره و بهتر ترجمه شود؛ نسخه‌ی بهتر ذخیره می‌شود.',
+      'en': 'The player reads the translations too. If one is wrong, tap the refresh button next to it to translate it again. The better version is saved.',
+      'fa': 'پلیر ترجمه‌ها را هم می‌خواند. اگر ترجمه‌ای اشتباه بود، دکمه‌ی رفرش کنارش را بزن تا دوباره ترجمه شود. نسخه‌ی بهتر ذخیره می‌شود.',
     },
   ),
   _Step(
     'account',
     Icons.volume_off_rounded,
-    {'en': 'Turn translation reading off', 'fa': 'خاموش‌کردنِ خوانشِ ترجمه'},
+    {'en': 'Turn off translation reading', 'fa': 'خاموش کردن خواندن ترجمه'},
     {
-      'en': 'Don\'t want translations read aloud? Open Settings from here and turn off «Read translations inside the app».',
+      'en': "Don't want translations read aloud? Open Settings from here and turn off «Read translations inside the app».",
       'fa': 'نمی‌خواهی ترجمه‌ها خوانده شوند؟ از اینجا تنظیمات را باز کن و گزینه‌ی «خواندن ترجمه‌ها داخل برنامه» را خاموش کن.',
+    },
+  ),
+];
+
+/// تورِ کارتِ ترجمه (پاپ‌آپی که با لمسِ لغت یا انتخابِ عبارت باز می‌شود) — بارِ اول.
+const List<_Step> _popupSteps = [
+  _Step(
+    'pc_trans',
+    Icons.translate_rounded,
+    {'en': 'Translation in all your languages', 'fa': 'ترجمه به همه‌ی زبان‌هایت'},
+    {
+      'en': 'The translation of the word or phrase you tapped shows here, in every language you selected.',
+      'fa': 'ترجمه‌ی لغت یا عبارتی که زدی، به همه‌ی زبان‌هایی که انتخاب کرده‌ای، اینجا نشان داده می‌شود.',
+    },
+  ),
+  _Step(
+    'pc_speak',
+    Icons.volume_up_rounded,
+    {'en': 'Hear the pronunciation', 'fa': 'شنیدن تلفظ'},
+    {
+      'en': 'Plays the pronunciation. Each translation has its own play button too.',
+      'fa': 'تلفظ را پخش می‌کند. کنار هر ترجمه هم یک دکمه‌ی پخش هست.',
+    },
+  ),
+  _Step(
+    'pc_retry',
+    Icons.refresh_rounded,
+    {'en': 'Translation not right?', 'fa': 'ترجمه‌اش خوب نیست؟'},
+    {
+      'en': 'Tap to translate it again.',
+      'fa': 'این دکمه را بزن تا دوباره ترجمه شود.',
+    },
+  ),
+  _Step(
+    'pc_neural',
+    Icons.hub_outlined,
+    {'en': 'Neural path', 'fa': 'مسیر عصبی'},
+    {
+      'en': 'Shows how many times you have heard and repeated this word, so you can follow your review.',
+      'fa': 'نشان می‌دهد چند بار این لغت را شنیده و تکرار کرده‌ای تا روند مرورت را ببینی.',
+    },
+  ),
+  _Step(
+    'pc_story',
+    Icons.bookmark_rounded,
+    {'en': 'Save for next story', 'fa': 'ذخیره برای داستان بعدی'},
+    {
+      'en': 'For a word or sentence that is hard, or that you want to learn better. It is used in your next story, and also stays in your dictionary and saved words (you can delete it any time). Pro feature.',
+      'fa': 'برای لغت یا جمله‌ای که سخت است یا می‌خواهی بهتر یادش بگیری. در داستان بعدی استفاده می‌شود و در دیکشنری و لغت‌های ذخیره‌شده هم می‌ماند (هر وقت خواستی حذفش می‌کنی). ویژه‌ی Pro.',
+    },
+  ),
+  _Step(
+    'pc_grammar',
+    Icons.extension_rounded,
+    {'en': 'Add to grammar learning', 'fa': 'افزودن به یادگیری گرامر'},
+    {
+      'en': 'When you want to know the grammar of a sentence or word, tap here. Its explanation is saved in the Grammar section. Pro feature.',
+      'fa': 'وقتی می‌خواهی گرامر یک جمله یا لغت را بدانی، این را بزن. توضیحش در بخش گرامر ذخیره می‌شود. ویژه‌ی Pro.',
+    },
+  ),
+  _Step(
+    'pc_leitner',
+    Icons.style_outlined,
+    {'en': 'Leitner box', 'fa': 'جعبه‌ی لایتنر'},
+    {
+      'en': 'Adds the word to a review box, so you see it again at the right times and remember it longer. Pro feature.',
+      'fa': 'لغت را به یک جعبه‌ی مرور اضافه می‌کند تا در زمان‌های مناسب دوباره ببینی‌اش و بهتر یادت بماند. ویژه‌ی Pro.',
     },
   ),
 ];
@@ -388,6 +447,62 @@ class SpotlightTour extends ConsumerStatefulWidget {
 
   /// مرحله‌ی «ابزارهای شناور»: به داک (FeatureDock) می‌گوید باز شود.
   static final ValueNotifier<int> dockExpand = ValueNotifier<int>(0);
+
+  /// true = تورِ کارتِ ترجمه در حال نمایش است (کارت در این مدت خودکار بسته نمی‌شود).
+  static final ValueNotifier<bool> cardTourActive = ValueNotifier<bool>(false);
+  static bool _cardTourRunning = false;
+
+  /// 🎓 تورِ کارتِ ترجمه (پاپ‌آپ): فقط بارِ اولی که کارت باز می‌شود. روی همان Overlay
+  /// و بالای کارت نشان داده می‌شود. force=true → همیشه.
+  static void maybeStartCardTour(BuildContext context, {bool force = false}) {
+    if (_cardTourRunning) return;
+    ProviderContainer? container;
+    OverlayState? overlay;
+    try {
+      container = ProviderScope.containerOf(context, listen: false);
+      overlay = Overlay.of(context, rootOverlay: true);
+    } catch (_) {
+      return;
+    }
+    var seen = true;
+    try {
+      seen = container.read(sharedPrefsProvider).getBool(_kPopupTourSeenKey) ?? false;
+    } catch (_) {}
+    if (seen && !force) return;
+    final ctn = container;
+    final ov = overlay;
+    _cardTourRunning = true;
+    cardTourActive.value = true;
+    late final OverlayEntry entry;
+    var removed = false;
+    void close(bool markSeen) {
+      if (removed) return;
+      removed = true;
+      try {
+        entry.remove();
+      } catch (_) {}
+      _cardTourRunning = false;
+      cardTourActive.value = false;
+      if (markSeen) {
+        try {
+          ctn.read(sharedPrefsProvider).setBool(_kPopupTourSeenKey, true);
+        } catch (_) {}
+      }
+    }
+
+    entry = OverlayEntry(builder: (_) => _CardTourOverlay(onClose: close));
+    // کمی صبر تا کارت و ترجمه‌ها روی صفحه بنشینند
+    Future<void>.delayed(const Duration(milliseconds: 700), () {
+      if (removed) return;
+      try {
+        ov.insert(entry);
+      } catch (_) {
+        removed = true;
+        _cardTourRunning = false;
+        cardTourActive.value = false;
+      }
+    });
+  }
 
   @override
   ConsumerState<SpotlightTour> createState() => _SpotlightTourState();
@@ -761,6 +876,224 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// مستطیلِ قابل‌دیدنِ یک هدف (برای تورِ کارت).
+Rect? _rectForId(String id, Size size) {
+  final cands = _multi[id];
+  if (cands == null || cands.isEmpty) return null;
+  for (final t in cands) {
+    final r = t._rect;
+    if (r == null) continue;
+    final vis = r.intersect(Offset.zero & size);
+    if (vis.width >= 6 && vis.height >= 6) return vis;
+  }
+  return null;
+}
+
+/// لایه‌ی تورِ کارتِ ترجمه — داخل Overlay، بالای خودِ کارت.
+class _CardTourOverlay extends ConsumerStatefulWidget {
+  final void Function(bool markSeen) onClose;
+  const _CardTourOverlay({required this.onClose});
+
+  @override
+  ConsumerState<_CardTourOverlay> createState() => _CardTourOverlayState();
+}
+
+class _CardTourOverlayState extends ConsumerState<_CardTourOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1500))
+    ..repeat();
+  int _i = -1;
+  bool _closed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_advance()) _close(false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  void _close(bool markSeen) {
+    if (_closed) return;
+    _closed = true;
+    widget.onClose(markSeen);
+  }
+
+  bool _advance() {
+    if (!mounted) return false;
+    final size = MediaQuery.of(context).size;
+    for (var j = _i + 1; j < _popupSteps.length; j++) {
+      if (_rectForId(_popupSteps[j].id, size) != null) {
+        setState(() => _i = j);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _hasLater(Size size) {
+    for (var j = _i + 1; j < _popupSteps.length; j++) {
+      if (_rectForId(_popupSteps[j].id, size) != null) return true;
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_i < 0) return const SizedBox.shrink();
+    final c = context.appColors;
+    final lang = ref.watch(appPrefsProvider).uiLang;
+    String t(Map<String, String> m) => m[lang] ?? m['en']!;
+    final rtl = lang == 'fa' || lang == 'ar';
+    final size = MediaQuery.of(context).size;
+    final step = _popupSteps[_i];
+    final r = _rectForId(step.id, size);
+    if (r == null) {
+      // کارت بسته شده یا هدف دیگر روی صفحه نیست → مرحله‌ی بعدی یا پایان
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _closed) return;
+        if (!_advance()) _close(false);
+      });
+      return const SizedBox.shrink();
+    }
+    final hole = r.inflate(6);
+    final below = hole.center.dy < size.height * 0.5;
+    final last = !_hasLater(size);
+    final shown = _popupSteps.indexOf(step) + 1;
+
+    return Directionality(
+      textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Material(
+        type: MaterialType.transparency,
+        child: AnimatedBuilder(
+          animation: _pulse,
+          builder: (context, _) {
+            final cur = _rectForId(step.id, size) ?? r;
+            final h = cur.inflate(6);
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {},
+                    child: CustomPaint(
+                      painter:
+                          _SpotPainter(hole: h, t: _pulse.value, color: c.gold),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  top: below ? math.max(h.bottom + 16, 8.0) : null,
+                  bottom: below ? null : math.max(size.height - h.top + 16, 8.0),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                        decoration: BoxDecoration(
+                          color: c.paper,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: c.cardBorder),
+                          boxShadow: const [
+                            BoxShadow(
+                                color: Color(0x33000000),
+                                blurRadius: 16,
+                                offset: Offset(0, 6)),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                      color: c.goldSoft, shape: BoxShape.circle),
+                                  child: Icon(step.icon, size: 22, color: c.gold),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    t(step.title),
+                                    style: TextStyle(
+                                        color: c.ink,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w800),
+                                  ),
+                                ),
+                                Text('$shown/${_popupSteps.length}',
+                                    style: TextStyle(
+                                        color: c.inkSoft, fontSize: 12)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              t(step.body),
+                              style: TextStyle(
+                                  color: c.ink, fontSize: 14, height: 1.65),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                TextButton(
+                                  onPressed: () => _close(true),
+                                  child: Text(t(_ui['skip']!),
+                                      style: TextStyle(color: c.inkSoft)),
+                                ),
+                                const Spacer(),
+                                FilledButton(
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: c.gold,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 22, vertical: 10),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  onPressed: () {
+                                    if (last) {
+                                      _close(true);
+                                    } else if (!_advance()) {
+                                      _close(true);
+                                    }
+                                  },
+                                  child: Text(
+                                    t(_ui[last ? 'done' : 'next']!),
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
