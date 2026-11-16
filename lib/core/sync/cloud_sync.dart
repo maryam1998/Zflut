@@ -34,10 +34,10 @@ const String _kDeleted = 'zflut-cloud-deleted-packs-v1';
 const String _kDismissed = 'zflut-cloud-dismissed-packs-v1';
 const String _kTable = 'user_sync';
 
-/// داده‌های کاربر (داستان‌ها، لغات، مثال‌های هوش مصنوعی و ...) فقط روی خودِ گوشی
-/// می‌مانند و به Supabase نمی‌روند / از آن برنمی‌گردند. (Supabase فقط برای ورود
-/// با حساب است.) اگر روزی سرور داشتی، این را true کن.
-const bool _kSyncUserData = false;
+/// داده‌های کاربر (لغات ذخیره‌شده، داستان‌ها، لایتنر، مرور، یادداشت‌ها، تنظیمات و ...)
+/// با حساب به Supabase همگام می‌شوند تا با Clear Data یا تعویض گوشی از بین نروند.
+/// (ادغامِ دو طرفه در data_merge.dart و نسخه‌ی پشتیبانِ ابری در _backupCloud.)
+const bool _kSyncUserData = true;
 
 /// حتی وقتی _kSyncUserData خاموش است، این کلیدها با حساب همگام می‌شوند:
 /// مثال‌های مثال‌ساز (AI) با خروج از حساب/نصبِ دوباره گم نشوند.
