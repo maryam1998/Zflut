@@ -300,7 +300,9 @@ async function handleTranslateText(request, env, ctx) {
 
   const label = TT_LANGS[target];
   const prompt =
-    `Translate the following text into ${label}. ` +
+    `Translate the following text into ${label} by meaning, the way a native speaker would naturally say it. ` +
+    `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` +
+    `(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). ` +
     "Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.\n\n" +
     `Text: ${text}`;
   const maxTokens = Math.min(Math.max(Math.floor(text.length / 2) + 96, 128), 600);

@@ -179,6 +179,17 @@ String _fixFarewell(String src, String from, String to, String out) {
       RegExp(r'(?<![\u0600-\u06FF])بیا(?![\u0600-\u06FF])'), 'خداحافظ');
 }
 
+/// 🎭 اصطلاح/عبارتِ ثابتِ معروف که مترجم‌های ماشینی کلمه‌به‌کلمه ترجمه می‌کنند
+/// (مثلاً «See you later, alligator!» ← «به‌زودی می‌بینمت، تمساح!»). فقط برای فعال‌کردنِ بازبینیِ AI.
+final RegExp _idiomRe = RegExp(
+  r'\b(see you later,?\s+alligator|in a while,?\s+crocodile|after a while,?\s+crocodile'
+  r'|break a leg|raining cats and dogs|piece of cake|kick the bucket|spill the beans'
+  r'|under the weather|an arm and a leg|bite the bullet|once in a blue moon|hit the sack)\b',
+  caseSensitive: false,
+);
+
+bool _looksIdiomatic(String text) => _idiomRe.hasMatch(text);
+
 /// کنترل کیفیتِ سبک — همان looksLikelyMistranslated وب
 bool looksLikelyMistranslated(
   String sourceText,
@@ -591,6 +602,7 @@ class TranslationService {
       }
       if (ml != null &&
           ml.trim().isNotEmpty &&
+          !(aiSettings != null && _looksIdiomatic(text)) &&
           !looksLikelyMistranslated(text, ml, targetLang,
               sourceLang: sourceLang)) {
         await cachePut(text, sourceLang, targetLang, ml.trim());
@@ -611,6 +623,7 @@ class TranslationService {
       var aiFixed = false;
       if (aiSettings != null &&
           (forceVerify ||
+              _looksIdiomatic(text) ||
               looksLikelyMistranslated(text, result, targetLang,
                   sourceLang: sourceLang))) {
         final before = result;
@@ -981,7 +994,10 @@ class TranslationService {
     }
     final targetLabel = englishLangName(target);
     final prompt =
-        'Translate the following text into $targetLabel. '
+        'Translate the following text into $targetLabel by meaning, the way a native speaker would naturally say it. '
+        'Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning '
+        'or a natural $targetLabel equivalent — never word for word '
+        '(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). '
         'Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.\n\n'
         'Text: $text';
 
@@ -1114,7 +1130,11 @@ class TranslationService {
       final prompt =
           'Source text: "$source"\n'
           'Draft translation into $targetLabel: "$draft"\n\n'
-          'Is the draft an accurate, complete translation? If yes, reply with EXACTLY: OK\n'
+          'Judge the draft by meaning, not wording. If the source is an idiom, slang, a rhyming or fixed expression, '
+          'a greeting/farewell formula or a figure of speech, the draft must be the natural $targetLabel equivalent '
+          'a native speaker would actually say — a word-for-word rendering is wrong '
+          '(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme).\n'
+          'Is the draft accurate, natural and complete? If yes, reply with EXACTLY: OK\n'
           'If no, reply with ONLY the corrected translation — no quotes, no explanation, nothing else.';
       final result = await callAI(
           prompt: prompt, maxTokens: 80, retries: 0, settings: settings);
