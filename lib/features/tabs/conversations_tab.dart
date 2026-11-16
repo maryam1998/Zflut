@@ -46,6 +46,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   // و با مدلِ مخصوصِ همان زبان خوانده می‌شود. هدر عوض شد → صداها خودکار دوباره انتخاب می‌شوند.
   static const String _mainLang = 'en';
   final Map<String, ({String? male, String? female})> _langVoices = {};
+  final Map<String, List<String>> _langIds = {}; // شناسه‌ی صداهای نصب‌شده (فعال اول)
   bool _voicesBusy = false;
   bool _voicesDirty = false;
 
@@ -82,6 +83,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       do {
         _voicesDirty = false;
         final next = <String, ({String? male, String? female})>{};
+        final nextIds = <String, List<String>>{};
         for (final lang in _wantedLangs()) {
           try {
             final r = await NativeBridge.instance.getTtsVoices(lang: lang);
@@ -106,6 +108,12 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             }
 
             next[lang] = (male: pick(_isMale), female: pick(_isFemale));
+            nextIds[lang] = [
+              for (final v in ok)
+                if (v['active'] == true) '${v['id']}',
+              for (final v in ok)
+                if (v['active'] != true) '${v['id']}',
+            ];
             _autoFetchMissingGender(lang, raw, next[lang]!, ok);
           } catch (_) {}
         }
@@ -113,6 +121,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         _langVoices
           ..clear()
           ..addAll(next);
+        _langIds
+          ..clear()
+          ..addAll(nextIds);
       } while (_voicesDirty);
     } catch (_) {
     } finally {
@@ -135,18 +146,25 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       void want(String gender, String? haveId, bool Function(String) isG) {
         final key = '$lang:$gender';
         if (haveId != null || _autoVoiceAsked.contains(key)) return;
-        for (final e in raw) {
-          if (e is! Map) continue;
-          if (e['downloaded'] == true || e['downloading'] == true) continue;
-          if (!isG('${e['label']}')) continue;
-          final id = '${e['id']}';
-          if (id.isEmpty) continue;
-          _autoVoiceAsked.add(key);
-          _autoVoicePending[lang] = (prevActive: prevActive, want: id);
-          unawaited(NativeBridge.instance
-              .downloadTtsModel(lang: lang, voice: id)
-              .catchError((_) => <String, dynamic>{}));
-          return;
+        // 🎭 اول صداهای سبک/متوسط (دانلودِ سریع‌تر و مطمئن‌تر)، بعد «high»
+        for (final allowHigh in const [false, true]) {
+          for (final e in raw) {
+            if (e is! Map) continue;
+            if (e['downloaded'] == true || e['downloading'] == true) continue;
+            if (!isG('${e['label']}')) continue;
+            if (!allowHigh &&
+                '${e['label']}'.toLowerCase().contains('· high')) {
+              continue;
+            }
+            final id = '${e['id']}';
+            if (id.isEmpty) continue;
+            _autoVoiceAsked.add(key);
+            _autoVoicePending[lang] = (prevActive: prevActive, want: id);
+            unawaited(NativeBridge.instance
+                .downloadTtsModel(lang: lang, voice: id)
+                .catchError((_) => <String, dynamic>{}));
+            return;
+          }
         }
       }
 
@@ -189,10 +207,29 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     if (p == null && mounted) {
       unawaited(_loadVoices()); // زبانِ تازه (مثلاً هدر تازه عوض شده) → صدایش را پیدا کن
     }
-    final v = p == null ? null : (male ? p.male : p.female);
+    final own = p == null ? null : (male ? p.male : p.female);
+    final other = p == null ? null : (male ? p.female : p.male);
+    final v = own ?? (p == null ? null : _distinctFallback(lang, other, male));
     // صدای اختصاصیِ مرد/زن نصب نیست (یا وب/صدای گوشی است) → فقط جنسیت را اعلام کن
     // تا موتورِ صدا از بینِ صداهای گوشی/مرورگر/Edge صدای هم‌جنس را انتخاب کند.
     return v ?? (male ? 'gender:male' : 'gender:female');
+  }
+
+
+  /// 🎭 صدای هم‌جنس نصب نیست → به‌جای «صدای فعال برای هر دو گوینده»، یک صدای
+  /// نصب‌شده‌ی دیگر (متفاوت از صدای گوینده‌ی مقابل) انتخاب می‌شود.
+  String? _distinctFallback(String lang, String? other, bool male) {
+    final ids = _langIds[lang.trim().toLowerCase()] ?? const <String>[];
+    if (ids.isEmpty) return null;
+    if (other != null) {
+      for (final id in ids) {
+        if (id != other) return id;
+      }
+      return null;
+    }
+    // جنسیتِ هیچ‌کدام معلوم نیست: زن = صدای فعال، مرد = صدای بعدی
+    if (male) return ids.length > 1 ? ids[1] : null;
+    return ids.first;
   }
 
   String? _voiceForTrans(String itemId, String lang) => _voiceFor(itemId, lang);
