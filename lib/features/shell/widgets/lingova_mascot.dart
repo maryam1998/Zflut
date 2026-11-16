@@ -18,10 +18,11 @@ import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/tts/speech_state.dart';
 import '../../review/providers/review_provider.dart';
 import '../../review/providers/review_session_provider.dart';
+import 'mascot_sprites.dart';
 
 // ─────────────────────────────────────────────────────────────────────────
-// آدمکِ ساده‌ی Lingova (کلاسیک) — پورتِ LingovaMascot.jsx + useLingovaMascot.js
-// از Hope. فقط همان آدمکِ سادهٔ SVG؛ کاراکترها/لباس‌های دیگر پورت نشده‌اند.
+// آدمکِ Lingova — منطقِ حرکت/پیام‌ها پورتِ LingovaMascot.jsx + useLingovaMascot.js از Hope؛
+// ظاهر = ماسکوتِ جدیدِ سه‌بعدی/خمیری (لایه‌های PNG؛ نقاشی در mascot_sprites.dart).
 //
 //  • رویِ یک نوارِ ثابتِ بالای صفحه رفت‌وبرگشت قدم می‌زند.
 //  • اگر کاربر بی‌تعامل شود، دو پیامِ تصادفی از چهار پیامِ یادآوری نشان می‌دهد.
@@ -71,6 +72,9 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
   bool _paused = false;
   bool _playing = false;
   bool _lastPinned = false;
+  double _look = 0; // ۰ = سرِ نیمرخ، ۱ = سرِ روبرو (نگاه به کاربر)
+  double _alertK = 0; // ۰ = دست پایین، ۱ = دستِ اشاره‌گر (تذکر)
+  int _lastTickMs = 0;
 
   // درگ
   bool _pressed = false;
@@ -92,6 +96,8 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
     super.initState();
     _playing =
         ref.read(speechControllerProvider).status == SpeechStatus.playing;
+    _lastTickMs = _nowMs();
+    unawaited(MascotSprites.load());
     _timer = Timer.periodic(const Duration(milliseconds: 45), _tick);
     WidgetsBinding.instance.addObserver(this);
   }
@@ -223,7 +229,23 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
     }
 
     if (!_paused && !_pressed) _step(now, pinned);
+    _animate(now);
     setState(() {});
+  }
+
+  /// چرخشِ نرمِ سر (نیمرخ ⇄ روبرو) و بالا آمدنِ دستِ تذکر.
+  /// وقتی کاربر بیکار است ماسکوت هر چند ثانیه سرش را به سمتِ کاربر می‌چرخاند.
+  void _animate(int now) {
+    final dt = (now - _lastTickMs).clamp(0, 100).toInt();
+    _lastTickMs = now;
+    final idleFor = now - MascotActivity.last - _kIdleMs;
+    final glance = idleFor > 0 && (idleFor % 4800) < 2800;
+    final wantFront = _paused || _mode == _Mode.alert || glance;
+    final lookStep = dt / 240.0;
+    _look = (_look + (wantFront ? lookStep : -lookStep)).clamp(0.0, 1.0).toDouble();
+    final wantAlert = !_paused && _mode == _Mode.alert;
+    final alertStep = dt / 200.0;
+    _alertK = (_alertK + (wantAlert ? alertStep : -alertStep)).clamp(0.0, 1.0).toDouble();
   }
 
   // ───────────────────────── پیام‌های رویدادی ─────────────────────────
@@ -387,16 +409,15 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
               children: [
                 Transform(
                   alignment: Alignment.center,
-                  transform: Matrix4.diagonal3Values(_facing.toDouble(), 1, 1),
+                  // ماسکوتِ جدید به‌طورِ پیش‌فرض رو به چپ است
+                  transform: Matrix4.diagonal3Values(-_facing.toDouble(), 1, 1),
                   child: CustomPaint(
                     size: const Size(_kW, _kH),
-                    painter: _MascotPainter(
-                      mode: shown,
+                    painter: MascotPainter(
+                      walking: shown == _Mode.walk,
                       ms: _nowMs(),
-                      shirt: c.teal,
-                      pants: c.ink,
-                      head: c.gold,
-                      eye: c.ink,
+                      look: _look,
+                      alertK: _alertK,
                     ),
                   ),
                 ),
@@ -488,80 +509,4 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
       ),
     );
   }
-}
-
-// ─────────────────────────── نقاشی آدمک (SVG → Canvas) ───────────────────────────
-class _MascotPainter extends CustomPainter {
-  /// null = پارک‌شده (بدون انیمیشن)
-  final _Mode? mode;
-  final int ms;
-  final Color shirt, pants, head, eye;
-
-  _MascotPainter({
-    required this.mode,
-    required this.ms,
-    required this.shirt,
-    required this.pants,
-    required this.head,
-    required this.eye,
-  });
-
-  static double _tri(double t) => t < 0.5 ? 1 - 4 * t : -3 + 4 * t;
-
-  void _rot(Canvas c, Offset o, double deg, VoidCallback draw) {
-    c.save();
-    c.translate(o.dx, o.dy);
-    c.rotate(deg * math.pi / 180);
-    c.translate(-o.dx, -o.dy);
-    draw();
-    c.restore();
-  }
-
-  RRect _r(double x, double y, double w, double h, double r) =>
-      RRect.fromRectAndRadius(Rect.fromLTWH(x, y, w, h), Radius.circular(r));
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final t = (ms % 500) / 500.0;
-    final walking = mode == _Mode.walk;
-
-    // چماق
-    var armDeg = 0.0;
-    var armDy = 0.0;
-    if (mode == _Mode.alert) {
-      armDeg = -95;
-      armDy = -2 * (0.5 - 0.5 * math.cos(2 * math.pi * (ms % 600) / 600));
-    } else if (walking) {
-      armDeg = -10 * _tri(t);
-    }
-    canvas.save();
-    canvas.translate(0, armDy);
-    _rot(canvas, const Offset(18, 15), armDeg, () {
-      canvas.drawRRect(_r(17, 3, 2.6, 11, 1.3), Paint()..color = const Color(0xFF8A5A2B));
-      canvas.drawCircle(const Offset(18.3, 3), 2.6, Paint()..color = const Color(0xFF6B4423));
-    });
-    canvas.restore();
-
-    // سر (موقع «خوندن» کمی خم می‌شود)
-    _rot(canvas, const Offset(15, 8), mode == _Mode.read ? 18 : 0, () {
-      canvas.drawCircle(const Offset(15, 8), 5, Paint()..color = head);
-      canvas.drawCircle(const Offset(17, 7.2), 0.8, Paint()..color = eye);
-    });
-
-    // تنه
-    canvas.drawRRect(_r(12, 13, 6, 12, 3), Paint()..color = shirt);
-
-    // پاها
-    final legDeg = walking ? 24 * _tri(t) : 0.0;
-    final pp = Paint()..color = pants;
-    _rot(canvas, const Offset(13, 25), legDeg, () {
-      canvas.drawRRect(_r(11.5, 25, 2.4, 10, 1.2), pp);
-    });
-    _rot(canvas, const Offset(17, 25), -legDeg, () {
-      canvas.drawRRect(_r(16, 25, 2.4, 10, 1.2), pp);
-    });
-  }
-
-  @override
-  bool shouldRepaint(covariant _MascotPainter old) => true;
 }
