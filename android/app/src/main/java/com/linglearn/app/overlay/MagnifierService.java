@@ -1328,7 +1328,10 @@ public class MagnifierService extends Service {
                     String better = null;
                     try {
                         boolean failed = draft == null || draft.isEmpty() || "—".equals(draft) || "…".equals(draft);
-                        String out = ctx != null
+                        // 🗄️ کشِ مشترکِ همه‌ی کاربرها (فقط برای متنِ بدونِ جمله‌ی اطراف): اگر قبلاً درست ترجمه شده، AI صدا زده نمی‌شود
+                        final String sharedHit = ctx == null ? SharedTr.get(text, from, tgt) : null;
+                        String out = sharedHit != null ? sharedHit
+                                : ctx != null
                                 ? (failed ? BubbleService.aiTranslateCtxStatic(text, from, tgt, ctx)
                                           : BubbleService.aiVerifyCtxStatic(text, from, tgt, draft, ctx))
                                 : (failed ? BubbleService.aiTranslateStatic(text, from, tgt)
@@ -1338,7 +1341,10 @@ public class MagnifierService extends Service {
                             boolean ok = out.equalsIgnoreCase("OK") || out.equalsIgnoreCase("OK.");
                             if (!out.isEmpty() && !ok && !out.equals(draft)
                                     && !LiveTranslator.isReasoningLeak(out)
-                                    && !LiveTranslator.looksLikelyMistranslated(text, out, tgt, from)) better = out;
+                                    && !LiveTranslator.looksLikelyMistranslated(text, out, tgt, from)) {
+                                better = out;
+                                if (sharedHit == null && ctx == null) SharedTr.put(text, from, tgt, out);   // برای بقیه هم ذخیره شود
+                            }
                         }
                     } catch (Throwable ignored) { }
                     if (better == null) return;
@@ -2261,7 +2267,10 @@ public class MagnifierService extends Service {
             String out = cleanAiOut(ctx != null ? BubbleService.aiTranslateCtxStatic(text, from, tgt, ctx)
                                                 : BubbleService.aiTranslateStatic(text, from, tgt));
             if (out != null && !LiveTranslator.isReasoningLeak(out)
-                    && !LiveTranslator.looksLikelyMistranslated(text, out, tgt, from)) return out;
+                    && !LiveTranslator.looksLikelyMistranslated(text, out, tgt, from)) {
+                if (ctx == null) SharedTr.put(text, from, tgt, out);   // ↻: ترجمه‌ی تازه‌ی AI برای همه‌ی کاربرها ذخیره شود
+                return out;
+            }
         } catch (Throwable ignored) { }
         try {
             String out = cleanAiOut(translateOne(text, from, tgt));

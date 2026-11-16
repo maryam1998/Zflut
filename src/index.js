@@ -348,8 +348,9 @@ async function genCacheGet(env, key) {
   if (!env.TR_DB) return null;
   try {
     await genCacheInit(env);
-    const row = await env.TR_DB.prepare("SELECT v, created FROM gen_cache WHERE k = ?1").bind(key).first();
-    if (!row || Date.now() - row.created > GEN_CACHE_TTL_MS) return null;
+    const row = await env.TR_DB.prepare("SELECT v, created, provider FROM gen_cache WHERE k = ?1").bind(key).first();
+    // ✅ ترجمه‌ی اصلاح‌شده‌ی کاربرها (provider = "user") هیچ‌وقت منقضی نمی‌شود؛ بقیه بعد از ۱۸۰ روز
+    if (!row || (row.provider !== "user" && Date.now() - row.created > GEN_CACHE_TTL_MS)) return null;
     return row.v;
   } catch {
     return null;

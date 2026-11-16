@@ -608,11 +608,14 @@ class TranslationService {
       _markCognate(text, result, targetLang, sourceLang);
 
       // فقط اگر مشکوک بود (یا forceVerify) با AI بررسی/اصلاح کن
+      var aiFixed = false;
       if (aiSettings != null &&
           (forceVerify ||
               looksLikelyMistranslated(text, result, targetLang,
                   sourceLang: sourceLang))) {
+        final before = result;
         result = await _verifyWithAI(text, targetLang, result, aiSettings);
+        aiFixed = result.trim() != before.trim();
       }
 
       // اگر بعد از اصلاح هم مشکوک بود کش نکن — برو سراغ AI
@@ -620,6 +623,11 @@ class TranslationService {
           sourceLang: sourceLang)) {
         _reportProviderOutcome(winner.provider.name, true);
         await cachePut(text, sourceLang, targetLang, result);
+        // 🗄️ اصلاحِ AI (هزینه داشت) برای بقیه‌ی کاربرها هم ذخیره شود تا دوباره AI صدا زده نشود
+        if (aiFixed && aiSettings != null) {
+          SharedTranslations.share(
+              aiSettings.baseUrl, text, sourceLang, targetLang, result);
+        }
         return result;
       }
     }

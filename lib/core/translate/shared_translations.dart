@@ -60,16 +60,46 @@ class SharedTranslations {
   static String _mk(String from, String to, String t) =>
       '${_src(from)}>$to|${t.trim()}';
 
+  // 📦 درخواست‌های هم‌زمانِ تک‌متنی (لغت‌های یک صفحه) ۴۰ میلی‌ثانیه جمع و در «یک» درخواستِ /api/tr-share فرستاده می‌شوند
+  // (هر درخواستِ Worker یک ردیفِ نوشتنِ D1 برای شمارنده‌ی سهمیه مصرف می‌کند؛ دسته‌ای = ارزان‌تر).
+  static final Map<String, _PendingBatch> _pending = {};
+
   /// یک متن (برای مسیرِ عمومیِ ترجمه در همه‌ی تب‌ها). null = نبود/نشد.
   static Future<String?> fetchOne(
-      String baseUrl, String from, String to, String text) async {
+      String baseUrl, String from, String to, String text) {
     final t = text.trim();
     if (!eligible(t) || !RegExp(r'\p{L}', unicode: true).hasMatch(t)) {
-      return null;
+      return Future<String?>.value(null);
     }
-    if (_missed.contains(_mk(from, to, t))) return null;
-    final r = await fetchMany(baseUrl, from, to, [t], quick: true);
-    return r[t];
+    if (_missed.contains(_mk(from, to, t))) return Future<String?>.value(null);
+    final key = '$baseUrl|${_src(from)}|$to';
+    final b = _pending.putIfAbsent(key, () => _PendingBatch(baseUrl, from, to));
+    final c = Completer<String?>();
+    b.waiters.putIfAbsent(t, () => <Completer<String?>>[]).add(c);
+    if (b.waiters.length >= _kBatch) {
+      b.timer?.cancel();
+      unawaited(_flush(key));
+    } else {
+      b.timer ??= Timer(const Duration(milliseconds: 40), () => _flush(key));
+    }
+    return c.future;
+  }
+
+  static Future<void> _flush(String key) async {
+    final b = _pending.remove(key);
+    if (b == null) return;
+    b.timer?.cancel();
+    var found = <String, String>{};
+    try {
+      found = await fetchMany(b.baseUrl, b.from, b.to, b.waiters.keys.toList(),
+          quick: true);
+    } catch (_) {}
+    for (final e in b.waiters.entries) {
+      final v = found[e.key];
+      for (final c in e.value) {
+        if (!c.isCompleted) c.complete(v);
+      }
+    }
   }
 
   static bool eligible(String text) {
@@ -172,4 +202,13 @@ class SharedTranslations {
       }
     }());
   }
+}
+
+class _PendingBatch {
+  _PendingBatch(this.baseUrl, this.from, this.to);
+  final String baseUrl;
+  final String from;
+  final String to;
+  final Map<String, List<Completer<String?>>> waiters = {};
+  Timer? timer;
 }

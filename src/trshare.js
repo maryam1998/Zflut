@@ -12,6 +12,47 @@ const MAX_TEXT = 300;      // مثلِ سقفِ /api/translate-text: متنِ ب
 const MAX_TRANSLATION = 1200;
 const MAX_BATCH = 40;
 
+// ⏳ مثلِ GEN_CACHE_TTL_MS در index.js؛ ردیف‌های provider="user" هیچ‌وقت منقضی نمی‌شوند.
+const TTL_MS = 180 * 24 * 60 * 60 * 1000;
+
+// یک کوئریِ SQL برای کلِ دسته (به‌جای یک کوئری برای هر مورد — سقفِ D1 رایگان ۵۰ کوئری در هر درخواست است).
+// اگر برای زبانِ مبدأِ دقیق چیزی نبود، ترجمه‌ی ذخیره‌شده با مبدأِ "auto" هم قبول است.
+async function lookupMany(env, deps, texts, source, target) {
+  const { genCacheKey, genCacheGet } = deps;
+  const valid = texts.map((t) => !!t && t.length <= MAX_TEXT);
+  const exact = await Promise.all(
+    texts.map((t, i) => (valid[i] ? genCacheKey(`translate-text|${source}|${target}|${t}`, 0) : null))
+  );
+  const auto = source === "auto"
+    ? exact
+    : await Promise.all(texts.map((t, i) => (valid[i] ? genCacheKey(`translate-text|auto|${target}|${t}`, 0) : null)));
+  const keys = [...new Set([...exact, ...auto].filter(Boolean))];
+  if (!keys.length) return texts.map(() => null);
+
+  const rows = new Map();
+  try {
+    if (!env.TR_DB) return texts.map(() => null);
+    const ph = keys.map((_, i) => `?${i + 1}`).join(",");
+    const res = await env.TR_DB.prepare(
+      `SELECT k, v, provider, created FROM gen_cache WHERE k IN (${ph})`
+    ).bind(...keys).all();
+    for (const r of res.results || []) rows.set(r.k, r);
+  } catch {
+    // جدول هنوز ساخته نشده یا خطای D1 → مسیرِ قدیمیِ تک‌به‌تک (که جدول را هم می‌سازد)
+    return Promise.all(
+      texts.map(async (t, i) => (valid[i] ? (await genCacheGet(env, exact[i])) || null : null))
+    );
+  }
+  const fresh = (r) => r && r.v && (r.provider === "user" || Date.now() - r.created <= TTL_MS);
+  return texts.map((t, i) => {
+    if (!valid[i]) return null;
+    const a = rows.get(exact[i]);
+    if (fresh(a)) return a.v;
+    const b = rows.get(auto[i]);
+    return fresh(b) ? b.v : null;
+  });
+}
+
 function resp(data, status, cors) {
   return new Response(JSON.stringify(data), {
     status,
@@ -42,13 +83,8 @@ export async function handleTrShare(request, env, ctx, cors, deps) {
 
   if (body.op === "get") {
     const items = Array.isArray(body.items) ? body.items.slice(0, MAX_BATCH) : [];
-    const results = await Promise.all(
-      items.map(async (it) => {
-        const text = String(it?.text ?? "").trim();
-        if (!text || text.length > MAX_TEXT) return null;
-        return (await genCacheGet(env, await keyOf(text))) || null;
-      })
-    );
+    const texts = items.map((it) => String(it?.text ?? "").trim());
+    const results = await lookupMany(env, deps, texts, source, target);
     return resp({ results }, 200, cors);
   }
 
@@ -65,7 +101,11 @@ export async function handleTrShare(request, env, ctx, cors, deps) {
       const ratio = tr.length / text.length;
       if (ratio < 0.15 || ratio > 6) return resp({ ok: false, skipped: "bad-ratio" }, 200, cors);
     }
-    await genCachePut(env, await keyOf(text), tr, "user");
+    const key = await keyOf(text);
+    // 💾 اگر همین ترجمه از قبل در کش هست، ننویس (سقفِ نوشتنِ D1 رایگان فقط ۱۰۰٬۰۰۰ ردیف در روز است؛ خواندن ۵ میلیون)
+    const existing = await genCacheGet(env, key);
+    if (existing && existing === tr) return resp({ ok: true, skipped: "same" }, 200, cors);
+    await genCachePut(env, key, tr, "user");
     return resp({ ok: true }, 200, cors);
   }
 
