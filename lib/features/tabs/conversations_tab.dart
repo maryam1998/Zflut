@@ -28,6 +28,7 @@ import '../../core/widgets/level_chips.dart';
 import '../../core/widgets/range_card.dart';
 import '../../core/widgets/sync_item_card.dart';
 import '../shell/widgets/shell_header.dart';
+import '../shell/widgets/spotlight_tour.dart' show TourTarget, SpotlightTour;
 import '_hope_panel.dart' show uiContentDirection;
 
 class ConversationsTab extends ConsumerStatefulWidget {
@@ -292,9 +293,26 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   /// ⏩ نمایشِ تدریجیِ سناریوها: اول چند کارت (فوری)، بقیه در فریم‌های بعدی
   int _reveal = 4;
 
+  /// 🎓 اولین موضوعِ بازِ (قفل‌نشده) لیست — تور همین را باز می‌کند.
+  String? _tourTopic;
+
+  void _onTourOpen() {
+    if (!mounted || _activeTopic != null) return;
+    final name = _tourTopic;
+    if (name == null) return;
+    _openTopic(name);
+  }
+
+  void _onTourClose() {
+    if (!mounted || _activeTopic == null) return;
+    _closeTopic();
+  }
+
   @override
   void initState() {
     super.initState();
+    SpotlightTour.convOpenTopic.addListener(_onTourOpen);
+    SpotlightTour.convCloseTopic.addListener(_onTourClose);
     // دکمه‌ی «بازگشت» گوشی: اول از موضوعِ بازشده به لیستِ موضوع‌ها برمی‌گردد؛
     // اگر لیست باز بود، کار را به AppShell می‌سپارد (خروج از برنامه).
     BackHandlers.add(_onSystemBack);
@@ -307,6 +325,10 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     // لمسِ طولانیِ دکمه‌ی پخش از تبِ دیگر: موضوع/سناریوی در حال پخش را باز کن
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _applyRestore(ref.read(tabRestoreProvider));
+    });
+    // 🎓 بارِ اولِ ورود به تبِ مکالمه (بعد از تورِ اصلی): تورِ مکالمه
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) SpotlightTour.startConv();
     });
   }
 
@@ -327,6 +349,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 
   @override
   void dispose() {
+    SpotlightTour.convOpenTopic.removeListener(_onTourOpen);
+    SpotlightTour.convCloseTopic.removeListener(_onTourClose);
     BackHandlers.remove(_onSystemBack);
     _dlSub?.cancel();
     _gridScroll.dispose();
@@ -480,6 +504,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     final readInRange = visible.where((t) => topicRead.contains(t.topic)).length;
     final readTotal = topics.where((t) => topicRead.contains(t.topic)).length;
     final isPro = ProStatus.isPro;
+    // 🎓 هدفِ تور = اولین موضوعِ قفل‌نشده
+    final tourIdx = visible.indexWhere((t) => !_lockedFor(t.topic));
+    _tourTopic = tourIdx >= 0 ? visible[tourIdx].topic : null;
     // 🔒 خلاصه‌ی قفل‌ها برای بنر (فقط کاربرِ رایگان)
     final lockSum = (isPro || index == null)
         ? null
@@ -540,7 +567,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             final visual = visualForTopic(topic.topic);
             final e = index?.of(topic.topic);
             final locked = _lockedFor(topic.topic);
-            return _TopicCard(
+            final card = _TopicCard(
               topic: topic,
               visual: visual,
               badgeColor: kTopicBadgeColors[i % kTopicBadgeColors.length],
@@ -556,6 +583,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
               onTap: () => _openTopic(topic.topic),
               onToggleRead: () => topicReadN.toggle(topic.topic),
             );
+            return i == tourIdx ? TourTarget(id: 'cv_topic', child: card) : card;
           },
         ),
             ],
@@ -1159,6 +1187,13 @@ class _DialogueBox extends ConsumerWidget {
       final hasHear = i < hear.length && _ok(hear[i]);
       final hasSay = i < say.length && _ok(say[i]);
       if (!hasHear && !hasSay) continue;
+      // 🎓 اولین خطِ نمایش‌داده‌شده هدفِ تورِ مکالمه است
+      final firstLine = kids.isEmpty;
+      Widget lineRow(ConversationLine l, String lid, bool tour) {
+        final row = _LineRow(line: l, id: lid);
+        return tour ? TourTarget(id: 'cv_line', child: row) : row;
+      }
+
       kids.add(Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Column(
@@ -1166,11 +1201,11 @@ class _DialogueBox extends ConsumerWidget {
           children: [
             if (hasHear)
               _tagged(context, L.dialogs_you_hear, c.teal,
-                  _LineRow(line: hear[i], id: 'a$i')),
+                  lineRow(hear[i], 'a$i', firstLine)),
             // جوابِ همین جمله دقیقاً زیرِ آن (کمی تورفته)
             if (hasSay)
               _tagged(context, L.dialogs_you_say, c.gold,
-                  _LineRow(line: say[i], id: 'b$i'),
+                  lineRow(say[i], 'b$i', firstLine && !hasHear),
                   indent: 16),
           ],
         ),

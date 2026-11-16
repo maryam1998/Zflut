@@ -6,7 +6,8 @@ import 'package:flutter/rendering.dart' show RenderBox;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/reader/widgets/neural_path_dialog.dart';
-import '../../features/shell/widgets/spotlight_tour.dart' show TourTarget, SpotlightTour;
+import '../../features/shell/widgets/spotlight_tour.dart'
+    show TourTarget, SpotlightTour, TourDemoSource;
 import '../neural/neural_store.dart';
 import '../constants/app_languages.dart';
 import '../constants/supported_languages.dart';
@@ -1254,6 +1255,10 @@ final RegExp _wordChar =
     RegExp(r"[\p{L}\p{M}\p{N}'’\-\u200c]", unicode: true);
 final RegExp _edgeChar = RegExp(r"['’\-\u200c]");
 
+/// کلمه‌ها (برای نمایشِ خودکارِ تور: لغت زدن / عبارت انتخاب کردن).
+final RegExp _demoWordRun =
+    RegExp(r"[\p{L}\p{M}\p{N}'’\-\u200c]+", unicode: true);
+
 TextRange? _wordRangeAt(String text, int offset, String code) {
   if (text.isEmpty) return null;
   var i = offset.clamp(0, text.length - 1).toInt();
@@ -1371,10 +1376,59 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
   bool _ptrDown = false; // انگشت همین الان روی این متن است
   bool _pendingClear = false; // پاک‌کردنِ انتخابِ بومی تا بالا آمدنِ انگشت عقب افتاده
 
+  // 🎓 تور می‌تواند خودش روی این متن لغت بزند / عبارت انتخاب کند
+  late final TourDemoSource _demoSrc = TourDemoSource(
+    rect: _demoRect,
+    open: _demoOpen,
+    closeCard: () => _closeActiveCard?.call(),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    SpotlightTour.addDemoSource(_demoSrc);
+  }
+
   @override
   void dispose() {
+    SpotlightTour.removeDemoSource(_demoSrc);
     _debounce?.cancel();
     super.dispose();
+  }
+
+  Rect? _demoRect() {
+    try {
+      if (!mounted || _open) return null;
+      final box = context.findRenderObject();
+      if (box is! RenderBox || !box.attached || !box.hasSize) return null;
+      return box.localToGlobal(Offset.zero) & box.size;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// نمایشِ خودکارِ تور: [phrase] = false → یک لغت؛ true → چند کلمه‌ی پشتِ‌سرهم.
+  Future<void>? _demoOpen(bool phrase) {
+    if (!mounted || _open) return null;
+    final ms = _demoWordRun.allMatches(widget.text).toList();
+    if (ms.isEmpty) return null;
+    TextRange r;
+    if (phrase) {
+      if (ms.length < 2) return null;
+      final a = ms.length > 3 ? 1 : 0;
+      final b = math.min(ms.length - 1, a + 2);
+      r = TextRange(start: ms[a].start, end: ms[b].end);
+    } else {
+      var w = ms.first;
+      for (final m in ms) {
+        if (m.end - m.start >= 4) {
+          w = m;
+          break;
+        }
+      }
+      r = TextRange(start: w.start, end: w.end);
+    }
+    return _openCard(r, highlight: true);
   }
 
   void _onPtrUp() {
@@ -1430,16 +1484,16 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
     return widgetRect;
   }
 
-  void _openCard(TextRange r, {required bool highlight}) {
-    if (r.end > widget.text.length || r.end <= r.start) return;
+  Future<void>? _openCard(TextRange r, {required bool highlight}) {
+    if (r.end > widget.text.length || r.end <= r.start) return null;
     final picked = widget.text.substring(r.start, r.end).trim();
-    if (picked.isEmpty) return;
+    if (picked.isEmpty) return null;
     final anchor = _anchor();
     setState(() {
       _open = true;
       _hl = highlight ? r : null;
     });
-    showSelectionCard(
+    return showSelectionCard(
       context,
       text: picked,
       langCode: widget.autoLang ? guessTextLang(picked, widget.code) : widget.code,

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/app_prefs_provider.dart';
+import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../../core/theme/app_theme_colors.dart';
 
@@ -27,12 +28,29 @@ const String _kImportTourSeenKey = 'zflut-tour-import-seen-v1';
 const String _kStoryTourSeenKey = 'zflut-tour-story-seen-v1';
 const String _kTransTourSeenKey = 'zflut-tour-trans-seen-v1';
 const String _kPopupTourSeenKey = 'zflut-tour-popup-seen-v1';
+const String _kConvTourSeenKey = 'zflut-tour-conv-seen-v1';
 
 final Map<String, _TourTargetState> _targets = {};
 
 /// چند ویجت می‌توانند یک id داشته باشند (مثلاً دکمه‌ی رفرشِ هر ردیفِ ترجمه)؛ تور اولین نمونه‌ی
 /// «قابل‌دیدن» را انتخاب می‌کند. برای idهای تک‌نمونه رفتار همان قبل است.
 final Map<String, Set<_TourTargetState>> _multi = {};
+
+/// 🎓 متنی که تور می‌تواند «خودش» روی آن لغت بزند یا عبارت انتخاب کند (SelectableSyncText
+/// خودش را ثبت می‌کند). [open] کارتِ ترجمه را باز می‌کند و Future برمی‌گرداند که با بسته‌شدنِ
+/// کارت تمام می‌شود (null = نشد). [closeCard] کارتِ باز را می‌بندد.
+class TourDemoSource {
+  final Rect? Function() rect;
+  final Future<void>? Function(bool phrase) open;
+  final void Function() closeCard;
+  const TourDemoSource({
+    required this.rect,
+    required this.open,
+    required this.closeCard,
+  });
+}
+
+final List<TourDemoSource> _demoSources = <TourDemoSource>[];
 
 /// ویجتی که یک جای صفحه را برای تور «ثبت» می‌کند (بدون GlobalKey، پس با
 /// انتقالِ صفحه‌ها تداخلی پیش نمی‌آید).
@@ -92,7 +110,11 @@ class _Step {
   final Map<String, String> body;
   /// توضیحِ «لمس طولانی» (اختیاری) — جدا و پررنگ نشان داده می‌شود.
   final Map<String, String>? hold;
-  const _Step(this.id, this.icon, this.title, this.body, [this.hold]);
+
+  /// اگر چند مرحله روی یک هدف باشند، id هدف (پیش‌فرض: همان [id]).
+  final String? target;
+  const _Step(this.id, this.icon, this.title, this.body, [this.hold, this.target]);
+  String get tid => target ?? id;
 }
 
 const List<_Step> _steps = [
@@ -110,8 +132,8 @@ const List<_Step> _steps = [
     Icons.translate_rounded,
     {'en': 'Your languages', 'fa': 'زبان‌های تو'},
     {
-      'en': 'Pick your native language, then tap the circles to choose one or more languages to learn. Translations appear in all of them, side by side.',
-      'fa': 'زبان مادری‌ات را انتخاب کن، بعد روی دایره‌ها بزن و یک یا چند زبان برای یادگیری انتخاب کن. ترجمه‌ها به همه‌ی آن زبان‌ها، کنار هم نشان داده می‌شود.',
+      'en': 'Pick your native language, then tap the circles to choose one or more languages to learn. Translations appear in all of them, side by side. Watch: the tour turns a circle on and off by itself.',
+      'fa': 'زبان مادری‌ات را انتخاب کن، بعد روی دایره‌ها بزن و یک یا چند زبان برای یادگیری انتخاب کن. ترجمه‌ها به همه‌ی آن زبان‌ها، کنار هم نشان داده می‌شود. نگاه کن: تور خودش یک دایره را روشن و خاموش می‌کند.',
     },
   ),
   _Step(
@@ -396,9 +418,66 @@ const List<_Step> _popupSteps = [
   ),
 ];
 
+/// تورِ تبِ «مکالمه» — بارِ اولِ ورود به تب (بعد از تورِ اصلی). تور خودش یک موضوع را
+/// باز می‌کند، روی یک لغت می‌زند و یک عبارت را انتخاب می‌کند.
+const List<_Step> _convSteps = [
+  _Step(
+    'cv_topic',
+    Icons.grid_view_rounded,
+    {'en': 'Pick a topic', 'fa': 'یک موضوع انتخاب کن'},
+    {
+      'en': 'Each card is a topic with ready-made conversations. Tap one to open it. When you tap Next, the tour opens one for you.',
+      'fa': 'هر کارت یک موضوع با مکالمه‌های آماده است. با لمس کارت باز می‌شود. وقتی «بعدی» را بزنی، تور خودش یکی را برایت باز می‌کند.',
+    },
+  ),
+  _Step(
+    'cv_line',
+    Icons.chat_bubble_outline_rounded,
+    {'en': 'A conversation line', 'fa': 'یک جمله‌ی مکالمه'},
+    {
+      'en': 'Each line shows the sentence and its translation in every language you selected. «You hear» is the other person, «You say» is your reply.',
+      'fa': 'هر خط، جمله و ترجمه‌اش را به همه‌ی زبان‌هایی که انتخاب کرده‌ای نشان می‌دهد. «می‌شنوی» حرف طرف مقابل است و «می‌گی» جواب توست.',
+    },
+  ),
+  _Step(
+    'cv_word',
+    Icons.touch_app_rounded,
+    {'en': 'Tap a word', 'fa': 'روی یک لغت بزن'},
+    {
+      'en': 'Watch: the tour taps a word for you. A card opens with its translation.',
+      'fa': 'نگاه کن: تور خودش روی یک لغت می‌زند و کارتِ ترجمه‌اش باز می‌شود.',
+    },
+    null,
+    'cv_line',
+  ),
+  _Step(
+    'cv_phrase',
+    Icons.format_color_text_rounded,
+    {'en': 'Select a phrase', 'fa': 'چند کلمه را انتخاب کن'},
+    {
+      'en': 'Press and hold a word, then drag to select several words. Watch: the tour selects a phrase for you and its translation opens.',
+      'fa': 'روی یک لغت نگه دار و بکش تا چند کلمه انتخاب شود. نگاه کن: تور خودش یک عبارت را انتخاب می‌کند و ترجمه‌اش باز می‌شود.',
+    },
+    null,
+    'cv_line',
+  ),
+  _Step(
+    'cv_done',
+    Icons.check_circle_outline_rounded,
+    {'en': 'Now it is your turn', 'fa': 'حالا نوبت توست'},
+    {
+      'en': 'In any section, tap a word or select a phrase. The translation card opens right there.',
+      'fa': 'در هر بخشی روی یک لغت بزن یا چند کلمه را انتخاب کن؛ کارت ترجمه همان‌جا باز می‌شود.',
+    },
+    null,
+    'cv_line',
+  ),
+];
+
 const Map<String, Map<String, String>> _ui = {
   'skip': {'en': 'Skip', 'fa': 'رد کردن'},
   'next': {'en': 'Next', 'fa': 'بعدی'},
+  'prev': {'en': 'Back', 'fa': 'قبلی'},
   'done': {'en': 'Got it', 'fa': 'فهمیدم'},
   'replay': {'en': 'App tour', 'fa': 'معرفیِ برنامه'},
   'hold': {'en': 'Long-press', 'fa': 'لمس طولانی'},
@@ -445,6 +524,29 @@ class SpotlightTour extends ConsumerStatefulWidget {
     _transTick.value++;
   }
 
+  static final ValueNotifier<int> _convTick = ValueNotifier<int>(0);
+  static bool _convForce = false;
+
+  /// تورِ تبِ «مکالمه». force=true → همیشه؛ وگرنه فقط بارِ اول (و بعد از تورِ اصلی).
+  static void startConv({bool force = false}) {
+    _convForce = force;
+    _convTick.value++;
+  }
+
+  /// تور از تبِ مکالمه می‌خواهد اولین موضوعِ باز را باز / دوباره به لیست برگردد.
+  static final ValueNotifier<int> convOpenTopic = ValueNotifier<int>(0);
+  static final ValueNotifier<int> convCloseTopic = ValueNotifier<int>(0);
+
+  /// true = کارتِ بعدی که باز می‌شود حتماً تورِ کارت را نشان بدهد (یک‌بار مصرف می‌شود).
+  static bool forcePopupTour = false;
+
+  /// متن‌هایی که تور می‌تواند خودش رویشان لغت بزند / عبارت انتخاب کند.
+  static void addDemoSource(TourDemoSource s) {
+    if (!_demoSources.contains(s)) _demoSources.add(s);
+  }
+
+  static void removeDemoSource(TourDemoSource s) => _demoSources.remove(s);
+
   /// مرحله‌ی «ابزارهای شناور»: به داک (FeatureDock) می‌گوید باز شود.
   static final ValueNotifier<int> dockExpand = ValueNotifier<int>(0);
 
@@ -455,6 +557,8 @@ class SpotlightTour extends ConsumerStatefulWidget {
   /// 🎓 تورِ کارتِ ترجمه (پاپ‌آپ): فقط بارِ اولی که کارت باز می‌شود. روی همان Overlay
   /// و بالای کارت نشان داده می‌شود. force=true → همیشه.
   static void maybeStartCardTour(BuildContext context, {bool force = false}) {
+    final forced = force || forcePopupTour;
+    forcePopupTour = false;
     if (_cardTourRunning) return;
     ProviderContainer? container;
     OverlayState? overlay;
@@ -468,7 +572,7 @@ class SpotlightTour extends ConsumerStatefulWidget {
     try {
       seen = container.read(sharedPrefsProvider).getBool(_kPopupTourSeenKey) ?? false;
     } catch (_) {}
-    if (seen && !force) return;
+    if (seen && !forced) return;
     final ctn = container;
     final ov = overlay;
     _cardTourRunning = true;
@@ -521,7 +625,9 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
       ? _importSteps
       : (_group == 'story'
           ? _storySteps
-          : (_group == 'trans' ? _transSteps : _steps));
+          : (_group == 'trans'
+              ? _transSteps
+              : (_group == 'conv' ? _convSteps : _steps)));
   int _i = -1;
   Rect? _prev;
   Rect? _last;
@@ -529,6 +635,15 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   Timer? _importTimer;
   Timer? _storyTimer;
   Timer? _transTimer;
+  Timer? _convTimer;
+  Timer? _stepTimer; // انتظار برای باز/بسته شدنِ موضوع در تبِ مکالمه
+  Timer? _demoTimer; // نمایشِ خودکارِ لغت/عبارت
+  Timer? _langTimer; // نمایشِ خودکارِ دایره‌های زبان
+  List<String>? _langOrig; // زبان‌های مقصدِ اصلیِ کاربر (برای برگرداندن)
+  int _demoTok = 0;
+  bool _busy = false; // تور منتظر است صفحه عوض شود
+  bool _demoRunning = false; // تور خودش دارد لغت می‌زند؛ لایه‌ی تور موقتاً پنهان است
+  VoidCallback? _cardL;
 
   @override
   void initState() {
@@ -544,6 +659,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     SpotlightTour._importTick.addListener(_onImportTick);
     SpotlightTour._storyTick.addListener(_onStoryTick);
     SpotlightTour._transTick.addListener(_onTransTick);
+    SpotlightTour._convTick.addListener(_onConvTick);
   }
 
   @override
@@ -553,6 +669,10 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     SpotlightTour._importTick.removeListener(_onImportTick);
     SpotlightTour._storyTick.removeListener(_onStoryTick);
     SpotlightTour._transTick.removeListener(_onTransTick);
+    SpotlightTour._convTick.removeListener(_onConvTick);
+    _convTimer?.cancel();
+    _stepTimer?.cancel();
+    _stepLeave();
     _transTimer?.cancel();
     _storyTimer?.cancel();
     _importTimer?.cancel();
@@ -578,6 +698,29 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     _transTimer = Timer(const Duration(milliseconds: 900), () {
       if (!mounted || _active) return;
       _begin(group: 'trans');
+    });
+  }
+
+  void _onConvTick() {
+    if (_active) return;
+    var seen = true;
+    var mainSeen = false;
+    try {
+      final prefs = ref.read(sharedPrefsProvider);
+      seen = prefs.getBool(_kConvTourSeenKey) ?? false;
+      mainSeen = prefs.getBool(_kTourSeenKey) ?? false;
+    } catch (_) {}
+    // خودکار فقط بعد از تورِ اصلی (که هنوز دیده نشده، با آن قاطی نشود)
+    if (!SpotlightTour._convForce && (seen || !mainSeen)) return;
+    _convTimer?.cancel();
+    _convTimer = Timer(const Duration(milliseconds: 800), () {
+      if (!mounted || _active) return;
+      _begin(group: 'conv');
+      if (!_active) {
+        _convTimer = Timer(const Duration(milliseconds: 900), () {
+          if (mounted && !_active) _begin(group: 'conv');
+        });
+      }
     });
   }
 
@@ -642,6 +785,10 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
 
   void _begin({String group = 'main'}) {
     if (!mounted) return;
+    _stepLeave();
+    _stepTimer?.cancel();
+    _busy = false;
+    _demoRunning = false;
     _group = group;
     _prev = null;
     _last = null;
@@ -659,42 +806,285 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
   bool _advance() {
     final size = MediaQuery.of(context).size;
     for (var j = _i + 1; j < _list.length; j++) {
-      if (_group == 'import' || _group == 'story') _targets[_list[j].id]?._reveal();
-      final r = _usableRect(_list[j].id, size);
+      if (_group == 'import' || _group == 'story' || _group == 'conv') {
+        _targets[_list[j].tid]?._reveal();
+      }
+      final r = _usableRect(_list[j].tid, size);
       if (r != null) {
-        setState(() {
-          _prev = _last;
-          _i = j;
-        });
-        _move.forward(from: 0);
-        if (_list[j].id == 'dock') SpotlightTour.dockExpand.value++;
+        _goTo(j);
         return true;
       }
     }
     return false;
   }
 
-  void _finish() {
+  void _goTo(int j) {
+    setState(() {
+      _prev = _last;
+      _i = j;
+    });
+    _move.forward(from: 0);
+    if (_list[j].id == 'dock') SpotlightTour.dockExpand.value++;
+    _stepEnter();
+  }
+
+  /// مرحله‌ی قبلی. اگر هدفِ مرحله‌ی قبل روی صفحه نیست (مثلاً موضوعِ مکالمه باز شده)،
+  /// در تبِ مکالمه خودِ تور صفحه را به حالتِ قبل برمی‌گرداند.
+  void _back() {
+    _stepLeave();
+    final size = MediaQuery.of(context).size;
+    for (var j = _i - 1; j >= 0; j--) {
+      final tid = _list[j].tid;
+      if (_group == 'import' || _group == 'story' || _group == 'conv') {
+        _targets[tid]?._reveal();
+      }
+      if (_usableRect(tid, size) != null) {
+        _goTo(j);
+        return;
+      }
+      if (_group == 'conv' && tid == 'cv_topic') {
+        SpotlightTour.convCloseTopic.value++;
+        _waitFor('cv_topic', () => _goTo(j), onTimeout: () => _finish(markSeen: false));
+        return;
+      }
+    }
+  }
+
+  bool _canBack(Size size) {
+    if (_group == 'conv') return _i > 0;
+    for (var j = _i - 1; j >= 0; j--) {
+      if (_usableRect(_list[j].tid, size) != null) return true;
+    }
+    return false;
+  }
+
+  /// منتظر می‌ماند تا هدفِ [tid] روی صفحه بیاید (حداکثر ~۵ ثانیه)، بعد [then].
+  void _waitFor(String tid, VoidCallback then, {VoidCallback? onTimeout}) {
+    _stepTimer?.cancel();
+    setState(() => _busy = true);
+    var tries = 0;
+    _stepTimer = Timer.periodic(const Duration(milliseconds: 200), (t) {
+      tries++;
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      _targets[tid]?._reveal();
+      final size = MediaQuery.of(context).size;
+      if (_usableRect(tid, size) != null) {
+        t.cancel();
+        setState(() => _busy = false);
+        then();
+      } else if (tries > 25) {
+        t.cancel();
+        setState(() => _busy = false);
+        if (onTimeout != null) onTimeout();
+      }
+    });
+  }
+
+  // ───────────── نمایشِ خودکار (دایره‌های زبان / لغت / عبارت) ─────────────
+
+  void _stepEnter() {
+    final id = _list[_i].id;
+    if (_group == 'main' && id == 'lang') _langDemoStart();
+    if (_group == 'conv' && id == 'cv_word') _selectDemoStart(false);
+    if (_group == 'conv' && id == 'cv_phrase') _selectDemoStart(true);
+  }
+
+  void _stepLeave() {
+    _langDemoStop();
+    _selectDemoCancel();
+  }
+
+  /// تور خودش آخرین زبانِ انتخاب‌شده را خاموش و دوباره روشن می‌کند. (فقط وقتی
+  /// دست‌کم دو زبان انتخاب شده؛ هیچ زبانِ تازه‌ای اضافه نمی‌شود، پس ترجمه‌ی جدیدی
+  /// هم درخواست نمی‌شود.) با رفتن به مرحله‌ی بعد، انتخابِ اصلیِ کاربر برمی‌گردد.
+  void _langDemoStart() {
+    _langDemoStop();
     try {
-      ref.read(sharedPrefsProvider).setBool(
-          _group == 'import'
-              ? _kImportTourSeenKey
-              : (_group == 'story'
-                  ? _kStoryTourSeenKey
-                  : (_group == 'trans' ? _kTransTourSeenKey : _kTourSeenKey)),
-          true);
+      final sel = ref.read(languageSelectionProvider);
+      final orig = List<String>.from(sel.targets);
+      if (orig.length < 2) return;
+      final notifier = ref.read(languageSelectionProvider.notifier);
+      final fewer = orig.sublist(0, orig.length - 1);
+      _langOrig = orig;
+      var off = false;
+      void tick() {
+        if (!mounted || _langOrig == null) return;
+        off = !off;
+        notifier.setTargets(off ? fewer : orig);
+      }
+
+      _langTimer = Timer(const Duration(milliseconds: 1200), () {
+        tick();
+        _langTimer = Timer.periodic(
+            const Duration(milliseconds: 1700), (_) => tick());
+      });
     } catch (_) {}
+  }
+
+  void _langDemoStop() {
+    _langTimer?.cancel();
+    _langTimer = null;
+    final o = _langOrig;
+    _langOrig = null;
+    if (o != null) {
+      try {
+        ref.read(languageSelectionProvider.notifier).setTargets(o);
+      } catch (_) {}
+    }
+  }
+
+  TourDemoSource? _pickDemoSource(Rect area) {
+    TourDemoSource? best;
+    var bestTop = double.infinity;
+    for (final s in List<TourDemoSource>.of(_demoSources)) {
+      final r = s.rect();
+      if (r == null) continue;
+      if (!area.inflate(4).contains(r.center)) continue;
+      if (r.top < bestTop) {
+        best = s;
+        bestTop = r.top;
+      }
+    }
+    return best;
+  }
+
+  void _selectDemoCancel() {
+    _demoTok++;
+    _demoTimer?.cancel();
+    _demoTimer = null;
+    final l = _cardL;
+    if (l != null) {
+      SpotlightTour.cardTourActive.removeListener(l);
+      _cardL = null;
+    }
+    SpotlightTour.forcePopupTour = false;
+    _demoRunning = false;
+  }
+
+  /// بعد از چند ثانیه (تا کاربر متنِ مرحله را بخواند) تور خودش روی یک لغت می‌زند
+  /// ([phrase] = false) یا چند کلمه را انتخاب می‌کند ([phrase] = true). کارتِ ترجمه باز
+  /// می‌شود؛ بعد از بسته شدنش تور خودکار به مرحله‌ی بعد می‌رود.
+  void _selectDemoStart(bool phrase) {
+    _selectDemoCancel();
+    final tok = _demoTok;
+    _demoTimer = Timer(const Duration(milliseconds: 2400), () {
+      if (!mounted || tok != _demoTok || !_active) return;
+      final size = MediaQuery.of(context).size;
+      final area = _usableRect(_list[_i].tid, size);
+      final src = area == null ? null : _pickDemoSource(area);
+      Future<void>? f;
+      if (src != null) {
+        // لغتِ اول: تورِ کارت (پاپ‌آپ) هم نشان داده شود
+        if (!phrase) SpotlightTour.forcePopupTour = true;
+        try {
+          f = src.open(phrase);
+        } catch (_) {
+          f = null;
+        }
+        SpotlightTour.forcePopupTour = false;
+      }
+      if (src == null || f == null) {
+        _afterDemo(tok);
+        return;
+      }
+      setState(() => _demoRunning = true);
+      void closeLater(int ms) {
+        _demoTimer = Timer(Duration(milliseconds: ms), () {
+          try {
+            src.closeCard();
+          } catch (_) {}
+        });
+      }
+
+      if (SpotlightTour.cardTourActive.value) {
+        late VoidCallback l;
+        l = () {
+          if (SpotlightTour.cardTourActive.value) return;
+          SpotlightTour.cardTourActive.removeListener(l);
+          if (identical(_cardL, l)) _cardL = null;
+          if (tok == _demoTok) closeLater(900);
+        };
+        _cardL = l;
+        SpotlightTour.cardTourActive.addListener(l);
+      } else {
+        closeLater(3600);
+      }
+      f.whenComplete(() => _afterDemo(tok));
+    });
+  }
+
+  void _afterDemo(int tok) {
+    if (!mounted || tok != _demoTok || !_active) return;
+    _demoRunning = false;
+    _next();
+  }
+
+  void _finish({bool markSeen = true}) {
+    _stepLeave();
+    _stepTimer?.cancel();
+    final wasMain = _group == 'main';
+    if (markSeen) {
+      try {
+        ref.read(sharedPrefsProvider).setBool(
+            _group == 'import'
+                ? _kImportTourSeenKey
+                : (_group == 'story'
+                    ? _kStoryTourSeenKey
+                    : (_group == 'trans'
+                        ? _kTransTourSeenKey
+                        : (_group == 'conv'
+                            ? _kConvTourSeenKey
+                            : _kTourSeenKey))),
+            true);
+      } catch (_) {}
+    }
     _pulse.stop();
+    _busy = false;
+    _demoRunning = false;
     if (mounted) setState(() => _active = false);
+    if (markSeen && wasMain) _maybeConvAfterMain();
+  }
+
+  /// تورِ اصلی تمام شد و کاربر روی تبِ مکالمه است → تورِ مکالمه بلافاصله بعدش.
+  void _maybeConvAfterMain() {
+    try {
+      final path =
+          GoRouter.of(context).routeInformationProvider.value.uri.path;
+      if (path == '/conversations') {
+        Future<void>.delayed(
+            const Duration(milliseconds: 600), () => SpotlightTour.startConv());
+      }
+    } catch (_) {}
   }
 
   void _next() {
+    final cur = _list[_i];
+    _stepLeave();
+    if (_group == 'conv' && cur.id == 'cv_topic') {
+      // تور خودش اولین موضوعِ باز را باز می‌کند و منتظرِ آمدنِ اولین خط می‌ماند
+      SpotlightTour.convOpenTopic.value++;
+      _waitFor('cv_line', () {
+        if (!_advance()) _finish();
+      }, onTimeout: () => _finish(markSeen: false));
+      return;
+    }
     if (!_advance()) _finish();
   }
 
   @override
   Widget build(BuildContext context) {
     if (!_active || _i < 0) return const SizedBox.shrink();
+    // تور خودش دارد روی لغت می‌زند: لایه‌ی تور تا بسته شدنِ کارتِ ترجمه پنهان است
+    if (_demoRunning) return const SizedBox.shrink();
+    // تور منتظر است صفحه عوض شود (باز/بسته شدنِ موضوع): فقط پرده‌ی تیره
+    if (_busy) {
+      return const Positioned.fill(
+        child: AbsorbPointer(child: ColoredBox(color: Color(0xB8000000))),
+      );
+    }
     final c = context.appColors;
     final lang = ref.watch(appPrefsProvider).uiLang;
     String t(Map<String, String> m) => m[lang] ?? m['en']!;
@@ -702,6 +1092,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
     final step = _list[_i];
     final size = MediaQuery.of(context).size;
     final lastStep = !_hasLater(size);
+    final canBack = _canBack(size);
 
     return Positioned.fill(
       child: Directionality(
@@ -711,7 +1102,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
           child: AnimatedBuilder(
             animation: Listenable.merge([_pulse, _move]),
             builder: (context, _) {
-              final cur = _usableRect(step.id, size) ??
+              final cur = _usableRect(step.tid, size) ??
                   _last ??
                   Rect.fromCenter(
                       center: size.center(Offset.zero), width: 60, height: 60);
@@ -745,7 +1136,7 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
                         constraints: const BoxConstraints(maxWidth: 420),
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 220),
-                          child: _card(c, step, t, lastStep, key: ValueKey(_i)),
+                          child: _card(c, step, t, lastStep, canBack, key: ValueKey(_i)),
                         ),
                       ),
                     ),
@@ -761,17 +1152,19 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
 
   /// آیا بعد از مرحله‌ی فعلی مرحله‌ی قابل‌نمایشی هست؟
   bool _hasLater(Size size) {
+    // مکالمه: مرحله‌های بعدی بعد از باز شدنِ موضوع می‌آیند
+    if (_group == 'conv') return _i < _list.length - 1;
     for (var j = _i + 1; j < _list.length; j++) {
       // ایمپورت: هدفِ ثبت‌شده کافی است (در _advance به صفحه آورده می‌شود)
       if (_group == 'import' || _group == 'story'
-          ? _targets[_list[j].id]?._rect != null
-          : _usableRect(_list[j].id, size) != null) return true;
+          ? _targets[_list[j].tid]?._rect != null
+          : _usableRect(_list[j].tid, size) != null) return true;
     }
     return false;
   }
 
   Widget _card(AppThemeColorsExt c, _Step step, String Function(Map<String, String>) t,
-      bool lastStep,
+      bool lastStep, bool canBack,
       {Key? key}) {
     final shown = _list.indexOf(step) + 1;
     return Container(
@@ -857,6 +1250,14 @@ class _SpotlightTourState extends ConsumerState<SpotlightTour>
                     style: TextStyle(color: c.inkSoft)),
               ),
               const Spacer(),
+              if (canBack) ...[
+                TextButton(
+                  onPressed: _back,
+                  child: Text(t(_ui['prev']!),
+                      style: TextStyle(color: c.inkSoft)),
+                ),
+                const SizedBox(width: 4),
+              ],
               FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: c.gold,
@@ -951,6 +1352,23 @@ class _CardTourOverlayState extends ConsumerState<_CardTourOverlay>
     return false;
   }
 
+  bool _canBack(Size size) {
+    for (var j = _i - 1; j >= 0; j--) {
+      if (_rectForId(_popupSteps[j].id, size) != null) return true;
+    }
+    return false;
+  }
+
+  void _back() {
+    final size = MediaQuery.of(context).size;
+    for (var j = _i - 1; j >= 0; j--) {
+      if (_rectForId(_popupSteps[j].id, size) != null) {
+        setState(() => _i = j);
+        return;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_i < 0) return const SizedBox.shrink();
@@ -972,6 +1390,7 @@ class _CardTourOverlayState extends ConsumerState<_CardTourOverlay>
     final hole = r.inflate(6);
     final below = hole.center.dy < size.height * 0.5;
     final last = !_hasLater(size);
+    final canBack = _canBack(size);
     final shown = _popupSteps.indexOf(step) + 1;
 
     return Directionality(
@@ -1059,6 +1478,14 @@ class _CardTourOverlayState extends ConsumerState<_CardTourOverlay>
                                       style: TextStyle(color: c.inkSoft)),
                                 ),
                                 const Spacer(),
+                                if (canBack) ...[
+                                  TextButton(
+                                    onPressed: _back,
+                                    child: Text(t(_ui['prev']!),
+                                        style: TextStyle(color: c.inkSoft)),
+                                  ),
+                                  const SizedBox(width: 4),
+                                ],
                                 FilledButton(
                                   style: FilledButton.styleFrom(
                                     backgroundColor: c.gold,
@@ -1175,6 +1602,10 @@ void _replayFor(String path) {
   }
   if (_onScreen('tr_refresh')) {
     SpotlightTour.startTranslationReading(force: true);
+    return;
+  }
+  if (path == '/conversations') {
+    SpotlightTour.startConv(force: true);
     return;
   }
   if (path == '/story') {
