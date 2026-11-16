@@ -117,7 +117,7 @@ export default {
         return json({ error: "invalid videoId or lang" }, 400);
       }
       try {
-        const result = await fetchYoutubeCaptions(videoId, lang);
+        const result = await fetchYoutubeCaptions(videoId, lang, env);
         return json(result);
       } catch (e) {
         return json({ ok: false, error: e.message || "Could not fetch captions", noCaptions: !!e.noCaptions }, 502);
@@ -410,7 +410,17 @@ function ytErr(msg, noCaptions) {
   return e;
 }
 
-async function fetchYoutubeCaptions(videoId, wantLang) {
+async function fetchYoutubeCaptions(videoId, wantLang, env) {
+  // 🗄️ اول D1 (ماندگار و مشترک بین همه‌ی کاربرها)؛ اگر TR_DB نبود/نیافت، همان Cache API قبلی
+  const d1Key = env && env.TR_DB ? await genCacheKey(`yt-captions|${videoId}|${wantLang}`, 0) : null;
+  if (d1Key) {
+    const raw = await genCacheGet(env, d1Key);
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch {}
+    }
+  }
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const cacheKey = new Request(`https://cache.phrasebook.local/yt-captions/${encodeURIComponent(videoId)}/${encodeURIComponent(wantLang)}`);
   if (cache) {
@@ -435,9 +445,11 @@ async function fetchYoutubeCaptions(videoId, wantLang) {
     throw ytErr(noCaptions ? "این ویدیو زیرنویس ندارد" : msg, noCaptions);
   }
 
+  const resultJson = JSON.stringify(result);
+  if (d1Key && resultJson.length < 1500000) await genCachePut(env, d1Key, resultJson, "yt");
   if (cache) {
     await cache
-      .put(cacheKey, new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=21600" } }))
+      .put(cacheKey, new Response(resultJson, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=21600" } }))
       .catch(() => {});
   }
   return result;
@@ -664,8 +676,22 @@ async function translateSubtitleChunk(body, env, ctx, gateFn) {
 
   // ⚡ کشِ سمتِ سرور: همین جمله‌ها + همین زبان‌ها + همین لحن = همان ترجمه (بین همه‌ی کاربرها مشترک).
   // زمینه (جمله‌های قبل/بعد) عمداً در کلید نیست تا شانسِ hit بیشتر شود.
+  // 🗄️ اول D1 (ماندگار)؛ اگر TR_DB نبود/نیافت، همان Cache API قبلی
   const cache = typeof caches !== "undefined" ? caches.default : null;
   let cacheReq = null;
+  let d1Key = null;
+  if (env.TR_DB) {
+    try {
+      d1Key = await genCacheKey(`sub-tr|${JSON.stringify([srcName, tgtName, tone, subs])}`, 0);
+      const raw = await genCacheGet(env, d1Key);
+      if (raw) {
+        const arr0 = JSON.parse(raw);
+        if (Array.isArray(arr0) && arr0.length === subs.length) {
+          return { ok: true, provider: "cache", cached: true, translations: arr0 };
+        }
+      }
+    } catch {}
+  }
   if (cache) {
     try {
       const keyStr = JSON.stringify([srcName, tgtName, tone, subs]);
@@ -703,6 +729,11 @@ async function translateSubtitleChunk(body, env, ctx, gateFn) {
     return a;
   });
 
+  if (d1Key) {
+    const d1put = genCachePut(env, d1Key, JSON.stringify(arr), provider);
+    if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(d1put);
+    else await d1put;
+  }
   if (cache && cacheReq) {
     const put = cache
       .put(
