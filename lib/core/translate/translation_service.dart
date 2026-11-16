@@ -152,6 +152,33 @@ void _markCognate(String src, String out, String target, String source,
   _confirmedSame.add(_sameKey(a, target));
 }
 
+/// 📌 «bye» را مترجم‌های ماشینی گاهی «بیا» (فعلِ come) ترجمه می‌کنند؛ ترجمه‌ی درستش «خداحافظ» است.
+/// ۱) خودِ کلمه (bye / bye-bye / goodbye) بدون رفتن سراغ هیچ مترجم/کشی؛
+/// ۲) جمله‌هایی که bye دارند (مثلاً «Bye, Anna!») اگر «بیا» در خروجی آمده بود، اصلاح می‌شود.
+String? _hardcodedFarewell(String text, String from, String to) {
+  if (to != 'fa') return null;
+  if (from.isNotEmpty && from != 'en' && from != 'auto') return null;
+  final k = text
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[\s\-]+'), ' ')
+      .replaceAll(RegExp(r'[.!?…]+$'), '')
+      .trim();
+  if (k == 'bye' || k == 'bye bye' || k == 'byebye' || k == 'goodbye') {
+    return text.trim().endsWith('!') ? 'خداحافظ!' : 'خداحافظ';
+  }
+  return null;
+}
+
+String _fixFarewell(String src, String from, String to, String out) {
+  if (to != 'fa' || out.isEmpty) return out;
+  if (from.isNotEmpty && from != 'en' && from != 'auto') return out;
+  if (!RegExp(r'\bbye\b', caseSensitive: false).hasMatch(src)) return out;
+  if (RegExp(r'\bcome\b', caseSensitive: false).hasMatch(src)) return out;
+  return out.replaceAll(
+      RegExp(r'(?<![\u0600-\u06FF])بیا(?![\u0600-\u06FF])'), 'خداحافظ');
+}
+
 /// کنترل کیفیتِ سبک — همان looksLikelyMistranslated وب
 bool looksLikelyMistranslated(
   String sourceText,
@@ -354,10 +381,14 @@ class TranslationService {
   /// فقط اگر مقدارِ کش‌شده از کنترل کیفیت رد شود برمی‌گرداند؛ وگرنه null.
   String? peekCached(String text, String from, String to) {
     if (text.trim().isEmpty || to.isEmpty) return null;
+    final hard = _hardcodedFarewell(text, from, to);
+    if (hard != null) return hard;
     final v = _db.peek(_cacheKey(text, from, to));
     if (v == null || v.isEmpty) return null;
     _markCognate(text, v, to, from, strict: false);
-    return looksLikelyMistranslated(text, v, to, sourceLang: from) ? null : v;
+    return looksLikelyMistranslated(text, v, to, sourceLang: from)
+        ? null
+        : _fixFarewell(text, from, to, v);
   }
 
   /// ذخیره در کشِ دائمی
@@ -385,13 +416,15 @@ class TranslationService {
         sourceLang == targetLang) {
       return text;
     }
+    final hardFarewell = _hardcodedFarewell(text, sourceLang, targetLang);
+    if (hardFarewell != null) return hardFarewell;
 
     // ۱. کش — با چکِ کیفیت؛ کشِ مشکوک نادیده گرفته می‌شود
     final cached = await _cacheGet(text, sourceLang, targetLang);
     if (cached != null &&
         !looksLikelyMistranslated(text, cached, targetLang,
             sourceLang: sourceLang)) {
-      return cached;
+      return _fixFarewell(text, sourceLang, targetLang, cached);
     }
 
     // ۱.۵ کشِ مشترکِ همه‌ی کاربرها (ترجمه‌های اصلاح‌شده) — رایگان و سریع؛ نتیجه روی گوشی هم ذخیره می‌شود
@@ -400,7 +433,7 @@ class TranslationService {
         await SharedTranslations.fetchOne(base, sourceLang, targetLang, text);
     if (shared != null) {
       await cachePut(text, sourceLang, targetLang, shared);
-      return shared;
+      return _fixFarewell(text, sourceLang, targetLang, shared);
     }
 
     // ۲. صفِ سراسری؛ تایمر ۱۵ثانیه‌ای فقط از لحظه‌ی «اجرا» شروع می‌شود
@@ -429,6 +462,25 @@ class TranslationService {
   /// می‌کند؛ اگر باز هم نشد، آخرین چاره ترجمه‌ی مستقیم با AI. سقفِ زمانیِ کل
   /// ۲۵ ثانیه است تا دکمه هیچ‌وقت گیر نکند.
   Future<String> retranslate({
+    required String text,
+    required String targetLang,
+    String sourceLang = 'en',
+    AiSettings? aiSettings,
+    String? previous,
+  }) async {
+    final hard = _hardcodedFarewell(text, sourceLang, targetLang);
+    if (hard != null) return hard;
+    final r = await _retranslate0(
+      text: text,
+      targetLang: targetLang,
+      sourceLang: sourceLang,
+      aiSettings: aiSettings,
+      previous: previous,
+    );
+    return _fixFarewell(text, sourceLang, targetLang, r);
+  }
+
+  Future<String> _retranslate0({
     required String text,
     required String targetLang,
     String sourceLang = 'en',
@@ -505,6 +557,25 @@ class TranslationService {
   // زنجیره‌ی شبکه — معادلِ translateFreeNetwork وب
   // ═══════════════════════════════════════════════════════════════
   Future<String> translateNetwork({
+    required String text,
+    required String targetLang,
+    required String sourceLang,
+    AiSettings? aiSettings,
+    bool forceVerify = false,
+  }) async {
+    final hard = _hardcodedFarewell(text, sourceLang, targetLang);
+    if (hard != null) return hard;
+    final r = await _translateNetwork0(
+      text: text,
+      targetLang: targetLang,
+      sourceLang: sourceLang,
+      aiSettings: aiSettings,
+      forceVerify: forceVerify,
+    );
+    return _fixFarewell(text, sourceLang, targetLang, r);
+  }
+
+  Future<String> _translateNetwork0({
     required String text,
     required String targetLang,
     required String sourceLang,

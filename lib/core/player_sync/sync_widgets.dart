@@ -126,6 +126,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   int _scrollToken = 0;
 
   late final SpeechController _ctrl;
+  // کانتینرِ ریورپاد: بعد از dispose هم می‌شود ازش خواند (برای خوانشِ مستقل از تب)
+  late final ProviderContainer _pc;
   // بعد از تمام شدنِ مثال‌ها، پخشِ لیست از این آیتم ادامه می‌یابد
   String? _resumeSpanId;
   bool _resumeFromHook = false;
@@ -136,6 +138,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     _FrameWatch.ensure();
     _notifier = ref.read(playerSyncProvider.notifier);
     _ctrl = ref.read(speechControllerProvider.notifier);
+    _pc = ProviderScope.containerOf(context, listen: false);
     _ctrl.addChunkAdvanceHook(_chunkHook);
     _ctrl.addChunkVoiceResolver(_voiceResolver);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -216,14 +219,99 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
     } catch (_) {}
   }
 
+  /// 🔁 تب وسطِ خوانش ترک شد (مثلاً مکالمات ← لغات): صفِ «لغت ← ترجمه‌ها» به خودِ تب بسته بود و با
+  /// بسته‌شدنش می‌مُرد؛ فقط متنِ اصلی ادامه می‌یافت و ترجمه‌ها دیگر خوانده نمی‌شدند تا کاربر به
+  /// همان تب برگردد. اینجا یک «خوانشگرِ مستقل از تب» ساخته می‌شود که همان کار را ادامه می‌دهد
+  /// (ترجمه‌ی هر آیتم به‌ترتیبِ زبان‌های هدر، با همان صدای گوینده/زبان). true = خوانشگر ساخته شد.
+  bool _detachReading() {
+    try {
+      if (!(_readTransFg() || _readTransBg())) return false;
+      final sync = ref.read(playerSyncProvider);
+      if (sync.scopeId != _scopeId) return false;
+      final main = sync.tracks[sync.mainCode];
+      if (main == null || main.spans.isEmpty) return false;
+      final sp = ref.read(speechControllerProvider);
+      if (sp.key == null) return false;
+      final inQueue = _bgActive;
+      if (!inQueue && sp.status == SpeechStatus.idle) return false;
+      final onMain = sp.key == main.key;
+      if (!onMain && !inQueue) return false; // متنِ دیگری (مثلاً ردیفِ ترجمه) پخش می‌شود
+      // صفِ «ترجمه‌ی ترک»(▶ روی ردیفِ ترجمه) مالِ همین تب است؛ همان رفتارِ قبلی
+      if (inQueue && _resumeCode != null && _resumeCode != main.code) return false;
+
+      final texts = <String, String>{};
+      final foreign = <String>{};
+      for (final s in main.spans) {
+        final t = _notifier.itemText(s.id);
+        if (t != null) texts[s.id] = t;
+        if (_notifier.isForeignItem(s.id)) foreign.add(s.id);
+      }
+      final sel = ref.read(languageSelectionProvider);
+      final allLangs = <String>{
+        for (final c in [sel.native, ...sel.targets])
+          if (c.trim().isNotEmpty && c.trim().toLowerCase() != main.code)
+            c.trim().toLowerCase(),
+      };
+      final ready = <String, Map<String, String>>{};
+      for (final s in main.spans) {
+        for (final l in allLangs) {
+          final tr = _notifier.translationFor(s.id, l);
+          if (tr != null) (ready[s.id] ??= <String, String>{})[l] = tr;
+        }
+      }
+
+      final reader = _DetachedReader(
+        container: _pc,
+        ctrl: _ctrl,
+        main: main,
+        scopeId: _scopeId,
+        texts: texts,
+        foreign: foreign,
+        ready: ready,
+        voiceForItem: widget.voiceForItem,
+        voiceForTrans: widget.voiceForTrans,
+      )..attach();
+
+      if (inQueue) {
+        // آیتمِ در حال خواندن = آیتمِ قبل از «آیتمِ بعد» (resume)؛ اگر بعدی نیست = آخرین آیتم
+        final spans = main.spans;
+        final rid = _resumeSpanId;
+        var ci = spans.length - 1;
+        if (rid != null) {
+          final ri = spans.indexWhere((x) => x.id == rid);
+          if (ri >= 0) ci = (ri - 1 + spans.length) % spans.length;
+        }
+        final stepIsTrans = _bgKey != null && _bgKey == _trVoiceKey;
+        final stepIsOther = _bgKey != null && _bgKey != _trVoiceKey; // مثال: بقیه‌ی مرحله‌ها رد می‌شوند
+        unawaited(reader.runItem(
+          spans[ci].id,
+          rid,
+          pendingKey: _bgKey,
+          afterLang: stepIsTrans ? _trVoiceLang : null,
+          skipLangs: stepIsOther,
+        ));
+      }
+      return true;
+    } catch (e) {
+      debugPrint('detachReading error: $e');
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _revealTimer?.cancel();
-    _handOffReadingIfNeeded();
+    // 🔁 اگر «خواندن ترجمه‌ها» روشن است، خوانش بعد از ترکِ تب هم با ترجمه‌ها و همان صداها ادامه پیدا می‌کند
+    final detached = _detachReading();
+    if (!detached) _handOffReadingIfNeeded();
     _bgCancel();
     _ctrl.removeChunkAdvanceHook(_chunkHook);
     _ctrl.removeChunkVoiceResolver(_voiceResolver);
-    _keepVoicesAfterLeaving();
+    if (detached) {
+      _clearDetachedVoices(); // صدای ترجمه‌ها/گوینده‌ها را خودِ خوانشگرِ مستقل نگه می‌دارد
+    } else {
+      _keepVoicesAfterLeaving();
+    }
     final n = _notifier;
     final id = _scopeId;
     Future.microtask(() {
@@ -255,7 +343,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   void _keepVoicesAfterLeaving() {
     try {
-      _clearDetachedVoices();
+      // ⚠️ اینجا دیگر resolverِ تبِ قبلی بی‌قیدوشرط پاک نمی‌شود: عبور از یک تبِ بی‌صدا (مثلاً لغات)
+      // صدای گوینده‌های مکالمه‌ای را که هنوز در حال خواندن است عوض می‌کرد.
       final vf = widget.voiceForItem;
       final vt = widget.voiceForTrans;
       if (vf == null && vt == null) return;
@@ -301,6 +390,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         }
       }
 
+      _clearDetachedVoices(); // فقط وقتی resolverِ تازه جایگزین می‌شود
       _detachedResolver = resolver;
       _ctrl.addChunkVoiceResolver(resolver);
       _detachedUnlisten = _ctrl.addListener((SpeechState s) {
@@ -1501,6 +1591,350 @@ class _BgStep {
   Future<String?> text() => _fixed != null ? Future.value(_fixed) : (_fut ?? Future.value(null));
 }
 
+
+/// آیا برنامه الان در پس‌زمینه است؟ (همان منطقِ `_inBackground` ویجتِ اسکوپ، برای خوانشگرِ مستقل از تب)
+bool _appInBackgroundNow() {
+  if (_FrameWatch.recent) return false;
+  final st = WidgetsBinding.instance.lifecycleState;
+  if (st == null) return false;
+  return st == AppLifecycleState.paused || st == AppLifecycleState.detached;
+}
+
+/// 🔁 خوانشگرِ مستقل از تب.
+///
+/// صفِ «لغت ← ترجمه‌ی هر زبان ← آیتمِ بعد» به ویجتِ اسکوپِ همان تب بسته است و با عوض‌شدنِ تب
+/// (هر تب یک route جداست) از بین می‌رفت؛ بعدش فقط متنِ اصلی خوانده می‌شد و ترجمه‌ها نه. این کلاس
+/// موقعِ ترکِ تب یک عکس از متن/ترجمه‌های آماده می‌گیرد و همان کار را ادامه می‌دهد:
+///   • بعد از هر آیتمِ متنِ اصلی، ترجمه‌ی همه‌ی زبان‌های هدر (به‌ترتیب) خوانده می‌شود؛
+///   • صدای گوینده‌ها (A/B) و صدای هر ترجمه همان می‌ماند (voiceForItem / voiceForTrans)؛
+///   • اگر چیزِ دیگری پخش شد، یا کاربر به همان تب برگشت (اسکوپِ تازه)، خودش را کنار می‌کشد.
+class _DetachedReader {
+  static _DetachedReader? _active;
+
+  final ProviderContainer _c;
+  final SpeechController _ctrl;
+  final PlayerTrack _main;
+  final String _oldScopeId;
+  final Map<String, String> _texts;
+  final Set<String> _foreign;
+  final Map<String, Map<String, String>> _ready;
+  final String? Function(String itemId)? _vf;
+  final String? Function(String itemId, String lang)? _vt;
+
+  bool _dead = false;
+  bool _busy = false;
+  int _token = 0;
+  String? _trKey, _trItem, _trLang;
+  final Set<String> _own = <String>{};
+  void Function()? _unlisten;
+  Timer? _guard;
+
+  _DetachedReader({
+    required ProviderContainer container,
+    required SpeechController ctrl,
+    required PlayerTrack main,
+    required String scopeId,
+    required Map<String, String> texts,
+    required Set<String> foreign,
+    required Map<String, Map<String, String>> ready,
+    String? Function(String itemId)? voiceForItem,
+    String? Function(String itemId, String lang)? voiceForTrans,
+  })  : _c = container,
+        _ctrl = ctrl,
+        _main = main,
+        _oldScopeId = scopeId,
+        _texts = texts,
+        _foreign = foreign,
+        _ready = ready,
+        _vf = voiceForItem,
+        _vt = voiceForTrans;
+
+  void attach() {
+    _active?._stop(); // فقط یک خوانشگر؛ تازه‌ترین
+    _active = this;
+    _own.add(_main.key);
+    _ctrl.addChunkAdvanceHook(_onAdvance);
+    if (_vf != null || _vt != null) _ctrl.addChunkVoiceResolver(_resolveVoice);
+    _unlisten = _ctrl.addListener((SpeechState s) {
+      if (_dead) return;
+      // متنِ دیگری (نه مالِ این خوانشگر) شروع شد → کاربر چیزِ دیگری پخش کرده؛ کنار می‌کشیم
+      if (s.key != null && s.status != SpeechStatus.idle && !_own.contains(s.key)) {
+        _stop();
+      }
+    }, fireImmediately: false);
+    _guard = Timer(const Duration(minutes: 90), _stop);
+  }
+
+  void _stop() {
+    if (_dead) return;
+    _dead = true;
+    _token++;
+    _guard?.cancel();
+    try {
+      _ctrl.removeChunkAdvanceHook(_onAdvance);
+    } catch (_) {}
+    try {
+      _ctrl.removeChunkVoiceResolver(_resolveVoice);
+    } catch (_) {}
+    try {
+      _unlisten?.call();
+    } catch (_) {}
+    if (identical(_active, this)) _active = null;
+  }
+
+  // 🎭 صدای جمله: ترجمه‌ی در حال خواندن ← صدای همان گوینده/زبان؛ متنِ اصلی ← صدای گوینده‌ی آن آیتم
+  String? _resolveVoice(String? key, int start) {
+    if (_dead || key == null) return null;
+    try {
+      if (key == _trKey && _trItem != null && _trLang != null) {
+        return _vt?.call(_trItem!, _trLang!);
+      }
+      if (key == _main.key) {
+        final sp = _main.spanAt(start);
+        return sp == null ? null : _vf?.call(sp.id);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  bool _liveScopeOwnsMain() {
+    final sync = _c.read(playerSyncProvider);
+    if (sync.scopeId == null || sync.scopeId == _oldScopeId) return false;
+    return sync.tracks.values.any((t) => t.key == _main.key);
+  }
+
+  bool _enabled() {
+    try {
+      final p = _c.read(sharedPrefsProvider);
+      return _appInBackgroundNow()
+          ? (p.getBool('zflut-read-trans-bg') ?? true)
+          : (p.getBool('zflut-read-trans-fg') ?? true);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// زبان‌هایی که ترجمه‌شان خوانده می‌شود: مبدأ + همه‌ی مقصدهای هدر (مثل `_fgLangs`)
+  List<String> _langs() {
+    final sel = _c.read(languageSelectionProvider);
+    var off = <String>{};
+    if (_appInBackgroundNow()) {
+      try {
+        off = (_c.read(sharedPrefsProvider).getString('zflut-read-trans-bg-off') ?? '')
+            .split(',')
+            .map((e) => e.trim().toLowerCase())
+            .where((e) => e.isNotEmpty)
+            .toSet();
+      } catch (_) {}
+    }
+    final out = <String>[];
+    for (final c in [
+      if (!sel.targets.contains(sel.native)) sel.native,
+      ...sel.targets,
+    ]) {
+      final t = c.trim().toLowerCase();
+      if (t.isNotEmpty && t != _main.code && !out.contains(t) && !off.contains(t)) {
+        out.add(t);
+      }
+    }
+    return out;
+  }
+
+  /// پایانِ طبیعیِ خواندنِ یک آیتمِ متنِ اصلی (مثل `_chunkHook` ویجتِ اسکوپ)
+  bool _onAdvance(String? key, int thisStart, int nextStart, bool loops) {
+    if (_dead || key == null || key != _main.key) return false;
+    if (_busy) return false;
+    if (_liveScopeOwnsMain()) {
+      // کاربر به همان تب برگشته؛ ویجتِ زنده خودش ادامه می‌دهد
+      _stop();
+      return false;
+    }
+    if (!_enabled()) return false;
+    final langs = _langs();
+    if (langs.isEmpty) return false;
+    int skipWs(int i) {
+      final t = _main.fullText;
+      while (i >= 0 && i < t.length && t.codeUnitAt(i) <= 32) {
+        i++;
+      }
+      return i;
+    }
+
+    final cur = _main.spanAt(skipWs(thisStart));
+    if (cur == null) return false;
+    final nxt = nextStart >= 0 ? _main.spanAt(skipWs(nextStart)) : null;
+    if (nxt != null && nxt.id == cur.id) return false; // هنوز همین آیتم
+    if (_foreign.contains(cur.id)) return false;
+    final resumeId =
+        nxt != null ? nxt.id : (loops ? _main.spans.first.id : null);
+    unawaited(runItem(cur.id, resumeId));
+    return true;
+  }
+
+  Future<String?> _text(String id, String lang,
+      {Duration timeout = const Duration(seconds: 25)}) async {
+    final r0 = _ready[id]?[lang];
+    if (r0 != null && r0.trim().isNotEmpty) return r0.trim();
+    final src = _texts[id]?.trim();
+    if (src == null || src.isEmpty) return null;
+    try {
+      final svc = _c.read(translationServiceProvider);
+      final hit = svc.peekCached(src, _main.code, lang) ??
+          KnownTranslations.get(src, _main.code, lang);
+      if (hit != null && hit.trim().isNotEmpty) return hit.trim();
+      final r = (await svc
+              .translate(
+                  text: src,
+                  targetLang: lang,
+                  sourceLang: _main.code,
+                  aiSettings: _c.read(aiSettingsProvider))
+              .timeout(timeout))
+          .trim();
+      if (r.isEmpty) return null;
+      if (r.toLowerCase() == src.toLowerCase() && (lang == 'fa' || lang == 'ar')) {
+        return null;
+      }
+      return r;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// یک آیتم: ترجمه‌ی هر زبان به‌ترتیب ← ادامه‌ی متنِ اصلی از [resumeId].
+  /// [pendingKey]: مرحله‌ای که هنگامِ ترکِ تب در حال پخش بود (اول تمام می‌شود).
+  /// [afterLang]: فقط زبان‌های بعد از این زبان؛ [skipLangs]: هیچ زبانی نماند (فقط ادامه‌ی متن).
+  Future<void> runItem(String itemId, String? resumeId,
+      {String? pendingKey, String? afterLang, bool skipLangs = false}) async {
+    final token = ++_token;
+    _busy = true;
+    try {
+      if (pendingKey != null) {
+        _own.add(pendingKey);
+        if (!await _awaitFinish(pendingKey, 120, token)) return;
+      }
+      var langs = skipLangs ? <String>[] : _langs();
+      if (afterLang != null) {
+        final i = langs.indexOf(afterLang);
+        if (i >= 0) langs = langs.sublist(i + 1);
+      }
+      var first = pendingKey == null;
+      for (final l in langs) {
+        // ⏱ ترجمه‌ی دیرآماده نمی‌ماند: رد می‌شویم (در پس‌زمینه کش می‌شود)
+        var timedOut = false;
+        var text = (await _text(itemId, l).timeout(const Duration(seconds: 5),
+                onTimeout: () {
+          timedOut = true;
+          return null;
+        }))
+            ?.trim();
+        if (_dead || token != _token) return;
+        if ((text == null || text.isEmpty) && !timedOut) {
+          text = (await _text(itemId, l, timeout: const Duration(seconds: 30))
+                  .timeout(const Duration(seconds: 5), onTimeout: () => null))
+              ?.trim();
+          if (_dead || token != _token) return;
+        }
+        if (text == null || text.isEmpty) continue;
+        if (!await _waitFree(token, first ? _main.key : null)) return;
+        final key = PlayerTrack.keyFor(l, text);
+        _own.add(key);
+        _trKey = key;
+        _trItem = itemId;
+        _trLang = l;
+        SpeechController.translationReadKey = key;
+        _c.read(adhocSyncProvider.notifier).state =
+            (key: key, active: ActiveSync(l, itemId));
+        unawaited(_ctrl.toggle(text, l));
+        first = false;
+        if (!await _awaitFinish(key, text.length, token)) return;
+      }
+      if (_dead || token != _token) return;
+      _trKey = null;
+      _resumeMain(resumeId);
+    } catch (e) {
+      debugPrint('detached reader error: $e');
+    } finally {
+      if (token == _token) _busy = false;
+    }
+  }
+
+  void _resumeMain(String? id) {
+    final cur = _c.read(speechControllerProvider);
+    final span = id == null ? null : _main.byId[id];
+    if (span == null) {
+      // لیست تمام شد (بدون تکرار): پلیرِ «بی‌صدا ولی در حال پخش» نماند
+      if (cur.key == _main.key && cur.status != SpeechStatus.idle) {
+        unawaited(_ctrl.stop());
+      }
+      return;
+    }
+    // همین متن هنوز «در حال پخش» ثبت است (کنترلر بینِ دو جمله منتظر مانده) → toggle آن را مکث می‌کرد
+    if (cur.key == _main.key && cur.status != SpeechStatus.idle) {
+      unawaited(_ctrl.seekToChunk(_ctrl.chunkIndexForOffset(span.start)));
+      return;
+    }
+    unawaited(_ctrl.toggle(
+      _main.fullText,
+      _main.code,
+      startCharOffset: span.start,
+      loop: true,
+      sentenceBoundaries: _main.boundaries,
+    ));
+  }
+
+  /// صبر تا موتورِ صدا آزاد شود (یا، فقط برای مرحله‌ی اول، متنِ اصلیِ منتظرِ ما باشد).
+  /// فقط «توقفِ کامل» صف را تمام می‌کند.
+  Future<bool> _waitFree(int token, String? firstKey) async {
+    while (true) {
+      if (_dead || token != _token) return false;
+      final sp = _c.read(speechControllerProvider);
+      if (sp.key == null) return false;
+      if (sp.status == SpeechStatus.idle) return true;
+      if (firstKey != null &&
+          sp.key == firstKey &&
+          sp.status == SpeechStatus.playing) {
+        return true;
+      }
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
+  /// پایانِ یک مرحله را از «وضعیتِ واقعیِ پخش» می‌فهمد (مثل `_awaitFinish` ویجتِ اسکوپ).
+  ///   true = تمام شد/رد شد؛ false = توقفِ کامل یا لغو.
+  Future<bool> _awaitFinish(String key, int textLen, int token) async {
+    final started = DateTime.now();
+    var deadline = started.add(Duration(seconds: 25 + textLen ~/ 4));
+    var seenActive = false;
+    DateTime? idleSince;
+    while (true) {
+      if (_dead || token != _token) return false;
+      final sp = _c.read(speechControllerProvider);
+      final now = DateTime.now();
+      if (sp.key == key) {
+        if (sp.status == SpeechStatus.paused) {
+          deadline = deadline.add(const Duration(milliseconds: 60)); // مکثِ کاربر
+          idleSince = null;
+          seenActive = true;
+        } else if (sp.status == SpeechStatus.playing) {
+          seenActive = true;
+          idleSince = null;
+        } else {
+          if (seenActive || sp.error != null) return true;
+          idleSince ??= now;
+          if (now.difference(idleSince) > const Duration(seconds: 3)) return true;
+        }
+      } else if (sp.key == null) {
+        if (now.difference(started) > const Duration(milliseconds: 1500)) {
+          return false; // توقفِ کاملِ کاربر
+        }
+      } else if (now.difference(started) > const Duration(seconds: 4)) {
+        return seenActive; // چیزِ دیگری جایش را گرفت
+      }
+      if (now.isAfter(deadline)) return true;
+      await Future.delayed(const Duration(milliseconds: 60));
+    }
+  }
+}
 
 /// بعد از ترکِ تب: وقتی آیتمِ در حال خواندن (ترجمه/مثال) تمام شد، خوانشِ لیست از آیتمِ بعد
 /// ادامه پیدا می‌کند. اگر کاربر در این فاصله توقفِ کامل کرد یا چیزِ دیگری پخش کرد، کاری نمی‌کند.
