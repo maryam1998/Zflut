@@ -394,8 +394,8 @@ const List<_Step> _popupSteps = [
     Icons.bookmark_rounded,
     {'en': 'Save for next story', 'fa': 'ذخیره برای داستان بعدی'},
     {
-      'en': 'For a word or sentence that is hard, or that you want to learn better. It is used in your next story, and also stays in your dictionary and saved words (you can delete it any time). Pro feature.',
-      'fa': 'برای لغت یا جمله‌ای که سخت است یا می‌خواهی بهتر یادش بگیری. در داستان بعدی استفاده می‌شود و در دیکشنری و لغت‌های ذخیره‌شده هم می‌ماند (هر وقت خواستی حذفش می‌کنی). ویژه‌ی Pro.',
+      'en': 'Select a word or a passage, then tap Save. The next story you generate is built around your saved words and sentences, so you learn them in context. They also stay in your dictionary and saved words, and you can delete them any time. Pro feature.',
+      'fa': 'روی یک لغت یا محدوده‌ی متن بزن و «ذخیره» را انتخاب کن. داستان بعدی بر پایه‌ی همین لغت‌ها و جمله‌ها ساخته می‌شود تا آن‌ها را در بافت داستان بهتر یاد بگیری. در دیکشنری و لغت‌های ذخیره‌شده هم می‌مانند و هر وقت خواستی حذفشان می‌کنی. ویژه‌ی Pro.',
     },
   ),
   _Step(
