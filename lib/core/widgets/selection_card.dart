@@ -1419,13 +1419,36 @@ class _SelectableSyncTextState extends ConsumerState<SelectableSyncText> {
       final b = math.min(ms.length - 1, a + 2);
       r = TextRange(start: ms[a].start, end: ms[b].end);
     } else {
+      // 🎓 لغتِ نمایشی: نه اولین کلمه (معمولاً اسم، مثل «Alex»)؛ یک لغتِ رایجِ
+      // کوچک‌حرف (۴ تا ۹ حرف) تا ترجمه‌اش حتماً وجود داشته باشد.
       var w = ms.first;
-      for (final m in ms) {
-        if (m.end - m.start >= 4) {
-          w = m;
+      RegExpMatch? pick;
+      for (var i = 1; i < ms.length; i++) {
+        final m = ms[i];
+        final len = m.end - m.start;
+        final t = widget.text.substring(m.start, m.end);
+        if (len >= 4 && len <= 9 && t == t.toLowerCase() && t != t.toUpperCase()) {
+          pick = m;
           break;
         }
       }
+      if (pick == null) {
+        for (var i = 1; i < ms.length; i++) {
+          if (ms[i].end - ms[i].start >= 4) {
+            pick = ms[i];
+            break;
+          }
+        }
+      }
+      if (pick == null) {
+        for (final m in ms) {
+          if (m.end - m.start >= 4) {
+            pick = m;
+            break;
+          }
+        }
+      }
+      if (pick != null) w = pick;
       r = TextRange(start: w.start, end: w.end);
     }
     return _openCard(r, highlight: true);

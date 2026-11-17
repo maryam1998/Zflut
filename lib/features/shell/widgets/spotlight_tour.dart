@@ -132,8 +132,8 @@ const List<_Step> _steps = [
     Icons.translate_rounded,
     {'en': 'Your languages', 'fa': 'زبان‌های تو'},
     {
-      'en': 'Pick your native language, then tap the circles to choose one or more languages to learn. Translations appear in all of them, side by side. Watch: the tour turns a circle on and off by itself.',
-      'fa': 'زبان مادری‌ات را انتخاب کن، بعد روی دایره‌ها بزن و یک یا چند زبان برای یادگیری انتخاب کن. ترجمه‌ها به همه‌ی آن زبان‌ها، کنار هم نشان داده می‌شود. نگاه کن: تور خودش یک دایره را روشن و خاموش می‌کند.',
+      'en': 'Pick your native language, then tap the circles to choose one or more languages to learn. Translations appear in all of them, side by side.',
+      'fa': 'زبان مادری‌ات را انتخاب کن، بعد روی دایره‌ها بزن و یک یا چند زبان برای یادگیری انتخاب کن. ترجمه‌ها به همه‌ی آن زبان‌ها، کنار هم نشان داده می‌شود.',
     },
   ),
   _Step(
