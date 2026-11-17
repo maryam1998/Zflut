@@ -500,6 +500,8 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
     final pro = ref.watch(isProProvider);
     final storySaved = ref.watch(savedWordsProvider.select((l) => l.any(
         (w) => w.langCode == lang && normWord(w.word) == normWord(_text))));
+    // کاربر رایگان فقط تا ۲ لغت می‌تواند برای داستان بعدی ذخیره کند
+    final storyFull = ref.watch(savedWordsProvider.select((l) => l.length >= 2));
     final grammarSaved = ref.watch(grammarNotesProvider.select((l) => l.any(
         (n) => n.langCode == lang && normWord(n.word) == normWord(_text))));
     final leitnerAdded = ref.watch(leitnerProvider.select((l) => l.any(
@@ -647,7 +649,7 @@ class _SelectionCardState extends ConsumerState<SelectionCard>
                 emoji: '🔖',
                 label: _s(ui, storySaved ? 'storyDone' : 'story'),
                 active: storySaved,
-                locked: !pro && !storySaved, // 🔒 فقط Pro
+                locked: !pro && !storySaved && storyFull, // 🔒 رایگان: حداکثر ۲ لغت
                 onTap: () {
                   _markActed();
                   ref.read(savedWordsProvider.notifier).toggleSave(

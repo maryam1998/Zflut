@@ -42,7 +42,7 @@ const List<TabGroup> kTabGroups = [
     key: 'practice',
     labelKey: 'group_practice',
     icon: Icons.task_alt_rounded,
-    tabs: ['favorites', 'review'],
+    tabs: ['review', 'favorites'],
   ),
 ];
 
