@@ -237,6 +237,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
 
   String? _voiceForItem(String itemId) => _voiceFor(itemId, _mainLang);
   String _query = '';
+  final TextEditingController _searchCtrl = TextEditingController();
+  final GlobalKey _searchKey = GlobalKey(); // با رفتن به حالتِ «بدون نتیجه» فوکوسِ کیبورد نپرد
   Set<String> _levels = <String>{};
 
   /// 💎 کاربرِ رایگان داخلِ موضوع‌های باز فقط جمله‌های A1 را می‌بیند
@@ -354,6 +356,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     BackHandlers.remove(_onSystemBack);
     _dlSub?.cancel();
     _gridScroll.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -464,15 +467,83 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   /// ردیف فیلتر سطح (A1–C2) بالای لیست موضوع‌ها.
   Widget _levelBar() => Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-        child: LevelChipsMulti(
-          selected: _levels,
-          onChanged: (v) => setState(() {
-            _levels = v;
-            _rangeFrom = 1;
-            _rangeTo = 65;
-          }),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            LevelChipsMulti(
+              selected: _levels,
+              onChanged: (v) => setState(() {
+                _levels = v;
+                _rangeFrom = 1;
+                _rangeTo = 65;
+              }),
+            ),
+            const SizedBox(height: 8),
+            _searchField(),
+          ],
         ),
       );
+
+  /// 🔍 جستجوی مکالمه‌ها (عنوانِ موضوع، سناریو و جمله‌ها) — مثل جستجوی تبِ لغت‌ها.
+  Widget _searchField() {
+    final c = context.appColors;
+    final dir = Directionality.of(context);
+    final leftIsPrefix = dir == TextDirection.ltr;
+    final search = Icon(Icons.search, color: c.inkSoft, size: 19);
+    Widget? side(bool prefix) {
+      if (prefix) {
+        if (!leftIsPrefix) return search;
+      } else if (leftIsPrefix) {
+        return null;
+      }
+      return ValueListenableBuilder<TextEditingValue>(
+        valueListenable: _searchCtrl,
+        builder: (_, v, __) => v.text.isEmpty
+            ? (prefix ? search : const SizedBox.shrink())
+            : IconButton(
+                icon: Icon(Icons.close, color: c.inkSoft, size: 18),
+                onPressed: () {
+                  _searchCtrl.clear();
+                  setState(() {
+                    _query = '';
+                    _rangeFrom = 1;
+                    _rangeTo = 65;
+                  });
+                },
+              ),
+      );
+    }
+
+    return Container(
+      key: _searchKey,
+      height: 46,
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.cardBorder, width: 1),
+      ),
+      child: TextField(
+        controller: _searchCtrl,
+        onChanged: (v) => setState(() {
+          _query = v;
+          _rangeFrom = 1;
+          _rangeTo = 65;
+        }),
+        textAlign: TextAlign.start,
+        style: TextStyle(color: c.ink, fontSize: 13.5),
+        decoration: InputDecoration(
+          hintText: context.l10n.phrasebook_search_conversations,
+          hintStyle:
+              TextStyle(color: c.inkSoft.withOpacity(0.55), fontSize: 13.5),
+          prefixIcon: side(true),
+          suffixIcon: side(false),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 13),
+        ),
+      ),
+    );
+  }
 
   Widget _buildTopicsGrid(BuildContext context, List<ConversationTopic> topics,
       ConversationsIndex? index) {
