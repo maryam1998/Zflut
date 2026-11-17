@@ -58,6 +58,7 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
     with WidgetsBindingObserver {
   final math.Random _rnd = math.Random();
   Timer? _timer;
+  int _legStartMs = 0;
 
   // حرکت
   double _x = 0;
@@ -143,11 +144,14 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
     _target = toX;
     _facing = toX >= _x ? 1 : -1;
     _speed = 0.45 + _rnd.nextDouble() * 0.3;
-    double d() =>
-        _kLegMsgMinDelayMs +
-        _rnd.nextDouble() * (_kLegMsgMaxDelayMs - _kLegMsgMinDelayMs);
+    // 🎲 نقطه‌های تذکر تصادفی در «طولِ مسیر» (۱۵٪ تا ۸۵٪ راه) — نه فقط ابتدا/انتهای صفحه
+    final legMs = ((toX - _x).abs() / _speed) * 45.0;
+    final lo = math.max(_kLegMsgMinDelayMs.toDouble(), legMs * 0.15);
+    final hi = math.max(lo + 1, legMs * 0.85);
+    double d() => lo + _rnd.nextDouble() * (hi - lo);
     _cps = [d(), d()]..sort();
     _cpIdx = 0;
+    _legStartMs = _nowMs();
   }
 
   String _pickIdleLine() {
@@ -194,7 +198,7 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
     }
 
     if (isIdle && _cpIdx < _kLegMsgCount) {
-      final dueAt = last + _kIdleMs + _cps[_cpIdx].toInt();
+      final dueAt = math.max(last + _kIdleMs, _legStartMs + _cps[_cpIdx].toInt());
       if (now >= dueAt) {
         _cpIdx += 1;
         _mode = _Mode.alert;
