@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../native/native_bridge.dart';
 import '../player_sync/playback_origin.dart';
 import '../player_sync/player_sync_provider.dart';
+import '../router/app_router.dart' show appRouterProvider, kRestorableTabs;
 import '../providers/speech_provider.dart';
 import '../storage/local_storage.dart';
 import '../tts/speech_controller.dart' show SpeechController;
@@ -387,7 +388,23 @@ final listeningStatsProvider =
   ({String route, ListenPoint? point})? ctxNow({bool withId = true}) {
     final sp = ref.read(speechControllerProvider);
     final o = ref.read(playbackOriginProvider);
-    if (o == null || sp.key == null) return null;
+    if (sp.key == null) return null;
+    // 📍 پخش از جاهایی که «مبدأ» ثبت نمی‌کنند (🔊 کارتِ انتخاب، پاسخ‌های AI، مثال‌های
+    // علاقه‌مندی‌ها …): زمان به تبی که کاربر همین الان در آن است حساب می‌شود (نه «نامشخص»).
+    ({String route, ListenPoint? point})? here() {
+      try {
+        final p = ref
+            .read(appRouterProvider)
+            .routeInformationProvider
+            .value
+            .uri
+            .path;
+        if (kRestorableTabs.contains(p)) return (route: p, point: null);
+      } catch (_) {}
+      return null;
+    }
+
+    if (o == null) return here();
     if (originKeysFor != o.key) {
       originKeys.clear();
       originKeysFor = o.key;
@@ -403,7 +420,7 @@ final listeningStatsProvider =
         originKeys.add(sp.key!);
         return (route: o.route, point: null);
       }
-      return null;
+      return here();
     }
     originKeys.add(sp.key!);
     final id = withId ? ref.read(activeSyncProvider)?.id : null;
