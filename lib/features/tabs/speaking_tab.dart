@@ -43,6 +43,8 @@ const String _kLangKey = 'zflut-speaking-lang-v1';
 const String _kHistKey = 'zflut-speaking-history-v1';
 const String _kAutoReadKey = 'zflut-speaking-autoread-v1';
 const String _kLevelKey = 'zflut-speaking-level-v1';
+const String _kLevelUpKey = 'zflut-speaking-levelup-v1';
+const int _kLevelUpAfter = 10; // پیامِ پشتِ‌هم‌ِ (تقریباً) بی‌غلط تا پیشنهادِ ارتقا
 // معرفیِ اولیه فقط یک‌بار در کلِ عمرِ برنامه؛ بعد از آن شروعِ گفتگو تصادفی است
 const String _kIntroKey = 'zflut-speaking-intro-v1';
 
@@ -1001,6 +1003,8 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   // خوانشِ خودکارِ جوابِ AI در چت (با تیک؛ ذخیره می‌شود)
   bool _autoReadOn = false;
   String _userLevel = 'auto'; // سطحِ زبانِ گفتگو: auto یا A1..C2
+  // ارتقای خودکارِ سطح: برای هر شخصیت [پیامِ پشتِ‌هم‌ِ خوب، تعدادِ غلطِ خیلی جزئی]
+  final Map<String, List<int>> _lvlProg = {};
 
   // تاریخچه
   String _sessionId = '';
@@ -1019,6 +1023,12 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     final ls = ref.read(localStorageProvider);
     final lv = (ls.readJson(_kLevelKey)['level'] ?? 'auto').toString();
     _userLevel = const ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].contains(lv) ? lv : 'auto';
+    final lp = ls.readJson(_kLevelUpKey);
+    lp.forEach((k, v) {
+      if (v is List && v.length >= 2) {
+        _lvlProg['$k'] = [(v[0] as num).toInt(), (v[1] as num).toInt()];
+      }
+    });
     if (_embedded) {
       final s = _HistoryStore.find(ls, widget.historyId!);
       _sessionId = widget.historyId!;
@@ -1312,6 +1322,152 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
         ref.read(speechControllerProvider.notifier), _persona, t, _activeLang()));
   }
 
+  // ───────────── 🚀 ارتقای خودکارِ سطح (Auto-Level Up) ─────────────
+  static const List<String> _lvOrder = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+  void _saveLvlProg() {
+    unawaited(ref.read(localStorageProvider).writeJson(_kLevelUpKey, {
+      for (final e in _lvlProg.entries) e.key: e.value,
+    }));
+  }
+
+  static int _editDist(String a, String b) {
+    if (a == b) return 0;
+    var prev = List<int>.generate(b.length + 1, (i) => i);
+    for (var i = 1; i <= a.length; i++) {
+      final cur = List<int>.filled(b.length + 1, 0);
+      cur[0] = i;
+      for (var j = 1; j <= b.length; j++) {
+        final cost = a.codeUnitAt(i - 1) == b.codeUnitAt(j - 1) ? 0 : 1;
+        cur[j] = math.min(math.min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+      }
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+
+  /// غلطِ «خیلی جزئی»: غلطِ املایی/حروفِ بزرگ و کوچک/نشانه‌گذاری (حداکثر ۲ نویسه اختلاف).
+  static bool _isMinorFix(_Correction f) {
+    String n(String t) =>
+        t.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '');
+    final a = n(f.original), b = n(f.corrected);
+    if (a == b) return true;
+    return a.length >= 3 && _editDist(a, b) <= 2;
+  }
+
+  /// بعد از هر پاسخِ موفقِ AI صدا زده می‌شود (چت و ویدیو کال).
+  void _trackLevelProgress(List<_Correction> fixes) {
+    if (_embedded || !mounted || _userLevel == 'auto') return;
+    final id = _persona.id;
+    var count = _lvlProg[id]?[0] ?? 0;
+    var minor = _lvlProg[id]?[1] ?? 0;
+    if (count >= _kLevelUpAfter) return; // پیشنهاد منتظرِ جوابِ کاربر است
+    if (fixes.isEmpty) {
+      count++;
+    } else if (fixes.length == 1 && _isMinorFix(fixes.first)) {
+      minor++;
+      if (minor > 1) {
+        count = 0;
+        minor = 0;
+      } else {
+        count++;
+      }
+    } else {
+      count = 0;
+      minor = 0;
+    }
+    setState(() => _lvlProg[id] = [count, minor]);
+    _saveLvlProg();
+  }
+
+  bool get _showLevelUp =>
+      !_embedded &&
+      _userLevel != 'auto' &&
+      (_lvlProg[_persona.id]?[0] ?? 0) >= _kLevelUpAfter;
+
+  void _levelUpNo() {
+    setState(() => _lvlProg[_persona.id] = [0, 0]);
+    _saveLvlProg();
+  }
+
+  void _levelUpYes() {
+    final i = _lvOrder.indexOf(_userLevel);
+    if (i < 0 || i >= _lvOrder.length - 1) return;
+    final next = _lvOrder[i + 1];
+    setState(() {
+      _userLevel = next;
+      _lvlProg.clear();
+    });
+    unawaited(ref
+        .read(localStorageProvider)
+        .writeJson(_kLevelKey, {'level': next}));
+    _saveLvlProg();
+  }
+
+  Widget _levelUpCard(AppThemeColorsExt c) {
+    final i = _lvOrder.indexOf(_userLevel);
+    final top = i == _lvOrder.length - 1;
+    final next = top || i < 0 ? '' : _lvOrder[i + 1];
+    final text = top
+        ? (_faUi
+            ? 'تو به بالاترین سطح رسیدی! تو یک نابغه زبانی هستی. 🏆'
+            : "You've reached the highest level! You're a language genius. 🏆")
+        : (_faUi
+            ? 'آفرین! تو در سطح $_userLevel عالی عمل کردی. آیا می‌خواهی سطحت را به $next ارتقا بدهیم؟'
+            : "Well done! You did great at level $_userLevel. Want us to move you up to $next?");
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+      decoration: BoxDecoration(
+        color: c.goldSoft,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: c.gold),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Text('🎉', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(text,
+                    style: TextStyle(
+                        color: c.ink,
+                        fontSize: 13,
+                        height: 1.5,
+                        fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            children: top
+                ? [
+                    TextButton(
+                      onPressed: _levelUpNo,
+                      child: Text(_faUi ? 'ممنون' : 'Thanks'),
+                    ),
+                  ]
+                : [
+                    TextButton(
+                      onPressed: _levelUpNo,
+                      child: Text(_faUi ? 'فعلاً نه' : 'Not now',
+                          style: TextStyle(color: c.inkSoft)),
+                    ),
+                    FilledButton(
+                      onPressed: _levelUpYes,
+                      style: FilledButton.styleFrom(backgroundColor: c.gold),
+                      child: Text(_faUi ? 'بله، ارتقا بده' : 'Yes, level me up'),
+                    ),
+                  ],
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 🎚️ قانونِ سطحِ زبان که به پرامپتِ AI اضافه می‌شود (خالی = خودکار).
   String _levelPrompt() {
     const rules = <String, String>{
@@ -1416,7 +1572,11 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
       ),
     );
     if (picked == null || !mounted || picked == _userLevel) return;
-    setState(() => _userLevel = picked);
+    setState(() {
+      _userLevel = picked;
+      _lvlProg.clear(); // شمارنده‌ی ارتقا برای سطحِ تازه از نو
+    });
+    _saveLvlProg();
     unawaited(ref
         .read(localStorageProvider)
         .writeJson(_kLevelKey, {'level': picked}));
@@ -1672,6 +1832,7 @@ Now respond to: "$sentence"
         _failedText = null;
         _failedHistory = null;
       });
+      _trackLevelProgress(r.corrections);
       _autoRead(r.text);
     } catch (_) {
       if (!mounted) return;
@@ -2046,6 +2207,9 @@ Now respond to: "$sentence"
           level: _userLevel,
           onLevelTap: _pickLevel,
         ),
+
+      // ── 🚀 پیشنهادِ ارتقای سطح (کارتِ کوچک؛ مزاحمِ گفتگو نمی‌شود) ──
+      if (_showLevelUp) _levelUpCard(c),
 
       // ── ویدیو کال (در همان صفحه‌ی چت) ──
       if (_callMode && !_embedded)
