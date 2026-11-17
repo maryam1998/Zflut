@@ -16,6 +16,10 @@ import 'package:record/record.dart';
 
 import '../../core/native/native_bridge.dart';
 import '../../core/providers/speech_provider.dart';
+import '../../core/providers/ai_settings_provider.dart';
+import '../../core/providers/language_selection_provider.dart';
+import '../../core/providers/translation_provider.dart';
+import '../../core/utils/html_entities.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/tts/speech_controller.dart';
@@ -2071,6 +2075,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   bool _stopping = false;
   bool _ended = false; // کاربر دکمه‌ی قطع را زد؛ در همین صفحه می‌مانیم
   bool _hintLoading = false;
+  bool _cc = false; // زیرنویس (CC) — پیش‌فرض خاموش
+  final Map<String, String> _trCache = {}; // متن → ترجمه به زبانِ مادری
+  final Set<String> _trBusy = {};
 
   bool _handsFree = true;
   bool _muted = false;
@@ -2251,6 +2258,45 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _level.value = 0;
     }
     _submit(t);
+  }
+
+  /// ترجمه‌ی زیرنویس به زبانِ مادریِ کاربر (همان که از بالای صفحه انتخاب شده).
+  String get _nativeCode {
+    try {
+      return ref.read(languageSelectionProvider).native;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  void _prefetchTr() {
+    if (!_cc || !mounted) return;
+    final native = _nativeCode;
+    if (native.isEmpty || native == widget.langCode) return;
+    for (final t in [_heard, _aiLine]) {
+      final txt = t.trim();
+      if (txt.isEmpty || _trCache.containsKey(txt) || _trBusy.contains(txt)) {
+        continue;
+      }
+      _trBusy.add(txt);
+      unawaited(() async {
+        String r = '';
+        try {
+          r = decodeHtmlEntities((await ref
+                  .read(translationServiceProvider)
+                  .translate(
+                    text: txt,
+                    targetLang: native,
+                    sourceLang: widget.langCode,
+                    aiSettings: ref.read(aiSettingsProvider),
+                  ))
+              .trim());
+        } catch (_) {}
+        _trBusy.remove(txt);
+        if (!mounted) return;
+        setState(() => _trCache[txt] = (r == txt) ? '' : r);
+      }());
+    }
   }
 
   Widget _endedView(AppThemeColorsExt c) {
@@ -3049,6 +3095,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final photoFace = p.photoFace;
 
     if (_ended) return _endedView(c);
+    if (_cc) WidgetsBinding.instance.addPostFrameCallback((_) => _prefetchTr());
+    final native = _nativeCode;
+    final nativeRtl = const ['fa', 'ar', 'he', 'ur'].contains(native);
+    final showTr = native.isNotEmpty && native != widget.langCode;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3182,7 +3232,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               ),
               if (photoFace == null)
                 Align(alignment: const Alignment(0, 0.3), child: _bars()),
-              // پایین: زیرنویس
+              // پایین: زیرنویس (با دکمه‌ی CC روشن/خاموش می‌شود؛ اصلاحیه‌ی جمله همیشه دیده می‌شود)
+              if (_cc || _fixes.isNotEmpty)
               Positioned(
                 left: 10,
                 right: 10,
@@ -3198,13 +3249,26 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (_heard.isNotEmpty)
+                      if (_cc && _heard.isNotEmpty)
                         Text('${_tr(context, 'تو', 'You')}: $_heard',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                                 color: Colors.white.withOpacity(0.7),
                                 fontSize: 11)),
+                      if (_cc &&
+                          showTr &&
+                          (_trCache[_heard.trim()] ?? '').isNotEmpty)
+                        Directionality(
+                          textDirection:
+                              nativeRtl ? TextDirection.rtl : TextDirection.ltr,
+                          child: Text(_trCache[_heard.trim()]!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.5),
+                                  fontSize: 10.5)),
+                        ),
                       if (_fixes.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
@@ -3233,18 +3297,46 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                             style: const TextStyle(fontSize: 12),
                           ),
                         ),
-                      if (_aiLine.isNotEmpty)
+                      if (_cc && _aiLine.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 3),
-                          child: Text(_aiLine,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12.5,
-                                  height: 1.35)),
+                          child: Text.rich(
+                            TextSpan(children: [
+                              TextSpan(
+                                text: '${widget.persona.name}: ',
+                                style: const TextStyle(
+                                    color: Color(0xFFFCD34D),
+                                    fontWeight: FontWeight.w800),
+                              ),
+                              TextSpan(text: _aiLine),
+                            ]),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.5,
+                                height: 1.35),
+                          ),
                         ),
-                      if (_heard.isEmpty && _aiLine.isEmpty)
+                      if (_cc &&
+                          showTr &&
+                          (_trCache[_aiLine.trim()] ?? '').isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Directionality(
+                            textDirection: nativeRtl
+                                ? TextDirection.rtl
+                                : TextDirection.ltr,
+                            child: Text(_trCache[_aiLine.trim()]!,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.6),
+                                    fontSize: 11,
+                                    height: 1.35)),
+                          ),
+                        ),
+                      if (_cc && _heard.isEmpty && _aiLine.isEmpty)
                         Text(
                           _tr(context, 'زیرنویسِ تماس این‌جا می‌آید…',
                               'Call captions will appear here…'),
@@ -3412,6 +3504,17 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               tip: _tr(context, 'نوشتن', 'Type'),
               bg: _showTyping ? c.gold : const Color(0xFFEFE9D6),
               onTap: () => setState(() => _showTyping = !_showTyping),
+            ),
+            // زیرنویس (CC) — کوچک‌تر از دکمه‌های اصلی
+            _circleBtn(
+              icon: _cc
+                  ? Icons.closed_caption_rounded
+                  : Icons.closed_caption_outlined,
+              tip: _tr(context, 'زیرنویس', 'Captions'),
+              size: 38,
+              bg: _cc ? const Color(0xFFDCFCE7) : const Color(0xFFEFE9D6),
+              fg: _cc ? const Color(0xFF16A34A) : const Color(0xFF3A3A3A),
+              onTap: () => setState(() => _cc = !_cc),
             ),
           ],
         ),
