@@ -29,6 +29,10 @@ class CategoryItem {
   });
 }
 
+/// 6342 → 6,342 (جداکننده‌ی هزارگان)
+String _fmtNum(int n) => n.toString().replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+
 String _wordsUnit(BuildContext context) {
   switch (Localizations.localeOf(context).languageCode) {
     case 'fa':
@@ -126,13 +130,13 @@ class _CategoryCard extends StatelessWidget {
 
     Widget footer;
     if (fullyLocked) {
-      footer = _pill(c, c.gold, Icons.lock, '${item.total}');
+      footer = _pill(c, c.gold, Icons.lock, _fmtNum(item.total));
     } else if (partial) {
       footer = _pill(c, c.teal, Icons.lock_open,
-          ProI18n.t(context, 'free_of', {'free': free!, 'n': item.total}));
+          ProI18n.t(context, 'free_of', {'free': _fmtNum(free!), 'n': _fmtNum(item.total)}));
     } else {
       footer = Text(
-        '${item.total} ${_wordsUnit(context)}',
+        '${_fmtNum(item.total)} ${_wordsUnit(context)}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
