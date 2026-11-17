@@ -808,7 +808,7 @@
   "pos_determiner": "Determinante",
   "pos_exclamation": "Exclamación",
   "pos_idiom": "Modismo",
-  "speaking_tab_speaking": "Conversación",
+  "speaking_tab_speaking": "Conversación en vivo con corrección al instante",
   "speaking_tab_history": "Historial de conversaciones",
   "speaking_history_intro": "Aquí están las conversaciones que guardaste, las más recientes primero. Abre una para seguir chateando, editar tus mensajes o eliminar mensajes.",
   "speaking_history_empty": "Aún no has guardado conversaciones. En la pestaña Conversación toca «Guardar en el historial».",

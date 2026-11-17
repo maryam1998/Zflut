@@ -248,12 +248,12 @@ class FeatureCardTexts {
       'ar': 'كلمات محفوظة لقصتك القادمة',
     },
     'talk_chat': {
-      'fa': 'گفتگو با Jimmy؛ اصلاحِ فوریِ اشتباه‌ها و توضیح',
-      'en': 'Chat with Jimmy: instant corrections & explanations',
-      'es': 'Habla con Jimmy: correcciones y explicaciones al instante',
-      'de': 'Chatte mit Jimmy: sofortige Korrekturen & Erklärungen',
-      'fr': 'Discute avec Jimmy : corrections et explications instantanées',
-      'ar': 'تحدّث مع Jimmy: تصحيح وشرح فوري للأخطاء',
+      'fa': 'هم‌صحبت هوشمند شما؛ اصلاح فوری اشتباهات و توضیح گرامر در لحظه.',
+      'en': 'Your smart conversation partner: instant corrections and grammar explanations on the spot.',
+      'es': 'Tu compañero de conversación inteligente: correcciones al instante y explicaciones de gramática al momento.',
+      'de': 'Dein smarter Gesprächspartner: sofortige Korrekturen und Grammatikerklärungen in Echtzeit.',
+      'fr': 'Votre partenaire de conversation intelligent : corrections immédiates et explications de grammaire en direct.',
+      'ar': 'شريكك الذكي في الحديث: تصحيح فوري للأخطاء وشرح القواعد في اللحظة.',
     },
     'talk_history': {
       'fa': 'مکالمه‌های ذخیره‌شده؛ ادامه بده و مرور کن',
