@@ -2026,6 +2026,12 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
   final Future<CallTurn?> Function(String text, bool retry) onUserSaid;
   final VoidCallback onEnd;
 
+  /// «راهنما (چی بگم؟)»: جمله‌ی انتخاب‌شده را برمی‌گرداند (یا null).
+  final Future<String?> Function()? onHint;
+
+  /// «تماس مجدد» بعد از قطع تماس.
+  final VoidCallback? onRedial;
+
   const SpeakingCallPanel({
     super.key,
     required this.persona,
@@ -2034,6 +2040,8 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
     required this.onConnected,
     required this.onUserSaid,
     required this.onEnd,
+    this.onHint,
+    this.onRedial,
   });
 
   @override
@@ -2061,6 +2069,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   int _turn = 0; // هر بار که «نوبت» عوض می‌شود زیاد می‌شود (قطعِ حرفِ AI)
   bool _closed = false;
   bool _stopping = false;
+  bool _ended = false; // کاربر دکمه‌ی قطع را زد؛ در همین صفحه می‌مانیم
+  bool _hintLoading = false;
 
   bool _handsFree = true;
   bool _muted = false;
@@ -2191,6 +2201,114 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     try {
       _ctl.stop();
     } catch (_) {}
+  }
+
+  /// قطعِ تماس بدونِ رفتن به صفحه‌ی چت: فقط وضعیتِ تماس عوض می‌شود.
+  void _endCallHere() {
+    if (_ended) return;
+    if (widget.onRedial == null) {
+      widget.onEnd();
+      return;
+    }
+    _turn++;
+    _closed = true;
+    _clock?.cancel();
+    _ampSub?.cancel();
+    _ampSub = null;
+    _stopSpeaking();
+    if (_phase == _Phase.recording) {
+      unawaited(_rec.stop().then((p) => _deleteFile(p)));
+      _level.value = 0;
+    }
+    if (_phase == _Phase.transcribing) {
+      unawaited(NativeBridge.instance.syncTranscribeCancel().catchError(
+          (Object _) => <String, dynamic>{}));
+    }
+    if (mounted) setState(() => _ended = true);
+  }
+
+  /// «راهنما (چی بگم؟)» داخلِ ویدیو کال؛ جمله‌ی انتخابی مستقیم برای AI فرستاده می‌شود.
+  Future<void> _askHint() async {
+    final fn = widget.onHint;
+    if (fn == null || _hintLoading || _closed) return;
+    setState(() => _hintLoading = true);
+    String? picked;
+    try {
+      picked = await fn();
+    } catch (_) {
+      picked = null;
+    }
+    if (!mounted) return;
+    setState(() => _hintLoading = false);
+    final t = (picked ?? '').trim();
+    if (t.isEmpty || _closed) return;
+    _stopSpeaking();
+    if (_phase == _Phase.recording) {
+      _ampSub?.cancel();
+      _ampSub = null;
+      _stopping = true;
+      unawaited(_rec.stop().then((p) => _deleteFile(p)));
+      _level.value = 0;
+    }
+    _submit(t);
+  }
+
+  Widget _endedView(AppThemeColorsExt c) {
+    final base = widget.persona.colorValue;
+    final m = (_secs ~/ 60).toString().padLeft(2, '0');
+    final s = (_secs % 60).toString().padLeft(2, '0');
+    return Container(
+      height: 380,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.lerp(base, Colors.black, 0.75)!,
+            Color.lerp(base, Colors.black, 0.92)!,
+          ],
+        ),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.call_end, color: Colors.white54, size: 40),
+          const SizedBox(height: 12),
+          Text(_tr(context, 'تماس پایان یافت', 'Call ended'),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text('$m:$s',
+              style: const TextStyle(color: Colors.white60, fontSize: 13)),
+          const SizedBox(height: 22),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              FilledButton.icon(
+                onPressed: widget.onRedial,
+                style: FilledButton.styleFrom(backgroundColor: c.teal),
+                icon: const Icon(Icons.videocam_rounded, size: 18),
+                label: Text(_tr(context, 'تماس مجدد', 'Call again')),
+              ),
+              OutlinedButton.icon(
+                onPressed: widget.onEnd,
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white54)),
+                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                label: Text(_tr(context, 'بازگشت به چت', 'Back to chat')),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   // ───────────── جریانِ تماس ─────────────
@@ -2930,6 +3048,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         _phase == _Phase.speaking;
     final photoFace = p.photoFace;
 
+    if (_ended) return _endedView(c);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -3190,6 +3310,52 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         ),
         const SizedBox(height: 10),
 
+        // ── راهنما (چی بگم؟) ──
+        if (widget.onHint != null) ...[
+          Center(
+            child: Material(
+              color: c.gold.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: (_hintLoading ||
+                        _phase == _Phase.ringing ||
+                        _phase == _Phase.thinking ||
+                        _phase == _Phase.transcribing)
+                    ? null
+                    : _askHint,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: c.gold),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.lightbulb_outline_rounded,
+                          size: 16, color: c.gold),
+                      const SizedBox(width: 6),
+                      Text(
+                        _hintLoading
+                            ? _tr(context, 'در حال فکر کردن…', 'Thinking…')
+                            : _tr(context, 'راهنما: چی بگم؟',
+                                'Hint: what do I say?'),
+                        style: TextStyle(
+                            color: c.ink,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+
         // ── کنترل‌ها ──
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -3239,7 +3405,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               fg: Colors.white,
               size: 50,
               tip: _tr(context, 'پایان تماس', 'End call'),
-              onTap: widget.onEnd,
+              onTap: _endCallHere,
             ),
             _circleBtn(
               icon: Icons.keyboard_alt_outlined,

@@ -995,6 +995,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   // شخصیتِ هوش مصنوعی + حالتِ ویدیو کال
   AiPersona _persona = PersonaStore.builtIns.first;
   bool _callMode = false;
+  int _callNonce = 0; // «تماس مجدد» پنلِ تماس را از نو می‌سازد
 
   // خوانشِ خودکارِ جوابِ AI در چت (با تیک؛ ذخیره می‌شود)
   bool _autoReadOn = false;
@@ -1932,13 +1933,15 @@ Now respond to: "$sentence"
       // ── ویدیو کال (در همان صفحه‌ی چت) ──
       if (_callMode && !_embedded)
         SpeakingCallPanel(
-          key: ValueKey('call-$_sessionId-${_persona.id}'),
+          key: ValueKey('call-$_sessionId-${_persona.id}-$_callNonce'),
           persona: _persona,
           langCode: lang,
           langName: _enName(lang),
           onConnected: _callGreeting,
           onUserSaid: _callTurn,
           onEnd: endCall,
+          onHint: () => _showHint(forCall: true),
+          onRedial: () => setState(() => _callNonce++),
         ),
 
       // ── نوارِ انتخابِ پیام‌ها ──
@@ -2541,9 +2544,10 @@ Now respond to: "$sentence"
   }
 
   /// 💡 «چی بگم؟» — AI سه جمله‌ی پیشنهادی (به زبانِ تمرین + معنی به زبانِ مادری) می‌دهد.
-  Future<void> _showHint() async {
-    if (_hintBusy || _loading) return;
-    if (FreeLimit.blockUnlessPro()) return; // 🔒 فقط Pro (هزینه‌ی AI)
+  /// [forCall] = true: جمله‌ی انتخاب‌شده در کادرِ چت نوشته نمی‌شود و به پنلِ ویدیو کال برمی‌گردد.
+  Future<String?> _showHint({bool forCall = false}) async {
+    if (_hintBusy || _loading) return null;
+    if (FreeLimit.blockUnlessPro()) return null; // 🔒 فقط Pro (هزینه‌ی AI)
     final lang = _activeLang();
     final langLabel = _enName(lang);
     final native = ref.read(languageSelectionProvider).native;
@@ -2574,13 +2578,13 @@ Now respond to: "$sentence"
     } catch (_) {
       hints = [];
     }
-    if (!mounted) return;
+    if (!mounted) return null;
     setState(() => _hintBusy = false);
     if (hints.isEmpty) {
       setState(() => _error = _faUi
           ? 'پیشنهادی پیدا نشد؛ دوباره امتحان کن.'
           : 'No suggestions this time. Try again.');
-      return;
+      return null;
     }
     final c = context.appColors;
     final picked = await showModalBottomSheet<String>(
@@ -2644,11 +2648,13 @@ Now respond to: "$sentence"
         ),
       ),
     );
-    if (picked == null || !mounted) return;
+    if (picked == null || !mounted) return null;
+    if (forCall) return picked;
     setState(() {
       _input.text = picked;
       _input.selection = TextSelection.collapsed(offset: picked.length);
     });
+    return null;
   }
 
   /// نوارِ «راهنما» + (در شروعِ چت) جمله‌های آمادهٔ شخصیت.
