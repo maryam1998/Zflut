@@ -2360,7 +2360,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final m = (_secs ~/ 60).toString().padLeft(2, '0');
     final s = (_secs % 60).toString().padLeft(2, '0');
     return Container(
-      height: 380,
+      height: 440,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         gradient: LinearGradient(
@@ -3161,7 +3161,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       children: [
         // ── «ویدیو» ──
         Container(
-          height: 380,
+          height: 440,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
@@ -3291,17 +3291,31 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               // پایین: زیرنویس (با دکمه‌ی CC روشن/خاموش می‌شود؛ اصلاحیه‌ی جمله همیشه دیده می‌شود)
               if (_cc || _fixes.isNotEmpty)
               Positioned(
-                left: 10,
-                right: 10,
-                bottom: 10,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.fromLTRB(14, 34, 14, 12),
                   decoration: BoxDecoration(
-                    color: Colors.black45,
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.55),
+                        Colors.black.withOpacity(0.86),
+                      ],
+                      stops: const [0.0, 0.45, 1.0],
+                    ),
                   ),
-                  child: Column(
+                  // ارتفاعِ زیرنویس محدود است تا هرگز بالا نیاید و روی چهره نیفتد
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 118),
+                    child: ClipRect(
+                      child: SingleChildScrollView(
+                        reverse: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -3401,6 +3415,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                               fontSize: 11.5),
                         ),
                     ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -3458,52 +3475,6 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         ),
         const SizedBox(height: 10),
 
-        // ── راهنما (چی بگم؟) ──
-        if (widget.onHint != null) ...[
-          Center(
-            child: Material(
-              color: c.gold.withOpacity(0.14),
-              borderRadius: BorderRadius.circular(20),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: (_hintLoading ||
-                        _phase == _Phase.ringing ||
-                        _phase == _Phase.thinking ||
-                        _phase == _Phase.transcribing)
-                    ? null
-                    : _askHint,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: c.gold),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.lightbulb_outline_rounded,
-                          size: 16, color: c.gold),
-                      const SizedBox(width: 6),
-                      Text(
-                        _hintLoading
-                            ? _tr(context, 'در حال فکر کردن…', 'Thinking…')
-                            : _tr(context, 'راهنما: چی بگم؟',
-                                'Hint: what do I say?'),
-                        style: TextStyle(
-                            color: c.ink,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-
         // ── کنترل‌ها ──
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -3516,6 +3487,34 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 if (_muted) _stopSpeaking();
               },
             ),
+            // راهنما (چی بگم؟) — آیکونِ لامپِ کوچک؛ منو در پایین باز می‌شود نه روی ویدیو
+            if (widget.onHint != null)
+              Opacity(
+                opacity: (_hintLoading ||
+                        _phase == _Phase.ringing ||
+                        _phase == _Phase.thinking ||
+                        _phase == _Phase.transcribing)
+                    ? 0.45
+                    : 1,
+                child: _circleBtn(
+                  icon: _hintLoading
+                      ? Icons.more_horiz_rounded
+                      : Icons.lightbulb_outline_rounded,
+                  tip: _tr(context, 'راهنما: چی بگم؟', 'Hint: what do I say?'),
+                  size: 38,
+                  bg: c.gold.withOpacity(0.18),
+                  fg: c.gold,
+                  onTap: () {
+                    if (_hintLoading ||
+                        _phase == _Phase.ringing ||
+                        _phase == _Phase.thinking ||
+                        _phase == _Phase.transcribing) {
+                      return;
+                    }
+                    _askHint();
+                  },
+                ),
+              ),
             // میکروفون
             GestureDetector(
               onTap: canMic ? _onMicTap : null,
