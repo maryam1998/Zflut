@@ -179,6 +179,50 @@ const Map<String, List<String>> _kLocalOpeners = {
   ],
 };
 
+/// 💬 جمله‌های آماده‌ی شروعِ چت برای هر شخصیت (انگلیسی؛ به زبانِ تمرین ترجمه و کش می‌شوند).
+const Map<String, List<String>> _kStarters = {
+  'jimmy': [
+    'Hi Sara! How are you today?',
+    'Can you help me practice speaking?',
+    'What should we talk about today?',
+  ],
+  'ryan': [
+    "Hey Ryan! What's up?",
+    'How was your day?',
+    'Did you do anything fun this weekend?',
+  ],
+  'emma': [
+    'Hi! Can I have a coffee, please?',
+    'What do you recommend?',
+    'How much is a latte?',
+  ],
+  'daniel': [
+    'Hello, thank you for meeting me.',
+    "I'm here for the job interview.",
+    'Can I tell you a little about myself?',
+  ],
+  'sofia': [
+    'Hello, I have a reservation.',
+    'Could I check in, please?',
+    'What time is breakfast?',
+  ],
+  'alex': [
+    'Hey Anna! What are you up to?',
+    'Any plans for the weekend?',
+    'Tell me something fun about your day!',
+  ],
+  'drlee': [
+    "Hello doctor, I don't feel well.",
+    'I have had a headache since yesterday.',
+    'Can you help me, please?',
+  ],
+  '_': [
+    'Hi! Nice to meet you.',
+    'Can we talk a little?',
+    'Tell me about yourself.',
+  ],
+};
+
 String _localOpener(String langCode) {
   final list = _kLocalOpeners[langCode.split('-').first.toLowerCase()] ??
       _kLocalOpeners['en']!;
@@ -938,6 +982,11 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   bool _loading = false;
   String _error = '';
   String _chatLang = 'en';
+
+  // 💡 راهنما (پیشنهادِ جمله) + جمله‌های آمادهٔ شروع
+  bool _hintBusy = false;
+  final Map<String, List<String>> _starterCache = {};
+  final Set<String> _starterLoading = {};
   List<_Correction> _corrections = [];
   bool _correctionsSaved = false;
   String? _failedText;
@@ -1901,6 +1950,9 @@ Now respond to: "$sentence"
       // ── منطقه‌ی چت ──
       _chatArea(c),
 
+      // ── راهنما (چی بگم؟) + جمله‌های آمادهٔ شروع ──
+      if (!_embedded && !_callMode) _assistRow(c, hasReal, lang),
+
       // ── کاربرِ رایگان: نمونه‌ی آماده‌ی چت و تماس ──
       if (!ProStatus.isPro && !_embedded) _demoButton(c),
 
@@ -2449,6 +2501,224 @@ Now respond to: "$sentence"
     return GestureDetector(
       onLongPress: (_loading || editing) ? null : () => _enterSelect(idx),
       child: row,
+    );
+  }
+
+  bool get _faUi => ref.read(appPrefsProvider).uiLang == 'fa';
+
+  /// جمله‌های شروعِ این شخصیت به زبانِ تمرین (ترجمه‌ی رایگان + کش؛ تا آماده شدن خالی).
+  List<String> _starterList(String lang) {
+    final key = '${_persona.id}|$lang';
+    final cached = _starterCache[key];
+    if (cached != null) return cached;
+    final base = _kStarters[_persona.id] ?? _kStarters['_']!;
+    if (lang == 'en') return base;
+    if (_starterLoading.add(key)) _loadStarters(key, base, lang);
+    return const [];
+  }
+
+  Future<void> _loadStarters(String key, List<String> base, String lang) async {
+    final out = <String>[];
+    for (final t in base) {
+      try {
+        final r = decodeHtmlEntities((await ref
+                .read(translationServiceProvider)
+                .translate(
+                  text: t,
+                  targetLang: lang,
+                  sourceLang: 'en',
+                  aiSettings: ref.read(aiSettingsProvider),
+                ))
+            .trim());
+        out.add(r.isEmpty ? t : r);
+      } catch (_) {
+        out.add(t);
+      }
+    }
+    _starterLoading.remove(key);
+    if (!mounted) return;
+    setState(() => _starterCache[key] = out);
+  }
+
+  /// 💡 «چی بگم؟» — AI سه جمله‌ی پیشنهادی (به زبانِ تمرین + معنی به زبانِ مادری) می‌دهد.
+  Future<void> _showHint() async {
+    if (_hintBusy || _loading) return;
+    if (FreeLimit.blockUnlessPro()) return; // 🔒 فقط Pro (هزینه‌ی AI)
+    final lang = _activeLang();
+    final langLabel = _enName(lang);
+    final native = ref.read(languageSelectionProvider).native;
+    final nativeLabel = _enName(native);
+    setState(() => _hintBusy = true);
+    List<List<String>> hints = [];
+    try {
+      final r = await _callAi(
+          '${_persona.partnerIntro(langLabel)}\n'
+          'The $langLabel learner (native language: $nativeLabel) is stuck and does '
+          'not know what to say next. Suggest 3 different short replies THEY could '
+          'say to you now in $langLabel: simple, natural, easy for a beginner, '
+          'each with a different intent (answer / ask back / react). If the '
+          'conversation has not started, suggest 3 ways to start it.\n'
+          'Output EXACTLY 3 lines, each in this format: '
+          '<$langLabel sentence> ||| <its $nativeLabel translation>\n'
+          'No numbering, no markdown, no extra text.\n'
+          'Recent conversation:\n${_historyText(_messages)}\n',
+          260);
+      for (final line in _normalizeAiText(r).split('\n')) {
+        final parts = line.split('|||');
+        if (parts.length < 2) continue;
+        final a = parts[0].replaceAll(RegExp(r'^[\s\-*\d.)]+'), '').trim();
+        final b = parts.sublist(1).join(' ').trim();
+        if (a.isNotEmpty) hints.add([a, b]);
+        if (hints.length == 3) break;
+      }
+    } catch (_) {
+      hints = [];
+    }
+    if (!mounted) return;
+    setState(() => _hintBusy = false);
+    if (hints.isEmpty) {
+      setState(() => _error = _faUi
+          ? 'پیشنهادی پیدا نشد؛ دوباره امتحان کن.'
+          : 'No suggestions this time. Try again.');
+      return;
+    }
+    final c = context.appColors;
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: c.paper,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                _faUi ? 'نمی‌دانی چی بگی؟ یکی را انتخاب کن' : 'Not sure what to say? Pick one',
+                style: TextStyle(
+                    color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 10),
+              for (final h in hints)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: c.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => Navigator.of(ctx).pop(h[0]),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: c.cardBorder),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Directionality(
+                              textDirection: TextDirection.ltr,
+                              child: Text(h[0],
+                                  style: TextStyle(
+                                      color: c.ink,
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.w700)),
+                            ),
+                            if (h[1].isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(h[1],
+                                  style: TextStyle(
+                                      color: c.inkSoft, fontSize: 12.5)),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _input.text = picked;
+      _input.selection = TextSelection.collapsed(offset: picked.length);
+    });
+  }
+
+  /// نوارِ «راهنما» + (در شروعِ چت) جمله‌های آمادهٔ شخصیت.
+  Widget _assistRow(AppThemeColorsExt c, bool hasReal, String lang) {
+    final starters = hasReal || _loading ? const <String>[] : _starterList(lang);
+    Widget chip(String label, VoidCallback? onTap,
+        {IconData? icon, bool filled = false}) {
+      return Material(
+        color: filled ? c.gold.withOpacity(0.14) : c.surface,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: filled ? c.gold : c.cardBorder),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 15, color: c.gold),
+                  const SizedBox(width: 5),
+                ],
+                Flexible(
+                  child: Text(label,
+                      style: TextStyle(
+                          color: c.ink,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (starters.isNotEmpty) ...[
+          Text(_faUi ? 'برای شروع بزن:' : 'Tap to start:',
+              style: TextStyle(color: c.inkSoft, fontSize: 12)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            textDirection: TextDirection.ltr,
+            children: [
+              for (final t in starters)
+                chip(t, _loading ? null : () => _ask(t, _messages)),
+            ],
+          ),
+          const SizedBox(height: 10),
+        ],
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: chip(
+            _hintBusy
+                ? (_faUi ? 'در حال فکر کردن…' : 'Thinking…')
+                : (_faUi ? 'راهنما: چی بگم؟' : 'Hint: what do I say?'),
+            _hintBusy ? null : _showHint,
+            icon: Icons.lightbulb_outline_rounded,
+            filled: true,
+          ),
+        ),
+      ],
     );
   }
 
