@@ -24,7 +24,7 @@ class TargetTextPrefs {
 
   const TargetTextPrefs({
     this.scale = 100,
-    this.bold = TargetBoldMode.both,
+    this.bold = TargetBoldMode.none, // پیش‌فرض: بدونِ بولد
     this.sentenceGap = defaultSentenceGap,
     this.langGap = defaultLangGap,
   });
@@ -60,7 +60,7 @@ class TargetTextPrefs {
       scale: (json['scale'] is num) ? (json['scale'] as num).toInt() : 100,
       bold: TargetBoldMode.values.firstWhere(
         (b) => b.name == boldName,
-        orElse: () => TargetBoldMode.both,
+        orElse: () => TargetBoldMode.none,
       ),
       sentenceGap: gap('sentenceGap', defaultSentenceGap, minSentenceGap,
           maxSentenceGap),

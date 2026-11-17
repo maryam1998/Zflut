@@ -17,6 +17,7 @@ import '../player_sync/playback_origin.dart';
 import '../player_sync/player_sync_provider.dart';
 import '../providers/speech_provider.dart';
 import '../storage/local_storage.dart';
+import '../tts/speech_controller.dart' show SpeechController;
 import '../tts/speech_state.dart';
 
 enum ListenSource { yt, audio, tts }
@@ -396,6 +397,12 @@ final listeningStatsProvider =
     if (!inScope) {
       // هنوز همان پخش است (تب عوض شده) → ثانیه‌ها به تبِ مبدأ حساب شود، بدونِ آیتم
       if (originKeys.contains(sp.key)) return (route: o.route, point: null);
+      // 🌐 خوانشِ ترجمه (زبانِ مبدأ/مقصد) ادامه‌ی همان پخش است → مالِ همان تب
+      // (قبلاً چون این کلید جزو تراک‌ها نبود، به‌اشتباه در «پلیر برنامه (سایر)» می‌رفت)
+      if (sp.key == SpeechController.translationReadKey) {
+        originKeys.add(sp.key!);
+        return (route: o.route, point: null);
+      }
       return null;
     }
     originKeys.add(sp.key!);
