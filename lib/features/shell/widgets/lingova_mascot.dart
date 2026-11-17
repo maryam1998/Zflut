@@ -72,7 +72,10 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
   bool _paused = false;
   bool _playing = false;
   bool _lastPinned = false;
-  double _look = 0; // ۰ = سرِ نیمرخ، ۱ = سرِ روبرو (نگاه به کاربر)
+  double _look = 1; // ۱ = سرِ نیمرخ، ۰ = سرِ روبرو (نگاه به کاربر)
+  double _phase = 0; // فازِ گام (بر اساسِ مسافت)
+  double _walkK = 0; // ۰ = ایستاده، ۱ = قدم زدن
+  double _lastX = 0;
   double _alertK = 0; // ۰ = دست پایین، ۱ = دستِ اشاره‌گر (تذکر)
   int _lastTickMs = 0;
 
@@ -241,8 +244,17 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
     final idleFor = now - MascotActivity.last - _kIdleMs;
     final glance = idleFor > 0 && (idleFor % 4800) < 2800;
     final wantFront = _paused || _mode == _Mode.alert || glance;
-    final lookStep = dt / 240.0;
-    _look = (_look + (wantFront ? lookStep : -lookStep)).clamp(0.0, 1.0).toDouble();
+    // چرخشِ سر کمی کندتر تا ۱۴ فریمِ کره نرم دیده شوند
+    final lookStep = dt / 420.0;
+    _look = (_look + (wantFront ? -lookStep : lookStep)).clamp(0.0, 1.0).toDouble();
+
+    // فازِ گام با مسافتِ واقعی جلو می‌رود (پا روی زمین نمی‌لغزد)
+    final moved = (_x - _lastX).abs();
+    _lastX = _x;
+    final moving = moved > 0.02 && moved < 6;
+    if (moving) _phase += moved / kMascotCyclePx;
+    final walkStep = dt / 180.0;
+    _walkK = (_walkK + (moving ? walkStep : -walkStep)).clamp(0.0, 1.0).toDouble();
     final wantAlert = !_paused && _mode == _Mode.alert;
     final alertStep = dt / 200.0;
     _alertK = (_alertK + (wantAlert ? alertStep : -alertStep)).clamp(0.0, 1.0).toDouble();
@@ -414,9 +426,10 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
                   child: CustomPaint(
                     size: const Size(_kW, _kH),
                     painter: MascotPainter(
-                      walking: shown == _Mode.walk,
+                      phase: _phase,
+                      walkK: _walkK,
                       ms: _nowMs(),
-                      look: _look,
+                      turn: _look,
                       alertK: _alertK,
                     ),
                   ),
