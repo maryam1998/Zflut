@@ -42,6 +42,7 @@ const String _kChatKey = 'zflut-speaking-chat-v1';
 const String _kLangKey = 'zflut-speaking-lang-v1';
 const String _kHistKey = 'zflut-speaking-history-v1';
 const String _kAutoReadKey = 'zflut-speaking-autoread-v1';
+const String _kLevelKey = 'zflut-speaking-level-v1';
 // معرفیِ اولیه فقط یک‌بار در کلِ عمرِ برنامه؛ بعد از آن شروعِ گفتگو تصادفی است
 const String _kIntroKey = 'zflut-speaking-intro-v1';
 
@@ -999,6 +1000,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
 
   // خوانشِ خودکارِ جوابِ AI در چت (با تیک؛ ذخیره می‌شود)
   bool _autoReadOn = false;
+  String _userLevel = 'auto'; // سطحِ زبانِ گفتگو: auto یا A1..C2
 
   // تاریخچه
   String _sessionId = '';
@@ -1015,6 +1017,8 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   void initState() {
     super.initState();
     final ls = ref.read(localStorageProvider);
+    final lv = (ls.readJson(_kLevelKey)['level'] ?? 'auto').toString();
+    _userLevel = const ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].contains(lv) ? lv : 'auto';
     if (_embedded) {
       final s = _HistoryStore.find(ls, widget.historyId!);
       _sessionId = widget.historyId!;
@@ -1099,7 +1103,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     final topic = topics[math.Random().nextInt(topics.length)];
     try {
       final r = await _callAi(
-          '${_persona.partnerIntro(langLabel)}\n'
+          '${_persona.partnerIntro(langLabel)}\n${_levelPrompt()}'
           'You start the conversation yourself with a $langLabel learner '
           '(native language: $native). Ask ONE short, casual small-talk '
           'question in $langLabel, the kind people ask each other to begin a '
@@ -1308,6 +1312,116 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
         ref.read(speechControllerProvider.notifier), _persona, t, _activeLang()));
   }
 
+  /// 🎚️ قانونِ سطحِ زبان که به پرامپتِ AI اضافه می‌شود (خالی = خودکار).
+  String _levelPrompt() {
+    const rules = <String, String>{
+      'A1': 'Speak very simply, use basic vocabulary (A1 level), speak in short sentences (about 6-8 words), and speak slowly. Do not use idioms or phrasal verbs.',
+      'A2': 'Use simple everyday vocabulary (A2 level), short clear sentences and simple tenses. Avoid idioms, phrasal verbs and rare words.',
+      'B1': 'Use common vocabulary and clear, fairly short sentences (B1 level). Everyday topics are fine; avoid complex grammar and advanced idioms.',
+      'B2': 'Speak naturally at B2 level: a wider vocabulary, common idioms and phrasal verbs, and compound or complex sentences, at a moderate speed.',
+      'C1': 'Speak at C1 level: rich vocabulary, idioms, nuance and complex sentence structures, at a fluent natural pace.',
+      'C2': 'Speak at a native level (C2), use advanced vocabulary, idioms, and complex sentence structures. Speak at a normal native speed.',
+    };
+    final r = rules[_userLevel];
+    if (r == null) return '';
+    return 'LEARNER LEVEL (strict, applies to your own chat reply): $r '
+        'Keep this level in every reply; it overrides any other instruction '
+        'about vocabulary or complexity.\n';
+  }
+
+  /// انتخابِ سطحِ زبانِ گفتگو (برای چت و ویدیو کال؛ از پاسخِ بعدیِ AI اعمال می‌شود).
+  Future<void> _pickLevel() async {
+    final c = context.appColors;
+    const items = <List<String>>[
+      ['auto', 'خودکار', 'Auto', 'بدون محدودیتِ سطح', 'No level limit'],
+      ['A1', 'A1', 'A1', 'مبتدی: جمله‌های خیلی کوتاه و ساده', 'Beginner: very short, simple sentences'],
+      ['A2', 'A2', 'A2', 'ابتدایی: واژگان و جمله‌های روزمره', 'Elementary: everyday words and sentences'],
+      ['B1', 'B1', 'B1', 'متوسط: گفتگوی روان با گرامر ساده', 'Intermediate: clear chat, simple grammar'],
+      ['B2', 'B2', 'B2', 'بالاتر از متوسط: اصطلاحات رایج', 'Upper-intermediate: common idioms'],
+      ['C1', 'C1', 'C1', 'پیشرفته: واژگان غنی و جمله‌های پیچیده', 'Advanced: rich vocabulary, complex sentences'],
+      ['C2', 'C2', 'C2', 'سطحِ بومی: اصطلاحات و سرعتِ عادی', 'Native level: idioms, normal speed'],
+    ];
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: c.paper,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                _faUi ? 'سطحِ زبانِ گفتگو' : 'Conversation level',
+                style: TextStyle(
+                    color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _faUi
+                    ? 'هوش مصنوعی دقیقاً در همین سطح باهات حرف می‌زند.'
+                    : 'The AI will talk to you at exactly this level.',
+                style: TextStyle(color: c.inkSoft, fontSize: 12.5),
+              ),
+              const SizedBox(height: 10),
+              for (final it in items)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: _userLevel == it[0] ? c.goldSoft : c.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => Navigator.of(ctx).pop(it[0]),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: _userLevel == it[0]
+                                  ? c.gold
+                                  : c.cardBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 52,
+                              child: Text(_faUi ? it[1] : it[2],
+                                  style: TextStyle(
+                                      color: c.ink,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800)),
+                            ),
+                            Expanded(
+                              child: Text(_faUi ? it[3] : it[4],
+                                  style: TextStyle(
+                                      color: c.inkSoft, fontSize: 12.5)),
+                            ),
+                            if (_userLevel == it[0])
+                              Icon(Icons.check_circle_rounded,
+                                  size: 20, color: c.gold),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked == null || !mounted || picked == _userLevel) return;
+    setState(() => _userLevel = picked);
+    unawaited(ref
+        .read(localStorageProvider)
+        .writeJson(_kLevelKey, {'level': picked}));
+  }
+
   void _setAutoRead(bool v) {
     setState(() => _autoReadOn = v);
     unawaited(
@@ -1422,7 +1536,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     final nativeLabel = _enName(native);
     final prompt = '''
 ${_persona.coachIntro(langLabel)} Learner's native language: $nativeLabel.
-They wrote${writtenInNative ? ' (in $nativeLabel, not $langLabel)' : ''}: "$sentence"
+${_levelPrompt()}They wrote${writtenInNative ? ' (in $nativeLabel, not $langLabel)' : ''}: "$sentence"
 
 Rules:
 - Mistakes in $langLabel: one line per mistake at the very top, EXACTLY: FIX: <what they wrote> => <correct version> (use their exact wording; keep "FIX" and "=>" in English, never translate the tag).
@@ -1454,6 +1568,7 @@ Now respond to: "$sentence"
         'react to what they said and/or ask a short follow-up question, like a real '
         'chat message. Plain text only, no markdown, no numbered lists.\n'
         '${_callMode ? kCallRules : ''}\n'
+        '${_levelPrompt()}'
         '${_questionStyle()}'
         'Recent conversation:\n${_historyText(history)}\n';
     final result = await _callAi(prompt, 160);
@@ -1740,7 +1855,7 @@ Now respond to: "$sentence"
     final fallback = _persona.welcomeText(langLabel);
     try {
       final r = await _callAi(
-          '${_persona.partnerIntro(langLabel)}\n'
+          '${_persona.partnerIntro(langLabel)}\n${_levelPrompt()}'
           'A live video call with a $langLabel learner (native language: $native) '
           'has just connected. Greet them warmly in $langLabel in 1-2 short spoken '
           'sentences, say your name, and ask one simple question to start the '
@@ -1928,6 +2043,8 @@ Now respond to: "$sentence"
           busy: _loading,
           onPickPersona: _pickPersona,
           onModeChanged: _setCallMode,
+          level: _userLevel,
+          onLevelTap: _pickLevel,
         ),
 
       // ── ویدیو کال (در همان صفحه‌ی چت) ──
@@ -2557,6 +2674,7 @@ Now respond to: "$sentence"
     try {
       final r = await _callAi(
           '${_persona.partnerIntro(langLabel)}\n'
+          '${_userLevel == 'auto' ? '' : 'The suggested replies must match CEFR level $_userLevel (simple enough for a learner at that level to say).\n'}'
           'The $langLabel learner (native language: $nativeLabel) is stuck and does '
           'not know what to say next. Suggest 3 different short replies THEY could '
           'say to you now in $langLabel: simple, natural, easy for a beginner, '

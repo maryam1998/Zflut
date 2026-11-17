@@ -453,6 +453,10 @@ class SpeakingPersonaBar extends StatelessWidget {
   final VoidCallback onPickPersona;
   final ValueChanged<bool> onModeChanged;
 
+  /// سطحِ زبانِ گفتگو ('auto' یا A1..C2) و باز کردنِ انتخابِ آن (اختیاری).
+  final String level;
+  final VoidCallback? onLevelTap;
+
   const SpeakingPersonaBar({
     super.key,
     required this.persona,
@@ -460,6 +464,8 @@ class SpeakingPersonaBar extends StatelessWidget {
     required this.busy,
     required this.onPickPersona,
     required this.onModeChanged,
+    this.level = 'auto',
+    this.onLevelTap,
   });
 
   @override
@@ -607,6 +613,56 @@ class SpeakingPersonaBar extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
+          // ── سطحِ زبانِ گفتگو (A1–C2) ──
+          if (onLevelTap != null) ...[
+            InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: onLevelTap,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: c.paperDark,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: c.cardBorder),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.tune_rounded, size: 17, color: c.gold),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                          _tr(context, 'سطحِ زبانِ گفتگو', 'Conversation level'),
+                          style: TextStyle(
+                              color: c.ink,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700)),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: c.goldSoft,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                          level == 'auto' || level.isEmpty
+                              ? _tr(context, 'خودکار', 'Auto')
+                              : level,
+                          style: TextStyle(
+                              color: c.gold,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800)),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.keyboard_arrow_down_rounded,
+                        size: 18, color: c.gold),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           // ── سوئیچِ چت / ویدیو کال با نشانگرِ لغزنده ──
           Container(
             padding: const EdgeInsets.all(4),
