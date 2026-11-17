@@ -394,8 +394,8 @@ const List<_Step> _popupSteps = [
     Icons.bookmark_rounded,
     {'en': 'Save for next story', 'fa': 'ذخیره برای داستان بعدی'},
     {
-      'en': 'Select a word or a passage, then tap Save. The next story you generate is built around your saved words and sentences, so you learn them in context. They also stay in your dictionary and saved words, and you can delete them any time. Free users can save up to 2 words; more needs Pro.',
-      'fa': 'روی یک لغت یا محدوده‌ی متن بزن و «ذخیره» را انتخاب کن. داستان بعدی بر پایه‌ی همین لغت‌ها و جمله‌ها ساخته می‌شود تا آن‌ها را در بافت داستان بهتر یاد بگیری. در دیکشنری و لغت‌های ذخیره‌شده هم می‌مانند و هر وقت خواستی حذفشان می‌کنی. کاربر رایگان تا ۲ لغت می‌تواند ذخیره کند؛ بیشتر از آن نیاز به Pro دارد.',
+      'en': 'Select a word or a passage, then tap Save. The next story you generate is built around your saved words and sentences, so you learn them in context.',
+      'fa': 'روی یک لغت یا محدوده‌ی متن بزن و «ذخیره» را انتخاب کن. داستان بعدی بر پایه‌ی همین لغت‌ها و جمله‌ها ساخته می‌شود تا آن‌ها را در بافت داستان بهتر یاد بگیری.',
     },
   ),
   _Step(

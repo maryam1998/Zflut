@@ -16,6 +16,8 @@ import '../player_sync/player_track.dart' show PlayerTrack;
 import '../player_sync/sync_widgets.dart' show SyncAnchor, syncSpeakAdhoc;
 import '../tts/speech_state.dart';
 import 'selection_card.dart' show SelectableSyncText;
+import 'feature_coach.dart';
+import '../storage/local_storage.dart' show sharedPrefsProvider;
 import 'sync_item_card.dart' show NeuralPathButton;
 import '../theme/app_theme_colors.dart';
 
@@ -54,6 +56,7 @@ class WordExamplesPanel extends ConsumerStatefulWidget {
 }
 
 class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
+  final GlobalKey _makerKey = GlobalKey();
   List<WordExample> _examples = [];
   bool _generating = false;
   String? _refreshingId;
@@ -72,6 +75,21 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
     _examples = ref
         .read(wordExamplesStoreProvider)
         .load(widget.word, widget.langCode);
+    // 💡 اولین باری که مثال‌ساز دیده می‌شود (فقط بعد از تورِ اصلی)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      try {
+        if (!(ref.read(sharedPrefsProvider).getBool('zflut-tour-seen-v1') ??
+            false)) {
+          return;
+        }
+      } catch (_) {
+        return;
+      }
+      await showFeatureCoach(context, ref,
+          id: CoachId.exampleMaker, target: _makerKey);
+    });
     if (_examples.isEmpty) {
       // 💎 Pro: مثالِ اول خودکار می‌آید (اول از کشِ سراسری). رایگان: با زدنِ دکمه، مثال‌های آماده نشان داده می‌شود
       if (ProStatus.isPro) _generate(auto: true);
@@ -301,7 +319,9 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Spacer(),
-                InkWell(
+                KeyedSubtree(
+                  key: _makerKey,
+                  child: InkWell(
                   onTap: _generating ? null : _generate,
                   borderRadius: BorderRadius.circular(6),
                   child: Container(
@@ -338,6 +358,7 @@ class _WordExamplesPanelState extends ConsumerState<WordExamplesPanel> {
                       ],
                     ),
                   ),
+                ),
                 ),
                 if (g > 0) SizedBox(width: g),
               ],

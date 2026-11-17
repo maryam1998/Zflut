@@ -19,6 +19,7 @@ import '../translate/translation_service.dart';
 import '../../features/reader/widgets/neural_path_dialog.dart';
 import 'selection_card.dart';
 import 'feature_coach.dart';
+import '../storage/local_storage.dart' show sharedPrefsProvider;
 import 'word_examples_panel.dart';
 import '../providers/language_selection_provider.dart';
 
@@ -74,6 +75,7 @@ class SyncItemCard extends ConsumerStatefulWidget {
 
 class _SyncItemCardState extends ConsumerState<SyncItemCard> {
   bool _showAiExamples = false;
+  final GlobalKey _personalKey = GlobalKey();
 
   @override
   void initState() {
@@ -87,6 +89,23 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
             .load(widget.en, widget.lang)
             .isNotEmpty;
       } catch (_) {}
+    }
+    // 🏷️ اولین باری که یک لغتِ «شخصی» دیده می‌شود (فقط بعد از تورِ اصلی)
+    if (widget.isPersonal) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 700));
+        if (!mounted) return;
+        try {
+          if (!(ref.read(sharedPrefsProvider).getBool('zflut-tour-seen-v1') ??
+              false)) {
+            return;
+          }
+        } catch (_) {
+          return;
+        }
+        await showFeatureCoach(context, ref,
+            id: CoachId.personalWord, target: _personalKey);
+      });
     }
   }
 
@@ -202,11 +221,14 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                   ],
                   if (widget.isPersonal) ...[
                     const SizedBox(width: 6),
-                    _Badge(
-                      text: context.l10n.words_personal_badge,
-                      fg: Color(0xFFA34960),
-                      bg: Color(0x1FA34960),
-                      size: 10,
+                    KeyedSubtree(
+                      key: _personalKey,
+                      child: _Badge(
+                        text: context.l10n.words_personal_badge,
+                        fg: Color(0xFFA34960),
+                        bg: Color(0x1FA34960),
+                        size: 10,
+                      ),
                     ),
                   ],
                   // از راست به چپ: 🔊 ← 🧬

@@ -21,7 +21,7 @@ import '../theme/app_theme_colors.dart';
 //   ... ادامه‌ی کارِ دکمه ...
 // ═══════════════════════════════════════════════════════════════════
 
-enum CoachId { refreshTranslation, generateStory }
+enum CoachId { refreshTranslation, generateStory, personalWord, exampleMaker }
 
 class _Copy {
   final IconData icon;
@@ -96,6 +96,60 @@ const Map<CoachId, _Copy> _copies = {
       'de': 'Verstanden, erstellen',
       'fr': 'Compris, générer',
       'ar': 'فهمت، أنشئ',
+    },
+  ),
+  CoachId.personalWord: _Copy(
+    Icons.bookmark_rounded,
+    {
+      'en': 'Custom word',
+      'fa': 'لغت شخصی',
+      'es': 'Palabra personal',
+      'de': 'Eigenes Wort',
+      'fr': 'Mot personnel',
+      'ar': 'كلمة شخصية',
+    },
+    {
+      'en': 'This word or sentence is one of those you saved to build a story with.',
+      'fa': 'این لغت یا جمله از لغت‌هایی است که برای ساخت داستان ذخیره کرده‌ای.',
+      'es': 'Esta palabra o frase es una de las que guardaste para crear una historia.',
+      'de': 'Dieses Wort oder dieser Satz gehört zu denen, die du für eine Geschichte gespeichert hast.',
+      'fr': 'Ce mot ou cette phrase fait partie de ceux que vous avez enregistrés pour créer une histoire.',
+      'ar': 'هذه الكلمة أو الجملة من التي حفظتها لإنشاء قصة بها.',
+    },
+    {
+      'en': 'Got it',
+      'fa': 'فهمیدم',
+      'es': 'Entendido',
+      'de': 'Verstanden',
+      'fr': 'Compris',
+      'ar': 'فهمت',
+    },
+  ),
+  CoachId.exampleMaker: _Copy(
+    Icons.auto_awesome,
+    {
+      'en': 'Example maker',
+      'fa': 'مثال‌ساز',
+      'es': 'Generador de ejemplos',
+      'de': 'Beispiel-Generator',
+      'fr': 'Générateur d’exemples',
+      'ar': 'مولّد الأمثلة',
+    },
+    {
+      'en': 'Makes example sentences for this word, with translations into your languages. Tap again for a new example.',
+      'fa': 'برای این لغت جمله‌ی مثال می‌سازد و ترجمه‌اش را به زبان‌هایت نشان می‌دهد. با هر بار زدن، یک مثال تازه می‌آید.',
+      'es': 'Crea frases de ejemplo para esta palabra, con traducciones a tus idiomas. Toca de nuevo para otro ejemplo.',
+      'de': 'Erstellt Beispielsätze für dieses Wort, mit Übersetzungen in deine Sprachen. Tippe erneut für ein neues Beispiel.',
+      'fr': 'Crée des phrases d’exemple pour ce mot, avec traductions dans vos langues. Touchez à nouveau pour un nouvel exemple.',
+      'ar': 'ينشئ جمل أمثلة لهذه الكلمة مع ترجمتها إلى لغاتك. اضغط مرة أخرى لمثال جديد.',
+    },
+    {
+      'en': 'Got it',
+      'fa': 'فهمیدم',
+      'es': 'Entendido',
+      'de': 'Verstanden',
+      'fr': 'Compris',
+      'ar': 'فهمت',
     },
   ),
 };
