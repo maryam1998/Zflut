@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../native/native_bridge.dart';
+import '../player_sync/sync_widgets.dart' show syncSkipWord;
 import 'speech_controller.dart';
 import 'speech_state.dart';
 
@@ -27,6 +28,7 @@ class MediaNotificationSync {
   StreamSubscription<Map<String, dynamic>>? _cmdSub;
   Timer? _debounce;
   Timer? _rotTimer;
+  Timer? _hideTimer;
   int _rot = 0; // نوبتِ نمایشِ زبان‌های مقصد (نوتیفیکیشن فقط یک خط جا دارد)
   bool _multi = false;
   String _lastSig = '';
@@ -55,9 +57,12 @@ class MediaNotificationSync {
           unawaited(_ctl.togglePlayPause());
           break;
         case 'next':
+          // وسطِ خوانشِ ترجمه‌ها: لغتِ بعدی (نه زبانِ بعدیِ همین لغت)
+          if (syncSkipWord(1)) break;
           unawaited(_ctl.nextChunk());
           break;
         case 'prev':
+          if (syncSkipWord(-1)) break;
           unawaited(_ctl.prevChunk());
           break;
         case 'stop':
@@ -78,12 +83,32 @@ class MediaNotificationSync {
     if (_disposed) return;
     final nb = NativeBridge.instance;
     if (s.status == SpeechStatus.idle || s.key == null) {
+      // بینِ دو مرحله‌ی خوانش (مثلاً لغت ← ترجمه) لحظه‌ای idle می‌شود؛ فوراً مخفی نکن تا اسلاید ورق نخورد
+      if (s.key != null) {
+        _hideTimer ??= Timer(const Duration(milliseconds: 2500), () {
+          _hideTimer = null;
+          final st = _lastState;
+          if (_disposed || st == null) return;
+          if (st.status != SpeechStatus.idle && st.key != null) return;
+          if (_lastSig != 'hidden') {
+            _lastSig = 'hidden';
+            unawaited(NativeBridge.instance
+                .mediaNotifHide()
+                .catchError((_) => <String, dynamic>{}));
+          }
+        });
+        return;
+      }
+      _hideTimer?.cancel();
+      _hideTimer = null;
       if (_lastSig != 'hidden') {
         _lastSig = 'hidden';
         unawaited(nb.mediaNotifHide().catchError((_) => <String, dynamic>{}));
       }
       return;
     }
+    _hideTimer?.cancel();
+    _hideTimer = null;
     final playing = s.status == SpeechStatus.playing;
     String title;
     String sub;
@@ -99,10 +124,14 @@ class MediaNotificationSync {
         title = _heldTitle!;
         var nat = _clip(full, 140);
         if (nat.isEmpty || nat == _clip(title, 140)) nat = _heldNative ?? '';
+        // اگر همان ترجمه‌ای است که قبلاً زیرِ اسلاید بود، دقیقاً همان متن بماند (بدونِ ورق‌خوردن)
+        if (_heldNative != null && _norm(nat) == _norm(_heldNative!)) nat = _heldNative!;
         sub = counter.isEmpty ? nat : (nat.isEmpty ? counter : '$counter · $nat');
       } else {
         // ترجمه‌ی یکی از زبان‌های مقصد (مثلاً اسپانیایی) ← خط اول: متنِ همان زبان، خط دوم: ترجمه‌ی زبانِ مبدأِ کاربر
         title = _clip(full, 90);
+        // متنِ همین زبان با متنِ اسلاید یکی است ← همان اسلاید می‌ماند
+        if (_norm(title) == _norm(_heldTitle!)) title = _heldTitle!;
         var nat = _heldNative ?? '';
         if (nat.isEmpty) nat = _translationFor(full, s);
         sub = counter.isEmpty ? nat : (nat.isEmpty ? counter : '$counter · $nat');
@@ -151,6 +180,9 @@ class MediaNotificationSync {
     final i = k.indexOf('::');
     return (i < 0 ? k : k.substring(i + 2)).trim();
   }
+
+  String _norm(String t) =>
+      t.trim().replaceAll(RegExp(r'\s+'), ' ').replaceAll('…', '').toLowerCase();
 
   String _clip(String t, int max) {
     final c = t.trim().replaceAll(RegExp(r'\s+'), ' ');
@@ -274,6 +306,7 @@ class MediaNotificationSync {
     _disposed = true;
     _debounce?.cancel();
     _rotTimer?.cancel();
+    _hideTimer?.cancel();
     _removeListener?.call();
     _cmdSub?.cancel();
     if (NativeBridge.instance.isSupported) {

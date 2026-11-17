@@ -116,6 +116,7 @@ class SyncPlayScope extends ConsumerStatefulWidget {
 
 class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   late final String _scopeId = 'scope_${identityHashCode(this)}';
+  static final Set<_SyncPlayScopeState> _live = <_SyncPlayScopeState>{};
   late final PlayerSyncNotifier _notifier;
   Object? _registeredRevision;
   TrackMode? _registeredMode;
@@ -136,6 +137,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   void initState() {
     super.initState();
     _FrameWatch.ensure();
+    _live.add(this);
     _notifier = ref.read(playerSyncProvider.notifier);
     _ctrl = ref.read(speechControllerProvider.notifier);
     _pc = ProviderScope.containerOf(context, listen: false);
@@ -300,6 +302,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   @override
   void dispose() {
+    _live.remove(this);
     _revealTimer?.cancel();
     // 🔁 اگر «خواندن ترجمه‌ها» روشن است، خوانش بعد از ترکِ تب هم با ترجمه‌ها و همان صداها ادامه پیدا می‌کند
     final detached = _detachReading();
@@ -530,6 +533,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
               timeout: const Duration(seconds: 30)),
         ),
     ];
+    _bgItemId = id;
+    _bgTrackCode = track.code;
     _bgActive = true;
     ExamplesRegistry.bgDriving = true;
     final token = ++_bgToken;
@@ -814,6 +819,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   // ═══════════════ صفِ خوانشِ پس‌زمینه (لغت + مثال‌ها + ترجمه‌ها) ═══════════════
   bool _bgActive = false;
+  String? _bgItemId; // آیتمی که ترجمه‌هایش در صف خوانده می‌شود (برای «قبلی/بعدی»)
+  String? _bgTrackCode;
   int _bgToken = 0;
   Completer<bool>? _bgWait;
   String? _bgKey;
@@ -896,6 +903,8 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       }
     }
 
+    _bgItemId = cur.id;
+    _bgTrackCode = track.code;
     _bgActive = true;
     ExamplesRegistry.bgDriving = true;
     final token = ++_bgToken;
@@ -1097,6 +1106,27 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       return;
     }
     if (_bgSeen) w.complete(true);
+  }
+
+  /// ⏭/⏮ نوتیفیکیشن وسطِ خوانشِ ترجمه‌ها: به لغتِ بعدی/قبلیِ همین فهرست می‌رود (نه زبانِ بعدیِ همین لغت).
+  bool _skipWord(int dir) {
+    if (!_bgActive) return false;
+    final id = _bgItemId;
+    if (id == null) return false;
+    final sync = ref.read(playerSyncProvider);
+    final track = sync.tracks[_bgTrackCode ?? sync.mainCode];
+    if (track == null || track.spans.isEmpty) return false;
+    final i = track.spans.indexWhere((x) => x.id == id);
+    if (i < 0) return false;
+    final n = track.spans.length;
+    final span = track.spans[((i + dir) % n + n) % n];
+    _bgCancel();
+    SpeechController.translationReadKey = null;
+    _resumeSpanId = span.id;
+    _resumeCode = track.code;
+    _resumeFromHook = true;
+    _resumeMain();
+    return true;
   }
 
   void _bgCancel() {
@@ -1592,6 +1622,14 @@ class _BgStep {
 }
 
 
+/// ⏭/⏮ پلیرِ پس‌زمینه: اگر الان صفِ ترجمه‌ها در حال خواندن است، به لغتِ بعدی/قبلی می‌پرد و true برمی‌گرداند.
+bool syncSkipWord(int dir) {
+  for (final st in List<_SyncPlayScopeState>.of(_SyncPlayScopeState._live)) {
+    if (st.mounted && st._skipWord(dir)) return true;
+  }
+  return _DetachedReader._active?.skipWord(dir) ?? false;
+}
+
 /// آیا برنامه الان در پس‌زمینه است؟ (همان منطقِ `_inBackground` ویجتِ اسکوپ، برای خوانشگرِ مستقل از تب)
 bool _appInBackgroundNow() {
   if (_FrameWatch.recent) return false;
@@ -1625,6 +1663,7 @@ class _DetachedReader {
   bool _busy = false;
   int _token = 0;
   String? _trKey, _trItem, _trLang;
+  String? _curItem; // آیتمی که ترجمه‌هایش در حال خواندن است
   final Set<String> _own = <String>{};
   void Function()? _unlisten;
   Timer? _guard;
@@ -1807,6 +1846,7 @@ class _DetachedReader {
       {String? pendingKey, String? afterLang, bool skipLangs = false}) async {
     final token = ++_token;
     _busy = true;
+    _curItem = itemId;
     try {
       if (pendingKey != null) {
         _own.add(pendingKey);
@@ -1856,6 +1896,22 @@ class _DetachedReader {
     } finally {
       if (token == _token) _busy = false;
     }
+  }
+
+  /// ⏭/⏮ نوتیفیکیشن وسطِ خوانشِ ترجمه‌ها: لغتِ بعدی/قبلی (نه زبانِ بعدیِ همین لغت)
+  bool skipWord(int dir) {
+    final id = _curItem;
+    if (_dead || !_busy || id == null) return false;
+    final i = _main.spans.indexWhere((x) => x.id == id);
+    if (i < 0) return false;
+    final n = _main.spans.length;
+    final span = _main.spans[((i + dir) % n + n) % n];
+    _token++;
+    _busy = false;
+    _trKey = null;
+    SpeechController.translationReadKey = null;
+    _resumeMain(span.id);
+    return true;
   }
 
   void _resumeMain(String? id) {
