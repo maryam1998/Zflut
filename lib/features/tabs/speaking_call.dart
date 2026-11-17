@@ -436,6 +436,14 @@ class CallTurn {
   const CallTurn(this.spoken, this.fixes);
 }
 
+/// یک خط از تاریخچه‌ی زیرنویسِ تماس (برای کادر شیشه‌ای اسکرول‌پذیر)
+class _CcEntry {
+  final bool user; // true = کاربر، false = شخصیتِ AI
+  final String text;
+  CallFix? fix; // اصلاحیه‌ی جمله‌ی کاربر (در صورت وجود)
+  _CcEntry(this.user, this.text);
+}
+
 /// متنِ پاسخ بدون خط‌های «N. Instead of …» (برای خواندن با صدا).
 String callSpokenBody(String text) => text
     .split('\n')
@@ -2133,6 +2141,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   bool _hintLoading = false;
   bool _cc = false; // زیرنویس (CC) — پیش‌فرض خاموش
   final Map<String, String> _trCache = {}; // متن → ترجمه به زبانِ مادری
+  final List<_CcEntry> _hist = []; // تاریخچه‌ی زیرنویس
+  final ScrollController _ccScroll = ScrollController();
   final Set<String> _trBusy = {};
 
   bool _handsFree = true;
@@ -2187,6 +2197,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     _pulse.dispose();
     _level.dispose();
     _typeCtl.dispose();
+    _ccScroll.dispose();
     unawaited(_rec.dispose());
     _deleteFile(_recPath);
     try {
@@ -2325,11 +2336,27 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     }
   }
 
+  /// خط جدید به تاریخچه اضافه می‌شود و کادر به پایین اسکرول می‌کند.
+  void _ccAdd(bool user, String text) {
+    final t = text.trim();
+    if (t.isEmpty) return;
+    if (_hist.isNotEmpty && _hist.last.user == user && _hist.last.text == t) {
+      return;
+    }
+    _hist.add(_CcEntry(user, t));
+    if (_hist.length > 60) _hist.removeAt(0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_ccScroll.hasClients) return;
+      _ccScroll.animateTo(_ccScroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+    });
+  }
+
   void _prefetchTr() {
     if (!_cc || !mounted) return;
     final native = _nativeCode;
     if (native.isEmpty || native == widget.langCode) return;
-    for (final t in [_heard, _aiLine]) {
+    for (final t in [for (final e in _hist) e.text, _heard, _aiLine]) {
       final txt = t.trim();
       if (txt.isEmpty || _trCache.containsKey(txt) || _trBusy.contains(txt)) {
         continue;
@@ -2354,6 +2381,133 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       }());
     }
   }
+
+  /// محتوای کادر شیشه‌ای زیرنویس: تاریخچه‌ی اسکرول‌پذیر؛ آخرین خط پررنگ.
+  Widget _ccGlassBody(bool showTr, bool nativeRtl) {
+    final dir = nativeRtl ? TextDirection.rtl : TextDirection.ltr;
+
+    // CC خاموش: فقط اصلاحیه‌ی جمله (مثل قبل)
+    if (!_cc) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+        child: _fixLine(_fixes.first, 1.0),
+      );
+    }
+
+    if (_hist.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Text(
+          _tr(context, 'زیرنویسِ تماس این‌جا می‌آید…',
+              'Call captions will appear here…'),
+          style: TextStyle(
+              color: Colors.white.withOpacity(0.6), fontSize: 12),
+        ),
+      );
+    }
+
+    final lastIdx = _hist.length - 1;
+    final items = <Widget>[];
+    for (var i = 0; i < _hist.length; i++) {
+      final e = _hist[i];
+      final cur = i == lastIdx;
+      final op = cur ? 1.0 : 0.42; // جمله‌ی فعلی روشن، قبلی‌ها کم‌رنگ
+      final tr = showTr ? (_trCache[e.text.trim()] ?? '') : '';
+      final nameColor = e.user
+          ? Colors.white.withOpacity(op * 0.85)
+          : const Color(0xFFFCD34D).withOpacity(cur ? 1.0 : 0.5);
+      items.add(Padding(
+        padding: EdgeInsets.only(top: i == 0 ? 0 : 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text.rich(
+              TextSpan(children: [
+                TextSpan(
+                  text: e.user
+                      ? '${_tr(context, 'تو', 'You')}: '
+                      : '${widget.persona.name}: ',
+                  style: TextStyle(
+                      color: nameColor, fontWeight: FontWeight.w800),
+                ),
+                TextSpan(text: e.text),
+              ]),
+              style: TextStyle(
+                color: Colors.white.withOpacity(op),
+                fontSize: cur ? 14 : 12.5,
+                fontWeight: cur ? FontWeight.w700 : FontWeight.w400,
+                height: 1.35,
+              ),
+            ),
+            if (tr.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Directionality(
+                  textDirection: dir,
+                  child: Text(
+                    tr,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(cur ? 0.72 : 0.3),
+                      fontSize: cur ? 12 : 11,
+                      fontWeight: cur ? FontWeight.w600 : FontWeight.w400,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ),
+            if (e.fix != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: _fixLine(e.fix!, cur ? 1.0 : 0.45),
+              ),
+          ],
+        ),
+      ));
+    }
+
+    return ShaderMask(
+      // محو شدنِ لبه‌ی بالا تا بفهمیم تاریخچه‌ی بیشتری بالا هست
+      shaderCallback: (r) => const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0x00FFFFFF), Colors.white],
+        stops: [0.0, 0.14],
+      ).createShader(r),
+      blendMode: BlendMode.dstIn,
+      child: SingleChildScrollView(
+        controller: _ccScroll,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: items,
+        ),
+      ),
+    );
+  }
+
+  Widget _fixLine(CallFix f, double op) => Text.rich(
+        TextSpan(children: [
+          TextSpan(
+            text: f.original,
+            style: TextStyle(
+              color: const Color(0xFFFCA5A5).withOpacity(op),
+              decoration: TextDecoration.lineThrough,
+            ),
+          ),
+          TextSpan(
+              text: '  →  ',
+              style: TextStyle(color: Colors.white.withOpacity(0.7 * op))),
+          TextSpan(
+            text: f.corrected,
+            style: TextStyle(
+              color: const Color(0xFF86EFAC).withOpacity(op),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ]),
+        style: const TextStyle(fontSize: 12),
+      );
 
   Widget _endedView(AppThemeColorsExt c) {
     final base = widget.persona.colorValue;
@@ -2428,6 +2582,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     if (g != null && g.trim().isNotEmpty) {
       setState(() {
         _aiLine = g;
+        _ccAdd(false, g);
         _phase = _Phase.speaking;
       });
       await _speak(g);
@@ -2671,6 +2826,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final token = ++_turn;
     setState(() {
       _heard = t;
+      _ccAdd(true, t);
       _lastText = t;
       _phase = _Phase.thinking;
       _error = '';
@@ -2696,6 +2852,13 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     setState(() {
       _fixes = res.fixes;
       _aiLine = res.spoken;
+      for (var i = _hist.length - 1; i >= 0; i--) {
+        if (_hist[i].user) {
+          if (res.fixes.isNotEmpty) _hist[i].fix = res.fixes.first;
+          break;
+        }
+      }
+      _ccAdd(false, res.spoken);
       _phase = _Phase.speaking;
     });
     await _speak(res.spoken);
@@ -3288,139 +3451,33 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               ),
               if (photoFace == null)
                 Align(alignment: const Alignment(0, 0.3), child: _bars()),
-              // پایین: زیرنویس (با دکمه‌ی CC روشن/خاموش می‌شود؛ اصلاحیه‌ی جمله همیشه دیده می‌شود)
+              // پایین: کادر شیشه‌ایِ زیرنویس + تاریخچه (اسکرول‌پذیر، ارتفاع محدود)
+              // جمله‌ی فعلی پررنگ و روشن؛ جمله‌های قبلی کم‌رنگ‌تر
               if (_cc || _fixes.isNotEmpty)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(14, 34, 14, 12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.55),
-                        Colors.black.withOpacity(0.86),
-                      ],
-                      stops: const [0.0, 0.45, 1.0],
-                    ),
-                  ),
-                  // ارتفاعِ زیرنویس محدود است تا هرگز بالا نیاید و روی چهره نیفتد
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 118),
-                    child: ClipRect(
-                      child: SingleChildScrollView(
-                        reverse: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (_cc && _heard.isNotEmpty)
-                        Text('${_tr(context, 'تو', 'You')}: $_heard',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
-                                fontSize: 11)),
-                      if (_cc &&
-                          showTr &&
-                          (_trCache[_heard.trim()] ?? '').isNotEmpty)
-                        Directionality(
-                          textDirection:
-                              nativeRtl ? TextDirection.rtl : TextDirection.ltr,
-                          child: Text(_trCache[_heard.trim()]!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  color: Colors.white.withOpacity(0.5),
-                                  fontSize: 10.5)),
+                Positioned(
+                  left: 10,
+                  right: 10,
+                  bottom: 10,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.32),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.18),
+                              width: 1),
                         ),
-                      if (_fixes.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text.rich(
-                            TextSpan(children: [
-                              TextSpan(
-                                text: _fixes.first.original,
-                                style: const TextStyle(
-                                  color: Color(0xFFFCA5A5),
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                              ),
-                              const TextSpan(
-                                  text: '  →  ',
-                                  style: TextStyle(color: Colors.white70)),
-                              TextSpan(
-                                text: _fixes.first.corrected,
-                                style: const TextStyle(
-                                  color: Color(0xFF86EFAC),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ]),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      if (_cc && _aiLine.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 3),
-                          child: Text.rich(
-                            TextSpan(children: [
-                              TextSpan(
-                                text: '${widget.persona.name}: ',
-                                style: const TextStyle(
-                                    color: Color(0xFFFCD34D),
-                                    fontWeight: FontWeight.w800),
-                              ),
-                              TextSpan(text: _aiLine),
-                            ]),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12.5,
-                                height: 1.35),
-                          ),
-                        ),
-                      if (_cc &&
-                          showTr &&
-                          (_trCache[_aiLine.trim()] ?? '').isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Directionality(
-                            textDirection: nativeRtl
-                                ? TextDirection.rtl
-                                : TextDirection.ltr,
-                            child: Text(_trCache[_aiLine.trim()]!,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    color: Colors.white.withOpacity(0.6),
-                                    fontSize: 11,
-                                    height: 1.35)),
-                          ),
-                        ),
-                      if (_cc && _heard.isEmpty && _aiLine.isEmpty)
-                        Text(
-                          _tr(context, 'زیرنویسِ تماس این‌جا می‌آید…',
-                              'Call captions will appear here…'),
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
-                              fontSize: 11.5),
-                        ),
-                    ],
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 150),
+                          child: _ccGlassBody(showTr, nativeRtl),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
               // تصویرِ «خودت»
               PositionedDirectional(
                 end: 10,
