@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data' show Float64List;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -77,7 +78,7 @@ const _headBox = _Box(212, 47, 212, 212);
 // کفِ کفشِ هر پا در حالتِ PSD (مرجعِ کاشتنِ پا روی زمین)
 const Offset _footA = Offset(257.4, 585);
 const Offset _footB = Offset(363.1, 583);
-const double _stride = 58; // نیم‌گام: فاصله‌ی پا تا زیرِ لگن در ابتدا/انتهای تماس با زمین
+const double _stride = 44; // نیم‌گام (کوچک‌تر + گامِ سریع‌تر: هر فریمِ کلیدی ≈ ۰٫۱۵–۰٫۲ ثانیه): فاصله‌ی پا تا زیرِ لگن در ابتدا/انتهای تماس با زمین
 const double _stanceFrac = 0.6; // سهمِ فازِ تماسِ پا با زمین در یک چرخه
 const double _liftH = 22; // ارتفاعِ بلند شدنِ پا در فازِ آویز
 const double _groundY = 586; // خطِ زمین (مختصاتِ بوم)
@@ -91,6 +92,34 @@ const double kMascotCyclePx = (2 * _stride / _stanceFrac) * (35 / 530);
 const double _k = 35 / 530;
 const double _originX = 15 - 315 * _k;
 const double _originY = 0.5 - 57 * _k;
+
+// ───── هم‌اندازه کردنِ دو پا
+// تصویرِ پای راست (leg_b) در PSD ≈ ۱۲٪ کوتاه‌تر و کمی باریک‌تر از پای چپ (leg_a) است و همین باعث «لنگیدن» می‌شد.
+// leg_b دورِ لولای خودش در امتدادِ محورِ اصلیِ پا (۶۲٫۸°) ×۱٫۱۴ و در عرض ×۱٫۰۳ بزرگ می‌شود
+// تا طول و ضخامتش با leg_a یکی شود.
+const double _legBAxisDeg = 62.8;
+const double _legBAlong = 1.14;
+const double _legBAcross = 1.03;
+
+/// ماتریسِ ۲×۲ِ اصلاحِ اندازه‌ی یک پا: [m00, m01, m11] (m10 = m01)؛ پایی که نیاز ندارد null.
+List<double>? _legFix(String name) {
+  if (name != 'leg_b') return null;
+  final t = _legBAxisDeg * math.pi / 180;
+  final s = math.sin(t), c = math.cos(t);
+  return [
+    _legBAlong * c * c + _legBAcross * s * s,
+    (_legBAlong - _legBAcross) * s * c,
+    _legBAlong * s * s + _legBAcross * c * c,
+  ];
+}
+
+/// بردارِ لولا→کفِ پا بعد از اصلاحِ اندازه
+Offset _legR(String name, Offset hip, Offset foot) {
+  final r = foot - hip;
+  final m = _legFix(name);
+  if (m == null) return r;
+  return Offset(m[0] * r.dx + m[1] * r.dy, m[1] * r.dx + m[2] * r.dy);
+}
 
 class _Step {
   final double f; // جلو بودنِ پا نسبت به لگن (مثبت = رو به جلو)
@@ -169,7 +198,7 @@ class MascotPainter extends CustomPainter {
   void _leg(Canvas c, String name, Offset hip, Offset foot, _Step g, double drop) {
     final h = Offset(hip.dx, hip.dy + drop);
     final tgt = Offset(_hipCx - g.f, _groundY - g.lift);
-    final r = foot - hip;
+    final r = _legR(name, hip, foot);
     final t = tgt - h;
     final phi = math.atan2(t.dy, t.dx) - math.atan2(r.dy, r.dx);
     final cp = math.cos(phi), sp = math.sin(phi);
@@ -178,6 +207,15 @@ class MascotPainter extends CustomPainter {
     c.save();
     c.translate(h.dx + d.dx, h.dy + d.dy);
     c.rotate(phi);
+    final fix = _legFix(name);
+    if (fix != null) {
+      c.transform(Float64List.fromList(<double>[
+        fix[0], fix[1], 0, 0, //
+        fix[1], fix[2], 0, 0, //
+        0, 0, 1, 0, //
+        0, 0, 0, 1,
+      ]));
+    }
     c.translate(-hip.dx, -hip.dy);
     _img(c, name);
     c.restore();
@@ -196,14 +234,14 @@ class MascotPainter extends CustomPainter {
     final ga = _gait(phase, amp);
     final gb = _gait(phase + 0.5, amp);
     // لگن به اندازه‌ای پایین می‌آید که پای ثابت (که دورتر از زیرِ لگن است) کشیده شود → بالا/پایینِ طبیعی
-    double need(_Step g, Offset foot, Offset hip) {
+    double need(String nm, _Step g, Offset foot, Offset hip) {
       if (!g.stance) return -1e9;
-      final len = (foot - hip).distance;
+      final len = _legR(nm, hip, foot).distance;
       final dx = _hipCx - g.f - hip.dx; // فاصله‌ی افقیِ لگنِ این پا تا نقطه‌ی تماس
       return _groundY - math.sqrt(math.max(len * len - dx * dx, 1));
     }
 
-    final hy = math.max(need(ga, _footA, _hipA), need(gb, _footB, _hipB));
+    final hy = math.max(need('leg_a', ga, _footA, _hipA), need('leg_b', gb, _footB, _hipB));
     final drop = (hy - 463).clamp(-2.0, 16.0).toDouble();
     // نفس کشیدنِ آرام وقتی ایستاده
     final breath = (1 - walkK) * -1.4 * math.sin(2 * math.pi * (ms % 2600) / 2600);

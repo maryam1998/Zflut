@@ -143,7 +143,7 @@ class _LingovaMascotLayerState extends ConsumerState<LingovaMascotLayer>
   void _startLeg(double toX) {
     _target = toX;
     _facing = toX >= _x ? 1 : -1;
-    _speed = 0.45 + _rnd.nextDouble() * 0.3;
+    _speed = 0.55 + _rnd.nextDouble() * 0.2; // ۰٫۵۵–۰٫۷۵ → هر فریمِ کلیدیِ گام ≈ ۰٫۱۵–۰٫۲ ثانیه
     // 🎲 نقطه‌های تذکر تصادفی در «طولِ مسیر» (۱۵٪ تا ۸۵٪ راه) — نه فقط ابتدا/انتهای صفحه
     final legMs = ((toX - _x).abs() / _speed) * 45.0;
     final lo = math.max(_kLegMsgMinDelayMs.toDouble(), legMs * 0.15);
