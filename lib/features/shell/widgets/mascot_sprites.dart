@@ -204,7 +204,17 @@ class MascotPainter extends CustomPainter {
   /// فرو می‌رفت و یک‌بار نه ← «لنگیدن». حالا هر پا حولِ لولای خودش و با دامنه‌ی یکسان می‌چرخد
   /// (دو نیم‌گام دقیقاً قرینه‌ی هم). در حالتِ ایستاده (walkK=۰) همان حالتِ قبلی
   /// (پاها زیرِ _hipCx) می‌ماند و با شروعِ قدم زدن نرم عوض می‌شود.
-  double _reachDx(Offset hip, _Step g) =>
+  ///
+  /// ⚠️ اما اگر پاها حولِ لولای خودشان تاب بخورند، بازه‌ی حرکتِ کفِ پاها هم ۴۳ پیکسل از هم جدا
+  /// می‌شود: یک پا تا ۴۴ پیکسل جلوتر از مرکز می‌رفت و پای دیگر فقط تا نزدیکِ مرکز؛ نتیجه این‌که
+  /// یک پا «ثابت» دیده می‌شد و فقط پای دیگر جلو می‌رفت. پس «نقطه‌ی فرودِ کفِ پا» برای هر دو پا
+  /// دورِ یک مرکزِ مشترک (_hipCx) و با دامنه‌ی برابر می‌چرخد؛ هر پا همچنان حولِ لولای خودش
+  /// می‌چرخد (فقط زاویه‌اش عوض می‌شود). در ایستادن (f=۰) همان حالتِ قبلی است.
+  double _reachDx(Offset hip, _Step g) => (_hipCx - hip.dx) - g.f;
+
+  /// فاصله‌ی افقیِ نقطه‌ی تماس تا لولا فقط برای محاسبه‌ی «پایین آمدنِ لگن» (همان فرمولِ قبلی؛
+  /// نوسانِ لگن بدونِ تغییر می‌ماند).
+  double _needDx(Offset hip, _Step g) =>
       (_hipCx - hip.dx) * (1 - walkK) - g.f;
 
   void _leg(Canvas c, String name, Offset hip, Offset foot, _Step g, double drop) {
@@ -249,7 +259,7 @@ class MascotPainter extends CustomPainter {
     double need(String nm, _Step g, Offset foot, Offset hip) {
       if (!g.stance) return -1e9;
       final len = _legR(nm, hip, foot).distance;
-      final dx = _reachDx(hip, g); // فاصله‌ی افقیِ لگنِ این پا تا نقطه‌ی تماس
+      final dx = _needDx(hip, g); // فاصله‌ی افقیِ لگنِ این پا تا نقطه‌ی تماس
       return _groundY - math.sqrt(math.max(len * len - dx * dx, 1));
     }
 
