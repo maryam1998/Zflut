@@ -340,7 +340,11 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
 class AiBubbleActions extends ConsumerWidget {
   final String text;
   final String? sourceLang;
-  const AiBubbleActions({super.key, required this.text, this.sourceLang});
+
+  /// اگر داده شود، 🔊 به‌جای خوانشِ پیش‌فرض این را صدا می‌زند (مثلاً صدای هم‌جنسِ شخصیت).
+  final void Function(String plain)? onSpeak;
+  const AiBubbleActions(
+      {super.key, required this.text, this.sourceLang, this.onSpeak});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -354,8 +358,14 @@ class AiBubbleActions extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           InkResponse(
-            onTap: () =>
-                ref.read(speechControllerProvider.notifier).toggle(plain, lang),
+            onTap: () {
+              final cb = onSpeak;
+              if (cb != null) {
+                cb(plain);
+              } else {
+                ref.read(speechControllerProvider.notifier).toggle(plain, lang);
+              }
+            },
             radius: 16,
             child: Padding(
               padding: const EdgeInsets.all(4),

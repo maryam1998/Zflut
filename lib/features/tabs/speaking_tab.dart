@@ -44,7 +44,24 @@ const String _kHistKey = 'zflut-speaking-history-v1';
 const String _kAutoReadKey = 'zflut-speaking-autoread-v1';
 const String _kLevelKey = 'zflut-speaking-level-v1';
 const String _kLevelUpKey = 'zflut-speaking-levelup-v1';
-const int _kLevelUpAfter = 10; // پیامِ پشتِ‌هم‌ِ (تقریباً) بی‌غلط تا پیشنهادِ ارتقا
+const int _kLevelUpAfter = 10; // پیامِ پشتِ‌هم‌ِ (تقریباً) بی‌غلط تا پیشنهادِ ارتقا (A1→A2)
+
+/// تعدادِ نوبتِ موفقِ پشتِ‌هم برای پیشنهادِ ارتقا از هر سطح:
+/// A1→A2: ۱۰ · A2→B1: ۱۵ · B1→B2: ۲۰ · B2→C1: ۲۵ · C1→C2: ۳۰
+int _levelUpAfterFor(String level) {
+  switch (level) {
+    case 'A2':
+      return 15;
+    case 'B1':
+      return 20;
+    case 'B2':
+      return 25;
+    case 'C1':
+      return 30;
+    default:
+      return _kLevelUpAfter;
+  }
+}
 // معرفیِ اولیه فقط یک‌بار در کلِ عمرِ برنامه؛ بعد از آن شروعِ گفتگو تصادفی است
 const String _kIntroKey = 'zflut-speaking-intro-v1';
 
@@ -1008,6 +1025,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
 
   // 💡 راهنما (پیشنهادِ جمله) + جمله‌های آمادهٔ شروع
   bool _hintBusy = false;
+  String? _hintPicked; // آخرین جمله‌ای که از راهنما آمد (برای کنار گذاشتنِ آن نوبت از شمارشِ ارتقا)
   final Map<String, List<String>> _starterCache = {};
   final Set<String> _starterLoading = {};
   List<_Correction> _corrections = [];
@@ -1388,12 +1406,15 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   }
 
   /// بعد از هر پاسخِ موفقِ AI صدا زده می‌شود (چت و ویدیو کال).
-  void _trackLevelProgress(List<_Correction> fixes) {
+  /// [viaHint] = true: جمله از «راهنما» آمده (پیشنهادِ AI یا ترجمه‌ی AI)؛ این نوبت
+  /// نه حساب می‌شود و نه شمارنده را صفر می‌کند.
+  void _trackLevelProgress(List<_Correction> fixes, {bool viaHint = false}) {
     if (_embedded || !mounted || _userLevel == 'auto') return;
+    if (viaHint) return;
     final id = _persona.id;
     var count = _lvlProg[id]?[0] ?? 0;
     var minor = _lvlProg[id]?[1] ?? 0;
-    if (count >= _kLevelUpAfter) return; // پیشنهاد منتظرِ جوابِ کاربر است
+    if (count >= _levelUpAfterFor(_userLevel)) return; // پیشنهاد منتظرِ جوابِ کاربر است
     if (fixes.isEmpty) {
       count++;
     } else if (fixes.length == 1 && _isMinorFix(fixes.first)) {
@@ -1415,7 +1436,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   bool get _showLevelUp =>
       !_embedded &&
       _userLevel != 'auto' &&
-      (_lvlProg[_persona.id]?[0] ?? 0) >= _kLevelUpAfter;
+      (_lvlProg[_persona.id]?[0] ?? 0) >= _levelUpAfterFor(_userLevel);
 
   void _levelUpNo() {
     setState(() => _lvlProg[_persona.id] = [0, 0]);
@@ -1938,6 +1959,9 @@ Now respond to: "$sentence"
   Future<void> _ask(String text, List<_Msg> history) async {
     if (FreeLimit.blockUnlessPro()) return; // 🔒 فقط Pro
     final lang = _activeLang();
+    // آیا این نوبت همان جمله‌ی راهنماست؟ (ویرایش‌شده = از خودِ کاربر)
+    final viaHint = _hintPicked != null && _hintPicked == text.trim();
+    if (!viaHint) _hintPicked = null;
     setState(() {
       _editIdx = null;
       _selectMode = false;
@@ -1962,7 +1986,7 @@ Now respond to: "$sentence"
         _failedText = null;
         _failedHistory = null;
       });
-      _trackLevelProgress(r.corrections);
+      _trackLevelProgress(r.corrections, viaHint: viaHint);
       _autoRead(r.text);
       unawaited(_maybeSummarize()); // 🧠 پس‌زمینه؛ جوابِ کاربر را معطل نمی‌کند
     } catch (_) {
@@ -2761,7 +2785,16 @@ Now respond to: "$sentence"
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: content),
-              AiBubbleActions(text: m.text, sourceLang: _activeLang()),
+              AiBubbleActions(
+                text: m.text,
+                sourceLang: _activeLang(),
+                // 🔊 با صدای خودِ شخصیت (هم‌جنس) خوانده شود
+                onSpeak: (t) => unawaited(PersonaVoice.speak(
+                    ref.read(speechControllerProvider.notifier),
+                    _persona,
+                    t,
+                    _activeLang())),
+              ),
             ],
           ),
           // خطِ‌چین + چیپ‌های ترجمه داخلِ کادر
@@ -3085,6 +3118,7 @@ Now respond to: "$sentence"
       )),
     );
     if (picked == null || !mounted) return null;
+    _hintPicked = picked.trim();
     if (forCall) return picked;
     setState(() {
       _input.text = picked;
