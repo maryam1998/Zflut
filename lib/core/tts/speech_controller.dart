@@ -38,6 +38,15 @@ class ChunkPlayedEvent {
 /// نتیجه‌ی یک بار خوانش با Web Speech
 enum _Once { ok, silent, noStart, cancelled, failed }
 
+
+/// 🔎 [ZFLUT-DBG] فقط لاگِ تشخیصی — رفتارِ پخش را تغییر نمی‌دهد.
+void _dbg(String what) {
+  try {
+    final st = StackTrace.current.toString().split('\n').skip(2).take(9).join('\n');
+    debugPrint('ZFLUT-DBG $what\n$st');
+  } catch (_) {}
+}
+
 class SpeechController extends StateNotifier<SpeechState> {
   /// [voicePref]: صدای ذخیره‌شده‌ی کاربر برای یک زبان (نام صدا) — اختیاری
   SpeechController({
@@ -403,6 +412,7 @@ class SpeechController extends StateNotifier<SpeechState> {
     List<int>? sentenceBoundaries,
   }) async {
     final newKey = '${TtsConfig.locale[code] ?? 'en-US'}::$text';
+    _dbg('START-NEW-TEXT code=$code len=${text.length} offset=$startCharOffset oldKey=$_currentKey');
     _generation++;
     await _stopAll();
 
@@ -520,6 +530,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   }
 
   Future<void> stop() async {
+    _dbg('STOP key=$_currentKey chunk=$_chunkIndex');
     _generation++;
     await _stopAll();
     _heldByPanel = false;
@@ -708,6 +719,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   }
 
   Future<void> _pause() async {
+    _dbg('PAUSE key=$_currentKey chunk=$_chunkIndex heldByPanel=$_heldByPanel');
     _generation++;
     _cancelWaiters();
     _lastStopAt = DateTime.now();
@@ -756,6 +768,7 @@ class SpeechController extends StateNotifier<SpeechState> {
         return;
       }
       _chunkIndex = 0;
+      debugPrint('ZFLUT-DBG END-OF-TEXT key=$_currentKey loop=$_loop');
       state = state.copyWith(
           status: SpeechStatus.idle, chunkIndex: 0, charOffset: 0);
       return;
@@ -1397,7 +1410,10 @@ class SpeechController extends StateNotifier<SpeechState> {
         } catch (e) {
           debugPrint('chunkAdvanceHook error: $e');
         }
-        if (taken) return;
+        if (taken) {
+          debugPrint('ZFLUT-DBG hook took over at chunk=$idx key=$_currentKey hook=${h.runtimeType}');
+          return;
+        }
       }
     }
     unawaited(_playFrom(idx + 1));
