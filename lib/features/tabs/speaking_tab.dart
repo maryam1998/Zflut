@@ -456,8 +456,8 @@ String _compactCoach(String text) {
   return s.length > 400 ? s.substring(0, 400) : s;
 }
 
-String _historyText(List<_Msg> history) {
-  final from = math.max(0, history.length - 4);
+String _historyText(List<_Msg> history, {int keep = 4}) {
+  final from = math.max(0, history.length - keep);
   return history.sublist(from).map((m) {
     if (m.role == 'ai') return 'Coach: ${_compactCoach(m.text)}';
     final t = m.text.length > 300 ? m.text.substring(0, 300) : m.text;
@@ -994,6 +994,18 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   bool _correctionsSaved = false;
   String? _failedText;
   List<_Msg>? _failedHistory;
+
+  // 🧠 خلاصه‌سازیِ تاریخچه (فقط برای سبک ماندنِ پرامپت و سرعتِ پاسخ)
+  // بعد از بیش از ۱۰ پیام، هر ۶ نوبت (۱۲ پیام) پیام‌های قدیمی فشرده می‌شوند و
+  // برای پاسخ فقط «خلاصه + ۶ پیامِ آخر» فرستاده می‌شود.
+  static const int _kSumMinMsgs = 10; // شروع: بیشتر از ۱۰ پیام
+  static const int _kSumEveryMsgs = 12; // هر ۶ نوبت = ۱۲ پیام
+  static const int _kSumKeep = 6; // پیام‌های آخری که خام می‌مانند
+  String _sumText = '';
+  int _sumFolded = 0; // چند پیامِ اولِ گفتگو داخل خلاصه رفته‌اند
+  int _sumAtLen = 0; // طولِ گفتگو در آخرین خلاصه‌سازی
+  String _sumKey = ''; // شناسه‌ی گفتگو (متنِ اولین پیام) برای تشخیصِ گفتگوی جدید
+  bool _sumBusy = false;
 
   // شخصیتِ هوش مصنوعی + حالتِ ویدیو کال
   AiPersona _persona = PersonaStore.builtIns.first;
@@ -1632,6 +1644,82 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     _persist();
   }
 
+  // ───────────── خلاصه‌سازیِ تاریخچه ─────────────
+  /// متنِ «گفتگوی اخیر» برای پرامپت: تا ۱۰ پیام مثل قبل (۴ پیام)؛ بعد از آن
+  /// خلاصه‌ی قدیمی‌ها + ۶ پیامِ آخر.
+  String _ctx(List<_Msg> history) {
+    final realList = history.where((m) => !m.isWelcome).toList();
+    final real = realList.length;
+    if (real <= _kSumMinMsgs) return _historyText(history);
+    final recent = _historyText(history, keep: _kSumKeep);
+    // خلاصه فقط وقتی معتبر است که از همین گفتگو باشد و پیام‌های بعد از آن را
+    // (مثلاً با ویرایشِ پیامِ قدیمی) شامل نشده باشد
+    if (_sumText.isEmpty ||
+        _sumKey != realList.first.text ||
+        _sumFolded > real - _kSumKeep) {
+      return recent;
+    }
+    return 'Summary of the earlier conversation: $_sumText\n$recent';
+  }
+
+  /// بعد از هر پاسخِ موفق صدا زده می‌شود؛ بدونِ منتظر ماندنِ کاربر در پس‌زمینه
+  /// اجرا می‌شود و هر خطایی را بی‌صدا نادیده می‌گیرد (خلاصه‌ی قبلی می‌ماند).
+  Future<void> _maybeSummarize() async {
+    if (_sumBusy || !mounted) return;
+    // اپ در پس‌زمینه است → کاری شروع نکن (باتری)
+    final st = WidgetsBinding.instance.lifecycleState;
+    if (st != null && st != AppLifecycleState.resumed) return;
+    final real = _messages.where((m) => !m.isWelcome).toList();
+    if (real.length <= _kSumMinMsgs) return;
+    // گفتگوی جدید/کوتاه‌شده → خلاصه‌ی قبلی بی‌اعتبار است
+    if (_sumKey != real.first.text || _sumFolded > real.length) {
+      _sumKey = real.first.text;
+      _sumText = '';
+      _sumFolded = 0;
+      _sumAtLen = 0;
+    }
+    if (real.length - _sumAtLen < _kSumEveryMsgs) return;
+    final end = real.length - _kSumKeep;
+    if (end <= _sumFolded) return;
+    final chunk = real.sublist(_sumFolded, end);
+    final lines = chunk.map((m) {
+      if (m.role == 'ai') return 'Partner: ${_compactCoach(m.text)}';
+      final t = m.text.length > 220 ? m.text.substring(0, 220) : m.text;
+      return 'Learner: $t';
+    }).join('\n');
+    final prompt =
+        'Update the running summary of a language-practice chat between a '
+        'learner and a partner.\n'
+        'Keep ONLY what helps continue the conversation: facts about the '
+        'learner (name, job, interests), topics discussed, recurring mistakes, '
+        'and anything still open (a question asked or a promise made).\n'
+        'Output ONLY the new summary: plain English text, max 90 words, no '
+        'markdown, no lists.\n'
+        '${_sumText.isEmpty ? '' : 'Previous summary: $_sumText\n'}'
+        'New older messages:\n$lines\n';
+    _sumBusy = true;
+    try {
+      final r = await ref.read(translationServiceProvider).callAI(
+            prompt: prompt,
+            maxTokens: 220,
+            retries: 0,
+            settings: ref.read(aiSettingsProvider),
+            feature: null, // از سقفِ نوبت‌های کاربر کم نمی‌شود
+            reportLimit: false,
+          );
+      var t = cleanAiText(_stripThink(r)).trim();
+      if (!mounted || t.isEmpty || aiOutputProblem(t) != null) return;
+      if (t.length > 700) t = t.substring(0, 700);
+      _sumText = t;
+      _sumFolded = end;
+      _sumAtLen = real.length;
+    } catch (_) {
+      // بی‌صدا؛ دفعه‌ی بعد دوباره امتحان می‌شود
+    } finally {
+      _sumBusy = false;
+    }
+  }
+
   // ───────────── AI ─────────────
   Future<String> _callAi(String prompt, int maxTokens) async {
     final svc = ref.read(translationServiceProvider);
@@ -1706,7 +1794,7 @@ Rules:
 ${_callMode ? kCallRules : ''}
 ${_questionStyle()}
 Recent conversation:
-${_historyText(history)}
+${_ctx(history)}
 
 Now respond to: "$sentence"
 ''';
@@ -1730,7 +1818,7 @@ Now respond to: "$sentence"
         '${_callMode ? kCallRules : ''}\n'
         '${_levelPrompt()}'
         '${_questionStyle()}'
-        'Recent conversation:\n${_historyText(history)}\n';
+        'Recent conversation:\n${_ctx(history)}\n';
     final result = await _callAi(prompt, 160);
     return _normalizeAiText(result);
   }
@@ -1834,6 +1922,7 @@ Now respond to: "$sentence"
       });
       _trackLevelProgress(r.corrections);
       _autoRead(r.text);
+      unawaited(_maybeSummarize()); // 🧠 پس‌زمینه؛ جوابِ کاربر را معطل نمی‌کند
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -2847,7 +2936,7 @@ Now respond to: "$sentence"
           'Output EXACTLY 3 lines, each in this format: '
           '<$langLabel sentence> ||| <its $nativeLabel translation>\n'
           'No numbering, no markdown, no extra text.\n'
-          'Recent conversation:\n${_historyText(_messages)}\n',
+          'Recent conversation:\n${_ctx(_messages)}\n',
           260);
       for (final line in _normalizeAiText(r).split('\n')) {
         final parts = line.split('|||');
