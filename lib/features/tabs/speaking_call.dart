@@ -2401,6 +2401,12 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     }
     _hist.add(_CcEntry(user, t));
     if (_hist.length > 60) _hist.removeAt(0);
+    _ccToBottom();
+  }
+
+  /// کادر زیرنویس را تا آخر (جمله‌ی فعلی + ترجمه‌اش) اسکرول می‌کند.
+  /// ترجمه چند لحظه بعد از جمله می‌رسد و کادر بلندتر می‌شود؛ پس بعد از آن هم صدا زده می‌شود.
+  void _ccToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_ccScroll.hasClients) return;
       _ccScroll.animateTo(_ccScroll.position.maxScrollExtent,
@@ -2434,6 +2440,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         _trBusy.remove(txt);
         if (!mounted) return;
         setState(() => _trCache[txt] = (r == txt) ? '' : r);
+        // ترجمه‌ی آخرین جمله رسید → کادر را دوباره تا پایین ببر تا دیده شود
+        if (_hist.isNotEmpty && _hist.last.text.trim() == txt) _ccToBottom();
       }());
     }
   }
@@ -3046,6 +3054,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           break;
         }
       }
+      _ccToBottom();
       _ccAdd(false, res.spoken);
       _phase = _Phase.speaking;
     });
@@ -3789,7 +3798,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               size: 38,
               bg: _cc ? const Color(0xFFDCFCE7) : const Color(0xFFEFE9D6),
               fg: _cc ? const Color(0xFF16A34A) : const Color(0xFF3A3A3A),
-              onTap: () => setState(() => _cc = !_cc),
+              onTap: () {
+                setState(() => _cc = !_cc);
+                if (_cc) _ccToBottom();
+              },
             ),
             // میکروفون
             GestureDetector(
