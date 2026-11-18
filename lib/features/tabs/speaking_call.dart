@@ -228,6 +228,11 @@ class AiPersona {
 /// همان خوانده می‌شود؛ وگرنه (یا جنسیت نامعلوم) همان صدای فعالِ کاربر. چیزی دانلود نمی‌شود.
 class PersonaVoice {
   static String? Function(String?, int)? _resolver;
+  static String? Function(String?, int)? _resolverG;
+
+  /// آخرین صدای هم‌جنسِ پیداشده برای هر (زبان، جنسیت) تا اگر فهرستِ صداها یک‌بار دیر/خالی
+  /// برگشت، همان پیام با صدای دیگری (مثلاً زن به‌جای مرد) خوانده نشود.
+  static final Map<String, String> _idCache = {};
 
   static Future<String?> _idFor(String lang, String gender) async {
     if (!NativeBridge.instance.isSupported) return null;
@@ -261,15 +266,31 @@ class PersonaVoice {
       ctl.removeChunkVoiceResolver(old);
       _resolver = null;
     }
+    final oldG = _resolverG;
+    if (oldG != null) {
+      ctl.removeChunkVoiceResolver(oldG);
+      _resolverG = null;
+    }
     final g = p.voiceGender;
     if (g != null) {
-      final vid = await _idFor(lang, g);
+      final key = '${TtsConfig.locale[lang] ?? 'en-US'}::$text';
+      final ck = '$lang::$g';
+      var vid = await _idFor(lang, g);
       if (vid != null) {
-        final key = '${TtsConfig.locale[lang] ?? 'en-US'}::$text';
-        String? res(String? k, int o) => k == key ? vid : null;
+        _idCache[ck] = vid;
+      } else {
+        vid = _idCache[ck];
+      }
+      if (vid != null) {
+        final id = vid;
+        String? res(String? k, int o) => k == key ? id : null;
         _resolver = res;
         ctl.addChunkVoiceResolver(res);
       }
+      // اگر موتورِ اصلی نتوانست و به صدای گوشی/آنلاین برگشت، همان جنسیت انتخاب شود
+      String? resG(String? k, int o) => k == key ? 'gender:$g' : null;
+      _resolverG = resG;
+      ctl.addChunkVoiceResolver(resG);
     }
     return ctl.toggle(text, lang);
   }

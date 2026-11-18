@@ -16,6 +16,7 @@ import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
 import '../../core/providers/speech_provider.dart' show speechControllerProvider;
+import '../../core/tts/speech_state.dart' show SpeechState, SpeechStatus;
 import '../../core/providers/translation_provider.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
@@ -1052,6 +1053,9 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
 
   // خوانشِ خودکارِ جوابِ AI در چت (با تیک؛ ذخیره می‌شود)
   bool _autoReadOn = false;
+  int _autoReadWhat = 0; // 0 = متن · 1 = ترجمه · 2 = متن + ترجمه
+  String? _autoTrText; // متنِ جوابی که ترجمه‌اش خودکار باز می‌شود
+  int _autoReadSeq = 0;
   String _userLevel = 'auto'; // سطحِ زبانِ گفتگو: auto یا A1..C2
   // ارتقای خودکارِ سطح: برای هر شخصیت [پیامِ پشتِ‌هم‌ِ خوب، تعدادِ غلطِ خیلی جزئی]
   final Map<String, List<int>> _lvlProg = {};
@@ -1090,6 +1094,8 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
       return;
     }
     _autoReadOn = ls.readJson(_kAutoReadKey)['on'] == true;
+    final w = ls.readJson(_kAutoReadKey)['what'];
+    if (w is num && w >= 0 && w <= 2) _autoReadWhat = w.toInt();
     final sel = ref.read(languageSelectionProvider);
     final options = sel.targets.isNotEmpty ? sel.targets : const ['en'];
     // زبانِ تمرینِ انتخاب‌شده‌ی قبلی حفظ می‌شود (با جابجایی بین تب‌ها ریست نشود)
@@ -1368,8 +1374,92 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
         .replaceAll(RegExp(r'\n{3,}'), '\n\n')
         .trim();
     if (t.isEmpty) return;
-    unawaited(PersonaVoice.speak(
-        ref.read(speechControllerProvider.notifier), _persona, t, _activeLang()));
+    final what = _autoReadWhat;
+    final seq = ++_autoReadSeq;
+    final lang = _activeLang();
+    final native = ref.read(languageSelectionProvider).native;
+    final ctl = ref.read(speechControllerProvider.notifier);
+    if (what != 0) _autoTrText = text; // ترجمه‌ی بومی در کادرِ پیام هم باز شود
+    unawaited(() async {
+      try {
+        if (what != 1) {
+          // با صدای خودِ شخصیت
+          if (what == 2) {
+            await _speakAndWait(t, lang);
+          } else {
+            await PersonaVoice.speak(ctl, _persona, t, lang);
+          }
+        }
+        if (what == 0 || native.isEmpty || native == lang) return;
+        if (!mounted || seq != _autoReadSeq || !_autoReadOn || _callMode) return;
+        final tr = await _translateForRead(t, native, lang);
+        if (tr.isEmpty ||
+            !mounted ||
+            seq != _autoReadSeq ||
+            !_autoReadOn ||
+            _callMode) {
+          return;
+        }
+        await PersonaVoice.speak(ctl, _persona, tr, native);
+      } catch (_) {}
+    }());
+  }
+
+  /// با صدای شخصیت می‌خواند و تا پایانِ پخش صبر می‌کند (برای «متن + ترجمه»).
+  Future<void> _speakAndWait(String text, String lang) async {
+    final ctl = ref.read(speechControllerProvider.notifier);
+    final done = Completer<void>();
+    var started = false;
+    final remove = ctl.addListener((SpeechState s) {
+      if (s.status == SpeechStatus.playing) started = true;
+      if (started && s.status == SpeechStatus.idle && !done.isCompleted) {
+        done.complete();
+      }
+    }, fireImmediately: false);
+    final guard = Timer(const Duration(seconds: 8), () {
+      if (!started && !done.isCompleted) done.complete();
+    });
+    try {
+      await PersonaVoice.speak(ctl, _persona, text, lang);
+      await done.future.timeout(const Duration(seconds: 150), onTimeout: () {});
+    } finally {
+      guard.cancel();
+      try {
+        remove();
+      } catch (_) {}
+    }
+  }
+
+  /// ترجمه‌ی جوابِ AI به زبانِ مادری برای خوانش (همان سرویس/کشِ ترجمه‌ی زیرِ پیام).
+  Future<String> _translateForRead(String t, String native, String from) async {
+    final svc = ref.read(translationServiceProvider);
+    final ai = ref.read(aiSettingsProvider);
+    final out = <String>[];
+    for (final line in t.split('\n')) {
+      final l = line.trim();
+      if (l.isEmpty) continue;
+      // بخش‌های کوتاه (سرویس‌های ترجمه طولِ متن را محدود می‌کنند)
+      final segs = <String>[];
+      var cur = '';
+      for (final p in l.split(RegExp(r'(?<=[.!?؟。])\s+'))) {
+        if (cur.isNotEmpty && cur.length + p.length + 1 > 380) {
+          segs.add(cur);
+          cur = p;
+        } else {
+          cur = cur.isEmpty ? p : '$cur $p';
+        }
+      }
+      if (cur.isNotEmpty) segs.add(cur);
+      for (final s in segs) {
+        try {
+          final r = decodeHtmlEntities((await svc.translate(
+                  text: s, targetLang: native, sourceLang: from, aiSettings: ai))
+              .trim());
+          if (r.isNotEmpty && r != s.trim()) out.add(r);
+        } catch (_) {}
+      }
+    }
+    return out.join('\n');
   }
 
   // ───────────── 🚀 ارتقای خودکارِ سطح (Auto-Level Up) ─────────────
@@ -1637,10 +1727,79 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
 
   void _setAutoRead(bool v) {
     setState(() => _autoReadOn = v);
-    unawaited(
-        ref.read(localStorageProvider).writeJson(_kAutoReadKey, {'on': v}));
+    unawaited(ref
+        .read(localStorageProvider)
+        .writeJson(_kAutoReadKey, {'on': v, 'what': _autoReadWhat}));
     // با خاموش‌کردن، خوانشِ در حال پخش هم قطع شود
-    if (!v) unawaited(ref.read(speechControllerProvider.notifier).stop());
+    if (!v) {
+      _autoReadSeq++;
+      unawaited(ref.read(speechControllerProvider.notifier).stop());
+    }
+  }
+
+  /// انتخابِ کاربر برای خوانشِ خودکارِ جوابِ AI: خاموش / متن / ترجمه / هر دو.
+  Future<void> _pickAutoRead() async {
+    final c = context.appColors;
+    final fa = _faUi;
+    final labels = fa
+        ? ['خاموش', 'فقط متن', 'فقط ترجمه', 'متن + ترجمه']
+        : ['Off', 'Text only', 'Translation only', 'Text + translation'];
+    final cur = _autoReadOn ? _autoReadWhat + 1 : 0;
+    final v = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: c.paper,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                fa ? 'خوانش خودکارِ جوابِ AI' : 'Auto-read AI replies',
+                style: TextStyle(
+                    color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                fa
+                    ? 'با صدای خودِ شخصیت؛ ترجمه به زبانِ مادریِ تو خوانده می‌شود.'
+                    : "In the character's own voice; translation is read in your native language.",
+                style: TextStyle(color: c.inkSoft, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              for (var i = 0; i < labels.length; i++)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    i == cur
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
+                    color: i == cur ? c.gold : c.inkSoft,
+                  ),
+                  title: Text(labels[i],
+                      style: TextStyle(
+                          color: c.ink,
+                          fontSize: 14,
+                          fontWeight:
+                              i == cur ? FontWeight.w800 : FontWeight.w600)),
+                  onTap: () => Navigator.of(ctx).pop(i),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (v == null || !mounted) return;
+    if (v == 0) {
+      _setAutoRead(false);
+    } else {
+      setState(() => _autoReadWhat = v - 1);
+      _setAutoRead(true);
+    }
   }
 
   // ───────────── انتخاب/حذفِ پیام‌ها ─────────────
@@ -2336,7 +2495,7 @@ Now respond to: "$sentence"
                           : 'Auto-read',
                       color: _autoReadOn ? c.gold : c.inkSoft,
                       active: _autoReadOn,
-                      onTap: () => _setAutoRead(!_autoReadOn),
+                      onTap: _pickAutoRead,
                     ),
                   if (!_embedded && _messages.isNotEmpty)
                     _ToolChip(
@@ -2798,7 +2957,22 @@ Now respond to: "$sentence"
             ],
           ),
           // خطِ‌چین + چیپ‌های ترجمه داخلِ کادر
-          AiAnswerTools(text: m.text, sourceLang: _activeLang()),
+          AiAnswerTools(
+                text: m.text,
+                sourceLang: _activeLang(),
+                // 🔊 ترجمه هم با صدای شخصیت
+                onSpeak: (t, l) => unawaited(PersonaVoice.speak(
+                    ref.read(speechControllerProvider.notifier),
+                    _persona,
+                    t,
+                    l)),
+                // خوانشِ خودکارِ ترجمه: ترجمه‌ی زبانِ مادری در کادر هم باز شود
+                autoOpenLang: (_autoReadOn &&
+                        _autoReadWhat != 0 &&
+                        _autoTrText == m.text)
+                    ? ref.read(languageSelectionProvider).native
+                    : null,
+              ),
         ],
       );
     }

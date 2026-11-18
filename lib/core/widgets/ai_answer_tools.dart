@@ -38,7 +38,18 @@ class AiAnswerTools extends ConsumerStatefulWidget {
   /// زبانِ متنِ جواب؛ null = زبانِ مادریِ کاربر
   final String? sourceLang;
 
-  const AiAnswerTools({super.key, required this.text, this.sourceLang});
+  /// اگر داده شود، 🔊 ردیفِ ترجمه این را صدا می‌زند (مثلاً صدای هم‌جنسِ شخصیت).
+  final void Function(String text, String lang)? onSpeak;
+
+  /// اگر داده شود، ترجمه‌ی همین زبان خودکار باز می‌شود (خوانش خودکارِ ترجمه).
+  final String? autoOpenLang;
+
+  const AiAnswerTools(
+      {super.key,
+      required this.text,
+      this.sourceLang,
+      this.onSpeak,
+      this.autoOpenLang});
 
   @override
   ConsumerState<AiAnswerTools> createState() => _AiAnswerToolsState();
@@ -51,6 +62,26 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
   final Set<String> _failed = {};
 
   @override
+  void initState() {
+    super.initState();
+    _maybeAutoOpen();
+  }
+
+  /// ترجمه‌ی خودکار (وقتی والد autoOpenLang داده): بعد از اولین فریم باز می‌شود.
+  void _maybeAutoOpen() {
+    final l = widget.autoOpenLang;
+    if (l == null || l.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _open.contains(l) || widget.autoOpenLang != l) return;
+      if (widget.text.trim().isEmpty) return;
+      final langs = answerTranslationLangs(
+          ref.read(languageSelectionProvider), _source);
+      if (!langs.contains(l)) return;
+      _toggleLang(l);
+    });
+  }
+
+  @override
   void didUpdateWidget(covariant AiAnswerTools old) {
     super.didUpdateWidget(old);
     if (old.text != widget.text) {
@@ -59,6 +90,10 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
       _results.clear();
       _loading.clear();
       _failed.clear();
+    }
+    if (widget.autoOpenLang != null &&
+        (old.autoOpenLang != widget.autoOpenLang || old.text != widget.text)) {
+      _maybeAutoOpen();
     }
   }
 
@@ -76,6 +111,11 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
   void _speak(String text, String lang) {
     final t = _plain(text);
     if (t.isEmpty) return;
+    final cb = widget.onSpeak;
+    if (cb != null) {
+      cb(t, lang);
+      return;
+    }
     ref.read(speechControllerProvider.notifier).toggle(t, lang);
   }
 
