@@ -31,6 +31,7 @@ import '../../core/widgets/sync_item_card.dart';
 import '../shell/widgets/shell_header.dart';
 import '../shell/widgets/spotlight_tour.dart' show TourTarget, SpotlightTour;
 import '_hope_panel.dart' show uiContentDirection;
+import 'scenario_practice.dart' show ScenarioPracticeSection;
 
 class ConversationsTab extends ConsumerStatefulWidget {
   const ConversationsTab({super.key});
@@ -1298,6 +1299,9 @@ class _ScenarioCard extends StatelessWidget {
           ),
           if (isOpen) ...[
             const Divider(height: 1),
+            // 🎯 تمرینِ این مکالمه با AI (ویدیو کال) — همان قابلیتِ تاریخچه‌ی مکالمه
+            ScenarioPracticeSection(
+                key: ObjectKey(scenario), scenario: scenario),
             _DialogueBox(
                 levelFilter: levelFilter,
                 hear: scenario.speakerA,
