@@ -197,9 +197,19 @@ class MascotPainter extends CustomPainter {
 
   /// یک پا: دورِ لولا می‌چرخد تا جهتش به هدف برسد، سپس طوری جابه‌جا می‌شود که کف کفش
   /// دقیقاً روی نقطه‌ی هدف (زمین/کمانِ آویز) بنشیند.
+  /// فاصله‌ی افقیِ هدفِ پا تا لولای «خودِ همان پا».
+  /// ⚠️ قبلاً هر دو پا حولِ یک نقطه‌ی مشترک (_hipCx) می‌چرخیدند؛ ولی لولای دو پا در PSD
+  /// ۴۳ پیکسل از هم فاصله دارند (۲۹۳ و ۳۳۶). نتیجه: در یکی از دو نیم‌گام پاها کنار هم
+  /// (فاصله‌ی ≈۳۰) و در نیم‌گامِ دیگر کاملاً باز (≈۱۱۶) فرود می‌آمدند و لگن یک‌بار ≈۱۳ پیکسل
+  /// فرو می‌رفت و یک‌بار نه ← «لنگیدن». حالا هر پا حولِ لولای خودش و با دامنه‌ی یکسان می‌چرخد
+  /// (دو نیم‌گام دقیقاً قرینه‌ی هم). در حالتِ ایستاده (walkK=۰) همان حالتِ قبلی
+  /// (پاها زیرِ _hipCx) می‌ماند و با شروعِ قدم زدن نرم عوض می‌شود.
+  double _reachDx(Offset hip, _Step g) =>
+      (_hipCx - hip.dx) * (1 - walkK) - g.f;
+
   void _leg(Canvas c, String name, Offset hip, Offset foot, _Step g, double drop) {
     final h = Offset(hip.dx, hip.dy + drop);
-    final tgt = Offset(_hipCx - g.f, _groundY - g.lift);
+    final tgt = Offset(hip.dx + _reachDx(hip, g), _groundY - g.lift);
     final r = _legR(name, hip, foot);
     final t = tgt - h;
     final phi = math.atan2(t.dy, t.dx) - math.atan2(r.dy, r.dx);
@@ -239,12 +249,12 @@ class MascotPainter extends CustomPainter {
     double need(String nm, _Step g, Offset foot, Offset hip) {
       if (!g.stance) return -1e9;
       final len = _legR(nm, hip, foot).distance;
-      final dx = _hipCx - g.f - hip.dx; // فاصله‌ی افقیِ لگنِ این پا تا نقطه‌ی تماس
+      final dx = _reachDx(hip, g); // فاصله‌ی افقیِ لگنِ این پا تا نقطه‌ی تماس
       return _groundY - math.sqrt(math.max(len * len - dx * dx, 1));
     }
 
     final hy = math.max(need('leg_a', ga, _footA, _hipA), need('leg_b', gb, _footB, _hipB));
-    final drop = (hy - 463).clamp(-2.0, 16.0).toDouble();
+    final drop = (hy - 463).clamp(-6.0, 16.0).toDouble();
     // نفس کشیدنِ آرام وقتی ایستاده
     final breath = (1 - walkK) * -1.4 * math.sin(2 * math.pi * (ms % 2600) / 2600);
     final dy = drop + breath;
