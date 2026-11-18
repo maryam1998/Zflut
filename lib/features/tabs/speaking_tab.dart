@@ -385,6 +385,12 @@ class _PracticeTurn {
   });
 }
 
+class _PracticePick {
+  final String lang;
+  final bool swap;
+  const _PracticePick(this.lang, this.swap);
+}
+
 class _Reply {
   final String text;
   final List<_Correction> corrections;
@@ -1068,6 +1074,15 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   bool _practiceMode = false;
   int _practiceNonce = 0;
   int _practiceK = 0; // تعدادِ نوبت‌هایی که تا حالا جواب داده شده
+  // 🌍 تمرین به هر زبانی: null = زبانِ اصلیِ مکالمه؛ وگرنه متن‌ها ترجمه می‌شوند
+  // (ترجمه‌ها در کشِ دائمیِ سرویسِ ترجمه می‌مانند، پس بارِ دوم رایگان و سریع است).
+  String? _practiceLang;
+  bool _practicePrep = false; // در حال آماده‌کردنِ ترجمه‌ها
+  final Map<String, String> _practiceTr = {};
+  // 🔁 جابجایی نقش‌ها: آواتار جمله‌های «کاربر»ِ مکالمه را می‌گوید و کاربر جمله‌های AI را می‌خواند
+  bool _practiceSwap = false;
+  int _swapP = -1; // اندیسِ گروهِ AI که کاربر باید بخواند
+  int _swapLast = -1; // اندیسِ آخرین جوابِ آواتار (برای «تلاش مجدد»)
 
   // خوانشِ خودکارِ جوابِ AI در چت (با تیک؛ ذخیره می‌شود)
   bool _autoReadOn = false;
@@ -2434,9 +2449,267 @@ Now respond to: "$sentence"
 
   bool get _canPractice => _practiceTurns().isNotEmpty;
 
-  void _startPractice() {
-    if (!_embedded || !_canPractice) return;
+  /// زبانِ تمرین را از کاربر می‌پرسد؛ زبانِ اصلیِ مکالمه + زبان‌های هدف/مادری اول می‌آیند.
+  Future<_PracticePick?> _pickPracticeLang() {
+    final c = context.appColors;
+    var swap = false;
+    final sel = ref.read(languageSelectionProvider);
+    final codes = <String>[_chatLang];
+    for (final x in [...sel.targets, sel.native]) {
+      if (x.isNotEmpty && !codes.contains(x)) codes.add(x);
+    }
+    for (final l in kSupportedLanguages) {
+      if (!codes.contains(l.code)) codes.add(l.code);
+    }
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    return showModalBottomSheet<_PracticePick>(
+      context: context,
+      backgroundColor: c.paper,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.72),
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            children: [
+              Text(
+                fa ? 'به کدام زبان تمرین کنی؟' : 'Choose practice language',
+                style: TextStyle(
+                    color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                fa
+                    ? 'همین مکالمه به زبانِ انتخابی پخش می‌شود؛ نوبتِ خودت را هم به همان زبان می‌خوانی.'
+                    : 'The same conversation is played in the chosen language, and you read your lines in it too.',
+                style: TextStyle(color: c.inkSoft, fontSize: 12.5),
+              ),
+              const SizedBox(height: 10),
+              // 🔁 جابجایی نقش‌ها
+              Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsetsDirectional.fromSTEB(14, 4, 6, 4),
+                decoration: BoxDecoration(
+                  color: swap ? c.goldSoft : c.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: swap ? c.gold : c.cardBorder),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.swap_horiz_rounded, size: 20, color: c.gold),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            fa ? 'جابجایی نقش‌ها' : 'Swap roles',
+                            style: TextStyle(
+                                color: c.ink,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800),
+                          ),
+                          Text(
+                            fa
+                                ? 'تو نقشِ ${_persona.name} را می‌خوانی و آواتار جمله‌های قبلیِ تو را می‌گوید.'
+                                : 'You read ${_persona.name}\'s lines; the avatar says your old lines.',
+                            style:
+                                TextStyle(color: c.inkSoft, fontSize: 11.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: swap,
+                      activeColor: c.gold,
+                      onChanged: (v) => setS(() => swap = v),
+                    ),
+                  ],
+                ),
+              ),
+              for (final code in codes)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: code == _chatLang ? c.goldSoft : c.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => Navigator.of(ctx).pop(_PracticePick(code, swap)),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: code == _chatLang
+                                  ? c.gold
+                                  : c.cardBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                langDisplayName(ctx, code),
+                                style: TextStyle(
+                                    color: c.ink,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            if (code == _chatLang)
+                              Text(
+                                fa ? 'متنِ اصلی' : 'Original',
+                                style: TextStyle(
+                                    color: c.inkSoft,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+      ),
+    );
+  }
+
+  /// گروه‌های پشت‌سرهمِ هر نقش در مکالمه‌ی ذخیره‌شده: [نقش، متنِ گفتنی].
+  List<MapEntry<String, String>> _practiceGroups() {
+    final out = <MapEntry<String, String>>[];
+    for (final m in _messages) {
+      if (m.isWelcome || m.text.trim().isEmpty) continue;
+      final t = m.role == 'user' ? m.text.trim() : callSpokenBody(m.text);
+      if (t.isEmpty) continue;
+      if (out.isNotEmpty && out.last.key == m.role) {
+        out[out.length - 1] = MapEntry(m.role, '${out.last.value} $t');
+      } else {
+        out.add(MapEntry(m.role, t));
+      }
+    }
+    return out;
+  }
+
+  String _ptr(String t) => _practiceLang == null ? t : (_practiceTr[t] ?? t);
+
+  int _swapNext(List<MapEntry<String, String>> g, int from, String role) {
+    for (var k = 1; k <= g.length; k++) {
+      final i = (from + k) % g.length;
+      if (g[i].key == role) return i;
+    }
+    return -1;
+  }
+
+  void _swapReset() {
+    _swapLast = -1;
+    final g = _practiceGroups();
+    _swapP = _swapNext(g, -1, 'ai');
+  }
+
+  /// یک متن را (در صورت لزوم تکه‌تکه) به زبانِ [to] ترجمه می‌کند؛ اگر نشد همان متنِ اصلی.
+  Future<String> _practiceTrText(String t, String to) async {
+    final src = t.trim();
+    if (src.isEmpty) return src;
+    final svc = ref.read(translationServiceProvider);
+    final ai = ref.read(aiSettingsProvider);
+    final from = (isMostlyArabicScript(src) &&
+            _chatLang != 'fa' &&
+            _chatLang != 'ar')
+        ? 'auto'
+        : _chatLang;
+    final segs = <String>[];
+    var cur = '';
+    for (final p in src.split(RegExp(r'(?<=[.!?؟。])\s+'))) {
+      if (cur.isNotEmpty && cur.length + p.length + 1 > 380) {
+        segs.add(cur);
+        cur = p;
+      } else {
+        cur = cur.isEmpty ? p : '$cur $p';
+      }
+    }
+    if (cur.isNotEmpty) segs.add(cur);
+    final out = <String>[];
+    for (final seg in segs) {
+      var r = '';
+      try {
+        r = decodeHtmlEntities((await svc.translate(
+                text: seg, targetLang: to, sourceLang: from, aiSettings: ai))
+            .trim());
+      } catch (_) {}
+      out.add(r.isEmpty ? seg : r);
+    }
+    return out.join(' ');
+  }
+
+  /// همه‌ی جمله‌های مکالمه (سلام، جمله‌های کاربر، جواب‌های AI) را یک‌جا ترجمه می‌کند.
+  /// true = ترجمه‌ها آماده‌اند.
+  Future<bool> _preparePracticeTr(String to, bool swap) async {
+    final src = <String>{};
+    if (swap) {
+      for (final e in _practiceGroups()) {
+        src.add(e.value);
+      }
+    }
+    final g = _practiceGreetingRaw();
+    if (g.isNotEmpty) src.add(g);
+    for (final t in _practiceTurns()) {
+      src.add(t.user);
+      final b = callSpokenBody(t.reply);
+      if (b.isNotEmpty) src.add(b);
+    }
+    final list = src.toList();
+    final res = await Future.wait([for (final t in list) _practiceTrText(t, to)]);
+    var changed = 0;
+    _practiceTr.clear();
+    for (var i = 0; i < list.length; i++) {
+      _practiceTr[list[i]] = res[i];
+      if (res[i].trim() != list[i].trim()) changed++;
+    }
+    // اگر هیچ‌چیز ترجمه نشد (مثلاً اینترنت قطع است) تمرین شروع نمی‌شود
+    return list.isEmpty || changed > 0;
+  }
+
+  Future<void> _startPractice() async {
+    if (!_embedded || !_canPractice || _practicePrep) return;
+    final pick = await _pickPracticeLang();
+    if (pick == null || !mounted) return;
+    final lang = pick.lang == _chatLang ? null : pick.lang;
+    if (lang != null) {
+      setState(() => _practicePrep = true);
+      var ok = false;
+      try {
+        ok = await _preparePracticeTr(lang, pick.swap);
+      } catch (_) {
+        ok = false;
+      }
+      if (!mounted) return;
+      setState(() => _practicePrep = false);
+      if (!ok) {
+        final fa = Localizations.localeOf(context).languageCode == 'fa';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(fa
+              ? 'ترجمه انجام نشد؛ اینترنت را بررسی کن و دوباره امتحان کن.'
+              : 'Translation failed. Check your connection and try again.'),
+        ));
+        return;
+      }
+    } else {
+      _practiceTr.clear();
+    }
     setState(() {
+      _practiceLang = lang;
+      _practiceSwap = pick.swap;
+      _swapReset();
       _practiceMode = true;
       _practiceK = 0;
       _practiceNonce++;
@@ -2454,12 +2727,13 @@ Now respond to: "$sentence"
     if (!mounted) return;
     setState(() {
       _practiceK = 0;
+      _swapReset();
       _practiceNonce++;
     });
   }
 
   /// سلامِ اولِ مکالمه (اگر AI در مکالمه‌ی ذخیره‌شده شروع کرده بود).
-  Future<String?> _practiceGreeting() async {
+  String _practiceGreetingRaw() {
     final ms = _messages
         .where((m) => !m.isWelcome && m.text.trim().isNotEmpty)
         .toList();
@@ -2468,20 +2742,45 @@ Now respond to: "$sentence"
       if (m.role == 'user') break;
       lead.add(callSpokenBody(m.text));
     }
-    final t = lead.join(' ').trim();
-    return t.isEmpty ? null : t;
+    return lead.join(' ').trim();
+  }
+
+  Future<String?> _practiceGreeting() async {
+    if (_practiceSwap) {
+      // آواتار نقشِ «کاربر» را بازی می‌کند: اگر مکالمه با جمله‌ی کاربر شروع شده، اول او می‌گوید
+      final g = _practiceGroups();
+      if (g.isNotEmpty && g.first.key == 'user') return _ptr(g.first.value);
+      return null;
+    }
+    final t = _practiceGreetingRaw();
+    if (t.isEmpty) return null;
+    return _practiceLang == null ? t : (_practiceTr[t] ?? t);
   }
 
   /// جمله‌ی کاربر (هرچه باشد) → جوابِ ذخیره‌شده‌ی همین نوبت؛ بدونِ هیچ درخواستی به AI.
   Future<CallTurn?> _practiceReply(String text, bool retry) async {
+    if (_practiceSwap) {
+      final g = _practiceGroups();
+      if (g.isEmpty || _swapP < 0) return null;
+      if (!(retry && _swapLast >= 0)) {
+        _swapLast = _swapNext(g, _swapP, 'user');
+        if (_swapLast < 0) return null;
+        _swapP = _swapNext(g, _swapLast, 'ai');
+      }
+      return CallTurn(_ptr(g[_swapLast].value), <CallFix>[]);
+    }
     final ts = _practiceTurns();
     if (ts.isEmpty) return null;
     if (!retry) _practiceK++;
     final t = ts[(_practiceK - 1) % ts.length];
-    final fixes = [
-      for (final c in t.corrections) CallFix(c.original, c.corrected),
-    ];
+    // در زبانِ دیگر، تصحیح‌ها (که مخصوصِ زبانِ اصلی‌اند) نمایش داده نمی‌شوند
+    final fixes = _practiceLang != null
+        ? <CallFix>[]
+        : [
+            for (final c in t.corrections) CallFix(c.original, c.corrected),
+          ];
     var spoken = callSpokenBody(t.reply);
+    if (_practiceLang != null) spoken = _practiceTr[spoken] ?? spoken;
     if (fixes.isNotEmpty &&
         !spoken.toLowerCase().contains(fixes.first.corrected.toLowerCase())) {
       spoken = '${fixes.first.corrected}. $spoken';
@@ -2491,9 +2790,15 @@ Now respond to: "$sentence"
 
   /// 💡 راهنما در حالتِ تمرین: جمله‌ی بعدیِ خودِ کاربر از مکالمه‌ی ذخیره‌شده.
   Future<String?> _practiceHint() async {
+    if (_practiceSwap) {
+      final g = _practiceGroups();
+      if (g.isEmpty || _swapP < 0 || _swapP >= g.length) return null;
+      return _ptr(g[_swapP].value);
+    }
     final ts = _practiceTurns();
     if (ts.isEmpty) return null;
-    return ts[_practiceK % ts.length].user;
+    final u = ts[_practiceK % ts.length].user;
+    return _practiceLang == null ? u : (_practiceTr[u] ?? u);
   }
 
   Widget _practiceButton(AppThemeColorsExt c) {
@@ -2505,10 +2810,18 @@ Now respond to: "$sentence"
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      onPressed: _canPractice ? _startPractice : null,
-      icon: const Icon(Icons.videocam_rounded, size: 20),
+      onPressed: (_canPractice && !_practicePrep) ? _startPractice : null,
+      icon: _practicePrep
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2.2, color: Colors.white))
+          : const Icon(Icons.videocam_rounded, size: 20),
       label: Text(
-        fa ? 'تمرین این مکالمه' : 'Practice this conversation',
+        _practicePrep
+            ? (fa ? 'در حال آماده‌سازی ترجمه…' : 'Preparing translation…')
+            : (fa ? 'تمرین این مکالمه' : 'Practice this conversation'),
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
       ),
     );
@@ -2764,8 +3077,8 @@ Now respond to: "$sentence"
         SpeakingCallPanel(
           key: ValueKey('practice-$_sessionId-${_persona.id}-$_practiceNonce'),
           persona: _persona,
-          langCode: _chatLang,
-          langName: _enName(_chatLang),
+          langCode: _practiceLang ?? _chatLang,
+          langName: _enName(_practiceLang ?? _chatLang),
           onConnected: _practiceGreeting,
           onUserSaid: _practiceReply,
           onEnd: _endPractice,
