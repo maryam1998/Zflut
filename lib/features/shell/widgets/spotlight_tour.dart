@@ -29,6 +29,7 @@ const String _kStoryTourSeenKey = 'zflut-tour-story-seen-v1';
 const String _kTransTourSeenKey = 'zflut-tour-trans-seen-v1';
 const String _kPopupTourSeenKey = 'zflut-tour-popup-seen-v1';
 const String _kConvTourSeenKey = 'zflut-tour-conv-seen-v1';
+const String _kPracticeTourSeenKey = 'zflut-tour-practice-seen-v1';
 
 final Map<String, _TourTargetState> _targets = {};
 
@@ -474,6 +475,36 @@ const List<_Step> _convSteps = [
   ),
 ];
 
+const List<_Step> _practiceSteps = [
+  _Step(
+    'call_practice_line',
+    Icons.record_voice_over_rounded,
+    {'en': 'Read this sentence aloud', 'fa': 'این جمله را بلند بخوان'},
+    {
+      'en': 'This is the sentence you picked from the hint. Read it out loud, clearly.',
+      'fa': 'این همان جمله‌ای است که از راهنما انتخاب کردی. آن را بلند و شمرده بخوان.',
+    },
+  ),
+  _Step(
+    'call_mic',
+    Icons.mic_rounded,
+    {'en': 'The microphone is already open', 'fa': 'میکروفون خودش باز شده'},
+    {
+      'en': 'It is listening now. If you read it right, the answer comes straight away. If not, you first hear the correct pronunciation.',
+      'fa': 'الان در حال گوش دادن است. اگر درست بخوانی، همان‌جا جواب می‌آید؛ اگر نه، اول تلفظِ درست را می‌شنوی و بعد جواب می‌آید.',
+    },
+  ),
+  _Step(
+    'call_send',
+    Icons.send_rounded,
+    {'en': 'Done? Tap Send', 'fa': 'تمام شد؟ ارسال را بزن'},
+    {
+      'en': 'As soon as you finish, tap Send. The call will not wait for silence.',
+      'fa': 'همین‌که حرفت تمام شد، ارسال را بزن؛ تماس دیگر منتظرِ سکوت نمی‌ماند و همان لحظه فرستاده می‌شود.',
+    },
+  ),
+];
+
 const Map<String, Map<String, String>> _ui = {
   'skip': {'en': 'Skip', 'fa': 'رد کردن'},
   'next': {'en': 'Next', 'fa': 'بعدی'},
@@ -604,6 +635,56 @@ class SpotlightTour extends ConsumerStatefulWidget {
         removed = true;
         _cardTourRunning = false;
         cardTourActive.value = false;
+      }
+    });
+  }
+
+  static bool _practiceTourRunning = false;
+
+  /// 🎯 تورِ «جمله‌ی راهنما را بلند بخوان» در تماسِ تصویری: فقط بارِ اول (force=true → همیشه).
+  static void maybeStartPracticeTour(BuildContext context, {bool force = false}) {
+    if (_practiceTourRunning) return;
+    ProviderContainer? container;
+    OverlayState? overlay;
+    try {
+      container = ProviderScope.containerOf(context, listen: false);
+      overlay = Overlay.of(context, rootOverlay: true);
+    } catch (_) {
+      return;
+    }
+    var seen = true;
+    try {
+      seen = container.read(sharedPrefsProvider).getBool(_kPracticeTourSeenKey) ?? false;
+    } catch (_) {}
+    if (seen && !force) return;
+    final ctn = container;
+    final ov = overlay;
+    _practiceTourRunning = true;
+    late final OverlayEntry entry;
+    var removed = false;
+    void close(bool markSeen) {
+      if (removed) return;
+      removed = true;
+      try {
+        entry.remove();
+      } catch (_) {}
+      _practiceTourRunning = false;
+      if (markSeen) {
+        try {
+          ctn.read(sharedPrefsProvider).setBool(_kPracticeTourSeenKey, true);
+        } catch (_) {}
+      }
+    }
+
+    entry = OverlayEntry(
+        builder: (_) => _CardTourOverlay(onClose: close, steps: _practiceSteps));
+    Future<void>.delayed(const Duration(milliseconds: 700), () {
+      if (removed) return;
+      try {
+        ov.insert(entry);
+      } catch (_) {
+        removed = true;
+        _practiceTourRunning = false;
       }
     });
   }
@@ -1298,7 +1379,8 @@ Rect? _rectForId(String id, Size size) {
 /// لایه‌ی تورِ کارتِ ترجمه — داخل Overlay، بالای خودِ کارت.
 class _CardTourOverlay extends ConsumerStatefulWidget {
   final void Function(bool markSeen) onClose;
-  const _CardTourOverlay({required this.onClose});
+  final List<_Step> steps;
+  const _CardTourOverlay({required this.onClose, this.steps = _popupSteps});
 
   @override
   ConsumerState<_CardTourOverlay> createState() => _CardTourOverlayState();
@@ -1336,8 +1418,8 @@ class _CardTourOverlayState extends ConsumerState<_CardTourOverlay>
   bool _advance() {
     if (!mounted) return false;
     final size = MediaQuery.of(context).size;
-    for (var j = _i + 1; j < _popupSteps.length; j++) {
-      if (_rectForId(_popupSteps[j].id, size) != null) {
+    for (var j = _i + 1; j < widget.steps.length; j++) {
+      if (_rectForId(widget.steps[j].id, size) != null) {
         setState(() => _i = j);
         return true;
       }
@@ -1346,15 +1428,15 @@ class _CardTourOverlayState extends ConsumerState<_CardTourOverlay>
   }
 
   bool _hasLater(Size size) {
-    for (var j = _i + 1; j < _popupSteps.length; j++) {
-      if (_rectForId(_popupSteps[j].id, size) != null) return true;
+    for (var j = _i + 1; j < widget.steps.length; j++) {
+      if (_rectForId(widget.steps[j].id, size) != null) return true;
     }
     return false;
   }
 
   bool _canBack(Size size) {
     for (var j = _i - 1; j >= 0; j--) {
-      if (_rectForId(_popupSteps[j].id, size) != null) return true;
+      if (_rectForId(widget.steps[j].id, size) != null) return true;
     }
     return false;
   }
@@ -1362,7 +1444,7 @@ class _CardTourOverlayState extends ConsumerState<_CardTourOverlay>
   void _back() {
     final size = MediaQuery.of(context).size;
     for (var j = _i - 1; j >= 0; j--) {
-      if (_rectForId(_popupSteps[j].id, size) != null) {
+      if (_rectForId(widget.steps[j].id, size) != null) {
         setState(() => _i = j);
         return;
       }
@@ -1377,7 +1459,7 @@ class _CardTourOverlayState extends ConsumerState<_CardTourOverlay>
     String t(Map<String, String> m) => m[lang] ?? m['en']!;
     final rtl = lang == 'fa' || lang == 'ar';
     final size = MediaQuery.of(context).size;
-    final step = _popupSteps[_i];
+    final step = widget.steps[_i];
     final r = _rectForId(step.id, size);
     if (r == null) {
       // کارت بسته شده یا هدف دیگر روی صفحه نیست → مرحله‌ی بعدی یا پایان
@@ -1391,7 +1473,7 @@ class _CardTourOverlayState extends ConsumerState<_CardTourOverlay>
     final below = hole.center.dy < size.height * 0.5;
     final last = !_hasLater(size);
     final canBack = _canBack(size);
-    final shown = _popupSteps.indexOf(step) + 1;
+    final shown = widget.steps.indexOf(step) + 1;
 
     return Directionality(
       textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
@@ -1458,7 +1540,7 @@ class _CardTourOverlayState extends ConsumerState<_CardTourOverlay>
                                         fontWeight: FontWeight.w800),
                                   ),
                                 ),
-                                Text('$shown/${_popupSteps.length}',
+                                Text('$shown/${widget.steps.length}',
                                     style: TextStyle(
                                         color: c.inkSoft, fontSize: 12)),
                               ],

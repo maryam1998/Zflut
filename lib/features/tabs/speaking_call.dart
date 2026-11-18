@@ -25,6 +25,7 @@ import '../../core/theme/app_theme_colors.dart';
 import '../../core/tts/speech_controller.dart';
 import '../../core/tts/speech_state.dart';
 import '../../core/tts/tts_config.dart';
+import '../shell/widgets/spotlight_tour.dart' show SpotlightTour, TourTarget;
 import 'photo_talking_face.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2437,6 +2438,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _error = '';
     });
     await _startRec();
+    if (mounted && !_closed) SpotlightTour.maybeStartPracticeTour(context);
   }
 
   /// متنِ تشخیص‌داده‌شده با جمله‌ی راهنما مقایسه می‌شود.
@@ -2454,7 +2456,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         _phase = _Phase.thinking;
         _info = '';
       });
-      await Future<void>.delayed(const Duration(milliseconds: 900));
+      await Future<void>.delayed(const Duration(milliseconds: 250));
       if (!mounted || _closed || token != _turn) return;
     } else {
       setState(() {
@@ -2536,61 +2538,32 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     return dp[a.length][b.length] / a.length >= 0.8;
   }
 
-  Widget _practiceBanner() {
-    final c = context.appColors;
-    final target = _practiceTarget ?? '';
-    final String title;
-    switch (_practiceState) {
-      case 1:
-        title = _tr(context, '✅ عالی! درست خوندی', '✅ Great! You read it right');
-        break;
-      case 2:
-        title = _tr(context, '🔊 گوش کن؛ تلفظِ درست این‌طوریه:',
-            '🔊 Listen — this is the correct pronunciation:');
-        break;
-      default:
-        title = _tr(context, '🎯 این جمله رو بلند بخون:', '🎯 Read this sentence aloud:');
-    }
-    return Container(
-      margin: const EdgeInsets.only(top: 6),
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-      decoration: BoxDecoration(
-        color: c.goldSoft,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: c.gold),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  color: c.inkSoft, fontSize: 12, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text(target,
-              textAlign: TextAlign.center,
-              textDirection: const {'ar', 'fa', 'he', 'ur'}.contains(widget.langCode)
-                  ? TextDirection.rtl
-                  : TextDirection.ltr,
-              style: TextStyle(
-                  color: c.ink, fontSize: 14.5, fontWeight: FontWeight.w700)),
-          if (_practiceState == 2 && _practiceHeard.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-                _tr(context, 'تو گفتی: «$_practiceHeard»',
-                    'You said: "$_practiceHeard"'),
-                textAlign: TextAlign.center,
-                textDirection: const {'ar', 'fa', 'he', 'ur'}.contains(widget.langCode)
-                    ? TextDirection.rtl
-                    : TextDirection.ltr,
-                style: TextStyle(color: c.inkSoft, fontSize: 12)),
-          ],
-          if (_practiceState == 0)
-            TextButton(
-              onPressed: _skipPractice,
-              child: Text(_tr(context, 'رد کردن و فرستادن', 'Skip and send')),
-            ),
-        ],
+  /// جمله‌ی تمرین: بدونِ کادر و دکمه‌ی اضافه، فقط خودِ جمله پایینِ ویدیو (تورِ برنامه توضیح می‌دهد).
+  Widget _practiceLine() {
+    final rtl = const {'ar', 'fa', 'he', 'ur'}.contains(widget.langCode);
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: TourTarget(
+        id: 'call_practice_line',
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            _practiceTarget ?? '',
+            textAlign: TextAlign.center,
+            textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+            style: const TextStyle(
+                color: Color(0xFFFCD34D),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                height: 1.4,
+                shadows: _ccShadow),
+          ),
+        ),
       ),
     );
   }
@@ -2660,6 +2633,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
 
   /// محتوای کادر شیشه‌ای زیرنویس: تاریخچه‌ی اسکرول‌پذیر؛ آخرین خط پررنگ.
   Widget _ccGlassBody(bool showTr, bool nativeRtl) {
+    if (_practiceTarget != null) return _practiceLine();
     final dir = nativeRtl ? TextDirection.rtl : TextDirection.ltr;
 
     // CC خاموش: فقط اصلاحیه‌ی جمله (مثل قبل)
@@ -3017,6 +2991,11 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       default:
         break;
     }
+  }
+
+  /// دکمه‌ی «ارسال»: بدونِ انتظار برای سکوت، همین حالا ضبط تمام و فرستاده می‌شود.
+  Future<void> _sendNow() async {
+    if (_phase == _Phase.recording) await _stopRec(send: true);
   }
 
   Future<void> _startRec() async {
@@ -3944,7 +3923,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 Align(alignment: const Alignment(0, 0.3), child: _bars()),
               // پایین: کادر شیشه‌ایِ زیرنویس + تاریخچه (اسکرول‌پذیر، ارتفاع محدود)
               // جمله‌ی فعلی پررنگ و روشن؛ جمله‌های قبلی کم‌رنگ‌تر
-              if (_cc || _fixes.isNotEmpty)
+              if (_cc || _fixes.isNotEmpty || _practiceTarget != null)
                 Positioned(
                   left: 14,
                   right: 14,
@@ -4009,6 +3988,34 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         const SizedBox(height: 10),
         if (_showTyping) _typingBox(c),
 
+        // ── ارسالِ فوری (فقط وقتی میکروفون باز است) ──
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          child: rec
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: TourTarget(
+                    id: 'call_send',
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: c.teal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 26, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(22)),
+                      ),
+                      onPressed: _sendNow,
+                      icon: const Icon(Icons.send_rounded, size: 18),
+                      label: Text(_tr(context, 'ارسال', 'Send'),
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                )
+              : const SizedBox(height: 0, width: double.infinity),
+        ),
+
         // ── کنترل‌ها ──
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -4036,7 +4043,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               },
             ),
             // میکروفون
-            GestureDetector(
+            TourTarget(
+              id: 'call_mic',
+              child: GestureDetector(
               onTap: canMic ? _onMicTap : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
@@ -4065,6 +4074,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   color: Colors.white,
                 ),
               ),
+            ),
             ),
             _circleBtn(
               icon: Icons.call_end,
@@ -4131,7 +4141,6 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           ],
         ),
 
-        if (_practiceTarget != null) _practiceBanner(),
         if (_info.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 2),
