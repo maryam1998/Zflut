@@ -2184,6 +2184,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   bool _hintLoading = false;
   DateTime _thinkAt = DateTime.now(); // شروعِ «در حال فکر کردن» (برای پیامِ اتصال)
   bool _cc = false; // زیرنویس (CC) — پیش‌فرض خاموش
+  bool _endCc = false; // صفحه‌ی «تماس پایان یافت»: ترجمه‌ی جمله‌های آخر
   final Map<String, String> _trCache = {}; // متن → ترجمه به زبانِ مادری
   final List<_CcEntry> _hist = []; // تاریخچه‌ی زیرنویس
   final ScrollController _ccScroll = ScrollController();
@@ -2369,6 +2370,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     if (mounted) {
       setState(() {
         _ended = true;
+        _endCc = _cc;
         _phase = _Phase.ready;
       });
     }
@@ -2600,10 +2602,13 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   }
 
   void _prefetchTr() {
-    if (!_cc || !mounted) return;
+    if ((!_cc && !(_ended && _endCc)) || !mounted) return;
     final native = _nativeCode;
     if (native.isEmpty || native == widget.langCode) return;
-    for (final t in [for (final e in _hist) e.text, _heard, _aiLine]) {
+    final src = _cc
+        ? [for (final e in _hist) e.text, _heard, _aiLine]
+        : _endLastLines();
+    for (final t in src) {
       final txt = t.trim();
       if (txt.isEmpty || _trCache.containsKey(txt) || _trBusy.contains(txt)) {
         continue;
@@ -2773,7 +2778,23 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         style: const TextStyle(fontSize: 12),
       );
 
+  /// آخرین جمله‌های شخصیت که روی صفحه‌ی «تماس پایان یافت» دیده می‌شوند.
+  List<String> _endLastLines() {
+    final aiLines = [
+      for (final e in _hist)
+        if (!e.user) e.text
+    ];
+    return aiLines.length > 2 ? aiLines.sublist(aiLines.length - 2) : aiLines;
+  }
+
   Widget _endedView(AppThemeColorsExt c) {
+    final native = _nativeCode;
+    final nativeRtl = const ['fa', 'ar', 'he', 'ur'].contains(native);
+    final canTr = native.isNotEmpty && native != widget.langCode;
+    final showEndTr = canTr && _endCc;
+    if (showEndTr) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _prefetchTr());
+    }
     final p = widget.persona;
     final base = p.colorValue;
     final photoFace = p.photoFace;
@@ -2896,13 +2917,43 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                             textDirection: TextDirection.ltr,
                             children: [
                               Expanded(
-                                child: Text(t,
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12.5,
-                                        height: 1.4)),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(t,
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12.5,
+                                            height: 1.4)),
+                                    if (showEndTr &&
+                                        (_trCache[t.trim()] ?? '').isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 3),
+                                        child: SizedBox(
+                                          width: double.infinity,
+                                          child: Text(
+                                            _trCache[t.trim()]!,
+                                            textDirection: nativeRtl
+                                                ? TextDirection.rtl
+                                                : TextDirection.ltr,
+                                            textAlign: nativeRtl
+                                                ? TextAlign.right
+                                                : TextAlign.left,
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                                color: Colors.white
+                                                    .withOpacity(0.72),
+                                                fontSize: 12,
+                                                height: 1.4),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                               IconButton(
                                 tooltip: _tr(context, 'شنیدن دوباره',
@@ -2927,6 +2978,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           spacing: 10,
           runSpacing: 10,
           children: [
+            if (canTr &&
+                Directionality.of(context) != TextDirection.rtl)
+              _endCcBtn(),
             FilledButton.icon(
               onPressed: widget.onRedial,
               style: FilledButton.styleFrom(backgroundColor: c.teal),
@@ -2941,6 +2995,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
               label: Text(_tr(context, 'رفتن به چت', 'Go to chat')),
             ),
+            if (canTr &&
+                Directionality.of(context) == TextDirection.rtl)
+              _endCcBtn(),
           ],
         ),
       ],
@@ -3770,6 +3827,21 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     );
   }
 
+  /// دکمه‌ی CC کنار «تماس مجدد» — ترجمه‌ی جمله‌های آخرِ صفحه‌ی پایان تماس.
+  Widget _endCcBtn() => _circleBtn(
+        icon: _endCc
+            ? Icons.closed_caption_rounded
+            : Icons.closed_caption_outlined,
+        tip: _tr(context, 'ترجمه', 'Translation'),
+        size: 42,
+        bg: _endCc ? const Color(0xFFDCFCE7) : const Color(0xFFEFE9D6),
+        fg: _endCc ? const Color(0xFF16A34A) : const Color(0xFF3A3A3A),
+        onTap: () {
+          setState(() => _endCc = !_endCc);
+          if (_endCc) _prefetchTr();
+        },
+      );
+
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
@@ -4016,8 +4088,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               : const SizedBox(height: 0, width: double.infinity),
         ),
 
-        // ── کنترل‌ها ──
-        Row(
+        // ── کنترل‌ها ── (همیشه LTR: CC سمت چپ، راهنما سمت راست؛ حتی در فارسی/عربی)
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _circleBtn(
@@ -4122,6 +4196,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 ),
               ),
           ],
+        ),
         ),
         const SizedBox(height: 6),
         Row(
