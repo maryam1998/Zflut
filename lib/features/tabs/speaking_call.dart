@@ -2165,6 +2165,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   final Map<String, String> _trCache = {}; // متن → ترجمه به زبانِ مادری
   final List<_CcEntry> _hist = []; // تاریخچه‌ی زیرنویس
   final ScrollController _ccScroll = ScrollController();
+  final FocusNode _typeFocus = FocusNode();
+  final GlobalKey _videoKey = GlobalKey();
   final Set<String> _trBusy = {};
 
   bool _handsFree = true;
@@ -2200,7 +2202,23 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     _clock = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && _phase != _Phase.ringing) setState(() => _secs++);
     });
+    _typeFocus.addListener(() {
+      if (_typeFocus.hasFocus) _keepAvatarVisible();
+    });
     unawaited(_connect());
+  }
+
+  /// موقع تایپ، صفحه را طوری نگه می‌دارد که اواتار همیشه بالای صفحه دیده شود.
+  void _keepAvatarVisible() {
+    Future<void>.delayed(const Duration(milliseconds: 380), () {
+      if (!mounted) return;
+      final ctx = _videoKey.currentContext;
+      if (ctx == null) return;
+      Scrollable.ensureVisible(ctx,
+          alignment: 0.0,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut);
+    });
   }
 
   @override
@@ -2219,6 +2237,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     _pulse.dispose();
     _level.dispose();
     _typeCtl.dispose();
+    _typeFocus.dispose();
     _ccScroll.dispose();
     unawaited(_rec.dispose());
     _deleteFile(_recPath);
@@ -2320,7 +2339,22 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       unawaited(NativeBridge.instance.syncTranscribeCancel().catchError(
           (Object _) => <String, dynamic>{}));
     }
-    if (mounted) setState(() => _ended = true);
+    if (mounted) {
+      setState(() {
+        _ended = true;
+        _phase = _Phase.ready;
+      });
+    }
+  }
+
+  /// بعد از قطع تماس: شنیدن دوباره‌ی صدای شخصیت.
+  Future<void> _replayAi(String text) async {
+    final t = text.trim();
+    if (t.isEmpty || !mounted) return;
+    try {
+      await _ctl.stop();
+      await PersonaVoice.speak(_ctl, widget.persona, t, widget.langCode);
+    } catch (_) {}
   }
 
   /// «راهنما (چی بگم؟)» داخلِ ویدیو کال؛ جمله‌ی انتخابی مستقیم برای AI فرستاده می‌شود.
@@ -2546,60 +2580,176 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       );
 
   Widget _endedView(AppThemeColorsExt c) {
-    final base = widget.persona.colorValue;
-    final m = (_secs ~/ 60).toString().padLeft(2, '0');
-    final s = (_secs % 60).toString().padLeft(2, '0');
-    return Container(
-      height: 440,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color.lerp(base, Colors.black, 0.75)!,
-            Color.lerp(base, Colors.black, 0.92)!,
-          ],
-        ),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.call_end, color: Colors.white54, size: 40),
-          const SizedBox(height: 12),
-          Text(_tr(context, 'تماس پایان یافت', 'Call ended'),
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text('$m:$s',
-              style: const TextStyle(color: Colors.white60, fontSize: 13)),
-          const SizedBox(height: 22),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 10,
-            runSpacing: 10,
+    final p = widget.persona;
+    final base = p.colorValue;
+    final photoFace = p.photoFace;
+    final aiLines = [
+      for (final e in _hist)
+        if (!e.user) e.text
+    ];
+    final lastLines =
+        aiLines.length > 2 ? aiLines.sublist(aiLines.length - 2) : aiLines;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          key: _videoKey,
+          height: 440,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color.lerp(base, Colors.black, 0.35)!,
+                Color.lerp(base, Colors.black, 0.8)!,
+              ],
+            ),
+          ),
+          child: Stack(
             children: [
-              FilledButton.icon(
-                onPressed: widget.onRedial,
-                style: FilledButton.styleFrom(backgroundColor: c.teal),
-                icon: const Icon(Icons.videocam_rounded, size: 18),
-                label: Text(_tr(context, 'تماس مجدد', 'Call again')),
+              if (photoFace != null)
+                Positioned.fill(
+                  child: RepaintBoundary(child: _photoFace(photoFace)),
+                )
+              else ...[
+                Positioned.fill(
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _CallBackdropPainter(p.id, base,
+                          hint:
+                              '${p.role} ${p.scenario} ${p.personality} ${p.name} ${p.emoji}'),
+                    ),
+                  ),
+                ),
+                Align(alignment: const Alignment(0, -0.28), child: _avatar()),
+              ],
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.55),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.6),
+                        ],
+                        stops: const [0, 0.45, 1],
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              OutlinedButton.icon(
-                onPressed: widget.onEnd,
-                style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white54)),
-                icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: Text(_tr(context, 'بازگشت به چت', 'Back to chat')),
+              Positioned(
+                left: 14,
+                right: 14,
+                top: 12,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(p.name,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800)),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black38,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.call_end,
+                              color: Colors.white70, size: 13),
+                          const SizedBox(width: 5),
+                          Text(
+                              '${_tr(context, 'تماس پایان یافت', 'Call ended')} · ${_clock2()}',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              // پایین: آخرین جمله‌های شخصیت + دکمه‌ی شنیدن دوباره
+              if (lastLines.isNotEmpty)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 10,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final t in lastLines)
+                        Container(
+                          margin: const EdgeInsets.only(top: 6),
+                          padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black45,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            textDirection: TextDirection.ltr,
+                            children: [
+                              Expanded(
+                                child: Text(t,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12.5,
+                                        height: 1.4)),
+                              ),
+                              IconButton(
+                                tooltip: _tr(context, 'شنیدن دوباره',
+                                    'Listen again'),
+                                visualDensity: VisualDensity.compact,
+                                onPressed: () => _replayAi(t),
+                                icon: const Icon(Icons.volume_up_rounded,
+                                    color: Colors.white, size: 22),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
             ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            FilledButton.icon(
+              onPressed: widget.onRedial,
+              style: FilledButton.styleFrom(backgroundColor: c.teal),
+              icon: const Icon(Icons.videocam_rounded, size: 18),
+              label: Text(_tr(context, 'تماس مجدد', 'Call again')),
+            ),
+            OutlinedButton.icon(
+              onPressed: widget.onEnd,
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: c.ink,
+                  side: BorderSide(color: c.cardBorder)),
+              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+              label: Text(_tr(context, 'رفتن به چت', 'Go to chat')),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -3317,6 +3467,63 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     );
   }
 
+  Widget _typingBox(AppThemeColorsExt c) {
+    return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: c.teal, width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              textDirection: TextDirection.ltr,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _typeCtl,
+                    focusNode: _typeFocus,
+                    scrollPadding: EdgeInsets.zero,
+                    minLines: 1,
+                    maxLines: 3,
+                    style: TextStyle(color: c.ink, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: _tr(context, 'به‌جای حرف زدن بنویس…',
+                          'Type instead of speaking…'),
+                      hintStyle: TextStyle(
+                          color: c.inkSoft.withOpacity(0.6), fontSize: 13),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 4),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: (_phase == _Phase.thinking ||
+                          _phase == _Phase.transcribing)
+                      ? null
+                      : () {
+                          final t = _typeCtl.text.trim();
+                          if (t.isEmpty) return;
+                          _typeCtl.clear();
+                          _stopSpeaking();
+                          if (_phase == _Phase.recording) {
+                            _ampSub?.cancel();
+                            _ampSub = null;
+                            _stopping = true;
+                            unawaited(_rec.stop().then((p) => _deleteFile(p)));
+                            _level.value = 0;
+                          }
+                          _submit(t);
+                        },
+                  icon: Icon(Icons.send_rounded, color: c.teal, size: 20),
+                ),
+              ],
+            ),
+          );
+  }
+
   Widget _circleBtn({
     required IconData icon,
     required VoidCallback onTap,
@@ -3366,7 +3573,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       children: [
         // ── «ویدیو» ──
         Container(
-          height: 440,
+          key: _videoKey,
+          height: _showTyping ? 320 : 440,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
@@ -3558,6 +3766,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           ),
         ),
         const SizedBox(height: 10),
+        if (_showTyping) _typingBox(c),
 
         // ── کنترل‌ها ──
         Row(
@@ -3571,34 +3780,17 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 if (_muted) _stopSpeaking();
               },
             ),
-            // راهنما (چی بگم؟) — آیکونِ لامپِ کوچک؛ منو در پایین باز می‌شود نه روی ویدیو
-            if (widget.onHint != null)
-              Opacity(
-                opacity: (_hintLoading ||
-                        _phase == _Phase.ringing ||
-                        _phase == _Phase.thinking ||
-                        _phase == _Phase.transcribing)
-                    ? 0.45
-                    : 1,
-                child: _circleBtn(
-                  icon: _hintLoading
-                      ? Icons.more_horiz_rounded
-                      : Icons.lightbulb_outline_rounded,
-                  tip: _tr(context, 'راهنما: چی بگم؟', 'Hint: what do I say?'),
-                  size: 38,
-                  bg: c.gold.withOpacity(0.18),
-                  fg: c.gold,
-                  onTap: () {
-                    if (_hintLoading ||
-                        _phase == _Phase.ringing ||
-                        _phase == _Phase.thinking ||
-                        _phase == _Phase.transcribing) {
-                      return;
-                    }
-                    _askHint();
-                  },
-                ),
-              ),
+            // زیرنویس (CC) — کوچک‌تر از دکمه‌های اصلی
+            _circleBtn(
+              icon: _cc
+                  ? Icons.closed_caption_rounded
+                  : Icons.closed_caption_outlined,
+              tip: _tr(context, 'زیرنویس', 'Captions'),
+              size: 38,
+              bg: _cc ? const Color(0xFFDCFCE7) : const Color(0xFFEFE9D6),
+              fg: _cc ? const Color(0xFF16A34A) : const Color(0xFF3A3A3A),
+              onTap: () => setState(() => _cc = !_cc),
+            ),
             // میکروفون
             GestureDetector(
               onTap: canMic ? _onMicTap : null,
@@ -3642,19 +3834,39 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               icon: Icons.keyboard_alt_outlined,
               tip: _tr(context, 'نوشتن', 'Type'),
               bg: _showTyping ? c.gold : const Color(0xFFEFE9D6),
-              onTap: () => setState(() => _showTyping = !_showTyping),
+              onTap: () {
+                setState(() => _showTyping = !_showTyping);
+                if (_showTyping) _keepAvatarVisible();
+              },
             ),
-            // زیرنویس (CC) — کوچک‌تر از دکمه‌های اصلی
-            _circleBtn(
-              icon: _cc
-                  ? Icons.closed_caption_rounded
-                  : Icons.closed_caption_outlined,
-              tip: _tr(context, 'زیرنویس', 'Captions'),
-              size: 38,
-              bg: _cc ? const Color(0xFFDCFCE7) : const Color(0xFFEFE9D6),
-              fg: _cc ? const Color(0xFF16A34A) : const Color(0xFF3A3A3A),
-              onTap: () => setState(() => _cc = !_cc),
-            ),
+            // راهنما (چی بگم؟) — آیکونِ لامپِ کوچک؛ منو در پایین باز می‌شود نه روی ویدیو
+            if (widget.onHint != null)
+              Opacity(
+                opacity: (_hintLoading ||
+                        _phase == _Phase.ringing ||
+                        _phase == _Phase.thinking ||
+                        _phase == _Phase.transcribing)
+                    ? 0.45
+                    : 1,
+                child: _circleBtn(
+                  icon: _hintLoading
+                      ? Icons.more_horiz_rounded
+                      : Icons.lightbulb_outline_rounded,
+                  tip: _tr(context, 'راهنما: چی بگم؟', 'Hint: what do I say?'),
+                  size: 38,
+                  bg: c.gold.withOpacity(0.18),
+                  fg: c.gold,
+                  onTap: () {
+                    if (_hintLoading ||
+                        _phase == _Phase.ringing ||
+                        _phase == _Phase.thinking ||
+                        _phase == _Phase.transcribing) {
+                      return;
+                    }
+                    _askHint();
+                  },
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 6),
@@ -3728,60 +3940,6 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
             ),
           ),
 
-        // ── نوشتنِ دستی (برای جایی که نمی‌شود حرف زد) ──
-        if (_showTyping)
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: c.teal, width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              textDirection: TextDirection.ltr,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _typeCtl,
-                    minLines: 1,
-                    maxLines: 3,
-                    style: TextStyle(color: c.ink, fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: _tr(context, 'به‌جای حرف زدن بنویس…',
-                          'Type instead of speaking…'),
-                      hintStyle: TextStyle(
-                          color: c.inkSoft.withOpacity(0.6), fontSize: 13),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 4),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: (_phase == _Phase.thinking ||
-                          _phase == _Phase.transcribing)
-                      ? null
-                      : () {
-                          final t = _typeCtl.text.trim();
-                          if (t.isEmpty) return;
-                          _typeCtl.clear();
-                          _stopSpeaking();
-                          if (_phase == _Phase.recording) {
-                            _ampSub?.cancel();
-                            _ampSub = null;
-                            _stopping = true;
-                            unawaited(_rec.stop().then((p) => _deleteFile(p)));
-                            _level.value = 0;
-                          }
-                          _submit(t);
-                        },
-                  icon: Icon(Icons.send_rounded, color: c.teal, size: 20),
-                ),
-              ],
-            ),
-          ),
       ],
     );
   }
