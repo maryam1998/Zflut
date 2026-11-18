@@ -384,17 +384,37 @@ String _stripThink(String t) => t
 _Reply _extractCorrections(String reply) {
   final normalized = _normalizeAiText(reply);
   final lines = normalized.split('\n');
-  final fixRe = RegExp(r'^FIX:\s*(.+?)\s*=>\s*(.+)$', caseSensitive: false);
+  // مدل‌های کوچک فرمت را کمی خراب می‌کنند: «Fix -»، «FIX :»، بولت/شماره‌ی اول
+  // خط، گیومه دورِ جمله‌ها، فلشِ -> یا → یا ==> به‌جای =>.
+  final fixRe = RegExp(
+      r'''^[\s\-•>\d.)]*FIX\s*[:：\-–]?\s*["']?(.+?)["']?\s*(?:==>|=>|-->|->|⇒|→|=)\s*["']?(.+?)["']?\s*$''',
+      caseSensitive: false);
+  // خطی که با «FIX:» شروع شده ولی قابلِ تجزیه نیست نباید در متنِ چت دیده شود
+  final fixLoose = RegExp(r'^[\s\-•>\d.)]*FIX\s*[:：]', caseSensitive: false);
+  String norm(String t) => t
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9\u0080-\uffff ]'), '')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
   final raw = <List<String>>[];
-  var i = 0;
-  while (i < lines.length) {
-    final m = fixRe.firstMatch(lines[i].trim());
-    if (m == null) break;
-    raw.add([m.group(1)!.trim(), m.group(2)!.trim()]);
-    i++;
+  final bodyLines = <String>[];
+  for (final line in lines) {
+    final t = line.trim();
+    final m = fixRe.firstMatch(t);
+    if (m != null) {
+      final o = m.group(1)!.trim();
+      final c = m.group(2)!.trim();
+      // «اشتباهِ ساختگی»: اصلاح با اصلِ جمله یکی است → نادیده
+      if (o.isNotEmpty && c.isNotEmpty && norm(o) != norm(c)) {
+        raw.add([o, c]);
+      }
+      continue;
+    }
+    if (fixLoose.hasMatch(t)) continue;
+    bodyLines.add(line);
   }
-  final body = lines.sublist(i).join('\n').replaceFirst(RegExp(r'^\s+'), '');
-  if (raw.isEmpty) return _Reply(normalized, const []);
+  final body = bodyLines.join('\n').replaceFirst(RegExp(r'^\s+'), '');
+  if (raw.isEmpty) return _Reply(body.isEmpty ? normalized : body, const []);
 
   var built = '';
   final out = <_Correction>[];
@@ -1813,7 +1833,7 @@ Rules:
 - If they wrote in $nativeLabel instead of $langLabel (not a mistake): ONE line: FIX: <what they wrote> => <$langLabel equivalent>.
 - Then a blank line and your chat reply ENTIRELY in $langLabel: plain text, no markdown, brief and natural; react and/or ask a follow-up like a real conversation, not a report. Never explain the mistakes in prose.
 
-${_callMode ? kCallRules : ''}
+${_callMode ? kCallRules + kCallFixExamples : ''}
 ${_questionStyle()}
 Recent conversation:
 ${_ctx(history)}

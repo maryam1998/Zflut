@@ -57,6 +57,18 @@ const String kCallRules =
     'Never repeat your own earlier sentences. Never invent a mistake: write a FIX '
     'line only for a REAL error, but never skip a real one.\n';
 
+/// مثال‌های «چند‌نمونه‌ای» برای مدل‌های کوچکِ تماس: فرمتِ دقیقِ FIX و اینکه
+/// اشتباهِ واقعی را نباید نادیده گرفت (فقط در پرامپتِ تصحیح استفاده می‌شود).
+const String kCallFixExamples =
+    'FORMAT EXAMPLES (for the FIX line only; never copy their content):\n'
+    'Learner: "I go to park yesterday"\n'
+    'FIX: I go to park yesterday => I went to the park yesterday\n\n'
+    'Learner: "He don\'t like coffee"\n'
+    'FIX: He don\'t like coffee => He doesn\'t like coffee\n\n'
+    'Learner: "I like reading books" (correct, so NO FIX line)\n'
+    'Reply only with your chat message.\n'
+    'Always write the tag exactly as FIX: and the separator exactly as =>\n';
+
 // ───────────────────────────── مدل ─────────────────────────────
 
 class AiPersona {
@@ -2148,6 +2160,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   bool _stopping = false;
   bool _ended = false; // کاربر دکمه‌ی قطع را زد؛ در همین صفحه می‌مانیم
   bool _hintLoading = false;
+  DateTime _thinkAt = DateTime.now(); // شروعِ «در حال فکر کردن» (برای پیامِ اتصال)
   bool _cc = false; // زیرنویس (CC) — پیش‌فرض خاموش
   final Map<String, String> _trCache = {}; // متن → ترجمه به زبانِ مادری
   final List<_CcEntry> _hist = []; // تاریخچه‌ی زیرنویس
@@ -2595,6 +2608,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (!mounted || _closed) return;
     final token = ++_turn;
+    _thinkAt = DateTime.now();
     setState(() => _phase = _Phase.thinking);
     String? greet;
     try {
@@ -2851,6 +2865,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _heard = t;
       _ccAdd(true, t);
       _lastText = t;
+      _thinkAt = DateTime.now();
       _phase = _Phase.thinking;
       _error = '';
       _info = '';
@@ -3031,6 +3046,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       case _Phase.transcribing:
         return _tr(context, 'دارم صدات رو می‌فهمم…', 'Understanding your voice…');
       case _Phase.thinking:
+        // جوابِ سرور کند شد (مثلاً سوییچ به مدلِ پشتیبان) → کاربر بداند قطع نشده
+        if (DateTime.now().difference(_thinkAt).inSeconds >= 6) {
+          return _tr(context, 'در حال اتصال…', 'Connecting…');
+        }
         return _tr(context, 'در حال فکر کردن…', 'Thinking…');
       case _Phase.speaking:
         return _tr(context, '$name داره حرف می‌زنه', '$name is speaking');
