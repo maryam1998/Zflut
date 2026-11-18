@@ -373,6 +373,18 @@ List<_Correction> _relocate(String text, List<_Correction> list) {
   return out;
 }
 
+/// یک نوبتِ مکالمه‌ی ذخیره‌شده برای تمرین: جمله‌ی کاربر ← جوابِ AI.
+class _PracticeTurn {
+  final String user;
+  final String reply;
+  final List<_Correction> corrections;
+  const _PracticeTurn({
+    required this.user,
+    required this.reply,
+    required this.corrections,
+  });
+}
+
 class _Reply {
   final String text;
   final List<_Correction> corrections;
@@ -1050,6 +1062,12 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   AiPersona _persona = PersonaStore.builtIns.first;
   bool _callMode = false;
   int _callNonce = 0; // «تماس مجدد» پنلِ تماس را از نو می‌سازد
+
+  // 🎯 حالتِ تمرینِ مکالمه‌ی ذخیره‌شده (isPracticeMode): همان پنلِ ویدیو کال، اما
+  // جواب‌ها از خودِ مکالمه‌ی ذخیره‌شده می‌آیند، نه از AI. چیزی ذخیره/تغییر نمی‌کند.
+  bool _practiceMode = false;
+  int _practiceNonce = 0;
+  int _practiceK = 0; // تعدادِ نوبت‌هایی که تا حالا جواب داده شده
 
   // خوانشِ خودکارِ جوابِ AI در چت (با تیک؛ ذخیره می‌شود)
   bool _autoReadOn = false;
@@ -2391,6 +2409,111 @@ Now respond to: "$sentence"
     if (_callMode && mounted) setState(() => _callMode = false);
   }
 
+  // ───────────── 🎯 تمرینِ مکالمه‌ی ذخیره‌شده ─────────────
+  /// نوبت‌های مکالمه‌ی ذخیره‌شده: جمله‌ی کاربر + جوابِ AI (+ تصحیح‌هایش).
+  List<_PracticeTurn> _practiceTurns() {
+    final ms = _messages
+        .where((m) => !m.isWelcome && m.text.trim().isNotEmpty)
+        .toList();
+    final out = <_PracticeTurn>[];
+    for (var i = 0; i < ms.length; i++) {
+      if (ms[i].role != 'user') continue;
+      final replies = <_Msg>[];
+      for (var j = i + 1; j < ms.length && ms[j].role != 'user'; j++) {
+        replies.add(ms[j]);
+      }
+      if (replies.isEmpty) continue;
+      out.add(_PracticeTurn(
+        user: ms[i].text.trim(),
+        reply: replies.map((m) => m.text).join('\n'),
+        corrections: [for (final m in replies) ...m.corrections],
+      ));
+    }
+    return out;
+  }
+
+  bool get _canPractice => _practiceTurns().isNotEmpty;
+
+  void _startPractice() {
+    if (!_embedded || !_canPractice) return;
+    setState(() {
+      _practiceMode = true;
+      _practiceK = 0;
+      _practiceNonce++;
+      _editIdx = null;
+      _selectMode = false;
+      _sel.clear();
+    });
+  }
+
+  void _endPractice() {
+    if (_practiceMode && mounted) setState(() => _practiceMode = false);
+  }
+
+  void _redialPractice() {
+    if (!mounted) return;
+    setState(() {
+      _practiceK = 0;
+      _practiceNonce++;
+    });
+  }
+
+  /// سلامِ اولِ مکالمه (اگر AI در مکالمه‌ی ذخیره‌شده شروع کرده بود).
+  Future<String?> _practiceGreeting() async {
+    final ms = _messages
+        .where((m) => !m.isWelcome && m.text.trim().isNotEmpty)
+        .toList();
+    final lead = <String>[];
+    for (final m in ms) {
+      if (m.role == 'user') break;
+      lead.add(callSpokenBody(m.text));
+    }
+    final t = lead.join(' ').trim();
+    return t.isEmpty ? null : t;
+  }
+
+  /// جمله‌ی کاربر (هرچه باشد) → جوابِ ذخیره‌شده‌ی همین نوبت؛ بدونِ هیچ درخواستی به AI.
+  Future<CallTurn?> _practiceReply(String text, bool retry) async {
+    final ts = _practiceTurns();
+    if (ts.isEmpty) return null;
+    if (!retry) _practiceK++;
+    final t = ts[(_practiceK - 1) % ts.length];
+    final fixes = [
+      for (final c in t.corrections) CallFix(c.original, c.corrected),
+    ];
+    var spoken = callSpokenBody(t.reply);
+    if (fixes.isNotEmpty &&
+        !spoken.toLowerCase().contains(fixes.first.corrected.toLowerCase())) {
+      spoken = '${fixes.first.corrected}. $spoken';
+    }
+    return CallTurn(spoken, fixes);
+  }
+
+  /// 💡 راهنما در حالتِ تمرین: جمله‌ی بعدیِ خودِ کاربر از مکالمه‌ی ذخیره‌شده.
+  Future<String?> _practiceHint() async {
+    final ts = _practiceTurns();
+    if (ts.isEmpty) return null;
+    return ts[_practiceK % ts.length].user;
+  }
+
+  Widget _practiceButton(AppThemeColorsExt c) {
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    return FilledButton.icon(
+      style: FilledButton.styleFrom(
+        backgroundColor: c.gold,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      onPressed: _canPractice ? _startPractice : null,
+      icon: const Icon(Icons.videocam_rounded, size: 20),
+      label: Text(
+        fa ? 'تمرین این مکالمه' : 'Practice this conversation',
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
+
   /// سلامِ شخصیت وقتی تماس وصل شد (به چت هم اضافه می‌شود).
   Future<String?> _callGreeting() async {
     // فقط یک‌بار: اگر در همین گفتگو قبلاً سلام/معرفی یا هر پیامِ واقعی‌ای هست،
@@ -2563,7 +2686,7 @@ Now respond to: "$sentence"
                 ],
               ),
             ),
-          if ((hasReal && !_selectMode && !_loading) ||
+          if ((hasReal && !_selectMode && !_loading && !_practiceMode) ||
               (!_embedded && !_callMode) ||
               (!_embedded && _messages.isNotEmpty))
             Padding(
@@ -2572,7 +2695,7 @@ Now respond to: "$sentence"
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  if (hasReal && !_selectMode && !_loading)
+                  if (hasReal && !_selectMode && !_loading && !_practiceMode)
                     _ToolChip(
                       icon: Icons.checklist_rounded,
                       label: context.l10n.grammar_select_delete,
@@ -2634,14 +2757,30 @@ Now respond to: "$sentence"
           onRedial: () => setState(() => _callNonce++),
         ),
 
+      // ── 🎯 تمرینِ مکالمه‌ی ذخیره‌شده: همان پنلِ ویدیو کال، جواب‌ها از دیتای ذخیره‌شده ──
+      if (_embedded && !_practiceMode && hasReal && !_selectMode)
+        _practiceButton(c),
+      if (_embedded && _practiceMode)
+        SpeakingCallPanel(
+          key: ValueKey('practice-$_sessionId-${_persona.id}-$_practiceNonce'),
+          persona: _persona,
+          langCode: _chatLang,
+          langName: _enName(_chatLang),
+          onConnected: _practiceGreeting,
+          onUserSaid: _practiceReply,
+          onEnd: _endPractice,
+          onHint: _practiceHint,
+          onRedial: _redialPractice,
+        ),
+
       // ── نوارِ انتخابِ پیام‌ها ──
       if (_selectMode) _selectBar(c),
 
       // ── کادر تصحیحات ──
-      if (_corrections.isNotEmpty) _correctionsBox(c),
+      if (_corrections.isNotEmpty && !_practiceMode) _correctionsBox(c),
 
       // ── منطقه‌ی چت ──
-      _chatArea(c),
+      if (!_practiceMode) _chatArea(c),
 
       // ── راهنما (چی بگم؟) + جمله‌های آمادهٔ شروع ──
       if (!_embedded && !_callMode) _assistRow(c, hasReal, lang),
@@ -2650,7 +2789,7 @@ Now respond to: "$sentence"
       if (!ProStatus.isPro && !_embedded) _demoButton(c),
 
       // ── نوار ورودی (در تماس، ورودیِ خودش را دارد) ──
-      if (!_callMode || _embedded) _inputBar(c),
+      if ((!_callMode || _embedded) && !_practiceMode) _inputBar(c),
     ];
 
     return Column(
