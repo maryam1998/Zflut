@@ -2871,12 +2871,21 @@ Now respond to: "$sentence"
     final c = context.appColors;
     final picked = await showModalBottomSheet<String>(
       context: context,
+      // در تماس: پرده‌ی تیره نیست تا اواتار دیده شود، و شیت کوتاه است
+      barrierColor: forCall ? Colors.transparent : null,
+      constraints: forCall
+          ? BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.3)
+          : null,
+      isScrollControlled: forCall,
       backgroundColor: c.paper,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        child: SingleChildScrollView(
+          child: Padding(
+          padding: EdgeInsets.fromLTRB(
+              16, forCall ? 10 : 16, 16, forCall ? 6 : 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2886,10 +2895,10 @@ Now respond to: "$sentence"
                 style: TextStyle(
                     color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: forCall ? 6 : 10),
               for (final h in hints)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: forCall ? 5 : 8),
                   child: Material(
                     color: c.surface,
                     borderRadius: BorderRadius.circular(14),
@@ -2897,7 +2906,10 @@ Now respond to: "$sentence"
                       borderRadius: BorderRadius.circular(14),
                       onTap: () => Navigator.of(ctx).pop(h[0]),
                       child: Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: forCall
+                            ? const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6)
+                            : const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: c.cardBorder),
@@ -2910,14 +2922,19 @@ Now respond to: "$sentence"
                               child: Text(h[0],
                                   style: TextStyle(
                                       color: c.ink,
-                                      fontSize: 14.5,
+                                      fontSize: forCall ? 13.5 : 14.5,
                                       fontWeight: FontWeight.w700)),
                             ),
                             if (h[1].isNotEmpty) ...[
-                              const SizedBox(height: 4),
+                              SizedBox(height: forCall ? 2 : 4),
                               Text(h[1],
+                                  maxLines: forCall ? 1 : null,
+                                  overflow: forCall
+                                      ? TextOverflow.ellipsis
+                                      : null,
                                   style: TextStyle(
-                                      color: c.inkSoft, fontSize: 12.5)),
+                                      color: c.inkSoft,
+                                      fontSize: forCall ? 11.5 : 12.5)),
                             ],
                           ],
                         ),
@@ -2927,6 +2944,7 @@ Now respond to: "$sentence"
                 ),
             ],
           ),
+        ),
         ),
       ),
     );

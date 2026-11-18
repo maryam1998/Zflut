@@ -437,6 +437,9 @@ class CallTurn {
 }
 
 /// یک خط از تاریخچه‌ی زیرنویسِ تماس (برای کادر شیشه‌ای اسکرول‌پذیر)
+/// ارتفاعِ ثابتِ ناحیه‌ی زیرنویس روی ویدیو (بدون کادر)
+const double _kCcHeight = 104;
+
 class _CcEntry {
   final bool user; // true = کاربر، false = شخصیتِ AI
   final String text;
@@ -2388,20 +2391,22 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
 
     // CC خاموش: فقط اصلاحیه‌ی جمله (مثل قبل)
     if (!_cc) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      return Align(
+        alignment: AlignmentDirectional.bottomStart,
         child: _fixLine(_fixes.first, 1.0),
       );
     }
 
     if (_hist.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      return Align(
+        alignment: AlignmentDirectional.bottomStart,
         child: Text(
           _tr(context, 'زیرنویسِ تماس این‌جا می‌آید…',
               'Call captions will appear here…'),
           style: TextStyle(
-              color: Colors.white.withOpacity(0.6), fontSize: 12),
+              color: Colors.white.withOpacity(0.6),
+              fontSize: 12,
+              shadows: _ccShadow),
         ),
       );
     }
@@ -2437,6 +2442,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 fontSize: cur ? 14 : 12.5,
                 fontWeight: cur ? FontWeight.w700 : FontWeight.w400,
                 height: 1.35,
+                shadows: _ccShadow,
               ),
             ),
             if (tr.isNotEmpty)
@@ -2451,6 +2457,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                       fontSize: cur ? 12 : 11,
                       fontWeight: cur ? FontWeight.w600 : FontWeight.w400,
                       height: 1.35,
+                      shadows: _ccShadow,
                     ),
                   ),
                 ),
@@ -2474,17 +2481,27 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         stops: [0.0, 0.14],
       ).createShader(r),
       blendMode: BlendMode.dstIn,
-      child: SingleChildScrollView(
-        controller: _ccScroll,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: items,
+      child: LayoutBuilder(
+        builder: (ctx, cons) => SingleChildScrollView(
+          controller: _ccScroll,
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: cons.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: items,
+            ),
+          ),
         ),
       ),
     );
   }
+
+  static const List<Shadow> _ccShadow = [
+    Shadow(color: Color(0xCC000000), blurRadius: 6),
+    Shadow(color: Color(0x99000000), blurRadius: 2, offset: Offset(0, 1)),
+  ];
 
   Widget _fixLine(CallFix f, double op) => Text.rich(
         TextSpan(children: [
@@ -3455,28 +3472,13 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               // جمله‌ی فعلی پررنگ و روشن؛ جمله‌های قبلی کم‌رنگ‌تر
               if (_cc || _fixes.isNotEmpty)
                 Positioned(
-                  left: 10,
-                  right: 10,
+                  left: 14,
+                  right: 14,
                   bottom: 10,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: BackdropFilter(
-                      filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.32),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.18),
-                              width: 1),
-                        ),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 150),
-                          child: _ccGlassBody(showTr, nativeRtl),
-                        ),
-                      ),
-                    ),
-                  ),
+                  // ارتفاعِ ثابت و بدون کادر: متن هرقدر طولانی شود اندازه عوض نمی‌شود
+                  // و (با محو شدنِ بالا) روی صورت/چانه‌ی اواتار نمی‌افتد
+                  height: _kCcHeight,
+                  child: _ccGlassBody(showTr, nativeRtl),
                 ),
               // تصویرِ «خودت»
               PositionedDirectional(
