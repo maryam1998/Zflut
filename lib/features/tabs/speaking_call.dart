@@ -2572,8 +2572,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   }
 
   /// جمله‌ی تمرین: بدونِ کادر و دکمه‌ی اضافه، فقط خودِ جمله پایینِ ویدیو (تورِ برنامه توضیح می‌دهد).
-  Widget _practiceLine() {
+  Widget _practiceLine(bool showTr, bool nativeRtl) {
     final rtl = const {'ar', 'fa', 'he', 'ur'}.contains(widget.langCode);
+    // اگر CC روشن است، ترجمه‌ی جمله‌ی راهنما هم زیرش نشان داده می‌شود
+    final tr = (_cc && showTr) ? (_trCache[(_practiceTarget ?? '').trim()] ?? '') : '';
     return Align(
       alignment: Alignment.bottomCenter,
       child: TourTarget(
@@ -2585,16 +2587,47 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
             color: Colors.black.withOpacity(0.35),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Text(
-            _practiceTarget ?? '',
-            textAlign: TextAlign.center,
-            textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
-            style: const TextStyle(
-                color: Color(0xFFFCD34D),
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                height: 1.4,
-                shadows: _ccShadow),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _practiceTarget ?? '',
+                        textAlign: TextAlign.center,
+                        textDirection:
+                            rtl ? TextDirection.rtl : TextDirection.ltr,
+                        style: const TextStyle(
+                            color: Color(0xFFFCD34D),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            height: 1.4,
+                            shadows: _ccShadow),
+                      ),
+                      if (tr.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            tr,
+                            textAlign: TextAlign.center,
+                            textDirection: nativeRtl
+                                ? TextDirection.rtl
+                                : TextDirection.ltr,
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 12.5,
+                                height: 1.35,
+                                shadows: _ccShadow),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -2637,7 +2670,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final native = _nativeCode;
     if (native.isEmpty || native == widget.langCode) return;
     final src = _cc
-        ? [for (final e in _hist) e.text, _heard, _aiLine]
+        ? [for (final e in _hist) e.text, _heard, _aiLine, _practiceTarget ?? '']
         : _endLastLines();
     for (final t in src) {
       final txt = t.trim();
@@ -2669,7 +2702,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
 
   /// محتوای کادر شیشه‌ای زیرنویس: تاریخچه‌ی اسکرول‌پذیر؛ آخرین خط پررنگ.
   Widget _ccGlassBody(bool showTr, bool nativeRtl) {
-    if (_practiceTarget != null) return _practiceLine();
+    if (_practiceTarget != null) return _practiceLine(showTr, nativeRtl);
     final dir = nativeRtl ? TextDirection.rtl : TextDirection.ltr;
 
     // CC خاموش: فقط اصلاحیه‌ی جمله (مثل قبل)
