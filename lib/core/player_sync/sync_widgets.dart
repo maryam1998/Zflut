@@ -228,11 +228,11 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
   bool _detachReading() {
     try {
       if (!(_readTransFg() || _readTransBg())) return false;
-      final sync = ref.read(playerSyncProvider);
+      final sync = _pc.read(playerSyncProvider);
       if (sync.scopeId != _scopeId) return false;
       final main = sync.tracks[sync.mainCode];
       if (main == null || main.spans.isEmpty) return false;
-      final sp = ref.read(speechControllerProvider);
+      final sp = _pc.read(speechControllerProvider);
       if (sp.key == null) return false;
       final inQueue = _bgActive;
       if (!inQueue && sp.status == SpeechStatus.idle) return false;
@@ -248,7 +248,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
         if (t != null) texts[s.id] = t;
         if (_notifier.isForeignItem(s.id)) foreign.add(s.id);
       }
-      final sel = ref.read(languageSelectionProvider);
+      final sel = _pc.read(languageSelectionProvider);
       final allLangs = <String>{
         for (final c in [sel.native, ...sel.targets])
           if (c.trim().isNotEmpty && c.trim().toLowerCase() != main.code)
@@ -351,9 +351,9 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
       final vf = widget.voiceForItem;
       final vt = widget.voiceForTrans;
       if (vf == null && vt == null) return;
-      final playing = ref.read(speechControllerProvider);
+      final playing = _pc.read(speechControllerProvider);
       if (playing.key == null) return; // چیزی پخش نمی‌شود
-      final st = ref.read(playerSyncProvider);
+      final st = _pc.read(playerSyncProvider);
       if (st.scopeId != _scopeId) return;
       final mainCode = st.mainCode;
       final snap = <String, ({String code, List<TrackSpan> spans})>{};
@@ -616,7 +616,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   bool _readTransBg() {
     try {
-      return ref.read(sharedPrefsProvider).getBool('zflut-read-trans-bg') ?? true;
+      return _pc.read(sharedPrefsProvider).getBool('zflut-read-trans-bg') ?? true;
     } catch (_) {
       return false;
     }
@@ -624,7 +624,7 @@ class _SyncPlayScopeState extends ConsumerState<SyncPlayScope> {
 
   bool _readTransFg() {
     try {
-      return ref.read(sharedPrefsProvider).getBool('zflut-read-trans-fg') ??
+      return _pc.read(sharedPrefsProvider).getBool('zflut-read-trans-fg') ??
           true;
     } catch (_) {
       return false;
