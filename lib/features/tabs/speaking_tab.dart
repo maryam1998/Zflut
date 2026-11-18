@@ -3083,6 +3083,7 @@ Now respond to: "$sentence"
           onUserSaid: _practiceReply,
           onEnd: _endPractice,
           onHint: _practiceHint,
+          autoHint: true,
           onRedial: _redialPractice,
         ),
 

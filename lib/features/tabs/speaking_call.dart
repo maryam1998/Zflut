@@ -2143,6 +2143,9 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
   /// «تماس مجدد» بعد از قطع تماس.
   final VoidCallback? onRedial;
 
+  /// true = بعد از هر نوبتِ AI، «راهنما» خودکار زده می‌شود و جمله‌ی بعدی برای خواندن نشان داده می‌شود.
+  final bool autoHint;
+
   const SpeakingCallPanel({
     super.key,
     required this.persona,
@@ -2153,6 +2156,7 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
     required this.onEnd,
     this.onHint,
     this.onRedial,
+    this.autoHint = false,
   });
 
   @override
@@ -2410,6 +2414,33 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _level.value = 0;
     }
     unawaited(_beginPractice(t));
+  }
+
+  /// بعد از تمام شدنِ حرفِ AI: در حالتِ تمرین خودکار «راهنما» زده می‌شود (بدونِ لمسِ دکمه)،
+  /// وگرنه رفتارِ قبلی (میکروفونِ دست‌آزاد).
+  Future<void> _afterAiTurn(int token) async {
+    final fn = widget.onHint;
+    if (!widget.autoHint || fn == null || !_sttSupported) {
+      if (_handsFree && _sttSupported) unawaited(_startRec());
+      return;
+    }
+    if (_hintLoading || _closed) return;
+    setState(() => _hintLoading = true);
+    String? picked;
+    try {
+      picked = await fn();
+    } catch (_) {
+      picked = null;
+    }
+    if (!mounted) return;
+    setState(() => _hintLoading = false);
+    if (_closed || token != _turn) return;
+    final t = (picked ?? '').trim();
+    if (t.isEmpty) {
+      if (_handsFree) unawaited(_startRec());
+      return;
+    }
+    await _beginPractice(t);
   }
 
   // ───────────── تمرینِ خواندنِ جمله‌ی راهنما ─────────────
@@ -3027,7 +3058,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       if (!mounted || _closed || token != _turn) return;
     }
     setState(() => _phase = _Phase.ready);
-    if (_handsFree && _sttSupported) unawaited(_startRec());
+    unawaited(_afterAiTurn(token));
   }
 
   Future<void> _onMicTap() async {
@@ -3329,7 +3360,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     await _speak(res.spoken);
     if (!mounted || _closed || token != _turn) return;
     setState(() => _phase = _Phase.ready);
-    if (_handsFree && _sttSupported) unawaited(_startRec());
+    unawaited(_afterAiTurn(token));
   }
 
   // ───────────── تشخیصِ گفتار (Whisperِ روی گوشی) ─────────────
