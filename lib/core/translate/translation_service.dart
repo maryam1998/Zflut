@@ -1,4 +1,5 @@
 import '../usage/free_limit.dart';
+import '../usage/pro_status.dart' show ProStatus;
 import 'dart:async';
 import 'dart:convert';
 
@@ -227,6 +228,59 @@ bool looksLikelyMistranslated(
   final ratio = out.length / (src.isEmpty ? 1 : src.length);
   if (src.length > 3 && (ratio < 0.25 || ratio > 3.5)) return true;
 
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🔍 بازبینیِ خودکارِ عمیق (فقط Pro): چکِ رایگان و همگام که «ترجمه‌ی مشکوک» را تشخیص می‌دهد.
+// ترجمه‌ی سالم هرگز به AI نمی‌رود؛ مشکوک‌ها یک بار بازبینی و در کش (محلی + مشترک) ذخیره می‌شوند.
+// ═══════════════════════════════════════════════════════════════════
+const Set<String> _deepNonLatin = {
+  'fa', 'ar', 'ur', 'he', 'ru', 'uk', 'bg', 'el', 'hi', 'bn', 'th', 'zh',
+  'ja', 'ko',
+};
+const Set<String> _deepCjk = {'zh', 'ja', 'ko', 'th'};
+
+bool _deepReviewOn(AiSettings? ai) => ai != null && ProStatus.isPro;
+
+bool looksSuspiciousDeep(String src, String draft, String from, String to) {
+  final s0 = src.trim();
+  final d = draft.trim();
+  if (s0.isEmpty || d.isEmpty) return false;
+
+  // ۱. کلمه‌های لاتینِ ترجمه‌نشده در زبانِ مقصدِ غیرلاتین (نام‌های خاصِ مبدأ مجازند)
+  if (_deepNonLatin.contains(to)) {
+    final srcWords = RegExp(r'[A-Za-z]{3,}')
+        .allMatches(s0)
+        .map((m) => m.group(0)!.toLowerCase())
+        .toSet();
+    final latin = RegExp(r'[A-Za-z]{3,}')
+        .allMatches(d)
+        .map((m) => m.group(0)!.toLowerCase())
+        .where((w) => !srcWords.contains(w))
+        .length;
+    final total = d.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    if (latin >= 2 && total > 0 && latin / total > 0.3) return true;
+  }
+
+  // ۲. نسبتِ طولِ مشکوک (برای CJK/تایی معنی ندارد)
+  if (s0.length >= 40 && !_deepCjk.contains(to) && !_deepCjk.contains(from)) {
+    final ratio = d.length / s0.length;
+    if (ratio < 0.45 || ratio > 2.6) return true;
+  }
+
+  // ۳. جمله‌های جاافتاده (ترجمه‌ی بریده)
+  final enders = RegExp(r'[.!?؟…]+');
+  final sc = enders.allMatches(s0).length;
+  if (sc >= 3 && enders.allMatches(d).length < sc * 0.5) return true;
+
+  // ۴. تکرارِ حلقه‌ای (۴ توکنِ مساویِ پشت‌سرهم)
+  final toks = d.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  var run = 1;
+  for (var i = 1; i < toks.length; i++) {
+    run = toks[i] == toks[i - 1] ? run + 1 : 1;
+    if (run >= 4) return true;
+  }
   return false;
 }
 
@@ -595,6 +649,7 @@ class TranslationService {
   }) async {
     // ۰. ML Kit روی گوشی: آنی، رایگان، بدون سقف و بدون هزینه‌ی Worker. اگر مدل آماده نبود
     //    دانلود در پس‌زمینه شروع می‌شود و همین‌بار از مسیر معمولِ زیر ترجمه می‌شود.
+    String? mlDraft; // نتیجه‌ی ML Kit که مشکوکِ عمیق بود؛ اگر هیچ‌چیز بهتر نشد همین برمی‌گردد
     if (!forceVerify) {
       final ml = await _viaMlKit(text, targetLang, sourceLang);
       if (ml != null) {
@@ -605,8 +660,13 @@ class TranslationService {
           !(aiSettings != null && _looksIdiomatic(text)) &&
           !looksLikelyMistranslated(text, ml, targetLang,
               sourceLang: sourceLang)) {
-        await cachePut(text, sourceLang, targetLang, ml.trim());
-        return ml.trim();
+        if (_deepReviewOn(aiSettings) &&
+            looksSuspiciousDeep(text, ml, sourceLang, targetLang)) {
+          mlDraft = ml.trim();
+        } else {
+          await cachePut(text, sourceLang, targetLang, ml.trim());
+          return ml.trim();
+        }
       }
     }
 
@@ -625,7 +685,10 @@ class TranslationService {
           (forceVerify ||
               _looksIdiomatic(text) ||
               looksLikelyMistranslated(text, result, targetLang,
-                  sourceLang: sourceLang))) {
+                  sourceLang: sourceLang) ||
+              (_deepReviewOn(aiSettings) &&
+                  looksSuspiciousDeep(
+                      text, result, sourceLang, targetLang)))) {
         final before = result;
         result = await _verifyWithAI(text, targetLang, result, aiSettings);
         aiFixed = result.trim() != before.trim();
@@ -659,6 +722,10 @@ class TranslationService {
       } catch (_) {}
     }
 
+    if (mlDraft != null && mlDraft.isNotEmpty) {
+      await cachePut(text, sourceLang, targetLang, mlDraft);
+      return mlDraft;
+    }
     return text; // هیچ سرویسی جواب نداد → متن اصلی (تا برنامه نیفتد)
   }
 
@@ -1136,8 +1203,14 @@ class TranslationService {
           '(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme).\n'
           'Is the draft accurate, natural and complete? If yes, reply with EXACTLY: OK\n'
           'If no, reply with ONLY the corrected translation — no quotes, no explanation, nothing else.';
+      // سقفِ توکن متناسب با طولِ متن (قبلاً ثابتِ ۸۰ بود و اصلاحِ جمله‌های بلند وسط بریده می‌شد)
+      final capTokens =
+          ((source.length > draft.length ? source.length : draft.length) * 1.3 + 96)
+              .round()
+              .clamp(96, 1200)
+              .toInt();
       final result = await callAI(
-          prompt: prompt, maxTokens: 80, retries: 0, settings: settings);
+          prompt: prompt, maxTokens: capTokens, retries: 0, settings: settings);
       final cleaned = stripAIReasoning(result);
       if (cleaned.isEmpty ||
           RegExp(r'^OK\.?$', caseSensitive: false).hasMatch(cleaned) ||
