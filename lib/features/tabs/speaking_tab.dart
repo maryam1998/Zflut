@@ -1223,8 +1223,102 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     });
   }
 
+  // ───────────── ⬇️ دکمه‌ی «برو به آخرین پیام» (شناور؛ مثل چت‌باکس‌های AI) ─────────────
+  // صفحه (نه خودِ چت) اسکرول می‌شود؛ پس به اسکرولِ صفحه گوش می‌دهیم و وقتی ابتدای
+  // آخرین پیام پایینِ صفحه است، فلشِ پایین را در گوشه‌ی پایینِ ناحیه‌ی اسکرول نشان می‌دهیم.
+  ScrollPosition? _pagePos;
+  OverlayEntry? _jumpEntry;
+  final ValueNotifier<Offset?> _jumpAt = ValueNotifier<Offset?>(null);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final pos = Scrollable.maybeOf(context)?.position;
+    if (pos != _pagePos) {
+      _pagePos?.removeListener(_updateJump);
+      _pagePos = pos;
+      _pagePos?.addListener(_updateJump);
+    }
+    if (_jumpEntry == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _jumpEntry != null) return;
+        final ov = Overlay.maybeOf(context, rootOverlay: true);
+        if (ov == null) return;
+        final e = OverlayEntry(builder: _jumpBuilder);
+        _jumpEntry = e;
+        ov.insert(e);
+        _updateJump();
+      });
+    }
+  }
+
+  void _updateJump() {
+    if (!mounted) return;
+    Offset? at;
+    final mk = _lastMsgKey.currentContext;
+    final sc = Scrollable.maybeOf(context);
+    if (mk != null &&
+        mk.mounted &&
+        sc != null &&
+        TickerMode.of(context) &&
+        !(_callMode && !_embedded) &&
+        _messages.length > 1) {
+      final mro = mk.findRenderObject();
+      final vro = sc.context.findRenderObject();
+      if (mro is RenderBox &&
+          vro is RenderBox &&
+          mro.attached &&
+          vro.attached &&
+          vro.hasSize) {
+        final dy = mro.localToGlobal(Offset.zero, ancestor: vro).dy;
+        final vh = vro.size.height;
+        if (dy > vh - 60) {
+          final g = vro.localToGlobal(Offset.zero);
+          at = Offset(g.dx + vro.size.width / 2, g.dy + vh);
+        }
+      }
+    }
+    if (_jumpAt.value != at) _jumpAt.value = at;
+  }
+
+  Widget _jumpBuilder(BuildContext ctx) {
+    return ValueListenableBuilder<Offset?>(
+      valueListenable: _jumpAt,
+      builder: (ctx, at, _) {
+        if (at == null) return const SizedBox.shrink();
+        final c = ctx.appColors;
+        const d = 42.0;
+        return Positioned(
+          left: at.dx - d / 2,
+          top: at.dy - d - 16,
+          child: Material(
+            color: c.surface,
+            elevation: 4,
+            shape: CircleBorder(side: BorderSide(color: c.cardBorder)),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () {
+                _scrollDown();
+                _jumpAt.value = null;
+              },
+              child: SizedBox(
+                width: d,
+                height: d,
+                child: Icon(Icons.keyboard_arrow_down_rounded,
+                    size: 28, color: c.gold),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
+    _pagePos?.removeListener(_updateJump);
+    _jumpEntry?.remove();
+    _jumpEntry = null;
     _input.dispose();
     _editCtrl.dispose();
     _scroll.dispose();
@@ -2376,6 +2470,7 @@ Now respond to: "$sentence"
   // ───────────── UI ─────────────
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateJump());
     final c = context.appColors;
     final sel = ref.watch(languageSelectionProvider);
     final options = sel.targets.isEmpty ? ['en'] : sel.targets;
@@ -3406,7 +3501,7 @@ Now respond to: "$sentence"
           const SizedBox(height: 10),
         ],
         Align(
-          alignment: AlignmentDirectional.centerStart,
+          alignment: Alignment.centerRight, // همیشه سمت راست، برای همه‌ی زبان‌ها
           child: chip(
             _hintBusy
                 ? (_faUi ? 'در حال فکر کردن…' : 'Thinking…')
