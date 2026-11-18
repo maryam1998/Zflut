@@ -248,11 +248,15 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     _eqPumping = true;
     Future<void>(() async {
       try {
+        // ⏳ بولدِ معادلِ لغت‌ها کارِ پس‌زمینه است: بعد از باز شدنِ داستان شروع شود تا UI قفل نشود
+        await Future<void>.delayed(const Duration(milliseconds: 1500));
         while (mounted && _eqQueue.isNotEmpty) {
           final f = _eqQueue.removeAt(0);
           try {
             await f();
           } catch (_) {}
+          // به UI فرصتِ نفس‌کشیدن بده
+          await Future<void>.delayed(const Duration(milliseconds: 150));
         }
       } finally {
         _eqPumping = false;
@@ -290,7 +294,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
 
   Future<void> _eqRun(String lang, String src, List<String> missing) async {
     final svc = ref.read(translationServiceProvider);
-    final ai = ref.read(aiSettingsProvider);
+    // بولدِ معادلِ لغت فقط با مترجم‌های رایگان/ML Kit/کش؛ AI صدا زده نمی‌شود
+    const ai = null;
     for (final w in missing) {
       if (!mounted) return;
       if (_eqMatchedNow(lang, src, w)) continue;
@@ -658,6 +663,32 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
       jobs = allJobs;
     }
     if (!mounted) return;
+
+    // نتیجه‌ها دسته‌ای و حداکثر هر ۲۵۰ms یک‌بار اعمال می‌شوند (به‌جای یک setState برای هر جمله)
+    final buf = <MapEntry<_Job, String>>[];
+    Timer? flushT;
+    void flush() {
+      flushT?.cancel();
+      flushT = null;
+      if (buf.isEmpty) return;
+      final items = List<MapEntry<_Job, String>>.of(buf);
+      buf.clear();
+      if (!mounted) return;
+      setState(() {
+        for (final e in items) {
+          final j = e.key;
+          final r = e.value;
+          _inflight.remove(j.key);
+          if (r.isEmpty || r == j.src.trim()) {
+            _failed.add(j.key);
+          } else {
+            _tr[j.key] = r;
+            _linkUnits(j.lang, j.src, r, overwrite: false);
+          }
+        }
+      });
+    }
+
     var next = 0;
     Future<void> worker() async {
       while (mounted) {
@@ -666,28 +697,27 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
         final j = jobs[i];
         var r = '';
         try {
+          // 🚫 باز کردنِ داستان هیچ‌وقت AI صدا نمی‌زند (کش ← ML Kit ← مترجم‌های رایگان).
+          // بازبینی/ترجمه‌ی AI فقط با دکمه‌ی ↻ (خودِ کاربر) انجام می‌شود.
           r = (await svc.translate(
             text: j.src,
             targetLang: j.lang,
             sourceLang: widget.langCode,
-            aiSettings: ai,
           ))
               .trim();
         } catch (_) {}
         if (!mounted) return;
-        setState(() {
-          _inflight.remove(j.key);
-          if (r.isEmpty || r == j.src.trim()) {
-            _failed.add(j.key);
-          } else {
-            _tr[j.key] = r;
-            _linkUnits(j.lang, j.src, r, overwrite: false);
-          }
-        });
+        buf.add(MapEntry(j, r));
+        flushT ??= Timer(const Duration(milliseconds: 250), flush);
       }
     }
 
-    await Future.wait([worker(), worker(), worker()]);
+    try {
+      await Future.wait([worker(), worker(), worker()]);
+    } finally {
+      flush();
+      flushT?.cancel();
+    }
   }
 
   static const Set<String> _noSpaceLangs = {'zh', 'ja'};
