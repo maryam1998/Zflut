@@ -1,3 +1,4 @@
+import '../../core/data/paid_content.dart' show PaidContent;
 import '../../core/usage/free_limit.dart';
 import '../../core/usage/conversations_index.dart';
 import '../../core/usage/pro_i18n.dart';
@@ -241,6 +242,107 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   final GlobalKey _searchKey = GlobalKey(); // با رفتن به حالتِ «بدون نتیجه» فوکوسِ کیبورد نپرد
   Set<String> _levels = <String>{};
 
+  // ───────────── 🔍 جستجوی سراسریِ تبِ Talk ─────────────
+  // متنِ مکالمه‌ها «تنبل» لود می‌شود (در لیستِ موضوع‌ها scenarios خالی است)؛
+  // پس برای جستجو، متنِ همه‌ی موضوع‌ها (جمله‌های انگلیسی + فارسی، سناریوها و
+  // عنوان‌ها) یک‌بار در پس‌زمینه خوانده و به یک متنِ نرمال‌شده تبدیل می‌شود.
+  final Map<String, String> _blob = {}; // شناسه‌ی موضوع → متنِ قابلِ جستجو
+  String _blobKey = '';
+  bool _indexing = false;
+
+  /// نرمال‌سازی برای جستجو در همه‌ی زبان‌ها: حروف کوچک، ی/ک عربی→فارسی،
+  /// حذفِ اعراب/کشیده/نیم‌فاصله، ارقامِ فارسی/عربی→لاتین، یکسان‌سازیِ گیومه.
+  static String _nz(String s) {
+    final b = StringBuffer();
+    for (final r in s.toLowerCase().runes) {
+      if (r == 0x064A || r == 0x0649) {
+        b.writeCharCode(0x06CC); // ي ى → ی
+      } else if (r == 0x0643) {
+        b.writeCharCode(0x06A9); // ك → ک
+      } else if ((r >= 0x064B && r <= 0x065F) ||
+          r == 0x0670 ||
+          r == 0x0640 ||
+          r == 0x200C ||
+          r == 0x200D) {
+        continue; // اعراب، کشیده، نیم‌فاصله
+      } else if (r >= 0x06F0 && r <= 0x06F9) {
+        b.writeCharCode(0x30 + r - 0x06F0); // ۰-۹
+      } else if (r >= 0x0660 && r <= 0x0669) {
+        b.writeCharCode(0x30 + r - 0x0660); // ٠-٩
+      } else if (r == 0x2018 || r == 0x2019) {
+        b.write("'");
+      } else {
+        b.writeCharCode(r);
+      }
+    }
+    return b.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  String _buildBlob(ConversationTopic t) {
+    final b = StringBuffer()
+      ..write('${t.topic}\n${topicTitle(t.topic, 'fa')}\n${topicTitle(t.topic, 'en')}\n');
+    for (final s in t.scenarios) {
+      b.write('${s.scenario}\n${s.context ?? ''}\n');
+      for (final l in s.speakerA) {
+        b.write('${l.en}\n${l.fa}\n');
+      }
+      for (final l in s.speakerB) {
+        b.write('${l.en}\n${l.fa}\n');
+      }
+    }
+    return _nz(b.toString());
+  }
+
+  /// متنِ موضوع‌هایی که هنوز خوانده نشده‌اند را (۴ تا ۴ تا) می‌خواند و بعد از هر
+  /// دسته نتیجه‌ها را تازه می‌کند. موضوعِ قفل/بدونِ متن (کاربرِ رایگان) فقط با
+  /// نامش جستجو می‌شود.
+  Future<void> _ensureIndex() async {
+    if (_indexing || !mounted) return;
+    final key = '${ProStatus.isPro}-${PaidContent.revision.value}';
+    if (key != _blobKey) {
+      _blob.clear();
+      _blobKey = key;
+    }
+    final repo = ref.read(conversationRepoProvider);
+    final todo = [
+      for (final t in repo.all)
+        if (t.id.isNotEmpty && !_blob.containsKey(t.id)) t
+    ];
+    if (todo.isEmpty) return;
+    _indexing = true;
+    if (mounted) setState(() {});
+    try {
+      for (var i = 0; i < todo.length; i += 4) {
+        await Future.wait(todo.skip(i).take(4).map((t) async {
+          ConversationTopic? full;
+          try {
+            full = await repo.loadTopic(t);
+          } catch (_) {}
+          _blob[t.id] = full == null ? '' : _buildBlob(full);
+        }));
+        if (!mounted) return;
+        setState(() {}); // نتیجه‌ها همین‌طور که ایندکس می‌شوند پر می‌شوند
+      }
+    } finally {
+      _indexing = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  bool _topicMatches(ConversationTopic t, String rawQuery, String uiLang) {
+    final q = _nz(rawQuery);
+    if (q.isEmpty) return true;
+    final head = _nz('${t.topic} ${topicTitle(t.topic, uiLang)} '
+        '${topicTitle(t.topic, 'fa')} ${topicTitle(t.topic, 'en')}');
+    final body = _blob[t.id] ?? '';
+    // همه‌ی کلمه‌های جستجو باید جایی در عنوان/متنِ موضوع باشند
+    for (final w in q.split(' ')) {
+      if (w.isEmpty) continue;
+      if (!head.contains(w) && !body.contains(w)) return false;
+    }
+    return true;
+  }
+
   /// 💎 کاربرِ رایگان داخلِ موضوع‌های باز فقط جمله‌های A1 را می‌بیند
   Set<String> get _effLevels {
     final t = _activeTopic;
@@ -439,18 +541,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       if (_levels.isNotEmpty && !_topicHasLevel(t, index)) {
         return false;
       }
-      if (_query.trim().isEmpty) return true;
-      final q = _query.trim().toLowerCase();
-      if (t.topic.toLowerCase().contains(q)) return true;
-      if (topicTitle(t.topic, Localizations.localeOf(context).languageCode)
-          .toLowerCase()
-          .contains(q)) {
-        return true;
-      }
-      return t.scenarios.any((s) =>
-          s.scenario.toLowerCase().contains(q) ||
-          s.speakerA.any((l) => l.en.toLowerCase().contains(q)) ||
-          s.speakerB.any((l) => l.en.toLowerCase().contains(q)));
+      return _topicMatches(
+          t, _query, Localizations.localeOf(context).languageCode);
     }).toList();
 
     if (_activeTopic != null) {
@@ -524,11 +616,14 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       ),
       child: TextField(
         controller: _searchCtrl,
-        onChanged: (v) => setState(() {
-          _query = v;
-          _rangeFrom = 1;
-          _rangeTo = 65;
-        }),
+        onChanged: (v) {
+          setState(() {
+            _query = v;
+            _rangeFrom = 1;
+            _rangeTo = 65;
+          });
+          if (v.trim().isNotEmpty) unawaited(_ensureIndex());
+        },
         textAlign: TextAlign.start,
         style: TextStyle(color: c.ink, fontSize: 13.5),
         decoration: InputDecoration(
@@ -558,8 +653,15 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           Padding(
             padding: const EdgeInsets.all(40),
             child: Center(
-              child: Text(context.l10n.dialogs_no_results,
-                  style: TextStyle(color: c.inkSoft, fontSize: 14)),
+              child: (_indexing && _query.trim().isNotEmpty)
+                  ? SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.2, color: c.gold),
+                    )
+                  : Text(context.l10n.dialogs_no_results,
+                      style: TextStyle(color: c.inkSoft, fontSize: 14)),
             ),
           ),
         ],
