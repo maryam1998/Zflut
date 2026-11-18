@@ -1242,6 +1242,16 @@ function getProviderChain(env) {
 // 🎚️ زنجیره بر اساسِ نوعِ کار: story → AI_PROVIDER_STRONG، بقیه → AI_PROVIDER_LIGHT.
 // متغیرِ ست‌نشده/نامعتبر = همان getProviderChain (بدونِ تغییرِ رفتار).
 function getProviderChainFor(env, feature) {
+  // ⚡ ویدیو کال: زنجیره‌ی جدا با مدل‌های کوچک و سریع (AI_PROVIDER_CALL)؛ ست‌نشده/نامعتبر
+  // = همان زنجیره‌ی سبکِ قبلی (بدونِ تغییرِ رفتار).
+  if (feature === "videocall" && env.AI_PROVIDER_CALL) {
+    const chain = String(env.AI_PROVIDER_CALL)
+      .toLowerCase()
+      .split(",")
+      .map((p) => p.trim())
+      .filter((p) => VALID_PROVIDERS.includes(p));
+    if (chain.length) return chain;
+  }
   const raw = feature === "story" ? env.AI_PROVIDER_STRONG : env.AI_PROVIDER_LIGHT;
   if (raw) {
     const chain = String(raw)

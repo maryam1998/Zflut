@@ -1644,6 +1644,28 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     _persist();
   }
 
+  /// آخرین پیامِ گفتگو (+ آخرین حرف‌های خودِ کاربر) برای پرامپتِ راهنما؛ تا
+  /// پیشنهادها دقیقاً به آخرین جمله مرتبط باشند و تکراری نشوند، حتی اگر
+  /// خلاصه خیلی کلی باشد.
+  String _hintLastLine() {
+    final real = _messages.where((m) => !m.isWelcome).toList();
+    if (real.isEmpty) return '';
+    String cut(String t) => t.length > 300 ? t.substring(0, 300) : t;
+    final last = real.last;
+    final who = last.role == 'ai' ? 'Partner' : 'Learner';
+    final said = real
+        .where((m) => m.role == 'user')
+        .toList()
+        .reversed
+        .take(2)
+        .map((m) => '"${cut(m.text)}"')
+        .join(', ');
+    return 'LAST MESSAGE ($who): "${cut(last.text)}"\n'
+        'Every suggestion MUST directly answer or react to this last message, '
+        'be specific to it (not generic), and differ from each other.'
+        '${said.isEmpty ? '' : ' Do NOT repeat anything the learner already said: $said.'}\n';
+  }
+
   // ───────────── خلاصه‌سازیِ تاریخچه ─────────────
   /// متنِ «گفتگوی اخیر» برای پرامپت: تا ۱۰ پیام مثل قبل (۴ پیام)؛ بعد از آن
   /// خلاصه‌ی قدیمی‌ها + ۶ پیامِ آخر.
@@ -2936,7 +2958,8 @@ Now respond to: "$sentence"
           'Output EXACTLY 3 lines, each in this format: '
           '<$langLabel sentence> ||| <its $nativeLabel translation>\n'
           'No numbering, no markdown, no extra text.\n'
-          'Recent conversation:\n${_ctx(_messages)}\n',
+          'Recent conversation:\n${_ctx(_messages)}\n'
+          '${_hintLastLine()}',
           260);
       for (final line in _normalizeAiText(r).split('\n')) {
         final parts = line.split('|||');
