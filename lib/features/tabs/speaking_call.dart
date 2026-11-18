@@ -2196,6 +2196,11 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
 
   String _aiLine = '';
   String _heard = '';
+  // 🎯 تمرینِ خواندنِ جمله‌ی «راهنما»: پاسخِ AI نگه داشته می‌شود تا کاربر جمله را بخواند
+  String? _practiceTarget; // جمله‌ای که از راهنما انتخاب شده
+  Future<CallTurn?>? _practiceFuture; // پاسخِ AI (از قبل گرفته‌شده و نگه‌داشته‌شده)
+  String _practiceHeard = ''; // آنچه تشخیصِ گفتار شنید
+  int _practiceState = 0; // 0 = منتظرِ خواندن، 1 = درست خواند، 2 = اشتباه خواند
   String _lastText = '';
   List<CallFix> _fixes = const [];
   String _info = '';
@@ -2401,7 +2406,193 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       unawaited(_rec.stop().then((p) => _deleteFile(p)));
       _level.value = 0;
     }
-    _submit(t);
+    unawaited(_beginPractice(t));
+  }
+
+  // ───────────── تمرینِ خواندنِ جمله‌ی راهنما ─────────────
+  /// جمله از راهنما انتخاب شد: پاسخِ AI همان لحظه در پس‌زمینه گرفته و نگه داشته می‌شود،
+  /// میکروفون باز می‌شود تا کاربر جمله را بخواند؛ بعد از خواندن پاسخ پخش می‌شود.
+  Future<void> _beginPractice(String t) async {
+    if (!_sttSupported) {
+      unawaited(_submit(t));
+      return;
+    }
+    final old = _practiceFuture;
+    if (old != null) {
+      try {
+        await old;
+      } catch (_) {}
+      if (!mounted || _closed) return;
+    }
+    final pre = widget.onUserSaid(t, false)
+        .then<CallTurn?>((v) => v, onError: (Object _) => null);
+    _turn++;
+    setState(() {
+      _practiceTarget = t;
+      _practiceFuture = pre;
+      _practiceHeard = '';
+      _practiceState = 0;
+      _phase = _Phase.ready;
+      _info = '';
+      _error = '';
+    });
+    await _startRec();
+  }
+
+  /// متنِ تشخیص‌داده‌شده با جمله‌ی راهنما مقایسه می‌شود.
+  /// درست → پاسخِ AI؛ اشتباه → جمله‌ی درست پخش می‌شود و بعد پاسخِ AI.
+  Future<void> _finishPractice(String heard) async {
+    final target = _practiceTarget;
+    final pre = _practiceFuture;
+    if (target == null) return;
+    final ok = _practiceMatches(target, heard);
+    final token = ++_turn;
+    if (ok) {
+      setState(() {
+        _practiceHeard = heard;
+        _practiceState = 1;
+        _phase = _Phase.thinking;
+        _info = '';
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      if (!mounted || _closed || token != _turn) return;
+    } else {
+      setState(() {
+        _practiceHeard = heard;
+        _practiceState = 2;
+        _phase = _Phase.speaking;
+        _info = '';
+      });
+      await _speak(target);
+      if (!mounted || _closed || token != _turn) return;
+    }
+    await _submit(target, pre: pre);
+  }
+
+  /// «رد کردن»: بدونِ تمرین، همان جمله برای AI فرستاده می‌شود.
+  void _skipPractice() {
+    final target = _practiceTarget;
+    if (target == null) return;
+    final pre = _practiceFuture;
+    _stopSpeaking();
+    if (_phase == _Phase.recording) {
+      _ampSub?.cancel();
+      _ampSub = null;
+      _stopping = true;
+      unawaited(_rec.stop().then((p) => _deleteFile(p)));
+      _level.value = 0;
+    }
+    unawaited(_submit(target, pre: pre));
+  }
+
+  static List<String> _practiceTokens(String s) {
+    final w = s
+        .toLowerCase()
+        .replaceAll('’', "'")
+        .replaceAll("'", '')
+        .replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), ' ')
+        .split(RegExp(r'\s+'))
+        .where((e) => e.isNotEmpty)
+        .toList();
+    // زبان‌های بدونِ فاصله (چینی/ژاپنی…): کاراکتر به کاراکتر
+    if (w.length == 1 && w.first.length > 4) return w.first.split('');
+    return w;
+  }
+
+  static int _practiceDist(String a, String b) {
+    var prev = List<int>.generate(b.length + 1, (i) => i);
+    for (var i = 1; i <= a.length; i++) {
+      final cur = List<int>.filled(b.length + 1, 0);
+      cur[0] = i;
+      for (var j = 1; j <= b.length; j++) {
+        final cost = a[i - 1] == b[j - 1] ? 0 : 1;
+        cur[j] = math.min(math.min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+      }
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+
+  static bool _practiceSame(String a, String b) {
+    if (a == b) return true;
+    if (a.length < 4 || b.length < 4) return false;
+    return _practiceDist(a, b) <= (a.length >= 8 ? 2 : 1);
+  }
+
+  /// شباهتِ کلمه‌به‌کلمه (LCS با تحملِ اختلافِ کوچکِ تشخیصِ گفتار) ≥ ۸۰٪ = درست.
+  static bool _practiceMatches(String target, String heard) {
+    final a = _practiceTokens(target);
+    final b = _practiceTokens(heard);
+    if (a.isEmpty) return true;
+    if (b.isEmpty) return false;
+    final dp = List.generate(a.length + 1, (_) => List<int>.filled(b.length + 1, 0));
+    for (var i = 1; i <= a.length; i++) {
+      for (var j = 1; j <= b.length; j++) {
+        dp[i][j] = _practiceSame(a[i - 1], b[j - 1])
+            ? dp[i - 1][j - 1] + 1
+            : math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+    return dp[a.length][b.length] / a.length >= 0.8;
+  }
+
+  Widget _practiceBanner() {
+    final c = context.appColors;
+    final target = _practiceTarget ?? '';
+    final String title;
+    switch (_practiceState) {
+      case 1:
+        title = _tr(context, '✅ عالی! درست خوندی', '✅ Great! You read it right');
+        break;
+      case 2:
+        title = _tr(context, '🔊 گوش کن؛ تلفظِ درست این‌طوریه:',
+            '🔊 Listen — this is the correct pronunciation:');
+        break;
+      default:
+        title = _tr(context, '🎯 این جمله رو بلند بخون:', '🎯 Read this sentence aloud:');
+    }
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      decoration: BoxDecoration(
+        color: c.goldSoft,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.gold),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: c.inkSoft, fontSize: 12, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(target,
+              textAlign: TextAlign.center,
+              textDirection: const {'ar', 'fa', 'he', 'ur'}.contains(widget.langCode)
+                  ? TextDirection.rtl
+                  : TextDirection.ltr,
+              style: TextStyle(
+                  color: c.ink, fontSize: 14.5, fontWeight: FontWeight.w700)),
+          if (_practiceState == 2 && _practiceHeard.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+                _tr(context, 'تو گفتی: «$_practiceHeard»',
+                    'You said: "$_practiceHeard"'),
+                textAlign: TextAlign.center,
+                textDirection: const {'ar', 'fa', 'he', 'ur'}.contains(widget.langCode)
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
+                style: TextStyle(color: c.inkSoft, fontSize: 12)),
+          ],
+          if (_practiceState == 0)
+            TextButton(
+              onPressed: _skipPractice,
+              child: Text(_tr(context, 'رد کردن و فرستادن', 'Skip and send')),
+            ),
+        ],
+      ),
+    );
   }
 
   /// ترجمه‌ی زیرنویس به زبانِ مادریِ کاربر (همان که از بالای صفحه انتخاب شده).
@@ -3028,6 +3219,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       });
       return;
     }
+    if (_practiceTarget != null) {
+      await _finishPractice(clean);
+      return;
+    }
     await _submit(clean);
   }
 
@@ -3036,11 +3231,18 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
 
-  Future<void> _submit(String text, {bool retry = false}) async {
+  Future<void> _submit(String text,
+      {bool retry = false, Future<CallTurn?>? pre}) async {
     final t = text.trim();
     if (t.isEmpty || _closed) return;
     final token = ++_turn;
+    // اگر تمرینِ راهنما بوده و کاربر چیزِ دیگری فرستاد، پاسخِ قبلیِ نگه‌داشته‌شده منتظر می‌ماند
+    final stale = pre == null ? _practiceFuture : null;
     setState(() {
+      _practiceTarget = null;
+      _practiceFuture = null;
+      _practiceHeard = '';
+      _practiceState = 0;
       _heard = t;
       _ccAdd(true, t);
       _lastText = t;
@@ -3052,7 +3254,16 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     });
     CallTurn? turn;
     try {
-      turn = await widget.onUserSaid(t, retry);
+      if (pre != null) {
+        turn = await pre;
+      } else {
+        if (stale != null) {
+          try {
+            await stale;
+          } catch (_) {}
+        }
+        turn = await widget.onUserSaid(t, retry);
+      }
     } catch (_) {
       turn = null;
     }
@@ -3920,6 +4131,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           ],
         ),
 
+        if (_practiceTarget != null) _practiceBanner(),
         if (_info.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 2),
