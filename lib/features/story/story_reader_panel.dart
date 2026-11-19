@@ -184,6 +184,43 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
   final Set<String> _retrying = {};
   final Map<int, GlobalKey> _pk = {};
 
+  // ⚡ نمایشِ تدریجیِ پاراگراف‌ها: داستان با چند پاراگرافِ اول باز می‌شود و بقیه
+  // دسته‌دسته (هر ~۸۰ms) اضافه می‌شوند تا باز شدنِ داستان‌های بلند قفل نکند.
+  static const int _kFirstParas = 6;
+  static const int _kGrowParas = 8;
+  int _shownParas = _kFirstParas;
+  int _totalParas = 0;
+  Timer? _growTimer;
+
+  void _scheduleGrow() {
+    if (_growTimer != null || _shownParas >= _totalParas) return;
+    _growTimer = Timer(const Duration(milliseconds: 80), () {
+      _growTimer = null;
+      if (!mounted || _shownParas >= _totalParas) return;
+      setState(() => _shownParas += _kGrowParas);
+    });
+  }
+
+  /// اسکرول به پاراگراف؛ اگر هنوز ساخته نشده، اول تا آنجا نشان داده می‌شود.
+  void _scrollToPara(int pi, double alignment) {
+    void go() {
+      final ctx = _pk[pi]?.currentContext;
+      if (ctx != null && ctx.mounted) {
+        Scrollable.ensureVisible(ctx,
+            alignment: alignment,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOut);
+      }
+    }
+
+    if (pi >= _shownParas && mounted) {
+      setState(() => _shownParas = pi + 4);
+      WidgetsBinding.instance.addPostFrameCallback((_) => go());
+    } else {
+      go();
+    }
+  }
+
   static String _k(String lang, String src) => '$lang\u0001$src';
 
   // ───────────── بولدِ معادلِ لغت‌های انتخابی داخلِ ترجمه‌ها (توسط خودِ اپ، نه AI) ─────────────
@@ -537,6 +574,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     _flashTimer?.cancel();
     _searchCtrl.dispose();
     _editCtrl.dispose();
+    _growTimer?.cancel();
     _notesCtrl.dispose();
     super.dispose();
   }
@@ -896,13 +934,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     _flashTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) setState(() => _flashGi = -1);
     });
-    final ctx = _pk[h.pi]?.currentContext;
-    if (ctx != null && ctx.mounted) {
-      Scrollable.ensureVisible(ctx,
-          alignment: 0.2,
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeOut);
-    }
+    _scrollToPara(h.pi, 0.2);
   }
 
   /// آیتم‌های پلیر: جمله‌به‌جمله (حالتِ ۲) یا پاراگراف‌به‌پاراگراف (حالتِ ۰ و ۱)
@@ -929,13 +961,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     final paras = _structure();
     for (var i = 0; i < paras.length; i++) {
       if (a.activeIndex < paras[i].firstGi + paras[i].sents.length) {
-        final ctx = _pk[i]?.currentContext;
-        if (ctx != null && ctx.mounted) {
-          Scrollable.ensureVisible(ctx,
-              alignment: 0.25,
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeOut);
-        }
+        _scrollToPara(i, 0.25);
         return;
       }
     }
@@ -985,13 +1011,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
         }
         if (pi >= 0) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            final ctx = _pk[pi]?.currentContext;
-            if (ctx != null && ctx.mounted) {
-              Scrollable.ensureVisible(ctx,
-                  alignment: 0.25,
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeOut);
-            }
+            if (mounted) _scrollToPara(pi, 0.25);
           });
         }
       }
@@ -1320,7 +1340,9 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     final boldText =
         tp.bold == TargetBoldMode.both || tp.bold == TargetBoldMode.text;
     final out = <Widget>[];
-    for (var pi = 0; pi < paras.length; pi++) {
+    _totalParas = paras.length;
+    final limit = paras.length < _shownParas ? paras.length : _shownParas;
+    for (var pi = 0; pi < limit; pi++) {
       final p = paras[pi];
       final key = _pk.putIfAbsent(pi, () => GlobalKey());
       final rows = <Widget>[];
@@ -1368,6 +1390,19 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: rows,
+          ),
+        ),
+      ));
+    }
+    if (limit < paras.length) {
+      _scheduleGrow();
+      out.add(const Padding(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        child: Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ),
       ));

@@ -421,6 +421,15 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     return r;
   }
 
+  /// برای مقایسه‌ی «ترجمه همان لغت است؟»: حروف/عددها، بدونِ حساسیت به بزرگی/کوچکی،
+  /// اعراب، نیم‌فاصله و علائم.
+  static String _same(String s) => s
+      .toLowerCase()
+      .replaceAll('ي', 'ی')
+      .replaceAll('ك', 'ک')
+      .replaceAll(RegExp('[\u064B-\u065F\u0670\u200C\u200D]'), '')
+      .replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '');
+
   Future<List<_P>> _plan(int i) {
     if (i < 0 || i >= _ws.length) return Future.value(const <_P>[]);
     return _plans[i] ??= _buildPlan(i);
@@ -433,13 +442,22 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     final langs = [for (final l in _langs) if (l != w.lang) l];
     final trs = await Future.wait([for (final l in langs) _translate(w, l)]);
     final out = <_P>[];
+    var sawSame = false;
+    final wordKey = _same(word);
     for (var k = 0; k < langs.length; k++) {
       final t = trs[k].trim();
       if (t.isEmpty) continue;
+      // ترجمه با خودِ لغت یکی است (مثلاً نامِ خاص/وام‌واژه) → تلفظش چک نمی‌شود
+      if (wordKey.isNotEmpty && _same(t) == wordKey) {
+        sawSame = true;
+        continue;
+      }
       out.add(_P(out.isEmpty ? word : '', w.lang, t, langs[k]));
       _langOf[t] = langs[k];
     }
-    if (out.isEmpty) return const <_P>[]; // ترجمه‌ای نیامد → این لغت رد می‌شود
+    // ترجمه‌ای نیامد → این لغت رد می‌شود (مگر اینکه ترجمه‌ها هم‌شکلِ لغت بوده باشند؛
+    // آن‌وقت فقط جمله‌ی مثال تمرین می‌شود)
+    if (out.isEmpty && !sawSame) return const <_P>[];
     if (_withExample) {
       try {
         final ex = ref
