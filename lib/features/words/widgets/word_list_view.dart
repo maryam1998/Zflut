@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../tabs/_hope_panel.dart' show uiContentDirection;
+import 'word_voice_practice.dart';
 import '../../../app.dart';
 import '../../../core/widgets/level_chips.dart';
 import '../../../core/models/daily_word.dart';
@@ -434,6 +435,13 @@ class _WordListViewState extends ConsumerState<WordListView> {
                   ),
                 ),
               ),
+            ),
+          // 🎙️ تمرین صوتیِ لغاتِ بازه‌ی نمایش‌داده‌شده (ویدیو کالِ AI، چندزبانه)
+          if (words.isNotEmpty &&
+              !widget.gridMode &&
+              widget.listId != 'favorites')
+            SliverToBoxAdapter(
+              child: WordVoicePractice(words: visible),
             ),
           if (words.isNotEmpty && !widget.gridMode)
             SliverToBoxAdapter(

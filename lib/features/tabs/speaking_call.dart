@@ -473,7 +473,10 @@ class CallTurn {
   /// متنی که شخصیت با صدا می‌گوید
   final String spoken;
   final List<CallFix> fixes;
-  const CallTurn(this.spoken, this.fixes);
+
+  /// زبانِ صدای همین جمله (null = زبانِ پیش‌فرضِ پنل). برای تمرینِ چندزبانه‌ی لغات.
+  final String? lang;
+  const CallTurn(this.spoken, this.fixes, {this.lang});
 }
 
 /// یک خط از تاریخچه‌ی زیرنویسِ تماس (برای کادر شیشه‌ای اسکرول‌پذیر)
@@ -2146,6 +2149,10 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
   /// true = بعد از هر نوبتِ AI، «راهنما» خودکار زده می‌شود و جمله‌ی بعدی برای خواندن نشان داده می‌شود.
   final bool autoHint;
 
+  /// زبانِ گفتنِ کاربر برای هر جمله‌ی راهنما (STT و صدای تصحیح) + تشخیصِ سخت‌گیریِ کم.
+  /// null = همه‌چیز به [langCode] (رفتارِ قبلی). فقط تمرینِ چندزبانه‌ی لغات از آن استفاده می‌کند.
+  final String Function(String target)? listenLang;
+
   const SpeakingCallPanel({
     super.key,
     required this.persona,
@@ -2157,6 +2164,7 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
     this.onHint,
     this.onRedial,
     this.autoHint = false,
+    this.listenLang,
   });
 
   @override
@@ -2317,7 +2325,19 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     } catch (_) {}
   }
 
-  Future<void> _speak(String text) async {
+  /// زبانِ گفتنِ کاربر برای جمله‌ی هدف (پیش‌فرض: زبانِ پنل).
+  String _listenLcFor(String? target) {
+    final f = widget.listenLang;
+    if (f != null && target != null && target.isNotEmpty) {
+      try {
+        final l = f(target);
+        if (l.isNotEmpty) return l;
+      } catch (_) {}
+    }
+    return widget.langCode;
+  }
+
+  Future<void> _speak(String text, {String? lang}) async {
     final t = text.trim();
     if (t.isEmpty || _muted || _closed) return;
     final done = Completer<void>();
@@ -2333,7 +2353,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     });
     try {
       await _ctl.stop();
-      await PersonaVoice.speak(_ctl, widget.persona, t, widget.langCode);
+      await PersonaVoice.speak(
+          _ctl, widget.persona, t, lang ?? widget.langCode);
       await done.future.timeout(const Duration(seconds: 150), onTimeout: () {});
     } catch (_) {
     } finally {
@@ -2480,7 +2501,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final target = _practiceTarget;
     final pre = _practiceFuture;
     if (target == null) return;
-    final ok = _practiceMatches(target, heard);
+    final ok = widget.listenLang != null
+        ? _lenientMatches(target, heard)
+        : _practiceMatches(target, heard);
     final token = ++_turn;
     if (ok) {
       setState(() {
@@ -2498,7 +2521,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         _phase = _Phase.speaking;
         _info = '';
       });
-      await _speak(target);
+      await _speak(target, lang: _listenLcFor(target));
       if (!mounted || _closed || token != _turn) return;
     }
     await _submit(target, pre: pre);
@@ -2554,6 +2577,45 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     return _practiceDist(a, b) <= (a.length >= 8 ? 2 : 1);
   }
 
+  static String _lenNorm(String s) => s
+      .toLowerCase()
+      .replaceAll('ي', 'ی')
+      .replaceAll('ك', 'ک')
+      .replaceAll('ى', 'ی')
+      .replaceAll(RegExp('[\u064B-\u065F\u0670\u200C\u200D]'), '')
+      .replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
+  /// تشخیصِ کم‌سخت‌گیر برای تمرینِ لغات: لهجه/اشتباهِ کوچکِ STT قبول است؛
+  /// اگر کاربر کلمه‌ی اضافه هم گفت ولی کلمه‌ی هدف در آن بود، درست حساب می‌شود.
+  static bool _lenientMatches(String target, String heard) {
+    final a = _lenNorm(target);
+    final b = _lenNorm(heard);
+    if (a.isEmpty) return true;
+    if (b.isEmpty) return false;
+    if (a == b || b.contains(a) || (b.length >= 3 && a.contains(b))) {
+      return true;
+    }
+    final at = a.split(' ');
+    final bt = b.split(' ');
+    if (at.length == 1) {
+      if (a.length <= 2) return false;
+      final lim = math.max(1, (a.length * 0.34).floor());
+      if (_practiceDist(a, b.replaceAll(' ', '')) <= lim) return true;
+      for (final t in bt) {
+        if (_practiceDist(a, t) <= lim) return true;
+      }
+      return false;
+    }
+    var hit = 0;
+    for (final x in at) {
+      final lim = x.length >= 7 ? 2 : (x.length >= 4 ? 1 : 0);
+      if (bt.any((y) => _practiceDist(x, y) <= lim)) hit++;
+    }
+    return hit / at.length >= 0.6;
+  }
+
   /// شباهتِ کلمه‌به‌کلمه (LCS با تحملِ اختلافِ کوچکِ تشخیصِ گفتار) ≥ ۸۰٪ = درست.
   static bool _practiceMatches(String target, String heard) {
     final a = _practiceTokens(target);
@@ -2575,7 +2637,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   Widget _practiceLine(bool showTr, bool nativeRtl) {
     final rtl = const {'ar', 'fa', 'he', 'ur'}.contains(widget.langCode);
     // اگر CC روشن است، ترجمه‌ی جمله‌ی راهنما هم زیرش نشان داده می‌شود
-    final tr = (_cc && showTr) ? (_trCache[(_practiceTarget ?? '').trim()] ?? '') : '';
+    final tr = (_cc && showTr && widget.listenLang == null)
+        ? (_trCache[(_practiceTarget ?? '').trim()] ?? '')
+        : '';
     return Align(
       alignment: Alignment.bottomCenter,
       child: TourTarget(
@@ -2670,7 +2734,12 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final native = _nativeCode;
     if (native.isEmpty || native == widget.langCode) return;
     final src = _cc
-        ? [for (final e in _hist) e.text, _heard, _aiLine, _practiceTarget ?? '']
+        ? [
+            for (final e in _hist) e.text,
+            _heard,
+            _aiLine,
+            if (widget.listenLang == null) _practiceTarget ?? '',
+          ]
         : _endLastLines();
     for (final t in src) {
       final txt = t.trim();
@@ -3390,7 +3459,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _ccAdd(false, res.spoken);
       _phase = _Phase.speaking;
     });
-    await _speak(res.spoken);
+    await _speak(res.spoken, lang: res.lang);
     if (!mounted || _closed || token != _turn) return;
     setState(() => _phase = _Phase.ready);
     unawaited(_afterAiTurn(token));
@@ -3451,7 +3520,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     });
     try {
       await n.syncTranscribe(
-          job: job, path: path, lang: widget.langCode, model: model);
+          job: job, path: path, lang: _listenLcFor(_practiceTarget), model: model);
       return await done.future
           .timeout(const Duration(seconds: 60), onTimeout: () => null);
     } on PlatformException catch (e) {
