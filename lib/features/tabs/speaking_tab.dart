@@ -31,7 +31,7 @@ import '../../core/neural/neural_dates.dart'
 import '../../core/providers/app_prefs_provider.dart';
 import '_hope_panel.dart';
 import 'ai_demo_sheet.dart';
-import '../../core/practice/practice_follow.dart' show pinCallLater, unpinCall;
+import '../../core/practice/practice_follow.dart' show KeepAliveCall;
 import 'speaking_call.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1360,7 +1360,6 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
     _input.dispose();
     _editCtrl.dispose();
     _scroll.dispose();
-    if (_embedded) unpinCall(_pc, this);
     super.dispose();
   }
 
@@ -2919,30 +2918,6 @@ Now respond to: "$sentence"
     final lang = options.contains(_chatLang) ? _chatLang : options.first;
     final hasReal = _messages.any((m) => !m.isWelcome);
 
-    // 🎥 تمرینِ مکالمه‌ی ذخیره‌شده: همان ویدیو کالِ تمرین‌های دیگر، بالای صفحه سنجاق است
-    if (_embedded) {
-      pinCallLater(
-        _pc,
-        this,
-        _practiceMode
-            ? SpeakingCallPanel(
-                key: ValueKey(
-                    'practice-$_sessionId-${_persona.id}-$_practiceNonce'),
-                persona: _persona,
-                langCode: _practiceLang ?? _chatLang,
-                langName: _enName(_practiceLang ?? _chatLang),
-                onConnected: _practiceGreeting,
-                onUserSaid: _practiceReply,
-                onEnd: _endPractice,
-                onHint: _practiceHint,
-                autoHint: true,
-                onRedial: _redialPractice,
-              )
-            : null,
-        () => mounted && _practiceMode,
-      );
-    }
-
     final parts = <Widget>[
       // ── زبان تمرین + اکشن‌ها ──
       Column(
@@ -3103,7 +3078,23 @@ Now respond to: "$sentence"
       // ── 🎯 تمرینِ مکالمه‌ی ذخیره‌شده: همان پنلِ ویدیو کال، جواب‌ها از دیتای ذخیره‌شده ──
       if (_embedded && !_practiceMode && hasReal && !_selectMode)
         _practiceButton(c),
-      // (خودِ پنل در build بالا سنجاق می‌شود؛ اینجا چیزی در کارت نمی‌ماند)
+      // 🎥 ویدیو کالِ تمرین سنجاق نیست؛ کامل داخلِ همین صفحه می‌آید
+      if (_embedded && _practiceMode)
+        KeepAliveCall(
+          child: SpeakingCallPanel(
+            key: ValueKey(
+                'practice-$_sessionId-${_persona.id}-$_practiceNonce'),
+            persona: _persona,
+            langCode: _practiceLang ?? _chatLang,
+            langName: _enName(_practiceLang ?? _chatLang),
+            onConnected: _practiceGreeting,
+            onUserSaid: _practiceReply,
+            onEnd: _endPractice,
+            onHint: _practiceHint,
+            autoHint: true,
+            onRedial: _redialPractice,
+          ),
+        ),
 
       // ── نوارِ انتخابِ پیام‌ها ──
       if (_selectMode) _selectBar(c),

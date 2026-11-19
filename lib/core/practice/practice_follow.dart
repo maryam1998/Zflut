@@ -162,3 +162,25 @@ void unpinCall(ProviderContainer c, Object owner) {
     } catch (_) {}
   });
 }
+
+/// ویدیو کالِ تمرین حالا سنجاق نمی‌شود و داخلِ همان صفحه (کاملاً، بدون برش) می‌آید.
+/// اگر صفحه لیستِ تنبل باشد، این ویجت نمی‌گذارد با اسکرول کردن تماس بسته/نابود شود.
+class KeepAliveCall extends StatefulWidget {
+  final Widget child;
+  const KeepAliveCall({super.key, required this.child});
+
+  @override
+  State<KeepAliveCall> createState() => _KeepAliveCallState();
+}
+
+class _KeepAliveCallState extends State<KeepAliveCall>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}

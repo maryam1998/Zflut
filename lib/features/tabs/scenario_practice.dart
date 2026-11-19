@@ -502,7 +502,6 @@ class _ScenarioPracticeSectionState
   @override
   void dispose() {
     _follow.clear();
-    unpinCall(_pc, this);
     super.dispose();
   }
 
@@ -510,11 +509,10 @@ class _ScenarioPracticeSectionState
   Widget build(BuildContext context) {
     if (!_canPractice) return const SizedBox.shrink();
     final c = context.appColors;
-    // 🎥 در حالتِ تمرین ویدیو کال بالای صفحه سنجاق است، نه داخلِ کارت
-    pinCallLater(_pc, this, _mode ? _panel() : null, () => mounted && _mode);
+    // 🎥 ویدیو کال سنجاق نیست؛ کامل داخلِ همین کارت می‌آید
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-      child: _mode ? const SizedBox.shrink() : _button(c),
+      child: _mode ? KeepAliveCall(child: _panel()) : _button(c),
     );
   }
 }

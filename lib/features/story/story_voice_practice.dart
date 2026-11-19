@@ -104,7 +104,6 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
   @override
   void dispose() {
     _follow.clear();
-    unpinCall(_pc, this);
     super.dispose();
   }
 
@@ -698,13 +697,13 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
   @override
   Widget build(BuildContext context) {
     final c = context.appColors;
-    // 🎥 در حالتِ تمرین ویدیو کال بالای صفحه سنجاق است؛ فقط کارتِ نتیجه همین‌جا می‌ماند
-    pinCallLater(_pc, this, _mode ? _panel() : null, () => mounted && _mode);
+    // 🎥 ویدیو کال سنجاق نیست؛ کامل داخلِ همین صفحه می‌آید
     if (!_mode) return _button(c);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        KeepAliveCall(child: _panel()),
         if (_pct != null) _resultCard(c),
       ],
     );

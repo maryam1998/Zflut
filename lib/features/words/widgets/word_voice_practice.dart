@@ -166,7 +166,6 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
   void dispose() {
     widget.controller?.startTick.removeListener(_onStartTick);
     _follow.clear();
-    unpinCall(_pc, this);
     super.dispose();
   }
 
@@ -645,8 +644,11 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
 
   @override
   Widget build(BuildContext context) {
-    // 🎥 در حالتِ تمرین ویدیو کال بالای صفحه سنجاق است (نه داخلِ لیست)
-    pinCallLater(_pc, this, _mode ? _panel() : null, () => mounted && _mode);
-    return const SizedBox.shrink();
+    // 🎥 ویدیو کال سنجاق نیست؛ کامل بالای لیستِ لغات (داخلِ اسکرول) می‌آید
+    if (!_mode) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: KeepAliveCall(child: _panel()),
+    );
   }
 }
