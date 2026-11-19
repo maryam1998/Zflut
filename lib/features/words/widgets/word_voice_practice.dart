@@ -119,12 +119,26 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
   int _hintWi = -1;
   int _hintPi = 0;
 
+  /// دکمه‌ی CC در پنلِ تماس (پیش‌فرض خاموش)
+  bool _cc = false;
+
+  void _onCc(bool v) {
+    _cc = v;
+    if (v) {
+      _hlWord();
+    } else {
+      _follow.clear();
+    }
+  }
+
   // 🎥 ویدیو کال بالای صفحه سنجاق می‌شود + لغتِ در حالِ تمرین در لیستِ پایین هایلایت/اسکرول می‌شود
   late final ProviderContainer _pc;
   late final PracticeFollow _follow;
 
   /// لغتِ فعلیِ تمرین را در لیستِ لغات هایلایت می‌کند و به آن اسکرول می‌کند.
   void _hlWord() {
+    // لغت فقط وقتی CC روشن است در لیست هایلایت می‌شود (CC خاموش = لغت دیده نشود)
+    if (!_cc) return;
     if (_wi < 0 || _wi >= _ws.length) return;
     final w = _ws[_wi];
     _follow.show([w.sid], codes: [w.lang, 'en'], lazy: true);
@@ -185,6 +199,8 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
           _pi = _hintPi;
         }
         _lastTurn = null;
+        _cc = false; // پنلِ جدید با CC خاموش شروع می‌شود
+        _follow.clear();
         _nonce++;
       }
     });
@@ -536,6 +552,7 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
   }
 
   void _reset() {
+    _cc = false; // پنلِ جدید با CC خاموش شروع می‌شود
     _wi = 0;
     _pi = 0;
     _hintWi = -1;
@@ -620,6 +637,7 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
           onRedial: _redial,
           autoHint: true,
           listenLang: _listenLang,
+          onCcChanged: _onCc,
         ),
       ],
     );

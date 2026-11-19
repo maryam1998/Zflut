@@ -534,6 +534,9 @@ class CallTurn {
 /// ارتفاعِ ثابتِ ناحیه‌ی زیرنویس روی ویدیو (بدون کادر)
 const double _kCcHeight = 104;
 
+/// تمرینِ لغات: اگر کاربر این‌قدر (۳۰ فریم × ۱۰۰ms = ۳ ثانیه) چیزی نگفت/ننوشت، یعنی بلد نیست.
+const int _kWordIdleFrames = 30;
+
 class _CcEntry {
   final bool user; // true = کاربر، false = شخصیتِ AI
   final String text;
@@ -2211,6 +2214,9 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
   /// حداقلِ شباهتِ کلمه‌به‌کلمه برای «درست» بودنِ خواندنِ جمله‌ی راهنما (پیش‌فرض ۰٫۸).
   final double practiceMatchRatio;
 
+  /// وقتی کاربر دکمه‌ی CC را روشن/خاموش می‌کند (تمرینِ لغات از آن برای مخفی کردنِ لغت در لیست استفاده می‌کند).
+  final ValueChanged<bool>? onCcChanged;
+
   const SpeakingCallPanel({
     super.key,
     required this.persona,
@@ -2225,6 +2231,7 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
     this.listenLang,
     this.onAiContinue,
     this.practiceMatchRatio = 0.8,
+    this.onCcChanged,
   });
 
   @override
@@ -2625,6 +2632,31 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     await _submit(target, pre: pre);
   }
 
+  /// 🕒 تمرینِ لغات: کاربر ۳ ثانیه چیزی نگفت → فرض: بلد نیست.
+  /// معنیِ درست با TTS گفته می‌شود و بدونِ تکرار می‌رویم سراغِ لغتِ بعدی.
+  Future<void> _giveUpWord() async {
+    final target = _practiceTarget;
+    if (target == null || _closed || _stopping) return;
+    final pre = _practiceFuture;
+    _ampSub?.cancel();
+    _ampSub = null;
+    _stopping = true;
+    unawaited(_rec.stop().then((p) => _deleteFile(p)));
+    _level.value = 0;
+    final token = ++_turn;
+    if (!mounted) return;
+    setState(() {
+      _practiceHeard = '';
+      _practiceState = 2;
+      _phase = _Phase.speaking;
+      _info = '';
+    });
+    await _speak(target, lang: _listenLcFor(target));
+    if (!mounted || _closed || token != _turn) return;
+    _practiceTries = 0;
+    await _submit(target, pre: pre);
+  }
+
   /// «رد کردن»: بدونِ تمرین، همان جمله برای AI فرستاده می‌شود.
   void _skipPractice() {
     final target = _practiceTarget;
@@ -2739,6 +2771,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final tr = (_cc && showTr && widget.listenLang == null)
         ? (_trCache[(_practiceTarget ?? '').trim()] ?? '')
         : '';
+    // 📝 تمرینِ لغات: فقط برچسبِ زبان (مثلاً «Es:») همیشه دیده می‌شود؛ خودِ معنی فقط با CC روشن
+    final wordMode = widget.listenLang != null;
+    final langLabel = wordMode ? _langLabel(_listenLcFor(_practiceTarget)) : '';
+    final showTarget = !wordMode || _cc;
     return Align(
       alignment: Alignment.bottomCenter,
       child: TourTarget(
@@ -2758,18 +2794,35 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        _practiceTarget ?? '',
-                        textAlign: TextAlign.center,
-                        textDirection:
-                            rtl ? TextDirection.rtl : TextDirection.ltr,
-                        style: const TextStyle(
-                            color: Color(0xFFFCD34D),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            height: 1.4,
-                            shadows: _ccShadow),
-                      ),
+                      if (wordMode)
+                        Text(
+                          langLabel,
+                          textAlign: TextAlign.center,
+                          textDirection: TextDirection.ltr,
+                          style: const TextStyle(
+                              color: Color(0xFFFCD34D),
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              height: 1.4,
+                              shadows: _ccShadow),
+                        ),
+                      if (showTarget)
+                        Text(
+                          _practiceTarget ?? '',
+                          textAlign: TextAlign.center,
+                          textDirection: (wordMode
+                                  ? const {'ar', 'fa', 'he', 'ur'}
+                                      .contains(_listenLcFor(_practiceTarget))
+                                  : rtl)
+                              ? TextDirection.rtl
+                              : TextDirection.ltr,
+                          style: const TextStyle(
+                              color: Color(0xFFFCD34D),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              height: 1.4,
+                              shadows: _ccShadow),
+                        ),
                       if (tr.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
@@ -2795,6 +2848,13 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         ),
       ),
     );
+  }
+
+  /// برچسبِ زبان برای تمرینِ لغات: «es» → «Es:»
+  static String _langLabel(String code) {
+    final c = code.trim();
+    if (c.isEmpty) return '';
+    return '${c[0].toUpperCase()}${c.substring(1).toLowerCase()}:';
   }
 
   /// ترجمه‌ی زیرنویس به زبانِ مادریِ کاربر (همان که از بالای صفحه انتخاب شده).
@@ -2871,15 +2931,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   /// محتوای کادر شیشه‌ای زیرنویس: تاریخچه‌ی اسکرول‌پذیر؛ آخرین خط پررنگ.
   Widget _ccGlassBody(bool showTr, bool nativeRtl) {
     if (_practiceTarget != null) {
-      // 📝 تمرینِ لغات: معنیِ لغت فقط وقتی CC روشن است روی ویدیو دیده می‌شود
-      if (widget.listenLang != null && !_cc) {
-        return _fixes.isNotEmpty
-            ? Align(
-                alignment: AlignmentDirectional.bottomStart,
-                child: _fixLine(_fixes.first, 1.0),
-              )
-            : const SizedBox.shrink();
-      }
+      // 📝 تمرینِ لغات: برچسبِ زبان همیشه، معنیِ لغت فقط وقتی CC روشن است (داخلِ _practiceLine)
       return _practiceLine(showTr, nativeRtl);
     }
     final dir = nativeRtl ? TextDirection.rtl : TextDirection.ltr;
@@ -3430,6 +3482,16 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _silentFrames = 0;
     } else {
       _silentFrames++;
+    }
+    // 🕒 تمرینِ لغات: ۳ ثانیه سکوت (نه حرف، نه تایپ) = «بلد نیست» → AI خودش معنی را می‌گوید
+    if (widget.listenLang != null &&
+        _practiceTarget != null &&
+        _practiceState == 0 &&
+        _speechFrames < 3 &&
+        _recFrames >= _kWordIdleFrames &&
+        _typeCtl.text.trim().isEmpty) {
+      unawaited(_giveUpWord());
+      return;
     }
     if (_handsFree) {
       if (_speechFrames >= 3 && _silentFrames >= 15) {
@@ -4046,6 +4108,12 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                             unawaited(_rec.stop().then((p) => _deleteFile(p)));
                             _level.value = 0;
                           }
+                          // 📝 تمرینِ لغات: معنیِ تایپ‌شده مثلِ گفتار چک می‌شود
+                          if (widget.listenLang != null &&
+                              _practiceTarget != null) {
+                            unawaited(_finishPractice(t));
+                            return;
+                          }
                           _submit(t);
                         },
                   icon: Icon(Icons.send_rounded, color: c.teal, size: 20),
@@ -4367,6 +4435,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               fg: _cc ? const Color(0xFF16A34A) : const Color(0xFF3A3A3A),
               onTap: () {
                 setState(() => _cc = !_cc);
+                widget.onCcChanged?.call(_cc);
                 if (_cc) _ccToBottom();
               },
             ),
