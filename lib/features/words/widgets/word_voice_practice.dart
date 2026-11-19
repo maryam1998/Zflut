@@ -461,6 +461,13 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
       .replaceAll(RegExp('[\u064B-\u065F\u0670\u200C\u200D]'), '')
       .replaceAll(RegExp(r'[^\p{L}\p{N}]', unicode: true), '');
 
+  /// هم‌زبان بودن (بدونِ حساسیت به بزرگی/کوچکی و پسوندِ منطقه‌ای مثل en-US)
+  static bool _sameLang(String a, String b) {
+    String base(String x) =>
+        x.toLowerCase().replaceAll('_', '-').split('-').first.trim();
+    return base(a) == base(b);
+  }
+
   Future<List<_P>> _plan(int i) {
     if (i < 0 || i >= _ws.length) return Future.value(const <_P>[]);
     return _plans[i] ??= _buildPlan(i);
@@ -470,10 +477,12 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     final w = _ws[i];
     final word = w.en.trim();
     if (word.isEmpty) return const <_P>[];
-    final langs = [for (final l in _langs) if (l != w.lang) l];
+    // زبانِ مقصد = زبانِ خودِ لغت → نه ترجمه می‌شود نه STT چک می‌شود؛ مستقیم می‌رود سراغ زبانِ بعدی
+    final langs = [for (final l in _langs) if (!_sameLang(l, w.lang)) l];
+    final skippedSameLang = langs.length != _langs.length;
     final trs = await Future.wait([for (final l in langs) _translate(w, l)]);
     final out = <_P>[];
-    var sawSame = false;
+    var sawSame = skippedSameLang;
     final wordKey = _same(word);
     for (var k = 0; k < langs.length; k++) {
       final t = trs[k].trim();
