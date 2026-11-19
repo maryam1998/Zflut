@@ -60,8 +60,33 @@ class PaidContent {
   static Future<Map<String, dynamic>?> conversationTopic(String id) {
     if (!ProStatus.isPro) return Future.value(null);
     // ⏱ سقفِ کلِ باز کردنِ محتوا: ۶ ثانیه (کلید ۴ ثانیه داخلِ همین ۶ ثانیه است)
-    return _conversationTopicInner(id)
-        .timeout(const Duration(seconds: 6), onTimeout: () => null);
+    return _conversationTopicInner(id).timeout(const Duration(seconds: 6),
+        onTimeout: () {
+      // 🐢 شبکه‌ی کند: کاربر فعلاً نسخه‌ی داخلِ اپ را می‌بیند، ولی دانلود در پس‌زمینه
+      // ادامه دارد؛ هر وقت تمام شد (تا ۲ دقیقه) موضوع خودکار با متنِ کامل تازه می‌شود.
+      unawaited(_deliverLate(id));
+      return null;
+    });
+  }
+
+  static final Set<String> _lateWaiting = <String>{};
+
+  static Future<void> _deliverLate(String id) async {
+    if (!_lateWaiting.add(id)) return;
+    try {
+      // کمی صبر تا دانلودِ در جریان ثبت شود
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      final inflight = _dlInflight[id];
+      if (inflight == null) return;
+      final t = await inflight.timeout(const Duration(minutes: 2));
+      if (t != null && ProStatus.isPro) {
+        onTopicUpdated?.call(id);
+        revision.value++; // لیست/موضوعِ باز دوباره بارگذاری شود
+      }
+    } catch (_) {
+    } finally {
+      _lateWaiting.remove(id);
+    }
   }
 
   static Future<Map<String, dynamic>?> _conversationTopicInner(
