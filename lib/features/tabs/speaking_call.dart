@@ -4317,7 +4317,11 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 Align(alignment: const Alignment(0, 0.3), child: _bars()),
               // پایین: کادر شیشه‌ایِ زیرنویس + تاریخچه (اسکرول‌پذیر، ارتفاع محدود)
               // جمله‌ی فعلی پررنگ و روشن؛ جمله‌های قبلی کم‌رنگ‌تر
-              if (_cc || _fixes.isNotEmpty || _practiceTarget != null)
+              // CC خاموش = هیچ متنی روی ویدیو نیست (تالک، تاریخچه‌ی مکالمه، داستان، تمرین).
+              // تمرینِ لغات (listenLang != null) مثل قبل می‌ماند.
+              if (_cc ||
+                  (widget.listenLang != null &&
+                      (_fixes.isNotEmpty || _practiceTarget != null)))
                 Positioned(
                   left: 14,
                   right: 14,
