@@ -138,8 +138,16 @@ class _AppShellState extends ConsumerState<AppShell> {
                   // جای نوارِ آدمک — همان ۴۰px که در Hope داخل هدر بود
                   const SizedBox(height: 40),
                   // 🎥 ویدیو کالِ تمرین (لغات/Talk/داستان) بالای صفحه سنجاق می‌شود
-                  const PinnedCallSlot(),
-                  Expanded(child: widget.child),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (ctx, cons) => Column(
+                        children: [
+                          PinnedCallSlot(maxHeight: cons.maxHeight * 0.86),
+                          Expanded(child: widget.child),
+                        ],
+                      ),
+                    ),
+                  ),
 
                   // ═══ پنل تمرین گرامر — فعلاً مخفی (kShowPracticeSheet) ═══
                   if (kShowPracticeSheet) const PracticeSheet(),

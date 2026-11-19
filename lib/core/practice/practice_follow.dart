@@ -26,15 +26,16 @@ final pinnedCallProvider = StateProvider<PinnedCall?>((ref) => null);
 /// جایگاهِ ویدیو کال بالای محتوای تب (داخلِ AppShell). اگر بلندتر از حدِ مجاز باشد
 /// کوچک می‌شود تا متنِ پایین هم جا داشته باشد.
 class PinnedCallSlot extends ConsumerWidget {
-  const PinnedCallSlot({super.key});
+  /// سقفِ ارتفاع؛ فقط اگر ویدیو کال با اندازه‌ی طبیعی (مثل ویدیو کالِ زنده) جا نشود کوچک می‌شود.
+  final double? maxHeight;
+  const PinnedCallSlot({super.key, this.maxHeight});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final p = ref.watch(pinnedCallProvider);
     if (p == null) return const SizedBox.shrink();
     final mq = MediaQuery.of(context);
-    final typing = mq.viewInsets.bottom > 0;
-    final maxH = mq.size.height * (typing ? 0.55 : 0.4);
+    final maxH = maxHeight ?? mq.size.height * 0.7;
     return LayoutBuilder(
       builder: (ctx, cons) {
         final w = cons.maxWidth.isFinite ? cons.maxWidth : mq.size.width;

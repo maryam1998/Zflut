@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/models/tab_group.dart';
+import '../../../core/practice/practice_follow.dart' show pinnedCallProvider;
 import '../../tabs/_hope_panel.dart' show uiContentDirection;
 import 'account_header.dart';
 import 'header_tabs.dart';
@@ -41,6 +43,14 @@ class ShellHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 🎥 وقتی ویدیو کالِ تمرین بالای صفحه سنجاق است، هدر/زبان‌ها/تب‌ها زیرش تکرار نمی‌شوند
+    return Consumer(builder: (context, ref, _) {
+      if (ref.watch(pinnedCallProvider) != null) return const SizedBox.shrink();
+      return _content(context);
+    });
+  }
+
+  Widget _content(BuildContext context) {
     final loc = GoRouterState.of(context).matchedLocation;
     final tabKey = _normalize(loc.replaceFirst('/', ''));
 
