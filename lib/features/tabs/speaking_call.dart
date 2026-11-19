@@ -537,6 +537,13 @@ const double _kCcHeight = 104;
 /// تمرینِ لغات: اگر کاربر این‌قدر (۳۰ فریم × ۱۰۰ms = ۳ ثانیه) چیزی نگفت/ننوشت، یعنی بلد نیست.
 const int _kWordIdleFrames = 30;
 
+/// یک جمله‌ی تمرین (برای دکمه‌های قبلی/بعدی): جمله + پاسخِ AI که از قبل گرفته شده.
+class _PItem {
+  final String target;
+  final Future<CallTurn?> pre;
+  _PItem(this.target, this.pre);
+}
+
 class _CcEntry {
   final bool user; // true = کاربر، false = شخصیتِ AI
   final String text;
@@ -2283,6 +2290,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   String _practiceHeard = ''; // آنچه تشخیصِ گفتار شنید
   int _practiceState = 0; // 0 = منتظرِ خواندن، 1 = درست خواند، 2 = اشتباه خواند
   int _practiceTries = 0; // چندبار همین جمله را اشتباه خوانده (بعد از ۲ بار می‌رویم جلو)
+  // ◀ قبلی / بعدی ▶ در حالتِ تمرین: تاریخچه‌ی جمله‌های تمرین‌شده (بدونِ دست‌زدن به state‌ی صفحه‌های بیرونی)
+  final List<_PItem> _pHist = [];
+  int _pIdx = -1;
   String _recStep = 'perm'; // کدام مرحله‌ی شروعِ ضبط خطا داد (برای تشخیص)
   String _lastText = '';
   List<CallFix> _fixes = const [];
@@ -2509,6 +2519,12 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   /// بعد از تمام شدنِ حرفِ AI: در حالتِ تمرین خودکار «راهنما» زده می‌شود (بدونِ لمسِ دکمه)،
   /// وگرنه رفتارِ قبلی (میکروفونِ دست‌آزاد).
   Future<void> _afterAiTurn(int token) async {
+    // ◀▶ وسطِ تاریخچه‌ایم (با «قبلی» برگشتیم): جمله‌ی بعدیِ ذخیره‌شده، نه جمله‌ی تازه از بیرون
+    if (widget.autoHint && _pIdx >= 0 && _pIdx < _pHist.length - 1) {
+      if (_closed || token != _turn) return;
+      unawaited(_gotoPractice(_pIdx + 1));
+      return;
+    }
     // 🔁 AI هنوز حرفِ دیگری دارد (مثلاً جمله‌ی بعدیِ داستان) → بدونِ انتظار بگو
     final cont = widget.onAiContinue;
     if (cont != null) {
@@ -2574,6 +2590,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final pre = widget.onUserSaid(t, false)
         .then<CallTurn?>((v) => v, onError: (Object _) => null);
     _turn++;
+    _pHist.add(_PItem(t, pre));
+    if (_pHist.length > 40) _pHist.removeAt(0);
+    _pIdx = _pHist.length - 1;
     setState(() {
       _practiceTarget = t;
       _practiceFuture = pre;
@@ -2586,6 +2605,77 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     });
     await _startRec();
     if (mounted && !_closed) SpotlightTour.maybeStartPracticeTour(context);
+  }
+
+  /// رفتن به یکی از جمله‌های تمرین‌شده (قبلی/بعدی). پاسخِ AI همان است که قبلاً گرفته شده؛
+  /// هیچ درخواستی به بیرون (onUserSaid / onHint) فرستاده نمی‌شود.
+  Future<void> _gotoPractice(int i) async {
+    if (i < 0 || i >= _pHist.length || _closed || _ended || !mounted) return;
+    _stopSpeaking();
+    if (_phase == _Phase.recording) {
+      _ampSub?.cancel();
+      _ampSub = null;
+      _stopping = true;
+      unawaited(_rec.stop().then((p) => _deleteFile(p)));
+      _level.value = 0;
+    }
+    final it = _pHist[i];
+    _turn++;
+    setState(() {
+      _pIdx = i;
+      _practiceTarget = it.target;
+      _practiceFuture = it.pre;
+      _practiceHeard = '';
+      _practiceState = 0;
+      _practiceTries = 0;
+      _phase = _Phase.ready;
+      _info = '';
+      _error = '';
+      _fixes = const [];
+    });
+    await _startRec();
+  }
+
+  bool get _navPhaseOk =>
+      _phase == _Phase.ready ||
+      _phase == _Phase.recording ||
+      _phase == _Phase.speaking ||
+      _phase == _Phase.error;
+
+  bool get _canBack =>
+      _navPhaseOk &&
+      _pHist.isNotEmpty &&
+      (_practiceTarget != null ? _pIdx > 0 : _pIdx >= 0);
+
+  bool get _canNext =>
+      _navPhaseOk &&
+      !_hintLoading &&
+      (_practiceTarget != null || _pIdx >= 0);
+
+  /// ◀ جمله‌ی قبلی (برای تمرینِ دوباره).
+  void _practiceBack() {
+    if (!_canBack) return;
+    unawaited(_gotoPractice(_practiceTarget != null ? _pIdx - 1 : _pIdx));
+  }
+
+  /// ▶ جمله‌ی بعدی.
+  void _practiceNext() {
+    if (!_canNext || _closed || _ended) return;
+    // وسطِ تاریخچه: جمله‌ی بعدیِ ذخیره‌شده
+    if (_pIdx >= 0 && _pIdx < _pHist.length - 1) {
+      unawaited(_gotoPractice(_pIdx + 1));
+      return;
+    }
+    // جمله‌ی فعلی هنوز خوانده نشده: ردش کن (پاسخِ AI پخش می‌شود و جمله‌ی بعدی می‌آید)
+    if (_practiceTarget != null) {
+      _skipPractice();
+      return;
+    }
+    // بینِ دو نوبت (AI در حال حرف زدن است): حرفش را قطع کن و برو سراغِ جمله‌ی بعدی
+    _stopSpeaking();
+    final token = ++_turn;
+    setState(() => _phase = _Phase.ready);
+    unawaited(_afterAiTurn(token));
   }
 
   /// متنِ تشخیص‌داده‌شده با جمله‌ی راهنما مقایسه می‌شود.
@@ -4123,6 +4213,93 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           );
   }
 
+  /// ردیفِ زیرِ کادرِ ویدیو در حالتِ تمرین: «قبلی» چپ، «ارسال» وسط، «بعدی» راست (همیشه LTR).
+  Widget _practiceNavRow(AppThemeColorsExt c, bool rec) {
+    Widget nav({
+      required String label,
+      required IconData icon,
+      required bool enabled,
+      required bool iconAfter,
+      required VoidCallback onTap,
+    }) {
+      final fg = enabled ? c.ink : c.inkSoft.withOpacity(0.5);
+      final txt = Text(label,
+          style: TextStyle(
+              color: fg, fontSize: 13, fontWeight: FontWeight.w700));
+      final ic = Icon(icon, size: 16, color: fg);
+      return Material(
+        color: const Color(0xFFEFE9D6).withOpacity(enabled ? 1 : 0.5),
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: enabled ? onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: iconAfter
+                  ? [txt, const SizedBox(width: 4), ic]
+                  : [ic, const SizedBox(width: 4), txt],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: SizedBox(
+          height: 42,
+          child: Row(
+            children: [
+              nav(
+                label: _tr(context, 'قبلی', 'Back'),
+                icon: Icons.arrow_back_ios_new_rounded,
+                enabled: _canBack,
+                iconAfter: false,
+                onTap: _practiceBack,
+              ),
+              Expanded(
+                child: Center(
+                  child: rec
+                      ? TourTarget(
+                          id: 'call_send',
+                          child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: c.teal,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(22)),
+                            ),
+                            onPressed: _sendNow,
+                            icon: const Icon(Icons.send_rounded, size: 18),
+                            label: Text(_tr(context, 'ارسال', 'Send'),
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+              nav(
+                label: _tr(context, 'بعدی', 'Next'),
+                icon: Icons.arrow_forward_ios_rounded,
+                enabled: _canNext,
+                iconAfter: true,
+                onTap: _practiceNext,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _circleBtn({
     required IconData icon,
     required VoidCallback onTap,
@@ -4386,6 +4563,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         const SizedBox(height: 10),
         if (_showTyping) _typingBox(c),
 
+        // ── حالتِ تمرین: ◀ قبلی | ارسال | بعدی ▶ ──
+        if (widget.autoHint)
+          _practiceNavRow(c, rec)
+        else
         // ── ارسالِ فوری (فقط وقتی میکروفون باز است) ──
         AnimatedSize(
           duration: const Duration(milliseconds: 180),
