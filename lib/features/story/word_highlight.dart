@@ -76,10 +76,25 @@ RegExp? _build(List<String> words, String lang) {
   }
 }
 
+// ⚡ نتیجه‌ی هایلایت برای هر (متن، لغت‌ها، زبان) کش می‌شود تا با هر rebuild/اسکرول
+// regexِ بزرگ دوباره روی متن اجرا نشود.
+final Map<String, List<SelectableRun>?> _runsMemo = {};
+
 /// تکه‌های متن با لغت‌های بولد؛ مجموعِ متنِ تکه‌ها دقیقاً برابرِ [text] است.
 List<SelectableRun>? highlightRuns(
     String text, List<String> words, String lang, TextStyle boldStyle) {
   if (words.isEmpty || text.isEmpty) return null;
+  final wh = Object.hashAll(words);
+  final mk = '$lang|$wh|${words.length}|${text.length}|${text.hashCode}|${boldStyle.fontWeight?.index}';
+  if (_runsMemo.containsKey(mk)) return _runsMemo[mk];
+  final r = _highlightRunsRaw(text, words, lang, boldStyle);
+  if (_runsMemo.length > 400) _runsMemo.clear();
+  _runsMemo[mk] = r;
+  return r;
+}
+
+List<SelectableRun>? _highlightRunsRaw(
+    String text, List<String> words, String lang, TextStyle boldStyle) {
   final key = '$lang|${words.join('\u0001')}';
   final re = _cache.putIfAbsent(key, () {
     if (_cache.length > 200) _cache.clear();

@@ -240,6 +240,18 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
 
   static const TextStyle _eqBold = TextStyle(fontWeight: FontWeight.w900);
 
+  // ⚡ نتیجه‌های بولدِ معادل پشت‌سرهم می‌آیند؛ به‌جای یک setState برای هر کدام (که کلِ پنل را
+  // دوباره می‌ساخت و اسکرول را هنگ می‌کرد)، همه با هم و حداکثر هر ~۲ ثانیه یک‌بار اعمال می‌شوند.
+  Timer? _eqFlushTimer;
+  void _eqMarkDirty() {
+    _eqVer++;
+    if (_eqFlushTimer != null) return;
+    _eqFlushTimer = Timer(const Duration(milliseconds: 2000), () {
+      _eqFlushTimer = null;
+      if (mounted) setState(() {});
+    });
+  }
+
   List<String> _eqCandidates(String w, String lang, String src) {
     final lw = w.toLowerCase().trim();
     final out = <String>[];
@@ -304,7 +316,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
             await f();
           } catch (_) {}
           // به UI فرصتِ نفس‌کشیدن بده
-          await Future<void>.delayed(const Duration(milliseconds: 150));
+          await Future<void>.delayed(const Duration(milliseconds: 400));
         }
       } finally {
         _eqPumping = false;
@@ -364,10 +376,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
         } catch (_) {}
         if (!mounted) return;
         if (r.isNotEmpty && r.toLowerCase() != lw) {
-          setState(() {
-            _eqWord[wk] = [r];
-            _eqVer++;
-          });
+          _eqWord[wk] = [r];
+          _eqMarkDirty();
         }
         if (_eqMatchedNow(lang, src, w)) continue;
       }
@@ -391,10 +401,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
         } catch (_) {}
         if (!mounted) return;
         if (r != null && r.trim().isNotEmpty) {
-          setState(() {
-            _eqCtx[ck] = [r!];
-            _eqVer++;
-          });
+          _eqCtx[ck] = [r!];
+          _eqMarkDirty();
         }
       }
     }
@@ -558,6 +566,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
 
   @override
   void dispose() {
+    _eqFlushTimer?.cancel();
     _dv?.dispose();
     _dv = null;
     final a = widget.audio;
