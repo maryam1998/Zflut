@@ -88,10 +88,8 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
   late final ProviderContainer _pc;
   late final PracticeFollow _follow;
 
-  void _hl(_It it) {
-    if (it.ids.isEmpty) return;
-    _follow.show(it.ids, codes: [widget.langCode, 'en']);
-  }
+  // ⛔ در حالت تمرین دیگر متنِ اصلی نه هایلایت می‌شود و نه خودکار اسکرول می‌کند
+  void _hl(_It it) {}
 
   @override
   void initState() {

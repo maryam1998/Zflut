@@ -79,7 +79,8 @@ class _ScenarioPracticeSectionState
   late final ProviderContainer _pc;
   late final PracticeFollow _follow;
 
-  void _hl(Iterable<String> ids) => _follow.show(ids.toList(), codes: const ['en']);
+  // ⛔ در حالت تمرین دیگر متنِ اصلی نه هایلایت می‌شود و نه خودکار اسکرول می‌کند
+  void _hl(Iterable<String> ids) {}
 
   Widget _panel() {
     final lang = _lang ?? _srcLang;
