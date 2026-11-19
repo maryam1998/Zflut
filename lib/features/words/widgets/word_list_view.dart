@@ -96,6 +96,7 @@ class WordListView extends ConsumerStatefulWidget {
 }
 
 class _WordListViewState extends ConsumerState<WordListView> {
+  final WordVoiceController _voice = WordVoiceController();
   // کنترلرِ جستجو (برای دکمه‌ی ✕ پاک‌کردنِ متن)
   late final TextEditingController _searchCtrl;
 
@@ -109,6 +110,7 @@ class _WordListViewState extends ConsumerState<WordListView> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _voice.dispose();
     super.dispose();
   }
 
@@ -436,13 +438,6 @@ class _WordListViewState extends ConsumerState<WordListView> {
                 ),
               ),
             ),
-          // 🎙️ تمرین صوتیِ لغاتِ بازه‌ی نمایش‌داده‌شده (ویدیو کالِ AI، چندزبانه)
-          if (words.isNotEmpty &&
-              !widget.gridMode &&
-              widget.listId != 'favorites')
-            SliverToBoxAdapter(
-              child: WordVoicePractice(words: visible),
-            ),
           if (words.isNotEmpty && !widget.gridMode)
             SliverToBoxAdapter(
               child: Padding(
@@ -463,8 +458,18 @@ class _WordListViewState extends ConsumerState<WordListView> {
                       visible.map((w) => w.sid), true),
                   onClear: () => readNotifier.setMany(
                       visible.map((w) => w.sid), false),
+                  extraAction: widget.listId == 'favorites'
+                      ? null
+                      : WordVoiceButton(controller: _voice),
                 ),
               ),
+            ),
+          // 🎙️ پنلِ ویدیو کالِ تمرینِ لغاتِ بازه‌ی نمایش‌داده‌شده (با دکمه‌ی ردیفِ بالا شروع می‌شود)
+          if (words.isNotEmpty &&
+              !widget.gridMode &&
+              widget.listId != 'favorites')
+            SliverToBoxAdapter(
+              child: WordVoicePractice(words: visible, controller: _voice),
             ),
           // (کاربرِ رایگان با جستجوی بی‌نتیجه هم «Nothing found» نمی‌بیند؛ کارتِ قفل
           // توضیح می‌دهد جستجو فقط روی لغاتِ رایگان است)

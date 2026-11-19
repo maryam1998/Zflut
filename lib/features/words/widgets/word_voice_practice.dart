@@ -38,10 +38,60 @@ class _P {
   const _P(this.lead, this.leadLang, this.target, this.lang);
 }
 
+/// پلِ بینِ دکمه‌ی ردیفِ «Mark range read / Clear range» و پنلِ تمرین.
+class WordVoiceController {
+  final ValueNotifier<int> startTick = ValueNotifier<int>(0);
+  final ValueNotifier<bool> active = ValueNotifier<bool>(false);
+  void start() => startTick.value++;
+  void dispose() {
+    startTick.dispose();
+    active.dispose();
+  }
+}
+
+/// دکمه‌ی «تمرین» کنارِ Mark range read / Clear range.
+class WordVoiceButton extends StatelessWidget {
+  final WordVoiceController controller;
+  const WordVoiceButton({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    return ValueListenableBuilder<bool>(
+      valueListenable: controller.active,
+      builder: (_, on, __) => Tooltip(
+        message: fa ? 'تمرین مکالمه با AI' : 'Practice conversation with AI',
+        child: FilledButton.icon(
+          onPressed: on ? null : controller.start,
+          style: FilledButton.styleFrom(
+            backgroundColor: c.gold,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: c.goldSoft,
+            disabledForegroundColor: c.gold,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+          ),
+          icon: const Icon(Icons.videocam_rounded, size: 17),
+          label: Text(
+            fa ? 'تمرین' : 'Practice',
+            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class WordVoicePractice extends ConsumerStatefulWidget {
   /// لغاتِ بازه‌ی نمایش‌داده‌شده
   final List<DailyWord> words;
-  const WordVoicePractice({super.key, required this.words});
+  final WordVoiceController? controller;
+  const WordVoicePractice({super.key, required this.words, this.controller});
 
   @override
   ConsumerState<WordVoicePractice> createState() => _WordVoicePracticeState();
@@ -65,10 +115,63 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
 
   bool get _fa => Localizations.localeOf(context).languageCode == 'fa';
 
+  int _hintWi = -1;
+  int _hintPi = 0;
+
   @override
   void initState() {
     super.initState();
     _persona = PersonaStore.builtIns.first;
+    widget.controller?.startTick.addListener(_onStartTick);
+  }
+
+  @override
+  void didUpdateWidget(covariant WordVoicePractice old) {
+    super.didUpdateWidget(old);
+    if (old.controller != widget.controller) {
+      old.controller?.startTick.removeListener(_onStartTick);
+      widget.controller?.startTick.addListener(_onStartTick);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller?.startTick.removeListener(_onStartTick);
+    super.dispose();
+  }
+
+  void _onStartTick() {
+    if (!_mode && mounted) unawaited(_start());
+  }
+
+  void _setMode(bool v) {
+    _mode = v;
+    widget.controller?.active.value = v;
+  }
+
+  /// آواتار را همین‌جا (بدونِ رفتن به تبِ Live chat) عوض می‌کند.
+  Future<void> _pickPersona() async {
+    final ls = ref.read(localStorageProvider);
+    final picked = await showPersonaSheet(context, ls, _persona.id);
+    if (!mounted) return;
+    final p = PersonaStore.byId(ls, picked ?? _persona.id);
+    PersonaStore.setActive(ls, p.id);
+    if (p.id == _persona.id && !_mode) {
+      setState(() => _persona = p);
+      return;
+    }
+    setState(() {
+      _persona = p;
+      if (_mode) {
+        // تماس با آواتارِ جدید از همان جمله‌ای که تمرین می‌شد ادامه می‌یابد
+        if (_hintWi >= 0) {
+          _wi = _hintWi;
+          _pi = _hintPi;
+        }
+        _lastTurn = null;
+        _nonce++;
+      }
+    });
   }
 
   String _enName(String code) {
@@ -134,6 +237,14 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
                     shrinkWrap: true,
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                     children: [
+                      PersonaChangeChip(
+                        persona: _persona,
+                        onTap: () async {
+                          await _pickPersona();
+                          setS(() {});
+                        },
+                      ),
+                      const SizedBox(height: 12),
                       Text(
                         fa
                             ? 'معنیِ لغت را به کدام زبان‌ها بگویی؟'
@@ -385,7 +496,7 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
       _langs = pick.langs;
       _withExample = pick.example;
       _reset();
-      _mode = true;
+      _setMode(true);
       _nonce++;
     });
   }
@@ -393,13 +504,14 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
   void _reset() {
     _wi = 0;
     _pi = 0;
+    _hintWi = -1;
     _lastTurn = null;
     _plans.clear();
     _langOf.clear();
   }
 
   void _end() {
-    if (_mode && mounted) setState(() => _mode = false);
+    if (_mode && mounted) setState(() => _setMode(false));
   }
 
   void _redial() {
@@ -440,6 +552,8 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     final p = await _peek();
     if (p == null) return null;
     _langOf[p.target] = p.lang;
+    _hintWi = _wi;
+    _hintPi = _pi;
     return p.target;
   }
 
@@ -447,46 +561,33 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
       _langOf[target] ?? (_ws.isNotEmpty ? _ws.first.lang : 'en');
 
   // ───────────── UI ─────────────
-  Widget _button(AppThemeColorsExt c) {
-    final fa = _fa;
-    return FilledButton.icon(
-      style: FilledButton.styleFrom(
-        backgroundColor: c.gold,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      onPressed: widget.words.isEmpty ? null : _start,
-      icon: const Icon(Icons.videocam_rounded, size: 20),
-      label: Text(
-        fa ? 'تمرین صوتی لغات' : 'Voice practice',
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (widget.words.isEmpty && !_mode) return const SizedBox.shrink();
-    final c = context.appColors;
+    if (!_mode) return const SizedBox.shrink();
     final lang = _ws.isNotEmpty ? _ws.first.lang : 'en';
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-      child: _mode
-          ? SpeakingCallPanel(
-              key: ValueKey('word-practice-$_nonce'),
-              persona: _persona,
-              langCode: lang,
-              langName: _enName(lang),
-              onConnected: _greeting,
-              onUserSaid: _reply,
-              onEnd: _end,
-              onHint: _hint,
-              onRedial: _redial,
-              autoHint: true,
-              listenLang: _listenLang,
-            )
-          : _button(c),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PersonaChangeChip(persona: _persona, onTap: _pickPersona),
+          const SizedBox(height: 8),
+          SpeakingCallPanel(
+            key: ValueKey('word-practice-$_nonce'),
+            persona: _persona,
+            langCode: lang,
+            langName: _enName(lang),
+            onConnected: _greeting,
+            onUserSaid: _reply,
+            onEnd: _end,
+            onHint: _hint,
+            onRedial: _redial,
+            autoHint: true,
+            listenLang: _listenLang,
+          ),
+        ],
+      ),
     );
   }
 }

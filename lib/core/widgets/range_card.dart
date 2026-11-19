@@ -22,6 +22,9 @@ class RangeCard extends StatefulWidget {
   final VoidCallback onMarkRead;
   final VoidCallback onClear;
 
+  /// دکمه‌ی اضافه در ردیفِ «Mark range read / Clear range» (مثلاً تمرین صوتی). اختیاری.
+  final Widget? extraAction;
+
   const RangeCard({
     super.key,
     required this.label,
@@ -36,6 +39,7 @@ class RangeCard extends StatefulWidget {
     required this.onMarkRead,
     required this.onClear,
     this.min = 1,
+    this.extraAction,
   });
 
   @override
@@ -284,6 +288,7 @@ class _RangeCardState extends State<RangeCard> {
                 const Color(0xFFEAF4F1), const Color(0xFFCFE6DF)),
             actionBtn(L.dialogs_clear_range, w.onClear, c.paper,
                 c.cardBorder),
+            if (w.extraAction != null) w.extraAction!,
           ],
         ),
       ],

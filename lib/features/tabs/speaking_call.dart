@@ -469,6 +469,57 @@ class CallFix {
   const CallFix(this.original, this.corrected);
 }
 
+/// نوارِ کوچکِ «آواتارِ فعلی + تغییر» برای داخلِ حالتِ تمرین (بدونِ رفتن به تبِ Live chat).
+class PersonaChangeChip extends StatelessWidget {
+  final AiPersona persona;
+  final VoidCallback onTap;
+  const PersonaChangeChip(
+      {super.key, required this.persona, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    return Material(
+      color: c.surface,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: c.cardBorder),
+          ),
+          child: Row(
+            children: [
+              _EmojiAvatar(persona: persona, size: 30),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  persona.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: c.ink, fontSize: 13.5, fontWeight: FontWeight.w800),
+                ),
+              ),
+              Icon(Icons.swap_horiz_rounded, size: 18, color: c.gold),
+              const SizedBox(width: 4),
+              Text(
+                fa ? 'تغییر آواتار' : 'Change avatar',
+                style: TextStyle(
+                    color: c.gold, fontSize: 12, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class CallTurn {
   /// متنی که شخصیت با صدا می‌گوید
   final String spoken;
