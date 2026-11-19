@@ -193,38 +193,54 @@ class PaidContent {
   static Future<void> prefetchTopics(List<String> ids) async {
     if (_prefetching || !ProStatus.isPro) return;
     _prefetching = true;
+    var gotAny = false;
     try {
       await _ensureCacheMatchesApp();
-      final todo = <String>[];
-      for (final id in ids) {
-        if (id.isEmpty) continue;
-        if (!await (await _convFile(id)).exists()) todo.add(id);
-      }
-      if (todo.isEmpty) return;
-      if (await _downloadBundle()) {
-        // آنچه هنوز نیامده (مثلاً موضوعِ تازه) یکی‌یکی
-        todo.removeWhere((id) => _existsSync(id));
-        if (todo.isEmpty) return;
-      }
-      var next = 0;
-      Future<void> worker() async {
-        while (next < todo.length && ProStatus.isPro) {
-          while (_userWaiting > 0) {
-            await Future<void>.delayed(const Duration(milliseconds: 400));
-          }
-          final id = todo[next++];
-          try {
-            await _downloadTopic(id, null);
-          } catch (e) {
-            debugPrint('PaidContent.prefetch($id): $e');
+      // 🔁 اگر سرور/شبکه جواب نداد، با فاصله‌های بیشتر دوباره تلاش می‌شود (تا ۶ دور)
+      const waits = [0, 20, 60, 120, 300, 600]; // ثانیه
+      for (final w in waits) {
+        if (!ProStatus.isPro) break;
+        if (w > 0) await Future<void>.delayed(Duration(seconds: w));
+        final todo = <String>[];
+        for (final id in ids) {
+          if (id.isEmpty) continue;
+          if (!await (await _convFile(id)).exists()) todo.add(id);
+        }
+        if (todo.isEmpty) break;
+        final before = todo.length;
+        if (await _downloadBundle()) {
+          // آنچه هنوز نیامده (مثلاً موضوعِ تازه) یکی‌یکی
+          todo.removeWhere((id) => _existsSync(id));
+        }
+        var next = 0;
+        Future<void> worker() async {
+          while (next < todo.length && ProStatus.isPro) {
+            while (_userWaiting > 0) {
+              await Future<void>.delayed(const Duration(milliseconds: 400));
+            }
+            final id = todo[next++];
+            try {
+              await _downloadTopic(id, null);
+            } catch (e) {
+              debugPrint('PaidContent.prefetch($id): $e');
+            }
           }
         }
-      }
 
-      await Future.wait([worker(), worker()]);
+        await Future.wait([worker(), worker()]);
+        // چیزی دانلود شد؟
+        var left = 0;
+        for (final id in ids) {
+          if (id.isNotEmpty && !await (await _convFile(id)).exists()) left++;
+        }
+        if (left < before) gotAny = true;
+        if (left == 0) break;
+      }
     } finally {
       _prefetching = false;
     }
+    // موضوعی که کاربر با نسخه‌ی ناقص باز کرده بود با متنِ کامل تازه شود
+    if (gotAny && ProStatus.isPro) revision.value++;
   }
 
   static bool _existsSync(String id) {
