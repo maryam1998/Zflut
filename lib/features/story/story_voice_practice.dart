@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/supported_languages.dart';
+import '../../core/practice/practice_follow.dart';
 import '../../core/providers/speech_provider.dart' show speechControllerProvider;
 import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
@@ -27,7 +28,10 @@ class _It {
   final String role; // 'ai' | 'user'
   final String text;
   final bool ask; // سؤالِ «چند درصد فهمیدی؟»
-  const _It(this.role, this.text, {this.ask = false});
+
+  /// شناسه‌ی همین جمله/پاراگراف در متنِ داستانِ پایین (برای هایلایت و اسکرول)
+  final List<String> ids;
+  const _It(this.role, this.text, {this.ask = false, this.ids = const []});
 }
 
 class StoryVoicePractice extends ConsumerStatefulWidget {
@@ -80,10 +84,28 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
 
   bool get _fa => Localizations.localeOf(context).languageCode == 'fa';
 
+  // 🎥 ویدیو کال بالای صفحه سنجاق می‌شود + جمله‌ی در حال خواندن در متنِ داستانِ پایین هایلایت/اسکرول می‌شود
+  late final ProviderContainer _pc;
+  late final PracticeFollow _follow;
+
+  void _hl(_It it) {
+    if (it.ids.isEmpty) return;
+    _follow.show(it.ids, codes: [widget.langCode, 'en']);
+  }
+
   @override
   void initState() {
     super.initState();
     _persona = PersonaStore.builtIns.first;
+    _pc = ProviderScope.containerOf(context, listen: false);
+    _follow = PracticeFollow(_pc);
+  }
+
+  @override
+  void dispose() {
+    _follow.clear();
+    unpinCall(_pc, this);
+    super.dispose();
   }
 
   String _enName(String code) {
@@ -104,25 +126,40 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
         .where((e) => e.isNotEmpty)
         .toList();
     final out = <_It>[];
+    // شناسه‌ی جمله‌ها/پاراگراف‌ها مثلِ StoryReaderPanel: '<id>-s<gi>' و '<id>-p<pi>'
+    var gi = 0;
+    List<String> sentsOf(String p) {
+      List<String> ss;
+      try {
+        ss = widget.splitSentences(p);
+      } catch (_) {
+        ss = [p];
+      }
+      return ss.isEmpty ? [p] : ss;
+    }
+
     if (widget.dialogue) {
       for (var k = 0; k < paras.length; k++) {
         final aIsAi = (k % 2 == 0) != swap; // بدونِ swap: نفرِ اول = AI
-        out.add(_It(aIsAi ? 'ai' : 'user', paras[k]));
+        final n = sentsOf(paras[k]).length;
+        final ids = <String>[
+          for (var s = 0; s < n; s++) '${widget.storyId}-s${gi + s}',
+          '${widget.storyId}-p$k',
+        ];
+        gi += n;
+        out.add(_It(aIsAi ? 'ai' : 'user', paras[k], ids: ids));
       }
     } else {
-      for (final p in paras) {
-        List<String> ss;
-        try {
-          ss = widget.splitSentences(p);
-        } catch (_) {
-          ss = [p];
-        }
-        for (final x in ss) {
+      for (var pi = 0; pi < paras.length; pi++) {
+        final p = paras[pi];
+        for (final x in sentsOf(p)) {
           final t = _clean(x);
           // جمله‌ی بدونِ هیچ حرفی (فقط نشانه‌گذاری) خوانده نمی‌شود
           if (RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(t)) {
-            out.add(_It(swap ? 'ai' : 'user', t));
+            out.add(_It(swap ? 'ai' : 'user', t,
+                ids: ['${widget.storyId}-s$gi', '${widget.storyId}-p$pi']));
           }
+          gi++;
         }
       }
       if (swap && out.isNotEmpty) {
@@ -335,11 +372,13 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
   }
 
   void _end() {
+    _follow.clear();
     if (_mode && mounted) setState(() => _mode = false);
   }
 
   void _redial() {
     if (!mounted) return;
+    _follow.clear();
     setState(() {
       _items = _build(_swap);
       _i = 0;
@@ -422,6 +461,7 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
       _resumeI = _i;
       final it = _items[_i++];
       if (it.ask) _asking = true;
+      _hl(it);
       return it.text;
     }
     return null;
@@ -434,6 +474,7 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
       _resumeI = _i;
       final it = _items[_i++];
       if (it.ask) _asking = true;
+      _hl(it);
       return CallTurn(it.text, <CallFix>[], lang: it.ask ? 'en' : null);
     }
     return null;
@@ -443,6 +484,7 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
     if (_asking) return null;
     if (_i < _items.length && _items[_i].role == 'user') {
       _resumeI = _i;
+      _hl(_items[_i]);
       return _items[_i].text;
     }
     return null;
@@ -472,6 +514,7 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
     if (_i < _items.length && _items[_i].role == 'ai') {
       _resumeI = _i;
       final it = _items[_i++];
+      _hl(it);
       t = CallTurn(it.text, <CallFix>[]);
     } else if (_i >= _items.length) {
       t = CallTurn('Great job! You finished the story.', <CallFix>[],
@@ -627,10 +670,7 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    if (!_mode) return _button(c);
+  Widget _panel() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -651,6 +691,20 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
           autoHint: true,
           practiceMatchRatio: 0.7, // نه خیلی سخت‌گیر، نه خیلی شل
         ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    // 🎥 در حالتِ تمرین ویدیو کال بالای صفحه سنجاق است؛ فقط کارتِ نتیجه همین‌جا می‌ماند
+    pinCallLater(_pc, this, _mode ? _panel() : null, () => mounted && _mode);
+    if (!_mode) return _button(c);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         if (_pct != null) _resultCard(c),
       ],
     );

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/supported_languages.dart';
 import '../../core/models/conversation.dart';
+import '../../core/practice/practice_follow.dart';
 import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/speech_provider.dart' show speechControllerProvider;
@@ -31,7 +32,10 @@ import 'speaking_call.dart';
 class _Grp {
   final String role; // 'ai' | 'user'
   final List<String> lines;
-  _Grp(this.role, this.lines);
+
+  /// شناسه‌ی هر خط در متنِ اصلیِ پایین ('a<i>' = می‌شنوی، 'b<i>' = می‌گی)
+  final List<String> ids;
+  _Grp(this.role, this.lines, this.ids);
 }
 
 class _Turn {
@@ -71,6 +75,30 @@ class _ScenarioPracticeSectionState
   final Map<String, String> _tr = {};
   late AiPersona _persona;
 
+  // 🎥 ویدیو کال بالای صفحه سنجاق می‌شود + خطِ در حال گفتن در متنِ پایین هایلایت/اسکرول می‌شود
+  late final ProviderContainer _pc;
+  late final PracticeFollow _follow;
+
+  void _hl(Iterable<String> ids) => _follow.show(ids.toList(), codes: const ['en']);
+
+  Widget _panel() {
+    final lang = _lang ?? _srcLang;
+    return SpeakingCallPanel(
+      key: ValueKey('sc-practice-${widget.scenario.hashCode}-$_nonce'),
+      persona: _persona,
+      langCode: lang,
+      langName: _enName(lang),
+      onConnected: _greeting,
+      onUserSaid: _reply,
+      onEnd: _end,
+      onHint: _hint,
+      onRedial: _redial,
+      // 🎯 بعد از حرفِ AI جمله‌ی بعدیِ کاربر نشان داده می‌شود و ضبط خودکار شروع می‌شود
+      autoHint: true,
+      practiceMatchRatio: 0.7,
+    );
+  }
+
   bool get _fa => Localizations.localeOf(context).languageCode == 'fa';
 
   // ───────────── ساختنِ گروه‌ها و نوبت‌ها از سناریو ─────────────
@@ -78,20 +106,21 @@ class _ScenarioPracticeSectionState
     final a = widget.scenario.speakerA;
     final b = widget.scenario.speakerB;
     final out = <_Grp>[];
-    void add(String role, String text) {
+    void add(String role, String text, String id) {
       final t = text.trim();
       if (t.isEmpty) return;
       if (out.isNotEmpty && out.last.role == role) {
         out.last.lines.add(t);
+        out.last.ids.add(id);
       } else {
-        out.add(_Grp(role, [t]));
+        out.add(_Grp(role, [t], [id]));
       }
     }
 
     final n = a.length > b.length ? a.length : b.length;
     for (var i = 0; i < n; i++) {
-      if (i < a.length) add('ai', a[i].en);
-      if (i < b.length) add('user', b[i].en);
+      if (i < a.length) add('ai', a[i].en, 'a$i');
+      if (i < b.length) add('user', b[i].en, 'b$i');
     }
     return out;
   }
@@ -364,11 +393,13 @@ class _ScenarioPracticeSectionState
   }
 
   void _end() {
+    _follow.clear();
     if (_mode && mounted) setState(() => _mode = false);
   }
 
   void _redial() {
     if (!mounted) return;
+    _follow.clear();
     setState(() {
       _k = 0;
       _swapReset();
@@ -381,11 +412,20 @@ class _ScenarioPracticeSectionState
     if (_swap) {
       // آواتار نقشِ «کاربر» را بازی می‌کند: اگر مکالمه با جمله‌ی کاربر شروع شود، اول او می‌گوید
       final g = _groups();
-      if (g.isNotEmpty && g.first.role == 'user') return _gText(g.first);
+      if (g.isNotEmpty && g.first.role == 'user') {
+        _hl(g.first.ids);
+        return _gText(g.first);
+      }
       return null;
     }
     final lines = _greetingLines();
     if (lines.isEmpty) return null;
+    final gids = <String>[];
+    for (final g in _groups()) {
+      if (g.role == 'user') break;
+      gids.addAll(g.ids);
+    }
+    _hl(gids);
     return lines.map(_lineTr).join(' ').trim();
   }
 
@@ -398,12 +438,14 @@ class _ScenarioPracticeSectionState
         if (_swapLast < 0) return null;
         _swapP = _swapNext(g, _swapLast, 'ai');
       }
+      _hl(g[_swapLast].ids);
       return CallTurn(_gText(g[_swapLast]), <CallFix>[]);
     }
     final ts = _turns();
     if (ts.isEmpty) return null;
     if (!retry) _k++;
     final t = ts[(_k - 1) % ts.length];
+    _hl(t.reply.ids);
     return CallTurn(_gText(t.reply), <CallFix>[]);
   }
 
@@ -412,11 +454,14 @@ class _ScenarioPracticeSectionState
     final g = _groups();
     if (_swap) {
       if (g.isEmpty || _swapP < 0 || _swapP >= g.length) return null;
+      _hl(g[_swapP].ids);
       return _gText(g[_swapP]);
     }
     final ts = _turns();
     if (ts.isEmpty) return null;
-    return _gText(ts[_k % ts.length].userG);
+    final ug = ts[_k % ts.length].userG;
+    _hl(ug.ids);
+    return _gText(ug);
   }
 
   // ───────────── UI ─────────────
@@ -450,31 +495,26 @@ class _ScenarioPracticeSectionState
   void initState() {
     super.initState();
     _persona = PersonaStore.builtIns.first;
+    _pc = ProviderScope.containerOf(context, listen: false);
+    _follow = PracticeFollow(_pc);
+  }
+
+  @override
+  void dispose() {
+    _follow.clear();
+    unpinCall(_pc, this);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     if (!_canPractice) return const SizedBox.shrink();
     final c = context.appColors;
-    final lang = _lang ?? _srcLang;
+    // 🎥 در حالتِ تمرین ویدیو کال بالای صفحه سنجاق است، نه داخلِ کارت
+    pinCallLater(_pc, this, _mode ? _panel() : null, () => mounted && _mode);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-      child: _mode
-          ? SpeakingCallPanel(
-              key: ValueKey('sc-practice-${widget.scenario.hashCode}-$_nonce'),
-              persona: _persona,
-              langCode: lang,
-              langName: _enName(lang),
-              onConnected: _greeting,
-              onUserSaid: _reply,
-              onEnd: _end,
-              onHint: _hint,
-              onRedial: _redial,
-              // 🎯 بعد از حرفِ AI جمله‌ی بعدیِ کاربر نشان داده می‌شود و ضبط خودکار شروع می‌شود
-              autoHint: true,
-              practiceMatchRatio: 0.7,
-            )
-          : _button(c),
+      child: _mode ? const SizedBox.shrink() : _button(c),
     );
   }
 }

@@ -2870,7 +2870,18 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
 
   /// محتوای کادر شیشه‌ای زیرنویس: تاریخچه‌ی اسکرول‌پذیر؛ آخرین خط پررنگ.
   Widget _ccGlassBody(bool showTr, bool nativeRtl) {
-    if (_practiceTarget != null) return _practiceLine(showTr, nativeRtl);
+    if (_practiceTarget != null) {
+      // 📝 تمرینِ لغات: معنیِ لغت فقط وقتی CC روشن است روی ویدیو دیده می‌شود
+      if (widget.listenLang != null && !_cc) {
+        return _fixes.isNotEmpty
+            ? Align(
+                alignment: AlignmentDirectional.bottomStart,
+                child: _fixLine(_fixes.first, 1.0),
+              )
+            : const SizedBox.shrink();
+      }
+      return _practiceLine(showTr, nativeRtl);
+    }
     final dir = nativeRtl ? TextDirection.rtl : TextDirection.ltr;
 
     // CC خاموش: فقط اصلاحیه‌ی جمله (مثل قبل)

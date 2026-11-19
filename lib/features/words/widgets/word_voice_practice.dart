@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/ai/word_examples.dart' show wordExamplesStoreProvider;
 import '../../../core/constants/supported_languages.dart';
 import '../../../core/models/daily_word.dart';
+import '../../../core/practice/practice_follow.dart';
 import '../../../core/providers/ai_settings_provider.dart';
 import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/providers/speech_provider.dart' show speechControllerProvider;
@@ -118,10 +119,23 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
   int _hintWi = -1;
   int _hintPi = 0;
 
+  // 🎥 ویدیو کال بالای صفحه سنجاق می‌شود + لغتِ در حالِ تمرین در لیستِ پایین هایلایت/اسکرول می‌شود
+  late final ProviderContainer _pc;
+  late final PracticeFollow _follow;
+
+  /// لغتِ فعلیِ تمرین را در لیستِ لغات هایلایت می‌کند و به آن اسکرول می‌کند.
+  void _hlWord() {
+    if (_wi < 0 || _wi >= _ws.length) return;
+    final w = _ws[_wi];
+    _follow.show([w.sid], codes: [w.lang, 'en'], lazy: true);
+  }
+
   @override
   void initState() {
     super.initState();
     _persona = PersonaStore.builtIns.first;
+    _pc = ProviderScope.containerOf(context, listen: false);
+    _follow = PracticeFollow(_pc);
     widget.controller?.startTick.addListener(_onStartTick);
   }
 
@@ -137,6 +151,8 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
   @override
   void dispose() {
     widget.controller?.startTick.removeListener(_onStartTick);
+    _follow.clear();
+    unpinCall(_pc, this);
     super.dispose();
   }
 
@@ -529,11 +545,13 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
   }
 
   void _end() {
+    _follow.clear();
     if (_mode && mounted) setState(() => _setMode(false));
   }
 
   void _redial() {
     if (!mounted) return;
+    _follow.clear();
     setState(() {
       _reset();
       _nonce++;
@@ -549,6 +567,7 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     if (p == null) {
       return 'Sorry, I could not get the translations. Check your connection and call again.';
     }
+    _hlWord();
     return p.lead;
   }
 
@@ -558,6 +577,7 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     _pi++;
     final nx = await _peek();
     _prefetch();
+    if (nx != null) _hlWord();
     final t = nx == null
         ? CallTurn(_doneMsg, <CallFix>[], lang: 'en')
         : CallTurn(nx.lead, <CallFix>[], lang: nx.leadLang);
@@ -570,6 +590,7 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     final p = await _peek();
     if (p == null) return null;
     _langOf[p.target] = p.lang;
+    _hlWord();
     _hintWi = _wi;
     _hintPi = _pi;
     return p.target;
@@ -579,33 +600,35 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
       _langOf[target] ?? (_ws.isNotEmpty ? _ws.first.lang : 'en');
 
   // ───────────── UI ─────────────
+  Widget _panel() {
+    final lang = _ws.isNotEmpty ? _ws.first.lang : 'en';
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PersonaChangeChip(persona: _persona, onTap: _pickPersona),
+        const SizedBox(height: 8),
+        SpeakingCallPanel(
+          key: ValueKey('word-practice-$_nonce'),
+          persona: _persona,
+          langCode: lang,
+          langName: _enName(lang),
+          onConnected: _greeting,
+          onUserSaid: _reply,
+          onEnd: _end,
+          onHint: _hint,
+          onRedial: _redial,
+          autoHint: true,
+          listenLang: _listenLang,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!_mode) return const SizedBox.shrink();
-    final lang = _ws.isNotEmpty ? _ws.first.lang : 'en';
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          PersonaChangeChip(persona: _persona, onTap: _pickPersona),
-          const SizedBox(height: 8),
-          SpeakingCallPanel(
-            key: ValueKey('word-practice-$_nonce'),
-            persona: _persona,
-            langCode: lang,
-            langName: _enName(lang),
-            onConnected: _greeting,
-            onUserSaid: _reply,
-            onEnd: _end,
-            onHint: _hint,
-            onRedial: _redial,
-            autoHint: true,
-            listenLang: _listenLang,
-          ),
-        ],
-      ),
-    );
+    // 🎥 در حالتِ تمرین ویدیو کال بالای صفحه سنجاق است (نه داخلِ لیست)
+    pinCallLater(_pc, this, _mode ? _panel() : null, () => mounted && _mode);
+    return const SizedBox.shrink();
   }
 }

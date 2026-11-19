@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../app.dart';
 import '../../core/constants/supported_languages.dart';
 import '../../core/mascot/mascot_pin_provider.dart';
+import '../../core/practice/practice_follow.dart' show PinnedCallSlot;
 import '../../core/providers/app_prefs_provider.dart';
 import '../../core/providers/player_prefs_provider.dart';
 import '../../core/router/app_router.dart' show kLastTabPrefKey, kRestorableTabs;
@@ -136,6 +137,8 @@ class _AppShellState extends ConsumerState<AppShell> {
                 children: [
                   // جای نوارِ آدمک — همان ۴۰px که در Hope داخل هدر بود
                   const SizedBox(height: 40),
+                  // 🎥 ویدیو کالِ تمرین (لغات/Talk/داستان) بالای صفحه سنجاق می‌شود
+                  const PinnedCallSlot(),
                   Expanded(child: widget.child),
 
                   // ═══ پنل تمرین گرامر — فعلاً مخفی (kShowPracticeSheet) ═══
