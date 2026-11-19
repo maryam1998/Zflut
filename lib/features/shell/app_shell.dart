@@ -142,7 +142,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                     child: LayoutBuilder(
                       builder: (ctx, cons) => Column(
                         children: [
-                          PinnedCallSlot(maxHeight: cons.maxHeight * 0.86),
+                          PinnedCallSlot(maxHeight: cons.maxHeight * 0.93),
                           Expanded(child: widget.child),
                         ],
                       ),
