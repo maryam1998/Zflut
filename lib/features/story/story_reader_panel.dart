@@ -272,6 +272,9 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
 
   /// تکه‌های ترجمه با معادلِ لغت‌های انتخابی بولد؛ null = چیزی برای بولد نیست.
   List<SelectableRun>? _eqRuns(String lang, String src, String t) {
+    // ⛔ بولدِ خودکارِ معادلِ لغت‌ها داخلِ ترجمه برداشته شد (بدونِ ترجمه‌ی پس‌زمینه)
+    return null;
+    // ignore: dead_code
     if (widget.highlightWords.isEmpty || t.isEmpty) return null;
     if (_eqMemoVer != _eqVer) {
       _eqMemo.clear();
@@ -1466,12 +1469,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                     id: id,
                     text: _tidy(src),
                     sentence: _tidy(src),
-                    runs: highlightRuns(
-                      _tidy(src),
-                      widget.highlightWords,
-                      widget.langCode,
-                      const TextStyle(fontWeight: FontWeight.w900),
-                    ),
+                    // ⛔ بولدِ خودکارِ لغت‌های داستان برداشته شد
+                    runs: null,
                     style: TextStyle(
                       color: c.ink,
                       fontSize: 15 * tp.scaleFactor,
