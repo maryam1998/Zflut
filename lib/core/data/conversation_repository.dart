@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -119,7 +120,9 @@ class ConversationRepository {
       return;
     }
     ConversationTopic? preview;
-    final a = await _readAsset(stub.id);
+    // 💎 Pro: متنِ کاملِ داخلِ اپ (آفلاین، فوری) — اگر نبود نسخه‌ی رایگان
+    final a = (ProStatus.isPro ? await _readProBundle(stub.id) : null) ??
+        await _readAsset(stub.id);
     if (a != null) {
       preview = ConversationTopic.fromJson(a, id: stub.id, kind: stub.kind);
       yield preview; // ← فوری
@@ -153,7 +156,9 @@ class ConversationRepository {
       j = await PaidContent.conversationTopic(stub.id);
       fromPaid = j != null;
     }
-    // رایگان (یا Pro بدونِ اینترنت/کش): نسخه‌ی داخلِ اپ — فقط موضوع‌های رایگان آن را دارند
+    // 💎 Pro بدونِ اینترنت/کش: متنِ کاملِ داخلِ اپ (کش نمی‌شود تا نسخه‌ی تازه‌ی سرور جایش بیاید)
+    if (ProStatus.isPro) j ??= await _readProBundle(stub.id);
+    // رایگان: نسخه‌ی داخلِ اپ — فقط موضوع‌های رایگان آن را دارند
     j ??= await _readAsset(stub.id);
     if (j == null) return null;
     try {
@@ -163,6 +168,44 @@ class ConversationRepository {
       return t;
     } catch (e) {
       debugPrint('ConversationRepository parse ${stub.id}: $e');
+      return null;
+    }
+  }
+
+  // ───────────── 💎 بسته‌ی آفلاینِ Pro ─────────────
+  // assets/data/pro_conv_bundle.bin (ساخته‌شده با scripts/build-pro-bundle.mjs).
+  // فقط برای کاربرِ Pro و فقط وقتی سرور/کش جواب ندهد خوانده می‌شود.
+  static const String _bundleKey = 'lingova-pro-conv-v1';
+  Map<String, dynamic>? _proBundle;
+  Future<Map<String, dynamic>?>? _proBundleLoad;
+
+  Future<Map<String, dynamic>?> _readProBundle(String id) async {
+    if (!ProStatus.isPro) return null;
+    try {
+      _proBundleLoad ??= _loadProBundle();
+      final all = await _proBundleLoad;
+      final t = all?[id];
+      return t is Map<String, dynamic> ? t : null;
+    } catch (e) {
+      debugPrint('ConversationRepository bundle $id: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> _loadProBundle() async {
+    try {
+      final data = await rootBundle.load('assets/data/pro_conv_bundle.bin');
+      final b = Uint8List.fromList(
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+      final k = utf8.encode(_bundleKey);
+      for (var i = 0; i < b.length; i++) {
+        b[i] ^= k[i % k.length];
+      }
+      final m = jsonDecode(utf8.decode(b));
+      return m is Map<String, dynamic> ? m : null;
+    } catch (e) {
+      debugPrint('ConversationRepository bundle load: $e');
+      _proBundleLoad = null; // دفعه‌ی بعد دوباره تلاش شود
       return null;
     }
   }
