@@ -32,6 +32,7 @@ import '../reader/widgets/neural_path_dialog.dart' show showNeuralPath;
 import '../tabs/_hope_panel.dart'
     show HopeChoiceChip, autoDir, uiContentDirection;
 import 'story_i18n.dart';
+import 'story_voice_practice.dart';
 import 'word_equivalents.dart';
 import 'word_highlight.dart';
 
@@ -122,6 +123,13 @@ class StoryReaderPanel extends ConsumerStatefulWidget {
   /// (هم برای متنِ اصلی و هم برای ترجمه‌ها، مثلِ تبِ «مکالمه»)
   final bool dialogue;
 
+  /// 🎙️ دکمه‌ی «حالتِ تمرین» (ویدیو کالِ AI) نشان داده شود؟ (داستان‌ساز و داستان‌های ذخیره‌شده)
+  final bool enablePractice;
+
+  /// سطحِ داستان و انتخابِ سطحِ بعدی بعد از «چند درصد فهمیدی؟» (اختیاری)
+  final String level;
+  final ValueChanged<String>? onLevelUp;
+
   const StoryReaderPanel({
     super.key,
     required this.storyId,
@@ -143,6 +151,9 @@ class StoryReaderPanel extends ConsumerStatefulWidget {
     this.onReorderLangs,
     this.highlightWords = const [],
     this.dialogue = false,
+    this.enablePractice = false,
+    this.level = 'B1',
+    this.onLevelUp,
   });
 
   @override
@@ -1176,6 +1187,20 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
                   ),
                 );
               }),
+              if (widget.enablePractice) ...[
+                const SizedBox(height: 12),
+                StoryVoicePractice(
+                  key: ValueKey('practice-${widget.storyId}'),
+                  storyId: widget.storyId,
+                  title: widget.title,
+                  text: widget.text,
+                  langCode: widget.langCode,
+                  level: widget.level,
+                  dialogue: widget.dialogue,
+                  splitSentences: widget.splitSentences,
+                  onLevelUp: widget.onLevelUp,
+                ),
+              ],
               if (widget.audioBar != null) ...[
                 const SizedBox(height: 12),
                 widget.audioBar!,

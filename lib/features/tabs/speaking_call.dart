@@ -2204,6 +2204,13 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
   /// null = همه‌چیز به [langCode] (رفتارِ قبلی). فقط تمرینِ چندزبانه‌ی لغات از آن استفاده می‌کند.
   final String Function(String target)? listenLang;
 
+  /// بعد از هر نوبتِ AI صدا زده می‌شود؛ اگر نوبتِ بعدیِ AI (بدونِ منتظر ماندن برای کاربر) را
+  /// برگرداند، بلافاصله گفته می‌شود (برای داستان‌خوانیِ جمله‌به‌جمله). null = منتظرِ کاربر.
+  final Future<CallTurn?> Function()? onAiContinue;
+
+  /// حداقلِ شباهتِ کلمه‌به‌کلمه برای «درست» بودنِ خواندنِ جمله‌ی راهنما (پیش‌فرض ۰٫۸).
+  final double practiceMatchRatio;
+
   const SpeakingCallPanel({
     super.key,
     required this.persona,
@@ -2216,6 +2223,8 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
     this.onRedial,
     this.autoHint = false,
     this.listenLang,
+    this.onAiContinue,
+    this.practiceMatchRatio = 0.8,
   });
 
   @override
@@ -2491,6 +2500,29 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   /// بعد از تمام شدنِ حرفِ AI: در حالتِ تمرین خودکار «راهنما» زده می‌شود (بدونِ لمسِ دکمه)،
   /// وگرنه رفتارِ قبلی (میکروفونِ دست‌آزاد).
   Future<void> _afterAiTurn(int token) async {
+    // 🔁 AI هنوز حرفِ دیگری دارد (مثلاً جمله‌ی بعدیِ داستان) → بدونِ انتظار بگو
+    final cont = widget.onAiContinue;
+    if (cont != null) {
+      CallTurn? nx;
+      try {
+        nx = await cont();
+      } catch (_) {
+        nx = null;
+      }
+      if (!mounted || _closed || token != _turn) return;
+      if (nx != null && nx.spoken.trim().isNotEmpty) {
+        final say = nx;
+        setState(() {
+          _aiLine = say.spoken;
+          _ccAdd(false, say.spoken);
+          _phase = _Phase.speaking;
+        });
+        await _speak(say.spoken, lang: say.lang);
+        if (!mounted || _closed || token != _turn) return;
+        setState(() => _phase = _Phase.ready);
+        return _afterAiTurn(token);
+      }
+    }
     final fn = widget.onHint;
     if (!widget.autoHint || fn == null || !_sttSupported) {
       if (_handsFree && _sttSupported) unawaited(_startRec());
@@ -2554,7 +2586,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     if (target == null) return;
     final ok = widget.listenLang != null
         ? _lenientMatches(target, heard)
-        : _practiceMatches(target, heard);
+        : _practiceMatches(target, heard, widget.practiceMatchRatio);
     final token = ++_turn;
     if (ok) {
       setState(() {
@@ -2668,7 +2700,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   }
 
   /// شباهتِ کلمه‌به‌کلمه (LCS با تحملِ اختلافِ کوچکِ تشخیصِ گفتار) ≥ ۸۰٪ = درست.
-  static bool _practiceMatches(String target, String heard) {
+  static bool _practiceMatches(String target, String heard,
+      [double ratio = 0.8]) {
     final a = _practiceTokens(target);
     final b = _practiceTokens(heard);
     if (a.isEmpty) return true;
@@ -2681,7 +2714,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
             : math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
-    return dp[a.length][b.length] / a.length >= 0.8;
+    return dp[a.length][b.length] / a.length >= ratio;
   }
 
   /// جمله‌ی تمرین: بدونِ کادر و دکمه‌ی اضافه، فقط خودِ جمله پایینِ ویدیو (تورِ برنامه توضیح می‌دهد).

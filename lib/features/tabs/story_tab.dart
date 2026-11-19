@@ -1007,6 +1007,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           paraTranslations: trans,
           highlightWords: s.words,
           dialogue: s.contentType == 'conversational', // 🎭 دو صدا (مرد/زن)
+          enablePractice: true,
+          level: s.level,
+          onLevelUp: (lv) => setState(() => _level = lv),
           splitSentences: _splitSentences,
           onReorderLangs: _moveTransLang,
           audio: ctrl,
@@ -3141,6 +3144,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       paraTranslations: s.translations,
       highlightWords: s.words,
       dialogue: s.contentType == 'conversational', // 🎭 دو صدا (مرد/زن)
+      enablePractice: true,
+      level: s.level,
+      onLevelUp: (lv) => setState(() => _level = lv),
       splitSentences: _splitSentences,
       onReorderLangs: _moveTransLang,
       audio: ctrl,
