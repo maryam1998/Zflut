@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert' show base64Decode, base64Encode;
-import 'dart:io' show File;
+import 'dart:io' show Directory, File;
 import 'dart:math' as math;
 import 'dart:typed_data' show Int32List, Uint8List;
 import 'dart:ui' as ui;
@@ -2275,6 +2275,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   Future<CallTurn?>? _practiceFuture; // پاسخِ AI (از قبل گرفته‌شده و نگه‌داشته‌شده)
   String _practiceHeard = ''; // آنچه تشخیصِ گفتار شنید
   int _practiceState = 0; // 0 = منتظرِ خواندن، 1 = درست خواند، 2 = اشتباه خواند
+  int _practiceTries = 0; // چندبار همین جمله را اشتباه خوانده (بعد از ۲ بار می‌رویم جلو)
+  String _recStep = 'perm'; // کدام مرحله‌ی شروعِ ضبط خطا داد (برای تشخیص)
   String _lastText = '';
   List<CallFix> _fixes = const [];
   String _info = '';
@@ -2570,6 +2572,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _practiceFuture = pre;
       _practiceHeard = '';
       _practiceState = 0;
+      _practiceTries = 0;
       _phase = _Phase.ready;
       _info = '';
       _error = '';
@@ -2606,7 +2609,19 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       });
       await _speak(target, lang: _listenLcFor(target));
       if (!mounted || _closed || token != _turn) return;
+      // 🔁 AI جمله را تکرار کرد → کاربر دوباره بخواند (حداکثر ۲ بار؛ بعدش می‌رویم جلو تا گیر نکند)
+      if (_practiceTries < 2) {
+        _practiceTries++;
+        setState(() {
+          _practiceHeard = '';
+          _practiceState = 0;
+          _phase = _Phase.ready;
+        });
+        await _startRec();
+        return;
+      }
     }
+    _practiceTries = 0;
     await _submit(target, pre: pre);
   }
 
@@ -3288,6 +3303,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       return;
     }
     try {
+      _recStep = 'perm';
       if (!await _rec.hasPermission()) {
         if (mounted) {
           setState(() => _error = _tr(context, 'اجازه‌ی میکروفون داده نشد.',
@@ -3302,9 +3318,18 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       try {
         if (await _rec.isRecording()) await _rec.stop();
       } catch (_) {}
-      final dir = await getTemporaryDirectory();
+      var step = 'tmpdir';
+      String dirPath;
+      try {
+        dirPath = (await getTemporaryDirectory()).path;
+      } catch (_) {
+        // اگر path_provider جواب نداد، پوشه‌ی temp خودِ دارت (بدونِ پلاگین)
+        dirPath = Directory.systemTemp.path;
+      }
       final path =
-          '${dir.path}/call_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          '$dirPath/call_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      step = 'start';
+      _recStep = step;
       // اگر تنظیماتِ پیشرفته (حذفِ اکو/نویز) روی این گوشی جواب نداد، ساده‌تر امتحان کن
       const configs = <RecordConfig>[
         RecordConfig(
@@ -3373,8 +3398,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       }
     } catch (e) {
       if (mounted) {
-        var d = e.toString().replaceAll('\n', ' ');
-        if (d.length > 90) d = '${d.substring(0, 90)}…';
+        var d = '[${_recStep}] ${e.runtimeType}: ${e.toString().replaceAll('\n', ' ')}';
+        debugPrint('startRec failed: $d');
+        if (d.length > 400) d = '${d.substring(0, 400)}…';
         setState(() => _error = _tr(
             context,
             'شروعِ ضبط ممکن نشد. (میکروفون شاید دستِ برنامه‌ی دیگری باشد)\n$d',

@@ -470,6 +470,9 @@ class _ScenarioPracticeSectionState
               onEnd: _end,
               onHint: _hint,
               onRedial: _redial,
+              // 🎯 بعد از حرفِ AI جمله‌ی بعدیِ کاربر نشان داده می‌شود و ضبط خودکار شروع می‌شود
+              autoHint: true,
+              practiceMatchRatio: 0.7,
             )
           : _button(c),
     );

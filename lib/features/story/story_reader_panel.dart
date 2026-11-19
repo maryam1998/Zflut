@@ -1360,12 +1360,15 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
         ));
       }
 
-      out.add(Padding(
-        key: key,
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: rows,
+      // ⚡ هر پاراگراف لایه‌ی جدا دارد؛ هایلایت/انیمیشنِ یک خط کلِ داستان را دوباره نمی‌کشد
+      out.add(RepaintBoundary(
+        child: Padding(
+          key: key,
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: rows,
+          ),
         ),
       ));
     }
