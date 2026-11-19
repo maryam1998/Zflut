@@ -947,6 +947,8 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
             onToggle: () =>
                 setState(() => _openScenario = isOpen ? null : i),
             onToggleRead: () => scenarioReadN.toggle(readKey),
+            onRetry: () =>
+                ref.invalidate(conversationTopicProvider(topic.topic)),
           );
         }),
         if (shownScenarios >= totalScenarios && topicCounts != null && lockedHere > 0) ...[
@@ -1216,6 +1218,9 @@ class _ScenarioCard extends StatelessWidget {
   final bool isOpen, isRead;
   final VoidCallback onToggle, onToggleRead;
 
+  /// تلاشِ دوباره برای لودِ متنِ کاملِ موضوع (وقتی سناریو متن ندارد)
+  final VoidCallback? onRetry;
+
   const _ScenarioCard({
     required this.scenario,
     required this.levelFilter,
@@ -1223,7 +1228,49 @@ class _ScenarioCard extends StatelessWidget {
     required this.isRead,
     required this.onToggle,
     required this.onToggleRead,
+    this.onRetry,
   });
+
+  /// سناریو با فیلترِ فعلی هیچ جمله‌ای برای نمایش ندارد
+  bool get _hasNoLines {
+    bool ok(ConversationLine l) =>
+        levelFilter.isEmpty || levelFilter.contains(l.level);
+    return !(scenario.speakerA.any(ok) || scenario.speakerB.any(ok));
+  }
+
+  Widget _emptyBody(BuildContext context) {
+    final c = context.appColors;
+    final fa = Localizations.localeOf(context).languageCode == 'fa';
+    final pro = ProStatus.isPro;
+    final msg = pro
+        ? (fa
+            ? 'متنِ این مکالمه هنوز لود نشده است. اینترنت را بررسی کنید و دوباره تلاش کنید.'
+            : 'This dialogue has not loaded yet. Check your connection and try again.')
+        : (fa
+            ? 'این مکالمه مخصوصِ Pro است.'
+            : 'This dialogue is available with Pro.');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        children: [
+          Icon(pro ? Icons.cloud_off : Icons.lock, color: c.gold, size: 22),
+          const SizedBox(height: 8),
+          Text(msg,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: c.inkSoft, fontSize: 13.5)),
+          if (pro && onRetry != null) ...[
+            const SizedBox(height: 6),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: Icon(Icons.refresh, color: c.teal, size: 18),
+              label: Text(fa ? 'تلاش دوباره' : 'Retry',
+                  style: TextStyle(color: c.teal)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1297,7 +1344,10 @@ class _ScenarioCard extends StatelessWidget {
               ),
             ),
           ),
-          if (isOpen) ...[
+          if (isOpen && _hasNoLines) ...[
+            const Divider(height: 1),
+            _emptyBody(context),
+          ] else if (isOpen) ...[
             const Divider(height: 1),
             // 🎯 تمرینِ این مکالمه با AI (ویدیو کال) — همان قابلیتِ تاریخچه‌ی مکالمه
             ScenarioPracticeSection(

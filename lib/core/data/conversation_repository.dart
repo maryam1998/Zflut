@@ -148,15 +148,18 @@ class ConversationRepository {
 
   Future<ConversationTopic?> _loadTopic(ConversationTopic stub) async {
     Map<String, dynamic>? j;
+    var fromPaid = false;
     if (ProStatus.isPro) {
       j = await PaidContent.conversationTopic(stub.id);
+      fromPaid = j != null;
     }
     // رایگان (یا Pro بدونِ اینترنت/کش): نسخه‌ی داخلِ اپ — فقط موضوع‌های رایگان آن را دارند
     j ??= await _readAsset(stub.id);
     if (j == null) return null;
     try {
       final t = ConversationTopic.fromJson(j, id: stub.id, kind: stub.kind);
-      _cache[stub.id] = t;
+      // 🛟 Pro که دانلود نشد: نسخه‌ی ناقصِ داخلِ اپ (فقط ۴ سناریوی اول) کش نشود
+      if (!ProStatus.isPro || fromPaid) _cache[stub.id] = t;
       return t;
     } catch (e) {
       debugPrint('ConversationRepository parse ${stub.id}: $e');
