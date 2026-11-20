@@ -35,7 +35,7 @@ import '../../core/providers/text_prefs_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/translate/translation_service.dart'
-    show runWithConcurrencyLimit, kLastAiError, looksLikelyMistranslated;
+    show runWithConcurrencyLimit, kLastAiError, looksLikelyMistranslated, RetryFlag;
 import '../../core/web/reading_io_stub.dart'
     if (dart.library.html) '../../core/web/reading_io_web.dart';
 import 'package:flutter/gestures.dart';
@@ -403,6 +403,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       }
       _openStoryId = id;
     });
+    unawaited(_retryEmptyParas(id));
   }
 
   /// دکمه‌ی «بازگشت» گوشی: اول داستانِ بازشده/خوانده‌شده و زیرصفحه‌ی کتابخانه/ذخیره‌شده‌ها بسته می‌شوند.
@@ -3099,6 +3100,102 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     ));
   }
 
+  // ───────────── 🔁 پاراگراف‌های ترجمه‌نشده (خالی) در داستانِ ذخیره‌شده ─────────────
+  // وقتی داستان باز می‌شود، هر پاراگرافِ خالی یک‌بار دیگر ترجمه می‌شود؛ ولی فقط اگر Flag «تلاش شد»
+  // اجازه بدهد (شکست → ۲ ساعت، شکستِ دوباره → ۲۴ ساعت؛ روی دیسک ذخیره است). نتیجه‌ها دسته‌ای و با یک
+  // به‌روزرسانی اعمال می‌شوند (نه یکی‌یکی).
+  final Set<String> _emptyRetryRunning = <String>{};
+
+  Future<void> _retryEmptyParas(String id) async {
+    if (!mounted || _emptyRetryRunning.contains(id)) return;
+    final s0 = _libGet(id);
+    if (s0 == null) return;
+    final langs =
+        _effectiveTransLangs().where((l) => l != s0.langCode).toList();
+    final paras = _paras(s0);
+    // فقط زبان‌هایی که قبلاً برای این داستان ترجمه شده (لیستشان هست) و بعضی پاراگراف‌هایشان خالی مانده
+    final todo = <String, List<int>>{};
+    for (final code in langs) {
+      final list = s0.translations[code];
+      if (list == null || list.isEmpty) continue;
+      for (var i = 0; i < paras.length; i++) {
+        final empty = i >= list.length || list[i].trim().isEmpty;
+        if (!empty) continue;
+        final key = RetryFlag.keyFor('story', paras[i], '$id|$code|$i');
+        if (RetryFlag.blocked(key)) continue;
+        todo.putIfAbsent(code, () => <int>[]).add(i);
+      }
+    }
+    if (todo.isEmpty) return;
+    _emptyRetryRunning.add(id);
+    try {
+      final svc = ref.read(translationServiceProvider);
+      final ai = ref.read(aiSettingsProvider);
+      final fills = <String, Map<int, String>>{};
+      for (final e in todo.entries) {
+        final code = e.key;
+        final out = await runWithConcurrencyLimit<int, String>(
+          e.value,
+          3,
+          (i, _) async {
+            final p = paras[i];
+            final key = RetryFlag.keyFor('story', p, '$id|$code|$i');
+            var r = '';
+            try {
+              r = _okTr(
+                  p,
+                  await svc.translate(
+                    text: p,
+                    targetLang: code,
+                    sourceLang: s0.langCode,
+                    aiSettings: ai,
+                  ),
+                  code,
+                  s0.langCode);
+            } catch (_) {
+              r = '';
+            }
+            if (r.isEmpty) {
+              RetryFlag.failed(key);
+            } else {
+              RetryFlag.succeeded(key);
+            }
+            return r;
+          },
+        );
+        final m = <int, String>{};
+        for (var k = 0; k < e.value.length; k++) {
+          if (out[k].isNotEmpty) m[e.value[k]] = out[k];
+        }
+        if (m.isNotEmpty) fills[code] = m;
+      }
+      if (!mounted || fills.isEmpty) return;
+      // داستان ممکن است در این فاصله عوض شده باشد؛ نسخه‌ی تازه را بخوان و فقط جاهای هنوز-خالی را پر کن
+      final cur = _libGet(id);
+      if (cur == null || cur.text != s0.text) return;
+      final map = <String, List<String>>{
+        for (final e in cur.translations.entries)
+          e.key: List<String>.from(e.value),
+      };
+      var changed = false;
+      for (final e in fills.entries) {
+        final list = map.putIfAbsent(e.key, () => <String>[]);
+        e.value.forEach((i, t) {
+          while (list.length <= i) {
+            list.add('');
+          }
+          if (list[i].trim().isEmpty) {
+            list[i] = t;
+            changed = true;
+          }
+        });
+      }
+      if (changed) _libPut(cur.copyWith(translations: map));
+    } finally {
+      _emptyRetryRunning.remove(id);
+    }
+  }
+
   void _libParaTr(String id, String lang, int idx, String t) {
     final cur = _libGet(id);
     if (cur == null) return;
@@ -3545,7 +3642,10 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           InkWell(
             onTap: link != null
                 ? () => _openLink(link)
-                : () => setState(() => _openStoryId = open ? null : s.id),
+                : () {
+                    setState(() => _openStoryId = open ? null : s.id);
+                    if (!open) unawaited(_retryEmptyParas(s.id));
+                  },
             child: Row(
               children: [
                 Expanded(

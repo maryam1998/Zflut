@@ -290,33 +290,60 @@ String _stripQuotes(String s) =>
 // ═══════════════════════════════════════════════════════════════════
 // Circuit breaker (سراسری)
 // ═══════════════════════════════════════════════════════════════════
-// 🚩 «تلاش شد» (Flag) با تاریخ انقضا: شکستِ اول → ۲ ساعت؛ اگر بعد از انقضا دوباره شکست خورد → ۲۴ ساعت.
-// بعد از آن هم Flag دائمی نمی‌شود: هر بار که منقضی شود یک شانسِ دیگر داده می‌شود (با همان ۲۴ ساعت).
-class _AiFail {
-  final int until; // زمانِ انقضا (میلی‌ثانیه)
-  final int count; // تعدادِ شکست‌های پشت‌سرهم
-  const _AiFail(this.until, this.count);
-}
+// 🚩 «تلاش شد» (Flag) با تاریخ انقضا — روی دیسک (همان دیتابیسِ کشِ ترجمه) ذخیره می‌شود،
+// پس بعد از بستن و باز کردنِ اپ هم زمان‌بندی حفظ می‌شود.
+//   شکستِ اول → ۲ ساعت؛ اگر بعد از انقضا دوباره شکست خورد → ۲۴ ساعت.
+//   Flag دائمی نمی‌شود: هر بار که منقضی شد یک شانسِ دیگر داده می‌شود (با همان ۲۴ ساعت).
+//   موفقیت → Flag و شمارنده‌ی شکست‌ها پاک می‌شود.
+class RetryFlag {
+  RetryFlag._();
 
-final Map<String, _AiFail> _aiFailed = {};
-const int _kAiFailFirstMs = 2 * 60 * 60 * 1000; // ۲ ساعت
-const int _kAiFailRepeatMs = 24 * 60 * 60 * 1000; // ۲۴ ساعت
+  static const String _prefix = '__retryflag__::'; // با کلیدِ ترجمه‌ها (مبدأ::مقصد::متن) قاطی نمی‌شود
+  static const int firstMs = 2 * 60 * 60 * 1000; // ۲ ساعت
+  static const int repeatMs = 24 * 60 * 60 * 1000; // ۲۴ ساعت
 
-/// آیا هنوز در بازه‌ی «تلاش شد» هستیم؟ (منقضی شده → false؛ شمارنده‌ی شکست‌ها می‌ماند تا تلاشِ بعدی طولانی‌تر ثبت شود)
-bool _aiRecentlyFailed(String key) {
-  final f = _aiFailed[key];
-  if (f == null) return false;
-  return DateTime.now().millisecondsSinceEpoch < f.until;
-}
+  /// کلیدِ کوتاه و پایدار برای هر متن (متنِ بلند مستقیم کلید نمی‌شود).
+  static String keyFor(String kind, String text, [String extra = '']) {
+    var h1 = 0x811c9dc5;
+    var h2 = 5381;
+    for (final c in text.codeUnits) {
+      h1 = ((h1 ^ c) * 0x01000193) & 0xFFFFFFFF;
+      h2 = ((h2 * 33) + c) & 0xFFFFFFFF;
+    }
+    return '$kind|$extra|${h1.toRadixString(16)}${h2.toRadixString(16)}|${text.length}';
+  }
 
-void _aiMarkFailed(String key) {
-  final n = (_aiFailed[key]?.count ?? 0) + 1;
-  final ms = n <= 1 ? _kAiFailFirstMs : _kAiFailRepeatMs;
-  _aiFailed[key] = _AiFail(DateTime.now().millisecondsSinceEpoch + ms, n);
-  // حافظه بی‌نهایت بزرگ نشود
-  if (_aiFailed.length > 500) {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    _aiFailed.removeWhere((_, v) => v.until < now && v.count <= 1);
+  /// [until, count] یا null
+  static List<int>? _read(String key) {
+    final v = TranslationCacheDb.instance.peek('$_prefix$key');
+    if (v == null || v.isEmpty) return null;
+    final parts = v.split('|');
+    if (parts.length != 2) return null;
+    final u = int.tryParse(parts[0]);
+    final c = int.tryParse(parts[1]);
+    if (u == null || c == null) return null;
+    return [u, c];
+  }
+
+  /// هنوز در بازه‌ی «تلاش شد» هستیم؟ (منقضی شده → false؛ شمارنده می‌ماند تا شکستِ بعدی طولانی‌تر ثبت شود)
+  static bool blocked(String key) {
+    final f = _read(key);
+    if (f == null) return false;
+    return DateTime.now().millisecondsSinceEpoch < f[0];
+  }
+
+  /// ثبتِ شکست: بار اول ۲ ساعت، دفعه‌های بعد ۲۴ ساعت.
+  static void failed(String key) {
+    final n = (_read(key)?[1] ?? 0) + 1;
+    final ms = n <= 1 ? firstMs : repeatMs;
+    final until = DateTime.now().millisecondsSinceEpoch + ms;
+    unawaited(TranslationCacheDb.instance.put('$_prefix$key', '$until|$n'));
+  }
+
+  /// موفقیت: Flag پاک می‌شود (مقدارِ خالی = بدونِ Flag).
+  static void succeeded(String key) {
+    if (_read(key) == null) return;
+    unawaited(TranslationCacheDb.instance.put('$_prefix$key', ''));
   }
 }
 
@@ -739,20 +766,20 @@ class TranslationService {
     }
 
     // آخرین چاره: بک‌اند AI — این نتیجه هم از فیلتر کیفیت رد می‌شود
-    final aiKey = '$sourceLang::$targetLang::$text';
-    if (aiSettings != null && !_aiRecentlyFailed(aiKey)) {
+    final aiKey = RetryFlag.keyFor('ai', text, '$sourceLang>$targetLang');
+    if (aiSettings != null && !RetryFlag.blocked(aiKey)) {
       try {
         final result =
             await translateViaAI(text, targetLang, sourceLang, aiSettings);
         if (result.trim().isNotEmpty &&
             !looksLikelyMistranslated(text, result, targetLang,
                 sourceLang: sourceLang)) {
-          _aiFailed.remove(aiKey);
+          RetryFlag.succeeded(aiKey);
           await cachePut(text, sourceLang, targetLang, result);
           return result;
         }
       } catch (_) {}
-      _aiMarkFailed(aiKey);
+      RetryFlag.failed(aiKey);
     }
 
     if (mlDraft != null && mlDraft.isNotEmpty) {
