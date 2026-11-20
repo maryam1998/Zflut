@@ -11,6 +11,7 @@ import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/speech_provider.dart' show speechControllerProvider;
 import '../../core/providers/translation_provider.dart';
 import '../../core/storage/local_storage.dart';
+import '../../core/translate/in_text_translation.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/utils/html_entities.dart';
 import 'speaking_call.dart';
@@ -185,12 +186,15 @@ class _ScenarioPracticeSectionState
     if (src.isEmpty) return src;
     var r = '';
     try {
-      r = decodeHtmlEntities((await ref.read(translationServiceProvider).translate(
-              text: src,
-              targetLang: to,
-              sourceLang: _srcLang,
-              aiSettings: ref.read(aiSettingsProvider)))
-          .trim());
+      // 🔗 همان ترجمه‌ی داخلِ متن (کشِ ترجمه‌ها + معنیِ از‌پیش‌معلومِ خودِ مکالمه)
+      r = (await inTextTranslate(
+        svc: ref.read(translationServiceProvider),
+        ai: ref.read(aiSettingsProvider),
+        text: src,
+        from: _srcLang,
+        to: to,
+      ))
+          .trim();
     } catch (_) {}
     return r.isEmpty ? src : r;
   }

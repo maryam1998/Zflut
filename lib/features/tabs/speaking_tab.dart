@@ -13,6 +13,7 @@ import '../../core/ai/ai_gateway.dart'
 import '../../core/constants/supported_languages.dart';
 import '../../core/models/grammar_note.dart';
 import '../../core/providers/ai_settings_provider.dart';
+import '../../core/translate/in_text_translation.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
 import '../../core/providers/speech_provider.dart' show speechControllerProvider;
@@ -2632,28 +2633,13 @@ Now respond to: "$sentence"
             _chatLang != 'ar')
         ? 'auto'
         : _chatLang;
-    final segs = <String>[];
-    var cur = '';
-    for (final p in src.split(RegExp(r'(?<=[.!?؟。])\s+'))) {
-      if (cur.isNotEmpty && cur.length + p.length + 1 > 380) {
-        segs.add(cur);
-        cur = p;
-      } else {
-        cur = cur.isEmpty ? p : '$cur $p';
-      }
+    // 🔗 همان ترجمه‌ی زیرِ پیام (کشِ ترجمه‌های اصلی/اصلاح‌شده؛ خط‌به‌خط مثلِ چیپِ ترجمه)
+    try {
+      return await inTextTranslate(
+          svc: svc, ai: ai, text: src, from: from, to: to);
+    } catch (_) {
+      return src;
     }
-    if (cur.isNotEmpty) segs.add(cur);
-    final out = <String>[];
-    for (final seg in segs) {
-      var r = '';
-      try {
-        r = decodeHtmlEntities((await svc.translate(
-                text: seg, targetLang: to, sourceLang: from, aiSettings: ai))
-            .trim());
-      } catch (_) {}
-      out.add(r.isEmpty ? seg : r);
-    }
-    return out.join(' ');
   }
 
   /// همه‌ی جمله‌های مکالمه (سلام، جمله‌های کاربر، جواب‌های AI) را یک‌جا ترجمه می‌کند.

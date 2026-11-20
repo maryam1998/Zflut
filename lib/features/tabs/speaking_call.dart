@@ -19,6 +19,7 @@ import '../../core/providers/speech_provider.dart';
 import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/translation_provider.dart';
+import '../../core/translate/in_text_translation.dart';
 import '../../core/utils/html_entities.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
@@ -2999,15 +3000,27 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       unawaited(() async {
         String r = '';
         try {
-          r = decodeHtmlEntities((await ref
-                  .read(translationServiceProvider)
-                  .translate(
-                    text: txt,
-                    targetLang: native,
-                    sourceLang: widget.langCode,
-                    aiSettings: ref.read(aiSettingsProvider),
-                  ))
-              .trim());
+          if (widget.autoHint) {
+            // 🔗 حالتِ تمرین: همان ترجمه‌ی داخلِ متن (کشِ ترجمه‌های اصلی/اصلاح‌شده)
+            r = (await inTextTranslate(
+              svc: ref.read(translationServiceProvider),
+              ai: ref.read(aiSettingsProvider),
+              text: txt,
+              from: widget.langCode,
+              to: native,
+            ))
+                .trim();
+          } else {
+            r = decodeHtmlEntities((await ref
+                    .read(translationServiceProvider)
+                    .translate(
+                      text: txt,
+                      targetLang: native,
+                      sourceLang: widget.langCode,
+                      aiSettings: ref.read(aiSettingsProvider),
+                    ))
+                .trim());
+          }
         } catch (_) {}
         _trBusy.remove(txt);
         if (!mounted) return;

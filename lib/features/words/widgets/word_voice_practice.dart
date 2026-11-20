@@ -13,6 +13,7 @@ import '../../../core/providers/speech_provider.dart' show speechControllerProvi
 import '../../../core/providers/translation_provider.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/translate/in_text_translation.dart';
 import '../../../core/utils/html_entities.dart';
 import '../../tabs/speaking_call.dart';
 
@@ -426,6 +427,15 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
   }
 
   Future<String> _translate(DailyWord w, String to) async {
+    // 🔗 ترجمه‌ی ذخیره‌شده/اصلاح‌شده‌ی داخلِ کارتِ لغت (↻) اولویت دارد
+    final saved = ref
+        .read(translationServiceProvider)
+        .peekCached(w.en, w.lang, to)
+        ?.trim();
+    if (saved != null && saved.isNotEmpty &&
+        saved.toLowerCase() != w.en.trim().toLowerCase()) {
+      return _firstMeaning(decodeHtmlEntities(saved));
+    }
     final known = (w.translations[to] ?? '').trim();
     if (known.isNotEmpty) return _firstMeaning(known);
     if (to == 'fa' && w.lang == 'en' && w.fa.trim().isNotEmpty) {
@@ -436,15 +446,14 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     if (hit != null) return hit;
     var r = '';
     try {
-      r = decodeHtmlEntities((await ref
-              .read(translationServiceProvider)
-              .translate(
-                text: w.en,
-                targetLang: to,
-                sourceLang: w.lang,
-                aiSettings: ref.read(aiSettingsProvider),
-              ))
-          .trim());
+      r = (await inTextTranslate(
+        svc: ref.read(translationServiceProvider),
+        ai: ref.read(aiSettingsProvider),
+        text: w.en,
+        from: w.lang,
+        to: to,
+      ))
+          .trim();
     } catch (_) {}
     if (r.toLowerCase() == w.en.trim().toLowerCase()) r = '';
     r = r.isEmpty ? '' : _firstMeaning(r);
