@@ -104,6 +104,7 @@ class _ScenarioPracticeSectionState
       onHint: _hint,
       onRedial: _redial,
       onSwapRoles: _swapRoles,
+      onChangeLang: _changeLang,
       // 🎯 بعد از حرفِ AI جمله‌ی بعدیِ کاربر نشان داده می‌شود و ضبط خودکار شروع می‌شود
       autoHint: true,
       practiceMatchRatio: 0.7,
@@ -497,6 +498,69 @@ class _ScenarioPracticeSectionState
     _swapReset();
   }
 
+  /// 🌐 کنارِ ⇄: لیستِ زبان‌ها در Bottom Sheet؛ زبانِ تمرین بدونِ قطعِ تماس عوض می‌شود.
+  /// true = زبان عوض شد (پنل همان لحظه با ترجمه و صدای جدید ادامه می‌دهد).
+  Future<bool> _changeLang() async {
+    if (!mounted || !_mode) return false;
+    final sel = ref.read(languageSelectionProvider);
+    final codes = <String>[_srcLang];
+    for (final x in [...sel.targets, sel.native]) {
+      if (x.isNotEmpty && !codes.contains(x)) codes.add(x);
+    }
+    for (final l in kSupportedLanguages) {
+      if (!codes.contains(l.code)) codes.add(l.code);
+    }
+    final cur = _lang ?? _srcLang;
+    final code = await showCallLangSheet(
+      context,
+      codes: codes,
+      current: cur,
+      originalCode: _srcLang,
+      labelOf: (x) => langDisplayName(context, x),
+    );
+    if (code == null || !mounted || !_mode || code == cur) return false;
+    final lang = code == _srcLang ? null : code;
+    Map<String, String>? fresh;
+    if (lang != null) {
+      try {
+        fresh = await _buildTr(lang);
+      } catch (_) {
+        fresh = null;
+      }
+      if (!mounted || !_mode) return false;
+      if (fresh == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_fa
+              ? 'ترجمه انجام نشد؛ اینترنت را بررسی کن و دوباره امتحان کن.'
+              : 'Translation failed. Check your connection and try again.'),
+        ));
+        return false;
+      }
+    }
+    _follow.clear();
+    setState(() {
+      _tr.clear();
+      if (fresh != null) _tr.addAll(fresh);
+      _lang = lang;
+    });
+    return true;
+  }
+
+  /// مثلِ [_prepareTr] ولی نتیجه را در نقشه‌ی تازه می‌دهد (null = ترجمه نشد).
+  Future<Map<String, String>?> _buildTr(String to) async {
+    final src = <String>{
+      for (final g in _groups()) ...g.lines,
+    }.toList();
+    final res = await Future.wait([for (final t in src) _translateLine(t, to)]);
+    final out = <String, String>{};
+    var changed = 0;
+    for (var i = 0; i < src.length; i++) {
+      out[src[i]] = res[i];
+      if (res[i].trim() != src[i].trim()) changed++;
+    }
+    return (src.isEmpty || changed > 0) ? out : null;
+  }
+
   void _redial() {
     if (!mounted) return;
     _follow.clear();
@@ -512,11 +576,18 @@ class _ScenarioPracticeSectionState
     if (_swap) {
       // آواتار نقشِ «کاربر» را بازی می‌کند: اگر مکالمه با جمله‌ی کاربر شروع شود، اول او می‌گوید
       final g = _groups();
+      // 🌐 تغییرِ زبان وسطِ تماس: آخرین جمله‌ی آواتار به زبانِ جدید دوباره گفته می‌شود
+      if (_swapLast >= 0 && _swapLast < g.length) return _gText(g[_swapLast]);
       if (g.isNotEmpty && g.first.role == 'user') {
         _hl(g.first.ids);
         return _gText(g.first);
       }
       return null;
+    }
+    // 🌐 تغییرِ زبان وسطِ تماس: آخرین جوابِ آواتار به زبانِ جدید دوباره گفته می‌شود
+    if (_k > 0) {
+      final ts = _turns();
+      if (ts.isNotEmpty) return _gText(ts[(_k - 1) % ts.length].reply);
     }
     final lines = _greetingLines();
     if (lines.isEmpty) return null;

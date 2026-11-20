@@ -1653,6 +1653,99 @@ class _CropMaskPainter extends CustomPainter {
 
 // ───────────────────────────── انتخاب / ساخت شخصیت ─────────────────────────────
 
+/// 🌐 Bottom Sheetِ لیستِ زبان‌ها برای تغییرِ زبانِ تمرین وسطِ ویدیو کال.
+/// کدِ زبانِ انتخاب‌شده را برمی‌گرداند (یا null اگر بسته شد).
+Future<String?> showCallLangSheet(
+  BuildContext context, {
+  required List<String> codes,
+  required String current,
+  required String originalCode,
+  required String Function(String code) labelOf,
+}) {
+  final c = context.appColors;
+  final fa = Localizations.localeOf(context).languageCode == 'fa';
+  return showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: c.paper,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    builder: (ctx) => SafeArea(
+      child: ConstrainedBox(
+        constraints:
+            BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.72),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          children: [
+            Text(
+              fa ? 'تغییر زبانِ تمرین' : 'Change practice language',
+              style: TextStyle(
+                  color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              fa
+                  ? 'تماس قطع نمی‌شود؛ ترجمه و صدا همین لحظه به زبانِ جدید عوض می‌شود.'
+                  : 'The call stays connected; translation and voice switch to the new language right away.',
+              style: TextStyle(color: c.inkSoft, fontSize: 12.5),
+            ),
+            const SizedBox(height: 10),
+            for (final code in codes)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: code == current ? c.goldSoft : c.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => Navigator.of(ctx).pop(code),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                            color: code == current ? c.gold : c.cardBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              labelOf(code),
+                              style: TextStyle(
+                                  color: c.ink,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          if (code == originalCode)
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(end: 8),
+                              child: Text(
+                                fa ? 'متنِ اصلی' : 'Original',
+                                style: TextStyle(
+                                    color: c.inkSoft,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          if (code == current)
+                            Icon(Icons.check_circle_rounded,
+                                size: 20, color: c.gold),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 /// شناسه‌ی شخصیتِ انتخاب‌شده را برمی‌گرداند (یا null اگر فقط بسته شد).
 Future<String?> showPersonaSheet(
     BuildContext context, LocalStorage ls, String activeId) {
@@ -2236,6 +2329,12 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
   /// null = دکمه نمایش داده نمی‌شود.
   final VoidCallback? onSwapRoles;
 
+  /// 🌐 «تغییر زبان» (فقط حالتِ تمرین): میزبان لیستِ زبان‌ها را در Bottom Sheet نشان می‌دهد،
+  /// ترجمه‌ها را آماده و زبانِ تمرین را عوض می‌کند و اگر زبان عوض شد true برمی‌گرداند.
+  /// پنل بدونِ قطعِ تماس، همان لحظه جمله‌ی جاری را با ترجمه و صدای زبانِ جدید ادامه می‌دهد.
+  /// null = دکمه نمایش داده نمی‌شود.
+  final Future<bool> Function()? onChangeLang;
+
   const SpeakingCallPanel({
     super.key,
     required this.persona,
@@ -2253,6 +2352,7 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
     this.onCcChanged,
     this.nativeTr,
     this.onSwapRoles,
+    this.onChangeLang,
   });
 
   @override
@@ -2282,6 +2382,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   bool _stopping = false;
   bool _ended = false; // کاربر دکمه‌ی قطع را زد؛ در همین صفحه می‌مانیم
   bool _hintLoading = false;
+  bool _langBusy = false; // 🌐 در حال انتخاب/آماده‌سازیِ زبانِ جدید (تماس برقرار می‌ماند)
   int _swapGen = 0; // هر بار «جابجایی نقش» زده شود زیاد می‌شود (نتیجه‌ی تشخیصِ گفتارِ قدیمی دور ریخته شود)
   DateTime _thinkAt = DateTime.now(); // شروعِ «در حال فکر کردن» (برای پیامِ اتصال)
   bool _cc = false; // زیرنویس (CC) — پیش‌فرض خاموش
@@ -2515,7 +2616,30 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   /// نوبتِ جاری کنسل می‌شود، میزبان نقش‌ها را عوض می‌کند و تمرین از اول با نقش‌های جدید می‌آید.
   void _swapRoles() {
     final fn = widget.onSwapRoles;
-    if (fn == null || _closed || _ended || !mounted) return;
+    if (fn == null) return;
+    _restartPractice(fn);
+  }
+
+  /// 🌐 تغییر زبان با یک کلیک: تماس قطع نمی‌شود؛ فقط ترجمه و صدا به زبانِ جدید عوض می‌شود.
+  Future<void> _changeLang() async {
+    final fn = widget.onChangeLang;
+    if (fn == null || _langBusy || _closed || _ended || !mounted) return;
+    if (_phase == _Phase.ringing || _hintLoading) return;
+    setState(() => _langBusy = true);
+    var changed = false;
+    try {
+      changed = await fn();
+    } catch (_) {
+      changed = false;
+    }
+    if (mounted) setState(() => _langBusy = false);
+    if (!changed || !mounted || _closed || _ended) return;
+    _restartPractice(() {});
+  }
+
+  /// نوبتِ جاری کنسل می‌شود، [fn] (تغییرِ میزبان) اجرا می‌شود و پنل بدونِ قطعِ تماس دوباره وصل می‌شود.
+  void _restartPractice(VoidCallback fn) {
+    if (_closed || _ended || !mounted) return;
     if (_phase == _Phase.ringing || _hintLoading) return;
     _swapGen++;
     _turn++;
@@ -4684,6 +4808,16 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         // ── کنترل‌ها ── (همیشه LTR: CC سمت چپ، راهنما سمت راست؛ حتی در فارسی/عربی)
         Directionality(
           textDirection: TextDirection.ltr,
+          // گوشی‌های باریک: اگر دکمه‌ها جا نشدند، کلِ ردیف کمی کوچک می‌شود (سرریز نمی‌دهد)
+          child: LayoutBuilder(builder: (ctx, cons) {
+          final need = 258.0 +
+              (widget.onSwapRoles != null ? 38 : 0) +
+              (widget.onChangeLang != null ? 38 : 0) +
+              (widget.onHint != null ? 38 : 0);
+          return FittedBox(
+          fit: BoxFit.scaleDown,
+          child: SizedBox(
+          width: math.max(cons.maxWidth, need),
           child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -4721,6 +4855,21 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   bg: c.gold.withOpacity(0.18),
                   fg: c.gold,
                   onTap: _swapRoles,
+                ),
+              ),
+            // 🌐 تغییرِ زبان (فقط در تمرین) — دقیقاً کنارِ ⇄؛ Bottom Sheetِ لیستِ زبان‌ها
+            if (widget.onChangeLang != null)
+              Opacity(
+                opacity: (_phase == _Phase.ringing || _hintLoading || _langBusy)
+                    ? 0.45
+                    : 1,
+                child: _circleBtn(
+                  icon: Icons.language_rounded,
+                  tip: _tr(context, 'تغییر زبان', 'Change language'),
+                  size: 38,
+                  bg: c.gold.withOpacity(0.18),
+                  fg: c.gold,
+                  onTap: _changeLang,
                 ),
               ),
             // میکروفون
@@ -4804,6 +4953,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               ),
           ],
         ),
+          ),
+          );
+          }),
         ),
         const SizedBox(height: 6),
         Row(
