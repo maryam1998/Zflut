@@ -1328,6 +1328,8 @@ public class MagnifierService extends Service {
                     String better = null;
                     try {
                         boolean failed = draft == null || draft.isEmpty() || "—".equals(draft) || "…".equals(draft);
+                        // 💰 ترجمه‌ی رایگانِ سالم → هیچ درخواستی به AI نمی‌رود؛ فقط خالی/مشکوک بازبینی می‌شود
+                        if (!failed && !LiveTranslator.looksLikelyMistranslated(text, draft, tgt, from)) return;
                         // 🗄️ کشِ مشترکِ همه‌ی کاربرها (فقط برای متنِ بدونِ جمله‌ی اطراف): اگر قبلاً درست ترجمه شده، AI صدا زده نمی‌شود
                         final String sharedHit = ctx == null ? SharedTr.get(text, from, tgt) : null;
                         String out = sharedHit != null ? sharedHit

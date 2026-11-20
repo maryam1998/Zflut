@@ -290,6 +290,18 @@ String _stripQuotes(String s) =>
 // ═══════════════════════════════════════════════════════════════════
 // Circuit breaker (سراسری)
 // ═══════════════════════════════════════════════════════════════════
+// 🚩 «تلاش شد» (Flag): اگر ترجمه‌ی AI برای یک متن شکست خورد، تا چند دقیقه دوباره AI صدا زده نمی‌شود
+final Map<String, int> _aiFailedAt = {};
+const int _kAiFailCooldownMs = 10 * 60 * 1000;
+
+bool _aiRecentlyFailed(String key) {
+  final t = _aiFailedAt[key];
+  if (t == null) return false;
+  if (DateTime.now().millisecondsSinceEpoch - t < _kAiFailCooldownMs) return true;
+  _aiFailedAt.remove(key);
+  return false;
+}
+
 // ─── ML Kit (آفلاین، روی گوشی) — اولین مرحله‌ی زنجیره‌ی شبکه ───
 const int _kSharedMaxChars = 300;         // سقفِ کشِ مشترک (همان سقفِ Worker): متنِ بلندِ کاربر هرگز به کش نمی‌رود
 const int _kMlKitMaxChars = 400;            // متن بلندتر: AI/MyMemory کیفیت بهتری دارد
@@ -709,17 +721,20 @@ class TranslationService {
     }
 
     // آخرین چاره: بک‌اند AI — این نتیجه هم از فیلتر کیفیت رد می‌شود
-    if (aiSettings != null) {
+    final aiKey = '$sourceLang::$targetLang::$text';
+    if (aiSettings != null && !_aiRecentlyFailed(aiKey)) {
       try {
         final result =
             await translateViaAI(text, targetLang, sourceLang, aiSettings);
         if (result.trim().isNotEmpty &&
             !looksLikelyMistranslated(text, result, targetLang,
                 sourceLang: sourceLang)) {
+          _aiFailedAt.remove(aiKey);
           await cachePut(text, sourceLang, targetLang, result);
           return result;
         }
       } catch (_) {}
+      _aiFailedAt[aiKey] = DateTime.now().millisecondsSinceEpoch;
     }
 
     if (mlDraft != null && mlDraft.isNotEmpty) {
