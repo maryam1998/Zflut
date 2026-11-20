@@ -328,6 +328,45 @@ String _voiceUi(BuildContext context, String key) {
   return (_kVoiceUi[code] ?? _kVoiceUi['en']!)[key] ?? _kVoiceUi['en']![key]!;
 }
 
+/// 🎚 راهنمای انتخاب صدا: کیفیت (High) در برابر سرعت (Low) — [0] عنوان، [1] متن، [2] جمله‌ی کوتاه برای کادرِ دانلودِ High
+const Map<String, List<String>> _kVoiceTierNote = {
+  'fa': [
+    'انتخاب صدا: کیفیت یا سرعت',
+    'صداهای High طبیعی‌ترین و باکیفیت‌ترین صدا را ارائه می‌دهند، اما پردازش سنگین‌تری دارند و ممکن است خواندن جمله کمی دیرتر شروع شود. صداهای Low سبک‌اند و تقریباً فوری شروع می‌کنند. برای تجربه‌ی سریع‌تر و روان‌تر یک صدای Low انتخاب کنید؛ برای غنی‌ترین کیفیت، High. پیش از تصمیم، با دکمه‌ی ▶ صداها را مقایسه کنید.',
+    'برای تجربه‌ی سریع‌تر، یک صدای Low انتخاب کنید.',
+  ],
+  'en': [
+    'Choosing a voice: quality or speed',
+    'High voices deliver the most natural, studio-grade sound, but they need more processing, so a sentence may start a moment later. Low voices are lightweight and start almost instantly. For the fastest, most responsive experience choose a Low voice; for the richest sound choose High. Use ▶ to compare them before you decide.',
+    'For a faster experience, choose a Low voice instead.',
+  ],
+  'ar': [
+    'اختيار الصوت: الجودة أم السرعة',
+    'توفّر أصوات High أكثر الأصوات طبيعيةً وجودة، لكنها تتطلب معالجة أكبر، لذا قد تتأخر بداية قراءة الجملة قليلًا. أصوات Low خفيفة وتبدأ فورًا تقريبًا. لتجربة أسرع وأكثر سلاسة اختر صوت Low، ولأغنى جودة اختر High. استخدم ▶ للمقارنة قبل أن تقرر.',
+    'لتجربة أسرع، اختر صوت Low.',
+  ],
+  'de': [
+    'Stimme wählen: Qualität oder Tempo',
+    'High-Stimmen klingen am natürlichsten und hochwertigsten, benötigen jedoch mehr Rechenleistung – ein Satz kann daher etwas später beginnen. Low-Stimmen sind schlank und starten nahezu sofort. Für ein besonders flüssiges Erlebnis wähle eine Low-Stimme, für den vollsten Klang High. Vergleiche sie vorab mit ▶.',
+    'Für ein schnelleres Erlebnis wähle eine Low-Stimme.',
+  ],
+  'es': [
+    'Elegir una voz: calidad o velocidad',
+    'Las voces High ofrecen el sonido más natural y de mayor calidad, pero requieren más procesamiento, por lo que una frase puede tardar un instante más en empezar. Las voces Low son ligeras y arrancan casi al instante. Para la experiencia más ágil elige una voz Low; para el sonido más rico, High. Compáralas con ▶ antes de decidir.',
+    'Para una experiencia más rápida, elige una voz Low.',
+  ],
+  'fr': [
+    'Choisir une voix : qualité ou rapidité',
+    'Les voix High offrent le rendu le plus naturel et le plus qualitatif, mais demandent plus de calcul : une phrase peut donc démarrer un peu plus tard. Les voix Low sont légères et démarrent presque instantanément. Pour l’expérience la plus fluide, choisissez une voix Low ; pour le son le plus riche, High. Comparez-les avec ▶ avant de décider.',
+    'Pour une expérience plus rapide, choisissez une voix Low.',
+  ],
+};
+
+List<String> _voiceTierNote(BuildContext context) {
+  final code = Localizations.localeOf(context).languageCode;
+  return _kVoiceTierNote[code] ?? _kVoiceTierNote['en']!;
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // یک ردیف از «صدای آفلاینِ باکیفیت» — [نام زبان]  ........  [📥 دانلود]
 // دانلود فقط وقتی شروع می‌شود که کاربر خودش دکمه را بزند.
@@ -530,7 +569,8 @@ class _TtsPackRowState extends State<TtsPackRow> {
           ctx,
           AlertDialog(
             title: Text(x[0]),
-            content: Text(x[1], style: const TextStyle(height: 1.6)),
+            content: Text('${x[1]}\n\n${_voiceTierNote(context)[2]}',
+                style: const TextStyle(height: 1.6)),
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
@@ -698,6 +738,68 @@ class _TtsPackRowState extends State<TtsPackRow> {
     }
   }
 
+  /// برچسبِ کوچکِ سطحِ صدا (High / Medium / Low)
+  Widget _tierChip(BuildContext context, String tier) {
+    final t = tier.toLowerCase();
+    if (t != 'high' && t != 'medium' && t != 'low') {
+      return const SizedBox.shrink();
+    }
+    final c = context.appColors;
+    final color = t == 'high'
+        ? c.gold
+        : (t == 'low' ? c.teal : c.inkSoft);
+    final label = t == 'high' ? 'High' : (t == 'low' ? 'Low' : 'Medium');
+    return Container(
+      margin: const EdgeInsetsDirectional.only(end: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.5), width: 0.7),
+      ),
+      child: Text(label,
+          textDirection: TextDirection.ltr,
+          style: TextStyle(
+              color: color, fontSize: 10, fontWeight: FontWeight.w800)),
+    );
+  }
+
+  /// کادرِ راهنمای «کیفیت یا سرعت» بالای فهرستِ صداها
+  Widget _tierNoteCard(BuildContext context) {
+    final c = context.appColors;
+    final n = _voiceTierNote(context);
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+      decoration: BoxDecoration(
+        color: c.goldSoft,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: c.gold.withOpacity(0.35), width: 0.8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.speed_rounded, size: 16, color: c.gold),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(n[0],
+                    style: TextStyle(
+                        color: c.ink,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(n[1],
+              style: TextStyle(color: c.ink, fontSize: 11.5, height: 1.6)),
+        ],
+      ),
+    );
+  }
+
   Widget _voiceRow(BuildContext context, Map<String, dynamic> v) {
     final c = context.appColors;
     final id = '${v['id']}';
@@ -743,6 +845,7 @@ class _TtsPackRowState extends State<TtsPackRow> {
                     fontWeight: active ? FontWeight.w800 : FontWeight.w500)),
           ),
           const SizedBox(width: 6),
+          _tierChip(context, '${v['tier'] ?? ''}'),
           if (downloaded && !downloading)
             InkWell(
               borderRadius: BorderRadius.circular(20),
@@ -915,8 +1018,10 @@ class _TtsPackRowState extends State<TtsPackRow> {
                     child: Text('...',
                         style: TextStyle(color: c.inkSoft, fontSize: 12)),
                   )
-                else
+                else ...[
+                  _tierNoteCard(context),
                   for (final v in _voices) _voiceRow(context, v),
+                ],
               ],
             )
           : head,

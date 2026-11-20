@@ -29,7 +29,7 @@ const String _kStoryTourSeenKey = 'zflut-tour-story-seen-v1';
 const String _kTransTourSeenKey = 'zflut-tour-trans-seen-v1';
 const String _kPopupTourSeenKey = 'zflut-tour-popup-seen-v1';
 const String _kConvTourSeenKey = 'zflut-tour-conv-seen-v1';
-const String _kPracticeTourSeenKey = 'zflut-tour-practice-seen-v1';
+const String _kPracticeTourSeenKey = 'zflut-tour-practice-seen-v2';
 
 final Map<String, _TourTargetState> _targets = {};
 
@@ -501,6 +501,69 @@ const List<_Step> _practiceSteps = [
     {
       'en': 'As soon as you finish, tap Send. The call will not wait for silence.',
       'fa': 'همین‌که حرفت تمام شد، ارسال را بزن؛ تماس دیگر منتظرِ سکوت نمی‌ماند و همان لحظه فرستاده می‌شود.',
+    },
+  ),
+  _Step(
+    'call_back',
+    Icons.arrow_back_ios_new_rounded,
+    {'en': 'Back: previous sentence', 'fa': 'قبلی: جمله‌ی پیشین'},
+    {
+      'en': 'Go back to a sentence you already practised and repeat it. Its reply is already saved, so it opens instantly. It stays greyed out until you have more than one sentence.',
+      'fa': 'به جمله‌ای که قبلاً تمرین کرده‌ای برمی‌گردی تا دوباره بخوانیش. جوابش از قبل ذخیره شده و فوراً باز می‌شود. تا وقتی بیش از یک جمله نداشته باشی کم‌رنگ و غیرفعال است.',
+    },
+  ),
+  _Step(
+    'call_next',
+    Icons.arrow_forward_ios_rounded,
+    {'en': 'Next: move on', 'fa': 'بعدی: ادامه بده'},
+    {
+      'en': 'Move to the next sentence. After you step back through your history, it takes you forward again; on the latest sentence it asks for a fresh hint.',
+      'fa': 'به جمله‌ی بعدی می‌روی. وقتی در تاریخچه عقب رفته باشی، تو را جلو می‌برد؛ روی آخرین جمله یک راهنمای تازه می‌گیری.',
+    },
+  ),
+  _Step(
+    'call_cc',
+    Icons.closed_caption_rounded,
+    {'en': 'CC: captions and translation', 'fa': 'CC: زیرنویس و ترجمه'},
+    {
+      'en': 'Shows the sentence and its translation in your native language. The translation is the same one you see inside the app, including any you refreshed with the refresh button.',
+      'fa': 'جمله و ترجمه‌اش را به زبان مادری‌ات نشان می‌دهد. این همان ترجمه‌ای است که داخل برنامه می‌بینی، از جمله ترجمه‌هایی که با دکمه‌ی رفرش اصلاح کرده‌ای.',
+    },
+  ),
+  _Step(
+    'call_hint',
+    Icons.lightbulb_outline_rounded,
+    {'en': 'Hint: what do I say?', 'fa': 'راهنما: چی بگم؟'},
+    {
+      'en': 'Stuck? Tap the bulb to get suggested sentences. Pick one and the call turns it into a practice line you read aloud.',
+      'fa': 'گیر کردی؟ روی لامپ بزن تا جمله‌های پیشنهادی بیاید. یکی را انتخاب کن تا تبدیل به جمله‌ی تمرین شود و آن را بلند بخوانی.',
+    },
+  ),
+  _Step(
+    'call_type',
+    Icons.keyboard_alt_outlined,
+    {'en': 'Type instead of speaking', 'fa': 'به‌جای حرف زدن بنویس'},
+    {
+      'en': 'In a quiet-only place or not ready to speak? Open the text box, type your sentence and tap the send arrow. It is checked just like speech.',
+      'fa': 'جایی هستی که نمی‌شود حرف زد یا آماده نیستی؟ کادر نوشتن را باز کن، جمله‌ات را بنویس و فلش ارسال را بزن؛ مثل گفتار بررسی می‌شود.',
+    },
+  ),
+  _Step(
+    'call_voice',
+    Icons.volume_up_rounded,
+    {'en': 'Character voice', 'fa': 'صدای شخصیت'},
+    {
+      'en': 'Mute or unmute the character. Muted, you only read the captions.',
+      'fa': 'صدای شخصیت را قطع یا وصل می‌کنی. با صدای قطع‌شده فقط زیرنویس را می‌خوانی.',
+    },
+  ),
+  _Step(
+    'call_end',
+    Icons.call_end,
+    {'en': 'End the call', 'fa': 'پایان تماس'},
+    {
+      'en': 'Ends the call and takes you to the summary, where you can call again or review the last lines with translations.',
+      'fa': 'تماس را تمام می‌کند و به صفحه‌ی پایان می‌رود؛ آنجا می‌توانی دوباره تماس بگیری یا آخرین جمله‌ها را با ترجمه مرور کنی.',
     },
   ),
 ];

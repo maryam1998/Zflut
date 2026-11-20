@@ -4267,12 +4267,15 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           height: 42,
           child: Row(
             children: [
-              nav(
-                label: _tr(context, 'قبلی', 'Back'),
-                icon: Icons.arrow_back_ios_new_rounded,
-                enabled: _canBack,
-                iconAfter: false,
-                onTap: _practiceBack,
+              TourTarget(
+                id: 'call_back',
+                child: nav(
+                  label: _tr(context, 'قبلی', 'Back'),
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  enabled: _canBack,
+                  iconAfter: false,
+                  onTap: _practiceBack,
+                ),
               ),
               Expanded(
                 child: Center(
@@ -4299,12 +4302,15 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                       : const SizedBox.shrink(),
                 ),
               ),
-              nav(
-                label: _tr(context, 'بعدی', 'Next'),
-                icon: Icons.arrow_forward_ios_rounded,
-                enabled: _canNext,
-                iconAfter: true,
-                onTap: _practiceNext,
+              TourTarget(
+                id: 'call_next',
+                child: nav(
+                  label: _tr(context, 'بعدی', 'Next'),
+                  icon: Icons.arrow_forward_ios_rounded,
+                  enabled: _canNext,
+                  iconAfter: true,
+                  onTap: _practiceNext,
+                ),
               ),
             ],
           ),
@@ -4614,16 +4620,16 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _circleBtn(
+            TourTarget(id: 'call_voice', child: _circleBtn(
               icon: _muted ? Icons.volume_off : Icons.volume_up,
               tip: _tr(context, 'صدای شخصیت', 'Persona voice'),
               onTap: () {
                 setState(() => _muted = !_muted);
                 if (_muted) _stopSpeaking();
               },
-            ),
+            )),
             // زیرنویس (CC) — کوچک‌تر از دکمه‌های اصلی
-            _circleBtn(
+            TourTarget(id: 'call_cc', child: _circleBtn(
               icon: _cc
                   ? Icons.closed_caption_rounded
                   : Icons.closed_caption_outlined,
@@ -4636,7 +4642,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 widget.onCcChanged?.call(_cc);
                 if (_cc) _ccToBottom();
               },
-            ),
+            )),
             // میکروفون
             TourTarget(
               id: 'call_mic',
@@ -4671,15 +4677,15 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               ),
             ),
             ),
-            _circleBtn(
+            TourTarget(id: 'call_end', child: _circleBtn(
               icon: Icons.call_end,
               bg: const Color(0xFFDC2626),
               fg: Colors.white,
               size: 50,
               tip: _tr(context, 'پایان تماس', 'End call'),
               onTap: _endCallHere,
-            ),
-            _circleBtn(
+            )),
+            TourTarget(id: 'call_type', child: _circleBtn(
               icon: Icons.keyboard_alt_outlined,
               tip: _tr(context, 'نوشتن', 'Type'),
               bg: _showTyping ? c.gold : const Color(0xFFEFE9D6),
@@ -4687,7 +4693,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 setState(() => _showTyping = !_showTyping);
                 if (_showTyping) _keepAvatarVisible();
               },
-            ),
+            )),
             // راهنما (چی بگم؟) — آیکونِ لامپِ کوچک؛ منو در پایین باز می‌شود نه روی ویدیو
             if (widget.onHint != null)
               Opacity(
@@ -4697,7 +4703,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                         _phase == _Phase.transcribing)
                     ? 0.45
                     : 1,
-                child: _circleBtn(
+                child: TourTarget(id: 'call_hint', child: _circleBtn(
                   icon: _hintLoading
                       ? Icons.more_horiz_rounded
                       : Icons.lightbulb_outline_rounded,
@@ -4714,7 +4720,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                     }
                     _askHint();
                   },
-                ),
+                )),
               ),
           ],
         ),
