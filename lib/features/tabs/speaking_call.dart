@@ -20,6 +20,7 @@ import '../../core/providers/ai_settings_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/translate/in_text_translation.dart';
+import '../../core/translate/translation_service.dart' show TranslationService;
 import '../../core/utils/html_entities.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/theme/app_theme_colors.dart';
@@ -2225,6 +2226,11 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
   /// وقتی کاربر دکمه‌ی CC را روشن/خاموش می‌کند (تمرینِ لغات از آن برای مخفی کردنِ لغت در لیست استفاده می‌کند).
   final ValueChanged<bool>? onCcChanged;
 
+  /// زیرنویسِ زبانِ مادری برای یک جمله‌ی نمایش‌داده‌شده. تمرین در زبانِ دیگر (مثلاً آلمانی) باید
+  /// همان ترجمه‌ی متنِ اصلی (و ↻ی کاربر) را نشان دهد، نه ترجمه‌ی دوباره‌ی جمله‌ی آلمانی.
+  /// null برگرداند = رفتارِ پیش‌فرض.
+  final Future<String?> Function(String shown, String native)? nativeTr;
+
   const SpeakingCallPanel({
     super.key,
     required this.persona,
@@ -2240,6 +2246,7 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
     this.onAiContinue,
     this.practiceMatchRatio = 0.8,
     this.onCcChanged,
+    this.nativeTr,
   });
 
   @override
@@ -2278,6 +2285,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   final FocusNode _typeFocus = FocusNode();
   final GlobalKey _videoKey = GlobalKey();
   final Set<String> _trBusy = {};
+  StreamSubscription<void>? _pinSub;
 
   bool _handsFree = true;
   bool _muted = false;
@@ -2325,6 +2333,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     _typeFocus.addListener(() {
       if (_typeFocus.hasFocus) _keepAvatarVisible();
     });
+    // ↻ی کاربر روی ترجمه‌ها (در متنِ اصلی) → زیرنویس‌ها فوراً با ترجمه‌ی جدید جایگزین شوند
+    _pinSub = TranslationService.pinEvents.stream.listen((_) {
+      if (mounted && !_closed) _prefetchTr(force: true);
+    });
     unawaited(_connect());
   }
 
@@ -2350,6 +2362,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   @override
   void dispose() {
     _closed = true;
+    _pinSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _clock?.cancel();
     _ampSub?.cancel();
@@ -2979,7 +2992,41 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     });
   }
 
-  void _prefetchTr() {
+  /// ترجمه‌ی یک جمله‌ی زیرنویس به زبانِ مادری (با اولویتِ ترجمه‌ی متنِ اصلی).
+  Future<String> _calcTr(String txt, String native) async {
+    String r = '';
+    try {
+      final host = widget.nativeTr;
+      if (host != null) {
+        final h = (await host(txt, native))?.trim() ?? '';
+        if (h.isNotEmpty) return h;
+      }
+      if (widget.autoHint) {
+        // 🔗 حالتِ تمرین: همان ترجمه‌ی داخلِ متن (کشِ ترجمه‌های اصلی/اصلاح‌شده)
+        r = (await inTextTranslate(
+          svc: ref.read(translationServiceProvider),
+          ai: ref.read(aiSettingsProvider),
+          text: txt,
+          from: widget.langCode,
+          to: native,
+        ))
+            .trim();
+      } else {
+        r = decodeHtmlEntities((await ref
+                .read(translationServiceProvider)
+                .translate(
+                  text: txt,
+                  targetLang: native,
+                  sourceLang: widget.langCode,
+                  aiSettings: ref.read(aiSettingsProvider),
+                ))
+            .trim());
+      }
+    } catch (_) {}
+    return r;
+  }
+
+  void _prefetchTr({bool force = false}) {
     if ((!_cc && !(_ended && _endCc)) || !mounted) return;
     final native = _nativeCode;
     if (native.isEmpty || native == widget.langCode) return;
@@ -2993,37 +3040,16 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         : _endLastLines();
     for (final t in src) {
       final txt = t.trim();
-      if (txt.isEmpty || _trCache.containsKey(txt) || _trBusy.contains(txt)) {
+      if (txt.isEmpty) continue;
+      if (!force && (_trCache.containsKey(txt) || _trBusy.contains(txt))) {
         continue;
       }
       _trBusy.add(txt);
       unawaited(() async {
-        String r = '';
-        try {
-          if (widget.autoHint) {
-            // 🔗 حالتِ تمرین: همان ترجمه‌ی داخلِ متن (کشِ ترجمه‌های اصلی/اصلاح‌شده)
-            r = (await inTextTranslate(
-              svc: ref.read(translationServiceProvider),
-              ai: ref.read(aiSettingsProvider),
-              text: txt,
-              from: widget.langCode,
-              to: native,
-            ))
-                .trim();
-          } else {
-            r = decodeHtmlEntities((await ref
-                    .read(translationServiceProvider)
-                    .translate(
-                      text: txt,
-                      targetLang: native,
-                      sourceLang: widget.langCode,
-                      aiSettings: ref.read(aiSettingsProvider),
-                    ))
-                .trim());
-          }
-        } catch (_) {}
+        final r = await _calcTr(txt, native);
         _trBusy.remove(txt);
         if (!mounted) return;
+        if (r.isEmpty && force && (_trCache[txt] ?? '').isNotEmpty) return;
         setState(() => _trCache[txt] = (r == txt) ? '' : r);
         // ترجمه‌ی آخرین جمله رسید → کادر را دوباره تا پایین ببر تا دیده شود
         if (_hist.isNotEmpty && _hist.last.text.trim() == txt) _ccToBottom();

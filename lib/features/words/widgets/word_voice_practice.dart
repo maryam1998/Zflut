@@ -14,6 +14,7 @@ import '../../../core/providers/translation_provider.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/translate/in_text_translation.dart';
+import '../../../core/translate/translation_service.dart' show TranslationService;
 import '../../../core/utils/html_entities.dart';
 import '../../tabs/speaking_call.dart';
 
@@ -152,7 +153,15 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     _pc = ProviderScope.containerOf(context, listen: false);
     _follow = PracticeFollow(_pc);
     widget.controller?.startTick.addListener(_onStartTick);
+    // ↻ی کاربر روی ترجمه‌ی یک لغت → برنامه‌ی تمرینِ لغت‌های بعدی با ترجمه‌ی جدید ساخته شود
+    _pinSub = TranslationService.pinEvents.stream.listen((_) {
+      if (!mounted || !_mode) return;
+      _trCache.clear();
+      _plans.removeWhere((i, _) => i != _wi);
+    });
   }
+
+  StreamSubscription<void>? _pinSub;
 
   @override
   void didUpdateWidget(covariant WordVoicePractice old) {
@@ -165,6 +174,7 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
 
   @override
   void dispose() {
+    _pinSub?.cancel();
     widget.controller?.startTick.removeListener(_onStartTick);
     _follow.clear();
     super.dispose();

@@ -466,6 +466,11 @@ class _AiBackendError implements Exception {
 // Main service
 // ═══════════════════════════════════════════════════════════════════
 class TranslationService {
+  /// هر بار که کاربر با ↻ ترجمه‌ای را اصلاح (قفل) کند خبر می‌دهد؛
+  /// صفحه‌های تمرین/ویدیو کال از آن برای به‌روزرسانیِ فوریِ ترجمه‌هایشان استفاده می‌کنند.
+  static final StreamController<void> pinEvents =
+      StreamController<void>.broadcast();
+
   TranslationService()
       : _dio = Dio(BaseOptions(
           connectTimeout: const Duration(milliseconds: _kProviderTimeoutMs),
@@ -567,6 +572,7 @@ class TranslationService {
     if (v.isEmpty) return;
     await _db.put(_pinKey(text, to), v);
     await _db.put(_cacheKey(text, from, to), v);
+    pinEvents.add(null);
   }
 
   /// ذخیره در کشِ دائمی (اگر ترجمه‌ی قفل‌شده دارد، دست نمی‌زند)

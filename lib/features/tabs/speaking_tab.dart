@@ -14,6 +14,7 @@ import '../../core/constants/supported_languages.dart';
 import '../../core/models/grammar_note.dart';
 import '../../core/providers/ai_settings_provider.dart';
 import '../../core/translate/in_text_translation.dart';
+import '../../core/translate/translation_service.dart' show TranslationService;
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/reader_providers.dart';
 import '../../core/providers/speech_provider.dart' show speechControllerProvider;
@@ -1113,6 +1114,8 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   void initState() {
     super.initState();
     _pc = ProviderScope.containerOf(context, listen: false);
+    _practicePinSub =
+        TranslationService.pinEvents.stream.listen((_) => _onPracticePinned());
     final ls = ref.read(localStorageProvider);
     final lv = (ls.readJson(_kLevelKey)['level'] ?? 'auto').toString();
     _userLevel = const ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].contains(lv) ? lv : 'auto';
@@ -1355,6 +1358,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
 
   @override
   void dispose() {
+    _practicePinSub?.cancel();
     _pagePos?.removeListener(_updateJump);
     _jumpEntry?.remove();
     _jumpEntry = null;
@@ -2670,6 +2674,40 @@ Now respond to: "$sentence"
     return list.isEmpty || changed > 0;
   }
 
+  /// زیرنویسِ زبانِ مادری در تمرینِ زبانِ دیگر = ترجمه‌ی همان جمله‌ی «متنِ اصلی» (نه ترجمه‌ی دوباره‌ی جمله‌ی تمرین).
+  Future<String?> _practiceNativeTr(String shown, String native) async {
+    if (_practiceLang == null) return null;
+    final s = shown.trim();
+    String? orig;
+    for (final e in _practiceTr.entries) {
+      if (e.value.trim() == s) {
+        orig = e.key;
+        break;
+      }
+    }
+    if (orig == null) return null;
+    final r = (await _practiceTrText(orig, native)).trim();
+    return r == orig.trim() ? null : r;
+  }
+
+  StreamSubscription<void>? _practicePinSub;
+
+  /// ↻ی کاربر روی یک ترجمه → ترجمه‌های تمرین هم همان لحظه عوض می‌شوند.
+  void _onPracticePinned() {
+    final lang = _practiceLang;
+    if (!mounted || lang == null) return;
+    final svc = ref.read(translationServiceProvider);
+    var changed = false;
+    for (final k in _practiceTr.keys.toList()) {
+      final p = svc.pinned(k, lang)?.trim() ?? '';
+      if (p.isNotEmpty && p != _practiceTr[k]) {
+        _practiceTr[k] = p;
+        changed = true;
+      }
+    }
+    if (changed) setState(() {});
+  }
+
   Future<void> _startPractice() async {
     if (!_embedded || !_canPractice || _practicePrep) return;
     final pick = await _pickPracticeLang();
@@ -3079,6 +3117,7 @@ Now respond to: "$sentence"
             onHint: _practiceHint,
             autoHint: true,
             onRedial: _redialPractice,
+            nativeTr: _practiceNativeTr,
           ),
         ),
 

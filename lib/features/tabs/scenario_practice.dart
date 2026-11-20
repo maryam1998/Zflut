@@ -12,6 +12,7 @@ import '../../core/providers/speech_provider.dart' show speechControllerProvider
 import '../../core/providers/translation_provider.dart';
 import '../../core/storage/local_storage.dart';
 import '../../core/translate/in_text_translation.dart';
+import '../../core/translate/translation_service.dart' show TranslationService;
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/utils/html_entities.dart';
 import 'speaking_call.dart';
@@ -98,7 +99,65 @@ class _ScenarioPracticeSectionState
       // 🎯 بعد از حرفِ AI جمله‌ی بعدیِ کاربر نشان داده می‌شود و ضبط خودکار شروع می‌شود
       autoHint: true,
       practiceMatchRatio: 0.7,
+      nativeTr: _nativeTr,
     );
+  }
+
+  /// زیرنویسِ زبانِ مادری = همان ترجمه‌ی «متنِ اصلیِ» مکالمه (خط‌به‌خط)، نه ترجمه‌ی دوباره‌ی
+  /// جمله‌ی زبانِ تمرین. ترجمه‌ی ↻‌شده هم همین‌جا اعمال می‌شود.
+  Future<String?> _nativeTr(String shown, String native) async {
+    final s = shown.trim();
+    if (s.isEmpty) return null;
+    List<String>? lines;
+    for (final g in _groups()) {
+      if (g.lines.map(_lineTr).join(' ').trim() == s) {
+        lines = g.lines;
+        break;
+      }
+      for (final l in g.lines) {
+        if (_lineTr(l).trim() == s) {
+          lines = [l];
+          break;
+        }
+      }
+      if (lines != null) break;
+    }
+    if (lines == null) {
+      // سلامِ اول: چند گروه؟ (فقط خطوطِ قبل از اولین جمله‌ی کاربر)
+      final gl = _greetingLines();
+      if (gl.isNotEmpty && gl.map(_lineTr).join(' ').trim() == s) lines = gl;
+    }
+    if (lines == null) return null;
+    final svc = ref.read(translationServiceProvider);
+    final ai = ref.read(aiSettingsProvider);
+    final parts = await Future.wait([
+      for (final l in lines)
+        inTextTranslate(svc: svc, ai: ai, text: l, from: _srcLang, to: native)
+    ]);
+    var changed = false;
+    for (var i = 0; i < lines.length; i++) {
+      if (parts[i].trim() != lines[i].trim()) changed = true;
+    }
+    if (!changed) return null;
+    return parts.map((e) => e.trim()).join(' ').trim();
+  }
+
+  StreamSubscription<void>? _pinSub;
+
+  /// ↻ی کاربر روی یک ترجمه → ترجمه‌های تمرین هم همان لحظه عوض می‌شوند.
+  void _onPinned() {
+    final lang = _lang;
+    if (!mounted || lang == null) return;
+    final svc = ref.read(translationServiceProvider);
+    var changed = false;
+    for (final k in _tr.keys.toList()) {
+      final p = svc.pinned(k, lang)?.trim() ?? '';
+      if (p.isNotEmpty && p != _tr[k]) {
+        _tr[k] = decodeHtmlEntities(p);
+        changed = true;
+      }
+    }
+    if (changed) setState(() {});
   }
 
   bool get _fa => Localizations.localeOf(context).languageCode == 'fa';
@@ -502,10 +561,12 @@ class _ScenarioPracticeSectionState
     _persona = PersonaStore.builtIns.first;
     _pc = ProviderScope.containerOf(context, listen: false);
     _follow = PracticeFollow(_pc);
+    _pinSub = TranslationService.pinEvents.stream.listen((_) => _onPinned());
   }
 
   @override
   void dispose() {
+    _pinSub?.cancel();
     _follow.clear();
     super.dispose();
   }
