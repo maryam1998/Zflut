@@ -2705,10 +2705,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         _phase = _Phase.speaking;
         _info = '';
       });
-      await _speak(target, lang: _listenLcFor(target));
-      if (!mounted || _closed || token != _turn) return;
-      // 🔁 AI جمله را تکرار کرد → کاربر دوباره بخواند (حداکثر ۲ بار؛ بعدش می‌رویم جلو تا گیر نکند)
+      // 🔁 AI جمله را حداکثر ۲ بار تکرار می‌کند؛ بعد از آن بدونِ تکرارِ بیشتر می‌رویم جلو
       if (_practiceTries < 2) {
+        await _speak(target, lang: _listenLcFor(target));
+        if (!mounted || _closed || token != _turn) return;
         _practiceTries++;
         setState(() {
           _practiceHeard = '';
