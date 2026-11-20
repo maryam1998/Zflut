@@ -9,7 +9,10 @@ import '../providers/auth_provider.dart';
 // 🎨 رنگ‌های برندِ AllLingOne (هماهنگ با لوگو)
 const Color _kBrandNavy = Color(0xFF0B2B6B);
 const Color _kBrandTeal = Color(0xFF009E96);
-const Color _kBrandTealPressed = Color(0xFF007A74);
+// 🎨 سبزِ تیره + زردِ خردلی/طلایی (عنوان، دکمه‌ی ورود، «Create one»)
+const Color _kDarkGreen = Color(0xFF0F3D2E);
+const Color _kMustard = Color(0xFFD4A017);
+const Color _kMustardPressed = Color(0xFFB8860B);
 
 /// صفحه‌ی ورود: گوگل · ایمیل/رمز (ورود و ساخت حساب + فراموشی رمز) · مهمان.
 class LoginScreen extends ConsumerStatefulWidget {
@@ -162,21 +165,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  /// «ورود به AllLingOne» با رنگ‌های لوگو: All و One سرمه‌ای، Ling فیروزه‌ای.
+  /// «ورود به All Ling One»: All و One سبزِ تیره، Ling زردِ خردلی/طلایی (با فاصله).
   Widget _brandTitle(String full, TextStyle? base, bool dark) {
     const brand = 'AllLingOne';
     final i = full.indexOf(brand);
     if (i < 0) {
       return Text(full, style: base, textAlign: TextAlign.center);
     }
-    final navy = dark ? const Color(0xFF9DB7F5) : _kBrandNavy;
-    final teal = dark ? const Color(0xFF2EC4BC) : _kBrandTeal;
+    final green = dark ? const Color(0xFF6FCF97) : _kDarkGreen;
+    final gold = dark ? const Color(0xFFE6B422) : _kMustard;
     return Text.rich(
       TextSpan(style: base, children: [
         TextSpan(text: full.substring(0, i)),
-        TextSpan(text: 'All', style: TextStyle(color: navy)),
-        TextSpan(text: 'Ling', style: TextStyle(color: teal)),
-        TextSpan(text: 'One', style: TextStyle(color: navy)),
+        TextSpan(text: 'All', style: TextStyle(color: green)),
+        const TextSpan(text: ' '),
+        TextSpan(text: 'Ling', style: TextStyle(color: gold)),
+        const TextSpan(text: ' '),
+        TextSpan(text: 'One', style: TextStyle(color: green)),
         TextSpan(text: full.substring(i + brand.length)),
       ]),
       textAlign: TextAlign.center,
@@ -360,21 +365,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: FilledButton(
                         onPressed: _busy ? null : _submit,
                         style: FilledButton.styleFrom(
-                          foregroundColor: Colors.white,
+                          foregroundColor: _kDarkGreen,
                           shape: const StadiumBorder(),
                           textStyle: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w700),
                         ).copyWith(
-                          // فیروزه‌ای؛ موقعِ لمس یک پله تیره‌تر
+                          // زردِ خردلی؛ موقعِ لمس یک پله تیره‌تر
                           backgroundColor:
                               MaterialStateProperty.resolveWith((states) {
                             if (states.contains(MaterialState.disabled)) {
-                              return _kBrandTeal.withOpacity(0.5);
+                              return _kMustard.withOpacity(0.5);
                             }
                             if (states.contains(MaterialState.pressed)) {
-                              return _kBrandTealPressed;
+                              return _kMustardPressed;
                             }
-                            return _kBrandTeal;
+                            return _kMustard;
                           }),
                         ),
                         child: _busy
@@ -382,7 +387,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2.4, color: Colors.white))
+                                    strokeWidth: 2.4, color: _kDarkGreen))
                             : Text(_isSignup
                                 ? L.auth_signup_submit
                                 : L.auth_login_submit),
@@ -406,7 +411,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     _infoMsg = null;
                                   }),
                           style: TextButton.styleFrom(
-                              foregroundColor: dark ? _kBrandTeal : _kBrandNavy,
+                              foregroundColor:
+                                  dark ? const Color(0xFF6FCF97) : _kDarkGreen,
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 6)),
                           child: Text(
