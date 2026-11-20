@@ -290,16 +290,34 @@ String _stripQuotes(String s) =>
 // ═══════════════════════════════════════════════════════════════════
 // Circuit breaker (سراسری)
 // ═══════════════════════════════════════════════════════════════════
-// 🚩 «تلاش شد» (Flag): اگر ترجمه‌ی AI برای یک متن شکست خورد، تا چند دقیقه دوباره AI صدا زده نمی‌شود
-final Map<String, int> _aiFailedAt = {};
-const int _kAiFailCooldownMs = 10 * 60 * 1000;
+// 🚩 «تلاش شد» (Flag) با تاریخ انقضا: شکستِ اول → ۲ ساعت؛ اگر بعد از انقضا دوباره شکست خورد → ۲۴ ساعت.
+// بعد از آن هم Flag دائمی نمی‌شود: هر بار که منقضی شود یک شانسِ دیگر داده می‌شود (با همان ۲۴ ساعت).
+class _AiFail {
+  final int until; // زمانِ انقضا (میلی‌ثانیه)
+  final int count; // تعدادِ شکست‌های پشت‌سرهم
+  const _AiFail(this.until, this.count);
+}
 
+final Map<String, _AiFail> _aiFailed = {};
+const int _kAiFailFirstMs = 2 * 60 * 60 * 1000; // ۲ ساعت
+const int _kAiFailRepeatMs = 24 * 60 * 60 * 1000; // ۲۴ ساعت
+
+/// آیا هنوز در بازه‌ی «تلاش شد» هستیم؟ (منقضی شده → false؛ شمارنده‌ی شکست‌ها می‌ماند تا تلاشِ بعدی طولانی‌تر ثبت شود)
 bool _aiRecentlyFailed(String key) {
-  final t = _aiFailedAt[key];
-  if (t == null) return false;
-  if (DateTime.now().millisecondsSinceEpoch - t < _kAiFailCooldownMs) return true;
-  _aiFailedAt.remove(key);
-  return false;
+  final f = _aiFailed[key];
+  if (f == null) return false;
+  return DateTime.now().millisecondsSinceEpoch < f.until;
+}
+
+void _aiMarkFailed(String key) {
+  final n = (_aiFailed[key]?.count ?? 0) + 1;
+  final ms = n <= 1 ? _kAiFailFirstMs : _kAiFailRepeatMs;
+  _aiFailed[key] = _AiFail(DateTime.now().millisecondsSinceEpoch + ms, n);
+  // حافظه بی‌نهایت بزرگ نشود
+  if (_aiFailed.length > 500) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    _aiFailed.removeWhere((_, v) => v.until < now && v.count <= 1);
+  }
 }
 
 // ─── ML Kit (آفلاین، روی گوشی) — اولین مرحله‌ی زنجیره‌ی شبکه ───
@@ -729,12 +747,12 @@ class TranslationService {
         if (result.trim().isNotEmpty &&
             !looksLikelyMistranslated(text, result, targetLang,
                 sourceLang: sourceLang)) {
-          _aiFailedAt.remove(aiKey);
+          _aiFailed.remove(aiKey);
           await cachePut(text, sourceLang, targetLang, result);
           return result;
         }
       } catch (_) {}
-      _aiFailedAt[aiKey] = DateTime.now().millisecondsSinceEpoch;
+      _aiMarkFailed(aiKey);
     }
 
     if (mlDraft != null && mlDraft.isNotEmpty) {
