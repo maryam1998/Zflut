@@ -2717,7 +2717,7 @@ Now respond to: "$sentence"
       setState(() => _practicePrep = true);
       var ok = false;
       try {
-        ok = await _preparePracticeTr(lang, pick.swap);
+        ok = await _preparePracticeTr(lang, true); // همه‌ی جمله‌ها ترجمه می‌شوند تا ⇄ در تمرین فوری باشد
       } catch (_) {
         ok = false;
       }
@@ -2750,6 +2750,14 @@ Now respond to: "$sentence"
 
   void _endPractice() {
     if (_practiceMode && mounted) setState(() => _practiceMode = false);
+  }
+
+  /// ⇄ دکمه‌ی کنارِ میکروفونِ ویدیو کال: نقش‌ها همان لحظه عوض می‌شوند (تماس قطع نمی‌شود).
+  void _swapPracticeRoles() {
+    if (!mounted) return;
+    _practiceSwap = !_practiceSwap;
+    _practiceK = 0;
+    _swapReset();
   }
 
   void _redialPractice() {
@@ -3117,6 +3125,7 @@ Now respond to: "$sentence"
             onHint: _practiceHint,
             autoHint: true,
             onRedial: _redialPractice,
+            onSwapRoles: _swapPracticeRoles,
             nativeTr: _practiceNativeTr,
           ),
         ),

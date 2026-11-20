@@ -103,6 +103,7 @@ class _ScenarioPracticeSectionState
       onEnd: _end,
       onHint: _hint,
       onRedial: _redial,
+      onSwapRoles: _swapRoles,
       // 🎯 بعد از حرفِ AI جمله‌ی بعدیِ کاربر نشان داده می‌شود و ضبط خودکار شروع می‌شود
       autoHint: true,
       practiceMatchRatio: 0.7,
@@ -485,6 +486,15 @@ class _ScenarioPracticeSectionState
   void _end() {
     _follow.clear();
     if (_mode && mounted) setState(() => _mode = false);
+  }
+
+  /// ⇄ دکمه‌ی کنارِ میکروفونِ ویدیو کال: نقش‌ها همان لحظه عوض می‌شوند (تماس قطع نمی‌شود).
+  void _swapRoles() {
+    if (!mounted) return;
+    _follow.clear();
+    _swap = !_swap;
+    _k = 0;
+    _swapReset();
   }
 
   void _redial() {

@@ -2231,6 +2231,11 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
   /// null برگرداند = رفتارِ پیش‌فرض.
   final Future<String?> Function(String shown, String native)? nativeTr;
 
+  /// ⇄ «جابجایی نقش‌ها» (فقط حالتِ تمرین): میزبان نقش‌ها را عوض و ایندکس‌هایش را ریست می‌کند؛
+  /// پنل بدونِ قطعِ تماس و بدونِ زنگ‌خوردن، همان لحظه از اول با نقش‌های جدید شروع می‌کند.
+  /// null = دکمه نمایش داده نمی‌شود.
+  final VoidCallback? onSwapRoles;
+
   const SpeakingCallPanel({
     super.key,
     required this.persona,
@@ -2247,6 +2252,7 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
     this.practiceMatchRatio = 0.8,
     this.onCcChanged,
     this.nativeTr,
+    this.onSwapRoles,
   });
 
   @override
@@ -2276,6 +2282,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   bool _stopping = false;
   bool _ended = false; // کاربر دکمه‌ی قطع را زد؛ در همین صفحه می‌مانیم
   bool _hintLoading = false;
+  int _swapGen = 0; // هر بار «جابجایی نقش» زده شود زیاد می‌شود (نتیجه‌ی تشخیصِ گفتارِ قدیمی دور ریخته شود)
   DateTime _thinkAt = DateTime.now(); // شروعِ «در حال فکر کردن» (برای پیامِ اتصال)
   bool _cc = false; // زیرنویس (CC) — پیش‌فرض خاموش
   bool _endCc = false; // صفحه‌ی «تماس پایان یافت»: ترجمه‌ی جمله‌های آخر
@@ -2502,6 +2509,47 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       await _ctl.stop();
       await PersonaVoice.speak(_ctl, widget.persona, t, widget.langCode);
     } catch (_) {}
+  }
+
+  /// ⇄ جابجایی نقش‌ها با یک کلیک: تماس قطع نمی‌شود و منو/لایه‌ای باز نمی‌شود.
+  /// نوبتِ جاری کنسل می‌شود، میزبان نقش‌ها را عوض می‌کند و تمرین از اول با نقش‌های جدید می‌آید.
+  void _swapRoles() {
+    final fn = widget.onSwapRoles;
+    if (fn == null || _closed || _ended || !mounted) return;
+    if (_phase == _Phase.ringing || _hintLoading) return;
+    _swapGen++;
+    _turn++;
+    _stopSpeaking();
+    if (_phase == _Phase.recording) {
+      _ampSub?.cancel();
+      _ampSub = null;
+      _stopping = true;
+      unawaited(_rec.stop().then((p) => _deleteFile(p)));
+      _level.value = 0;
+    }
+    if (_phase == _Phase.transcribing) {
+      unawaited(NativeBridge.instance.syncTranscribeCancel().catchError(
+          (Object _) => <String, dynamic>{}));
+    }
+    fn();
+    setState(() {
+      _practiceTarget = null;
+      _practiceFuture = null;
+      _practiceHeard = '';
+      _practiceState = 0;
+      _practiceTries = 0;
+      _pHist.clear();
+      _pIdx = -1;
+      _hist.clear();
+      _aiLine = '';
+      _heard = '';
+      _lastText = '';
+      _fixes = const [];
+      _info = '';
+      _error = '';
+      _phase = _Phase.ready;
+    });
+    unawaited(_connect(instant: true));
   }
 
   /// «راهنما (چی بگم؟)» داخلِ ویدیو کال؛ جمله‌ی انتخابی مستقیم برای AI فرستاده می‌شود.
@@ -3420,8 +3468,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   }
 
   // ───────────── جریانِ تماس ─────────────
-  Future<void> _connect() async {
-    await Future<void>.delayed(const Duration(milliseconds: 1500));
+  Future<void> _connect({bool instant = false}) async {
+    if (!instant) await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (!mounted || _closed) return;
     final token = ++_turn;
     _thinkAt = DateTime.now();
@@ -3663,6 +3711,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _info = '';
     });
     String? text;
+    final swapGen = _swapGen;
     try {
       text = await _transcribe(path);
     } on _NoModel {
@@ -3682,6 +3731,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     }
     _deleteFile(path);
     if (!mounted || _closed) return;
+    if (swapGen != _swapGen) return; // وسطِ تشخیصِ گفتار نقش‌ها عوض شد؛ نتیجه‌ی قدیمی بی‌اثر است
     final clean = _cleanTranscript(text ?? '');
     if (clean.isEmpty) {
       setState(() {
@@ -4660,6 +4710,19 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 if (_cc) _ccToBottom();
               },
             )),
+            // ⇄ جابجایی نقش‌ها (فقط در تمرین) — کنارِ میکروفون، با یک کلیک
+            if (widget.onSwapRoles != null)
+              Opacity(
+                opacity: (_phase == _Phase.ringing || _hintLoading) ? 0.45 : 1,
+                child: _circleBtn(
+                  icon: Icons.swap_horiz_rounded,
+                  tip: _tr(context, 'جابجایی نقش‌ها', 'Swap roles'),
+                  size: 38,
+                  bg: c.gold.withOpacity(0.18),
+                  fg: c.gold,
+                  onTap: _swapRoles,
+                ),
+              ),
             // میکروفون
             TourTarget(
               id: 'call_mic',
