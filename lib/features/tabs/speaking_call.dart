@@ -2396,6 +2396,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   StreamSubscription<void>? _pinSub;
 
   bool _handsFree = true;
+  // 🎯 چک کردنِ تلفظ با STT (فقط حالتِ تمرین). خاموش = بدونِ چک، مکالمه پشتِ سرهم ادامه دارد.
+  bool _checkPron = true;
   bool _muted = false;
   bool _showTyping = false;
 
@@ -2789,6 +2791,11 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _info = '';
       _error = '';
     });
+    if (!_checkPron) {
+      // بدونِ چکِ تلفظ: جمله مستقیم فرستاده می‌شود و گفتگو ادامه پیدا می‌کند
+      await _submit(t, pre: pre);
+      return;
+    }
     await _startRec();
     if (mounted && !_closed) SpotlightTour.maybeStartPracticeTour(context);
   }
@@ -2819,6 +2826,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _error = '';
       _fixes = const [];
     });
+    if (!_checkPron) return;
     await _startRec();
   }
 
@@ -2870,6 +2878,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final target = _practiceTarget;
     final pre = _practiceFuture;
     if (target == null) return;
+    if (!_checkPron) {
+      await _submit(target, pre: pre);
+      return;
+    }
     final ok = widget.listenLang != null
         ? _lenientMatches(target, heard)
         : _practiceMatches(target, heard, widget.practiceMatchRatio);
@@ -4974,6 +4986,34 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
             ),
           ],
         ),
+        if (widget.autoHint)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _tr(context, 'چک کردنِ تلفظ', 'Check pronunciation'),
+                style: TextStyle(color: c.inkSoft, fontSize: 11.5),
+              ),
+              Switch(
+                value: _checkPron,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                activeColor: c.teal,
+                onChanged: (v) {
+                  setState(() => _checkPron = v);
+                  if (_closed || _ended || _practiceTarget == null) return;
+                  if (!v) {
+                    // خاموش شد وسطِ جمله: ضبط بسته و مکالمه ادامه پیدا می‌کند
+                    if (_phase == _Phase.recording ||
+                        _phase == _Phase.ready) {
+                      _skipPractice();
+                    }
+                  } else if (_phase == _Phase.ready) {
+                    unawaited(_startRec());
+                  }
+                },
+              ),
+            ],
+          ),
 
         if (_info.isNotEmpty)
           Padding(
