@@ -540,13 +540,25 @@ class TranslationService {
   String? pinned(String text, String to) {
     var v = _db.peek(_pinKey(text, to));
     if (v == null || v.isEmpty) v = _db.peek(_legacyPinKey(text, to));
-    return (v == null || v.isEmpty) ? null : v;
+    if (v == null || v.isEmpty) return null;
+    _trustPinned(text, v, to);
+    return v;
+  }
+
+  /// ترجمه‌ی قفل‌شده قبلاً کنترل کیفیت را رد کرده؛ اگر هم‌شکلِ متن است (cognate)
+  /// بعد از ری‌استارتِ اپ هم نباید «ترجمه‌نشده» حساب شود (علامتِ cognate فقط در حافظه بود).
+  void _trustPinned(String text, String v, String to) {
+    if (text.trim().toLowerCase() == v.trim().toLowerCase()) {
+      _confirmedSame.add(_sameKey(text, to));
+    }
   }
 
   Future<String?> _pinnedAsync(String text, String to) async {
     var v = await _db.get(_pinKey(text, to));
     if (v == null || v.isEmpty) v = await _db.get(_legacyPinKey(text, to));
-    return (v == null || v.isEmpty) ? null : v;
+    if (v == null || v.isEmpty) return null;
+    _trustPinned(text, v, to);
+    return v;
   }
 
   /// قفل کردنِ ترجمه + نوشتنِ همان در کلیدِ عادی (برای بقیه‌ی خواننده‌های کش).

@@ -29,6 +29,13 @@ class TranslationCacheDb {
 
   Database? _db;
   Future<void>? _opening;
+  bool _ready = false;
+
+  /// true = رکوردهای دیسک در حافظه بارگذاری شده‌اند (peek همگام معتبر است).
+  bool get isReady => _ready;
+
+  /// تکمیلِ بارگذاریِ کش (اگر هنوز init صدا نشده باشد، فوراً کامل می‌شود).
+  Future<void> get ready => _opening ?? Future<void>.value();
 
   /// باز کردنِ دیتابیس + بارگذاریِ رکوردها در حافظه + انتقالِ کشِ قدیمی
   /// (SharedPreferences). چندبار صدا زدن امن است.
@@ -47,6 +54,7 @@ class TranslationCacheDb {
       _db = null; // فقط حافظه
     }
     if (legacy != null) await _migrateLegacy(legacy);
+    _ready = true;
   }
 
   /// ترجمه‌هایی که قبلاً تک‌به‌تک در SharedPreferences بودند (کلید `tr3::…`)

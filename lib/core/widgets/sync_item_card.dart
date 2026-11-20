@@ -15,6 +15,7 @@ import '../providers/text_prefs_provider.dart';
 import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart';
+import '../storage/translation_cache_db.dart';
 
 import '../../features/reader/widgets/neural_path_dialog.dart';
 import 'selection_card.dart';
@@ -520,6 +521,18 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
           .read(translationServiceProvider)
           .peekCached(widget.en, widget.sourceLang, widget.langCode);
       if (saved != null && _usable(saved)) _text = saved;
+      if (!TranslationCacheDb.instance.isReady) {
+        // کش هنوز لود نشده بود → بعد از آماده شدن، ترجمه‌ی رفرش‌شده را جایگزین کن
+        TranslationCacheDb.instance.ready.then((_) {
+          if (!mounted || gen != _gen) return;
+          final s2 = ref
+              .read(translationServiceProvider)
+              .peekCached(widget.en, widget.sourceLang, widget.langCode);
+          if (s2 != null && _usable(s2) && s2.trim() != _text) {
+            setState(() => _text = s2.trim());
+          }
+        });
+      }
       return;
     }
 

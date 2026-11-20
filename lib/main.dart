@@ -92,9 +92,14 @@ Future<void> main() async {
     // اگر prefs خالی/پاک شده باشد، لغات و داستان‌ها و ... از این‌جا برمی‌گردند.
     await DurableStore.instance.init(prefs);
 
-    // کشِ دائمیِ ترجمه‌ها (IndexedDB / فایل) — در پس‌زمینه باز و پر می‌شود؛
-    // تا آماده شود کش فقط در حافظه کار می‌کند و اپ منتظر نمی‌ماند.
-    unawaited(TranslationCacheDb.instance.init(prefs));
+    // کشِ دائمیِ ترجمه‌ها (IndexedDB / فایل) — قبل از ساخته شدنِ کارت‌ها لود می‌شود
+    // تا ترجمه‌های رفرش‌شده (🔒 قفل‌شده) بعد از باز کردنِ دوباره‌ی اپ هم فوراً نشان داده شوند.
+    // سقفِ انتظار ۴ ثانیه است تا اپ هیچ‌وقت گیر نکند.
+    try {
+      await TranslationCacheDb.instance
+          .init(prefs)
+          .timeout(const Duration(seconds: 4));
+    } catch (_) {}
 
     // فایل‌های OCRِ فارسی/عربی/روسی بی‌صدا در پس‌زمینه دانلود می‌شن (بدونِ تنظیمات)
     if (!kIsWeb) {
