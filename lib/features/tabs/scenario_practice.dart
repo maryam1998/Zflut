@@ -55,7 +55,14 @@ class _Pick {
 
 class ScenarioPracticeSection extends ConsumerStatefulWidget {
   final ConversationScenario scenario;
-  const ScenarioPracticeSection({super.key, required this.scenario});
+
+  /// سطح‌های فعالِ صفحه (همان فیلترِ متنِ بازشده)؛ خالی = همه‌ی سطح‌ها.
+  /// تمرین فقط جمله‌هایی را می‌خواند که همین الان در متنِ باز نمایش داده می‌شوند.
+  final Set<String> levelFilter;
+  const ScenarioPracticeSection(
+      {super.key,
+      required this.scenario,
+      this.levelFilter = const <String>{}});
 
   @override
   ConsumerState<ScenarioPracticeSection> createState() =>
@@ -180,10 +187,29 @@ class _ScenarioPracticeSectionState
 
     final n = a.length > b.length ? a.length : b.length;
     for (var i = 0; i < n; i++) {
-      if (i < a.length) add('ai', a[i].en, 'a$i');
-      if (i < b.length) add('user', b[i].en, 'b$i');
+      if (i < a.length && _lvOk(a[i])) add('ai', a[i].en, 'a$i');
+      if (i < b.length && _lvOk(b[i])) add('user', b[i].en, 'b$i');
     }
     return out;
+  }
+
+  /// فقط جمله‌هایی که با فیلترِ سطحِ فعلی در متنِ باز نمایش داده می‌شوند
+  bool _lvOk(ConversationLine l) =>
+      widget.levelFilter.isEmpty || widget.levelFilter.contains(l.level);
+
+  static String _sig(Set<String> s) => (s.toList()..sort()).join(',');
+
+  @override
+  void didUpdateWidget(covariant ScenarioPracticeSection old) {
+    super.didUpdateWidget(old);
+    // سطح عوض شد → متنِ باز عوض شده؛ تمرینِ در جریان با متنِ قبلی نباید ادامه یابد
+    if (_sig(old.levelFilter) != _sig(widget.levelFilter)) {
+      _follow.clear();
+      _tr.clear();
+      _k = 0;
+      _swapReset();
+      if (_mode) _mode = false;
+    }
   }
 
   String _gText(_Grp g) => g.lines.map(_lineTr).join(' ');

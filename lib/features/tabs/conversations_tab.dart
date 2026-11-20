@@ -1351,7 +1351,9 @@ class _ScenarioCard extends StatelessWidget {
             const Divider(height: 1),
             // 🎯 تمرینِ این مکالمه با AI (ویدیو کال) — همان قابلیتِ تاریخچه‌ی مکالمه
             ScenarioPracticeSection(
-                key: ObjectKey(scenario), scenario: scenario),
+                key: ObjectKey(scenario),
+                scenario: scenario,
+                levelFilter: levelFilter),
             _DialogueBox(
                 levelFilter: levelFilter,
                 hear: scenario.speakerA,
