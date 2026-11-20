@@ -2950,14 +2950,13 @@ Now respond to: "$sentence"
 
   /// سلامِ شخصیت وقتی تماس وصل شد (به چت هم اضافه می‌شود).
   Future<String?> _callGreeting() async {
-    // فقط یک‌بار: اگر در همین گفتگو قبلاً سلام/معرفی یا هر پیامِ واقعی‌ای هست،
-    // با هر بار وارد شدن دوباره معرفیِ خودش را نگوید و در چت هم ننویسد.
-    if (_messages.any((m) => !m.isWelcome)) return null;
+    // معرفیِ کامل فقط بارِ اول؛ اگر گفتگوی قبلی هست (یا قبلاً معرفی شده) معرفیِ تکراری نداریم.
     if (_openerBusy) return null;
-    // از بارِ دوم به بعد: معرفیِ تکراری نداریم؛ گاهی AI با یک سؤالِ معمولی
-    // شروع می‌کند و گاهی ساکت منتظرِ حرفِ کاربر می‌ماند.
-    if (_introSeen) {
-      if (math.Random().nextInt(100) >= 60) return null;
+    // 🎲 AI در تماس هم (مثلِ چت) خودش شروع می‌کند، حتی وقتی تاریخچه‌ی گفتگو دارد.
+    // رندوم و غیرقابل‌پیش‌بینی: بیشترِ وقت‌ها با یک سؤالِ معمولی شروع می‌کند، گاهی منتظر می‌ماند.
+    if (_introSeen || _messages.any((m) => !m.isWelcome)) {
+      if (math.Random().nextInt(100) >= 85) return null;
+      final sid = _sessionId;
       _openerBusy = true;
       String? o;
       try {
@@ -2965,8 +2964,7 @@ Now respond to: "$sentence"
       } finally {
         _openerBusy = false;
       }
-      if (!mounted || o == null) return null;
-      if (_messages.any((m) => !m.isWelcome)) return null;
+      if (!mounted || o == null || _sessionId != sid) return null;
       setState(() => _messages = [
             ..._messages.where((m) => !m.isWelcome),
             _Msg(role: 'ai', text: o!),
