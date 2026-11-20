@@ -141,6 +141,11 @@ Future<String> _run(TranslationService svc, AiSettings? ai, String text,
   final src = text.trim();
   // بدونِ هیچ حرفی (فقط عدد/علامت) → ترجمه‌ای لازم نیست
   if (!RegExp(r'\p{L}', unicode: true).hasMatch(src)) return text;
+  // 📌 ترجمه‌ی اصلاح‌شده‌ی کاربر: بدونِ بازبینیِ دوباره (مگر خودِ کاربر ↻ بزند)
+  if (!fresh) {
+    final pin = svc.pinned(src, to);
+    if (pin != null) return pin;
+  }
 
   // ۱. ترجمه‌ی رایگان (بدونِ ناظرِ داخلیِ سرویس؛ ناظرِ ما پایین است)
   var draft = '';
@@ -169,7 +174,11 @@ Future<String> _run(TranslationService svc, AiSettings? ai, String text,
             previous: previous)
         .timeout(const Duration(seconds: 45));
     if (reviewed.isNotEmpty) {
-      await svc.cachePut(src, _ns(from), to, reviewed);
+      if (fresh) {
+        await svc.pinPut(src, _ns(from), to, reviewed);
+      } else {
+        await svc.cachePut(src, _ns(from), to, reviewed);
+      }
       return reviewed;
     }
   } catch (_) {}

@@ -62,6 +62,15 @@ Future<String> inTextTranslate({
       r.trim().isNotEmpty &&
       !looksLikelyMistranslated(seg, r.trim(), to, sourceLang: from);
 
+  // ۰) 📌 ترجمه‌ی قفل‌شده‌ی کاربر (↻) همیشه مقدم است؛ بدون کنترل کیفیت و بدون معنیِ از‌پیش‌معلوم
+  final pin = svc.pinned(src, to);
+  if (pin != null) return decodeHtmlEntities(pin.trim());
+  final plain0 = _plain(src);
+  if (plain0.isNotEmpty && plain0 != src) {
+    final pp = svc.pinned(plain0, to);
+    if (pp != null) return decodeHtmlEntities(pp.trim());
+  }
+
   // ۱) ترجمه‌ی ذخیره‌شده (مثلاً اصلاح‌شده با ↻)
   final saved = svc.peekCached(src, from, to);
   if (saved != null && usable(src, saved)) {
@@ -81,6 +90,8 @@ Future<String> inTextTranslate({
 
   // یک تکه را از کش/سرویس می‌گیرد
   Future<String> one(String seg) async {
+    final pinSeg = svc.pinned(seg, to);
+    if (pinSeg != null) return decodeHtmlEntities(pinSeg.trim());
     final hit = svc.peekCached(seg, from, to);
     if (hit != null && usable(seg, hit)) {
       return decodeHtmlEntities(hit.trim());

@@ -503,6 +503,8 @@ class TranslationService {
   /// فقط اگر مقدارِ کش‌شده از کنترل کیفیت رد شود برمی‌گرداند؛ وگرنه null.
   String? peekCached(String text, String from, String to) {
     if (text.trim().isEmpty || to.isEmpty) return null;
+    final pin = pinned(text, to);
+    if (pin != null) return pin;
     final hard = _hardcodedFarewell(text, from, to);
     if (hard != null) return hard;
     final v = _db.peek(_cacheKey(text, from, to));
@@ -513,10 +515,53 @@ class TranslationService {
         : _fixFarewell(text, from, to, v);
   }
 
-  /// ذخیره در کشِ دائمی
+  // ═══ 📌 ترجمه‌های «قفل‌شده» (اصلاحِ دستیِ کاربر با دکمه‌ی ↻) ═══
+  // مستقل از زبانِ مبدأ ذخیره می‌شوند و هیچ مسیرِ خودکاری (کنترل کیفیت، ML Kit،
+  // بازبینیِ AI، ترجمه‌ی داستان، کشِ مشترک) حق ندارد جایگزینشان کند؛ فقط ↻ی بعدیِ خودِ کاربر.
+  // کلیدِ قفل «نرمال‌شده» است: حروفِ بزرگ/کوچک، فاصله‌ی اضافه، نقطه و علائمِ نگارشی، و
+  // نوعِ آپوستروف فرقی نمی‌کند؛ پس «Hello, world!» و «hello world» یک ترجمه‌ی قفل‌شده دارند.
+  static String _normPin(String text) {
+    var t = text
+        .replaceAll('\u2019', "'")
+        .replaceAll('\u2018', "'")
+        .replaceAll('\u200c', ' ')
+        .replaceAll(RegExp('[\u200b\u200d\u200e\u200f\u2066-\u2069]'), '')
+        .toLowerCase();
+    t = t.replaceAll(RegExp(r"[^\p{L}\p{N}']+", unicode: true), ' ').trim();
+    t = t.replaceAll(RegExp(r"^'+|'+$"), '').replaceAll(RegExp(r"\s+'|'\s+"), ' ').trim();
+    return t.isEmpty ? text.trim() : t;
+  }
+
+  String _pinKey(String text, String to) => '__pin__::$to::${_normPin(text)}';
+  String _legacyPinKey(String text, String to) =>
+      '__pin__::$to::${text.trim()}';
+
+  /// خواندنِ همگامِ ترجمه‌ی قفل‌شده (null = نیست).
+  String? pinned(String text, String to) {
+    var v = _db.peek(_pinKey(text, to));
+    if (v == null || v.isEmpty) v = _db.peek(_legacyPinKey(text, to));
+    return (v == null || v.isEmpty) ? null : v;
+  }
+
+  Future<String?> _pinnedAsync(String text, String to) async {
+    var v = await _db.get(_pinKey(text, to));
+    if (v == null || v.isEmpty) v = await _db.get(_legacyPinKey(text, to));
+    return (v == null || v.isEmpty) ? null : v;
+  }
+
+  /// قفل کردنِ ترجمه + نوشتنِ همان در کلیدِ عادی (برای بقیه‌ی خواننده‌های کش).
+  Future<void> pinPut(String text, String from, String to, String value) async {
+    final v = value.trim();
+    if (v.isEmpty) return;
+    await _db.put(_pinKey(text, to), v);
+    await _db.put(_cacheKey(text, from, to), v);
+  }
+
+  /// ذخیره در کشِ دائمی (اگر ترجمه‌ی قفل‌شده دارد، دست نمی‌زند)
   Future<void> cachePut(
-      String text, String from, String to, String value) {
-    return _db.put(_cacheKey(text, from, to), value);
+      String text, String from, String to, String value) async {
+    if (await _pinnedAsync(text, to) != null) return;
+    await _db.put(_cacheKey(text, from, to), value);
   }
 
   /// تعدادِ ترجمه‌های ذخیره‌شده روی دستگاه
@@ -538,6 +583,10 @@ class TranslationService {
         sourceLang == targetLang) {
       return text;
     }
+    // 📌 ترجمه‌ی اصلاح‌شده‌ی کاربر همیشه مقدم است (بدون کنترل کیفیت و بدون شبکه)
+    final pin = await _pinnedAsync(text, targetLang);
+    if (pin != null) return pin;
+
     final hardFarewell = _hardcodedFarewell(text, sourceLang, targetLang);
     if (hardFarewell != null) return hardFarewell;
 
@@ -599,7 +648,18 @@ class TranslationService {
       aiSettings: aiSettings,
       previous: previous,
     );
-    return _fixFarewell(text, sourceLang, targetLang, r);
+    final out = _fixFarewell(text, sourceLang, targetLang, r);
+    // 📌 نتیجه‌ی ↻ برای همیشه روی دستگاه قفل می‌شود (حتی بعد از بستن/آپدیتِ برنامه)
+    final o = out.trim();
+    if (o.isNotEmpty &&
+        o.toLowerCase() != text.trim().toLowerCase() &&
+        !looksLikelyMistranslated(text, o, targetLang,
+            sourceLang: sourceLang)) {
+      await pinPut(text, sourceLang, targetLang, o);
+      SharedTranslations.share(aiSettings?.baseUrl ?? kDefaultBackendUrl, text,
+          sourceLang, targetLang, o);
+    }
+    return out;
   }
 
   Future<String> _retranslate0({
