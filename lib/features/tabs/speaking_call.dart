@@ -2718,19 +2718,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         _phase = _Phase.speaking;
         _info = '';
       });
-      // 🔁 AI جمله را حداکثر ۲ بار تکرار می‌کند؛ بعد از آن بدونِ تکرارِ بیشتر می‌رویم جلو
-      if (_practiceTries < 2) {
-        await _speak(target, lang: _listenLcFor(target));
-        if (!mounted || _closed || token != _turn) return;
-        _practiceTries++;
-        setState(() {
-          _practiceHeard = '';
-          _practiceState = 0;
-          _phase = _Phase.ready;
-        });
-        await _startRec();
-        return;
-      }
+      // 🔁 اشتباه خواند → AI فقط «یک بار» جمله/لغت/مثالِ درست را می‌خواند و بدونِ منتظر ماندنِ
+      // تلفظِ دوبارِ کاربر می‌رود سراغِ بعدی
+      await _speak(target, lang: _listenLcFor(target));
+      if (!mounted || _closed || token != _turn) return;
     }
     _practiceTries = 0;
     await _submit(target, pre: pre);
