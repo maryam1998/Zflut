@@ -2791,11 +2791,6 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _info = '';
       _error = '';
     });
-    if (!_checkPron) {
-      // بدونِ چکِ تلفظ: جمله مستقیم فرستاده می‌شود و گفتگو ادامه پیدا می‌کند
-      await _submit(t, pre: pre);
-      return;
-    }
     await _startRec();
     if (mounted && !_closed) SpotlightTour.maybeStartPracticeTour(context);
   }
@@ -2826,8 +2821,31 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _error = '';
       _fixes = const [];
     });
-    if (!_checkPron) return;
     await _startRec();
+  }
+
+  /// سوییچِ کوچکِ زیرِ دکمه‌های تماس (همه هم‌اندازه و دقیقاً زیرِ هم).
+  Widget _miniToggle(
+      AppThemeColorsExt c, String label, bool value, ValueChanged<bool> onChanged) {
+    return SizedBox(
+      height: 28,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: c.inkSoft, fontSize: 11.5)),
+          const SizedBox(width: 10),
+          Transform.scale(
+            scale: 0.68,
+            child: Switch(
+              value: value,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              activeColor: c.teal,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   bool get _navPhaseOk =>
@@ -2878,13 +2896,11 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final target = _practiceTarget;
     final pre = _practiceFuture;
     if (target == null) return;
-    if (!_checkPron) {
-      await _submit(target, pre: pre);
-      return;
-    }
-    final ok = widget.listenLang != null
-        ? _lenientMatches(target, heard)
-        : _practiceMatches(target, heard, widget.practiceMatchRatio);
+    // چکِ تلفظ خاموش: STT مقایسه نمی‌کند؛ خواندن «درست» حساب می‌شود
+    final ok = !_checkPron ||
+        (widget.listenLang != null
+            ? _lenientMatches(target, heard)
+            : _practiceMatches(target, heard, widget.practiceMatchRatio));
     final token = ++_turn;
     if (ok) {
       setState(() {
@@ -3840,6 +3856,13 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               : "I couldn't hear you — try again.",
         );
       });
+      return;
+    }
+    // چکِ تلفظ خاموش: ضبط/توقف مثلِ حالتِ عادی است ولی تشخیصِ گفتار انجام نمی‌شود
+    final pt = _practiceTarget;
+    if (pt != null && !_checkPron) {
+      _deleteFile(path);
+      await _finishPractice(pt);
       return;
     }
     setState(() {
@@ -4970,50 +4993,29 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           }),
         ),
         const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _tr(context, 'دست‌آزاد (شروع و پایانِ خودکار)',
-                  'Hands-free (auto start / stop)'),
-              style: TextStyle(color: c.inkSoft, fontSize: 11.5),
+        Center(
+          child: IntrinsicWidth(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _miniToggle(
+                  c,
+                  _tr(context, 'دست‌آزاد (شروع و پایانِ خودکار)',
+                      'Hands-free (auto start / stop)'),
+                  _handsFree,
+                  (v) => setState(() => _handsFree = v),
+                ),
+                if (widget.autoHint)
+                  _miniToggle(
+                    c,
+                    _tr(context, 'چک کردنِ تلفظ', 'Check pronunciation'),
+                    _checkPron,
+                    (v) => setState(() => _checkPron = v),
+                  ),
+              ],
             ),
-            Switch(
-              value: _handsFree,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              activeColor: c.teal,
-              onChanged: (v) => setState(() => _handsFree = v),
-            ),
-          ],
-        ),
-        if (widget.autoHint)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _tr(context, 'چک کردنِ تلفظ', 'Check pronunciation'),
-                style: TextStyle(color: c.inkSoft, fontSize: 11.5),
-              ),
-              Switch(
-                value: _checkPron,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                activeColor: c.teal,
-                onChanged: (v) {
-                  setState(() => _checkPron = v);
-                  if (_closed || _ended || _practiceTarget == null) return;
-                  if (!v) {
-                    // خاموش شد وسطِ جمله: ضبط بسته و مکالمه ادامه پیدا می‌کند
-                    if (_phase == _Phase.recording ||
-                        _phase == _Phase.ready) {
-                      _skipPractice();
-                    }
-                  } else if (_phase == _Phase.ready) {
-                    unawaited(_startRec());
-                  }
-                },
-              ),
-            ],
           ),
+        ),
 
         if (_info.isNotEmpty)
           Padding(
