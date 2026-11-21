@@ -77,6 +77,7 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
 
   List<_It> _items = const [];
   int _i = 0; // نوبتِ بعدی
+  int _resumeNonce = -1; // == _nonce → پنلِ «ادامه‌ی تماس»: بدونِ زنگ و از همان نوبت
   int _resumeI = 0; // آخرین نوبتی که شروع شد (برای ادامه بعد از تغییرِ آواتار)
   bool _asking = false;
   CallTurn? _lastTurn;
@@ -371,6 +372,19 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
   void _end() {
     _follow.clear();
     if (_mode && mounted) setState(() => _mode = false);
+  }
+
+  /// «ادامه‌ی تماس» بعد از قطع (زنگِ گوشی / بیرون رفتن از اپ): از همان نوبت، بدونِ ریست.
+  void _resumeCall() {
+    if (!mounted) return;
+    _follow.clear();
+    setState(() {
+      _i = _resumeI;
+      _asking = false;
+      _lastTurn = null;
+      _nonce++;
+      _resumeNonce = _nonce;
+    });
   }
 
   void _redial() {
@@ -684,6 +698,8 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
           onEnd: _end,
           onHint: _hint,
           onRedial: _redial,
+          onContinue: _resumeCall,
+          resume: _resumeNonce == _nonce,
           onAiContinue: _continue,
           autoHint: true,
           onPickPersona: _pickPersona, // ✎ روی اسمِ بالای ویدیو

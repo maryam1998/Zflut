@@ -1076,6 +1076,7 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
   // جواب‌ها از خودِ مکالمه‌ی ذخیره‌شده می‌آیند، نه از AI. چیزی ذخیره/تغییر نمی‌کند.
   bool _practiceMode = false;
   int _practiceNonce = 0;
+  int _practiceResumeNonce = -1; // == _practiceNonce → «ادامه‌ی تماس»: بدونِ زنگ
   int _practiceK = 0; // تعدادِ نوبت‌هایی که تا حالا جواب داده شده
   // 🌍 تمرین به هر زبانی: null = زبانِ اصلیِ مکالمه؛ وگرنه متن‌ها ترجمه می‌شوند
   // (ترجمه‌ها در کشِ دائمیِ سرویسِ ترجمه می‌مانند، پس بارِ دوم رایگان و سریع است).
@@ -2851,6 +2852,15 @@ Now respond to: "$sentence"
     return (list.isEmpty || changed > 0) ? out : null;
   }
 
+  /// «ادامه‌ی تماس» بعد از قطع (زنگِ گوشی / بیرون رفتن از اپ): بدونِ ریست؛ آخرین جوابِ AI دوباره گفته می‌شود.
+  void _continuePractice() {
+    if (!mounted) return;
+    setState(() {
+      _practiceNonce++;
+      _practiceResumeNonce = _practiceNonce;
+    });
+  }
+
   void _redialPractice() {
     if (!mounted) return;
     setState(() {
@@ -3364,6 +3374,8 @@ Now respond to: "$sentence"
             onHint: _practiceHint,
             autoHint: true,
             onRedial: _redialPractice,
+            onContinue: _continuePractice,
+            resume: _practiceResumeNonce == _practiceNonce,
             onSwapRoles: _swapPracticeRoles,
             onChangeLang: _changePracticeLang,
             onPickPersona: _pickPracticePersona,

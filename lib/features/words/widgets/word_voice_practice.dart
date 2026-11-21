@@ -103,6 +103,7 @@ class WordVoicePractice extends ConsumerStatefulWidget {
 class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
   bool _mode = false;
   int _nonce = 0;
+  int _resumeNonce = -1; // == _nonce → پنلِ «ادامه‌ی تماس»: بدونِ زنگ
   late AiPersona _persona;
 
   // نشستِ تمرین
@@ -593,6 +594,22 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     if (_mode && mounted) setState(() => _setMode(false));
   }
 
+  /// «ادامه‌ی تماس» بعد از قطع (زنگِ گوشی / بیرون رفتن از اپ): از همان جمله، بدونِ ریست.
+  void _resumeCall() {
+    if (!mounted) return;
+    _follow.clear();
+    setState(() {
+      if (_hintWi >= 0) {
+        _wi = _hintWi;
+        _pi = _hintPi;
+      }
+      _lastTurn = null;
+      _cc = false; // پنلِ جدید با CC خاموش شروع می‌شود
+      _nonce++;
+      _resumeNonce = _nonce;
+    });
+  }
+
   void _redial() {
     if (!mounted) return;
     _follow.clear();
@@ -662,6 +679,8 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
           onEnd: _end,
           onHint: _hint,
           onRedial: _redial,
+          onContinue: _resumeCall,
+          resume: _resumeNonce == _nonce,
           autoHint: true,
           onPickPersona: _pickPersona, // ✎ روی اسمِ بالای ویدیو
           listenLang: _listenLang,

@@ -76,6 +76,7 @@ class _ScenarioPracticeSectionState
   bool _mode = false;
   bool _prep = false;
   int _nonce = 0;
+  int _resumeNonce = -1; // == _nonce → پنلِ «ادامه‌ی تماس»: بدونِ زنگ
   int _k = 0; // تعدادِ نوبت‌هایی که تا حالا جواب داده شده
   String? _lang; // null = متنِ اصلی
   bool _swap = false;
@@ -103,6 +104,8 @@ class _ScenarioPracticeSectionState
       onEnd: _end,
       onHint: _hint,
       onRedial: _redial,
+      onContinue: _resumeCall,
+      resume: _resumeNonce == _nonce,
       onSwapRoles: _swapRoles,
       onChangeLang: _changeLang,
       onPickPersona: _pickPersona, // ✎ روی اسمِ بالای ویدیو
@@ -572,6 +575,16 @@ class _ScenarioPracticeSectionState
       if (res[i].trim() != src[i].trim()) changed++;
     }
     return (src.isEmpty || changed > 0) ? out : null;
+  }
+
+  /// «ادامه‌ی تماس» بعد از قطع (زنگِ گوشی / بیرون رفتن از اپ): بدونِ ریست؛ آخرین جوابِ آواتار دوباره گفته می‌شود.
+  void _resumeCall() {
+    if (!mounted) return;
+    _follow.clear();
+    setState(() {
+      _nonce++;
+      _resumeNonce = _nonce;
+    });
   }
 
   void _redial() {
