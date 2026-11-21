@@ -7,8 +7,6 @@ import '../../../core/theme/app_theme_colors.dart';
 import '../providers/auth_provider.dart';
 
 // 🎨 رنگ‌های برندِ AllLingOne (هماهنگ با لوگو)
-const Color _kBrandNavy = Color(0xFF0B2B6B);
-const Color _kBrandTeal = Color(0xFF009E96);
 // 🎨 سبزِ تیره + زردِ خردلی/طلایی (عنوان، دکمه‌ی ورود، «Create one»)
 const Color _kDarkGreen = Color(0xFF0F3D2E);
 const Color _kMustard = Color(0xFFD4A017);
@@ -251,7 +249,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
-              child: Container(
+              // جهتِ کارت از زبانِ خودِ متن‌ها: انگلیسی = چپ‌به‌راست (علامت‌های «?»، جای آیکن و راهنمای فیلدها درست)،
+              // فارسی/عربی = راست‌به‌چپ
+              child: Directionality(
+                textDirection: const ['fa', 'ar', 'he', 'ur']
+                        .contains(Localizations.localeOf(context).languageCode)
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
+                child: Container(
                 padding: const EdgeInsets.fromLTRB(22, 30, 22, 22),
                 decoration: BoxDecoration(
                   color: c.paperDark,
@@ -273,11 +278,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         width: 64,
                         height: 64,
                         decoration: BoxDecoration(
-                            color: dark ? _kBrandTeal : _kBrandNavy,
+                            // سبزِ تیره + آیکنِ طلایی (هماهنگ با پالتِ برند، نه سرمه‌ای)
+                            color: dark
+                                ? const Color(0xFF14532D)
+                                : _kDarkGreen,
                             shape: BoxShape.circle),
                         child: Icon(
                           _isSignup ? Icons.person_add_alt_1 : Icons.login,
-                          color: Colors.white,
+                          color: dark ? const Color(0xFFE6B422) : const Color(0xFFF2C94C),
                           size: 30,
                         ),
                       ),
@@ -473,6 +481,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ],
                 ),
+              ),
               ),
             ),
           ),
