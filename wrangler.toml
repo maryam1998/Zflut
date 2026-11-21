@@ -94,6 +94,12 @@ AI_ALERT_COST_USD = "0.50"
 AI_ALERT_CALLS = "400"
 
 # 👑 جیمیل‌هایی که همیشه Pro (بدونِ محدودیت) هستند؛ با ویرگول جدا کن. (نقطه و +‌ی جیمیل نادیده گرفته می‌شود)
+# 🔒 جلوگیری از اشتراکِ اکانت — ترتیبِ انتشار: log → (اپ) → on → بعد از ۱۴ روز DEVICE_ALLOW_LEGACY = "off"
+DEVICE_MODE = "log"
+DEVICE_ALLOW_LEGACY = "on"
+DEVICE_LIMIT_FREE = "1"
+DEVICE_LIMIT_PRO = "1"
+
 VIP_EMAILS = "maryam.s.sharifiyan@gmail.com"
 
 # ⭐ NEW: Cloudflare Workers AI binding — برای تبدیلِ صدا به متن با Whisper

@@ -5,7 +5,7 @@
 
 import { handleTranscribe } from "./transcribe.js";
 import { handleWordExample } from "./examples.js";
-import { authGate, handleSession, verifySessionToken } from "./auth.js";
+import { authGate, handleSession, verifySessionToken, handleDevices, handleDevicesLogoutAll } from "./auth.js";
 import { handleUsage, featureOf, aiMissGate } from "./usage.js";
 import { handleContent } from "./content.js";
 import { recordUsage, handleAdminReport } from "./metrics.js";
@@ -15,7 +15,7 @@ import { handleTrShare } from "./trshare.js";
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, X-App-Token, Authorization, X-Feature, X-Use-Id",
+  "Access-Control-Allow-Headers": "Content-Type, X-App-Token, Authorization, X-Feature, X-Use-Id, X-Device-Id, X-Device-Type, X-Device-Model",
 };
 
 export default {
@@ -49,6 +49,14 @@ export default {
     // 🔐 ورود: توکنِ Supabase → توکنِ نشستِ امضاشده (فقط همین مسیر بدونِ X-App-Token است)
     if (url.pathname === "/api/session" && request.method === "POST") {
       return handleSession(request, env, CORS_HEADERS);
+    }
+
+    // 🔒 دستگاه‌های متصل (لیست) و «خروج از همه‌ی دستگاه‌ها» (با کدِ ایمیل)
+    if (url.pathname === "/api/devices" && request.method === "GET") {
+      return handleDevices(request, env, CORS_HEADERS);
+    }
+    if (url.pathname === "/api/devices/logout-all" && request.method === "POST") {
+      return handleDevicesLogoutAll(request, env, CORS_HEADERS);
     }
 
     // 💎 وضعیتِ سهمیه‌ی رایگان / شروعِ یک استفاده (بدونِ شمارشِ سهمیه‌ی روزانه)

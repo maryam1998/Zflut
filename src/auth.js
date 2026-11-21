@@ -18,6 +18,7 @@
 // ---------------------------------------------------------------------------
 
 import { featureGate, isPro, isVipEmail } from "./usage.js";
+import { cleanDeviceId, deviceActive, deviceMode, legacyAllowed, registerDevice, handleDevicesList, handleLogoutAll } from "./devices.js";
 
 const enc = new TextEncoder();
 const SESSION_TTL_SEC = 14 * 24 * 3600;
@@ -47,10 +48,10 @@ async function hmacKey(secret, usages) {
   return crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, usages);
 }
 
-async function issueSessionToken(env, userId, email) {
+async function issueSessionToken(env, userId, email, deviceId) {
   const exp = Math.floor(Date.now() / 1000) + SESSION_TTL_SEC;
   // em = ایمیلِ کاربر (برای تشخیصِ VIP بدونِ رفتن سراغِ Supabase)
-  const payload = b64uEncode(enc.encode(JSON.stringify({ sub: userId, exp, em: String(email || "").toLowerCase() })));
+  const payload = b64uEncode(enc.encode(JSON.stringify({ sub: userId, exp, em: String(email || "").toLowerCase(), ...(deviceId ? { did: deviceId } : {}) })));
   const key = await hmacKey(env.SESSION_SECRET, ["sign"]);
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode("v1." + payload));
   return { token: `v1.${payload}.${b64uEncode(sig)}`, exp };
@@ -66,6 +67,14 @@ export async function verifySessionToken(env, token) {
     if (!ok) return null;
     const p = JSON.parse(new TextDecoder().decode(b64uDecode(parts[1])));
     if (!p || !p.sub || !p.exp || p.exp < Math.floor(Date.now() / 1000)) return null;
+    // 🔒 دستگاه: خارج‌شده (یا توکنِ قدیمیِ بدونِ شناسه وقتی Legacy خاموش است) = نامعتبر
+    if (deviceMode(env) === "on") {
+      if (p.did) {
+        if (!(await deviceActive(env, p.sub, p.did))) return null;
+      } else if (!legacyAllowed(env)) {
+        return null;
+      }
+    }
     return p;
   } catch {
     return null;
@@ -158,10 +167,28 @@ export async function handleSession(request, env, cors) {
     String(user.app_metadata?.provider || "").toLowerCase() === "google";
   const email = verified ? user.email : "";
   if (!verified && user.email) console.warn("[SECURITY] session: unverified email, VIP/Pro by email disabled", user.id);
-  const { token, exp } = await issueSessionToken(env, user.id, email);
+  // 🔒 دستگاه: اپ‌های جدید X-Device-Id می‌فرستند؛ بدونِ آن = اپِ قدیمی (Legacy)
+  const deviceId = cleanDeviceId(request.headers.get("X-Device-Id"));
+  let evicted = [];
+  let suspicious = [];
+  if (deviceId) {
+    const reg = await registerDevice(env, user.id, email, deviceId, {
+      type: request.headers.get("X-Device-Type"),
+      model: request.headers.get("X-Device-Model"),
+    });
+    if (reg.revoked) {
+      // این دستگاه قبلاً خارج شده؛ باید دوباره لاگین کند (با شناسه‌ی تازه)
+      return jsonResp({ error: "device signed out", code: "device_revoked" }, 401, cors);
+    }
+    evicted = reg.evicted;
+    suspicious = reg.suspicious;
+  } else if (deviceMode(env) === "on" && !legacyAllowed(env)) {
+    return jsonResp({ error: "please update the app", code: "update_required" }, 426, cors);
+  }
+  const { token, exp } = await issueSessionToken(env, user.id, email, deviceId);
   let pro = false;
   try { pro = await isPro(env, user.id, email); } catch { /* ignore */ }
-  return jsonResp({ token, exp, pro }, 200, cors);
+  return jsonResp({ token, exp, pro, suspicious }, 200, cors);
 }
 
 /** برای هر /api/* (جز /api/session): null = اجازه، وگرنه Response ردّ. */
@@ -193,4 +220,19 @@ export async function authGate(request, env, url, cors) {
     return gated;
   }
   return null;
+}
+
+/** GET /api/devices */
+export async function handleDevices(request, env, cors) {
+  const p = await verifySessionToken(env, request.headers.get("X-App-Token"));
+  if (!p) return jsonResp({ error: "login required" }, 401, cors);
+  return handleDevicesList(env, cors, p);
+}
+
+/** POST /api/devices/logout-all (با کدِ ایمیل) */
+export function handleDevicesLogoutAll(request, env, cors) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    return jsonResp({ error: "auth is not configured on the server" }, 500, cors);
+  }
+  return handleLogoutAll(request, env, cors, verifySupabaseUser);
 }

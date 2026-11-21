@@ -26,6 +26,7 @@ import '../../../core/widgets/color_palette_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../tabs/_hope_panel.dart' show uiContentDirection;
 import 'contact_us_button.dart';
+import 'devices_section.dart';
 import 'credits_page.dart';
 import 'feature_dock.dart' show FeatureDockToggleRow;
 import 'help_center.dart';
@@ -387,6 +388,8 @@ class _AccountSection extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 14),
+          const DevicesSection(),
         ],
       ],
     );
