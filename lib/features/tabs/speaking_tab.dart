@@ -2438,6 +2438,8 @@ Now respond to: "$sentence"
     if (v && FreeLimit.blockUnlessPro()) return; // 🔒 ویدیو کالِ زنده فقط Pro
     setState(() {
       _callMode = v;
+      // گفتگوی قبلی هست (آخرین حرف AI): به‌جای وصل شدن، «ادامه‌ی تماس / تماس مجدد» نشان بده
+      _callShowEnded = v && _hasPastCall();
       _editIdx = null;
       _selectMode = false;
       _sel.clear();
@@ -2963,26 +2965,160 @@ Now respond to: "$sentence"
     );
   }
 
+  // ───────────── 👋 بانکِ احوال‌پرسیِ تماس (بدونِ هزینه‌ی AI در هر تماس) ─────────────
+  // برای هر زبان یک‌بار (فقط Pro) ~۵۰ احوال‌پرسیِ متنوع با AI ساخته و ذخیره می‌شود؛
+  // از آن به بعد هر تماسِ جدید یکی را تصادفی از همان بانک می‌گوید.
+  static const int _kGreetBankSize = 50;
+  final Set<String> _greetFilling = {};
+  String _lastGreet = '';
+
+  String _greetKey(String lang) => 'zflut-greet-bank-$lang';
+
+  List<String> _greetBank(String lang) {
+    final ls = ref.read(localStorageProvider);
+    final raw = ls.readJson(_greetKey(lang))['items'];
+    if (raw is! List) return const [];
+    return [for (final x in raw) if (x is String && x.trim().isNotEmpty) x.trim()];
+  }
+
+  Future<void> _fillGreetBank(String lang) async {
+    if (!ProStatus.isPro || !_greetFilling.add(lang)) return;
+    try {
+      final langLabel = _enName(lang);
+      final r = await _callAi(
+          'Write $_kGreetBankSize different short, casual greetings / small-talk '
+          'openers in $langLabel that a friendly person says to start a chat '
+          '(asking how someone is, about their day, week, plans, food, sleep, '
+          'mood, weather...). Each is ONE natural sentence of 3-12 words, '
+          'varied in wording and topic. Do not introduce yourself, no names, '
+          'no emojis, no numbering, no markdown. Output exactly one per line.',
+          1500);
+      final seen = <String>{};
+      final out = <String>[];
+      for (final line in _normalizeAiText(r).split('\n')) {
+        final t = line.replaceAll(RegExp(r'^[\s\-*\d.)]+'), '').trim();
+        if (t.length < 3 || t.length > 140 || !seen.add(t.toLowerCase())) continue;
+        out.add(t);
+        if (out.length >= _kGreetBankSize) break;
+      }
+      if (out.length >= 15) {
+        await ref.read(localStorageProvider).writeJson(_greetKey(lang), {'items': out});
+      }
+    } catch (_) {
+      // بعداً دوباره امتحان می‌شود
+    } finally {
+      _greetFilling.remove(lang);
+    }
+  }
+
+  /// احوال‌پرسیِ تماس: از بانکِ ذخیره‌شده؛ اگر هنوز نیست بانکِ محلی (و برای Pro ساختنِ بانک در پس‌زمینه).
+  String _callOpener() {
+    final lang = _activeLang();
+    final bank = _greetBank(lang);
+    if (bank.isEmpty) {
+      unawaited(_fillGreetBank(lang));
+      return _localOpener(lang);
+    }
+    var t = bank[math.Random().nextInt(bank.length)];
+    if (bank.length > 1 && t == _lastGreet) {
+      t = bank[(bank.indexOf(t) + 1) % bank.length];
+    }
+    _lastGreet = t;
+    return t;
+  }
+
+  /// آخرین حرفِ AI برای ادامه‌ی مکالمه (حداکثر دو جمله‌ی آخر؛ بدونِ هزینه).
+  String _lastAiSpoken(String text) {
+    final body = callSpokenBody(text).trim();
+    if (body.length <= 200) return body;
+    final parts = body.split(RegExp(r'(?<=[.!?؟。])\s+'));
+    final tail = parts.length <= 2 ? parts : parts.sublist(parts.length - 2);
+    return tail.join(' ').trim();
+  }
+
   /// سلامِ شخصیت وقتی تماس وصل شد (به چت هم اضافه می‌شود).
+  // 🔁 دکمه‌های صفحه‌ی «Call ended»: «ادامه‌ی تماس» = همان گفتگو با آخرین جمله‌ی AI (بدونِ پرسش)،
+  // «تماس مجدد» = گفتگوی تازه (جلسه‌ی جدید) و AI خودش شروع می‌کند.
+  bool _callResumeNext = false;
+  bool _callFreshNext = false;
+  bool _callShowEnded = false; // ورود به تبِ Call با گفتگوی قبلی: مستقیم صفحه‌ی دو دکمه
+
+  /// گفتگوی قبلی هست و AI آخرین حرف را زده؟
+  bool _hasPastCall() {
+    final real = _messages.where((m) => !m.isWelcome).toList();
+    return real.isNotEmpty &&
+        real.any((m) => m.role == 'ai') &&
+        _lastAiSpoken(real.lastWhere((m) => m.role == 'ai').text).isNotEmpty;
+  }
+
+  /// چند جمله‌ی آخرِ گفتگو برای نمایشِ کمرنگ روی ویدیو (آخرین جمله‌ی AI پررنگ نشان داده می‌شود).
+  List<CallPastLine> _pastLines() {
+    final real = _messages.where((m) => !m.isWelcome).toList();
+    final lastAi = real.lastIndexWhere((m) => m.role == 'ai');
+    if (lastAi < 0) return const [];
+    final from = lastAi - 3 < 0 ? 0 : lastAi - 3;
+    return [
+      for (final m in real.sublist(from, lastAi + 1))
+        if (callSpokenBody(m.text).trim().isNotEmpty)
+          CallPastLine(
+              m.role != 'ai',
+              m.role == 'ai'
+                  ? (m == real[lastAi]
+                      ? _lastAiSpoken(m.text)
+                      : callSpokenBody(m.text).trim())
+                  : m.text.trim()),
+    ];
+  }
+
+  void _continueCall() {
+    setState(() {
+      _callShowEnded = false;
+      _callResumeNext = true;
+      _callFreshNext = false;
+      _callNonce++;
+    });
+  }
+
+  void _callAgainNewChat() {
+    _clearChat(); // جلسه‌ی جدید؛ مکالمه‌ی قبلی در تاریخچه می‌ماند
+    setState(() {
+      _callShowEnded = false;
+      _callResumeNext = false;
+      _callFreshNext = true;
+      _callNonce++;
+    });
+  }
+
   Future<String?> _callGreeting() async {
     // معرفیِ کامل فقط بارِ اول؛ اگر گفتگوی قبلی هست (یا قبلاً معرفی شده) معرفیِ تکراری نداریم.
     if (_openerBusy) return null;
-    // 🎲 AI در تماس هم (مثلِ چت) خودش شروع می‌کند، حتی وقتی تاریخچه‌ی گفتگو دارد.
-    // رندوم و غیرقابل‌پیش‌بینی: بیشترِ وقت‌ها با یک سؤالِ معمولی شروع می‌کند، گاهی منتظر می‌ماند.
-    if (_introSeen || _messages.any((m) => !m.isWelcome)) {
-      if (math.Random().nextInt(100) >= 85) return null;
-      final sid = _sessionId;
-      _openerBusy = true;
-      String? o;
-      try {
-        o = await _smallTalkOpener();
-      } finally {
-        _openerBusy = false;
+    final real = _messages.where((m) => !m.isWelcome).toList();
+    final resume = _callResumeNext;
+    final fresh = _callFreshNext;
+    _callResumeNext = false;
+    _callFreshNext = false;
+    if (resume) {
+      // ادامه‌ی تماس: آخرین جمله‌ی AI روی صفحه‌ی ویدیو (بدونِ پرسش و بدونِ هزینه‌ی AI)
+      for (var i = real.length - 1; i >= 0; i--) {
+        if (real[i].role != 'ai') continue;
+        final last = _lastAiSpoken(real[i].text);
+        if (last.isNotEmpty) return last;
+        break;
       }
-      if (!mounted || o == null || _sessionId != sid) return null;
+    }
+    // 🔁 گفتگوی قبلی هست و آخرین حرف را AI زده (مثلاً تماس/خروج از اپ وسطِ مکالمه):
+    // می‌پرسد «ادامه‌ی قبلی یا جدید؟». ادامه = همان آخرین حرفِ AI (بدونِ هزینه‌ی AI).
+    final askedNew = fresh; // «تماس مجدد» = گفتگوی تازه؛ AI همیشه شروع می‌کند
+    // 🎲 شروعِ تازه: سلام و احوال‌پرسی از بانکِ ذخیره‌شده (بدونِ AI)؛ کاربر «جدید» را
+    // انتخاب کرده پس همیشه می‌گوید. بدونِ پرسش: رندوم و غیرقابل‌پیش‌بینی (گاهی منتظر می‌ماند).
+    if (_introSeen || real.isNotEmpty) {
+      if (!askedNew && math.Random().nextInt(100) >= 85) return null;
+      final sid = _sessionId;
+      final String o = _callOpener();
+      if (!mounted || _sessionId != sid) return null;
       setState(() => _messages = [
             ..._messages.where((m) => !m.isWelcome),
-            _Msg(role: 'ai', text: o!),
+            _Msg(role: 'ai', text: o),
           ]);
       _persist();
       _scrollDown();
@@ -3201,7 +3337,13 @@ Now respond to: "$sentence"
           onUserSaid: _callTurn,
           onEnd: endCall,
           onHint: () => _showHint(forCall: true),
-          onRedial: () => setState(() => _callNonce++),
+          onRedial: _callAgainNewChat,
+          onContinue: _continueCall,
+          resume: _callResumeNext,
+          startEnded: _callShowEnded,
+          pastLines: (_callShowEnded || _callResumeNext)
+              ? _pastLines()
+              : const <CallPastLine>[],
         ),
 
       // ── 🎯 تمرینِ مکالمه‌ی ذخیره‌شده: همان پنلِ ویدیو کال، جواب‌ها از دیتای ذخیره‌شده ──

@@ -546,6 +546,13 @@ class _PItem {
   _PItem(this.target, this.pre);
 }
 
+/// یک جمله از گفتگوی قبلی (برای نمایشِ کمرنگ روی ویدیوی «ادامه‌ی تماس»).
+class CallPastLine {
+  final bool user; // true = کاربر، false = شخصیتِ AI
+  final String text;
+  const CallPastLine(this.user, this.text);
+}
+
 class _CcEntry {
   final bool user; // true = کاربر، false = شخصیتِ AI
   final String text;
@@ -2302,6 +2309,20 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
   /// «تماس مجدد» بعد از قطع تماس.
   final VoidCallback? onRedial;
 
+  /// «ادامه‌ی تماس» بعد از قطع تماس (جایگزینِ «رفتن به چت»): میزبان همان گفتگو را با آخرین جمله‌ی AI
+  /// دوباره وصل می‌کند. null = همان «رفتن به چت» (onEnd).
+  final VoidCallback? onContinue;
+
+  /// true = بدونِ زنگ خوردن و بلافاصله وصل شود (ادامه‌ی تماس).
+  final bool resume;
+
+  /// گفتگوی قبلی (قدیمی‌ها کمرنگ، آخرین جمله‌ی AI پررنگ) برای صفحه‌ی «ادامه‌ی تماس / تماس مجدد».
+  final List<CallPastLine> pastLines;
+
+  /// true = بدونِ وصل شدن، مستقیم صفحه‌ی «تماس پایان یافت» با دو دکمه‌ی «ادامه‌ی تماس» و «تماس مجدد»
+  /// (بعد از زنگِ گوشی / بیرون رفتن از اپ).
+  final bool startEnded;
+
   /// true = بعد از هر نوبتِ AI، «راهنما» خودکار زده می‌شود و جمله‌ی بعدی برای خواندن نشان داده می‌شود.
   final bool autoHint;
 
@@ -2350,6 +2371,10 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
     required this.onEnd,
     this.onHint,
     this.onRedial,
+    this.onContinue,
+    this.resume = false,
+    this.pastLines = const [],
+    this.startEnded = false,
     this.autoHint = false,
     this.listenLang,
     this.onAiContinue,
@@ -2453,7 +2478,19 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     _pinSub = TranslationService.pinEvents.stream.listen((_) {
       if (mounted && !_closed) _prefetchTr(force: true);
     });
-    unawaited(_connect());
+    for (final l in widget.pastLines) {
+      _hist.add(_CcEntry(l.user, l.text));
+    }
+    if (widget.startEnded) {
+      // تماسِ قبلی قطع شده بود: وصل نشو؛ مستقیم صفحه‌ی پایانِ تماس با دو دکمه
+      _clock?.cancel();
+      _closed = true;
+      _ended = true;
+      _endCc = _cc;
+      _phase = _Phase.ready;
+      return;
+    }
+    unawaited(_connect(instant: widget.resume));
   }
 
   /// موقع تایپ، صفحه را طوری نگه می‌دارد که اواتار همیشه بالای صفحه دیده شود.
@@ -2472,7 +2509,14 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // برنامه به پس‌زمینه رفت → تماس قطع (میکروفون روشن نمی‌ماند)
-    if (state == AppLifecycleState.paused && !_closed) widget.onEnd();
+    // تماسِ زنده: همان‌جا «تماس پایان یافت» با دکمه‌های ادامه/تماس مجدد؛ بقیه: مثلِ قبل
+    if (state == AppLifecycleState.paused && !_closed) {
+      if (widget.onContinue != null) {
+        _endCallHere();
+      } else {
+        widget.onEnd();
+      }
+    }
   }
 
   @override
@@ -3423,8 +3467,16 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       for (final e in _hist)
         if (!e.user) e.text
     ];
-    final lastLines =
-        aiLines.length > 2 ? aiLines.sublist(aiLines.length - 2) : aiLines;
+    final live = widget.onContinue != null; // تماسِ زنده: قبلی‌ها کمرنگ، آخرین جمله‌ی AI پررنگ
+    final lastAi = _hist.lastIndexWhere((e) => !e.user);
+    final ctxEntries = <_CcEntry>[];
+    if (live && lastAi > 0) {
+      final from = lastAi - 3 < 0 ? 0 : lastAi - 3;
+      ctxEntries.addAll(_hist.sublist(from, lastAi));
+    }
+    final lastLines = live
+        ? (aiLines.isEmpty ? <String>[] : [aiLines.last])
+        : (aiLines.length > 2 ? aiLines.sublist(aiLines.length - 2) : aiLines);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -3506,7 +3558,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                               color: Colors.white70, size: 13),
                           const SizedBox(width: 5),
                           Text(
-                              '${_tr(context, 'تماس پایان یافت', 'Call ended')} · ${_clock2()}',
+                              '${_tr(context, 'تماس پایان یافت', 'Call ended')}${_secs > 0 ? ' · ${_clock2()}' : ''}',
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
@@ -3526,6 +3578,31 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // گفتگوی قبلی (کمرنگ)
+                      for (final e in ctxEntries)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Align(
+                            alignment: e.user
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Text(
+                              e.text,
+                              textDirection: TextDirection.ltr,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign:
+                                  e.user ? TextAlign.right : TextAlign.left,
+                              style: TextStyle(
+                                  color: Colors.white.withOpacity(0.5),
+                                  fontSize: 11.5,
+                                  height: 1.35,
+                                  fontStyle: e.user
+                                      ? FontStyle.italic
+                                      : FontStyle.normal),
+                            ),
+                          ),
+                        ),
                       for (final t in lastLines)
                         Container(
                           margin: const EdgeInsets.only(top: 6),
@@ -3545,9 +3622,12 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                                     Text(t,
                                         maxLines: 3,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             color: Colors.white,
-                                            fontSize: 12.5,
+                                            fontSize: live ? 15 : 12.5,
+                                            fontWeight: live
+                                                ? FontWeight.w800
+                                                : FontWeight.w400,
                                             height: 1.4)),
                                     if (showEndTr &&
                                         (_trCache[t.trim()] ?? '').isNotEmpty)
@@ -3609,12 +3689,18 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               label: Text(_tr(context, 'تماس مجدد', 'Call again')),
             ),
             OutlinedButton.icon(
-              onPressed: widget.onEnd,
+              onPressed: widget.onContinue ?? widget.onEnd,
               style: OutlinedButton.styleFrom(
                   foregroundColor: c.ink,
                   side: BorderSide(color: c.cardBorder)),
-              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-              label: Text(_tr(context, 'رفتن به چت', 'Go to chat')),
+              icon: Icon(
+                  widget.onContinue != null
+                      ? Icons.phone_in_talk_rounded
+                      : Icons.chat_bubble_outline_rounded,
+                  size: 18),
+              label: Text(widget.onContinue != null
+                  ? _tr(context, 'ادامه‌ی تماس', 'Continue to call')
+                  : _tr(context, 'رفتن به چت', 'Go to chat')),
             ),
             if (canTr &&
                 Directionality.of(context) == TextDirection.rtl)
