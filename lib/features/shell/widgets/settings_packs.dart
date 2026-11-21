@@ -332,32 +332,32 @@ String _voiceUi(BuildContext context, String key) {
 const Map<String, List<String>> _kVoiceTierNote = {
   'fa': [
     'انتخاب صدا: کیفیت یا سرعت',
-    'صداهای High طبیعی‌ترین و باکیفیت‌ترین صدا را ارائه می‌دهند، اما پردازش سنگین‌تری دارند و ممکن است خواندن جمله کمی دیرتر شروع شود. صداهای Low سبک‌اند و تقریباً فوری شروع می‌کنند. برای تجربه‌ی سریع‌تر و روان‌تر یک صدای Low انتخاب کنید؛ برای غنی‌ترین کیفیت، High. پیش از تصمیم، با دکمه‌ی ▶ صداها را مقایسه کنید.',
+    'High: طبیعی‌تر → پردازش بیشتر → شروع با تأخیر بیشتر\nLow: شروع فوری → پردازش کمتر → کیفیت پایین‌تر',
     'برای تجربه‌ی سریع‌تر، یک صدای Low انتخاب کنید.',
   ],
   'en': [
     'Choosing a voice: quality or speed',
-    'High voices deliver the most natural, studio-grade sound, but they need more processing, so a sentence may start a moment later. Low voices are lightweight and start almost instantly. For the fastest, most responsive experience choose a Low voice; for the richest sound choose High. Use ▶ to compare them before you decide.',
+    'High: more natural → more processing → slower start\nLow: instant start → less processing → lower quality',
     'For a faster experience, choose a Low voice instead.',
   ],
   'ar': [
     'اختيار الصوت: الجودة أم السرعة',
-    'توفّر أصوات High أكثر الأصوات طبيعيةً وجودة، لكنها تتطلب معالجة أكبر، لذا قد تتأخر بداية قراءة الجملة قليلًا. أصوات Low خفيفة وتبدأ فورًا تقريبًا. لتجربة أسرع وأكثر سلاسة اختر صوت Low، ولأغنى جودة اختر High. استخدم ▶ للمقارنة قبل أن تقرر.',
+    'High: أكثر طبيعية ← معالجة أكبر ← بداية أبطأ\nLow: بداية فورية ← معالجة أقل ← جودة أقل',
     'لتجربة أسرع، اختر صوت Low.',
   ],
   'de': [
     'Stimme wählen: Qualität oder Tempo',
-    'High-Stimmen klingen am natürlichsten und hochwertigsten, benötigen jedoch mehr Rechenleistung – ein Satz kann daher etwas später beginnen. Low-Stimmen sind schlank und starten nahezu sofort. Für ein besonders flüssiges Erlebnis wähle eine Low-Stimme, für den vollsten Klang High. Vergleiche sie vorab mit ▶.',
+    'High: natürlicher → mehr Rechenaufwand → späterer Start\nLow: sofortiger Start → weniger Rechenaufwand → geringere Qualität',
     'Für ein schnelleres Erlebnis wähle eine Low-Stimme.',
   ],
   'es': [
     'Elegir una voz: calidad o velocidad',
-    'Las voces High ofrecen el sonido más natural y de mayor calidad, pero requieren más procesamiento, por lo que una frase puede tardar un instante más en empezar. Las voces Low son ligeras y arrancan casi al instante. Para la experiencia más ágil elige una voz Low; para el sonido más rico, High. Compáralas con ▶ antes de decidir.',
+    'High: más natural → más procesamiento → inicio más lento\nLow: inicio inmediato → menos procesamiento → menor calidad',
     'Para una experiencia más rápida, elige una voz Low.',
   ],
   'fr': [
     'Choisir une voix : qualité ou rapidité',
-    'Les voix High offrent le rendu le plus naturel et le plus qualitatif, mais demandent plus de calcul : une phrase peut donc démarrer un peu plus tard. Les voix Low sont légères et démarrent presque instantanément. Pour l’expérience la plus fluide, choisissez une voix Low ; pour le son le plus riche, High. Comparez-les avec ▶ avant de décider.',
+    'High : plus naturel → plus de calcul → démarrage plus lent\nLow : démarrage immédiat → moins de calcul → qualité moindre',
     'Pour une expérience plus rapide, choisissez une voix Low.',
   ],
 };
