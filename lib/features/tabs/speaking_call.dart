@@ -2830,10 +2830,10 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     return SizedBox(
       height: 28,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(label, style: TextStyle(color: c.inkSoft, fontSize: 11.5)),
-          const SizedBox(width: 10),
+          const SizedBox(width: 4),
           Transform.scale(
             scale: 0.68,
             child: Switch(
@@ -4462,10 +4462,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       required VoidCallback onTap,
     }) {
       final fg = enabled ? c.ink : c.inkSoft.withOpacity(0.5);
-      final txt = Text(label,
-          style: TextStyle(
-              color: fg, fontSize: 13, fontWeight: FontWeight.w700));
-      final ic = Icon(icon, size: 16, color: fg);
+      final ic = Icon(icon, size: 18, color: fg);
       return Material(
         color: const Color(0xFFEFE9D6).withOpacity(enabled ? 1 : 0.5),
         borderRadius: BorderRadius.circular(22),
@@ -4473,13 +4470,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           borderRadius: BorderRadius.circular(22),
           onTap: enabled ? onTap : null,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: iconAfter
-                  ? [txt, const SizedBox(width: 4), ic]
-                  : [ic, const SizedBox(width: 4), txt],
-            ),
+            // فقط فلش (جا برای ⇄ و 🌐 در همین ردیف)؛ برچسب به‌صورت Tooltip
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+            child: Tooltip(message: label, child: ic),
           ),
         ),
       );
@@ -4503,6 +4496,21 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   onTap: _practiceBack,
                 ),
               ),
+              // ⇄ جابجایی نقش‌ها (فقط در تمرین)
+              if (widget.onSwapRoles != null) ...[
+                const SizedBox(width: 6),
+                Opacity(
+                  opacity: (_phase == _Phase.ringing || _hintLoading) ? 0.45 : 1,
+                  child: _circleBtn(
+                    icon: Icons.swap_horiz_rounded,
+                    tip: _tr(context, 'جابجایی نقش‌ها', 'Swap roles'),
+                    size: 38,
+                    bg: c.gold.withOpacity(0.18),
+                    fg: c.gold,
+                    onTap: _swapRoles,
+                  ),
+                ),
+              ],
               Expanded(
                 child: Center(
                   child: rec
@@ -4528,6 +4536,24 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                       : const SizedBox.shrink(),
                 ),
               ),
+              // 🌐 تغییرِ زبان (فقط در تمرین)
+              if (widget.onChangeLang != null) ...[
+                Opacity(
+                  opacity:
+                      (_phase == _Phase.ringing || _hintLoading || _langBusy)
+                          ? 0.45
+                          : 1,
+                  child: _circleBtn(
+                    icon: Icons.language_rounded,
+                    tip: _tr(context, 'تغییر زبان', 'Change language'),
+                    size: 38,
+                    bg: c.gold.withOpacity(0.18),
+                    fg: c.gold,
+                    onTap: _changeLang,
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
               TourTarget(
                 id: 'call_next',
                 child: nav(
@@ -4846,8 +4872,6 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           // گوشی‌های باریک: اگر دکمه‌ها جا نشدند، کلِ ردیف کمی کوچک می‌شود (سرریز نمی‌دهد)
           child: LayoutBuilder(builder: (ctx, cons) {
           final need = 258.0 +
-              (widget.onSwapRoles != null ? 38 : 0) +
-              (widget.onChangeLang != null ? 38 : 0) +
               (widget.onHint != null ? 38 : 0);
           return FittedBox(
           fit: BoxFit.scaleDown,
@@ -4879,34 +4903,6 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                 if (_cc) _ccToBottom();
               },
             )),
-            // ⇄ جابجایی نقش‌ها (فقط در تمرین) — کنارِ میکروفون، با یک کلیک
-            if (widget.onSwapRoles != null)
-              Opacity(
-                opacity: (_phase == _Phase.ringing || _hintLoading) ? 0.45 : 1,
-                child: _circleBtn(
-                  icon: Icons.swap_horiz_rounded,
-                  tip: _tr(context, 'جابجایی نقش‌ها', 'Swap roles'),
-                  size: 38,
-                  bg: c.gold.withOpacity(0.18),
-                  fg: c.gold,
-                  onTap: _swapRoles,
-                ),
-              ),
-            // 🌐 تغییرِ زبان (فقط در تمرین) — دقیقاً کنارِ ⇄؛ Bottom Sheetِ لیستِ زبان‌ها
-            if (widget.onChangeLang != null)
-              Opacity(
-                opacity: (_phase == _Phase.ringing || _hintLoading || _langBusy)
-                    ? 0.45
-                    : 1,
-                child: _circleBtn(
-                  icon: Icons.language_rounded,
-                  tip: _tr(context, 'تغییر زبان', 'Change language'),
-                  size: 38,
-                  bg: c.gold.withOpacity(0.18),
-                  fg: c.gold,
-                  onTap: _changeLang,
-                ),
-              ),
             // میکروفون
             TourTarget(
               id: 'call_mic',
@@ -4994,24 +4990,29 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         ),
         const SizedBox(height: 6),
         Center(
-          child: IntrinsicWidth(
-            child: Column(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 _miniToggle(
                   c,
-                  _tr(context, 'دست‌آزاد (شروع و پایانِ خودکار)',
-                      'Hands-free (auto start / stop)'),
+                  widget.autoHint
+                      ? _tr(context, 'دست‌آزاد', 'Hands-free')
+                      : _tr(context, 'دست‌آزاد (شروع و پایانِ خودکار)',
+                          'Hands-free (auto start / stop)'),
                   _handsFree,
                   (v) => setState(() => _handsFree = v),
                 ),
-                if (widget.autoHint)
+                if (widget.autoHint) ...[
+                  const SizedBox(width: 14),
                   _miniToggle(
                     c,
                     _tr(context, 'چک کردنِ تلفظ', 'Check pronunciation'),
                     _checkPron,
                     (v) => setState(() => _checkPron = v),
                   ),
+                ],
               ],
             ),
           ),
