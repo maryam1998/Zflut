@@ -2335,6 +2335,11 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
   /// null = دکمه نمایش داده نمی‌شود.
   final Future<bool> Function()? onChangeLang;
 
+  /// ✎ «تغییر اواتار/شخصیت» روی اسمِ بالای ویدیو (فقط حالتِ تمرین): میزبان همان Bottom Sheetِ
+  /// انتخابِ شخصیت را باز می‌کند؛ تماس قطع و جمله‌ی جاری ریست نمی‌شود (شخصیت از widget.persona خوانده می‌شود).
+  /// null = چیپ نمایش داده نمی‌شود.
+  final Future<void> Function()? onPickPersona;
+
   const SpeakingCallPanel({
     super.key,
     required this.persona,
@@ -2353,6 +2358,7 @@ class SpeakingCallPanel extends ConsumerStatefulWidget {
     this.nativeTr,
     this.onSwapRoles,
     this.onChangeLang,
+    this.onPickPersona,
   });
 
   @override
@@ -4720,11 +4726,52 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(p.name,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800)),
+                          if (widget.onPickPersona != null)
+                            // ✎ چیپِ قابل‌لمس: اسم + مداد → همان شیتِ انتخابِ شخصیت/اواتارِ تبِ Live
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: (_phase == _Phase.ringing || _closed || _ended)
+                                  ? null
+                                  : () => unawaited(widget.onPickPersona!()),
+                              child: Tooltip(
+                                message: _tr(
+                                    context, 'تغییر اواتار', 'Change avatar'),
+                                child: ConstrainedBox(
+                                  constraints:
+                                      const BoxConstraints(minHeight: 32),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(p.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w800)),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.22),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.edit_rounded,
+                                            size: 12, color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            Text(p.name,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800)),
                           Text(_status(context),
                               style: TextStyle(
                                   color: Colors.white.withOpacity(0.85),

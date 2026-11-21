@@ -2418,6 +2418,21 @@ Now respond to: "$sentence"
     _persist(history: false);
   }
 
+  /// ✎ تمرین: همان شیتِ انتخابِ شخصیت/اواتارِ Live (با Crop و آپلودِ عکس). ذخیره‌سازی مشترک است،
+  /// پس در Live هم اعمال می‌شود. تماس قطع و جمله‌ی جاری ریست نمی‌شود: جواب‌های تمرین از متنِ
+  /// ذخیره‌شده می‌آیند و پنل اواتار/صدا را از persona‌ی جدید می‌خواند (کلیدِ پنل به id وابسته نیست).
+  Future<void> _pickPracticePersona() async {
+    if (!mounted || !_practiceMode) return;
+    final ls = ref.read(localStorageProvider);
+    final picked = await showPersonaSheet(context, ls, _persona.id);
+    if (!mounted) return;
+    final p = PersonaStore.byId(ls, picked ?? _persona.id);
+    PersonaStore.setActive(ls, p.id);
+    if (_inHistory) PersonaStore.setForSession(ls, _sessionId, p.id);
+    setState(() => _persona = p);
+    _persist(history: false);
+  }
+
   void _setCallMode(bool v) {
     if (v == _callMode || _embedded) return;
     if (v && FreeLimit.blockUnlessPro()) return; // 🔒 ویدیو کالِ زنده فقط Pro
@@ -3197,7 +3212,7 @@ Now respond to: "$sentence"
         KeepAliveCall(
           child: SpeakingCallPanel(
             key: ValueKey(
-                'practice-$_sessionId-${_persona.id}-$_practiceNonce'),
+                'practice-$_sessionId-$_practiceNonce'),
             persona: _persona,
             langCode: _practiceLang ?? _chatLang,
             langName: _enName(_practiceLang ?? _chatLang),
@@ -3209,6 +3224,7 @@ Now respond to: "$sentence"
             onRedial: _redialPractice,
             onSwapRoles: _swapPracticeRoles,
             onChangeLang: _changePracticeLang,
+            onPickPersona: _pickPracticePersona,
             nativeTr: _practiceNativeTr,
           ),
         ),
