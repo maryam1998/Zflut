@@ -332,32 +332,32 @@ String _voiceUi(BuildContext context, String key) {
 const Map<String, List<String>> _kVoiceTierNote = {
   'fa': [
     'انتخاب صدا: کیفیت یا سرعت',
-    'High: طبیعی‌تر → پردازش بیشتر → شروع با تأخیر بیشتر\nLow: شروع فوری → پردازش کمتر → کیفیت پایین‌تر',
+    'High: کیفیت بهتر، شروع کندتر\nLow: کیفیت کمتر، شروع سریع‌تر',
     'برای تجربه‌ی سریع‌تر، یک صدای Low انتخاب کنید.',
   ],
   'en': [
     'Choosing a voice: quality or speed',
-    'High: more natural → more processing → slower start\nLow: instant start → less processing → lower quality',
+    'High: better quality, slower start\nLow: lower quality, faster start',
     'For a faster experience, choose a Low voice instead.',
   ],
   'ar': [
     'اختيار الصوت: الجودة أم السرعة',
-    'High: أكثر طبيعية ← معالجة أكبر ← بداية أبطأ\nLow: بداية فورية ← معالجة أقل ← جودة أقل',
+    'High: جودة أفضل، بداية أبطأ\nLow: جودة أقل، بداية أسرع',
     'لتجربة أسرع، اختر صوت Low.',
   ],
   'de': [
     'Stimme wählen: Qualität oder Tempo',
-    'High: natürlicher → mehr Rechenaufwand → späterer Start\nLow: sofortiger Start → weniger Rechenaufwand → geringere Qualität',
+    'High: bessere Qualität, späterer Start\nLow: geringere Qualität, schnellerer Start',
     'Für ein schnelleres Erlebnis wähle eine Low-Stimme.',
   ],
   'es': [
     'Elegir una voz: calidad o velocidad',
-    'High: más natural → más procesamiento → inicio más lento\nLow: inicio inmediato → menos procesamiento → menor calidad',
+    'High: mejor calidad, inicio más lento\nLow: menor calidad, inicio más rápido',
     'Para una experiencia más rápida, elige una voz Low.',
   ],
   'fr': [
     'Choisir une voix : qualité ou rapidité',
-    'High : plus naturel → plus de calcul → démarrage plus lent\nLow : démarrage immédiat → moins de calcul → qualité moindre',
+    'High : meilleure qualité, démarrage plus lent\nLow : qualité moindre, démarrage plus rapide',
     'Pour une expérience plus rapide, choisissez une voix Low.',
   ],
 };
@@ -764,39 +764,14 @@ class _TtsPackRowState extends State<TtsPackRow> {
     );
   }
 
-  /// کادرِ راهنمای «کیفیت یا سرعت» بالای فهرستِ صداها
+  /// راهنمای کوتاهِ «کیفیت یا سرعت» بالای فهرستِ صداها (فقط متن، بدونِ کادر)
   Widget _tierNoteCard(BuildContext context) {
     final c = context.appColors;
     final n = _voiceTierNote(context);
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
-      decoration: BoxDecoration(
-        color: c.goldSoft,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: c.gold.withOpacity(0.35), width: 0.8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.speed_rounded, size: 16, color: c.gold),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(n[0],
-                    style: TextStyle(
-                        color: c.ink,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w800)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(n[1],
-              style: TextStyle(color: c.ink, fontSize: 11.5, height: 1.6)),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 2),
+      child: Text(n[1],
+          style: TextStyle(color: c.inkSoft, fontSize: 11.5, height: 1.5)),
     );
   }
 
