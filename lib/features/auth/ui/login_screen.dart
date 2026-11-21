@@ -165,26 +165,74 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  /// «ورود به All Ling One»: All و One سبزِ تیره، Ling زردِ خردلی/طلایی (با فاصله).
+  /// «ورود به All Ling One»: جمله‌ی کوچک و ملایم بالا، و نامِ برند به‌صورتِ لوگوتایپ:
+  /// All و One سبزِ تیره، Ling داخلِ کپسولِ سبزِ تیره با متنِ طلایی (کنتراستِ بالا).
   Widget _brandTitle(String full, TextStyle? base, bool dark) {
     const brand = 'AllLingOne';
     final i = full.indexOf(brand);
     if (i < 0) {
       return Text(full, style: base, textAlign: TextAlign.center);
     }
+    final prefix = full.substring(0, i).trim();
+    final suffix = full.substring(i + brand.length).trim();
     final green = dark ? const Color(0xFF6FCF97) : _kDarkGreen;
-    final gold = dark ? const Color(0xFFE6B422) : _kMustard;
-    return Text.rich(
-      TextSpan(style: base, children: [
-        TextSpan(text: full.substring(0, i)),
-        TextSpan(text: 'All', style: TextStyle(color: green)),
-        const TextSpan(text: ' '),
-        TextSpan(text: 'Ling', style: TextStyle(color: gold)),
-        const TextSpan(text: ' '),
-        TextSpan(text: 'One', style: TextStyle(color: green)),
-        TextSpan(text: full.substring(i + brand.length)),
-      ]),
-      textAlign: TextAlign.center,
+    final pill = dark ? const Color(0xFF14532D) : _kDarkGreen;
+    final gold = dark ? const Color(0xFFE6B422) : const Color(0xFFF2C94C);
+    final big = (base ?? const TextStyle()).copyWith(
+      fontSize: 30,
+      fontWeight: FontWeight.w900,
+      height: 1.1,
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (prefix.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              prefix,
+              textAlign: TextAlign.center,
+              style: base?.copyWith(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: base.color?.withOpacity(0.65),
+              ),
+            ),
+          ),
+        // لوگوتایپ همیشه LTR (حتی در فارسی/عربی)
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text('All', style: big.copyWith(color: green)),
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: pill,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text('Ling', style: big.copyWith(color: gold)),
+                ),
+                const SizedBox(width: 8),
+                Text('One', style: big.copyWith(color: green)),
+              ],
+            ),
+          ),
+        ),
+        if (suffix.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(suffix,
+                textAlign: TextAlign.center,
+                style: base?.copyWith(fontSize: 15)),
+          ),
+      ],
     );
   }
 
