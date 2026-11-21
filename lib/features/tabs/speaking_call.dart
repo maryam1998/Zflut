@@ -246,16 +246,31 @@ class PersonaVoice {
       final want = gender == 'male' ? 'M' : 'F';
       // برچسب مثلِ «Chloe · US · F · low» است؛ نشانِ F/M بینِ بخش‌ها می‌آید
       final re = RegExp(r'·\s*' + want + r'(\s*·|\s*$)');
-      Map? first;
+      // ⚡ سرعت: اول صدای low، اگر نبود medium، بعد بقیه (high و ...)؛
+      // بینِ صداهای هم‌رده، صدای فعالِ کاربر مقدم است.
+      int rank(Map e) {
+        final t = '${e['tier'] ?? ''}'.toLowerCase();
+        final l = '${e['label']}'.toLowerCase();
+        if (t == 'low' || (t.isEmpty && l.contains('· low'))) return 0;
+        if (t == 'medium' || (t.isEmpty && l.contains('· medium'))) return 1;
+        return 2;
+      }
+
+      Map? best;
+      var bestRank = 99;
       for (final e in raw) {
         if (e is! Map || e['downloaded'] != true || '${e['id']}'.isEmpty) {
           continue;
         }
         if (!re.hasMatch('${e['label']}')) continue;
-        if (e['active'] == true) return '${e['id']}';
-        first ??= e;
+        final r = rank(e);
+        if (r < bestRank ||
+            (r == bestRank && e['active'] == true && best?['active'] != true)) {
+          best = e;
+          bestRank = r;
+        }
       }
-      return first == null ? null : '${first['id']}';
+      return best == null ? null : '${best['id']}';
     } catch (_) {
       return null;
     }
