@@ -4015,42 +4015,49 @@ Now respond to: "$sentence"
     final langLabel = _enName(lang);
     final native = ref.read(languageSelectionProvider).native;
     final nativeLabel = _enName(native);
+    // ⚡ شیتِ راهنما فوراً باز می‌شود؛ درخواستِ AI (همان یک درخواستِ قبلی) هم‌زمان در پس‌زمینه
+    // اجرا می‌شود و فقط ۲ پیشنهاد می‌خواهد. null = در حالِ ساخت، [] = ناموفق.
+    final hintsN = ValueNotifier<List<List<String>>?>(null);
+    var sheetOpen = true;
     setState(() => _hintBusy = true);
-    List<List<String>> hints = [];
-    try {
-      final r = await _callAi(
-          '${_persona.partnerIntro(langLabel)}\n'
-          '${_userLevel == 'auto' ? '' : 'The suggested replies must match CEFR level $_userLevel (simple enough for a learner at that level to say).\n'}'
-          'The $langLabel learner (native language: $nativeLabel) is stuck and does '
-          'not know what to say next. Suggest 3 different short replies THEY could '
-          'say to you now in $langLabel: simple, natural, easy for a beginner, '
-          'each with a different intent (answer / ask back / react). If the '
-          'conversation has not started, suggest 3 ways to start it.\n'
-          'Output EXACTLY 3 lines, each in this format: '
-          '<$langLabel sentence> ||| <its $nativeLabel translation>\n'
-          'No numbering, no markdown, no extra text.\n'
-          'Recent conversation:\n${_ctx(_messages)}\n'
-          '${_hintLastLine()}',
-          260);
-      for (final line in _normalizeAiText(r).split('\n')) {
-        final parts = line.split('|||');
-        if (parts.length < 2) continue;
-        final a = parts[0].replaceAll(RegExp(r'^[\s\-*\d.)]+'), '').trim();
-        final b = parts.sublist(1).join(' ').trim();
-        if (a.isNotEmpty) hints.add([a, b]);
-        if (hints.length == 3) break;
+    unawaited(() async {
+      List<List<String>> hints = [];
+      try {
+        final r = await _callAi(
+            '${_persona.partnerIntro(langLabel)}\n'
+            '${_userLevel == 'auto' ? '' : 'The suggested replies must match CEFR level $_userLevel (simple enough for a learner at that level to say).\n'}'
+            'The $langLabel learner (native language: $nativeLabel) is stuck and does '
+            'not know what to say next. Suggest 2 different short replies THEY could '
+            'say to you now in $langLabel: simple, natural, easy for a beginner, '
+            'each with a different intent (answer / ask back / react). If the '
+            'conversation has not started, suggest 2 ways to start it.\n'
+            'Output EXACTLY 2 lines, each in this format: '
+            '<$langLabel sentence> ||| <its $nativeLabel translation>\n'
+            'No numbering, no markdown, no extra text.\n'
+            'Recent conversation:\n${_ctx(_messages)}\n'
+            '${_hintLastLine()}',
+            200);
+        for (final line in _normalizeAiText(r).split('\n')) {
+          final parts = line.split('|||');
+          if (parts.length < 2) continue;
+          final a = parts[0].replaceAll(RegExp(r'^[\s\-*\d.)]+'), '').trim();
+          final b = parts.sublist(1).join(' ').trim();
+          if (a.isNotEmpty) hints.add([a, b]);
+          if (hints.length == 2) break;
+        }
+      } catch (_) {
+        hints = [];
       }
-    } catch (_) {
-      hints = [];
-    }
+      hintsN.value = hints;
+      if (!mounted) return;
+      setState(() => _hintBusy = false);
+      if (hints.isEmpty && !sheetOpen) {
+        setState(() => _error = _faUi
+            ? 'پیشنهادی پیدا نشد؛ دوباره امتحان کن.'
+            : 'No suggestions this time. Try again.');
+      }
+    }());
     if (!mounted) return null;
-    setState(() => _hintBusy = false);
-    if (hints.isEmpty) {
-      setState(() => _error = _faUi
-          ? 'پیشنهادی پیدا نشد؛ دوباره امتحان کن.'
-          : 'No suggestions this time. Try again.');
-      return null;
-    }
     final c = context.appColors;
     final picked = await showModalBottomSheet<String>(
       context: context,
@@ -4076,7 +4083,50 @@ Now respond to: "$sentence"
                     color: c.ink, fontSize: 15, fontWeight: FontWeight.w800),
               ),
               SizedBox(height: forCall ? 6 : 10),
-              for (final h in hints)
+              ValueListenableBuilder<List<List<String>>?>(
+                valueListenable: hintsN,
+                builder: (_, hs, __) {
+                  if (hs == null) {
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: forCall ? 8 : 12),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: c.gold),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _faUi
+                                  ? 'در حال ساخت پیشنهادها…'
+                                  : 'Building suggestions…',
+                              style: TextStyle(
+                                  color: c.inkSoft, fontSize: 12.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  if (hs.isEmpty) {
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: forCall ? 8 : 12),
+                      child: Text(
+                        _faUi
+                            ? 'پیشنهادی پیدا نشد؛ دوباره امتحان کن یا خودت بنویس.'
+                            : 'No suggestions this time. Try again or type your own.',
+                        style: TextStyle(color: c.inkSoft, fontSize: 12.5),
+                      ),
+                    );
+                  }
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+              for (final h in hs)
                 Padding(
                   padding: EdgeInsets.only(bottom: forCall ? 5 : 8),
                   child: Material(
@@ -4122,6 +4172,10 @@ Now respond to: "$sentence"
                     ),
                   ),
                 ),
+                    ],
+                  );
+                },
+              ),
               // ✍️ متنِ دلخواهِ کاربر (به هر زبانی) → ترجمه به زبانِ تمرین → مثلِ جمله‌ی انتخابی
               _HintCustomInput(
                 c: c,
@@ -4135,6 +4189,7 @@ Now respond to: "$sentence"
         ),
       )),
     );
+    sheetOpen = false;
     if (picked == null || !mounted) return null;
     _hintPicked = picked.trim();
     if (forCall) return picked;
