@@ -105,11 +105,24 @@ class _ScenarioPracticeSectionState
       onRedial: _redial,
       onSwapRoles: _swapRoles,
       onChangeLang: _changeLang,
+      onPickPersona: _pickPersona, // ✎ روی اسمِ بالای ویدیو
       // 🎯 بعد از حرفِ AI جمله‌ی بعدیِ کاربر نشان داده می‌شود و ضبط خودکار شروع می‌شود
       autoHint: true,
       practiceMatchRatio: 0.7,
       nativeTr: _nativeTr,
     );
+  }
+
+  /// ✎ همان شیتِ انتخابِ شخصیت/اواتارِ تبِ Live. جواب‌ها از متنِ ذخیره‌شده می‌آیند، پس تماس
+  /// قطع و جمله‌ی جاری ریست نمی‌شود (کلیدِ پنل به شخصیت وابسته نیست؛ فقط اواتار/صدا عوض می‌شود).
+  Future<void> _pickPersona() async {
+    if (!mounted) return;
+    final ls = ref.read(localStorageProvider);
+    final picked = await showPersonaSheet(context, ls, _persona.id);
+    if (!mounted) return;
+    final p = PersonaStore.byId(ls, picked ?? _persona.id);
+    PersonaStore.setActive(ls, p.id);
+    setState(() => _persona = p);
   }
 
   /// زیرنویسِ زبانِ مادری = همان ترجمه‌ی «متنِ اصلیِ» مکالمه (خط‌به‌خط)، نه ترجمه‌ی دوباره‌ی

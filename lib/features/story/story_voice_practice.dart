@@ -686,6 +686,7 @@ class _StoryVoicePracticeState extends ConsumerState<StoryVoicePractice> {
           onRedial: _redial,
           onAiContinue: _continue,
           autoHint: true,
+          onPickPersona: _pickPersona, // ✎ روی اسمِ بالای ویدیو
           practiceMatchRatio: 0.7, // نه خیلی سخت‌گیر، نه خیلی شل
         ),
       ],

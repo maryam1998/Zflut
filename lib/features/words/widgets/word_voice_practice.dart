@@ -663,6 +663,7 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
           onHint: _hint,
           onRedial: _redial,
           autoHint: true,
+          onPickPersona: _pickPersona, // ✎ روی اسمِ بالای ویدیو
           listenLang: _listenLang,
           onCcChanged: _onCc,
         ),
