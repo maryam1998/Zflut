@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -53,6 +56,38 @@ class AuthRepository {
   Future<void> resetPassword(String email) =>
       _client.auth.resetPasswordForEmail(email);
 
+  bool _cleared = false; // قبلاً signOut شده → قبل از هر ورود دوباره لازم نیست
+
+  /// ⚡ پیش‌گرمایش: ساختنِ GoogleSignIn و پاک‌کردنِ حسابِ قبلی همان موقعِ باز شدنِ صفحه‌ی ورود،
+  /// تا لمسِ دکمه‌ی گوگل منتظرِ این کارها نماند.
+  Future<void> warmUp() async {
+    if (kIsWeb || _googleWebClientId.isEmpty || _cleared) return;
+    try {
+      await _google.signOut();
+      _cleared = true;
+    } catch (_) {}
+  }
+
+  /// خطای گذرای شبکه (اینترنت کند/قطع) که ارزشِ یک بار تلاشِ دوباره را دارد.
+  static bool _transient(Object e) {
+    if (e is PlatformException) return e.code == 'network_error';
+    if (e is TimeoutException) return true;
+    final t = e.runtimeType.toString();
+    if (t.contains('Retryable')) return true;
+    final m = '$e';
+    return m.contains('SocketException') || m.contains('ClientException');
+  }
+
+  static Future<T> _retry<T>(Future<T> Function() run) async {
+    try {
+      return await run();
+    } catch (e) {
+      if (!_transient(e)) rethrow;
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      return await run();
+    }
+  }
+
   /// ورود گوگل.
   /// • اندروید (وقتی GOOGLE_WEB_CLIENT_ID هست): ورودِ بومی با google_sign_in و تحویلِ idToken به Supabase؛
   ///   صفحه‌ی انتخابِ حسابِ گوگل اسمِ LingoLearn را نشان می‌دهد، نه آدرسِ supabase.co.
@@ -60,17 +95,23 @@ class AuthRepository {
   /// برمی‌گرداند false اگر کاربر انصراف داد.
   Future<bool> signInWithGoogle() async {
     if (!kIsWeb && _googleWebClientId.isNotEmpty) {
-      await _google.signOut().catchError((_) => null);   // همیشه انتخابِ حساب نشان بده
-      final account = await _google.signIn();
+      if (!_cleared) {
+        await _google.signOut().catchError((_) => null);  // انتخابِ حساب نشان داده شود
+        _cleared = true;
+      }
+      final account = await _retry(() => _google.signIn());
       if (account == null) return false;                  // انصراف
-      final auth = await account.authentication;
+      final auth = await _retry(() => account.authentication);
       final idToken = auth.idToken;
       if (idToken == null) throw 'Google did not return an ID token';
-      await _client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: auth.accessToken,
-      );
+      await _retry(() => _client.auth
+          .signInWithIdToken(
+            provider: OAuthProvider.google,
+            idToken: idToken,
+            accessToken: auth.accessToken,
+          )
+          .timeout(const Duration(seconds: 25)));
+      _cleared = false; // بعد از ورود، signOutِ برنامه دوباره حساب را پاک می‌کند
       return true;
     }
     return _client.auth.signInWithOAuth(

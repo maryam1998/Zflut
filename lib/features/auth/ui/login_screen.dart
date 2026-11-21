@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -27,8 +28,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isSignup = false;
   bool _showPass = false;
   bool _busy = false;
+  bool _googleBusy = false;
   String? _errorMsg;
   String? _infoMsg;
+
+  @override
+  void initState() {
+    super.initState();
+    // ⚡ گوگل را از قبل آماده کن تا بعد از لمسِ دکمه تأخیر نداشته باشد
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        try {
+          ref.read(authRepositoryProvider).warmUp();
+        } catch (_) {}
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -100,15 +115,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final L = context.l10n;
     setState(() {
       _busy = true;
+      _googleBusy = true;
       _errorMsg = null;
       _infoMsg = null;
     });
     try {
       await ref.read(authRepositoryProvider).signInWithGoogle();
     } catch (e) {
-      if (mounted) setState(() => _errorMsg = '${L.auth_google_failed}$e');
+      if (mounted) {
+        final fa = Localizations.localeOf(context).languageCode == 'fa';
+        final net = e is PlatformException && e.code == 'network_error';
+        setState(() => _errorMsg = net
+            ? (fa
+                ? 'اینترنت کند یا ناپایدار است؛ چند ثانیه بعد دوباره امتحان کن.'
+                : 'Slow or unstable connection. Please try again in a few seconds.')
+            : '${L.auth_google_failed}$e');
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _googleBusy = false;
+        });
+      }
     }
   }
 
@@ -209,8 +238,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Text('All', style: big.copyWith(color: green)),
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                  // دمِ حرفِ g پایین می‌زند؛ کمی بالاتر و با فضای بیشتر در پایین تا Ling وسطِ کپسول دیده شود
+                  padding: const EdgeInsets.fromLTRB(12, 2, 12, 8),
                   decoration: BoxDecoration(
                     color: pill,
                     borderRadius: BorderRadius.circular(14),
@@ -315,6 +344,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     _GoogleButton(
                       label: L.auth_continue_with_google,
                       onTap: _busy ? null : _google,
+                      loading: _googleBusy,
                     ),
                     const SizedBox(height: 18),
 
@@ -495,7 +525,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 class _GoogleButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
-  const _GoogleButton({required this.label, required this.onTap});
+  final bool loading;
+  const _GoogleButton(
+      {required this.label, required this.onTap, this.loading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -514,7 +546,14 @@ class _GoogleButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ShaderMask(
+                loading
+                    ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: c.ink),
+                      )
+                    : ShaderMask(
                   blendMode: BlendMode.srcIn,
                   shaderCallback: (r) => const SweepGradient(
                     center: Alignment(0.0, 0.05),
