@@ -2431,7 +2431,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   bool _langBusy = false; // 🌐 در حال انتخاب/آماده‌سازیِ زبانِ جدید (تماس برقرار می‌ماند)
   int _swapGen = 0; // هر بار «جابجایی نقش» زده شود زیاد می‌شود (نتیجه‌ی تشخیصِ گفتارِ قدیمی دور ریخته شود)
   DateTime _thinkAt = DateTime.now(); // شروعِ «در حال فکر کردن» (برای پیامِ اتصال)
-  bool _cc = false; // زیرنویس (CC) — پیش‌فرض خاموش
+  bool _cc = true; // زیرنویس (CC) — پیش‌فرض روشن (کاربر می‌تواند خاموش کند)
   bool _endCc = false; // صفحه‌ی «تماس پایان یافت»: ترجمه‌ی جمله‌های آخر
   final Map<String, String> _trCache = {}; // متن → ترجمه به زبانِ مادری
   final List<_CcEntry> _hist = []; // تاریخچه‌ی زیرنویس
@@ -2443,7 +2443,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
 
   bool _handsFree = true;
   // 🎯 چک کردنِ تلفظ با STT (فقط حالتِ تمرین). خاموش = بدونِ چک، مکالمه پشتِ سرهم ادامه دارد.
-  bool _checkPron = true;
+  bool _checkPron = false; // پیش‌فرض خاموش (کاربر می‌تواند روشن کند)
   bool _muted = false;
   bool _showTyping = false;
 
@@ -2483,6 +2483,12 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     WidgetsBinding.instance.addObserver(this);
     _neutralizeRepeat();
     _showTyping = !_sttSupported;
+    // CC پیش‌فرض روشن است؛ میزبان (مثلاً تمرینِ لغات) هم باید خبردار شود
+    if (_cc && widget.onCcChanged != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onCcChanged?.call(true);
+      });
+    }
     _clock = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && _phase != _Phase.ringing) setState(() => _secs++);
     });
