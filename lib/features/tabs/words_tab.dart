@@ -22,8 +22,8 @@ import '../words/widgets/word_list_view.dart';
 /// (غذا، سفر، سلامت، ...) دسته‌بندی می‌شوند؛ لغت، عبارت و اسلنگ هرکدام داخلِ
 /// موضوعِ خودشان قرار می‌گیرند (ردیفِ جداگانه‌ای برای نوع نیست).
 ///
-/// 💎 نسخه‌ی رایگان: در کلِ تب فقط [kFreeDictionaryWords] لغت باز است (از بینِ موضوع‌ها
-/// پخش شده)؛ بقیه قفل‌اند ولی شمارِ کل/قفلِ هر موضوع و سطح به کاربر نشان داده می‌شود.
+/// 💎 نسخه‌ی رایگان: فقط [kFreeWordsPerGroup] لغت از هر دسته‌ی رایگان (food و home) باز است؛
+/// بقیه قفل‌اند ولی شمارِ کل/قفلِ هر موضوع و سطح به کاربر نشان داده می‌شود.
 class WordsTab extends ConsumerWidget {
   const WordsTab({super.key});
 
@@ -183,9 +183,8 @@ List<CategoryItem> _dictItems({
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// 💎 انتخابِ ۲۰ لغتِ رایگان
-// از هر موضوع به‌نوبت یکی (ساده‌ترین‌ها ــ A1 ــ اول)، تا همه‌ی موضوع‌ها یک نمونه داشته
-// باشند. فقط به لغاتِ «بدونِ فیلتر» وابسته است، پس با عوض‌کردنِ سطح/جستجو/موضوع
+// 💎 انتخابِ لغاتِ رایگان
+// ده لغتِ اول (ساده‌ترین‌ها ــ A1 ــ اول) از هر یک از دسته‌های رایگان (food و home). فقط به لغاتِ «بدونِ فیلتر» وابسته است، پس با عوض‌کردنِ سطح/جستجو/موضوع
 // لغاتِ رایگان عوض نمی‌شوند (راهِ دورزدنِ سقف نیست).
 // ═══════════════════════════════════════════════════════════════════
 
@@ -227,19 +226,15 @@ final _freeDictionaryProvider = Provider<List<DailyWord>>((ref) {
   ]..sort();
   final order = <String>[...known, ...extra];
 
+  // 💎 فقط دسته‌های رایگان (food و home)، و از هرکدام [kFreeWordsPerGroup] لغت
   final picked = <String>{};
-  var round = 0;
-  while (picked.length < kFreeDictionaryWords) {
-    var added = false;
-    for (final k in order) {
-      final g = groups[k];
-      if (g == null || round >= g.length) continue;
-      picked.add(g[round].sid);
-      added = true;
-      if (picked.length >= kFreeDictionaryWords) break;
+  for (final k in order) {
+    if (!kFreeWordGroups.contains(k)) continue;
+    final g = groups[k];
+    if (g == null) continue;
+    for (final w in g.take(kFreeWordsPerGroup)) {
+      picked.add(w.sid);
     }
-    if (!added) break;
-    round++;
   }
   // ترتیبِ اصلیِ لیست حفظ می‌شود
   return [

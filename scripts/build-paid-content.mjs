@@ -5,7 +5,7 @@
 //
 //   node scripts/build-paid-content.mjs --assets
 //       ← نسخه‌ی رایگان را در assets/data/ می‌نویسد:
-//         • لغات: ده لغتِ اولِ «هر دسته» (دیکشنری: هر موضوع، Slang: هر دسته، Vocab in use: هر موضوعِ اصلی)
+//         • لغات: ده لغتِ اولِ دو دسته‌ی food و home (در دیکشنری، Slang و Vocab in use)؛ بقیه‌ی دسته‌ها پولی
 //         • assets/data/words_index.json: شمارِ کلِ لغاتِ هر دسته به‌تفکیکِ سطح (برای نمایشِ «قفل‌شده‌ها» به کاربرِ رایگان)
 //         • دو موضوعِ مکالمه با جمله‌های A1
 //   node scripts/build-paid-content.mjs --sql content_seed
@@ -17,7 +17,10 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 
-const FREE_PER_GROUP = 10; // 💎 تعدادِ لغتِ رایگان در هر دسته (باید با kFreeWordsPerGroup در pro_status.dart یکی باشد)
+const FREE_PER_GROUP = 10; // 💎 تعدادِ لغتِ رایگان در هر دسته‌ی رایگان (باید با kFreeWordsPerGroup در pro_status.dart یکی باشد)
+// 💎 فقط این دو دسته (Food & drink و Home & daily life) لغتِ رایگان دارند؛ بقیه‌ی دسته‌ها — در دیکشنری، Slang و Vocab in use — کاملاً پولی‌اند.
+// (باید با kFreeWordGroups در pro_status.dart یکی باشد)
+const FREE_GROUPS = ["food", "home"];
 const FREE_TOPICS = ["Greetings and Small Talk", "Introducing People"];
 const FREE_LEVEL = "A1";
 
@@ -241,12 +244,12 @@ function prepareList(list, tools) {
     w.__g = groupOf(w);
     if (list === "daily") w.category = w.__g; // اپ موضوعِ لغاتِ روزمره را از همین می‌خواند
   }
-  // ده لغتِ اولِ هر گروه (به ترتیبِ فایل) رایگان است
+  // ده لغتِ اولِ هر «گروهِ رایگان» (food و home؛ به ترتیبِ فایل) رایگان است؛ گروه‌های دیگر هیچ لغتِ رایگانی ندارند
   const taken = new Map();
   for (const w of words) {
     const n = taken.get(w.__g) ?? 0;
     // لغاتِ افزوده‌شده با scripts/add-words.mjs (id ≥ 500000) هرگز رایگان نمی‌شوند
-    w.__free = n < FREE_PER_GROUP && !(Number(w.id) >= 500000);
+    w.__free = FREE_GROUPS.includes(w.__g) && n < FREE_PER_GROUP && !(Number(w.id) >= 500000);
     if (w.__free) taken.set(w.__g, n + 1);
   }
   return words;
