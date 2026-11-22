@@ -16,6 +16,10 @@ class BundledTranslations {
   static const String _asset = 'assets/data/free_translations.json';
   static Map<String, Map<String, String>> _m = {};
   static Future<void>? _loading;
+  static bool _loaded = false;
+
+  /// بعد از پایانِ بارگذاری (حتی اگر فایل نبود) true می‌شود.
+  static bool get isLoaded => _loaded;
 
   static String _norm(String s) {
     var t = s
@@ -48,6 +52,8 @@ class BundledTranslations {
       _m = m;
     } catch (_) {
       _m = {}; // نبودنِ فایل فقط یعنی «ترجمه‌ی آماده‌ای نیست»
+    } finally {
+      _loaded = true;
     }
   }
 

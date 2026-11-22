@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import '../auth/worker_auth.dart';
 import '../native/native_bridge.dart';
 import '../storage/translation_cache_db.dart';
+import 'bundled_translations.dart';
 import 'shared_translations.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -512,6 +513,10 @@ class TranslationService {
     if (pin != null) return pin;
     final hard = _hardcodedFarewell(text, from, to);
     if (hard != null) return hard;
+    // 📦 ترجمه‌ی آماده‌ی داخلِ اپ (فقط محتوای رایگان)
+    unawaited(BundledTranslations.ensureLoaded());
+    final bundled = BundledTranslations.get(text, from, to);
+    if (bundled != null) return bundled;
     final v = _db.peek(_cacheKey(text, from, to));
     if (v == null || v.isEmpty) return null;
     _markCognate(text, v, to, from, strict: false);
@@ -607,6 +612,11 @@ class TranslationService {
 
     final hardFarewell = _hardcodedFarewell(text, sourceLang, targetLang);
     if (hardFarewell != null) return hardFarewell;
+
+    // 📦 ترجمه‌ی آماده‌ی داخلِ اپ (فقط محتوای رایگان): بدون کش، شبکه و AI
+    await BundledTranslations.ensureLoaded();
+    final bundled = BundledTranslations.get(text, sourceLang, targetLang);
+    if (bundled != null) return bundled;
 
     // ۱. کش — با چکِ کیفیت؛ کشِ مشکوک نادیده گرفته می‌شود
     final cached = await _cacheGet(text, sourceLang, targetLang);

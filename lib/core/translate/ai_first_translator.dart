@@ -232,7 +232,7 @@ class AiFirstTranslator {
         return (text: pin.trim(), isFinal: true);
       }
     }
-    // 📦 ترجمه‌ی آماده‌ی داخلِ اپ (محتوای رایگان) — بدونِ شبکه و AI
+    // 📦 ترجمه‌ی آماده‌ی داخلِ اپ (محتوای رایگان) — نهایی؛ بدونِ D1 و AI
     final bundled = BundledTranslations.get(text, from, to);
     if (bundled != null && bundled.trim().isNotEmpty) {
       return (text: bundled.trim(), isFinal: true);
