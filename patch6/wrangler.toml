@@ -1,0 +1,156 @@
+name = "phrasebook-api"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# Non-secret config (visible in the dashboard, fine to keep here).
+# ⚠️ نکته‌ی مهم: هر بار `wrangler deploy` اجرا بشه (چه دستی، چه از طریقِ
+# ورک‌فلوی گیت‌هاب‌اکشنز)، همینجا (نه هرچی دستی توی داشبوردِ Cloudflare
+# گذاشته باشی) منبعِ حقیقت می‌شه — یعنی اگه بعداً بخوای ترتیب/لیستِ
+# پرووایدرها رو عوض کنی، باید همینجا (نه فقط توی داشبورد) عوضش کنی، وگرنه
+# دفعه‌ی بعد که پوش کنی، دوباره برمی‌گرده به همین مقدار.
+#
+# ترتیب زیر: اول سه‌تایی که اصلاً کلید نمی‌خوان (kilocode، llm7،
+# ovhcloud) — این‌ها همیشه یه شانسِ رایگان و بی‌نیاز از تنظیمات می‌دن.
+# بعدش پرووایدرهایی با سقفِ رایگانِ سخاوتمندتر، و آخرِ صف هرکدوم که یا
+# کلید ندارن یا طبقِ تجربه مشکل‌دار بودن (gemini/huggingface). هر
+# پرووایدری که کلیدش (پایین‌تر، به‌صورتِ secret) ست نشده باشه، خودکار رد
+# می‌شه و زنجیره می‌ره سراغِ بعدی — پس عیبی نداره اگه فعلاً کلیدِ همه‌شون
+# رو نداری.
+[vars]
+AI_PROVIDER = "groq,gemini,cerebras,mistral,nvidianim,cloudflareai,ollamacloud,ovhcloud,llm7,openrouter,siliconflow,zai,cohere,aionlabs,modelscope,grok,avalai,deepseek,openai,huggingface,kilocode"
+# 🎚️ مسیریابیِ هزینه: AI_PROVIDER بالا = زنجیره‌ی «سبک/ارزان» برای همه‌ی کارهای ساده
+# (چت، تصحیح، سؤال شروع، گرامر، ترجمه). فقط «داستان» از زنجیره‌ی زیر استفاده می‌کند
+# (ترتیبِ پیشنهادی؛ بر اساسِ کلیدهایی که واقعاً داری و هزینه‌ی واقعی تنظیمش کن).
+# برای زنجیره‌ی جدا برای کارهای ساده هم می‌توانی AI_PROVIDER_LIGHT را ست کنی.
+# ⚡ ویدیو کال: مدل‌های کوچک و سریع اول (Cerebras=llama3.1-8b، Mistral-small، SiliconFlow=Qwen3-8B،
+# LLM7=gpt-oss:20b)؛ اگر همه خطا دادند، Groq/Gemini به‌عنوان پشتیبان تا مکالمه قطع نشود.
+AI_PROVIDER_CALL = "cerebras,mistral,siliconflow,llm7,groq,gemini"
+AI_PROVIDER_STRONG = "gemini,mistral,nvidianim,groq,cerebras,openrouter,cloudflareai,ollamacloud,zai,cohere,grok,deepseek,openai,avalai,siliconflow,ovhcloud,llm7,aionlabs,modelscope,huggingface,kilocode"
+GEMINI_MODEL = "gemini-3.6-flash"
+# 🧠 ترجمه (/api/translate-text: لغات و مکالماتِ Pro، کش سراسری D1) با مدل‌های قوی‌تر.
+# اگر هیچ AI جواب نداد، Worker خطای 502 می‌دهد و خودِ اپ بی‌صدا می‌رود سراغ ML Kit / سرویس آنلاین.
+# (برای برگشت به قبل: این سه خط را پاک کن.) مدل‌های دیگر: <NAME>_MODEL_TRANSLATE
+AI_PROVIDER_TRANSLATE = "gemini,mistral,nvidianim,openrouter,deepseek,openai,grok,cohere,zai,groq,cerebras,cloudflareai,ollamacloud,siliconflow,ovhcloud,llm7,aionlabs,modelscope,avalai,huggingface,kilocode"
+GEMINI_MODEL_TRANSLATE = "gemini-2.5-pro"
+MISTRAL_MODEL_TRANSLATE = "mistral-large-latest"
+HF_MODEL = "openai/gpt-oss-120b"
+
+# 🔐 احراز هویت: "on" = فقط اپِ لاگین‌شده؛ "log" = فقط لاگ (برای مرحله‌ی انتقال)؛ "off" = قدیمی
+# Secrets لازم:  wrangler secret put SESSION_SECRET / SUPABASE_URL / SUPABASE_ANON_KEY
+AUTH_MODE = "on"
+LIMIT_AI = "600"      # ترجمه/زیرنویس/تشخیص گفتار — در روزِ هر کاربر
+LIMIT_TTS = "4000"    # صدای آنلاین
+LIMIT_MISC = "3000"
+MAX_PROMPT_CHARS = "30000"  # حداکثر طولِ prompt در /api/generate (هزینه‌ی توکنِ ورودی)
+# 🔖 نسخه‌ی مدل/پرامپتِ ترجمه: "1" = کش‌های فعلی معتبر. مدل/پرامپت عوض شد و خواستی همه دوباره ترجمه شوند → "2" و deploy.
+TR_MODEL_VERSION = "1"
+LIMIT_TRANSLATE = "4000"   # ترجمه‌ی لمسی (/api/translate-text) — شاملِ کش‌ها؛ هزینه‌ی AI با DAILY_TRANSLATE کنترل می‌شود
+
+# 💎 نسخه‌ی رایگان: سقفِ «کل عمر» برای هر بخش (مثال‌ساز، گرامر، چت، ویدیوکال، داستان، ترجمه‌ی زنده، ذره‌بین، ترجمه‌ی یوتیوب)
+FREE_LIMIT = "2"
+# 🔭 ترجمه‌ی زنده و ذره‌بین: فقط ۲ بارِ «کل عمر» برای تست؛ بعدش Pro (مستقل از FREE_LIMIT)
+FREE_LIMIT_LIVE = "2"
+FREE_LIMIT_MAGNIFIER = "2"
+# 📥 ایمپورتِ تبِ داستان‌ساز (PDF / عکس / SRT / لینک / متن): ۲ بارِ «کل عمر»؛ بارِ سوم → Pro
+FREE_LIMIT_IMPORT = "2"
+# 🔒 داستان‌ساز، گرامر، مثال‌ساز و چتِ AI: برای رایگان کاملاً بسته (۰ = هیچ AIـای)؛ در اپ فقط دموی ثابت دیده می‌شود. فقط Pro.
+FREE_LIMIT_STORY = "0"
+FREE_LIMIT_GRAMMAR = "0"
+FREE_LIMIT_EXAMPLE = "0"
+FREE_LIMIT_CHAT = "0"
+# ▶️ ترجمه‌ی یوتیوب: رایگان فقط ۱ ویدیو در «کل عمر» (یک نشست = ۶۰ دقیقه فعالیتِ پشت‌سرهم)
+FREE_LIMIT_YTSUB = "1"
+# 🧩 مثال‌سازِ مشترک: حداکثر چند مثال برای هر لغت در D1 ذخیره شود (بعدش دیگر AI صدا زده نمی‌شود)
+EXAMPLE_POOL_MAX = "8"
+# 📞 تماس صوتی/تصویری رایگان: FREE_LIMIT_VIDEOCALL جلسه در «کل عمر» (نه روزانه)، هر جلسه حداکثر FREE_CALL_SECONDS ثانیه (سمتِ سرور).
+#    بعد از تمام‌شدنِ جلسه یا سقف، اتصالِ دوباره ۴۰۲ می‌گیرد — حتی بعد از ۳۰ دقیقه یا فردا.
+FREE_LIMIT_VIDEOCALL = "0"  # 🔒 ویدیو/تماسِ AI: برای رایگان کاملاً بسته (فقط Pro)
+FREE_CALL_SECONDS = "180"
+# 💬 سقفِ اصلیِ تماسِ رایگان: ۶ جمله‌ی مجموع (کاربر + AI) = ۳ نوبت؛ هر کدام زودتر برسد (۶ جمله یا ۱۸۰ ثانیه) تماس تمام می‌شود.
+FREE_CALL_SENTENCES = "6"
+
+# 📅 سقفِ روزانه‌ی هر بخش (سمتِ سرور/D1) — فقط برای کاربرانِ «رایگان». عدد = تعداد «استفاده» در روز؛ حذف یا ۰ = بدونِ سقف.
+# Pro/VIP سقفِ روزانه‌ی هر بخش ندارند؛ فقط سقفِ کلی (LIMIT_AI=600 / LIMIT_TTS=4000 / LIMIT_MISC=3000) رویشان اعمال می‌شود.
+# اگر خواستی این سقف‌ها برای Pro/VIP هم باشد:  DAILY_APPLY_TO_PRO = "1"
+# (چت/تماس/یوتیوب هر نشستِ ۳۰/۳۰/۶۰ دقیقه‌ای یک استفاده حساب می‌شود). پیش‌فرض‌ها را بعد از دیدنِ آمارِ واقعی تنظیم کن.
+# --- Free tier daily limits ---
+# (حذف شد: DAILY_EXAMPLE / DAILY_GRAMMAR / DAILY_STORY / DAILY_CHAT / DAILY_YTSUB — این بخش‌ها یا کلاً Pro‌اند یا سقفِ کل‌عمر دارند)
+DAILY_VIDEOCALL = "10"
+# 🌐 ترجمه و درخواست‌های بدونِ بخش — برای همه‌ی کاربران (حتی Pro/VIP)، و فقط «کش‌نشده‌ها» (واقعاً AI) حساب می‌شوند؛
+#    ترجمه‌ی کش‌شده (حافظه‌ی گوشی/کشِ مشترکِ D1) هیچ سهمیه‌ای مصرف نمی‌کند. ۰ = بدونِ سقف.
+DAILY_TRANSLATE = "150"
+# 💎 سقفِ روزانه‌ی اختصاصیِ Pro/VIP برای یک بخش (جدا از DAILY_APPLY_TO_PRO؛ فقط همان بخش). حذف یا ۰ = بدونِ سقف.
+#    داستان‌ساز: حتی Pro هم روزی حداکثر ۶ داستان. (شمارش روی /api/generate با X-Feature: story؛ retryِ همان استفاده رایگان است)
+PRO_DAILY_STORY = "6"
+# ⏱️ ویدیوکالِ Pro/VIP: حداکثر دقیقه در روز (UTC). ۰ یا حذف = بدونِ سقف.
+PRO_CALL_MINUTES = "60"
+
+# ⚖️ مدیریتِ بار (src/load.js) — ۰ = خاموش
+#   همزمانیِ هر کاربرِ Pro: حداکثر PRO_MAX_CONCURRENT درخواستِ AI هم‌زمان؛ بیشتر → صفِ FIFO؛ صف > PRO_QUEUE_MAX یا
+#   انتظار > PRO_QUEUE_WAIT_MS → ۴۲۹ «الان شلوغه، چند لحظه دیگه».
+PRO_MAX_CONCURRENT = "2"
+PRO_QUEUE_MAX = "10"
+PRO_QUEUE_WAIT_MS = "60000"
+#   سقفِ سراسریِ روزانه (همه‌ی کاربران، حتی Pro) — فقط درخواست‌هایی که واقعاً به AI/Whisper می‌رسند (نه کش/استخر).
+#   پر شد → فقط از کش و استخر جواب داده می‌شود. شمارنده در D1 (جدول global_daily) و هر روز (UTC) صفر می‌شود.
+GLOBAL_DAILY_AI = "5000"
+# 👤 سقفِ روزانه‌ی هر کاربر (UTC) روی درخواست‌هایی که واقعاً به AI می‌رسند — علاوه بر سقفِ سراسریِ بالا.
+#   پر شد → ۵۰۳ با پیامِ «AI موقتاً در دسترس نیست» (عمداً بدونِ ذکرِ سقف). ۰ = خاموش.
+USER_DAILY_AI = "50"
+PRO_USER_DAILY_AI = "300"
+GLOBAL_DAILY_WHISPER = "3000"
+# سقفِ اختصاصیِ یک بخش (اختیاری):  FREE_LIMIT_STORY = "3"
+# 📊 گزارشِ مصرفِ AI (اختیاری) — پنل: https://<worker>/admin/usage-report?key=<ADMIN_KEY>
+#   ADMIN_KEY را secret بگذار:  npx wrangler secret put ADMIN_KEY
+#   تعرفه (دلار برای هر ۱M توکن [ورودی, خروجی]) و آستانه‌ی هشدار؛ بدونِ تعرفه هزینه ۰ ثبت می‌شود:
+AI_PRICING = '{"gemini":[0.30,2.50],"deepseek":[0.28,0.42],"default":[0,0]}'
+AI_ALERT_COST_USD = "0.50"
+AI_ALERT_CALLS = "400"
+
+# 👑 جیمیل‌هایی که همیشه Pro (بدونِ محدودیت) هستند؛ با ویرگول جدا کن. (نقطه و +‌ی جیمیل نادیده گرفته می‌شود)
+# 🔒 جلوگیری از اشتراکِ اکانت — ترتیبِ انتشار: log → (اپ) → on → بعد از ۱۴ روز DEVICE_ALLOW_LEGACY = "off"
+DEVICE_MODE = "log"
+DEVICE_ALLOW_LEGACY = "on"
+DEVICE_LIMIT_FREE = "1"
+DEVICE_LIMIT_PRO = "1"
+
+# VIP_EMAILS عمداً اینجا نیست (ایمیل خصوصی است) — به‌صورت Secret در Cloudflare تنظیم می‌شود:
+#   npx wrangler secret put VIP_EMAILS
+
+# ⭐ NEW: Cloudflare Workers AI binding — برای تبدیلِ صدا به متن با Whisper
+# (@cf/openai/whisper-large-v3-turbo). رایگان: ۱۰٬۰۰۰ نورون در روز.
+# 🧹 پاک‌سازیِ هفتگیِ کش (ردیف‌های قدیمی‌تر از ۳ سال) — یکشنبه ۰۳:۰۰ UTC (Cloudflare روزِ هفته را با ۱–۷ یا SUN–SAT می‌خواهد؛ ۰ نامعتبر است)
+[triggers]
+crons = ["0 3 * * SUN"]
+
+[ai]
+binding = "AI"
+
+# API keys are NOT set here — set them as secrets instead (see README.md
+# and DEPLOY.md), so they never end up in git or the dashboard's
+# plain-text vars. Set each one you actually have with:
+#   npx wrangler secret put GROQ_API_KEY
+#   npx wrangler secret put MISTRAL_API_KEY
+#   npx wrangler secret put OPENROUTER_API_KEY
+#   npx wrangler secret put GEMINI_API_KEY
+#   npx wrangler secret put HF_API_KEY
+#   npx wrangler secret put CEREBRAS_API_KEY
+#   npx wrangler secret put GROK_API_KEY
+#   npx wrangler secret put AIONLABS_API_KEY
+#   npx wrangler secret put COHERE_API_KEY
+#   npx wrangler secret put ZAI_API_KEY
+#   npx wrangler secret put CF_API_TOKEN
+#   npx wrangler secret put CF_ACCOUNT_ID
+#   npx wrangler secret put MODELSCOPE_API_KEY
+#   npx wrangler secret put NVIDIA_API_KEY
+#   npx wrangler secret put OLLAMA_API_KEY
+#   npx wrangler secret put SILICONFLOW_API_KEY
+# (kilocode/llm7/ovhcloud need no key at all — skip those three.)
+# Secrets set this way persist across deploys; `wrangler deploy` never
+# touches or clears them.
+
+# ⭐ D1 — کشِ مشترکِ ترجمه (binding باید دقیقاً TR_DB باشد)
+[[d1_databases]]
+binding = "TR_DB"
+database_name = "phrasebook-tr-cache"
+database_id = "2c917ede-0b23-492a-9833-9b35400c56c3"
