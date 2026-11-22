@@ -19,6 +19,23 @@ const CORS_HEADERS = {
 };
 
 export default {
+  // 🧹 پاک‌سازیِ هفتگیِ کش (cron در wrangler.toml): فقط ردیف‌های قدیمی‌تر از ۳ سال؛ ترجمه‌های اصلاح‌شده‌ی کاربرها (provider='user') هیچ‌وقت پاک نمی‌شوند.
+  async scheduled(event, env, ctx) {
+    if (!env.TR_DB) return;
+    ctx.waitUntil(
+      (async () => {
+        try {
+          await genCacheInit(env);
+          await env.TR_DB.prepare("DELETE FROM gen_cache WHERE created < ?1 AND (provider IS NULL OR provider != 'user')")
+            .bind(Date.now() - GEN_CACHE_PURGE_MS)
+            .run();
+        } catch (e) {
+          console.error("[gen_cache purge]", e && e.message);
+        }
+      })()
+    );
+  },
+
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
@@ -169,7 +186,7 @@ export default {
 
     // 🗄️ کشِ مشترکِ ترجمه‌های اصلاح‌شده (↻ کاربرها) — بدونِ AI، فقط D1
     if (url.pathname === "/api/tr-share" && request.method === "POST") {
-      return handleTrShare(request, env, ctx, CORS_HEADERS, { genCacheKey, genCacheGet, genCachePut });
+      return handleTrShare(request, env, ctx, CORS_HEADERS, { genCacheKey, genCacheGet, genCachePut, trCacheKey });
     }
 
     if (url.pathname === "/api/generate" && request.method === "POST") {
@@ -292,7 +309,7 @@ async function handleTranslateText(request, env, ctx) {
   if (!TT_LANGS[target]) return json({ error: "unsupported target language" }, 400);
   if (source !== "auto" && !TT_LANGS[source]) return json({ error: "unsupported source language" }, 400);
 
-  const cacheKey = await genCacheKey(`translate-text|${source}|${target}|${text}`, 0);
+  const cacheKey = await trCacheKey(env, source, target, text);
   const hit = await genCacheGet(env, cacheKey);
   if (hit) {
     ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
@@ -337,7 +354,17 @@ async function handleTranslateText(request, env, ctx) {
 
 // --- کشِ مشترکِ D1 برای /api/generate (مثال‌ساز و ...) ---------------------
 // اگر binding با نام TR_DB تنظیم نشده باشد، همه‌ی این توابع بی‌صدا هیچ‌کاری نمی‌کنند.
-const GEN_CACHE_TTL_MS = 180 * 24 * 60 * 60 * 1000; // ۱۸۰ روز
+// ⏳ دیگر TTLِ زمانی روی «خواندن» نیست: ترجمه تا وقتی متن همان است (کلیدِ هشِ متن) معتبر می‌ماند.
+// این عدد فقط برای پاک‌سازیِ ردیف‌های یتیم (cron هفتگی، scheduled پایین) است.
+const GEN_CACHE_PURGE_MS = 3 * 365 * 24 * 60 * 60 * 1000; // ۳ سال
+
+// 🔖 نسخه‌ی مدل/پرامپتِ ترجمه (env.TR_MODEL_VERSION). "1" = کلیدِ قدیمی (ردیف‌های فعلیِ D1 معتبر می‌مانند)؛
+// هر مقدارِ دیگر (مثلاً "2") کلیدِ همه‌ی ترجمه‌ها را عوض می‌کند → همه دوباره از AI گرفته می‌شوند.
+async function trCacheKey(env, source, target, text) {
+  const mv = String((env && env.TR_MODEL_VERSION) || "1").trim() || "1";
+  const base = `translate-text|${source}|${target}|${text}`;
+  return genCacheKey(mv === "1" ? base : `mv${mv}|${base}`, 0);
+}
 let genCacheReady = false;
 
 async function genCacheKey(prompt, capped) {
@@ -359,8 +386,8 @@ async function genCacheGet(env, key) {
   try {
     await genCacheInit(env);
     const row = await env.TR_DB.prepare("SELECT v, created, provider FROM gen_cache WHERE k = ?1").bind(key).first();
-    // ✅ ترجمه‌ی اصلاح‌شده‌ی کاربرها (provider = "user") هیچ‌وقت منقضی نمی‌شود؛ بقیه بعد از ۱۸۰ روز
-    if (!row || (row.provider !== "user" && Date.now() - row.created > GEN_CACHE_TTL_MS)) return null;
+    // ✅ بدونِ انقضای زمانی: کلید = هشِ متن (+ نسخه‌ی مدل)، پس متنِ عوض‌شده خودبه‌خود miss می‌شود
+    if (!row) return null;
     return row.v;
   } catch {
     return null;
@@ -690,7 +717,7 @@ async function translateSubtitleChunk(body, env, ctx, gateFn) {
   let d1Key = null;
   if (env.TR_DB) {
     try {
-      d1Key = await genCacheKey(`sub-tr|${JSON.stringify([srcName, tgtName, tone, subs])}`, 0);
+      d1Key = await genCacheKey(`sub-tr|${String(env.TR_MODEL_VERSION || "1") === "1" ? "" : "mv" + env.TR_MODEL_VERSION + "|"}${JSON.stringify([srcName, tgtName, tone, subs])}`, 0);
       const raw = await genCacheGet(env, d1Key);
       if (raw) {
         const arr0 = JSON.parse(raw);

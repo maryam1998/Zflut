@@ -36,6 +36,8 @@ LIMIT_AI = "600"      # ترجمه/زیرنویس/تشخیص گفتار — در
 LIMIT_TTS = "4000"    # صدای آنلاین
 LIMIT_MISC = "3000"
 MAX_PROMPT_CHARS = "30000"  # حداکثر طولِ prompt در /api/generate (هزینه‌ی توکنِ ورودی)
+# 🔖 نسخه‌ی مدل/پرامپتِ ترجمه: "1" = کش‌های فعلی معتبر. مدل/پرامپت عوض شد و خواستی همه دوباره ترجمه شوند → "2" و deploy.
+TR_MODEL_VERSION = "1"
 LIMIT_TRANSLATE = "4000"   # ترجمه‌ی لمسی (/api/translate-text) — شاملِ کش‌ها؛ هزینه‌ی AI با DAILY_TRANSLATE کنترل می‌شود
 
 # 💎 نسخه‌ی رایگان: سقفِ «کل عمر» برای هر بخش (مثال‌ساز، گرامر، چت، ویدیوکال، داستان، ترجمه‌ی زنده، ذره‌بین، ترجمه‌ی یوتیوب)
@@ -104,6 +106,10 @@ VIP_EMAILS = "maryam.s.sharifiyan@gmail.com"
 
 # ⭐ NEW: Cloudflare Workers AI binding — برای تبدیلِ صدا به متن با Whisper
 # (@cf/openai/whisper-large-v3-turbo). رایگان: ۱۰٬۰۰۰ نورون در روز.
+# 🧹 پاک‌سازیِ هفتگیِ کش (ردیف‌های قدیمی‌تر از ۳ سال) — یکشنبه ۰۳:۰۰ UTC
+[triggers]
+crons = ["0 3 * * 0"]
+
 [ai]
 binding = "AI"
 

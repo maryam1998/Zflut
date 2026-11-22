@@ -12,20 +12,19 @@ const MAX_TEXT = 300;      // مثلِ سقفِ /api/translate-text: متنِ ب
 const MAX_TRANSLATION = 1200;
 const MAX_BATCH = 40;
 
-// ⏳ مثلِ GEN_CACHE_TTL_MS در index.js؛ ردیف‌های provider="user" هیچ‌وقت منقضی نمی‌شوند.
-const TTL_MS = 180 * 24 * 60 * 60 * 1000;
+// ⏳ بدونِ TTLِ زمانی؛ فقط پاک‌سازیِ ۳ ساله (scheduled در index.js). کلید = هشِ متن + TR_MODEL_VERSION.
 
 // یک کوئریِ SQL برای کلِ دسته (به‌جای یک کوئری برای هر مورد — سقفِ D1 رایگان ۵۰ کوئری در هر درخواست است).
 // اگر برای زبانِ مبدأِ دقیق چیزی نبود، ترجمه‌ی ذخیره‌شده با مبدأِ "auto" هم قبول است.
 async function lookupMany(env, deps, texts, source, target) {
-  const { genCacheKey, genCacheGet } = deps;
+  const { genCacheGet, trCacheKey } = deps;
   const valid = texts.map((t) => !!t && t.length <= MAX_TEXT);
   const exact = await Promise.all(
-    texts.map((t, i) => (valid[i] ? genCacheKey(`translate-text|${source}|${target}|${t}`, 0) : null))
+    texts.map((t, i) => (valid[i] ? trCacheKey(env, source, target, t) : null))
   );
   const auto = source === "auto"
     ? exact
-    : await Promise.all(texts.map((t, i) => (valid[i] ? genCacheKey(`translate-text|auto|${target}|${t}`, 0) : null)));
+    : await Promise.all(texts.map((t, i) => (valid[i] ? trCacheKey(env, "auto", target, t) : null)));
   const keys = [...new Set([...exact, ...auto].filter(Boolean))];
   if (!keys.length) return texts.map(() => null);
 
@@ -43,7 +42,7 @@ async function lookupMany(env, deps, texts, source, target) {
       texts.map(async (t, i) => (valid[i] ? (await genCacheGet(env, exact[i])) || null : null))
     );
   }
-  const fresh = (r) => r && r.v && (r.provider === "user" || Date.now() - r.created <= TTL_MS);
+  const fresh = (r) => !!(r && r.v);
   return texts.map((t, i) => {
     if (!valid[i]) return null;
     const a = rows.get(exact[i]);
@@ -69,7 +68,7 @@ function norm(body) {
 }
 
 export async function handleTrShare(request, env, ctx, cors, deps) {
-  const { genCacheKey, genCacheGet, genCachePut } = deps;
+  const { genCacheGet, genCachePut, trCacheKey } = deps;
   let body;
   try {
     body = await request.json();
@@ -79,7 +78,7 @@ export async function handleTrShare(request, env, ctx, cors, deps) {
   const lp = norm(body);
   if (!lp) return resp({ error: "unsupported language" }, 400, cors);
   const { source, target } = lp;
-  const keyOf = (text) => genCacheKey(`translate-text|${source}|${target}|${text}`, 0);
+  const keyOf = (text) => trCacheKey(env, source, target, text);
 
   if (body.op === "get") {
     const items = Array.isArray(body.items) ? body.items.slice(0, MAX_BATCH) : [];
