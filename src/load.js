@@ -22,6 +22,8 @@ import { verifySessionToken } from "./auth.js";
 import { isPro } from "./usage.js";
 
 const MSG_BUSY = "الان شلوغه، چند لحظه دیگه (try again in 5s)";
+// پیامِ سقفِ per-user عمداً مثلِ خطای موقتِ AI است (نه «سقف/محدودیت»)؛ اپ ۵xx را «AI جواب نمی‌دهد» نشان می‌دهد.
+const MSG_UNAVAILABLE = "AI service is temporarily unavailable. Please try again in a few minutes.";
 const MSG_CAP = "ظرفیتِ هوش مصنوعیِ امروز تکمیل شده؛ فردا دوباره امتحان کن.";
 
 function intVar(env, key, dflt) {
@@ -61,6 +63,41 @@ async function ensure(env) {
     env.TR_DB.prepare("CREATE INDEX IF NOT EXISTS ai_queue_user ON ai_queue (user_id, ticket)"),
   ]);
   ready = true;
+}
+
+// ───────────── ۱.۵) سقفِ روزانه‌ی هر کاربر (per-user) ─────────────
+// USER_DAILY_AI (رایگان) و PRO_USER_DAILY_AI (Pro/VIP) = حداکثرِ درخواست‌هایی که در روزِ UTC واقعاً به AI می‌رسند.
+// ۰/نبود = خاموش. پر شد → 503 با پیامِ «AI موقتاً در دسترس نیست» (نه 429/402) تا کاربر سقف را نبیند.
+// بدونِ نشست (AUTH_MODE≠on) هویتی نیست → اعمال نمی‌شود. D1 خراب → اجازه.
+let userCapReady = false;
+async function takeUser(env, userId, pro) {
+  const cap = intVar(env, pro ? "PRO_USER_DAILY_AI" : "USER_DAILY_AI", 0);
+  if (!cap || !env.TR_DB || !userId) return { ok: true };
+  try {
+    if (!userCapReady) {
+      await env.TR_DB.prepare(
+        "CREATE TABLE IF NOT EXISTS user_ai_daily (user_id TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, day))"
+      ).run();
+      userCapReady = true;
+    }
+    const day = new Date().toISOString().slice(0, 10);
+    const r = await env.TR_DB.prepare(
+      "INSERT INTO user_ai_daily (user_id, day, n) VALUES (?1, ?2, 1) " +
+        "ON CONFLICT(user_id, day) DO UPDATE SET n = n + 1 WHERE n < ?3 RETURNING n"
+    ).bind(userId, day, cap).first();
+    if (!r) {
+      console.warn(`[LIMIT] user_daily_ai user=${userId} cap=${cap} pro=${pro}`);
+      return { ok: false };
+    }
+    if (Math.random() < 0.01) {
+      const old = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+      await env.TR_DB.prepare("DELETE FROM user_ai_daily WHERE day < ?1").bind(old).run();
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error("[FAIL-OPEN] user daily cap error", String(e));
+    return { ok: true };
+  }
 }
 
 // ───────────── ۱) همزمانی + صفِ FIFO ─────────────
@@ -182,9 +219,20 @@ export async function takeGlobal(env, kind) {
  */
 export async function beginAi(request, env, kind, cors, opts = {}) {
   let release = noop;
+  const sess = env.TR_DB ? await verifySessionToken(env, request.headers.get("X-App-Token")) : null;
+  const pro = sess ? await isPro(env, sess.sub, sess.em) : false;
+  // 👤 سقفِ روزانه‌ی هر کاربر (فقط AI، نه Whisper) — قبل از صف و سقفِ سراسری، تا کاربرِ پرمصرف سهمِ بقیه را نخورد
+  if (sess && kind !== "whisper") {
+    const u = await takeUser(env, sess.sub, pro);
+    if (!u.ok) {
+      return {
+        deny: jsonResp({ error: MSG_UNAVAILABLE, code: "ai_unavailable" }, 503, cors),
+        release: noop,
+      };
+    }
+  }
   if (opts.queue !== false && env.TR_DB) {
-    const sess = await verifySessionToken(env, request.headers.get("X-App-Token"));
-    if (sess && (await isPro(env, sess.sub, sess.em))) {
+    if (sess && pro) {
       const s = await acquireSlot(env, sess.sub);
       if (!s.ok) {
         console.warn(`[LIMIT] busy user=${sess.sub}`);

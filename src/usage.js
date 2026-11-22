@@ -45,7 +45,7 @@ const PATH_FEATURE = {
 };
 
 // 🆓 بخش‌هایی که سقفِ «کل عمر» ندارند (رایگانِ همیشگی)؛ فقط سقفِ روزانه‌ی سرور روشان اعمال می‌شود.
-const LIFETIME_EXEMPT = new Set(["ytsub"]);
+const LIFETIME_EXEMPT = new Set(); // ytsub دیگر معاف نیست: FREE_LIMIT_YTSUB (کل عمر)
 
 const MSG_FA = "سقف استفاده‌ی رایگان از این بخش تمام شده. برای استفاده‌ی نامحدود، نسخه‌ی Pro را بخرید.";
 
@@ -191,6 +191,8 @@ export async function consume(env, userId, feature, useId, ph = "") {
   const limit = limitOf(env, feature);
   if (!env.TR_DB) return { ok: true, used: 0, limit };
   try {
+    // 🔒 سقفِ ۰ = این بخش برای رایگان کاملاً بسته است (فقط Pro)
+    if (limit <= 0) return { ok: false, used: 0, limit };
     await ensureTables(env);
     const now = Date.now();
     const win = (FEATURES[feature]?.window || 0) * 60000;
@@ -201,7 +203,7 @@ export async function consume(env, userId, feature, useId, ph = "") {
     if (row) {
       // تلاشِ دوباره‌ی همان درخواست (retry) دوباره حساب نمی‌شود
       if (useId && (await isFreeRetry(env, "life", userId, feature, useId, ph, now))) {
-        return { ok: true, used: row.n, limit, fresh: false };
+        return { ok: true, used: row.n, limit, fresh: false, retry: true };
       }
       // ادامه‌ی همان نشست
       if (win > 0 && row.n > 0 && now - row.last_at < win) {
@@ -362,6 +364,40 @@ async function sessionTimeOk(env, userId, feature, fresh) {
 }
 
 /**
+ * 💬 سقفِ «جمله» در تماسِ رایگان (FREE_CALL_SENTENCES؛ ۰/نبود = بدونِ سقف). هر درخواستِ ویدیوکال = یک نوبت =
+ * جمله‌ی کاربر + جوابِ AI = ۲ جمله. با ۶ → سه نوبت؛ نوبتِ چهارم رد می‌شود (حتی اگر ۱۸۰ ثانیه نشده باشد).
+ * جلسه‌ی تازه شمارنده را صفر می‌کند. خطای دیتابیس → اجازه (fail-open).
+ */
+let callSentTableReady = false;
+async function callSentencesOk(env, userId, fresh) {
+  const max = Number(env.FREE_CALL_SENTENCES);
+  if (!Number.isFinite(max) || max <= 0 || !env.TR_DB) return true;
+  try {
+    if (!callSentTableReady) {
+      await env.TR_DB.prepare(
+        "CREATE TABLE IF NOT EXISTS call_sentences (user_id TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0, t INTEGER NOT NULL DEFAULT 0)"
+      ).run();
+      callSentTableReady = true;
+    }
+    const now = Date.now();
+    if (fresh) {
+      await env.TR_DB.prepare(
+        "INSERT INTO call_sentences (user_id, n, t) VALUES (?1, 0, ?2) ON CONFLICT(user_id) DO UPDATE SET n = 0, t = ?2"
+      ).bind(userId, now).run();
+    } else {
+      await env.TR_DB.prepare("INSERT OR IGNORE INTO call_sentences (user_id, n, t) VALUES (?1, 0, ?2)").bind(userId, now).run();
+    }
+    const r = await env.TR_DB.prepare(
+      "UPDATE call_sentences SET n = n + 2, t = ?3 WHERE user_id = ?1 AND n + 2 <= ?2 RETURNING n"
+    ).bind(userId, Math.floor(max), now).first();
+    return !!r;
+  } catch (e) {
+    console.error("[FAIL-OPEN] callSentencesOk error", String(e));
+    return true;
+  }
+}
+
+/**
  * ⏱️ سقفِ «دقیقه‌ی تماس در روز» برای Pro/VIP (PRO_CALL_MINUTES در wrangler.toml؛ ۰/نبود = بدونِ سقف).
  * هر درخواستِ ویدیوکال = یک نوبتِ گفتگو؛ فاصله‌ی دو درخواستِ پشت‌سرهم (حداکثر ۶۰ثانیه) به مصرفِ روز
  * اضافه می‌شود، و شروعِ تماس/وقفه‌ی طولانی ≈ ۲۰ثانیه. روز بر اساس UTC صفر می‌شود.
@@ -416,7 +452,17 @@ async function promptHash(request) {
 /** داخلِ authGate صدا زده می‌شود. null = اجازه، وگرنه Response (402 رایگان / 429 سقفِ روزانه). */
 export async function featureGate(request, env, url, session, cors) {
   const feature = featureOf(request, url);
-  if (!feature) return null;
+  if (!feature) {
+    // 🔒 /api/generate بدونِ X-Feature معتبر (هدرِ خالی، نامعتبر یا بخشی مثل ytsub) = دورزدنِ سقفِ بخش‌ها با curl.
+    // فقط Pro/VIP اجازه دارند بدونِ بخش بزنند (مثلاً خلاصه‌ی چت)؛ رایگان باید بخشِ معتبر بفرستد، و آن بخش سقفِ خودش را دارد.
+    if (url.pathname === "/api/generate" && request.method === "POST") {
+      if (!(await isPro(env, session.sub, session.em))) {
+        console.warn(`[LIMIT] generate_without_feature user=${session.sub}`);
+        return jsonResp({ error: "This feature requires Pro.", code: "pro_required" }, 403, cors);
+      }
+    }
+    return null;
+  }
   const useId = (request.headers.get("X-Use-Id") || "").slice(0, 64);
   // 🔗 هشِ پرامپت (فقط برای /api/generate): retry باید «همان پرامپت» باشد
   let ph = "";
@@ -447,6 +493,11 @@ export async function featureGate(request, env, url, session, cors) {
     }
     if (!(await sessionTimeOk(env, session.sub, feature, r.fresh === true))) {
       console.warn(`[LIMIT] free_session_over user=${session.sub} feature=${feature}`);
+      return jsonResp({ error: MSG_FA, code: "free_session_over", feature }, 402, cors);
+    }
+    // 💬 سقفِ جمله‌ی تماسِ رایگان (retryِ همان درخواست دوباره شمرده نمی‌شود)
+    if (feature === "videocall" && !r.retry && !(await callSentencesOk(env, session.sub, r.fresh === true))) {
+      console.warn(`[LIMIT] free_call_sentences user=${session.sub}`);
       return jsonResp({ error: MSG_FA, code: "free_session_over", feature }, 402, cors);
     }
   }
