@@ -19,6 +19,7 @@ import 'package:dio/dio.dart';
 
 import '../auth/worker_auth.dart';
 import '../storage/translation_cache_db.dart';
+import 'bundled_translations.dart';
 import 'shared_translations.dart';
 import 'translation_service.dart';
 
@@ -225,11 +226,18 @@ class AiFirstTranslator {
   static ({String text, bool isFinal})? peek(
       TranslationService svc, String text, String from, String to) {
     final db = TranslationCacheDb.instance;
-    if (!db.isReady) return null;
-    final pin = svc.pinned(text, to);
-    if (pin != null && pin.trim().isNotEmpty) {
-      return (text: pin.trim(), isFinal: true);
+    if (db.isReady) {
+      final pin = svc.pinned(text, to);
+      if (pin != null && pin.trim().isNotEmpty) {
+        return (text: pin.trim(), isFinal: true);
+      }
     }
+    // 📦 ترجمه‌ی آماده‌ی داخلِ اپ (محتوای رایگان) — بدونِ شبکه و AI
+    final bundled = BundledTranslations.get(text, from, to);
+    if (bundled != null && bundled.trim().isNotEmpty) {
+      return (text: bundled.trim(), isFinal: true);
+    }
+    if (!db.isReady) return null;
     final c = svc.peekCached(text, from, to);
     if (c == null || c.trim().isEmpty) return null;
     final fin = db.peek(_marker(from, to, text)) != null;
@@ -257,6 +265,7 @@ class AiFirstTranslator {
     required void Function(String text, bool isFinal) onValue,
     required void Function() onGiveUp,
   }) {
+    unawaited(BundledTranslations.ensureLoaded());
     final l = _Listener(onValue, onGiveUp);
     final key = '${from.isEmpty ? 'auto' : from}>$to|$text';
 
@@ -328,6 +337,7 @@ class AiFirstTranslator {
 
   static Future<void> _run0(_Job j) async {
     await TranslationCacheDb.instance.ready;
+    await BundledTranslations.ensureLoaded();
     // دیگر یک microtask فاصله: اولین تحویل همیشه ناهمگام است
     await Future<void>.value();
 

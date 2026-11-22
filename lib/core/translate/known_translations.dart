@@ -4,6 +4,8 @@
 // نوتیفیکیشنِ پلیر هم باید از همین‌ها بخواند، نه اینکه جمله را دوباره با مترجمِ ماشینی ترجمه کند
 // (مثلاً «patient» را «بیمار» ترجمه می‌کرد).
 
+import 'bundled_translations.dart';
+
 class KnownTranslations {
   KnownTranslations._();
 
@@ -30,6 +32,6 @@ class KnownTranslations {
 
   static String? get(String text, String from, String to) {
     if (text.trim().isEmpty) return null;
-    return _m[_key(text, from, to)];
+    return _m[_key(text, from, to)] ?? BundledTranslations.get(text, from, to);
   }
 }
