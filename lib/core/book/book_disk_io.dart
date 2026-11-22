@@ -99,6 +99,18 @@ class _IoBookDisk implements BookDisk {
   }
 
   @override
+  Future<void> clearAll() async {
+    try {
+      final root = await _rootDir();
+      await for (final e in root.list(followLinks: false)) {
+        try {
+          await e.delete(recursive: true);
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
+  @override
   Future<void> cleanTemp() async {
     try {
       final tmp = await getTemporaryDirectory();

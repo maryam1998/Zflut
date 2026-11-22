@@ -13,6 +13,8 @@ class _NoBookDisk implements BookDisk {
   @override
   Future<void> trim({required int maxBytes, String? keepDoc}) async {}
   @override
+  Future<void> clearAll() async {}
+  @override
   Future<void> cleanTemp() async {}
 }
 

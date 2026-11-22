@@ -44,6 +44,7 @@ class StoryPageStore {
       final tmp = File('$path.part');
       await tmp.writeAsBytes(bytes, flush: true);
       await tmp.rename(path);
+      _maybeTrim(storyId);
       return true;
     } catch (_) {
       return false;
@@ -60,6 +61,53 @@ class StoryPageStore {
     } catch (_) {
       return null;
     }
+  }
+
+  // سقفِ حجمِ کل: قدیمی‌ترین داستان‌ها پاک می‌شوند (داستانِ در حالِ ذخیره هرگز).
+  static const int _maxBytes = 400 * 1024 * 1024;
+  static int _puts = 0;
+
+  static void _maybeTrim(String keepStory) {
+    // هر ۲۰ بار نوشتن یک بار چک کن تا کند نشود
+    if (++_puts % 20 != 1) return;
+    trim(maxBytes: _maxBytes, keepStory: keepStory);
+  }
+
+  static Future<void> trim({required int maxBytes, String? keepStory}) async {
+    try {
+      final root = await _rootDir();
+      if (root == null) return;
+      final keep = keepStory == null ? null : _safe(keepStory);
+      final items = <MapEntry<Directory, List<int>>>[]; // [size, newestMs]
+      var total = 0;
+      await for (final e in root.list(followLinks: false)) {
+        if (e is! Directory) continue;
+        var size = 0;
+        var newest = 0;
+        await for (final f in e.list(recursive: true, followLinks: false)) {
+          if (f is! File) continue;
+          try {
+            final st = await f.stat();
+            size += st.size;
+            final ms = st.modified.millisecondsSinceEpoch;
+            if (ms > newest) newest = ms;
+          } catch (_) {}
+        }
+        total += size;
+        items.add(MapEntry(e, [size, newest]));
+      }
+      if (total <= maxBytes) return;
+      items.sort((a, b) => a.value[1].compareTo(b.value[1]));
+      for (final it in items) {
+        if (total <= maxBytes) break;
+        final name = it.key.path.split(Platform.pathSeparator).last;
+        if (keep != null && name == keep) continue;
+        try {
+          await it.key.delete(recursive: true);
+          total -= it.value[0];
+        } catch (_) {}
+      }
+    } catch (_) {}
   }
 
   static Future<void> deleteStory(String storyId) async {

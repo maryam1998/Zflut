@@ -1313,7 +1313,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       // ترجمه‌ی عکسی فقط برای صفحه‌ی فعلی و چند صفحه‌ی بعد شروع می‌شود.
       // ترجمه‌ی کلِ کتاب فقط با انتخابِ صریحِ کاربر (نوارِ ترجمه) انجام می‌شود.
       unawaited(_buildPdfEngine(activate: true));
-      unawaited(_bookDisk.trim(maxBytes: 800 * 1024 * 1024, keepDoc: key));
+      unawaited(_bookDisk.trim(maxBytes: 300 * 1024 * 1024, keepDoc: key));
     } catch (_) {
       if (mounted) {
         setState(() => _importError =

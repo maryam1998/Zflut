@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app.dart';
+import '../../../core/book/book_disk.dart';
 import '../../../core/bridge/linlearn_bridge.dart';
 import '../../../core/constants/app_font_sizes.dart';
 import '../../../core/constants/app_fonts.dart';
@@ -376,6 +377,10 @@ class _AccountSection extends ConsumerWidget {
               try {
                 await ref.read(authRepositoryProvider).signOut();
               } catch (_) {}
+              // کشِ صفحه‌های ترجمه‌شده‌ی این حساب پاک شود (مدل‌های صوتی نه)
+              try {
+                await createBookDisk().clearAll();
+              } catch (_) {}
               if (context.mounted) Navigator.pop(context);
             },
             child: Row(
@@ -390,6 +395,8 @@ class _AccountSection extends ConsumerWidget {
           ),
           const SizedBox(height: 14),
           const DevicesSection(),
+          const SizedBox(height: 14),
+          const _ClearCacheRow(),
         ],
       ],
     );
@@ -2801,6 +2808,63 @@ class _ReminderSectionState extends ConsumerState<_ReminderSection> {
         const SizedBox(height: 6),
         Text(tx[3], style: TextStyle(color: c.inkSoft, fontSize: 11, height: 1.5)),
       ],
+    );
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// پاک‌کردنِ حافظه‌ی موقت — فقط کشِ صفحه‌های ترجمه‌شده؛ لاگین، مدل‌های صوتی و داستان‌های ذخیره‌شده دست نمی‌خورند.
+class _ClearCacheRow extends StatefulWidget {
+  const _ClearCacheRow();
+  @override
+  State<_ClearCacheRow> createState() => _ClearCacheRowState();
+}
+
+class _ClearCacheRowState extends State<_ClearCacheRow> {
+  bool _busy = false;
+  bool _done = false;
+
+  Future<void> _run() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _done = false;
+    });
+    try {
+      final d = createBookDisk();
+      await d.clearAll();
+      await d.cleanTemp();
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _busy = false;
+        _done = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _run,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_done ? Icons.check_circle_outline : Icons.cleaning_services_outlined,
+              size: 14, color: c.inkSoft),
+          const SizedBox(width: 8),
+          Text(
+              _busy
+                  ? '...'
+                  : _done
+                      ? 'حافظه‌ی موقت پاک شد'
+                      : 'پاک کردن حافظه‌ی موقت',
+              style: TextStyle(color: c.inkSoft, fontSize: 12)),
+        ],
+      ),
     );
   }
 }

@@ -18,6 +18,9 @@ abstract class BookDisk {
   /// (سندِ [keepDoc] هیچ‌وقت پاک نمی‌شود).
   Future<void> trim({required int maxBytes, String? keepDoc});
 
+  /// پاک‌کردنِ کاملِ کشِ صفحه‌های ترجمه‌شده (فقط کش؛ مدل‌های صوتی و حساب دست نمی‌خورند).
+  Future<void> clearAll();
+
   /// پاک‌کردنِ فایل‌های موقتِ OCR که از اجراهای قبلی (مثلاً بعد از ANR/کرش) مانده‌اند.
   Future<void> cleanTemp();
 }
