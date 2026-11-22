@@ -1482,6 +1482,7 @@ class _LineRow extends ConsumerWidget {
           ? <String, String>{'fa': line.fa}
           : const <String, String>{},
       compact: true,
+      aiFirst: true, // 🤖 ترجمه‌ی «اول AI» + کشِ مشترک (lib/core/translate/ai_first_translator.dart)
     );
   }
 }

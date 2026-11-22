@@ -15,6 +15,7 @@ import '../providers/text_prefs_provider.dart';
 import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart';
+import '../translate/ai_first_translator.dart';
 import '../storage/translation_cache_db.dart';
 
 import '../../features/reader/widgets/neural_path_dialog.dart';
@@ -53,6 +54,10 @@ class SyncItemCard extends ConsumerStatefulWidget {
   /// زبانِ متنِ اصلیِ کارت (پیش‌فرض انگلیسی؛ لغاتِ شخصیِ زبان‌های دیگر هم می‌توانند باشند).
   final String lang;
 
+  /// 🤖 ترجمه‌ی «اول AI» (فعلاً فقط تب مکالمه): کشِ گوشی ← کشِ مشترکِ سرور ← AI؛
+  /// تا رسیدنِ AI ترجمه‌ی موقتِ ML Kit/آنلاین و بعد جایگزینیِ بی‌صدا.
+  final bool aiFirst;
+
   const SyncItemCard({
     super.key,
     required this.id,
@@ -68,6 +73,7 @@ class SyncItemCard extends ConsumerStatefulWidget {
     this.isRead = false,
     this.onToggleRead,
     this.lang = 'en',
+    this.aiFirst = false,
   });
 
   @override
@@ -275,6 +281,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                 compact: compact,
                 gutter: gutter,
                 sourceLang: widget.lang,
+                aiFirst: widget.aiFirst,
               ),
 
             if (widget.showActions) ...[
@@ -442,6 +449,9 @@ class SyncTranslationRow extends ConsumerStatefulWidget {
   /// زبانِ متنِ مبدأ (پیش‌فرض انگلیسی)
   final String sourceLang;
 
+  /// 🤖 ترجمه‌ی «اول AI» (به SyncItemCard.aiFirst نگاه کن)
+  final bool aiFirst;
+
   const SyncTranslationRow({
     super.key,
     required this.itemId,
@@ -452,6 +462,7 @@ class SyncTranslationRow extends ConsumerStatefulWidget {
     this.gutter = 0,
     this.sideActions,
     this.sourceLang = 'en',
+    this.aiFirst = false,
   });
 
   @override
@@ -467,6 +478,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
   bool _retryFailed = false;
   final GlobalKey _refreshKey = GlobalKey();
   int _gen = 0;
+  void Function()? _aiStop; // 🤖 لغوِ ترجمه‌ی «اول AI»
 
   @override
   void initState() {
@@ -481,6 +493,8 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
         old.sourceLang != widget.sourceLang ||
         old.langCode != widget.langCode ||
         old.knownText != widget.knownText) {
+      _aiStop?.call();
+      _aiStop = null;
       _text = null;
       _failed = false;
       _retryFailed = false;
@@ -492,6 +506,8 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
   @override
   void dispose() {
     _gen++;
+    _aiStop?.call();
+    _aiStop = null;
     super.dispose();
   }
 
@@ -536,6 +552,13 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       return;
     }
 
+    if (widget.aiFirst &&
+        widget.sourceLang.isNotEmpty &&
+        widget.sourceLang != widget.langCode) {
+      _resolveAiFirst(gen);
+      return;
+    }
+
     final service = ref.read(translationServiceProvider);
     final hit = service.peekCached(widget.en, widget.sourceLang, widget.langCode);
     if (hit != null && _usable(hit)) {
@@ -547,6 +570,38 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       if (!mounted || gen != _gen) return;
       _fetch(gen, 0);
     });
+  }
+
+  /// 🤖 «اول AI»: نمایشِ فوریِ آنچه روی گوشی هست، بعد AI/کشِ مشترک؛ موقتی‌ها بی‌صدا جایگزین می‌شوند.
+  void _resolveAiFirst(int gen) {
+    final service = ref.read(translationServiceProvider);
+    final peek =
+        AiFirstTranslator.peek(service, widget.en, widget.sourceLang, widget.langCode);
+    if (peek != null && _usable(peek.text)) {
+      _text = peek.text; // همگام (بدون setState) چون از initState/didUpdateWidget می‌آید
+    }
+    _aiStop?.call();
+    _aiStop = AiFirstTranslator.watch(
+      svc: service,
+      ai: ref.read(aiSettingsProvider),
+      text: widget.en,
+      from: widget.sourceLang,
+      to: widget.langCode,
+      onValue: (t, isFinal) {
+        if (!mounted || gen != _gen) return;
+        final s = t.trim();
+        if (s.isEmpty || !_usable(s)) return;
+        if (s == _text && !_failed) return;
+        setState(() {
+          _text = s;
+          _failed = false;
+        });
+      },
+      onGiveUp: () {
+        if (!mounted || gen != _gen) return;
+        if (_text == null) setState(() => _failed = true);
+      },
+    );
   }
 
   Future<void> _fetch(int gen, int attempt) async {
