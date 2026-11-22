@@ -4,10 +4,10 @@
 // • هر بخش (feature) برای هر کاربر یک شمارنده‌ی دائمی در D1 دارد (جدول feature_usage) —
 //   با پاک‌کردنِ اپ یا نصبِ دوباره ریست نمی‌شود، چون به user_id حساب گوگل وصل است.
 // • وقتی شمارنده به سقف برسد: HTTP 402 + پیامِ فارسی.
-// • Pro = (۱) ایمیل در VIP_EMAILS (wrangler.toml)  یا  (۲) ردیفِ plan='pro' در جدول entitlements.
+// • Pro = (۱) ایمیل در VIP_EMAILS (Secret در Cloudflare)  یا  (۲) ردیفِ plan='pro' در جدول entitlements.
 //   Pro/VIP بدونِ محدودیت است.
 //
-// Vars اختیاری (wrangler.toml):
+// Vars اختیاری (Secret در Cloudflare):
 //   FREE_LIMIT            = "2"            سقفِ پیش‌فرضِ هر بخش
 //   FREE_LIMIT_<FEATURE>  = "5"            سقفِ اختصاصیِ یک بخش (مثلاً FREE_LIMIT_STORY)
 //   VIP_EMAILS            = "a@gmail.com, b@gmail.com"

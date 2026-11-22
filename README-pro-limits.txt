@@ -1,6 +1,6 @@
 نسخه‌ی رایگان / Pro — راه‌اندازی
 =================================
-۱) wrangler.toml: مقدارِ VIP_EMAILS را به جیمیل‌های خودت تغییر بده (چندتا: با ویرگول).
+۱) VIP_EMAILS را به‌صورت Secret بگذار (نه داخل wrangler.toml): npx wrangler secret put VIP_EMAILS ← جیمیل‌ها با ویرگول.
    FREE_LIMIT = "2" سقفِ هر بخش است.
 ۲) Worker را دیپلوی کن:  npx wrangler deploy   (از پوشه‌ی ریشه، همان‌جا که src/index.js هست)
 ۳) محتوای پولی را در D1 بریز: در GitHub → Actions → «Seed paid content (D1)» → Run workflow

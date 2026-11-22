@@ -1698,7 +1698,7 @@ async function callOpenRouter(prompt, maxTokens, env) {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${key}`,
-      "HTTP-Referer": env.OPENROUTER_SITE_URL || "https://maryam1998.github.io/Hope/",
+      ...(env.OPENROUTER_SITE_URL ? { "HTTP-Referer": env.OPENROUTER_SITE_URL } : {}),
       "X-Title": "LingoLearn",
     },
     body: JSON.stringify({

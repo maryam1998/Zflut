@@ -114,7 +114,8 @@ DEVICE_ALLOW_LEGACY = "on"
 DEVICE_LIMIT_FREE = "1"
 DEVICE_LIMIT_PRO = "1"
 
-VIP_EMAILS = "maryam.s.sharifiyan@gmail.com"
+# VIP_EMAILS عمداً اینجا نیست (ایمیل خصوصی است) — به‌صورت Secret در Cloudflare تنظیم می‌شود:
+#   npx wrangler secret put VIP_EMAILS
 
 # ⭐ NEW: Cloudflare Workers AI binding — برای تبدیلِ صدا به متن با Whisper
 # (@cf/openai/whisper-large-v3-turbo). رایگان: ۱۰٬۰۰۰ نورون در روز.

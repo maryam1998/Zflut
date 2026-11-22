@@ -1,3 +1,4 @@
+import '../config/backend_config.dart';
 import '../usage/free_limit.dart';
 import '../usage/pro_status.dart' show ProStatus;
 import 'dart:async';
@@ -23,8 +24,7 @@ import 'shared_translations.dart';
 // ═══════════════════════════════════════════════════════════════════
 
 /// همان DEFAULT_BACKEND_URL وب‌اپ (app/ai/callAI.js)
-const String kDefaultBackendUrl =
-    'https://phrasebook-api.maryam-s-sharifiyan.workers.dev';
+const String kDefaultBackendUrl = kBackendBaseUrl;
 
 /// false = انتشار تجاری: سرویس‌های غیررسمی (Google gtx / Lingva / LibreTranslate عمومی) خاموش‌اند. true = مثل قبل.
 const bool kAllowUnofficialTranslators = false;

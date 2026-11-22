@@ -32,7 +32,7 @@ import okhttp3.ResponseBody;
 final class SharedTr {
     private static final String TAG = "SharedTr";
     // همان WORKER_BASE در BubbleService (آنجا private است)
-    private static final String URL = "https://phrasebook-api.maryam-s-sharifiyan.workers.dev/api/tr-share";
+    private static final String URL = BackendConfig.BASE + "/api/tr-share";
     private static final MediaType JSON_MT = MediaType.get("application/json; charset=utf-8");
     private static final int MAX_CHARS = 300;
     private static final Set<String> LANGS = new HashSet<>(Arrays.asList(

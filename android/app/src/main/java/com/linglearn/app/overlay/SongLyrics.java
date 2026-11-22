@@ -27,7 +27,7 @@ final class SongLyrics {
     private SongLyrics() {}
 
     private static final String API = "https://lrclib.net/api";
-    private static final String UA = "LingoLearn/1.0 (https://github.com/maryam1998/Hope)";
+    private static final String UA = "LingoLearn/1.0";
 
     /** ترانه‌ی زمان‌دار پیدا نشد. */
     static final class NotFound extends Exception {

@@ -1,6 +1,6 @@
+import '../config/backend_config.dart';
 class TtsConfig {
-  static const String backendUrl =
-      'https://phrasebook-api.maryam-s-sharifiyan.workers.dev';
+  static const String backendUrl = kBackendBaseUrl;
 
   static const Map<String, String> locale = {
     'fa': 'fa-IR', 'en': 'en-US', 'de': 'de-DE', 'es': 'es-ES',

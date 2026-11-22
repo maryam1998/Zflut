@@ -114,7 +114,7 @@ public class BubbleService extends Service {
     /** true = از مجوزِ ضبطِ مشترک (ProjectionHolder) استفاده کن؛ پنجره‌ی اندروید لازم نیست. */
     public static final String EXTRA_REUSE = "reuse";
 
-    private static final String WORKER_BASE = "https://phrasebook-api.maryam-s-sharifiyan.workers.dev";
+    private static final String WORKER_BASE = BackendConfig.BASE;
     private static final String TRANSCRIBE_PATH = "/api/transcribe";
     private static final String GENERATE_PATH = "/api/generate";
     private static final String GENERATE_PROMPT_KEY = "prompt";
