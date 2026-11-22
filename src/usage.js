@@ -398,41 +398,41 @@ async function callSentencesOk(env, userId, fresh) {
 }
 
 /**
- * ⏱️ سقفِ «دقیقه‌ی تماس در روز» برای Pro/VIP (PRO_CALL_MINUTES در wrangler.toml؛ ۰/نبود = بدونِ سقف).
- * هر درخواستِ ویدیوکال = یک نوبتِ گفتگو؛ فاصله‌ی دو درخواستِ پشت‌سرهم (حداکثر ۶۰ثانیه) به مصرفِ روز
- * اضافه می‌شود، و شروعِ تماس/وقفه‌ی طولانی ≈ ۲۰ثانیه. روز بر اساس UTC صفر می‌شود.
+ * 💬 سقفِ «جمله‌ی تماس در روز» برای Pro/VIP (PRO_CALL_SENTENCES در wrangler.toml؛ ۰/نبود = بدونِ سقف).
+ * هر درخواستِ ویدیوکال = یک نوبت = جمله‌ی کاربر + جوابِ AI = ۲ جمله (۳۰۰ جمله = ۱۵۰ نوبت).
+ * retryِ همان درخواست (همان X-Use-Id) دوباره شمرده نمی‌شود. روز بر اساس UTC صفر می‌شود.
  * خطای دیتابیس → اجازه (fail-open) تا تماس بی‌دلیل قطع نشود.
  */
 let callTableReady = false;
-export async function proCallMinutesGate(env, userId) {
-  const mins = Number(env.PRO_CALL_MINUTES);
-  if (!Number.isFinite(mins) || mins <= 0 || !env.TR_DB) return { ok: true, limit: 0 };
+export async function proCallSentencesGate(env, userId, useId) {
+  const max = Math.floor(Number(env.PRO_CALL_SENTENCES));
+  if (!Number.isFinite(max) || max <= 0 || !env.TR_DB) return { ok: true, limit: 0 };
   try {
     if (!callTableReady) {
       await env.TR_DB.prepare(
-        "CREATE TABLE IF NOT EXISTS call_seconds (" +
-          "user_id TEXT NOT NULL, day TEXT NOT NULL, secs INTEGER NOT NULL DEFAULT 0, " +
-          "last_at INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, day))"
+        "CREATE TABLE IF NOT EXISTS call_sentences_daily (" +
+          "user_id TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, " +
+          "last_use TEXT NOT NULL DEFAULT '', PRIMARY KEY (user_id, day))"
       ).run();
       callTableReady = true;
     }
-    const now = Date.now();
-    const day = new Date(now).toISOString().slice(0, 10);
-    const row = await env.TR_DB.prepare(
-      "SELECT secs, last_at FROM call_seconds WHERE user_id = ?1 AND day = ?2"
-    ).bind(userId, day).first();
-    const cap = Math.floor(mins * 60);
-    const used = row ? row.secs : 0;
-    if (used >= cap) return { ok: false, limit: Math.floor(mins) };
-    const gap = row && row.last_at ? (now - row.last_at) / 1000 : Infinity;
-    const add = gap <= 60 ? Math.max(1, Math.round(gap)) : 20;
+    const day = new Date().toISOString().slice(0, 10);
+    const uid = String(useId || "");
+    if (uid) {
+      const same = await env.TR_DB.prepare(
+        "SELECT n FROM call_sentences_daily WHERE user_id = ?1 AND day = ?2 AND last_use = ?3"
+      ).bind(userId, day, uid).first();
+      if (same) return { ok: true, limit: max }; // retry
+    }
     await env.TR_DB.prepare(
-      "INSERT INTO call_seconds (user_id, day, secs, last_at) VALUES (?1, ?2, ?3, ?4) " +
-        "ON CONFLICT(user_id, day) DO UPDATE SET secs = secs + ?3, last_at = ?4"
-    ).bind(userId, day, add, now).run();
-    return { ok: true, limit: Math.floor(mins) };
+      "INSERT OR IGNORE INTO call_sentences_daily (user_id, day, n, last_use) VALUES (?1, ?2, 0, '')"
+    ).bind(userId, day).run();
+    const r = await env.TR_DB.prepare(
+      "UPDATE call_sentences_daily SET n = n + 2, last_use = ?4 WHERE user_id = ?1 AND day = ?2 AND n + 2 <= ?3 RETURNING n"
+    ).bind(userId, day, max, uid).first();
+    return { ok: !!r, limit: max };
   } catch (e) {
-    console.error("[FAIL-OPEN] proCallMinutesGate error", String(e));
+    console.error("[FAIL-OPEN] proCallSentencesGate error", String(e));
     return { ok: true, limit: 0 };
   }
 }
@@ -475,11 +475,11 @@ export async function featureGate(request, env, url, session, cors) {
   }
   const pro = await isPro(env, session.sub, session.em);
 
-  // ⏱️ Pro/VIP: سقفِ دقیقه‌ی ویدیوکال در روز
+  // 💬 Pro/VIP: سقفِ جمله‌ی ویدیوکال در روز
   if (pro && feature === "videocall") {
-    const cg = await proCallMinutesGate(env, session.sub);
+    const cg = await proCallSentencesGate(env, session.sub, useId);
     if (!cg.ok) {
-      console.warn(`[LIMIT] pro_call_minutes user=${session.sub} limit=${cg.limit}min`);
+      console.warn(`[LIMIT] pro_call_sentences user=${session.sub} limit=${cg.limit}`);
       return dailyResponse(feature, cg.limit, cors);
     }
   }
