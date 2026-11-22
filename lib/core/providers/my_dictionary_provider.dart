@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/dictionary_topics.dart';
 import '../constants/vocab_topics.dart';
+import '../usage/pro_status.dart' show isProProvider;
 import '../models/daily_word.dart';
 import '../models/filter_state.dart';
 import '../storage/local_storage.dart';
@@ -114,6 +115,9 @@ String _estimateLevel(String text, Map<String, String> idx) {
 
 /// لغات/عبارات شخصیِ دیکشنری من (جدیدترین اول)، بدون موارد پنهان‌شده.
 final myDictionaryWordsProvider = Provider<List<DailyWord>>((ref) {
+  // 💎 «دیکشنری من» فقط برای Pro است؛ کاربر رایگان لغاتش فقط در «لغات ذخیره‌شده» (برای داستان) می‌ماند
+  // و این‌جا وارد نمی‌شود (تا لغاتِ قفل‌شده از راهِ ذخیره‌ی شخصی دورزده نشوند).
+  if (!ref.watch(isProProvider)) return const <DailyWord>[];
   final saved = ref.watch(savedWordsProvider);
   if (saved.isEmpty) return const <DailyWord>[];
   final hidden = ref.watch(wordsTabHiddenProvider);
