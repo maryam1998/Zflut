@@ -27,6 +27,12 @@ AI_PROVIDER = "groq,gemini,cerebras,mistral,nvidianim,cloudflareai,ollamacloud,o
 AI_PROVIDER_CALL = "cerebras,mistral,siliconflow,llm7,groq,gemini"
 AI_PROVIDER_STRONG = "gemini,mistral,nvidianim,groq,cerebras,openrouter,cloudflareai,ollamacloud,zai,cohere,grok,deepseek,openai,avalai,siliconflow,ovhcloud,llm7,aionlabs,modelscope,huggingface,kilocode"
 GEMINI_MODEL = "gemini-3.6-flash"
+# 🧠 ترجمه (/api/translate-text: لغات و مکالماتِ Pro، کش سراسری D1) با مدل‌های قوی‌تر.
+# اگر هیچ AI جواب نداد، Worker خطای 502 می‌دهد و خودِ اپ بی‌صدا می‌رود سراغ ML Kit / سرویس آنلاین.
+# (برای برگشت به قبل: این سه خط را پاک کن.) مدل‌های دیگر: <NAME>_MODEL_TRANSLATE
+AI_PROVIDER_TRANSLATE = "gemini,mistral,nvidianim,openrouter,deepseek,openai,grok,cohere,zai,groq,cerebras,cloudflareai,ollamacloud,siliconflow,ovhcloud,llm7,aionlabs,modelscope,avalai,huggingface,kilocode"
+GEMINI_MODEL_TRANSLATE = "gemini-2.5-pro"
+MISTRAL_MODEL_TRANSLATE = "mistral-large-latest"
 HF_MODEL = "openai/gpt-oss-120b"
 
 # 🔐 احراز هویت: "on" = فقط اپِ لاگین‌شده؛ "log" = فقط لاگ (برای مرحله‌ی انتقال)؛ "off" = قدیمی

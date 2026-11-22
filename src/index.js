@@ -331,11 +331,15 @@ async function handleTranslateText(request, env, ctx) {
     "Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.\n\n" +
     `Text: ${text}`;
   const maxTokens = Math.min(Math.max(Math.floor(text.length / 2) + 96, 128), 600);
-  const perProviderMs = Math.min(20000, 4000 + maxTokens * 10);
+  // 🧠 ترجمه با مدل‌های قوی‌تر (فقط وقتی AI_PROVIDER_TRANSLATE / *_MODEL_TRANSLATE ست شده)؛ نتیجه در D1 برای همه می‌ماند
+  const { chain: trChain, env: trEnv, strong } = translateSetup(env);
+  const perProviderMs = Math.min(30000, (strong ? 12000 : 4000) + maxTokens * 10);
   const errors = [];
-  for (const provider of getProviderChain(env)) {
+  for (const provider of trChain) {
     try {
-      const raw = await withTimeout(callProvider(provider, prompt, maxTokens, env), perProviderMs, provider);
+      // Gemini 2.5 Pro «فکر» می‌کند و فکر از سقفِ توکن کم می‌شود → سقفِ بیشتر تا خروجی خالی نشود
+      const mt = strong && provider === "gemini" ? maxTokens + 2000 : maxTokens;
+      const raw = await withTimeout(callProvider(provider, prompt, mt, trEnv), perProviderMs, provider);
       let out = sanitizeAiText(raw).trim();
       // گیومه‌ی دورِ خروجی را بردار
       out = out.replace(/^["“”«»]+|["“”«»]+$/g, "").trim();
@@ -350,6 +354,28 @@ async function handleTranslateText(request, env, ctx) {
   }
   console.error("[AI-FAIL] /api/translate-text همه‌ی پرووایدرها خطا دادند:", errors.join(" | ").slice(0, 900));
   return json({ error: errors.join(" | ") }, 502);
+}
+
+// 🧠 زنجیره و مدل‌های «قوی‌تر» برای /api/translate-text.
+//   AI_PROVIDER_TRANSLATE = ترتیبِ پرووایدرها (ست‌نشده = همان AI_PROVIDER قبلی)
+//   <NAME>_MODEL_TRANSLATE = مدلِ قوی‌ترِ همان پرووایدر فقط برای ترجمه (مثلاً GEMINI_MODEL_TRANSLATE)
+// هر پرووایدری که خطا بدهد/کلید نداشته باشد رد می‌شود و بعدی امتحان می‌شود (همان رفتارِ قبلی).
+const TR_MODEL_VARS = [
+  "GEMINI_MODEL", "MISTRAL_MODEL", "GROQ_MODEL", "NVIDIA_MODEL", "OPENAI_MODEL", "DEEPSEEK_MODEL",
+  "OPENROUTER_MODEL", "GROK_MODEL", "CEREBRAS_MODEL", "COHERE_MODEL", "ZAI_MODEL", "CF_AI_MODEL",
+];
+function translateSetup(env) {
+  let chain = null;
+  if (env.AI_PROVIDER_TRANSLATE) {
+    const c = String(env.AI_PROVIDER_TRANSLATE).toLowerCase().split(",").map((p) => p.trim()).filter((p) => VALID_PROVIDERS.includes(p));
+    if (c.length) chain = c;
+  }
+  const e = { ...env };
+  let overridden = false;
+  for (const v of TR_MODEL_VARS) {
+    if (env[v + "_TRANSLATE"]) { e[v] = env[v + "_TRANSLATE"]; overridden = true; }
+  }
+  return { chain: chain || getProviderChain(env), env: e, strong: !!chain || overridden };
 }
 
 // --- کشِ مشترکِ D1 برای /api/generate (مثال‌ساز و ...) ---------------------
