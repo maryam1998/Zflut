@@ -11,9 +11,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// ⚠️ باید با FREE_PER_GROUP در scripts/build-paid-content.mjs یکی باشد.
 const int kFreeWordsPerGroup = 10;
 
-/// فقط این دو دسته لغتِ رایگان دارند: «غذا و نوشیدنی» (food) و «خانه و زندگی روزمره» (home).
-/// ⚠️ باید با FREE_GROUPS در scripts/build-paid-content.mjs یکی باشد.
-const Set<String> kFreeWordGroups = {'food', 'home'};
+/// «دیکشنری من»: فقط دسته‌ی «غذا و نوشیدنی» (food) لغتِ رایگان دارد.
+/// (Vocabulary in use ← فقط «سلامت و بیماری» و Slang ← فقط «مردم و شخصیت»؛ آن‌ها از روی assets/ایندکس کار می‌کنند.)
+/// ⚠️ باید با FREE_GROUPS.daily در scripts/build-paid-content.mjs یکی باشد.
+const Set<String> kFreeWordGroups = {'food'};
 
 /// «دیکشنری من»: کلِ لغاتِ بازِ کاربرِ رایگان = [kFreeWordsPerGroup] لغت از هر دسته‌ی رایگان.
 const int kFreeDictionaryWords = 20;
@@ -21,10 +22,9 @@ const int kFreeDictionaryWords = 20;
 /// (قدیمی — دیگر استفاده نمی‌شود؛ جایش kFreeWordsPerGroup است)
 const int kFreeWordCount = 30;
 
-/// مکالمه: فقط این موضوع‌ها (Greeting و Introduction) رایگان‌اند …
+/// مکالمه (تب Talk): فقط همین موضوع رایگان است …
 const Set<String> kFreeConversationTopics = {
   'Greetings and Small Talk',
-  'Introducing People',
 };
 
 /// … و فقط جمله‌های همین سطح داخلشان.

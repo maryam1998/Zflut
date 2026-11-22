@@ -5,9 +5,9 @@
 //
 //   node scripts/build-paid-content.mjs --assets
 //       ← نسخه‌ی رایگان را در assets/data/ می‌نویسد:
-//         • لغات: ده لغتِ اولِ دو دسته‌ی food و home (در دیکشنری، Slang و Vocab in use)؛ بقیه‌ی دسته‌ها پولی
+//         • لغات: ده لغتِ دست‌چین از یک دسته‌ی هر لیست (دیکشنری: food | Vocab in use: health | Slang: people)؛ بقیه پولی
 //         • assets/data/words_index.json: شمارِ کلِ لغاتِ هر دسته به‌تفکیکِ سطح (برای نمایشِ «قفل‌شده‌ها» به کاربرِ رایگان)
-//         • دو موضوعِ مکالمه با جمله‌های A1
+//         • یک موضوعِ مکالمه (Greetings and Small Talk) با جمله‌های A1
 //   node scripts/build-paid-content.mjs --sql content_seed
 //       ← فایل‌های SQL برای ریختنِ محتوای پولی در D1 (جدول‌های paid_words / paid_conversations / content_meta)
 //
@@ -20,8 +20,20 @@ import crypto from "node:crypto";
 const FREE_PER_GROUP = 10; // 💎 تعدادِ لغتِ رایگان در هر دسته‌ی رایگان (باید با kFreeWordsPerGroup در pro_status.dart یکی باشد)
 // 💎 فقط این دو دسته (Food & drink و Home & daily life) لغتِ رایگان دارند؛ بقیه‌ی دسته‌ها — در دیکشنری، Slang و Vocab in use — کاملاً پولی‌اند.
 // (باید با kFreeWordGroups در pro_status.dart یکی باشد)
-const FREE_GROUPS = ["food", "home"];
-const FREE_TOPICS = ["Greetings and Small Talk", "Introducing People"];
+// ‼️ حالا هر لیست دسته‌ی رایگانِ خودش را دارد:
+//    دیکشنری من (daily) ← food («Food & drink»)  |  Vocabulary in use (vocab) ← health («Health & illness»)  |  Slang ← people («People & personality»)
+const FREE_GROUPS = { daily: ["food"], vocab: ["health"], slang: ["people"] };
+// ⭐ ده لغتِ رایگانِ دست‌چین برای هر لیست (شناسه‌ی لغت در paid-content/*.json). عوض‌کردنشان = فقط همین فهرست + اجرای دوباره‌ی --assets
+const FREE_PICKS = {
+  // دیکشنری من — Food & drink: رستوران/منو/غذا
+  daily: [102760, 103733, 101183, 102183, 104481, 100536, 700607, 701894, 100778, 103597],
+  // Vocabulary in use — Health & illness: جمله‌های مطبِ دکتر
+  vocab: [200409, 200410, 200411, 200412, 200414, 200417, 200419, 200420, 200415, 203933],
+  // Slang — People & personality: دوست‌ها و آدم‌ها
+  slang: [500003, 500006, 500008, 500016, 500089, 500099, 500135, 500141, 500228, 500234],
+};
+// 💬 تب Talk (مکالمه): فقط همین موضوع، آن هم فقط سطح A1
+const FREE_TOPICS = ["Greetings and Small Talk"];
 const FREE_LEVEL = "A1";
 
 const SRC = "paid-content";
@@ -244,14 +256,18 @@ function prepareList(list, tools) {
     w.__g = groupOf(w);
     if (list === "daily") w.category = w.__g; // اپ موضوعِ لغاتِ روزمره را از همین می‌خواند
   }
-  // ده لغتِ اولِ هر «گروهِ رایگان» (food و home؛ به ترتیبِ فایل) رایگان است؛ گروه‌های دیگر هیچ لغتِ رایگانی ندارند
-  const taken = new Map();
-  for (const w of words) {
-    const n = taken.get(w.__g) ?? 0;
-    // لغاتِ افزوده‌شده با scripts/add-words.mjs (id ≥ 500000) هرگز رایگان نمی‌شوند
-    w.__free = FREE_GROUPS.includes(w.__g) && n < FREE_PER_GROUP && !(Number(w.id) >= 500000);
-    if (w.__free) taken.set(w.__g, n + 1);
+  // 💎 ده لغتِ رایگانِ هر لیست «دست‌چین» است (جذاب و کاربردی)، نه ده‌تای اولِ فایل.
+  // اگر شناسه‌ای در فایل نباشد یا در گروهِ رایگان نباشد، همین‌جا خطا می‌دهد تا بی‌صدا خراب نشود.
+  const picks = FREE_PICKS[list] || [];
+  const byId = new Map(words.map((w) => [Number(w.id), w]));
+  for (const id of picks) {
+    const w = byId.get(id);
+    if (!w) throw new Error(`FREE_PICKS.${list}: id ${id} not found`);
+    if (!(FREE_GROUPS[list] || []).includes(w.__g)) throw new Error(`FREE_PICKS.${list}: id ${id} (${w.en}) is in group "${w.__g}", not a free group`);
   }
+  if (picks.length !== FREE_PER_GROUP && (FREE_GROUPS[list] || []).length) throw new Error(`FREE_PICKS.${list} must have exactly ${FREE_PER_GROUP} ids`);
+  const pickSet = new Set(picks);
+  for (const w of words) w.__free = pickSet.has(Number(w.id));
   return words;
 }
 

@@ -26,12 +26,96 @@ const int _kMaxChars = 300; // سقفِ Worker برای /api/translate-text
 const int _kAiConcurrency = 4; // هم‌زمانیِ درخواست‌های AI از این گوشی
 const int _kProvConcurrency = 3; // هم‌زمانیِ ترجمه‌ی موقت (ML Kit/آنلاین)
 const Duration _kGrace = Duration(milliseconds: 900);
+// تلاش‌های خودکارِ پس‌زمینه: اول سریع (کاربر منتظر است)، بعد کم‌کم کندتر
 const List<Duration> _kRetryDelays = <Duration>[
-  Duration(seconds: 15),
+  Duration(seconds: 3),
+  Duration(seconds: 8),
+  Duration(seconds: 20),
   Duration(seconds: 45),
-  Duration(minutes: 2),
+  Duration(seconds: 90),
+  Duration(minutes: 3),
   Duration(minutes: 6),
+  Duration(minutes: 10),
 ];
+
+// ─── پاک‌سازیِ ترجمه‌ی موقت (ML Kit / MyMemory) ───
+// MyMemory گاهی «&#10;» و «&quot;» برمی‌گرداند یا جمله‌ی بی‌ربطِ دیگری (مثلاً از ترجمه‌ی کاربران).
+String _decodeEntities(String s) {
+  String once(String x) {
+    var t = x.replaceAllMapped(RegExp(r'&#(\d+);'), (m) {
+      final c = int.tryParse(m[1]!);
+      return (c == null || c <= 0 || c > 0x10FFFF) ? ' ' : String.fromCharCode(c);
+    });
+    t = t.replaceAllMapped(RegExp(r'&#[xX]([0-9a-fA-F]+);'), (m) {
+      final c = int.tryParse(m[1]!, radix: 16);
+      return (c == null || c <= 0 || c > 0x10FFFF) ? ' ' : String.fromCharCode(c);
+    });
+    return t
+        .replaceAll('&quot;', '"')
+        .replaceAll('&apos;', "'")
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&amp;', '&');
+  }
+
+  return once(once(s)); // دوبار: «&amp;#10;» هم درست شود
+}
+
+String _tidy(String s) =>
+    _decodeEntities(s).replaceAll(RegExp(r'\s+'), ' ').trim();
+
+const Set<String> _kNonLatinTargets = {
+  'fa', 'ar', 'hi', 'zh', 'ko', 'ru', 'ja',
+};
+
+// واژه‌های بزرگ‌حرفی که نامِ شخص نیستند و در زبانِ مقصد عوض می‌شوند
+const Set<String> _kNotNames = {
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+  'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
+  'september', 'october', 'november', 'december',
+  'english', 'spanish', 'french', 'german', 'italian', 'persian', 'iran',
+  'iranian', 'american', 'british', 'turkish', 'arabic', 'chinese', 'japanese',
+  'korean', 'russian', 'hindi', 'spain', 'france', 'germany', 'italy', 'turkey',
+  'china', 'japan', 'korea', 'russia', 'india', 'england', 'mexico', 'egypt',
+  'christmas', 'thanks', 'please', 'sorry', 'hello', 'good', 'nice', 'happy',
+  'welcome', 'excuse', 'goodbye', 'yes', 'what', 'where', 'when', 'who', 'why',
+  'how', 'the', 'this', 'that', 'let', 'don', 'mr', 'mrs', 'ms', 'dr',
+};
+
+String _plain(String s) => s
+    .toLowerCase()
+    .replaceAll(RegExp('[àáâãäå]'), 'a')
+    .replaceAll(RegExp('[èéêë]'), 'e')
+    .replaceAll(RegExp('[ìíîï]'), 'i')
+    .replaceAll(RegExp('[òóôõö]'), 'o')
+    .replaceAll(RegExp('[ùúûü]'), 'u')
+    .replaceAll('ñ', 'n')
+    .replaceAll('ç', 'c')
+    .replaceAll('ı', 'i')
+    .replaceAll('ş', 's')
+    .replaceAll('ğ', 'g');
+
+/// نام‌های خاصِ وسطِ جمله («Lisa»، «Sam») باید در ترجمه‌ی لاتین‌نویس بمانند؛
+/// وگرنه معمولاً یک جمله‌ی بی‌ربط از ترجمه‌ی کاربرانِ MyMemory است.
+bool _namesKept(String src, String out, String to) {
+  if (_kNonLatinTargets.contains(to)) return true;
+  final o = _plain(out);
+  for (final m in RegExp(r"[A-Za-z][A-Za-z'’-]*").allMatches(src)) {
+    final w = m.group(0)!;
+    if (w.length < 3 || w.toUpperCase() == w) continue;
+    final c = w.codeUnitAt(0);
+    if (c < 65 || c > 90) continue; // بزرگ‌حرف نیست
+    final before = src.substring(0, m.start).trimRight();
+    if (before.isEmpty) continue; // اولِ جمله
+    if ('.!?¿¡:;'.contains(before[before.length - 1])) continue;
+    final lw = w.toLowerCase().replaceAll(RegExp("['’-].*\$"), '');
+    if (lw.length < 3 || _kNotNames.contains(lw)) continue;
+    final stem = _plain(lw.length > 4 ? lw.substring(0, 4) : lw);
+    if (!o.contains(stem)) return false;
+  }
+  return true;
+}
 
 const Set<String> _kWorkerLangs = {
   'fa', 'en', 'it', 'hi', 'tr', 'ar', 'es', 'de', 'fr', 'zh', 'ko', 'ru', 'ja',
@@ -82,7 +166,7 @@ class _Job {
   String? latest;
   bool latestFinal = false;
   bool gaveUp = false;
-  bool noRetry = false;
+  int invalid = 0; // چند بار AI خروجیِ نامعتبر داد (بیش از ۲ بار → دیگر تلاش نکن)
 }
 
 class AiFirstTranslator {
@@ -149,7 +233,15 @@ class AiFirstTranslator {
     final c = svc.peekCached(text, from, to);
     if (c == null || c.trim().isEmpty) return null;
     final fin = db.peek(_marker(from, to, text)) != null;
-    return (text: c.trim(), isFinal: fin);
+    if (fin) return (text: c.trim(), isFinal: true);
+    // ترجمه‌ی موقتیِ قدیمی (ML Kit/MyMemory) ممکن است خراب ذخیره شده باشد → تمیز یا حذف
+    final t = _tidy(c);
+    if (t.isEmpty ||
+        t.toLowerCase() == text.trim().toLowerCase() ||
+        !_namesKept(text, t, to)) {
+      return null;
+    }
+    return (text: t, isFinal: false);
   }
 
   /// شروع/پیوستن به ترجمه‌ی یک متن. نتیجه همیشه ناهمگام (microtask) تحویل داده می‌شود.
@@ -248,7 +340,7 @@ class AiFirstTranslator {
         aiSettings: AiSettings(backendUrl: j.base),
       ))
           .trim();
-      if (r.isNotEmpty) {
+      if (r.isNotEmpty && r.toLowerCase() != j.text.trim().toLowerCase()) {
         _emit(j, r, true);
       } else {
         _giveUp(j);
@@ -300,16 +392,43 @@ class AiFirstTranslator {
       return;
     }
 
-    // AI جواب نداد: اگر هیچ‌چیز نداریم، رابط می‌تواند «ترجمه نشد» نشان دهد؛ کار ادامه دارد
-    if (j.latest == null) _giveUp(j);
+    // AI جواب نداد (چه دیر، چه «سریع و با خطا / مکثِ سهمیه»): همین حالا ML Kit/آنلاین.
+    // (قبلاً اگر AI سریع خطا می‌داد این مرحله رد می‌شد و «ترجمه نشد» می‌آمد.)
+    if (j.latest == null) {
+      final prov = await _provisional(j);
+      if (prov != null && j.latest == null) _emit(j, prov, false);
+    }
 
-    // 🔁 تلاش‌های خودکارِ پس‌زمینه (فقط تا وقتی کسی منتظرِ این ترجمه است)
-    for (final d in _kRetryDelays) {
-      if (j.noRetry) break;
-      final wait = d.inMilliseconds > _pauseLeftMs()
-          ? d
-          : Duration(milliseconds: _pauseLeftMs() + 500);
-      await Future<void>.delayed(wait);
+    // 🔁 تلاش‌های خودکارِ پس‌زمینه (فقط تا وقتی کسی منتظرِ این ترجمه است).
+    // وقتی AI برسد، ترجمه‌ی موقت بی‌صدا جایگزین می‌شود؛ نیازی به دکمه‌ی رفرش نیست.
+    var attempt = 0; // فقط تلاش‌های واقعیِ AI را می‌شمارد
+    var provTries = 0; // تلاشِ ترجمه‌ی موقت در زمانِ مکث
+    var rounds = 0;
+    while (attempt < _kRetryDelays.length) {
+      if (j.invalid >= 2) break;
+      if (j.listeners.isEmpty) break;
+
+      if (_paused()) {
+        // سهمیه/سرور فعلاً جواب نمی‌دهد: AI را نمی‌زنیم، فقط ترجمه‌ی موقت را تازه می‌کنیم
+        final left = _pauseLeftMs();
+        final nap = j.latest == null
+            ? Duration(seconds: left > 30000 ? 30 : (left ~/ 1000) + 1)
+            : Duration(
+                milliseconds: left + 500 > 300000 ? 300000 : left + 500);
+        await Future<void>.delayed(nap);
+        if (j.listeners.isEmpty) break;
+        if (j.latest == null && provTries < 6) {
+          provTries++;
+          final prov = await _provisional(j);
+          if (prov != null && j.latest == null) _emit(j, prov, false);
+          rounds++;
+          if (rounds >= 2 && j.latest == null) _giveUp(j);
+        }
+        continue;
+      }
+
+      await Future<void>.delayed(_kRetryDelays[attempt]);
+      attempt++;
       if (j.listeners.isEmpty) break;
       ai = await _askAi(j);
       if (ai != null) {
@@ -317,12 +436,17 @@ class AiFirstTranslator {
         _emit(j, ai, true);
         return;
       }
-      // هنوز چیزی برای نشان‌دادن نیست؟ یک بار دیگر ترجمه‌ی موقت
-      if (j.latest == null && !j.noRetry) {
+      // هنوز چیزی برای نشان‌دادن نیست؟ دوباره ترجمه‌ی موقت (مثلاً مدل ML Kit تازه دانلود شده)
+      if (j.latest == null) {
         final prov = await _provisional(j);
         if (prov != null && j.latest == null) _emit(j, prov, false);
       }
+      rounds++;
+      // بعد از دو دورِ ناموفق، رابط «ترجمه نشد» نشان می‌دهد؛ ولی تلاش ادامه دارد
+      // و اگر چیزی رسید خودکار جایگزین می‌شود.
+      if (rounds >= 2 && j.latest == null) _giveUp(j);
     }
+    if (j.latest == null) _giveUp(j);
   }
 
   /// ترجمه‌ی موقت: ML Kit روی گوشی، بعد مترجم آنلاین (بدون AI).
@@ -330,14 +454,17 @@ class AiFirstTranslator {
   static Future<String?> _provisional(_Job j) {
     return _provGate.run<String?>(() async {
       try {
-        final r = (await j.svc.translateNetwork(
+        final r = _tidy(await j.svc.translateNetwork(
           text: j.text,
           targetLang: j.to,
           sourceLang: j.from,
           aiSettings: null,
-        ))
-            .trim();
-        return _good(j, r) ? r : null;
+        ));
+        if (r.isEmpty || r.toLowerCase() == j.text.trim().toLowerCase()) {
+          return null; // سرویس‌ها نتوانستند (برگرداندنِ خودِ متن)
+        }
+        if (!_good(j, r) || !_namesKept(j.text, r, j.to)) return null;
+        return r;
       } catch (_) {
         return null;
       }
@@ -382,8 +509,8 @@ class AiFirstTranslator {
               looksLikeAIReasoning(cleaned) ||
               looksLikeGuardOutput(cleaned) ||
               !_good(j, cleaned)) {
-            // خروجیِ نامعتبر: تکرارش فایده‌ای ندارد (هزینه‌ی بی‌جا)
-            j.noRetry = true;
+            // خروجیِ نامعتبر: حداکثر دو بار دیگر امتحان می‌شود (هر بار ممکن است مدلِ دیگری جواب بدهد)
+            j.invalid++;
             _okCall();
             return null;
           }

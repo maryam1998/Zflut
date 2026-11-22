@@ -14,3 +14,16 @@
 تغییرِ محتوا: فقط فایل‌های paid-content/*.json را عوض کن (منبعِ کامل؛ داخلِ اپ نمی‌رود).
 نسخه‌ی رایگانِ assets/data/ (ده لغتِ اولِ هر دسته + words_index.json = شمارِ کلِ لغاتِ هر دسته) از آن‌ها با این دستور ساخته می‌شود:
    node scripts/build-paid-content.mjs --assets
+
+────────────────────────────────────────
+محتوای رایگان (نسخه‌ی فعلی)
+  • تب Talk (مکالمه): فقط موضوع «Greetings and Small Talk» و فقط سطح A1
+  • دیکشنری من: ده لغتِ دست‌چینِ «Food & drink»
+  • Vocabulary in use: ده لغتِ دست‌چینِ «Health & illness»
+  • Slang: ده لغتِ دست‌چینِ «People & personality»
+  عوض‌کردنِ لغاتِ رایگان: فهرستِ FREE_PICKS در scripts/build-paid-content.mjs → سپس
+     node scripts/build-paid-content.mjs --assets
+  و workflow «Seed paid content (D1)» را اجرا کن (بعد از پچ zip خودکار اجرا می‌شود).
+
+پیش‌ترجمه‌ی محتوای رایگان (کشِ D1، بدونِ مصرفِ سهمیه‌ی AI)
+     scripts/pretranslate-free.mjs   (راهنما: بالای همان فایل و scripts/pretranslate-free.workflow.yml)
