@@ -866,9 +866,8 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
           if (u.pi == paraIdx && u.lang == lang) continue;
           widget.onParagraphRetranslated?.call(u.lang, u.pi, u.text);
         }
-        // برای بقیه‌ی کاربرها هم ذخیره شود (فقط ترجمه‌ای که خودِ کاربر با ↻ اصلاح کرده)
-        SharedTranslations.share(
-            ref.read(aiSettingsProvider).baseUrl, src, widget.langCode, lang, r);
+        // 🔒 ↻ فقط روی گوشیِ خودِ کاربر قفل می‌شود (خودِ retranslate این کار را می‌کند)؛
+        // به سرور فقط اگر AI تأیید کرده باشد و آن هم فقط به‌عنوان پیشنهاد (داخلِ سرویس).
       } else if (!_tr.containsKey(key)) {
         setState(() => _failed.add(key));
       }

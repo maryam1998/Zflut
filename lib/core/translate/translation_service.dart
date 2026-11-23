@@ -669,14 +669,14 @@ class TranslationService {
   }) async {
     final hard = _hardcodedFarewell(text, sourceLang, targetLang);
     if (hard != null) return hard;
-    final r = await _retranslate0(
+    final r0 = await _retranslate0(
       text: text,
       targetLang: targetLang,
       sourceLang: sourceLang,
       aiSettings: aiSettings,
       previous: previous,
     );
-    final out = _fixFarewell(text, sourceLang, targetLang, r);
+    final out = _fixFarewell(text, sourceLang, targetLang, r0.text);
     // 📌 نتیجه‌ی ↻ برای همیشه روی دستگاه قفل می‌شود (حتی بعد از بستن/آپدیتِ برنامه)
     final o = out.trim();
     if (o.isNotEmpty &&
@@ -684,20 +684,26 @@ class TranslationService {
         !looksLikelyMistranslated(text, o, targetLang,
             sourceLang: sourceLang)) {
       await pinPut(text, sourceLang, targetLang, o);
-      SharedTranslations.share(aiSettings?.baseUrl ?? kDefaultBackendUrl, text,
-          sourceLang, targetLang, o);
+      // 🔒 ↻ فقط برای خودِ کاربر قفل می‌شود. فقط اگر AI تأییدش کرده باشد به‌عنوان «پیشنهاد» به
+      // سرور می‌رود؛ سرور هرگز با آن ترجمه‌ی موجودِ کشِ مشترک را جایگزین نمی‌کند.
+      if (r0.aiApproved && o == r0.text.trim()) {
+        SharedTranslations.share(aiSettings?.baseUrl ?? kDefaultBackendUrl,
+            text, sourceLang, targetLang, o,
+            aiVerified: true);
+      }
     }
     return out;
   }
 
-  Future<String> _retranslate0({
+  /// aiApproved = نتیجه را خودِ AI ساخته یا اصلاح/تأیید کرده (فقط همین‌ها لایقِ پیشنهاد به سرورند).
+  Future<({String text, bool aiApproved})> _retranslate0({
     required String text,
     required String targetLang,
     String sourceLang = 'en',
     AiSettings? aiSettings,
     String? previous,
   }) async {
-    if (text.trim().isEmpty) return text;
+    if (text.trim().isEmpty) return (text: text, aiApproved: false);
     final ai = aiSettings;
     final prev = previous?.trim();
 
@@ -707,7 +713,7 @@ class TranslationService {
     bool same(String r) =>
         prev != null && prev.isNotEmpty && r.trim() == prev;
 
-    Future<String> run() async {
+    Future<({String text, bool aiApproved})> run() async {
       // ۰. ML Kit (فقط برای تشخیصِ لغتِ هم‌شکل مثل hospital؛ نتیجه‌اش جایگزین نمی‌شود)
       try {
         final ml = await _viaMlKit(text, targetLang, sourceLang);
@@ -729,15 +735,16 @@ class TranslationService {
       } catch (_) {}
 
       // ۲. ناظر AI: فقط اگر مشکوک بود یا همان ترجمه‌ی قبلی تکرار شد
+      var approved = false;
       if (ai != null && result.trim().isNotEmpty &&
           (bad(result) || same(result))) {
-        result = await _verifyWithAI(text, targetLang, result, ai);
+        final v = await _verifyWithAIQ(text, targetLang, result, ai);
+        result = v.text;
+        approved = v.approved;
       }
       if (result.trim().isNotEmpty && !bad(result) && !same(result)) {
         await cachePut(text, sourceLang, targetLang, result);
-        SharedTranslations.share(ai?.baseUrl ?? kDefaultBackendUrl, text,
-            sourceLang, targetLang, result);
-        return result;
+        return (text: result, aiApproved: approved);
       }
 
       // ۳. آخرین چاره: ترجمه‌ی مستقیم با AI
@@ -747,19 +754,20 @@ class TranslationService {
               useShared: false);
           if (!bad(r)) {
             await cachePut(text, sourceLang, targetLang, r);
-            SharedTranslations.share(ai.baseUrl, text, sourceLang, targetLang, r);
-            return r;
+            return (text: r, aiApproved: true);
           }
         } catch (_) {}
       }
       // اگر ترجمه‌ی سالمی هست (حتی تکراری) همان را بده؛ وگرنه متن اصلی
-      return (result.trim().isNotEmpty && !bad(result)) ? result : text;
+      return (result.trim().isNotEmpty && !bad(result))
+          ? (text: result, aiApproved: false)
+          : (text: text, aiApproved: false);
     }
 
     try {
       return await run().timeout(const Duration(seconds: 25));
     } catch (_) {
-      return text;
+      return (text: text, aiApproved: false);
     }
   }
 
@@ -847,7 +855,8 @@ class TranslationService {
         // 🗄️ اصلاحِ AI (هزینه داشت) برای بقیه‌ی کاربرها هم ذخیره شود تا دوباره AI صدا زده نشود
         if (aiFixed && aiSettings != null) {
           SharedTranslations.share(
-              aiSettings.baseUrl, text, sourceLang, targetLang, result);
+              aiSettings.baseUrl, text, sourceLang, targetLang, result,
+              aiVerified: true);
         }
         return result;
       }
@@ -1334,7 +1343,7 @@ class TranslationService {
     }
   }
 
-  Future<String> _verifyWithAI(
+  Future<({String text, bool approved})> _verifyWithAIQ(
     String source,
     String target,
     String draft,
@@ -1360,21 +1369,33 @@ class TranslationService {
       final result = await callAI(
           prompt: prompt, maxTokens: capTokens, retries: 0, settings: settings);
       final cleaned = stripAIReasoning(result);
-      if (cleaned.isEmpty ||
-          RegExp(r'^OK\.?$', caseSensitive: false).hasMatch(cleaned) ||
-          looksLikeAIReasoning(cleaned)) {
-        return draft;
+      if (cleaned.isEmpty || looksLikeAIReasoning(cleaned)) {
+        return (text: draft, approved: false);
       }
-      if (looksLikeGuardOutput(cleaned)) return draft;
+      // AI صراحتاً «OK» گفت = پیش‌نویس را تأیید کرد
+      if (RegExp(r'^OK\.?$', caseSensitive: false).hasMatch(cleaned)) {
+        return (text: draft, approved: true);
+      }
+      if (looksLikeGuardOutput(cleaned)) return (text: draft, approved: false);
       final fixed = _stripQuotes(cleaned);
-      if (fixed.isEmpty) return draft;
+      if (fixed.isEmpty) return (text: draft, approved: false);
       // «اصلاح»ی که چند برابرِ پیش‌نویس است ترجمه نیست
-      if (draft.isNotEmpty && fixed.length > draft.length * 3 + 20) return draft;
-      return fixed;
+      if (draft.isNotEmpty && fixed.length > draft.length * 3 + 20) {
+        return (text: draft, approved: false);
+      }
+      return (text: fixed, approved: true);
     } catch (_) {
-      return draft;
+      return (text: draft, approved: false);
     }
   }
+
+  Future<String> _verifyWithAI(
+    String source,
+    String target,
+    String draft,
+    AiSettings settings,
+  ) async =>
+      (await _verifyWithAIQ(source, target, draft, settings)).text;
 
   // ═══════════════════════════════════════════════════════════════
   // ترجمه‌ی «داخل جمله»ی یک کلمه — معادلِ translateWordInContext وب

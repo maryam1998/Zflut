@@ -1,7 +1,11 @@
 // ---------------------------------------------------------------------------
 // 🗄️ /api/tr-share — کشِ مشترکِ ترجمه‌های اصلاح‌شده‌ی کاربرها
 //   op "get": { items: [{text}], source_lang_code, target_lang_code } → { results: [string|null, ...] }
-//   op "put": { text, translation, source_lang_code, target_lang_code } → { ok: true }
+//   op "put": { text, translation, source_lang_code, target_lang_code, verified: true } → { ok: true }
+//     🔒 فقط «پیشنهادِ تأییدشده با AI» (verified:true) پذیرفته می‌شود؛ بدونِ آن نادیده گرفته می‌شود.
+//     ترجمه‌ی موجود در کشِ مشترک (ساخته‌ی AI یا قبلاً ذخیره‌شده) هرگز جایگزین نمی‌شود: اگر ردیفی
+//     نبود همین ذخیره می‌شود؛ اگر بود، فقط در جدولِ tr_suggest به‌عنوان پیشنهاد (با شمارنده) ثبت می‌شود
+//     و هیچ‌جا به کاربرها نشان داده نمی‌شود (برای بازبینیِ دستیِ مدیر).
 // از همان جدول و همان کلیدِ /api/translate-text (gen_cache) استفاده می‌کند؛ پس
 // translate-text هم ترجمه‌ی اصلاح‌شده را می‌بیند. هیچ AI صدا زده نمی‌شود (هزینه‌ی صفر).
 // ردیف‌های این مسیر provider = "user" دارند (برای پاک‌سازی: DELETE FROM gen_cache WHERE provider='user').
@@ -67,6 +71,36 @@ function norm(body) {
   return { source, target };
 }
 
+// ردیفِ موجودِ کشِ مشترک (v و provider) یا null
+async function existingRow(env, deps, key) {
+  try {
+    if (env.TR_DB) {
+      const r = await env.TR_DB.prepare("SELECT v, provider FROM gen_cache WHERE k = ?1").bind(key).first();
+      return r ? { v: r.v, provider: r.provider } : null;
+    }
+  } catch {
+    // جدول هنوز ساخته نشده → مسیرِ ساده‌ی پایین
+  }
+  const v = await deps.genCacheGet(env, key);
+  return v ? { v, provider: "?" } : null;
+}
+
+// 📝 پیشنهادِ کاربر برای ترجمه‌ای که قفل است؛ فقط ذخیره می‌شود، به کسی نمایش داده نمی‌شود.
+// بازبینی: SELECT * FROM tr_suggest ORDER BY n DESC;
+async function saveSuggestion(env, key, text, source, target, tr) {
+  try {
+    if (!env.TR_DB) return;
+    await env.TR_DB.prepare(
+      "CREATE TABLE IF NOT EXISTS tr_suggest (k TEXT NOT NULL, v TEXT NOT NULL, text TEXT, src TEXT, tgt TEXT, n INTEGER NOT NULL DEFAULT 1, created INTEGER NOT NULL, PRIMARY KEY (k, v))"
+    ).run();
+    await env.TR_DB.prepare(
+      "INSERT INTO tr_suggest (k, v, text, src, tgt, n, created) VALUES (?1, ?2, ?3, ?4, ?5, 1, ?6) ON CONFLICT(k, v) DO UPDATE SET n = n + 1"
+    ).bind(key, tr, text, source, target, Date.now()).run();
+  } catch {
+    // پیشنهاد مهم نیست؛ خطا نباید چیزی را خراب کند
+  }
+}
+
 export async function handleTrShare(request, env, ctx, cors, deps) {
   const { genCacheGet, genCachePut, trCacheKey } = deps;
   let body;
@@ -100,12 +134,19 @@ export async function handleTrShare(request, env, ctx, cors, deps) {
       const ratio = tr.length / text.length;
       if (ratio < 0.15 || ratio > 6) return resp({ ok: false, skipped: "bad-ratio" }, 200, cors);
     }
+    // 🔒 فقط پیشنهادِ تأییدشده با AI. کلاینت‌های قدیمی (بدونِ verified) و ↻ی ساده نادیده گرفته می‌شوند.
+    if (body.verified !== true) return resp({ ok: true, skipped: "unverified" }, 200, cors);
     const key = await keyOf(text);
-    // 💾 اگر همین ترجمه از قبل در کش هست، ننویس (سقفِ نوشتنِ D1 رایگان فقط ۱۰۰٬۰۰۰ ردیف در روز است؛ خواندن ۵ میلیون)
-    const existing = await genCacheGet(env, key);
-    if (existing && existing === tr) return resp({ ok: true, skipped: "same" }, 200, cors);
-    await genCachePut(env, key, tr, "user");
-    return resp({ ok: true }, 200, cors);
+    // ترجمه‌ی موجود (کلیدِ دقیقِ مبدأ یا «auto») = قفل؛ هرگز جایگزین نمی‌شود
+    const existing = await existingRow(env, deps, key)
+      || (source !== "auto" ? await existingRow(env, deps, await trCacheKey(env, "auto", target, text)) : null);
+    if (!existing) {
+      await genCachePut(env, key, tr, "user");
+      return resp({ ok: true }, 200, cors);
+    }
+    if (existing.v === tr) return resp({ ok: true, skipped: "same" }, 200, cors);
+    await saveSuggestion(env, key, text, source, target, tr);
+    return resp({ ok: true, queued: "suggestion" }, 200, cors);
   }
 
   return resp({ error: "unknown op" }, 400, cors);

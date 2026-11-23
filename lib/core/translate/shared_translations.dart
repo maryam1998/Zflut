@@ -169,9 +169,14 @@ class SharedTranslations {
     return out;
   }
 
-  /// ذخیره‌ی ترجمه‌ی اصلاح‌شده برای بقیه (fire-and-forget).
+  /// پیشنهادِ ترجمه‌ی «تأییدشده با AI» به سرور (fire-and-forget).
+  /// 🔒 بدونِ [aiVerified] هیچ‌چیز فرستاده نمی‌شود (ترجمه‌ی ↻ی خودِ کاربر فقط روی گوشی می‌ماند).
+  /// سرور هم هرگز ترجمه‌ی موجودِ کشِ مشترک را با این جایگزین نمی‌کند؛ فقط اگر چیزی نبود ذخیره
+  /// می‌کند، وگرنه به‌عنوان «پیشنهاد» کنارش نگه می‌دارد.
   static void share(
-      String baseUrl, String text, String from, String to, String tr) {
+      String baseUrl, String text, String from, String to, String tr,
+      {bool aiVerified = false}) {
+    if (!aiVerified) return;
     final src = text.trim();
     final t = tr.trim();
     if (!eligible(src) || t.isEmpty || to.isEmpty || _paused()) return;
@@ -188,6 +193,7 @@ class SharedTranslations {
             'target_lang_code': to,
             'text': src,
             'translation': t,
+            'verified': true,
           },
           options: Options(contentType: 'application/json'),
         ).timeout(const Duration(seconds: 10));
