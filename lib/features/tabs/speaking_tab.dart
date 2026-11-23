@@ -1047,6 +1047,12 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
 
   // 💡 راهنما (پیشنهادِ جمله) + جمله‌های آمادهٔ شروع
   bool _hintBusy = false;
+  // ⚡ پیش‌واکشیِ راهنما: پیشنهادها بعد از هر نوبتِ AI بی‌صدا در پس‌زمینه ساخته می‌شوند
+  // تا با زدنِ لامپ فوراً نشان داده شوند (نه بعد از چند ثانیه انتظار).
+  String _hintCacheKey = '';
+  List<List<String>>? _hintCache;
+  Future<List<List<String>>>? _hintFuture;
+  String _hintFutureKey = '';
   String? _hintPicked; // آخرین جمله‌ای که از راهنما آمد (برای کنار گذاشتنِ آن نوبت از شمارشِ ارتقا)
   final Map<String, List<String>> _starterCache = {};
   final Set<String> _starterLoading = {};
@@ -3180,6 +3186,7 @@ Now respond to: "$sentence"
         !spoken.toLowerCase().contains(fixes.first.corrected.toLowerCase())) {
       spoken = '${fixes.first.corrected}. $spoken';
     }
+    _prefetchHints(); // ⚡ تا لامپِ راهنما فوراً جواب بدهد
     return CallTurn(spoken, fixes);
   }
 
@@ -3343,7 +3350,11 @@ Now respond to: "$sentence"
           persona: _persona,
           langCode: lang,
           langName: _enName(lang),
-          onConnected: _callGreeting,
+          onConnected: () async {
+            final g = await _callGreeting();
+            _prefetchHints(); // ⚡ پیشنهادهای اولِ تماس هم از قبل آماده شوند
+            return g;
+          },
           onUserSaid: _callTurn,
           onEnd: endCall,
           onHint: () => _showHint(forCall: true),
@@ -4006,57 +4017,109 @@ Now respond to: "$sentence"
     setState(() => _starterCache[key] = out);
   }
 
+  /// کلیدِ وضعیتِ فعلیِ گفتگو برای کشِ راهنما (با هر پیامِ تازه، زبان یا سطح عوض می‌شود).
+  String _hintKey() {
+    final real = _messages.where((m) => !m.isWelcome).toList();
+    return '$_sessionId|${_activeLang()}|$_userLevel|${real.length}|'
+        '${real.isEmpty ? 0 : real.last.text.hashCode}';
+  }
+
+  /// پیشنهادهای راهنما برای [key]: از کش، یا درخواستِ در حالِ اجرا، یا درخواستِ تازه.
+  Future<List<List<String>>> _hintsFor(String key) {
+    final cached = _hintCache;
+    if (cached != null && cached.isNotEmpty && _hintCacheKey == key) {
+      return Future.value(cached);
+    }
+    final running = _hintFuture;
+    if (running != null && _hintFutureKey == key) return running;
+    late final Future<List<List<String>>> f;
+    f = _fetchHints().then((h) {
+      if (h.isNotEmpty) {
+        _hintCache = h;
+        _hintCacheKey = key;
+      }
+      if (identical(_hintFuture, f)) _hintFuture = null;
+      return h;
+    });
+    _hintFuture = f;
+    _hintFutureKey = key;
+    return f;
+  }
+
+  /// ⚡ بعد از هر نوبتِ AI در تماسِ زنده: پیشنهادها را از قبل می‌سازد (فقط Pro، بی‌صدا).
+  void _prefetchHints() {
+    if (!mounted || !_callMode || !ProStatus.isPro) return;
+    unawaited(_hintsFor(_hintKey()));
+  }
+
+  /// درخواستِ AI برای ۲ جمله‌ی پیشنهادی. هرگز خطا نمی‌دهد؛ ناموفق = [].
+  Future<List<List<String>>> _fetchHints() async {
+    final lang = _activeLang();
+    final langLabel = _enName(lang);
+    final nativeLabel = _enName(ref.read(languageSelectionProvider).native);
+    final hints = <List<String>>[];
+    try {
+      final r = await _callAi(
+          '${_persona.partnerIntro(langLabel)}\n'
+          '${_userLevel == 'auto' ? '' : 'The suggested replies must match CEFR level $_userLevel (simple enough for a learner at that level to say).\n'}'
+          'The $langLabel learner (native language: $nativeLabel) is stuck and does '
+          'not know what to say next. Suggest 2 different short replies THEY could '
+          'say to you now in $langLabel: simple, natural, easy for a beginner, '
+          'each with a different intent (answer / ask back / react). If the '
+          'conversation has not started, suggest 2 ways to start it.\n'
+          'Output EXACTLY 2 lines, each in this format: '
+          '<$langLabel sentence> ||| <its $nativeLabel translation>\n'
+          'No numbering, no markdown, no extra text.\n'
+          'Recent conversation:\n${_ctx(_messages)}\n'
+          '${_hintLastLine()}',
+          200);
+      for (final line in _normalizeAiText(r).split('\n')) {
+        final parts = line.split('|||');
+        if (parts.length < 2) continue;
+        final a = parts[0].replaceAll(RegExp(r'^[\s\-*\d.)]+'), '').trim();
+        final b = parts.sublist(1).join(' ').trim();
+        if (a.isNotEmpty) hints.add([a, b]);
+        if (hints.length == 2) break;
+      }
+    } catch (_) {
+      return <List<String>>[];
+    }
+    return hints;
+  }
+
   /// 💡 «چی بگم؟» — AI سه جمله‌ی پیشنهادی (به زبانِ تمرین + معنی به زبانِ مادری) می‌دهد.
   /// [forCall] = true: جمله‌ی انتخاب‌شده در کادرِ چت نوشته نمی‌شود و به پنلِ ویدیو کال برمی‌گردد.
   Future<String?> _showHint({bool forCall = false}) async {
     if (_hintBusy || _loading) return null;
     if (FreeLimit.blockUnlessPro()) return null; // 🔒 فقط Pro (هزینه‌ی AI)
-    final lang = _activeLang();
-    final langLabel = _enName(lang);
-    final native = ref.read(languageSelectionProvider).native;
-    final nativeLabel = _enName(native);
-    // ⚡ شیتِ راهنما فوراً باز می‌شود؛ درخواستِ AI (همان یک درخواستِ قبلی) هم‌زمان در پس‌زمینه
-    // اجرا می‌شود و فقط ۲ پیشنهاد می‌خواهد. null = در حالِ ساخت، [] = ناموفق.
+    // ⚡ شیتِ راهنما فوراً باز می‌شود. اگر پیشنهادها از قبل (پیش‌واکشی) آماده باشند همان لحظه
+    // نشان داده می‌شوند؛ وگرنه درخواستِ در حالِ اجرا (یا یک درخواستِ تازه) منتظر می‌ماند.
+    // null = در حالِ ساخت، [] = ناموفق.
     final hintsN = ValueNotifier<List<List<String>>?>(null);
     var sheetOpen = true;
-    setState(() => _hintBusy = true);
-    unawaited(() async {
-      List<List<String>> hints = [];
-      try {
-        final r = await _callAi(
-            '${_persona.partnerIntro(langLabel)}\n'
-            '${_userLevel == 'auto' ? '' : 'The suggested replies must match CEFR level $_userLevel (simple enough for a learner at that level to say).\n'}'
-            'The $langLabel learner (native language: $nativeLabel) is stuck and does '
-            'not know what to say next. Suggest 2 different short replies THEY could '
-            'say to you now in $langLabel: simple, natural, easy for a beginner, '
-            'each with a different intent (answer / ask back / react). If the '
-            'conversation has not started, suggest 2 ways to start it.\n'
-            'Output EXACTLY 2 lines, each in this format: '
-            '<$langLabel sentence> ||| <its $nativeLabel translation>\n'
-            'No numbering, no markdown, no extra text.\n'
-            'Recent conversation:\n${_ctx(_messages)}\n'
-            '${_hintLastLine()}',
-            200);
-        for (final line in _normalizeAiText(r).split('\n')) {
-          final parts = line.split('|||');
-          if (parts.length < 2) continue;
-          final a = parts[0].replaceAll(RegExp(r'^[\s\-*\d.)]+'), '').trim();
-          final b = parts.sublist(1).join(' ').trim();
-          if (a.isNotEmpty) hints.add([a, b]);
-          if (hints.length == 2) break;
-        }
-      } catch (_) {
-        hints = [];
-      }
+    final key = _hintKey();
+    final cached = _hintCache;
+    if (cached != null && cached.isNotEmpty && _hintCacheKey == key) {
+      hintsN.value = cached;
+    } else {
+      setState(() => _hintBusy = true);
+    }
+    Future<void> load() async {
+      hintsN.value = null;
+      var hints = await _hintsFor(key);
+      // ناموفق بود؟ یک بار خودکار دوباره (بدونِ اینکه کاربر چیزی بزند)
+      if (hints.isEmpty && sheetOpen) hints = await _hintsFor(key);
       hintsN.value = hints;
       if (!mounted) return;
-      setState(() => _hintBusy = false);
+      if (_hintBusy) setState(() => _hintBusy = false);
       if (hints.isEmpty && !sheetOpen) {
         setState(() => _error = _faUi
             ? 'پیشنهادی پیدا نشد؛ دوباره امتحان کن.'
             : 'No suggestions this time. Try again.');
       }
-    }());
+    }
+
+    if (hintsN.value == null) unawaited(load());
     if (!mounted) return null;
     final c = context.appColors;
     final picked = await showModalBottomSheet<String>(
@@ -4114,11 +4177,28 @@ Now respond to: "$sentence"
                   if (hs.isEmpty) {
                     return Padding(
                       padding: EdgeInsets.only(bottom: forCall ? 8 : 12),
-                      child: Text(
-                        _faUi
-                            ? 'پیشنهادی پیدا نشد؛ دوباره امتحان کن یا خودت بنویس.'
-                            : 'No suggestions this time. Try again or type your own.',
-                        style: TextStyle(color: c.inkSoft, fontSize: 12.5),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _faUi
+                                  ? 'پیشنهادی پیدا نشد؛ دوباره امتحان کن یا خودت بنویس.'
+                                  : 'No suggestions this time. Try again or type your own.',
+                              style:
+                                  TextStyle(color: c.inkSoft, fontSize: 12.5),
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                              setState(() => _hintBusy = true);
+                              unawaited(load());
+                            },
+                            icon: Icon(Icons.refresh_rounded,
+                                size: 16, color: c.gold),
+                            label: Text(_faUi ? 'دوباره' : 'Retry',
+                                style: TextStyle(color: c.gold, fontSize: 12.5)),
+                          ),
+                        ],
                       ),
                     );
                   }

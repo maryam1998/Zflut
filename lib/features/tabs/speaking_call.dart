@@ -5151,14 +5151,12 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               children: [
                 _miniToggle(
                   c,
-                  widget.autoHint
-                      ? _tr(context, 'دست‌آزاد', 'Hands-free')
-                      : _tr(context, 'دست‌آزاد (شروع و پایانِ خودکار)',
-                          'Hands-free (auto start / stop)'),
+                  _tr(context, 'دست‌آزاد', 'Hands-free'),
                   _handsFree,
                   (v) => setState(() => _handsFree = v),
                 ),
-                if (widget.autoHint) ...[
+                // 🎯 چک کردنِ تلفظ: هم در تمرین و هم در تماسِ زنده (پیش‌فرض خاموش)
+                if (widget.onHint != null) ...[
                   const SizedBox(width: 14),
                   _miniToggle(
                     c,
