@@ -12,7 +12,8 @@
 //   FREE_LIMIT_<FEATURE>  = "5"            سقفِ اختصاصیِ یک بخش (مثلاً FREE_LIMIT_STORY)
 //   VIP_EMAILS            = "a@gmail.com, b@gmail.com"
 //   DAILY_<FEATURE>       = "30"           سقفِ روزانه‌ی هر بخش — پیش‌فرض فقط برای کاربرِ رایگان
-//   DAILY_APPLY_TO_PRO    = "1"            (اختیاری) سقفِ روزانه‌ی بالا برای Pro/VIP هم اعمال شود
+//   DAILY_APPLY_TO_PRO    = "1"            (اختیاری) سقفِ روزانه‌ی بالا برای Pro هم اعمال شود (VIP همیشه معاف)
+//   PRO_DAILY_TRANSLATE   = "600"          سقفِ روزانه‌ی ترجمه‌ی کش‌نشده برای Pro (رایگان: DAILY_TRANSLATE؛ VIP: نامحدود)
 //
 // سیاستِ «کل عمر» (برای کاربرِ رایگان): جدول‌های feature_usage و feature_session کلیدشان
 // (user_id, feature) است، بدونِ تاریخ ← یعنی FREE_LIMIT_VIDEOCALL = تعدادِ جلسه در «کل عمر».
@@ -320,8 +321,13 @@ function dailyAppliesToPro(env) {
  * پس ترجمه‌های کش‌شده هیچ سهمیه‌ای مصرف نمی‌کنند. برای همه‌ی کاربران (رایگان/Pro/VIP).
  * DAILY_TRANSLATE در wrangler.toml؛ نبود/۰ = بدونِ سقف. null = اجازه، وگرنه Response ۴۲۹.
  */
-export async function aiMissGate(env, userId, cors) {
-  const d = await consumeDaily(env, userId, "translate", "");
+export async function aiMissGate(env, userId, cors, email = "") {
+  // 👑 VIP (ایمیلِ داخلِ VIP_EMAILS): بدونِ سقفِ روزانه‌ی ترجمه
+  if (isVipEmail(env, email)) return null;
+  // 💎 Pro: سقفِ بالاترِ PRO_DAILY_TRANSLATE (اگر ست باشد)؛ رایگان: DAILY_TRANSLATE
+  let override = 0;
+  if (await isPro(env, userId, email)) override = proDailyLimitOf(env, "translate");
+  const d = await consumeDaily(env, userId, "translate", "", "", override);
   if (d.ok) return null;
   console.warn(`[LIMIT] daily_feature_limit user=${userId} feature=translate limit=${d.limit}`);
   return dailyResponse("translate", d.limit, cors);
@@ -475,8 +481,11 @@ export async function featureGate(request, env, url, session, cors) {
   }
   const pro = await isPro(env, session.sub, session.em);
 
-  // 💬 Pro/VIP: سقفِ جمله‌ی ویدیوکال در روز
-  if (pro && feature === "videocall") {
+  // 👑 VIP (ایمیلِ داخلِ VIP_EMAILS) هیچ سقفِ روزانه‌ای ندارد؛ Pro فقط سقف‌های اختصاصیِ Pro را دارد
+  const vip = isVipEmail(env, session.em);
+
+  // 💬 Pro: سقفِ جمله‌ی ویدیوکال در روز (VIP معاف)
+  if (pro && !vip && feature === "videocall") {
     const cg = await proCallSentencesGate(env, session.sub, useId);
     if (!cg.ok) {
       console.warn(`[LIMIT] pro_call_sentences user=${session.sub} limit=${cg.limit}`);
@@ -501,7 +510,8 @@ export async function featureGate(request, env, url, session, cors) {
       return jsonResp({ error: MSG_FA, code: "free_session_over", feature }, 402, cors);
     }
   }
-  // 📅 سقفِ روزانه‌ی هر بخش — سمتِ سرور؛ پیش‌فرض فقط رایگان (Pro/VIP فقط با DAILY_APPLY_TO_PRO)
+  // 📅 سقفِ روزانه‌ی هر بخش — سمتِ سرور؛ پیش‌فرض فقط رایگان (Pro فقط با DAILY_APPLY_TO_PRO)؛ VIP هیچ‌وقت
+  if (vip) return null;
   if (!pro || dailyAppliesToPro(env)) {
     const d = await consumeDaily(env, session.sub, feature, useId, ph);
     if (!d.ok) {
@@ -553,6 +563,7 @@ export async function handleUsage(request, env, url, cors, session) {
     const feature = String(body.feature || "").toLowerCase();
     if (!FEATURES[feature]) return jsonResp({ error: "unknown feature" }, 400, cors);
     const bid = String(body.id || "").slice(0, 64);
+    if (isVipEmail(env, session.em)) return jsonResp({ ok: true, pro: true }, 200, cors);
     if (!pro || dailyAppliesToPro(env)) {
       const dd = await consumeDaily(env, session.sub, feature, bid);
       if (!dd.ok) return dailyResponse(feature, dd.limit, cors);

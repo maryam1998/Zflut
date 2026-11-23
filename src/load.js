@@ -19,7 +19,7 @@
 // اگر D1 خراب/نبود، هر دو سقف بی‌صدا خاموش می‌شوند (کاربر الکی قفل نشود).
 // ---------------------------------------------------------------------------
 import { verifySessionToken } from "./auth.js";
-import { isPro } from "./usage.js";
+import { isPro, isVipEmail } from "./usage.js";
 
 const MSG_BUSY = "الان شلوغه، چند لحظه دیگه (try again in 5s)";
 // پیامِ سقفِ per-user عمداً مثلِ خطای موقتِ AI است (نه «سقف/محدودیت»)؛ اپ ۵xx را «AI جواب نمی‌دهد» نشان می‌دهد.
@@ -221,8 +221,10 @@ export async function beginAi(request, env, kind, cors, opts = {}) {
   let release = noop;
   const sess = env.TR_DB ? await verifySessionToken(env, request.headers.get("X-App-Token")) : null;
   const pro = sess ? await isPro(env, sess.sub, sess.em) : false;
+  // 👑 VIP (ایمیلِ داخلِ VIP_EMAILS): بدونِ سقفِ روزانه‌ی کاربر و بدونِ صفِ همزمانی (سقفِ سراسریِ همه‌ی کاربران باقی می‌ماند)
+  const vip = !!sess && isVipEmail(env, sess.em);
   // 👤 سقفِ روزانه‌ی هر کاربر (فقط AI، نه Whisper) — قبل از صف و سقفِ سراسری، تا کاربرِ پرمصرف سهمِ بقیه را نخورد
-  if (sess && kind !== "whisper") {
+  if (sess && !vip && kind !== "whisper") {
     const u = await takeUser(env, sess.sub, pro);
     if (!u.ok) {
       return {
@@ -232,7 +234,7 @@ export async function beginAi(request, env, kind, cors, opts = {}) {
     }
   }
   if (opts.queue !== false && env.TR_DB) {
-    if (sess && pro) {
+    if (sess && pro && !vip) {
       const s = await acquireSlot(env, sess.sub);
       if (!s.ok) {
         console.warn(`[LIMIT] busy user=${sess.sub}`);

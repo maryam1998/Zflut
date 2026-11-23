@@ -283,7 +283,7 @@ function buildExamplePrompt({ word, lang, meaning, nativeLabel, used }) {
 async function missGate(request, env) {
   if (String(env.AUTH_MODE || "on").toLowerCase() !== "on") return null;
   const sess = await verifySessionToken(env, request.headers.get("X-App-Token"));
-  return sess ? aiMissGate(env, sess.sub, CORS_HEADERS) : null;
+  return sess ? aiMissGate(env, sess.sub, CORS_HEADERS, sess.em) : null;
 }
 
 // --- /api/translate-text -----------------------------------------------------
