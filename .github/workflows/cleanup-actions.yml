@@ -1,0 +1,45 @@
+name: Cleanup Actions storage
+
+# 🧹 دستی (Run workflow): همه‌ی Artifactها و Cacheهای این ریپو را پاک می‌کند و از هر workflow فقط
+# چند اجرای آخر را نگه می‌دارد (حذفِ اجراها، Artifactهای باقی‌مانده‌شان را هم پاک می‌کند).
+# فقط روی همین ریپو اثر دارد؛ سهمیه‌ی Storage بین همه‌ی ریپوهای حساب مشترک است.
+
+on:
+  workflow_dispatch:
+    inputs:
+      keep_runs:
+        description: 'تعدادِ اجراهای اخیرِ هر workflow که بماند'
+        default: '3'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Delete artifacts, caches and old runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          KEEP: ${{ inputs.keep_runs }}
+        run: |
+          echo "== artifacts"
+          gh api --paginate "repos/$REPO/actions/artifacts?per_page=100" --jq '.artifacts[].id' \
+            | while read -r id; do gh api -X DELETE "repos/$REPO/actions/artifacts/$id" --silent || true; done
+
+          echo "== caches"
+          gh api --paginate "repos/$REPO/actions/caches?per_page=100" --jq '.actions_caches[].id' \
+            | while read -r id; do gh api -X DELETE "repos/$REPO/actions/caches/$id" --silent || true; done
+
+          echo "== old runs (keep $KEEP per workflow)"
+          gh api --paginate "repos/$REPO/actions/runs?per_page=100" \
+            --jq '.workflow_runs[] | select(.status == "completed") | "\(.workflow_id) \(.id)"' \
+            | awk -v keep="$KEEP" '{ n[$1]++; if (n[$1] > keep) print $2 }' \
+            | while read -r id; do
+                [ "$id" = "${{ github.run_id }}" ] && continue
+                gh api -X DELETE "repos/$REPO/actions/runs/$id" --silent || true
+              done
+          echo "done"

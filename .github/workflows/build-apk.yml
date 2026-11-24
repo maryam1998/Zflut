@@ -3,6 +3,12 @@ name: Build APK
 on:
   workflow_dispatch:
 
+# خروجی‌ها (APK/AAB) دیگر Artifact نمی‌شوند (سهمیه‌ی Actions Storage را پر می‌کرد)؛
+# به‌جایش در یک GitHub Release «پیش‌نویس» (draft) آپلود می‌شوند که فقط خودت می‌بینی
+# و جزو سهمیه‌ی Actions Storage حساب نمی‌شود.
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,7 +27,7 @@ jobs:
         with:
           channel: stable
           flutter-version: '3.35.x'
-          cache: true
+          cache: false   # کشِ Flutter SDK/pub صدها مگابایت از سهمیه را می‌خورد
 
       - name: Flutter pub get
         run: flutter pub get
@@ -98,12 +104,33 @@ jobs:
           echo "=== خطاهای Gradle ==="
           grep -hE "What went wrong|Execution failed|Could not|FAILED" -A3 build-*.log | head -60 || true
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: STORE-apk-for-bazaar-myket
-          path: build/app/outputs/flutter-apk/app-store-release.apk
+      # 📦 به‌جای upload-artifact: Release پیش‌نویس (draft) = فقط افراد با دسترسیِ push می‌بینند
+      - name: Publish APK + AAB to draft GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: build-${{ github.run_number }}
+        run: |
+          APK=build/app/outputs/flutter-apk/app-store-release.apk
+          AAB=build/app/outputs/bundle/storeRelease/app-store-release.aab
+          cp "$APK" "Phanes-store-build${{ github.run_number }}.apk"
+          cp "$AAB" "Phanes-store-build${{ github.run_number }}.aab"
+          gh release create "$TAG" \
+            "Phanes-store-build${{ github.run_number }}.apk" \
+            "Phanes-store-build${{ github.run_number }}.aab" \
+            --draft --target "${{ github.sha }}" \
+            --title "Build ${{ github.run_number }}" \
+            --notes "STORE build #${{ github.run_number }} (apk: Bazaar/Myket، aab: Google Play)"
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: STORE-aab-for-google-play
-          path: build/app/outputs/bundle/storeRelease/app-store-release.aab
+      # فقط ۲ ریلیزِ آخر نگه داشته شود (هر کدام صدها مگابایت است)
+      - name: Keep only the 2 newest build releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api --paginate "repos/$REPO/releases?per_page=100" \
+            --jq '.[] | select(.tag_name | startswith("build-")) | "\(.created_at) \(.id)"' \
+            | sort -r | tail -n +3 | awk '{print $2}' \
+            | while read -r id; do
+                echo "delete old release $id"
+                gh api -X DELETE "repos/$REPO/releases/$id" || true
+              done

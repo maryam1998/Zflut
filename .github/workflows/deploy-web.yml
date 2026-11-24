@@ -31,7 +31,7 @@ jobs:
         with:
           channel: stable
           flutter-version: '3.35.x'
-          cache: true
+          cache: false   # کشِ Flutter SDK/pub صدها مگابایت از سهمیه را می‌خورد
 
       - name: Generate web folder if missing
         run: |
@@ -74,6 +74,7 @@ jobs:
         with:
           name: pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: build/web
+          retention-days: 1   # بعد از دیپلوی لازم نیست؛ حداقلِ مجاز
 
       - name: Deploy
         id: deployment
