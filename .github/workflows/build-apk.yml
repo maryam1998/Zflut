@@ -112,11 +112,11 @@ jobs:
         run: |
           APK=build/app/outputs/flutter-apk/app-store-release.apk
           AAB=build/app/outputs/bundle/storeRelease/app-store-release.aab
-          cp "$APK" "Phanes-store-build${{ github.run_number }}.apk"
-          cp "$AAB" "Phanes-store-build${{ github.run_number }}.aab"
+          cp "$APK" "AllLingOne-store-build${{ github.run_number }}.apk"
+          cp "$AAB" "AllLingOne-store-build${{ github.run_number }}.aab"
           gh release create "$TAG" \
-            "Phanes-store-build${{ github.run_number }}.apk" \
-            "Phanes-store-build${{ github.run_number }}.aab" \
+            "AllLingOne-store-build${{ github.run_number }}.apk" \
+            "AllLingOne-store-build${{ github.run_number }}.aab" \
             --draft --target "${{ github.sha }}" \
             --title "Build ${{ github.run_number }}" \
             --notes "STORE build #${{ github.run_number }} (apk: Bazaar/Myket، aab: Google Play)"
