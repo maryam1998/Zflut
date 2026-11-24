@@ -1291,7 +1291,7 @@ const VALID_PROVIDERS = [
 function getProviderChain(env) {
   const raw = (
     env.AI_PROVIDER ||
-    "kilocode,llm7,ovhcloud,groq,nvidianim,ollamacloud,cloudflareai,mistral,cohere,zai,aionlabs,modelscope,siliconflow,openrouter,cerebras,grok,gemini,huggingface"
+    "deepseek,kilocode,llm7,ovhcloud,groq,nvidianim,ollamacloud,cloudflareai,mistral,cohere,zai,aionlabs,modelscope,siliconflow,openrouter,cerebras,grok,gemini,huggingface"
   ).toLowerCase();
   const chain = raw
     .split(",")
@@ -1640,7 +1640,7 @@ async function callDeepSeek(prompt, maxTokens, env) {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      model: env.DEEPSEEK_MODEL || "deepseek-chat",
+      model: env.DEEPSEEK_MODEL || "deepseek-v4.1-flash",
       messages: [{ role: "user", content: prompt }],
       max_tokens: maxTokens,
     }),
