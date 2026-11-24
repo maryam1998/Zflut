@@ -246,7 +246,8 @@ export async function beginAi(request, env, kind, cors, opts = {}) {
       release = s.release;
     }
   }
-  const g = await takeGlobal(env, kind);
+  // 👑 VIP: سقفِ سراسریِ AI هم رویش اعمال نمی‌شود (Whisper مستثنا نیست چون سقفِ خودِ Cloudflare دارد)
+  const g = vip && kind !== "whisper" ? { ok: true } : await takeGlobal(env, kind);
   if (!g.ok) {
     await release();
     return {

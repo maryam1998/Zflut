@@ -478,6 +478,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
   bool _retryFailed = false;
   final GlobalKey _refreshKey = GlobalKey();
   int _gen = 0;
+  bool _fromKnown = false; // متنِ فعلی از فایلِ داده آمده و هنوز AI جایگزینش نکرده
   void Function()? _aiStop; // 🤖 لغوِ ترجمه‌ی «اول AI»
 
   @override
@@ -526,6 +527,16 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
 
   void _resolve() {
     final gen = ++_gen;
+    _fromKnown = false;
+
+    // 🤖 تب Talk: ترجمه‌ی آماده‌ی داخلِ فایل (known) فقط موقتی است؛ AI/کشِ مشترک جایگزینش می‌کند
+    final aiRow = widget.aiFirst &&
+        widget.sourceLang.isNotEmpty &&
+        widget.sourceLang != widget.langCode;
+    if (aiRow) {
+      _resolveAiFirst(gen);
+      return;
+    }
 
     if (_hasKnown) {
       _text = widget.knownText;
@@ -577,8 +588,17 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
     final service = ref.read(translationServiceProvider);
     final peek =
         AiFirstTranslator.peek(service, widget.en, widget.sourceLang, widget.langCode);
-    if (peek != null && _usable(peek.text)) {
-      _text = peek.text; // همگام (بدون setState) چون از initState/didUpdateWidget می‌آید
+    if (_hasKnown) {
+      KnownTranslations.put(
+          widget.en, widget.sourceLang, widget.langCode, widget.knownText);
+    }
+    if (peek != null && peek.isFinal && _usable(peek.text)) {
+      _text = peek.text; // نهایی (قفل‌شده/AI/آماده‌ی اپ)؛ همگام چون از initState می‌آید
+    } else if (_hasKnown && _usable(widget.knownText)) {
+      _text = widget.knownText; // موقتی تا رسیدنِ AI
+      _fromKnown = true;
+    } else if (peek != null && _usable(peek.text)) {
+      _text = peek.text;
     }
     _aiStop?.call();
     _aiStop = AiFirstTranslator.watch(
@@ -591,7 +611,13 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
         if (!mounted || gen != _gen) return;
         final s = t.trim();
         if (s.isEmpty || !_usable(s)) return;
+        // ترجمه‌ی موقتیِ ماشینی روی متنِ آماده‌ی فایل نمی‌نشیند؛ فقط نتیجه‌ی نهایی (AI)
+        if (_fromKnown && !isFinal) return;
         if (s == _text && !_failed) return;
+        if (isFinal) {
+          _fromKnown = false;
+          KnownTranslations.put(widget.en, widget.sourceLang, widget.langCode, s);
+        }
         setState(() {
           _text = s;
           _failed = false;

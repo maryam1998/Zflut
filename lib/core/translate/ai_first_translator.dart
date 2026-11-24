@@ -26,7 +26,7 @@ import 'translation_service.dart';
 const int _kMaxChars = 300; // سقفِ Worker برای /api/translate-text
 const int _kAiConcurrency = 4; // هم‌زمانیِ درخواست‌های AI از این گوشی
 const int _kProvConcurrency = 3; // هم‌زمانیِ ترجمه‌ی موقت (ML Kit/آنلاین)
-const Duration _kGrace = Duration(milliseconds: 900);
+const Duration _kGrace = Duration(milliseconds: 2500);
 // تلاش‌های خودکارِ پس‌زمینه: اول سریع (کاربر منتظر است)، بعد کم‌کم کندتر
 const List<Duration> _kRetryDelays = <Duration>[
   Duration(seconds: 3),
@@ -414,7 +414,8 @@ class AiFirstTranslator {
     var attempt = 0; // فقط تلاش‌های واقعیِ AI را می‌شمارد
     var provTries = 0; // تلاشِ ترجمه‌ی موقت در زمانِ مکث
     var rounds = 0;
-    while (attempt < _kRetryDelays.length) {
+    // 🔁 تا وقتی کسی منتظرِ این ترجمه است، تلاش ادامه دارد (بعد از جدول، هر ۱۰ دقیقه)
+    while (true) {
       if (j.invalid >= 2) break;
       if (j.listeners.isEmpty) break;
 
@@ -437,7 +438,9 @@ class AiFirstTranslator {
         continue;
       }
 
-      await Future<void>.delayed(_kRetryDelays[attempt]);
+      await Future<void>.delayed(attempt < _kRetryDelays.length
+          ? _kRetryDelays[attempt]
+          : const Duration(minutes: 10));
       attempt++;
       if (j.listeners.isEmpty) break;
       ai = await _askAi(j);
