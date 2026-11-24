@@ -5,6 +5,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'persona_face_detect.dart';
+
 // ═══════════════════════════════════════════════════════════════════
 // چهره‌ی عکس‌دارِ سخنگو برای «ویدیو کال»
 //
@@ -44,6 +46,29 @@ class PhotoFaceSpec {
 
   /// بزرگ‌نمایی قاب (برای عکس‌هایی که صورتشان کوچک است)
   final double zoom;
+
+  /// مشخصاتِ عکسِ گالریِ کاربر (مختصاتِ تشخیصِ خودکارِ لب). [asset] به شکلِ «file:نام.png» است.
+  factory PhotoFaceSpec.fromMap(String asset, Map<dynamic, dynamic> m) {
+    double g(String k, [double d = 0]) => (m[k] as num?)?.toDouble() ?? d;
+    return PhotoFaceSpec(
+      asset: asset,
+      avatar: '',
+      refW: g('w', 1),
+      refH: g('h', 1),
+      mouthX: g('mx'),
+      mouthHalfW: g('mhw'),
+      cornerY: g('cy'),
+      seamY: g('sy'),
+      patchLeft: g('pl'),
+      patchRight: g('pr'),
+      patchTop: g('pt'),
+      patchBottom: g('pb'),
+      maxOpen: g('mo'),
+      focusX: g('fx'),
+      focusY: g('fy'),
+      zoom: g('z', 1.045),
+    );
+  }
 
   const PhotoFaceSpec({
     required this.asset,
@@ -201,9 +226,17 @@ final Map<String, Future<ui.Image>> _photoCache = {};
 
 Future<ui.Image> _loadPhoto(String asset) {
   return _photoCache.putIfAbsent(asset, () async {
-    final data = await rootBundle.load(asset);
-    final codec = await ui.instantiateImageCodec(
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+    final Uint8List bytes;
+    if (asset.startsWith('file:')) {
+      // عکسِ گالریِ کاربر (ذخیره‌شده در پوشه‌ی اسنادِ برنامه)
+      final b = await loadPersonaPhotoBytes(asset.substring(5));
+      if (b == null) throw StateError('persona photo missing');
+      bytes = b;
+    } else {
+      final data = await rootBundle.load(asset);
+      bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    }
+    final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
     return frame.image;
   });
@@ -282,6 +315,7 @@ class _PhotoTalkingFaceState extends State<PhotoTalkingFace> {
     final sh = _shader;
     if (im == null || sh == null) {
       // تا لحظه‌ی آماده شدنِ تصویر، همان عکس ثابت
+      if (widget.spec.asset.startsWith('file:')) return const SizedBox.expand();
       return Image.asset(
         widget.spec.asset,
         fit: BoxFit.cover,

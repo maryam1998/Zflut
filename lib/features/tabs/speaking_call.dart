@@ -28,6 +28,7 @@ import '../../core/tts/speech_controller.dart';
 import '../../core/tts/speech_state.dart';
 import '../../core/tts/tts_config.dart';
 import '../shell/widgets/spotlight_tour.dart' show SpotlightTour, TourTarget;
+import 'persona_face_detect.dart';
 import 'photo_talking_face.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -85,6 +86,11 @@ class AiPersona {
   /// عکسِ آماده‌ی داخلِ اپ (مثلاً assets/personas/ryan.jpg) که در ویدیو کال تمام‌قاب
   /// نشان داده می‌شود و لب‌هایش حرکت می‌کنند؛ باید در kPhotoFaces ثبت شده باشد.
   final String asset;
+
+  /// عکسِ گالریِ کاربر (نامِ فایلِ PNG در پوشه‌ی persona_photos) + مختصاتِ لبِ تشخیص‌داده‌شده
+  /// (خودکار با ML Kit). هر دو پر باشند، در ویدیو کال همین عکسِ تمام‌قاب با لب‌های متحرک نشان داده می‌شود.
+  final String photo;
+  final Map<String, dynamic>? face;
   final int color;
   final String role;
   final String roleFa;
@@ -101,6 +107,8 @@ class AiPersona {
     required this.emoji,
     this.image = '',
     this.asset = '',
+    this.photo = '',
+    this.face,
     required this.color,
     this.role = '',
     this.roleFa = '',
@@ -115,7 +123,13 @@ class AiPersona {
   bool get isDefault => id == jimmyId;
 
   /// مشخصاتِ عکسِ سخنگو (اگر این شخصیت عکسِ آماده دارد)
-  PhotoFaceSpec? get photoFace => asset.isEmpty ? null : kPhotoFaces[asset];
+  PhotoFaceSpec? get photoFace {
+    if (asset.isNotEmpty) return kPhotoFaces[asset];
+    final f = face;
+    if (photo.isNotEmpty && f != null) return PhotoFaceSpec.fromMap('file:$photo', f);
+    return null;
+  }
+
   Color get colorValue => Color(color);
 
   /// جنسیتِ صدای این شخصیت: 'male' / 'female' / null (نامعلوم → همان صدای فعالِ کاربر).
@@ -188,6 +202,8 @@ class AiPersona {
         emoji: emoji ?? this.emoji,
         image: image ?? this.image,
         asset: asset,
+        photo: photo,
+        face: face,
         color: color ?? this.color,
         role: role ?? this.role,
         roleFa: '',
@@ -202,6 +218,8 @@ class AiPersona {
         'name': name,
         'emoji': emoji,
         if (image.isNotEmpty) 'image': image,
+        if (photo.isNotEmpty && face != null) 'photo': photo,
+        if (photo.isNotEmpty && face != null) 'face': face,
         'color': color,
         'role': role,
         'personality': personality,
@@ -218,6 +236,8 @@ class AiPersona {
       name: name,
       emoji: (j['emoji'] ?? '🙂').toString(),
       image: (j['image'] ?? '').toString(),
+      photo: (j['photo'] ?? '').toString(),
+      face: j['face'] is Map ? Map<String, dynamic>.from(j['face'] as Map) : null,
       color: (j['color'] as num?)?.toInt() ?? 0xFF0F766E,
       role: (j['role'] ?? '').toString(),
       personality: (j['personality'] ?? '').toString(),
@@ -898,7 +918,7 @@ class _EmojiAvatar extends StatelessWidget {
           colors: [base, Color.lerp(base, Colors.black, 0.45)!],
         ),
       ),
-      child: face != null
+      child: face != null && face.avatar.isNotEmpty
           ? Image.asset(face.avatar,
               width: size, height: size, fit: BoxFit.cover, gaplessPlayback: true)
           : img != null
@@ -1478,8 +1498,10 @@ class _EmojiTalkingFaceState extends State<_EmojiTalkingFace> {
   }
 }
 
-/// انتخابِ عکس از گالری + برشِ دایره‌ای (جابه‌جا و زوم کن). خروجی: PNG با فرمتِ base64 یا null.
-Future<String?> _pickPersonaPhoto(BuildContext context) async {
+/// انتخابِ عکس از گالری + برشِ دایره‌ای (جابه‌جا و زوم کن) برای آواتارِ کوچک.
+/// خروجی: avatar = PNG به‌صورتِ base64 و original = عکسِ اصلیِ بدونِ برش (برای ویدیو کالِ تمام‌قاب)؛ یا null.
+Future<({String avatar, Uint8List original})?> _pickPersonaPhoto(
+    BuildContext context) async {
   Uint8List? bytes;
   try {
     final res = await FilePicker.platform
@@ -1489,11 +1511,13 @@ Future<String?> _pickPersonaPhoto(BuildContext context) async {
     bytes = null;
   }
   if (bytes == null || !context.mounted) return null;
-  return showDialog<String>(
+  final avatar = await showDialog<String>(
     context: context,
     barrierDismissible: false,
     builder: (_) => _AvatarCropDialog(bytes: bytes!),
   );
+  if (avatar == null) return null;
+  return (avatar: avatar, original: bytes);
 }
 
 class _AvatarCropDialog extends StatefulWidget {
@@ -1804,6 +1828,7 @@ class _PersonaSheetState extends State<_PersonaSheet> {
   }
 
   void _delete(AiPersona p) {
+    if (p.photo.isNotEmpty) unawaited(deletePersonaPhoto(p.photo));
     PersonaStore.remove(widget.ls, p.id);
     setState(() {});
   }
@@ -1990,6 +2015,10 @@ class _PersonaEditorState extends State<_PersonaEditor> {
   late final TextEditingController _scenario;
   late String _emoji;
   String _image = '';
+  String _photo = '';
+  Map<String, dynamic>? _face;
+  Uint8List? _origBytes; // عکسِ اصلیِ تازه‌انتخاب‌شده (تا موقعِ «ذخیره» لب‌ها تشخیص داده شود)
+  bool _saving = false;
   late final TextEditingController _emojiCtl;
   late int _color;
   late String _level;
@@ -2004,6 +2033,8 @@ class _PersonaEditorState extends State<_PersonaEditor> {
     _scenario = TextEditingController(text: p?.scenario ?? '');
     _emoji = p?.emoji ?? '🙂';
     _image = p?.image ?? '';
+    _photo = p?.photo ?? '';
+    _face = p?.face;
     _emojiCtl = TextEditingController(text: _emoji);
     _color = p?.color ?? _colors.first;
     _level = p?.level ?? 'auto';
@@ -2038,10 +2069,40 @@ class _PersonaEditorState extends State<_PersonaEditor> {
     setState(() => _setEmoji(last));
   }
 
-  void _save() {
+  Future<void> _save() async {
     final name = _name.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty || _saving) return;
     final base = widget.initial;
+    var photo = _photo;
+    var face = _face;
+    final orig = _origBytes;
+    if (_image.isEmpty) {
+      if (_photo.isNotEmpty) unawaited(deletePersonaPhoto(_photo));
+      photo = '';
+      face = null;
+    } else if (orig != null) {
+      // 👄 عکسِ تازه: لب‌ها خودکار تشخیص داده می‌شوند (آفلاین، روی گوشی)
+      setState(() => _saving = true);
+      final r = await detectPersonaFace(orig);
+      if (!mounted) return;
+      if (_photo.isNotEmpty) unawaited(deletePersonaPhoto(_photo));
+      if (r != null) {
+        photo = r.file;
+        face = Map<String, dynamic>.from(r.face);
+      } else {
+        photo = '';
+        face = null;
+        if (!kIsWeb) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+            content: Text(_tr(
+                context,
+                'لب‌ها در این عکس پیدا نشد؛ برای تماسِ تمام‌قاب یک عکسِ روبه‌رو و واضح انتخاب کن.',
+                'Could not find the lips in this photo. Pick a clear, front-facing photo for the full-screen call.')),
+          ));
+        }
+      }
+    }
+    if (!mounted) return;
     Navigator.of(context).pop(AiPersona(
       id: (base != null && !base.builtIn)
           ? base.id
@@ -2049,6 +2110,8 @@ class _PersonaEditorState extends State<_PersonaEditor> {
       name: name,
       emoji: _emoji,
       image: _image,
+      photo: photo,
+      face: face,
       color: _color,
       role: _role.text.trim(),
       personality: _personality.text.trim(),
@@ -2152,7 +2215,12 @@ class _PersonaEditorState extends State<_PersonaEditor> {
                   OutlinedButton.icon(
                     onPressed: () async {
                       final r = await _pickPersonaPhoto(context);
-                      if (r != null && mounted) setState(() => _image = r);
+                      if (r != null && mounted) {
+                        setState(() {
+                          _image = r.avatar;
+                          _origBytes = r.original;
+                        });
+                      }
                     },
                     icon: const Icon(Icons.photo_library_outlined, size: 18),
                     label: Text(_tr(context, 'انتخاب از گالری', 'Pick from gallery')),
@@ -2160,7 +2228,10 @@ class _PersonaEditorState extends State<_PersonaEditor> {
                   if (_image.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     TextButton(
-                      onPressed: () => setState(() => _image = ''),
+                      onPressed: () => setState(() {
+                        _image = '';
+                        _origBytes = null;
+                      }),
                       child: Text(_tr(context, 'حذف عکس', 'Remove')),
                     ),
                   ],
