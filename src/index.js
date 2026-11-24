@@ -328,6 +328,7 @@ async function handleTranslateText(request, env, ctx) {
     `Translate the following text into ${label} by meaning, the way a native speaker would naturally say it. ` +
     `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` +
     `(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). ` +
+    trStyle(target) +
     "Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.\n\n" +
     `Text: ${text}`;
   const maxTokens = Math.min(Math.max(Math.floor(text.length / 2) + 96, 128), 600);
@@ -345,6 +346,12 @@ async function handleTranslateText(request, env, ctx) {
       out = out.replace(/^["“”«»]+|["“”«»]+$/g, "").trim();
       const bad = badAiOutputReason(out, prompt);
       if (bad) throw new Error(`unusable output (${bad})`);
+      // 🛡️ قبل از ورود به کشِ مشترکِ همه‌ی کاربرها: خروجی باید واقعاً به زبانِ مقصد باشد
+      if (!trScriptOk(target, text, out)) throw new Error("unusable output (wrong-script)");
+      // 🔎 بازبینیِ دوم (TR_REVIEW="1"): همان مدل ترجمه را یک بار نقد می‌کند؛ هر خطا/خروجیِ مشکوک = همان ترجمه‌ی اول
+      if (String(env.TR_REVIEW || "") === "1") {
+        out = await trReview(provider, trEnv, text, out, label, target, perProviderMs, maxTokens);
+      }
       ctx.waitUntil(genCachePut(env, cacheKey, out, provider));
       ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider, cached: false, prompt, text: out }));
       return json({ text: out, provider });
@@ -354,6 +361,51 @@ async function handleTranslateText(request, env, ctx) {
   }
   console.error("[AI-FAIL] /api/translate-text همه‌ی پرووایدرها خطا دادند:", errors.join(" | ").slice(0, 900));
   return json({ error: errors.join(" | ") }, 502);
+}
+
+// 🛡️ آیا خروجی خطِ زبانِ مقصد را دارد؟ (فقط برای متن‌های ≥ ۲ کلمه؛ اسمِ تکی مثل Netflix می‌تواند بدونِ تغییر بماند)
+const TR_SCRIPTS = {
+  fa: /[؀-ۿ]/, ar: /[؀-ۿ]/, hi: /[ऀ-ॿ]/, zh: /[一-鿿]/,
+  ja: /[぀-ヿ一-鿿]/, ko: /[가-힯]/, ru: /[Ѐ-ӿ]/,
+};
+function trScriptOk(target, text, out) {
+  const re = TR_SCRIPTS[target];
+  if (!re) return true;
+  if (String(text).trim().split(/\s+/).length < 2) return true;
+  if (!/\p{L}/u.test(text)) return true;
+  return re.test(out);
+}
+
+// 🎨 سبکِ ترجمه به فارسی: یک‌دست، محاوره‌ای‌ملایم و محترمانه؛ نه کلمه‌به‌کلمه، نه رسمی/کتابی در یک جمله و محاوره‌ای در جمله‌ی بعد.
+function trStyle(target) {
+  if (target !== "fa") return "";
+  return (
+    "Style for Persian: natural, fluent, everyday spoken Persian of Iran (polite colloquial, e.g. «چطوری؟»، «خوبه»، «می‌کنم»), " +
+    "used consistently in every sentence — do not mix stiff bookish forms with colloquial ones, and never translate word for word. " +
+    "Pay attention to the exact meaning of every word (e.g. \"together\" = «با هم», \"a little\" = «یه کم / کمی»). "
+  );
+}
+
+// 🔎 بازبینیِ ترجمه: «درست و طبیعی است؟ همان را برگردان؛ وگرنه اصلاحش کن». هر مشکلی (خطا، تایم‌اوت، خروجیِ مشکوک) = ترجمه‌ی اول بدونِ تغییر.
+async function trReview(provider, trEnv, text, out, label, target, timeoutMs, maxTokens) {
+  try {
+    const rp =
+      `You are a strict ${label} translation reviewer.\n` +
+      `Source text: ${text}\n` +
+      `Proposed ${label} translation: ${out}\n` +
+      `If the translation is accurate, complete and sounds natural to a native ${label} speaker, output it exactly unchanged. ` +
+      `Otherwise output a corrected ${label} translation (by meaning; idioms and slang rendered naturally, never word for word). ` +
+      trStyle(target) +
+      `Output ONLY the final ${label} text — no quotes, no explanation, nothing else.`;
+    const raw = await withTimeout(callProvider(provider, rp, maxTokens, trEnv), timeoutMs, provider);
+    const rev = sanitizeAiText(raw).trim().replace(/^["“”«»]+|["“”«»]+$/g, "").trim();
+    if (!rev || badAiOutputReason(rev, rp)) return out;
+    if (!trScriptOk(target, text, rev)) return out;
+    if (rev.length > out.length * 3 + 60) return out;
+    return rev;
+  } catch {
+    return out;
+  }
 }
 
 // 🧠 زنجیره و مدل‌های «قوی‌تر» برای /api/translate-text.
