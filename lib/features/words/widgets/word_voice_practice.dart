@@ -144,7 +144,8 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     if (!_cc) return;
     if (_wi < 0 || _wi >= _ws.length) return;
     final w = _ws[_wi];
-    _follow.show([w.sid], codes: [w.lang, 'en'], lazy: true);
+    // ⛔ بدونِ اسکرولِ خودکار: ویدیو کال بالای لیست است و نباید با اسکرول از دید برود
+    _follow.show([w.sid], codes: [w.lang, 'en'], lazy: true, scroll: false);
   }
 
   @override

@@ -70,8 +70,13 @@ class PracticeFollow {
 
   /// [ids] = شناسه‌ی آیتم‌های همان خط (هر کدام که روی صفحه هست هایلایت می‌شود)،
   /// [codes] = کدِ زبانِ لنگرها برای پیدا کردنِ ردیف، [lazy] = لیستِ تنبل (لغات).
+  ///
+  /// [scroll] = false → فقط هایلایت می‌شود و صفحه اسکرول نمی‌شود
+  /// (تمرینِ ویدیو کالِ لغات: ویدیو کال بالای لیست است و نباید از دید برود).
   void show(List<String> ids,
-      {List<String> codes = const ['en'], bool lazy = false}) {
+      {List<String> codes = const ['en'],
+      bool lazy = false,
+      bool scroll = true}) {
     final list = [
       for (final i in ids)
         if (i.isNotEmpty) i
@@ -83,6 +88,7 @@ class PracticeFollow {
       _c.read(readHighlightProvider.notifier).state = hl;
     } catch (_) {}
     final token = ++_token;
+    if (!scroll) return;
     _scroll(list, codes, lazy, token, 0);
   }
 
