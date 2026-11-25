@@ -77,6 +77,15 @@ const Map<String, TopicVisual> _dict = {
   'pe': TopicVisual(Icons.sports_soccer_rounded, _orange),
   'computers': TopicVisual(Icons.computer_rounded, _blue),
   'community': TopicVisual(Icons.groups_rounded, _teal),
+  'safety': TopicVisual(Icons.warning_amber_rounded, _gold),
+  'environment': TopicVisual(Icons.eco_rounded, _green),
+  'space': TopicVisual(Icons.star_rounded, _purple),
+  'habits': TopicVisual(Icons.spa_rounded, _teal),
+  'stories': TopicVisual(Icons.auto_stories_rounded, _brown),
+  'cooking': TopicVisual(Icons.kitchen_rounded, _orange),
+  'vehicles': TopicVisual(Icons.local_shipping_rounded, _blue),
+  'friends': TopicVisual(Icons.people_alt_rounded, _rose),
+  'history': TopicVisual(Icons.account_balance_rounded, _brown),
 };
 
 const Map<String, TopicVisual> _slang = {

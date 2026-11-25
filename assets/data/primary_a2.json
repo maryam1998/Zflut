@@ -4008,6 +4008,2540 @@
    ]
   },
   {
+   "key": "safety",
+   "fa": "ایمنی و قوانین",
+   "en": "Safety & Rules",
+   "words": [
+    {
+     "id": 920511,
+     "level": "A2",
+     "pos": "noun",
+     "en": "danger",
+     "fa": ""
+    },
+    {
+     "id": 920512,
+     "level": "A2",
+     "pos": "noun",
+     "en": "warning",
+     "fa": ""
+    },
+    {
+     "id": 920513,
+     "level": "A2",
+     "pos": "noun",
+     "en": "fire",
+     "fa": ""
+    },
+    {
+     "id": 920514,
+     "level": "A2",
+     "pos": "noun",
+     "en": "fire alarm",
+     "fa": ""
+    },
+    {
+     "id": 920515,
+     "level": "A2",
+     "pos": "noun",
+     "en": "emergency",
+     "fa": ""
+    },
+    {
+     "id": 920516,
+     "level": "A2",
+     "pos": "noun",
+     "en": "ambulance",
+     "fa": ""
+    },
+    {
+     "id": 920389,
+     "level": "A2",
+     "pos": "noun",
+     "en": "helmet",
+     "fa": ""
+    },
+    {
+     "id": 920517,
+     "level": "A2",
+     "pos": "noun",
+     "en": "seat belt",
+     "fa": ""
+    },
+    {
+     "id": 920518,
+     "level": "A2",
+     "pos": "noun",
+     "en": "zebra crossing",
+     "fa": ""
+    },
+    {
+     "id": 920519,
+     "level": "A2",
+     "pos": "noun",
+     "en": "stranger",
+     "fa": ""
+    },
+    {
+     "id": 920520,
+     "level": "A2",
+     "pos": "noun",
+     "en": "first aid",
+     "fa": ""
+    },
+    {
+     "id": 920521,
+     "level": "A2",
+     "pos": "noun",
+     "en": "rule",
+     "fa": ""
+    },
+    {
+     "id": 920522,
+     "level": "A2",
+     "pos": "noun",
+     "en": "electric shock",
+     "fa": ""
+    },
+    {
+     "id": 920523,
+     "level": "A2",
+     "pos": "noun",
+     "en": "poison",
+     "fa": ""
+    },
+    {
+     "id": 920524,
+     "level": "A2",
+     "pos": "noun",
+     "en": "fire exit",
+     "fa": ""
+    },
+    {
+     "id": 920525,
+     "level": "A2",
+     "pos": "noun",
+     "en": "emergency exit",
+     "fa": ""
+    },
+    {
+     "id": 920526,
+     "level": "A2",
+     "pos": "noun",
+     "en": "wet floor",
+     "fa": ""
+    },
+    {
+     "id": 920527,
+     "level": "A2",
+     "pos": "noun",
+     "en": "no entry",
+     "fa": ""
+    },
+    {
+     "id": 920528,
+     "level": "A2",
+     "pos": "noun",
+     "en": "keep out",
+     "fa": ""
+    },
+    {
+     "id": 920529,
+     "level": "A2",
+     "pos": "noun",
+     "en": "safety",
+     "fa": ""
+    },
+    {
+     "id": 920530,
+     "level": "A2",
+     "pos": "noun",
+     "en": "accident",
+     "fa": ""
+    },
+    {
+     "id": 920531,
+     "level": "A2",
+     "pos": "verb",
+     "en": "cross",
+     "fa": ""
+    },
+    {
+     "id": 920532,
+     "level": "A2",
+     "pos": "verb",
+     "en": "touch",
+     "fa": ""
+    },
+    {
+     "id": 920533,
+     "level": "A2",
+     "pos": "verb",
+     "en": "follow",
+     "fa": ""
+    },
+    {
+     "id": 920534,
+     "level": "A2",
+     "pos": "verb",
+     "en": "obey",
+     "fa": ""
+    },
+    {
+     "id": 920535,
+     "level": "A2",
+     "pos": "verb",
+     "en": "warn",
+     "fa": ""
+    },
+    {
+     "id": 920536,
+     "level": "A2",
+     "pos": "verb",
+     "en": "escape",
+     "fa": ""
+    },
+    {
+     "id": 920506,
+     "level": "A2",
+     "pos": "verb",
+     "en": "rescue",
+     "fa": ""
+    },
+    {
+     "id": 920537,
+     "level": "A2",
+     "pos": "verb",
+     "en": "fasten",
+     "fa": ""
+    },
+    {
+     "id": 920296,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "dangerous",
+     "fa": ""
+    },
+    {
+     "id": 920538,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "careful",
+     "fa": ""
+    },
+    {
+     "id": 920539,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "sharp",
+     "fa": ""
+    },
+    {
+     "id": 920540,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "poisonous",
+     "fa": ""
+    },
+    {
+     "id": 920541,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "forbidden",
+     "fa": ""
+    },
+    {
+     "id": 920542,
+     "level": "A2",
+     "pos": "other",
+     "en": "Be careful!",
+     "fa": ""
+    },
+    {
+     "id": 920543,
+     "level": "A2",
+     "pos": "other",
+     "en": "Look both ways.",
+     "fa": ""
+    },
+    {
+     "id": 920544,
+     "level": "A2",
+     "pos": "other",
+     "en": "Cross the road carefully.",
+     "fa": ""
+    },
+    {
+     "id": 920545,
+     "level": "A2",
+     "pos": "other",
+     "en": "Don't touch!",
+     "fa": ""
+    },
+    {
+     "id": 920546,
+     "level": "A2",
+     "pos": "other",
+     "en": "Call for help.",
+     "fa": ""
+    },
+    {
+     "id": 920547,
+     "level": "A2",
+     "pos": "other",
+     "en": "Stay calm.",
+     "fa": ""
+    },
+    {
+     "id": 920548,
+     "level": "A2",
+     "pos": "other",
+     "en": "Wear a helmet.",
+     "fa": ""
+    },
+    {
+     "id": 920549,
+     "level": "A2",
+     "pos": "other",
+     "en": "Fasten your seat belt.",
+     "fa": ""
+    },
+    {
+     "id": 920550,
+     "level": "A2",
+     "pos": "other",
+     "en": "Don't talk to strangers.",
+     "fa": ""
+    },
+    {
+     "id": 920551,
+     "level": "A2",
+     "pos": "other",
+     "en": "Walk, don't run.",
+     "fa": ""
+    },
+    {
+     "id": 920552,
+     "level": "A2",
+     "pos": "other",
+     "en": "Follow the rules.",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "environment",
+   "fa": "محیط زیست و بازیافت",
+   "en": "Environment & Recycling",
+   "words": [
+    {
+     "id": 920553,
+     "level": "A2",
+     "pos": "noun",
+     "en": "environment",
+     "fa": ""
+    },
+    {
+     "id": 920554,
+     "level": "A2",
+     "pos": "noun",
+     "en": "planet",
+     "fa": ""
+    },
+    {
+     "id": 920555,
+     "level": "A2",
+     "pos": "noun",
+     "en": "pollution",
+     "fa": ""
+    },
+    {
+     "id": 920556,
+     "level": "A2",
+     "pos": "noun",
+     "en": "litter",
+     "fa": ""
+    },
+    {
+     "id": 920557,
+     "level": "A2",
+     "pos": "noun",
+     "en": "rubbish",
+     "fa": ""
+    },
+    {
+     "id": 920558,
+     "level": "A2",
+     "pos": "noun",
+     "en": "waste",
+     "fa": ""
+    },
+    {
+     "id": 920559,
+     "level": "A2",
+     "pos": "noun",
+     "en": "recycling",
+     "fa": ""
+    },
+    {
+     "id": 920560,
+     "level": "A2",
+     "pos": "noun",
+     "en": "recycling bin",
+     "fa": ""
+    },
+    {
+     "id": 920561,
+     "level": "A2",
+     "pos": "noun",
+     "en": "plastic bag",
+     "fa": ""
+    },
+    {
+     "id": 920562,
+     "level": "A2",
+     "pos": "noun",
+     "en": "can",
+     "fa": ""
+    },
+    {
+     "id": 920563,
+     "level": "A2",
+     "pos": "noun",
+     "en": "cardboard",
+     "fa": ""
+    },
+    {
+     "id": 920564,
+     "level": "A2",
+     "pos": "noun",
+     "en": "compost",
+     "fa": ""
+    },
+    {
+     "id": 920565,
+     "level": "A2",
+     "pos": "noun",
+     "en": "solar panel",
+     "fa": ""
+    },
+    {
+     "id": 920566,
+     "level": "A2",
+     "pos": "noun",
+     "en": "wind turbine",
+     "fa": ""
+    },
+    {
+     "id": 920567,
+     "level": "A2",
+     "pos": "noun",
+     "en": "global warming",
+     "fa": ""
+    },
+    {
+     "id": 920568,
+     "level": "A2",
+     "pos": "noun",
+     "en": "nature",
+     "fa": ""
+    },
+    {
+     "id": 920569,
+     "level": "A2",
+     "pos": "noun",
+     "en": "endangered species",
+     "fa": ""
+    },
+    {
+     "id": 920570,
+     "level": "A2",
+     "pos": "verb",
+     "en": "recycle",
+     "fa": ""
+    },
+    {
+     "id": 920571,
+     "level": "A2",
+     "pos": "verb",
+     "en": "reuse",
+     "fa": ""
+    },
+    {
+     "id": 920572,
+     "level": "A2",
+     "pos": "verb",
+     "en": "reduce",
+     "fa": ""
+    },
+    {
+     "id": 920458,
+     "level": "A2",
+     "pos": "verb",
+     "en": "save",
+     "fa": ""
+    },
+    {
+     "id": 920573,
+     "level": "A2",
+     "pos": "verb",
+     "en": "pollute",
+     "fa": ""
+    },
+    {
+     "id": 920502,
+     "level": "A2",
+     "pos": "verb",
+     "en": "protect",
+     "fa": ""
+    },
+    {
+     "id": 920574,
+     "level": "A2",
+     "pos": "verb",
+     "en": "switch off",
+     "fa": ""
+    },
+    {
+     "id": 920575,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "harmful",
+     "fa": ""
+    },
+    {
+     "id": 920576,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "eco-friendly",
+     "fa": ""
+    },
+    {
+     "id": 920577,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "recyclable",
+     "fa": ""
+    },
+    {
+     "id": 920578,
+     "level": "A2",
+     "pos": "other",
+     "en": "Don't drop litter.",
+     "fa": ""
+    },
+    {
+     "id": 920579,
+     "level": "A2",
+     "pos": "other",
+     "en": "Save water.",
+     "fa": ""
+    },
+    {
+     "id": 920580,
+     "level": "A2",
+     "pos": "other",
+     "en": "Turn off the light.",
+     "fa": ""
+    },
+    {
+     "id": 920581,
+     "level": "A2",
+     "pos": "other",
+     "en": "Recycle paper and plastic.",
+     "fa": ""
+    },
+    {
+     "id": 920582,
+     "level": "A2",
+     "pos": "other",
+     "en": "Plant a tree.",
+     "fa": ""
+    },
+    {
+     "id": 920583,
+     "level": "A2",
+     "pos": "other",
+     "en": "Take care of our planet.",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "space",
+   "fa": "فضا و ستاره‌ها",
+   "en": "Space",
+   "words": [
+    {
+     "id": 920584,
+     "level": "A2",
+     "pos": "noun",
+     "en": "space",
+     "fa": ""
+    },
+    {
+     "id": 920554,
+     "level": "A2",
+     "pos": "noun",
+     "en": "planet",
+     "fa": ""
+    },
+    {
+     "id": 920585,
+     "level": "A2",
+     "pos": "noun",
+     "en": "moon",
+     "fa": ""
+    },
+    {
+     "id": 920586,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Earth",
+     "fa": ""
+    },
+    {
+     "id": 920587,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Mercury",
+     "fa": ""
+    },
+    {
+     "id": 920588,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Venus",
+     "fa": ""
+    },
+    {
+     "id": 920589,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Mars",
+     "fa": ""
+    },
+    {
+     "id": 920590,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Jupiter",
+     "fa": ""
+    },
+    {
+     "id": 920591,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Saturn",
+     "fa": ""
+    },
+    {
+     "id": 920592,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Uranus",
+     "fa": ""
+    },
+    {
+     "id": 920593,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Neptune",
+     "fa": ""
+    },
+    {
+     "id": 920594,
+     "level": "A2",
+     "pos": "noun",
+     "en": "galaxy",
+     "fa": ""
+    },
+    {
+     "id": 920595,
+     "level": "A2",
+     "pos": "noun",
+     "en": "universe",
+     "fa": ""
+    },
+    {
+     "id": 920596,
+     "level": "A2",
+     "pos": "noun",
+     "en": "solar system",
+     "fa": ""
+    },
+    {
+     "id": 920597,
+     "level": "A2",
+     "pos": "noun",
+     "en": "orbit",
+     "fa": ""
+    },
+    {
+     "id": 920598,
+     "level": "A2",
+     "pos": "noun",
+     "en": "rocket",
+     "fa": ""
+    },
+    {
+     "id": 920599,
+     "level": "A2",
+     "pos": "noun",
+     "en": "astronaut",
+     "fa": ""
+    },
+    {
+     "id": 920600,
+     "level": "A2",
+     "pos": "noun",
+     "en": "spaceship",
+     "fa": ""
+    },
+    {
+     "id": 920601,
+     "level": "A2",
+     "pos": "noun",
+     "en": "satellite",
+     "fa": ""
+    },
+    {
+     "id": 920602,
+     "level": "A2",
+     "pos": "noun",
+     "en": "telescope",
+     "fa": ""
+    },
+    {
+     "id": 920603,
+     "level": "A2",
+     "pos": "noun",
+     "en": "comet",
+     "fa": ""
+    },
+    {
+     "id": 920604,
+     "level": "A2",
+     "pos": "noun",
+     "en": "meteor",
+     "fa": ""
+    },
+    {
+     "id": 920605,
+     "level": "A2",
+     "pos": "noun",
+     "en": "asteroid",
+     "fa": ""
+    },
+    {
+     "id": 920606,
+     "level": "A2",
+     "pos": "noun",
+     "en": "crater",
+     "fa": ""
+    },
+    {
+     "id": 920607,
+     "level": "A2",
+     "pos": "noun",
+     "en": "space station",
+     "fa": ""
+    },
+    {
+     "id": 920608,
+     "level": "A2",
+     "pos": "noun",
+     "en": "alien",
+     "fa": ""
+    },
+    {
+     "id": 920609,
+     "level": "A2",
+     "pos": "noun",
+     "en": "night sky",
+     "fa": ""
+    },
+    {
+     "id": 920610,
+     "level": "A2",
+     "pos": "noun",
+     "en": "constellation",
+     "fa": ""
+    },
+    {
+     "id": 920611,
+     "level": "A2",
+     "pos": "noun",
+     "en": "eclipse",
+     "fa": ""
+    },
+    {
+     "id": 920612,
+     "level": "A2",
+     "pos": "verb",
+     "en": "launch",
+     "fa": ""
+    },
+    {
+     "id": 920613,
+     "level": "A2",
+     "pos": "verb",
+     "en": "explore",
+     "fa": ""
+    },
+    {
+     "id": 920085,
+     "level": "A2",
+     "pos": "verb",
+     "en": "float",
+     "fa": ""
+    },
+    {
+     "id": 920298,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "huge",
+     "fa": ""
+    },
+    {
+     "id": 920614,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "distant",
+     "fa": ""
+    },
+    {
+     "id": 920615,
+     "level": "A2",
+     "pos": "other",
+     "en": "The Earth goes around the sun.",
+     "fa": ""
+    },
+    {
+     "id": 920616,
+     "level": "A2",
+     "pos": "other",
+     "en": "The moon shines at night.",
+     "fa": ""
+    },
+    {
+     "id": 920617,
+     "level": "A2",
+     "pos": "other",
+     "en": "How far is the moon?",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "habits",
+   "fa": "عادت‌های سالم",
+   "en": "Healthy Habits",
+   "words": [
+    {
+     "id": 920421,
+     "level": "A2",
+     "pos": "noun",
+     "en": "exercise",
+     "fa": ""
+    },
+    {
+     "id": 920618,
+     "level": "A2",
+     "pos": "noun",
+     "en": "diet",
+     "fa": ""
+    },
+    {
+     "id": 920619,
+     "level": "A2",
+     "pos": "noun",
+     "en": "healthy food",
+     "fa": ""
+    },
+    {
+     "id": 920620,
+     "level": "A2",
+     "pos": "noun",
+     "en": "junk food",
+     "fa": ""
+    },
+    {
+     "id": 920621,
+     "level": "A2",
+     "pos": "noun",
+     "en": "fast food",
+     "fa": ""
+    },
+    {
+     "id": 920622,
+     "level": "A2",
+     "pos": "noun",
+     "en": "snack",
+     "fa": ""
+    },
+    {
+     "id": 920623,
+     "level": "A2",
+     "pos": "noun",
+     "en": "sweets",
+     "fa": ""
+    },
+    {
+     "id": 920624,
+     "level": "A2",
+     "pos": "noun",
+     "en": "water bottle",
+     "fa": ""
+    },
+    {
+     "id": 920625,
+     "level": "A2",
+     "pos": "noun",
+     "en": "toothbrush",
+     "fa": ""
+    },
+    {
+     "id": 920626,
+     "level": "A2",
+     "pos": "noun",
+     "en": "toothpaste",
+     "fa": ""
+    },
+    {
+     "id": 920627,
+     "level": "A2",
+     "pos": "noun",
+     "en": "soap",
+     "fa": ""
+    },
+    {
+     "id": 920628,
+     "level": "A2",
+     "pos": "noun",
+     "en": "shampoo",
+     "fa": ""
+    },
+    {
+     "id": 920629,
+     "level": "A2",
+     "pos": "noun",
+     "en": "tissue",
+     "fa": ""
+    },
+    {
+     "id": 920630,
+     "level": "A2",
+     "pos": "noun",
+     "en": "hygiene",
+     "fa": ""
+    },
+    {
+     "id": 920631,
+     "level": "A2",
+     "pos": "noun",
+     "en": "germs",
+     "fa": ""
+    },
+    {
+     "id": 920632,
+     "level": "A2",
+     "pos": "noun",
+     "en": "bacteria",
+     "fa": ""
+    },
+    {
+     "id": 920633,
+     "level": "A2",
+     "pos": "noun",
+     "en": "mask",
+     "fa": ""
+    },
+    {
+     "id": 920634,
+     "level": "A2",
+     "pos": "noun",
+     "en": "bedtime",
+     "fa": ""
+    },
+    {
+     "id": 920635,
+     "level": "A2",
+     "pos": "noun",
+     "en": "habit",
+     "fa": ""
+    },
+    {
+     "id": 920636,
+     "level": "A2",
+     "pos": "noun",
+     "en": "fresh air",
+     "fa": ""
+    },
+    {
+     "id": 920637,
+     "level": "A2",
+     "pos": "verb",
+     "en": "cover",
+     "fa": ""
+    },
+    {
+     "id": 920638,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "unhealthy",
+     "fa": ""
+    },
+    {
+     "id": 920423,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "strong",
+     "fa": ""
+    },
+    {
+     "id": 920639,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "weak",
+     "fa": ""
+    },
+    {
+     "id": 920640,
+     "level": "A2",
+     "pos": "other",
+     "en": "Wash your hands before eating.",
+     "fa": ""
+    },
+    {
+     "id": 920641,
+     "level": "A2",
+     "pos": "other",
+     "en": "Brush your teeth twice a day.",
+     "fa": ""
+    },
+    {
+     "id": 920642,
+     "level": "A2",
+     "pos": "other",
+     "en": "Drink more water.",
+     "fa": ""
+    },
+    {
+     "id": 920643,
+     "level": "A2",
+     "pos": "other",
+     "en": "Eat fruit and vegetables.",
+     "fa": ""
+    },
+    {
+     "id": 920644,
+     "level": "A2",
+     "pos": "other",
+     "en": "Go to bed early.",
+     "fa": ""
+    },
+    {
+     "id": 920645,
+     "level": "A2",
+     "pos": "other",
+     "en": "Don't eat too many sweets.",
+     "fa": ""
+    },
+    {
+     "id": 920646,
+     "level": "A2",
+     "pos": "other",
+     "en": "Cover your mouth when you cough.",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "stories",
+   "fa": "داستان و کتاب",
+   "en": "Stories & Books",
+   "words": [
+    {
+     "id": 920647,
+     "level": "A2",
+     "pos": "noun",
+     "en": "story",
+     "fa": ""
+    },
+    {
+     "id": 920648,
+     "level": "A2",
+     "pos": "noun",
+     "en": "fairy tale",
+     "fa": ""
+    },
+    {
+     "id": 920649,
+     "level": "A2",
+     "pos": "noun",
+     "en": "tale",
+     "fa": ""
+    },
+    {
+     "id": 920650,
+     "level": "A2",
+     "pos": "noun",
+     "en": "character",
+     "fa": ""
+    },
+    {
+     "id": 920651,
+     "level": "A2",
+     "pos": "noun",
+     "en": "hero",
+     "fa": ""
+    },
+    {
+     "id": 920652,
+     "level": "A2",
+     "pos": "noun",
+     "en": "villain",
+     "fa": ""
+    },
+    {
+     "id": 920653,
+     "level": "A2",
+     "pos": "noun",
+     "en": "princess",
+     "fa": ""
+    },
+    {
+     "id": 920654,
+     "level": "A2",
+     "pos": "noun",
+     "en": "prince",
+     "fa": ""
+    },
+    {
+     "id": 920655,
+     "level": "A2",
+     "pos": "noun",
+     "en": "king",
+     "fa": ""
+    },
+    {
+     "id": 920656,
+     "level": "A2",
+     "pos": "noun",
+     "en": "queen",
+     "fa": ""
+    },
+    {
+     "id": 920657,
+     "level": "A2",
+     "pos": "noun",
+     "en": "dragon",
+     "fa": ""
+    },
+    {
+     "id": 920658,
+     "level": "A2",
+     "pos": "noun",
+     "en": "giant",
+     "fa": ""
+    },
+    {
+     "id": 920659,
+     "level": "A2",
+     "pos": "noun",
+     "en": "witch",
+     "fa": ""
+    },
+    {
+     "id": 920660,
+     "level": "A2",
+     "pos": "noun",
+     "en": "wizard",
+     "fa": ""
+    },
+    {
+     "id": 920661,
+     "level": "A2",
+     "pos": "noun",
+     "en": "fairy",
+     "fa": ""
+    },
+    {
+     "id": 920662,
+     "level": "A2",
+     "pos": "noun",
+     "en": "castle",
+     "fa": ""
+    },
+    {
+     "id": 920663,
+     "level": "A2",
+     "pos": "noun",
+     "en": "treasure",
+     "fa": ""
+    },
+    {
+     "id": 920664,
+     "level": "A2",
+     "pos": "noun",
+     "en": "magic",
+     "fa": ""
+    },
+    {
+     "id": 920665,
+     "level": "A2",
+     "pos": "noun",
+     "en": "wand",
+     "fa": ""
+    },
+    {
+     "id": 920666,
+     "level": "A2",
+     "pos": "noun",
+     "en": "adventure",
+     "fa": ""
+    },
+    {
+     "id": 920667,
+     "level": "A2",
+     "pos": "noun",
+     "en": "mystery",
+     "fa": ""
+    },
+    {
+     "id": 920668,
+     "level": "A2",
+     "pos": "noun",
+     "en": "comic",
+     "fa": ""
+    },
+    {
+     "id": 920669,
+     "level": "A2",
+     "pos": "noun",
+     "en": "novel",
+     "fa": ""
+    },
+    {
+     "id": 920670,
+     "level": "A2",
+     "pos": "noun",
+     "en": "poem",
+     "fa": ""
+    },
+    {
+     "id": 920671,
+     "level": "A2",
+     "pos": "noun",
+     "en": "author",
+     "fa": ""
+    },
+    {
+     "id": 920672,
+     "level": "A2",
+     "pos": "noun",
+     "en": "writer",
+     "fa": ""
+    },
+    {
+     "id": 920673,
+     "level": "A2",
+     "pos": "noun",
+     "en": "illustrator",
+     "fa": ""
+    },
+    {
+     "id": 920674,
+     "level": "A2",
+     "pos": "noun",
+     "en": "title",
+     "fa": ""
+    },
+    {
+     "id": 920637,
+     "level": "A2",
+     "pos": "noun",
+     "en": "cover",
+     "fa": ""
+    },
+    {
+     "id": 920675,
+     "level": "A2",
+     "pos": "noun",
+     "en": "page",
+     "fa": ""
+    },
+    {
+     "id": 920676,
+     "level": "A2",
+     "pos": "noun",
+     "en": "chapter",
+     "fa": ""
+    },
+    {
+     "id": 920677,
+     "level": "A2",
+     "pos": "noun",
+     "en": "beginning",
+     "fa": ""
+    },
+    {
+     "id": 920678,
+     "level": "A2",
+     "pos": "noun",
+     "en": "ending",
+     "fa": ""
+    },
+    {
+     "id": 920679,
+     "level": "A2",
+     "pos": "noun",
+     "en": "plot",
+     "fa": ""
+    },
+    {
+     "id": 920680,
+     "level": "A2",
+     "pos": "noun",
+     "en": "setting",
+     "fa": ""
+    },
+    {
+     "id": 920681,
+     "level": "A2",
+     "pos": "verb",
+     "en": "imagine",
+     "fa": ""
+    },
+    {
+     "id": 920682,
+     "level": "A2",
+     "pos": "verb",
+     "en": "tell",
+     "fa": ""
+    },
+    {
+     "id": 920683,
+     "level": "A2",
+     "pos": "verb",
+     "en": "invent",
+     "fa": ""
+    },
+    {
+     "id": 920684,
+     "level": "A2",
+     "pos": "verb",
+     "en": "retell",
+     "fa": ""
+    },
+    {
+     "id": 920685,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "brave",
+     "fa": ""
+    },
+    {
+     "id": 920686,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "magical",
+     "fa": ""
+    },
+    {
+     "id": 920687,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "scary",
+     "fa": ""
+    },
+    {
+     "id": 920688,
+     "level": "A2",
+     "pos": "other",
+     "en": "Once upon a time …",
+     "fa": ""
+    },
+    {
+     "id": 920689,
+     "level": "A2",
+     "pos": "other",
+     "en": "The end.",
+     "fa": ""
+    },
+    {
+     "id": 920690,
+     "level": "A2",
+     "pos": "other",
+     "en": "They lived happily ever after.",
+     "fa": ""
+    },
+    {
+     "id": 920691,
+     "level": "A2",
+     "pos": "other",
+     "en": "Who is the main character?",
+     "fa": ""
+    },
+    {
+     "id": 920692,
+     "level": "A2",
+     "pos": "other",
+     "en": "What happens next?",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "cooking",
+   "fa": "آشپزی و آشپزخانه",
+   "en": "Cooking & Kitchen",
+   "words": [
+    {
+     "id": 920693,
+     "level": "A2",
+     "pos": "noun",
+     "en": "recipe",
+     "fa": ""
+    },
+    {
+     "id": 920694,
+     "level": "A2",
+     "pos": "noun",
+     "en": "ingredient",
+     "fa": ""
+    },
+    {
+     "id": 920695,
+     "level": "A2",
+     "pos": "noun",
+     "en": "flour",
+     "fa": ""
+    },
+    {
+     "id": 920696,
+     "level": "A2",
+     "pos": "noun",
+     "en": "oil",
+     "fa": ""
+    },
+    {
+     "id": 920697,
+     "level": "A2",
+     "pos": "noun",
+     "en": "yoghurt",
+     "fa": ""
+    },
+    {
+     "id": 920698,
+     "level": "A2",
+     "pos": "noun",
+     "en": "honey",
+     "fa": ""
+    },
+    {
+     "id": 920699,
+     "level": "A2",
+     "pos": "noun",
+     "en": "jam",
+     "fa": ""
+    },
+    {
+     "id": 920700,
+     "level": "A2",
+     "pos": "noun",
+     "en": "noodles",
+     "fa": ""
+    },
+    {
+     "id": 920701,
+     "level": "A2",
+     "pos": "noun",
+     "en": "spice",
+     "fa": ""
+    },
+    {
+     "id": 920702,
+     "level": "A2",
+     "pos": "noun",
+     "en": "herb",
+     "fa": ""
+    },
+    {
+     "id": 920703,
+     "level": "A2",
+     "pos": "noun",
+     "en": "garlic",
+     "fa": ""
+    },
+    {
+     "id": 920704,
+     "level": "A2",
+     "pos": "noun",
+     "en": "oven",
+     "fa": ""
+    },
+    {
+     "id": 920705,
+     "level": "A2",
+     "pos": "noun",
+     "en": "pan",
+     "fa": ""
+    },
+    {
+     "id": 920706,
+     "level": "A2",
+     "pos": "noun",
+     "en": "pot",
+     "fa": ""
+    },
+    {
+     "id": 920707,
+     "level": "A2",
+     "pos": "noun",
+     "en": "kettle",
+     "fa": ""
+    },
+    {
+     "id": 920708,
+     "level": "A2",
+     "pos": "noun",
+     "en": "blender",
+     "fa": ""
+    },
+    {
+     "id": 920709,
+     "level": "A2",
+     "pos": "noun",
+     "en": "frying pan",
+     "fa": ""
+    },
+    {
+     "id": 920710,
+     "level": "A2",
+     "pos": "noun",
+     "en": "grater",
+     "fa": ""
+    },
+    {
+     "id": 920711,
+     "level": "A2",
+     "pos": "noun",
+     "en": "chopping board",
+     "fa": ""
+    },
+    {
+     "id": 920712,
+     "level": "A2",
+     "pos": "noun",
+     "en": "apron",
+     "fa": ""
+    },
+    {
+     "id": 920713,
+     "level": "A2",
+     "pos": "noun",
+     "en": "tray",
+     "fa": ""
+    },
+    {
+     "id": 920714,
+     "level": "A2",
+     "pos": "noun",
+     "en": "jar",
+     "fa": ""
+    },
+    {
+     "id": 920088,
+     "level": "A2",
+     "pos": "verb",
+     "en": "mix",
+     "fa": ""
+    },
+    {
+     "id": 920715,
+     "level": "A2",
+     "pos": "verb",
+     "en": "stir",
+     "fa": ""
+    },
+    {
+     "id": 920716,
+     "level": "A2",
+     "pos": "verb",
+     "en": "chop",
+     "fa": ""
+    },
+    {
+     "id": 920717,
+     "level": "A2",
+     "pos": "verb",
+     "en": "peel",
+     "fa": ""
+    },
+    {
+     "id": 920718,
+     "level": "A2",
+     "pos": "verb",
+     "en": "slice",
+     "fa": ""
+    },
+    {
+     "id": 920719,
+     "level": "A2",
+     "pos": "verb",
+     "en": "bake",
+     "fa": ""
+    },
+    {
+     "id": 920720,
+     "level": "A2",
+     "pos": "verb",
+     "en": "fry",
+     "fa": ""
+    },
+    {
+     "id": 920084,
+     "level": "A2",
+     "pos": "verb",
+     "en": "boil",
+     "fa": ""
+    },
+    {
+     "id": 920721,
+     "level": "A2",
+     "pos": "verb",
+     "en": "grill",
+     "fa": ""
+    },
+    {
+     "id": 920722,
+     "level": "A2",
+     "pos": "verb",
+     "en": "pour",
+     "fa": ""
+    },
+    {
+     "id": 920127,
+     "level": "A2",
+     "pos": "verb",
+     "en": "add",
+     "fa": ""
+    },
+    {
+     "id": 920723,
+     "level": "A2",
+     "pos": "verb",
+     "en": "taste",
+     "fa": ""
+    },
+    {
+     "id": 920507,
+     "level": "A2",
+     "pos": "verb",
+     "en": "serve",
+     "fa": ""
+    },
+    {
+     "id": 920724,
+     "level": "A2",
+     "pos": "verb",
+     "en": "roast",
+     "fa": ""
+    },
+    {
+     "id": 920725,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "raw",
+     "fa": ""
+    },
+    {
+     "id": 920726,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "cooked",
+     "fa": ""
+    },
+    {
+     "id": 920727,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "crispy",
+     "fa": ""
+    },
+    {
+     "id": 920728,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "sour",
+     "fa": ""
+    },
+    {
+     "id": 920729,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "bitter",
+     "fa": ""
+    },
+    {
+     "id": 920730,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "juicy",
+     "fa": ""
+    },
+    {
+     "id": 920731,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "tasty",
+     "fa": ""
+    },
+    {
+     "id": 920732,
+     "level": "A2",
+     "pos": "other",
+     "en": "Add a little salt.",
+     "fa": ""
+    },
+    {
+     "id": 920733,
+     "level": "A2",
+     "pos": "other",
+     "en": "Cook for ten minutes.",
+     "fa": ""
+    },
+    {
+     "id": 920734,
+     "level": "A2",
+     "pos": "other",
+     "en": "Stir the soup.",
+     "fa": ""
+    },
+    {
+     "id": 920735,
+     "level": "A2",
+     "pos": "other",
+     "en": "Preheat the oven.",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "vehicles",
+   "fa": "وسیله‌های نقلیه",
+   "en": "Vehicles",
+   "words": [
+    {
+     "id": 920736,
+     "level": "A2",
+     "pos": "noun",
+     "en": "lorry",
+     "fa": ""
+    },
+    {
+     "id": 920737,
+     "level": "A2",
+     "pos": "noun",
+     "en": "truck",
+     "fa": ""
+    },
+    {
+     "id": 920738,
+     "level": "A2",
+     "pos": "noun",
+     "en": "van",
+     "fa": ""
+    },
+    {
+     "id": 920739,
+     "level": "A2",
+     "pos": "noun",
+     "en": "motorbike",
+     "fa": ""
+    },
+    {
+     "id": 920740,
+     "level": "A2",
+     "pos": "noun",
+     "en": "scooter",
+     "fa": ""
+    },
+    {
+     "id": 920741,
+     "level": "A2",
+     "pos": "noun",
+     "en": "helicopter",
+     "fa": ""
+    },
+    {
+     "id": 920742,
+     "level": "A2",
+     "pos": "noun",
+     "en": "boat",
+     "fa": ""
+    },
+    {
+     "id": 920743,
+     "level": "A2",
+     "pos": "noun",
+     "en": "ship",
+     "fa": ""
+    },
+    {
+     "id": 920744,
+     "level": "A2",
+     "pos": "noun",
+     "en": "ferry",
+     "fa": ""
+    },
+    {
+     "id": 920745,
+     "level": "A2",
+     "pos": "noun",
+     "en": "submarine",
+     "fa": ""
+    },
+    {
+     "id": 920746,
+     "level": "A2",
+     "pos": "noun",
+     "en": "fire engine",
+     "fa": ""
+    },
+    {
+     "id": 920747,
+     "level": "A2",
+     "pos": "noun",
+     "en": "police car",
+     "fa": ""
+    },
+    {
+     "id": 920748,
+     "level": "A2",
+     "pos": "noun",
+     "en": "tractor",
+     "fa": ""
+    },
+    {
+     "id": 920749,
+     "level": "A2",
+     "pos": "noun",
+     "en": "wheel",
+     "fa": ""
+    },
+    {
+     "id": 920750,
+     "level": "A2",
+     "pos": "noun",
+     "en": "engine",
+     "fa": ""
+    },
+    {
+     "id": 920751,
+     "level": "A2",
+     "pos": "noun",
+     "en": "steering wheel",
+     "fa": ""
+    },
+    {
+     "id": 920752,
+     "level": "A2",
+     "pos": "noun",
+     "en": "horn",
+     "fa": ""
+    },
+    {
+     "id": 920753,
+     "level": "A2",
+     "pos": "noun",
+     "en": "brake",
+     "fa": ""
+    },
+    {
+     "id": 920754,
+     "level": "A2",
+     "pos": "noun",
+     "en": "tyre",
+     "fa": ""
+    },
+    {
+     "id": 920755,
+     "level": "A2",
+     "pos": "noun",
+     "en": "pedal",
+     "fa": ""
+    },
+    {
+     "id": 920756,
+     "level": "A2",
+     "pos": "noun",
+     "en": "handlebars",
+     "fa": ""
+    },
+    {
+     "id": 920757,
+     "level": "A2",
+     "pos": "noun",
+     "en": "cable car",
+     "fa": ""
+    },
+    {
+     "id": 920758,
+     "level": "A2",
+     "pos": "noun",
+     "en": "hot-air balloon",
+     "fa": ""
+    },
+    {
+     "id": 920759,
+     "level": "A2",
+     "pos": "noun",
+     "en": "sailing boat",
+     "fa": ""
+    },
+    {
+     "id": 920760,
+     "level": "A2",
+     "pos": "noun",
+     "en": "traffic jam",
+     "fa": ""
+    },
+    {
+     "id": 920761,
+     "level": "A2",
+     "pos": "noun",
+     "en": "motorway",
+     "fa": ""
+    },
+    {
+     "id": 920762,
+     "level": "A2",
+     "pos": "noun",
+     "en": "tunnel",
+     "fa": ""
+    },
+    {
+     "id": 920763,
+     "level": "A2",
+     "pos": "noun",
+     "en": "speed",
+     "fa": ""
+    },
+    {
+     "id": 920764,
+     "level": "A2",
+     "pos": "verb",
+     "en": "ride",
+     "fa": ""
+    },
+    {
+     "id": 920765,
+     "level": "A2",
+     "pos": "verb",
+     "en": "sail",
+     "fa": ""
+    },
+    {
+     "id": 920766,
+     "level": "A2",
+     "pos": "verb",
+     "en": "steer",
+     "fa": ""
+    },
+    {
+     "id": 920767,
+     "level": "A2",
+     "pos": "verb",
+     "en": "load",
+     "fa": ""
+    },
+    {
+     "id": 920292,
+     "level": "A2",
+     "pos": "verb",
+     "en": "fly",
+     "fa": ""
+    },
+    {
+     "id": 920369,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "fast",
+     "fa": ""
+    },
+    {
+     "id": 920368,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "slow",
+     "fa": ""
+    },
+    {
+     "id": 920768,
+     "level": "A2",
+     "pos": "other",
+     "en": "I go to school by bus.",
+     "fa": ""
+    },
+    {
+     "id": 920769,
+     "level": "A2",
+     "pos": "other",
+     "en": "I ride my bike to school.",
+     "fa": ""
+    },
+    {
+     "id": 920770,
+     "level": "A2",
+     "pos": "other",
+     "en": "How do you travel?",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "friends",
+   "fa": "دوستی و احساسات",
+   "en": "Friends & Feelings",
+   "words": [
+    {
+     "id": 920771,
+     "level": "A2",
+     "pos": "noun",
+     "en": "friendship",
+     "fa": ""
+    },
+    {
+     "id": 920772,
+     "level": "A2",
+     "pos": "noun",
+     "en": "best friend",
+     "fa": ""
+    },
+    {
+     "id": 920773,
+     "level": "A2",
+     "pos": "noun",
+     "en": "classmate",
+     "fa": ""
+    },
+    {
+     "id": 920774,
+     "level": "A2",
+     "pos": "noun",
+     "en": "partner",
+     "fa": ""
+    },
+    {
+     "id": 920775,
+     "level": "A2",
+     "pos": "noun",
+     "en": "bully",
+     "fa": ""
+    },
+    {
+     "id": 920776,
+     "level": "A2",
+     "pos": "noun",
+     "en": "argument",
+     "fa": ""
+    },
+    {
+     "id": 920777,
+     "level": "A2",
+     "pos": "noun",
+     "en": "kindness",
+     "fa": ""
+    },
+    {
+     "id": 920778,
+     "level": "A2",
+     "pos": "noun",
+     "en": "respect",
+     "fa": ""
+    },
+    {
+     "id": 920779,
+     "level": "A2",
+     "pos": "noun",
+     "en": "promise",
+     "fa": ""
+    },
+    {
+     "id": 920780,
+     "level": "A2",
+     "pos": "noun",
+     "en": "trust",
+     "fa": ""
+    },
+    {
+     "id": 920467,
+     "level": "A2",
+     "pos": "verb",
+     "en": "share",
+     "fa": ""
+    },
+    {
+     "id": 920781,
+     "level": "A2",
+     "pos": "verb",
+     "en": "invite",
+     "fa": ""
+    },
+    {
+     "id": 920782,
+     "level": "A2",
+     "pos": "verb",
+     "en": "argue",
+     "fa": ""
+    },
+    {
+     "id": 920783,
+     "level": "A2",
+     "pos": "verb",
+     "en": "forgive",
+     "fa": ""
+    },
+    {
+     "id": 920784,
+     "level": "A2",
+     "pos": "verb",
+     "en": "apologise",
+     "fa": ""
+    },
+    {
+     "id": 920785,
+     "level": "A2",
+     "pos": "verb",
+     "en": "include",
+     "fa": ""
+    },
+    {
+     "id": 920786,
+     "level": "A2",
+     "pos": "verb",
+     "en": "laugh",
+     "fa": ""
+    },
+    {
+     "id": 920787,
+     "level": "A2",
+     "pos": "verb",
+     "en": "cry",
+     "fa": ""
+    },
+    {
+     "id": 920788,
+     "level": "A2",
+     "pos": "verb",
+     "en": "hug",
+     "fa": ""
+    },
+    {
+     "id": 920789,
+     "level": "A2",
+     "pos": "verb",
+     "en": "worry",
+     "fa": ""
+    },
+    {
+     "id": 920790,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "nervous",
+     "fa": ""
+    },
+    {
+     "id": 920791,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "proud",
+     "fa": ""
+    },
+    {
+     "id": 920792,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "jealous",
+     "fa": ""
+    },
+    {
+     "id": 920793,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "lonely",
+     "fa": ""
+    },
+    {
+     "id": 920794,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "worried",
+     "fa": ""
+    },
+    {
+     "id": 920795,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "upset",
+     "fa": ""
+    },
+    {
+     "id": 920796,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "embarrassed",
+     "fa": ""
+    },
+    {
+     "id": 920797,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "disappointed",
+     "fa": ""
+    },
+    {
+     "id": 920685,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "brave",
+     "fa": ""
+    },
+    {
+     "id": 920798,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "calm",
+     "fa": ""
+    },
+    {
+     "id": 920799,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "cheerful",
+     "fa": ""
+    },
+    {
+     "id": 920800,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "grumpy",
+     "fa": ""
+    },
+    {
+     "id": 920801,
+     "level": "A2",
+     "pos": "other",
+     "en": "I'm sorry.",
+     "fa": ""
+    },
+    {
+     "id": 920802,
+     "level": "A2",
+     "pos": "other",
+     "en": "Can I play with you?",
+     "fa": ""
+    },
+    {
+     "id": 920803,
+     "level": "A2",
+     "pos": "other",
+     "en": "Let's be friends.",
+     "fa": ""
+    },
+    {
+     "id": 920804,
+     "level": "A2",
+     "pos": "other",
+     "en": "That's not fair.",
+     "fa": ""
+    },
+    {
+     "id": 920805,
+     "level": "A2",
+     "pos": "other",
+     "en": "Don't worry.",
+     "fa": ""
+    },
+    {
+     "id": 920806,
+     "level": "A2",
+     "pos": "other",
+     "en": "I feel nervous.",
+     "fa": ""
+    },
+    {
+     "id": 920807,
+     "level": "A2",
+     "pos": "other",
+     "en": "Thank you for helping me.",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "history",
+   "fa": "دایناسورها و گذشته",
+   "en": "Dinosaurs & the Past",
+   "words": [
+    {
+     "id": 920808,
+     "level": "A2",
+     "pos": "noun",
+     "en": "dinosaur",
+     "fa": ""
+    },
+    {
+     "id": 920809,
+     "level": "A2",
+     "pos": "noun",
+     "en": "fossil",
+     "fa": ""
+    },
+    {
+     "id": 920810,
+     "level": "A2",
+     "pos": "noun",
+     "en": "bone",
+     "fa": ""
+    },
+    {
+     "id": 920811,
+     "level": "A2",
+     "pos": "noun",
+     "en": "skeleton",
+     "fa": ""
+    },
+    {
+     "id": 920812,
+     "level": "A2",
+     "pos": "noun",
+     "en": "ice age",
+     "fa": ""
+    },
+    {
+     "id": 920813,
+     "level": "A2",
+     "pos": "noun",
+     "en": "stone age",
+     "fa": ""
+    },
+    {
+     "id": 920814,
+     "level": "A2",
+     "pos": "noun",
+     "en": "ancient",
+     "fa": ""
+    },
+    {
+     "id": 920815,
+     "level": "A2",
+     "pos": "noun",
+     "en": "century",
+     "fa": ""
+    },
+    {
+     "id": 920816,
+     "level": "A2",
+     "pos": "noun",
+     "en": "pyramid",
+     "fa": ""
+    },
+    {
+     "id": 920817,
+     "level": "A2",
+     "pos": "noun",
+     "en": "knight",
+     "fa": ""
+    },
+    {
+     "id": 920818,
+     "level": "A2",
+     "pos": "noun",
+     "en": "armour",
+     "fa": ""
+    },
+    {
+     "id": 920819,
+     "level": "A2",
+     "pos": "noun",
+     "en": "sword",
+     "fa": ""
+    },
+    {
+     "id": 920820,
+     "level": "A2",
+     "pos": "noun",
+     "en": "shield",
+     "fa": ""
+    },
+    {
+     "id": 920821,
+     "level": "A2",
+     "pos": "noun",
+     "en": "emperor",
+     "fa": ""
+    },
+    {
+     "id": 920822,
+     "level": "A2",
+     "pos": "noun",
+     "en": "explorer",
+     "fa": ""
+    },
+    {
+     "id": 920823,
+     "level": "A2",
+     "pos": "noun",
+     "en": "discovery",
+     "fa": ""
+    },
+    {
+     "id": 920079,
+     "level": "A2",
+     "pos": "noun",
+     "en": "invention",
+     "fa": ""
+    },
+    {
+     "id": 920824,
+     "level": "A2",
+     "pos": "noun",
+     "en": "empire",
+     "fa": ""
+    },
+    {
+     "id": 920825,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Persepolis",
+     "fa": ""
+    },
+    {
+     "id": 920826,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Persian Empire",
+     "fa": ""
+    },
+    {
+     "id": 920827,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Silk Road",
+     "fa": ""
+    },
+    {
+     "id": 920828,
+     "level": "A2",
+     "pos": "noun",
+     "en": "Great Wall",
+     "fa": ""
+    },
+    {
+     "id": 920829,
+     "level": "A2",
+     "pos": "noun",
+     "en": "ancient Egypt",
+     "fa": ""
+    },
+    {
+     "id": 920830,
+     "level": "A2",
+     "pos": "noun",
+     "en": "ancient Rome",
+     "fa": ""
+    },
+    {
+     "id": 920831,
+     "level": "A2",
+     "pos": "noun",
+     "en": "ancient Greece",
+     "fa": ""
+    },
+    {
+     "id": 920092,
+     "level": "A2",
+     "pos": "verb",
+     "en": "discover",
+     "fa": ""
+    },
+    {
+     "id": 920683,
+     "level": "A2",
+     "pos": "verb",
+     "en": "invent",
+     "fa": ""
+    },
+    {
+     "id": 920613,
+     "level": "A2",
+     "pos": "verb",
+     "en": "explore",
+     "fa": ""
+    },
+    {
+     "id": 920521,
+     "level": "A2",
+     "pos": "verb",
+     "en": "rule",
+     "fa": ""
+    },
+    {
+     "id": 920832,
+     "level": "A2",
+     "pos": "verb",
+     "en": "live",
+     "fa": ""
+    },
+    {
+     "id": 920833,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "extinct",
+     "fa": ""
+    },
+    {
+     "id": 920834,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "historical",
+     "fa": ""
+    },
+    {
+     "id": 920835,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "famous",
+     "fa": ""
+    },
+    {
+     "id": 920836,
+     "level": "A2",
+     "pos": "other",
+     "en": "Dinosaurs lived millions of years ago.",
+     "fa": ""
+    },
+    {
+     "id": 920837,
+     "level": "A2",
+     "pos": "other",
+     "en": "Long ago, people lived in caves.",
+     "fa": ""
+    },
+    {
+     "id": 920838,
+     "level": "A2",
+     "pos": "other",
+     "en": "Who built the pyramids?",
+     "fa": ""
+    }
+   ]
+  },
+  {
    "key": "shopping",
    "fa": "خرید و فروشگاه",
    "en": "Shopping",
