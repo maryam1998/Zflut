@@ -6,6 +6,7 @@ import '../../core/constants/level_colors.dart';
 import '../../core/models/daily_word.dart';
 import '../../core/providers/conversation_provider.dart';
 import '../../core/providers/my_dictionary_provider.dart';
+import '../../core/providers/primary_school_provider.dart';
 import '../../core/providers/words_filter_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/usage/free_limit.dart';
@@ -14,7 +15,9 @@ import '../../core/usage/pro_status.dart';
 import '../../core/usage/words_index.dart';
 import '../../core/widgets/category_grid.dart';
 import '../../core/widgets/locked_words_card.dart';
+import '../words/widgets/stage_chips_bar.dart';
 import '../words/widgets/word_list_view.dart';
+import 'primary_school_view.dart';
 
 /// تبِ «دیکشنری من»: لغات روزمره + لغات/عبارت‌های شخصی‌ای که کاربر با
 /// «ذخیره برای داستان بعدی» نشان کرده (با برچسب «شخصی» و ✕).
@@ -29,6 +32,10 @@ class WordsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 🎒 مرحله‌ی «Primary School ▸ A1»
+    if (ref.watch(wordsStageProvider) == kStagePrimary) {
+      return const PrimarySchoolView();
+    }
     final words = ref.watch(wordsTabItemsProvider);
     final base = ref.watch(wordsTabBaseItemsProvider);
     final all = ref.watch(allDailyWordsProvider);
@@ -79,6 +86,7 @@ class WordsTab extends ConsumerWidget {
       words: shown,
       gridMode: gridMode,
       hasAnyData: all.isNotEmpty || personal.isNotEmpty,
+      topSlot: const StageChipsBar(),
       loading: ref.watch(dailyWordsLoaderProvider).isLoading,
       afterHeading: Column(
         mainAxisSize: MainAxisSize.min,

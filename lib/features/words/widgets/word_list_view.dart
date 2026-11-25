@@ -76,6 +76,12 @@ class WordListView extends ConsumerStatefulWidget {
   /// فیلترِ سطح + جستجو + [afterHeading] (شبکه‌ی دسته‌ها) دیده می‌شود.
   final bool gridMode;
 
+  /// ویجتِ بالای چیپ‌های سطح (مثلاً چیپ‌های مرحله: همه / Primary School)
+  final Widget? topSlot;
+
+  /// true = چیپ‌های سطحِ A1…C2 پنهان می‌شوند (مثلاً در نمای Primary School)
+  final bool hideLevelChips;
+
   const WordListView({
     super.key,
     required this.listId,
@@ -89,6 +95,8 @@ class WordListView extends ConsumerStatefulWidget {
     this.lockedInfo,
     this.levelAvailability,
     this.gridMode = false,
+    this.topSlot,
+    this.hideLevelChips = false,
   });
 
   @override
@@ -306,13 +314,18 @@ class _WordListViewState extends ConsumerState<WordListView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  LevelChipsMulti(
-                    selected: filter.levels,
-                    onChanged: notifier.setLevels,
-                    lockedLevels: lockedLevels,
-                    disabledLevels: emptyLevels,
-                    selectLocked: true,
-                  ),
+                  if (widget.topSlot != null) ...[
+                    widget.topSlot!,
+                    const SizedBox(height: 8),
+                  ],
+                  if (!widget.hideLevelChips)
+                    LevelChipsMulti(
+                      selected: filter.levels,
+                      onChanged: notifier.setLevels,
+                      lockedLevels: lockedLevels,
+                      disabledLevels: emptyLevels,
+                      selectLocked: true,
+                    ),
                   const SizedBox(height: 8),
                   if (!widget.gridMode)
                   Align(

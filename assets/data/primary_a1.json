@@ -1,0 +1,2506 @@
+{
+ "v": 1,
+ "stage": "primary",
+ "level": "A1",
+ "topics": [
+  {
+   "key": "alphabet",
+   "fa": "الفبا و صداها",
+   "en": "Alphabet & Sounds",
+   "words": [
+    {
+     "id": 900001,
+     "level": "A1",
+     "pos": "letter",
+     "en": "A",
+     "fa": "حرف A — مثل Apple (سیب)"
+    },
+    {
+     "id": 900002,
+     "level": "A1",
+     "pos": "letter",
+     "en": "B",
+     "fa": "حرف B — مثل Ball (توپ)"
+    },
+    {
+     "id": 900003,
+     "level": "A1",
+     "pos": "letter",
+     "en": "C",
+     "fa": "حرف C — مثل Cat (گربه)"
+    },
+    {
+     "id": 900004,
+     "level": "A1",
+     "pos": "letter",
+     "en": "D",
+     "fa": "حرف D — مثل Dog (سگ)"
+    },
+    {
+     "id": 900005,
+     "level": "A1",
+     "pos": "letter",
+     "en": "E",
+     "fa": "حرف E — مثل Egg (تخم‌مرغ)"
+    },
+    {
+     "id": 900006,
+     "level": "A1",
+     "pos": "letter",
+     "en": "F",
+     "fa": "حرف F — مثل Fish (ماهی)"
+    },
+    {
+     "id": 900007,
+     "level": "A1",
+     "pos": "letter",
+     "en": "G",
+     "fa": "حرف G — مثل Girl (دختر)"
+    },
+    {
+     "id": 900008,
+     "level": "A1",
+     "pos": "letter",
+     "en": "H",
+     "fa": "حرف H — مثل Hat (کلاه)"
+    },
+    {
+     "id": 900009,
+     "level": "A1",
+     "pos": "letter",
+     "en": "I",
+     "fa": "حرف I — مثل Ice (یخ)"
+    },
+    {
+     "id": 900010,
+     "level": "A1",
+     "pos": "letter",
+     "en": "J",
+     "fa": "حرف J — مثل Juice (آبمیوه)"
+    },
+    {
+     "id": 900011,
+     "level": "A1",
+     "pos": "letter",
+     "en": "K",
+     "fa": "حرف K — مثل Key (کلید)"
+    },
+    {
+     "id": 900012,
+     "level": "A1",
+     "pos": "letter",
+     "en": "L",
+     "fa": "حرف L — مثل Lion (شیر)"
+    },
+    {
+     "id": 900013,
+     "level": "A1",
+     "pos": "letter",
+     "en": "M",
+     "fa": "حرف M — مثل Moon (ماه)"
+    },
+    {
+     "id": 900014,
+     "level": "A1",
+     "pos": "letter",
+     "en": "N",
+     "fa": "حرف N — مثل Nose (بینی)"
+    },
+    {
+     "id": 900015,
+     "level": "A1",
+     "pos": "letter",
+     "en": "O",
+     "fa": "حرف O — مثل Orange (پرتقال)"
+    },
+    {
+     "id": 900016,
+     "level": "A1",
+     "pos": "letter",
+     "en": "P",
+     "fa": "حرف P — مثل Pen (خودکار)"
+    },
+    {
+     "id": 900017,
+     "level": "A1",
+     "pos": "letter",
+     "en": "Q",
+     "fa": "حرف Q — مثل Queen (ملکه)"
+    },
+    {
+     "id": 900018,
+     "level": "A1",
+     "pos": "letter",
+     "en": "R",
+     "fa": "حرف R — مثل Red (قرمز)"
+    },
+    {
+     "id": 900019,
+     "level": "A1",
+     "pos": "letter",
+     "en": "S",
+     "fa": "حرف S — مثل Sun (خورشید)"
+    },
+    {
+     "id": 900020,
+     "level": "A1",
+     "pos": "letter",
+     "en": "T",
+     "fa": "حرف T — مثل Tree (درخت)"
+    },
+    {
+     "id": 900021,
+     "level": "A1",
+     "pos": "letter",
+     "en": "U",
+     "fa": "حرف U — مثل Umbrella (چتر)"
+    },
+    {
+     "id": 900022,
+     "level": "A1",
+     "pos": "letter",
+     "en": "V",
+     "fa": "حرف V — مثل Van (ون)"
+    },
+    {
+     "id": 900023,
+     "level": "A1",
+     "pos": "letter",
+     "en": "W",
+     "fa": "حرف W — مثل Water (آب)"
+    },
+    {
+     "id": 900024,
+     "level": "A1",
+     "pos": "letter",
+     "en": "X",
+     "fa": "حرف X — مثل Box (جعبه (صدای ks))"
+    },
+    {
+     "id": 900025,
+     "level": "A1",
+     "pos": "letter",
+     "en": "Y",
+     "fa": "حرف Y — مثل Yellow (زرد)"
+    },
+    {
+     "id": 900026,
+     "level": "A1",
+     "pos": "letter",
+     "en": "Z",
+     "fa": "حرف Z — مثل Zebra (گورخر)"
+    },
+    {
+     "id": 900027,
+     "level": "A1",
+     "pos": "noun",
+     "en": "alphabet",
+     "fa": "الفبا"
+    },
+    {
+     "id": 900028,
+     "level": "A1",
+     "pos": "noun",
+     "en": "letter",
+     "fa": "حرف"
+    },
+    {
+     "id": 900029,
+     "level": "A1",
+     "pos": "noun",
+     "en": "word",
+     "fa": "کلمه"
+    },
+    {
+     "id": 900030,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sound",
+     "fa": "صدا"
+    },
+    {
+     "id": 900031,
+     "level": "A1",
+     "pos": "noun",
+     "en": "vowel",
+     "fa": "حرف صدادار"
+    },
+    {
+     "id": 900032,
+     "level": "A1",
+     "pos": "noun",
+     "en": "consonant",
+     "fa": "حرف بی‌صدا"
+    },
+    {
+     "id": 900033,
+     "level": "A1",
+     "pos": "verb",
+     "en": "spell",
+     "fa": "هجی کردن"
+    }
+   ]
+  },
+  {
+   "key": "numbers",
+   "fa": "اعداد",
+   "en": "Numbers",
+   "words": [
+    {
+     "id": 104952,
+     "level": "A2",
+     "pos": "number",
+     "en": "zero",
+     "fa": "صفر"
+    },
+    {
+     "id": 103033,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "one",
+     "fa": "یک"
+    },
+    {
+     "id": 104641,
+     "level": "A1",
+     "pos": "number",
+     "en": "two",
+     "fa": "دو"
+    },
+    {
+     "id": 104495,
+     "level": "A1",
+     "pos": "number",
+     "en": "three",
+     "fa": "سه"
+    },
+    {
+     "id": 101870,
+     "level": "A1",
+     "pos": "number",
+     "en": "four",
+     "fa": "چهار"
+    },
+    {
+     "id": 101797,
+     "level": "A1",
+     "pos": "number",
+     "en": "five",
+     "fa": "پنج"
+    },
+    {
+     "id": 104033,
+     "level": "A1",
+     "pos": "number",
+     "en": "six",
+     "fa": "شش"
+    },
+    {
+     "id": 103936,
+     "level": "A1",
+     "pos": "number",
+     "en": "seven",
+     "fa": "هفت"
+    },
+    {
+     "id": 101459,
+     "level": "A1",
+     "pos": "number",
+     "en": "eight",
+     "fa": "هشت"
+    },
+    {
+     "id": 102936,
+     "level": "A1",
+     "pos": "number",
+     "en": "nine",
+     "fa": "نه"
+    },
+    {
+     "id": 104419,
+     "level": "A1",
+     "pos": "number",
+     "en": "ten",
+     "fa": "ده"
+    },
+    {
+     "id": 101479,
+     "level": "A1",
+     "pos": "number",
+     "en": "eleven",
+     "fa": "یازده"
+    },
+    {
+     "id": 104636,
+     "level": "A1",
+     "pos": "number",
+     "en": "twelve",
+     "fa": "دوازده"
+    },
+    {
+     "id": 104482,
+     "level": "A1",
+     "pos": "number",
+     "en": "thirteen",
+     "fa": "سیزده"
+    },
+    {
+     "id": 101871,
+     "level": "A1",
+     "pos": "number",
+     "en": "fourteen",
+     "fa": "چهارده"
+    },
+    {
+     "id": 101765,
+     "level": "A1",
+     "pos": "number",
+     "en": "fifteen",
+     "fa": "پانزده"
+    },
+    {
+     "id": 104034,
+     "level": "A1",
+     "pos": "number",
+     "en": "sixteen",
+     "fa": "شانزده"
+    },
+    {
+     "id": 103937,
+     "level": "A1",
+     "pos": "number",
+     "en": "seventeen",
+     "fa": "هفده"
+    },
+    {
+     "id": 101460,
+     "level": "A1",
+     "pos": "number",
+     "en": "eighteen",
+     "fa": "هجده"
+    },
+    {
+     "id": 102937,
+     "level": "A1",
+     "pos": "number",
+     "en": "nineteen",
+     "fa": "نوزده"
+    },
+    {
+     "id": 104637,
+     "level": "A1",
+     "pos": "number",
+     "en": "twenty",
+     "fa": "بیست"
+    },
+    {
+     "id": 104483,
+     "level": "A1",
+     "pos": "number",
+     "en": "thirty",
+     "fa": "سی"
+    },
+    {
+     "id": 101862,
+     "level": "A1",
+     "pos": "number",
+     "en": "forty",
+     "fa": "چهل"
+    },
+    {
+     "id": 101767,
+     "level": "A1",
+     "pos": "number",
+     "en": "fifty",
+     "fa": "پنجاه"
+    },
+    {
+     "id": 104035,
+     "level": "A1",
+     "pos": "number",
+     "en": "sixty",
+     "fa": "شصت"
+    },
+    {
+     "id": 103938,
+     "level": "A1",
+     "pos": "number",
+     "en": "seventy",
+     "fa": "هفتاد"
+    },
+    {
+     "id": 101461,
+     "level": "A1",
+     "pos": "number",
+     "en": "eighty",
+     "fa": "هشتاد"
+    },
+    {
+     "id": 102938,
+     "level": "A1",
+     "pos": "number",
+     "en": "ninety",
+     "fa": "نود"
+    },
+    {
+     "id": 102181,
+     "level": "A1",
+     "pos": "number",
+     "en": "hundred",
+     "fa": "صد"
+    },
+    {
+     "id": 104491,
+     "level": "A1",
+     "pos": "number",
+     "en": "thousand",
+     "fa": "هزار"
+    },
+    {
+     "id": 102978,
+     "level": "A1",
+     "pos": "noun",
+     "en": "number",
+     "fa": "عدد"
+    },
+    {
+     "id": 101027,
+     "level": "A2",
+     "pos": "verb",
+     "en": "count",
+     "fa": "شمردن"
+    }
+   ]
+  },
+  {
+   "key": "colors",
+   "fa": "رنگ‌ها",
+   "en": "Colors",
+   "words": [
+    {
+     "id": 103613,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "red",
+     "fa": "قرمز"
+    },
+    {
+     "id": 100493,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "blue",
+     "fa": "آبی"
+    },
+    {
+     "id": 102015,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "green",
+     "fa": "سبز"
+    },
+    {
+     "id": 104940,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "yellow",
+     "fa": "زرد"
+    },
+    {
+     "id": 103061,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "orange",
+     "fa": "نارنجی"
+    },
+    {
+     "id": 103504,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "purple",
+     "fa": "بنفش"
+    },
+    {
+     "id": 103246,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "pink",
+     "fa": "صورتی"
+    },
+    {
+     "id": 100558,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "brown",
+     "fa": "قهوه ای"
+    },
+    {
+     "id": 100477,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "black",
+     "fa": "سیاه"
+    },
+    {
+     "id": 104862,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "white",
+     "fa": "سفید"
+    },
+    {
+     "id": 900034,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "gray",
+     "fa": "خاکستری"
+    },
+    {
+     "id": 101983,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "gold",
+     "fa": "طلا"
+    },
+    {
+     "id": 104010,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "silver",
+     "fa": "نقره ای"
+    },
+    {
+     "id": 101122,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "dark",
+     "fa": "تاریک"
+    },
+    {
+     "id": 900035,
+     "level": "A1",
+     "pos": "noun",
+     "en": "color",
+     "fa": "رنگ"
+    }
+   ]
+  },
+  {
+   "key": "shapes",
+   "fa": "شکل‌ها",
+   "en": "Shapes",
+   "words": [
+    {
+     "id": 100720,
+     "level": "A2",
+     "pos": "noun",
+     "en": "circle",
+     "fa": "دایره"
+    },
+    {
+     "id": 104177,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "square",
+     "fa": "مربع"
+    },
+    {
+     "id": 900036,
+     "level": "A1",
+     "pos": "noun",
+     "en": "triangle",
+     "fa": "مثلث"
+    },
+    {
+     "id": 900037,
+     "level": "A1",
+     "pos": "noun",
+     "en": "rectangle",
+     "fa": "مستطیل"
+    },
+    {
+     "id": 104194,
+     "level": "A1",
+     "pos": "noun",
+     "en": "star",
+     "fa": "ستاره"
+    },
+    {
+     "id": 102091,
+     "level": "A2",
+     "pos": "noun",
+     "en": "heart",
+     "fa": "قلب"
+    },
+    {
+     "id": 900038,
+     "level": "A1",
+     "pos": "noun",
+     "en": "oval",
+     "fa": "بیضی"
+    },
+    {
+     "id": 101259,
+     "level": "B1",
+     "pos": "noun",
+     "en": "diamond",
+     "fa": "الماس"
+    },
+    {
+     "id": 102587,
+     "level": "A1",
+     "pos": "noun",
+     "en": "line",
+     "fa": "خط"
+    },
+    {
+     "id": 103801,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "round",
+     "fa": "گرد"
+    },
+    {
+     "id": 103952,
+     "level": "A2",
+     "pos": "noun",
+     "en": "shape",
+     "fa": "شکل"
+    }
+   ]
+  },
+  {
+   "key": "animals",
+   "fa": "حیوان‌ها",
+   "en": "Animals",
+   "words": [
+    {
+     "id": 100643,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cat",
+     "fa": "گربه"
+    },
+    {
+     "id": 101362,
+     "level": "A1",
+     "pos": "noun",
+     "en": "dog",
+     "fa": "سگ"
+    },
+    {
+     "id": 100468,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bird",
+     "fa": "پرنده"
+    },
+    {
+     "id": 101793,
+     "level": "A1",
+     "pos": "noun",
+     "en": "fish",
+     "fa": "ماهی"
+    },
+    {
+     "id": 102160,
+     "level": "A1",
+     "pos": "noun",
+     "en": "horse",
+     "fa": "اسب"
+    },
+    {
+     "id": 101044,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cow",
+     "fa": "گاو"
+    },
+    {
+     "id": 103960,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sheep",
+     "fa": "گوسفند"
+    },
+    {
+     "id": 103241,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pig",
+     "fa": "خوک"
+    },
+    {
+     "id": 100705,
+     "level": "A1",
+     "pos": "noun",
+     "en": "chicken",
+     "fa": "مرغ"
+    },
+    {
+     "id": 900039,
+     "level": "A1",
+     "pos": "noun",
+     "en": "duck",
+     "fa": "اردک"
+    },
+    {
+     "id": 900040,
+     "level": "A1",
+     "pos": "noun",
+     "en": "rabbit",
+     "fa": "خرگوش"
+    },
+    {
+     "id": 102858,
+     "level": "A1",
+     "pos": "noun",
+     "en": "mouse",
+     "fa": "موش"
+    },
+    {
+     "id": 102592,
+     "level": "A1",
+     "pos": "noun",
+     "en": "lion",
+     "fa": "شیر"
+    },
+    {
+     "id": 900041,
+     "level": "A1",
+     "pos": "noun",
+     "en": "tiger",
+     "fa": "ببر"
+    },
+    {
+     "id": 100412,
+     "level": "A2",
+     "pos": "noun",
+     "en": "bear",
+     "fa": "خرس"
+    },
+    {
+     "id": 101477,
+     "level": "A1",
+     "pos": "noun",
+     "en": "elephant",
+     "fa": "فیل"
+    },
+    {
+     "id": 102831,
+     "level": "A2",
+     "pos": "noun",
+     "en": "monkey",
+     "fa": "میمون"
+    },
+    {
+     "id": 101897,
+     "level": "A2",
+     "pos": "noun",
+     "en": "frog",
+     "fa": "قورباغه"
+    },
+    {
+     "id": 900042,
+     "level": "A1",
+     "pos": "noun",
+     "en": "turtle",
+     "fa": "لاک‌پشت"
+    },
+    {
+     "id": 900043,
+     "level": "A1",
+     "pos": "noun",
+     "en": "butterfly",
+     "fa": "پروانه"
+    },
+    {
+     "id": 900044,
+     "level": "A1",
+     "pos": "noun",
+     "en": "giraffe",
+     "fa": "زرافه"
+    },
+    {
+     "id": 900045,
+     "level": "A1",
+     "pos": "noun",
+     "en": "zebra",
+     "fa": "گورخر"
+    },
+    {
+     "id": 900046,
+     "level": "A1",
+     "pos": "noun",
+     "en": "goat",
+     "fa": "بز"
+    },
+    {
+     "id": 900047,
+     "level": "A1",
+     "pos": "noun",
+     "en": "donkey",
+     "fa": "الاغ"
+    },
+    {
+     "id": 100421,
+     "level": "B1",
+     "pos": "noun",
+     "en": "bee",
+     "fa": "زنبور"
+    },
+    {
+     "id": 900048,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ant",
+     "fa": "مورچه"
+    },
+    {
+     "id": 104152,
+     "level": "A2",
+     "pos": "noun",
+     "en": "spider",
+     "fa": "عنکبوت"
+    },
+    {
+     "id": 900049,
+     "level": "A1",
+     "pos": "noun",
+     "en": "wolf",
+     "fa": "گرگ"
+    },
+    {
+     "id": 900050,
+     "level": "A1",
+     "pos": "noun",
+     "en": "fox",
+     "fa": "روباه"
+    },
+    {
+     "id": 900051,
+     "level": "A1",
+     "pos": "noun",
+     "en": "deer",
+     "fa": "آهو"
+    },
+    {
+     "id": 900052,
+     "level": "A1",
+     "pos": "noun",
+     "en": "camel",
+     "fa": "شتر"
+    },
+    {
+     "id": 900053,
+     "level": "A1",
+     "pos": "noun",
+     "en": "owl",
+     "fa": "جغد"
+    },
+    {
+     "id": 900054,
+     "level": "A1",
+     "pos": "noun",
+     "en": "eagle",
+     "fa": "عقاب"
+    },
+    {
+     "id": 900055,
+     "level": "A1",
+     "pos": "noun",
+     "en": "dolphin",
+     "fa": "دلفین"
+    },
+    {
+     "id": 900056,
+     "level": "A1",
+     "pos": "noun",
+     "en": "shark",
+     "fa": "کوسه"
+    },
+    {
+     "id": 900057,
+     "level": "A1",
+     "pos": "noun",
+     "en": "whale",
+     "fa": "نهنگ"
+    },
+    {
+     "id": 104072,
+     "level": "A1",
+     "pos": "noun",
+     "en": "snake",
+     "fa": "مار"
+    },
+    {
+     "id": 100200,
+     "level": "A1",
+     "pos": "noun",
+     "en": "animal",
+     "fa": "حیوان"
+    }
+   ]
+  },
+  {
+   "key": "body",
+   "fa": "اعضای بدن",
+   "en": "Body",
+   "words": [
+    {
+     "id": 100497,
+     "level": "A1",
+     "pos": "noun",
+     "en": "body",
+     "fa": "بدن"
+    },
+    {
+     "id": 102081,
+     "level": "A1",
+     "pos": "noun",
+     "en": "head",
+     "fa": "سر"
+    },
+    {
+     "id": 102048,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hair",
+     "fa": "مو"
+    },
+    {
+     "id": 101698,
+     "level": "A1",
+     "pos": "noun",
+     "en": "face",
+     "fa": "صورت"
+    },
+    {
+     "id": 101695,
+     "level": "A1",
+     "pos": "noun",
+     "en": "eye",
+     "fa": "چشم"
+    },
+    {
+     "id": 101421,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ear",
+     "fa": "گوش"
+    },
+    {
+     "id": 102960,
+     "level": "A1",
+     "pos": "noun",
+     "en": "nose",
+     "fa": "بینی"
+    },
+    {
+     "id": 102859,
+     "level": "A1",
+     "pos": "noun",
+     "en": "mouth",
+     "fa": "دهان"
+    },
+    {
+     "id": 102593,
+     "level": "B1",
+     "pos": "noun",
+     "en": "lip",
+     "fa": "لب"
+    },
+    {
+     "id": 104541,
+     "level": "A1",
+     "pos": "noun",
+     "en": "tooth",
+     "fa": "دندان"
+    },
+    {
+     "id": 900058,
+     "level": "A1",
+     "pos": "noun",
+     "en": "teeth",
+     "fa": "دندان‌ها"
+    },
+    {
+     "id": 104536,
+     "level": "B1",
+     "pos": "noun",
+     "en": "tongue",
+     "fa": "زبان"
+    },
+    {
+     "id": 100697,
+     "level": "B2",
+     "pos": "noun",
+     "en": "cheek",
+     "fa": "گونه"
+    },
+    {
+     "id": 900059,
+     "level": "A1",
+     "pos": "noun",
+     "en": "chin",
+     "fa": "چانه"
+    },
+    {
+     "id": 102906,
+     "level": "A2",
+     "pos": "noun",
+     "en": "neck",
+     "fa": "گردن"
+    },
+    {
+     "id": 103987,
+     "level": "A2",
+     "pos": "noun",
+     "en": "shoulder",
+     "fa": "شانه"
+    },
+    {
+     "id": 100265,
+     "level": "A1",
+     "pos": "noun",
+     "en": "arm",
+     "fa": "بازو"
+    },
+    {
+     "id": 101464,
+     "level": "B2",
+     "pos": "noun",
+     "en": "elbow",
+     "fa": "آرنج"
+    },
+    {
+     "id": 102053,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hand",
+     "fa": "دست"
+    },
+    {
+     "id": 101783,
+     "level": "A2",
+     "pos": "noun",
+     "en": "finger",
+     "fa": "انگشت"
+    },
+    {
+     "id": 102541,
+     "level": "A1",
+     "pos": "noun",
+     "en": "leg",
+     "fa": "پا"
+    },
+    {
+     "id": 102479,
+     "level": "A2",
+     "pos": "noun",
+     "en": "knee",
+     "fa": "زانو"
+    },
+    {
+     "id": 101834,
+     "level": "A1",
+     "pos": "noun",
+     "en": "foot",
+     "fa": "پا"
+    },
+    {
+     "id": 900060,
+     "level": "A1",
+     "pos": "noun",
+     "en": "feet",
+     "fa": "کف پاها"
+    },
+    {
+     "id": 104526,
+     "level": "B1",
+     "pos": "noun",
+     "en": "toe",
+     "fa": "انگشت پا"
+    },
+    {
+     "id": 100361,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "back",
+     "fa": "بازگشت"
+    },
+    {
+     "id": 104225,
+     "level": "A2",
+     "pos": "noun",
+     "en": "stomach",
+     "fa": "معده"
+    }
+   ]
+  },
+  {
+   "key": "family",
+   "fa": "خانواده",
+   "en": "Family",
+   "words": [
+    {
+     "id": 101719,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "family",
+     "fa": "خانوادگی"
+    },
+    {
+     "id": 102848,
+     "level": "A1",
+     "pos": "noun",
+     "en": "mother",
+     "fa": "مادر"
+    },
+    {
+     "id": 101738,
+     "level": "A1",
+     "pos": "noun",
+     "en": "father",
+     "fa": "پدر"
+    },
+    {
+     "id": 900061,
+     "level": "A1",
+     "pos": "noun",
+     "en": "mom",
+     "fa": "مامان"
+    },
+    {
+     "id": 101110,
+     "level": "A1",
+     "pos": "noun",
+     "en": "dad",
+     "fa": "پدر"
+    },
+    {
+     "id": 104028,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sister",
+     "fa": "خواهر"
+    },
+    {
+     "id": 100557,
+     "level": "A1",
+     "pos": "noun",
+     "en": "brother",
+     "fa": "برادر"
+    },
+    {
+     "id": 100360,
+     "level": "A1",
+     "pos": "noun",
+     "en": "baby",
+     "fa": "بچه"
+    },
+    {
+     "id": 102003,
+     "level": "A1",
+     "pos": "noun",
+     "en": "grandmother",
+     "fa": "مادربزرگ"
+    },
+    {
+     "id": 102002,
+     "level": "A1",
+     "pos": "noun",
+     "en": "grandfather",
+     "fa": "پدربزرگ"
+    },
+    {
+     "id": 900062,
+     "level": "A1",
+     "pos": "noun",
+     "en": "grandma",
+     "fa": "مادربزرگ (خودمانی)"
+    },
+    {
+     "id": 900063,
+     "level": "A1",
+     "pos": "noun",
+     "en": "grandpa",
+     "fa": "پدربزرگ (خودمانی)"
+    },
+    {
+     "id": 104653,
+     "level": "A1",
+     "pos": "noun",
+     "en": "uncle",
+     "fa": "عمو"
+    },
+    {
+     "id": 100339,
+     "level": "A1",
+     "pos": "noun",
+     "en": "aunt",
+     "fa": "عمه"
+    },
+    {
+     "id": 101040,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cousin",
+     "fa": "پسر عمو"
+    },
+    {
+     "id": 104107,
+     "level": "A1",
+     "pos": "noun",
+     "en": "son",
+     "fa": "پسر"
+    },
+    {
+     "id": 101127,
+     "level": "A1",
+     "pos": "noun",
+     "en": "daughter",
+     "fa": "دختر"
+    },
+    {
+     "id": 103140,
+     "level": "A1",
+     "pos": "noun",
+     "en": "parent",
+     "fa": "والدین"
+    },
+    {
+     "id": 100707,
+     "level": "A1",
+     "pos": "noun",
+     "en": "child",
+     "fa": "کودک"
+    },
+    {
+     "id": 900064,
+     "level": "A1",
+     "pos": "noun",
+     "en": "children",
+     "fa": "کودکان"
+    },
+    {
+     "id": 102189,
+     "level": "A1",
+     "pos": "noun",
+     "en": "husband",
+     "fa": "شوهر"
+    },
+    {
+     "id": 104876,
+     "level": "A1",
+     "pos": "noun",
+     "en": "wife",
+     "fa": "همسر"
+    },
+    {
+     "id": 100526,
+     "level": "A1",
+     "pos": "noun",
+     "en": "boy",
+     "fa": "پسر"
+    },
+    {
+     "id": 101967,
+     "level": "A1",
+     "pos": "noun",
+     "en": "girl",
+     "fa": "دختر"
+    },
+    {
+     "id": 102676,
+     "level": "A1",
+     "pos": "noun",
+     "en": "man",
+     "fa": "مرد"
+    },
+    {
+     "id": 104901,
+     "level": "A1",
+     "pos": "noun",
+     "en": "woman",
+     "fa": "زن"
+    },
+    {
+     "id": 101891,
+     "level": "A1",
+     "pos": "noun",
+     "en": "friend",
+     "fa": "دوست"
+    }
+   ]
+  },
+  {
+   "key": "food",
+   "fa": "خوراکی‌ها",
+   "en": "Food & Drink",
+   "words": [
+    {
+     "id": 101832,
+     "level": "A1",
+     "pos": "noun",
+     "en": "food",
+     "fa": "غذا"
+    },
+    {
+     "id": 100536,
+     "level": "A1",
+     "pos": "noun",
+     "en": "breakfast",
+     "fa": "صبحانه"
+    },
+    {
+     "id": 102648,
+     "level": "A1",
+     "pos": "noun",
+     "en": "lunch",
+     "fa": "ناهار"
+    },
+    {
+     "id": 101279,
+     "level": "A1",
+     "pos": "noun",
+     "en": "dinner",
+     "fa": "شام"
+    },
+    {
+     "id": 104814,
+     "level": "A1",
+     "pos": "noun",
+     "en": "water",
+     "fa": "آب"
+    },
+    {
+     "id": 102785,
+     "level": "A1",
+     "pos": "noun",
+     "en": "milk",
+     "fa": "شیر"
+    },
+    {
+     "id": 102450,
+     "level": "A1",
+     "pos": "noun",
+     "en": "juice",
+     "fa": "آب میوه"
+    },
+    {
+     "id": 104398,
+     "level": "A1",
+     "pos": "noun",
+     "en": "tea",
+     "fa": "چای"
+    },
+    {
+     "id": 100778,
+     "level": "A1",
+     "pos": "noun",
+     "en": "coffee",
+     "fa": "قهوه"
+    },
+    {
+     "id": 100533,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bread",
+     "fa": "نان"
+    },
+    {
+     "id": 103764,
+     "level": "A1",
+     "pos": "noun",
+     "en": "rice",
+     "fa": "برنج"
+    },
+    {
+     "id": 101457,
+     "level": "A1",
+     "pos": "noun",
+     "en": "egg",
+     "fa": "تخم مرغ"
+    },
+    {
+     "id": 100700,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cheese",
+     "fa": "پنیر"
+    },
+    {
+     "id": 100585,
+     "level": "A1",
+     "pos": "noun",
+     "en": "butter",
+     "fa": "کره"
+    },
+    {
+     "id": 102734,
+     "level": "A1",
+     "pos": "noun",
+     "en": "meat",
+     "fa": "گوشت"
+    },
+    {
+     "id": 104115,
+     "level": "A1",
+     "pos": "noun",
+     "en": "soup",
+     "fa": "سوپ"
+    },
+    {
+     "id": 103832,
+     "level": "A1",
+     "pos": "noun",
+     "en": "salad",
+     "fa": "سالاد"
+    },
+    {
+     "id": 103840,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sandwich",
+     "fa": "ساندویچ"
+    },
+    {
+     "id": 900065,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pizza",
+     "fa": "پیتزا"
+    },
+    {
+     "id": 100594,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cake",
+     "fa": "کیک"
+    },
+    {
+     "id": 100710,
+     "level": "A1",
+     "pos": "noun",
+     "en": "chocolate",
+     "fa": "شکلات"
+    },
+    {
+     "id": 102194,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ice cream",
+     "fa": "بستنی"
+    },
+    {
+     "id": 104300,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sugar",
+     "fa": "شکر"
+    },
+    {
+     "id": 103835,
+     "level": "A1",
+     "pos": "noun",
+     "en": "salt",
+     "fa": "نمک"
+    },
+    {
+     "id": 101901,
+     "level": "A1",
+     "pos": "noun",
+     "en": "fruit",
+     "fa": "میوه"
+    },
+    {
+     "id": 104739,
+     "level": "A1",
+     "pos": "noun",
+     "en": "vegetable",
+     "fa": "سبزیجات"
+    },
+    {
+     "id": 100238,
+     "level": "A1",
+     "pos": "noun",
+     "en": "apple",
+     "fa": "سیب"
+    },
+    {
+     "id": 100381,
+     "level": "A1",
+     "pos": "noun",
+     "en": "banana",
+     "fa": "موز"
+    },
+    {
+     "id": 103061,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "orange",
+     "fa": "نارنجی"
+    },
+    {
+     "id": 900066,
+     "level": "A1",
+     "pos": "noun",
+     "en": "grape",
+     "fa": "انگور"
+    },
+    {
+     "id": 102551,
+     "level": "A2",
+     "pos": "noun",
+     "en": "lemon",
+     "fa": "لیمو"
+    },
+    {
+     "id": 900067,
+     "level": "A1",
+     "pos": "noun",
+     "en": "strawberry",
+     "fa": "توت‌فرنگی"
+    },
+    {
+     "id": 900068,
+     "level": "A1",
+     "pos": "noun",
+     "en": "watermelon",
+     "fa": "هندوانه"
+    },
+    {
+     "id": 900069,
+     "level": "A1",
+     "pos": "noun",
+     "en": "peach",
+     "fa": "هلو"
+    },
+    {
+     "id": 900070,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pear",
+     "fa": "گلابی"
+    },
+    {
+     "id": 900071,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cherry",
+     "fa": "گیلاس"
+    },
+    {
+     "id": 104532,
+     "level": "A1",
+     "pos": "noun",
+     "en": "tomato",
+     "fa": "گوجه فرنگی"
+    },
+    {
+     "id": 103322,
+     "level": "A1",
+     "pos": "noun",
+     "en": "potato",
+     "fa": "سیب زمینی"
+    },
+    {
+     "id": 100632,
+     "level": "A1",
+     "pos": "noun",
+     "en": "carrot",
+     "fa": "هویج"
+    },
+    {
+     "id": 103035,
+     "level": "A1",
+     "pos": "noun",
+     "en": "onion",
+     "fa": "پیاز"
+    },
+    {
+     "id": 900072,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cucumber",
+     "fa": "خیار"
+    }
+   ]
+  },
+  {
+   "key": "objects",
+   "fa": "وسایل",
+   "en": "Things Around You",
+   "words": [
+    {
+     "id": 100505,
+     "level": "A1",
+     "pos": "noun",
+     "en": "book",
+     "fa": "کتاب"
+    },
+    {
+     "id": 102965,
+     "level": "B2",
+     "pos": "noun",
+     "en": "notebook",
+     "fa": "دفترچه"
+    },
+    {
+     "id": 103189,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pen",
+     "fa": "خودکار"
+    },
+    {
+     "id": 103191,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pencil",
+     "fa": "مداد"
+    },
+    {
+     "id": 103135,
+     "level": "A1",
+     "pos": "noun",
+     "en": "paper",
+     "fa": "کاغذ"
+    },
+    {
+     "id": 900073,
+     "level": "A1",
+     "pos": "noun",
+     "en": "eraser",
+     "fa": "پاک‌کن"
+    },
+    {
+     "id": 900074,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ruler",
+     "fa": "خط‌کش"
+    },
+    {
+     "id": 900075,
+     "level": "A1",
+     "pos": "noun",
+     "en": "scissors",
+     "fa": "قیچی"
+    },
+    {
+     "id": 100371,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bag",
+     "fa": "کیف"
+    },
+    {
+     "id": 200574,
+     "level": "B2",
+     "pos": "noun",
+     "en": "backpack",
+     "fa": "کوله پشتی"
+    },
+    {
+     "id": 100671,
+     "level": "A1",
+     "pos": "noun",
+     "en": "chair",
+     "fa": "صندلی"
+    },
+    {
+     "id": 104376,
+     "level": "A1",
+     "pos": "noun",
+     "en": "table",
+     "fa": "میز"
+    },
+    {
+     "id": 101228,
+     "level": "A1",
+     "pos": "noun",
+     "en": "desk",
+     "fa": "میز"
+    },
+    {
+     "id": 101372,
+     "level": "A1",
+     "pos": "noun",
+     "en": "door",
+     "fa": "در"
+    },
+    {
+     "id": 104884,
+     "level": "A1",
+     "pos": "noun",
+     "en": "window",
+     "fa": "پنجره"
+    },
+    {
+     "id": 100419,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bed",
+     "fa": "تخت"
+    },
+    {
+     "id": 102493,
+     "level": "A2",
+     "pos": "noun",
+     "en": "lamp",
+     "fa": "چراغ"
+    },
+    {
+     "id": 100758,
+     "level": "A1",
+     "pos": "noun",
+     "en": "clock",
+     "fa": "ساعت"
+    },
+    {
+     "id": 103228,
+     "level": "A1",
+     "pos": "noun",
+     "en": "phone",
+     "fa": "تلفن"
+    },
+    {
+     "id": 102464,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "key",
+     "fa": "کلیدی"
+    },
+    {
+     "id": 100525,
+     "level": "A1",
+     "pos": "noun",
+     "en": "box",
+     "fa": "جعبه"
+    },
+    {
+     "id": 101089,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cup",
+     "fa": "فنجان"
+    },
+    {
+     "id": 101972,
+     "level": "A1",
+     "pos": "noun",
+     "en": "glass",
+     "fa": "لیوان"
+    },
+    {
+     "id": 103263,
+     "level": "A2",
+     "pos": "noun",
+     "en": "plate",
+     "fa": "بشقاب"
+    },
+    {
+     "id": 104167,
+     "level": "A2",
+     "pos": "noun",
+     "en": "spoon",
+     "fa": "قاشق"
+    },
+    {
+     "id": 101848,
+     "level": "A2",
+     "pos": "noun",
+     "en": "fork",
+     "fa": "چنگال"
+    },
+    {
+     "id": 102480,
+     "level": "A2",
+     "pos": "noun",
+     "en": "knife",
+     "fa": "چاقو"
+    },
+    {
+     "id": 100518,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bottle",
+     "fa": "بطری"
+    },
+    {
+     "id": 100376,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ball",
+     "fa": "توپ"
+    },
+    {
+     "id": 104559,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "toy",
+     "fa": "اسباب بازی"
+    },
+    {
+     "id": 900076,
+     "level": "A1",
+     "pos": "noun",
+     "en": "doll",
+     "fa": "عروسک"
+    },
+    {
+     "id": 900077,
+     "level": "A1",
+     "pos": "noun",
+     "en": "kite",
+     "fa": "بادبادک"
+    },
+    {
+     "id": 100378,
+     "level": "B2",
+     "pos": "noun",
+     "en": "balloon",
+     "fa": "بادکنک"
+    },
+    {
+     "id": 104649,
+     "level": "A1",
+     "pos": "noun",
+     "en": "umbrella",
+     "fa": "چتر"
+    },
+    {
+     "id": 102073,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hat",
+     "fa": "کلاه"
+    },
+    {
+     "id": 103975,
+     "level": "A1",
+     "pos": "noun",
+     "en": "shoe",
+     "fa": "کفش"
+    }
+   ]
+  },
+  {
+   "key": "feelings",
+   "fa": "احساسات",
+   "en": "Feelings",
+   "words": [
+    {
+     "id": 102062,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "happy",
+     "fa": "خوشحال"
+    },
+    {
+     "id": 103823,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "sad",
+     "fa": "غمگین"
+    },
+    {
+     "id": 100199,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "angry",
+     "fa": "عصبانی"
+    },
+    {
+     "id": 104520,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "tired",
+     "fa": "خسته"
+    },
+    {
+     "id": 102183,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "hungry",
+     "fa": "گرسنه"
+    },
+    {
+     "id": 104481,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "thirsty",
+     "fa": "تشنه"
+    },
+    {
+     "id": 103854,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "scared",
+     "fa": "ترسیده"
+    },
+    {
+     "id": 900078,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "sleepy",
+     "fa": "خواب‌آلود"
+    },
+    {
+     "id": 103996,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "sick",
+     "fa": "بیمار"
+    },
+    {
+     "id": 100511,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "bored",
+     "fa": "خسته"
+    },
+    {
+     "id": 101631,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "excited",
+     "fa": "هیجان زده"
+    },
+    {
+     "id": 104339,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "surprised",
+     "fa": "متعجب"
+    },
+    {
+     "id": 102166,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "hot",
+     "fa": "گرم"
+    },
+    {
+     "id": 100783,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "cold",
+     "fa": "سرد"
+    },
+    {
+     "id": 102640,
+     "level": "A1",
+     "pos": "noun",
+     "en": "love",
+     "fa": "عشق"
+    },
+    {
+     "id": 102579,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "like",
+     "fa": "مثل"
+    }
+   ]
+  },
+  {
+   "key": "greetings",
+   "fa": "سلام و احوالپرسی",
+   "en": "Greetings & Politeness",
+   "words": [
+    {
+     "id": 102102,
+     "level": "A1",
+     "pos": "exclamation",
+     "en": "hello",
+     "fa": "سلام"
+    },
+    {
+     "id": 102116,
+     "level": "A1",
+     "pos": "exclamation",
+     "en": "hi",
+     "fa": "سلام"
+    },
+    {
+     "id": 101987,
+     "level": "A1",
+     "pos": "exclamation",
+     "en": "goodbye",
+     "fa": "خداحافظ"
+    },
+    {
+     "id": 100589,
+     "level": "A1",
+     "pos": "exclamation",
+     "en": "bye",
+     "fa": "خداحافظ"
+    },
+    {
+     "id": 900079,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "good morning",
+     "fa": "صبح بخیر"
+    },
+    {
+     "id": 900080,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "good afternoon",
+     "fa": "ظهر/عصر بخیر"
+    },
+    {
+     "id": 900081,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "good evening",
+     "fa": "عصر بخیر"
+    },
+    {
+     "id": 900082,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "good night",
+     "fa": "شب بخیر"
+    },
+    {
+     "id": 104451,
+     "level": "A1",
+     "pos": "exclamation",
+     "en": "thanks",
+     "fa": "متشکرم"
+    },
+    {
+     "id": 900083,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "thank you",
+     "fa": "متشکرم"
+    },
+    {
+     "id": 900084,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "you're welcome",
+     "fa": "خواهش می‌کنم"
+    },
+    {
+     "id": 103270,
+     "level": "A1",
+     "pos": "exclamation",
+     "en": "please",
+     "fa": "لطفاً"
+    },
+    {
+     "id": 104111,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "sorry",
+     "fa": "متاسف"
+    },
+    {
+     "id": 900085,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "excuse me",
+     "fa": "ببخشید (برای جلب توجه)"
+    },
+    {
+     "id": 104941,
+     "level": "A1",
+     "pos": "exclamation",
+     "en": "yes",
+     "fa": "بله"
+    },
+    {
+     "id": 102939,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "no",
+     "fa": "نه"
+    },
+    {
+     "id": 104838,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "welcome",
+     "fa": "خوش آمدید"
+    },
+    {
+     "id": 900086,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "nice to meet you",
+     "fa": "از آشنایی با شما خوشحالم"
+    },
+    {
+     "id": 900087,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "how are you?",
+     "fa": "حال شما چطور است؟"
+    },
+    {
+     "id": 900088,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I'm fine",
+     "fa": "من خوبم"
+    },
+    {
+     "id": 900089,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "see you later",
+     "fa": "بعداً می‌بینمت"
+    }
+   ]
+  },
+  {
+   "key": "sentences",
+   "fa": "جمله‌های ساده",
+   "en": "Simple Sentences",
+   "words": [
+    {
+     "id": 900090,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "My name is ...",
+     "fa": "اسم من ... است"
+    },
+    {
+     "id": 900091,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I am ...",
+     "fa": "من ... هستم"
+    },
+    {
+     "id": 900092,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I am ... years old.",
+     "fa": "من ... ساله‌ام."
+    },
+    {
+     "id": 900093,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I have ...",
+     "fa": "من ... دارم"
+    },
+    {
+     "id": 900094,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I like ...",
+     "fa": "من ... را دوست دارم"
+    },
+    {
+     "id": 900095,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I want ...",
+     "fa": "من ... می‌خواهم"
+    },
+    {
+     "id": 900096,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I don't want ...",
+     "fa": "من ... نمی‌خواهم"
+    },
+    {
+     "id": 900097,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "What's your name?",
+     "fa": "اسمت چیست؟"
+    },
+    {
+     "id": 900098,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "How old are you?",
+     "fa": "چند سال داری؟"
+    },
+    {
+     "id": 900099,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "What is this?",
+     "fa": "این چیست؟"
+    },
+    {
+     "id": 900100,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "It's a cat.",
+     "fa": "این یک گربه است."
+    },
+    {
+     "id": 900101,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "This is my mother.",
+     "fa": "این مادر من است."
+    },
+    {
+     "id": 900102,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "What color is it?",
+     "fa": "چه رنگی است؟"
+    },
+    {
+     "id": 900103,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "How many?",
+     "fa": "چند تا؟"
+    },
+    {
+     "id": 900104,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I'm hungry.",
+     "fa": "من گرسنه‌ام."
+    },
+    {
+     "id": 900105,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I'm thirsty.",
+     "fa": "من تشنه‌ام."
+    },
+    {
+     "id": 900106,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "Can I have some water?",
+     "fa": "می‌توانم کمی آب بخورم؟"
+    },
+    {
+     "id": 900107,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "Can you help me?",
+     "fa": "می‌توانی کمکم کنی؟"
+    },
+    {
+     "id": 900108,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I need help.",
+     "fa": "به کمک نیاز دارم."
+    },
+    {
+     "id": 900109,
+     "level": "A1",
+     "pos": "phrase",
+     "en": "I don't understand.",
+     "fa": "متوجه نمی‌شوم."
+    }
+   ]
+  },
+  {
+   "key": "actions",
+   "fa": "افعال ساده",
+   "en": "Simple Actions",
+   "words": [
+    {
+     "id": 104029,
+     "level": "A1",
+     "pos": "verb",
+     "en": "sit",
+     "fa": "نشستن"
+    },
+    {
+     "id": 104191,
+     "level": "A1",
+     "pos": "verb",
+     "en": "stand",
+     "fa": "ایستادن"
+    },
+    {
+     "id": 100804,
+     "level": "A1",
+     "pos": "verb",
+     "en": "come",
+     "fa": "آمدن"
+    },
+    {
+     "id": 101980,
+     "level": "A1",
+     "pos": "verb",
+     "en": "go",
+     "fa": "رفتن"
+    },
+    {
+     "id": 104227,
+     "level": "A1",
+     "pos": "noun",
+     "en": "stop",
+     "fa": "توقف"
+    },
+    {
+     "id": 104793,
+     "level": "A1",
+     "pos": "verb",
+     "en": "wait",
+     "fa": "منتظر ماندن"
+    },
+    {
+     "id": 102627,
+     "level": "A1",
+     "pos": "verb",
+     "en": "look",
+     "fa": "نگاه کردن"
+    },
+    {
+     "id": 102596,
+     "level": "A1",
+     "pos": "verb",
+     "en": "listen",
+     "fa": "گوش دادن"
+    },
+    {
+     "id": 103039,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "open",
+     "fa": "باز"
+    },
+    {
+     "id": 100759,
+     "level": "A1",
+     "pos": "verb",
+     "en": "close",
+     "fa": "بستن"
+    },
+    {
+     "id": 101969,
+     "level": "A1",
+     "pos": "verb",
+     "en": "give",
+     "fa": "دادن"
+    },
+    {
+     "id": 104383,
+     "level": "A1",
+     "pos": "verb",
+     "en": "take",
+     "fa": "گرفتن"
+    },
+    {
+     "id": 104810,
+     "level": "A1",
+     "pos": "verb",
+     "en": "wash",
+     "fa": "شستن"
+    },
+    {
+     "id": 104052,
+     "level": "A1",
+     "pos": "verb",
+     "en": "sleep",
+     "fa": "خوابیدن"
+    },
+    {
+     "id": 900110,
+     "level": "A1",
+     "pos": "verb",
+     "en": "wake up",
+     "fa": "بیدار شدن"
+    },
+    {
+     "id": 101432,
+     "level": "A1",
+     "pos": "verb",
+     "en": "eat",
+     "fa": "خوردن"
+    },
+    {
+     "id": 101395,
+     "level": "A1",
+     "pos": "noun",
+     "en": "drink",
+     "fa": "نوشیدنی"
+    },
+    {
+     "id": 102452,
+     "level": "A2",
+     "pos": "noun",
+     "en": "jump",
+     "fa": "پرش"
+    },
+    {
+     "id": 103815,
+     "level": "A1",
+     "pos": "verb",
+     "en": "run",
+     "fa": "دویدن"
+    },
+    {
+     "id": 104796,
+     "level": "A1",
+     "pos": "noun",
+     "en": "walk",
+     "fa": "راه رفتن"
+    },
+    {
+     "id": 103568,
+     "level": "A1",
+     "pos": "verb",
+     "en": "read",
+     "fa": "خواندن"
+    },
+    {
+     "id": 104931,
+     "level": "A1",
+     "pos": "verb",
+     "en": "write",
+     "fa": "نوشتن"
+    },
+    {
+     "id": 101389,
+     "level": "A1",
+     "pos": "verb",
+     "en": "draw",
+     "fa": "نقاشی کردن"
+    },
+    {
+     "id": 104022,
+     "level": "A1",
+     "pos": "verb",
+     "en": "sing",
+     "fa": "خواندن"
+    },
+    {
+     "id": 101116,
+     "level": "A1",
+     "pos": "noun",
+     "en": "dance",
+     "fa": "رقص"
+    },
+    {
+     "id": 103265,
+     "level": "A1",
+     "pos": "noun",
+     "en": "play",
+     "fa": "بازی"
+    },
+    {
+     "id": 102104,
+     "level": "A1",
+     "pos": "noun",
+     "en": "help",
+     "fa": "کمک"
+    }
+   ]
+  }
+ ]
+}
