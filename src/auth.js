@@ -117,7 +117,7 @@ function bucketOf(pathname) {
     pathname === "/api/translate-subtitles"
   ) return "ai";
   // ترجمه‌ی لمسی/متنِ کوتاه: سقفِ کلیِ جدا (کش‌ها هم شمرده می‌شوند ولی ارزان‌اند)؛ هزینه‌ی واقعیِ AI را DAILY_TRANSLATE (فقط کش‌نشده‌ها) کنترل می‌کند
-  if (pathname === "/api/translate-text" || pathname === "/api/tr-share") return "translate";
+  if (pathname === "/api/translate-text" || pathname === "/api/translate-batch" || pathname === "/api/tr-share") return "translate";
   return "misc";
 }
 

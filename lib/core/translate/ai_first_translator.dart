@@ -31,6 +31,8 @@ const int _kMaxChars = 300; // سقفِ Worker برای /api/translate-text
 const int _kAiConcurrency = 4; // هم‌زمانیِ درخواست‌های AI از این گوشی
 const int _kProvConcurrency = 3; // هم‌زمانیِ ترجمه‌ی موقت (ML Kit/آنلاین)
 const Duration _kGrace = Duration(milliseconds: 1000); // تا این‌قدر منتظرِ کش/AI؛ بعد پیش‌نویسِ خوب نشان داده می‌شود
+const int _kBatchMax = 20; // حداکثر متن در یک درخواستِ /api/translate-batch
+const Duration _kBatchWindow = Duration(milliseconds: 80); // جمع‌کردنِ درخواست‌های هم‌زمان
 const Duration _kSoftGrace = Duration(milliseconds: 1500); // پیش‌نویسِ «متوسط» فقط اگر بعد از این هم چیزِ بهتری نرسید
 // تلاش‌های خودکارِ پس‌زمینه: اول سریع (کاربر منتظر است)، بعد کم‌کم کندتر
 const List<Duration> _kRetryDelays = <Duration>[
@@ -191,6 +193,21 @@ int _provisionalGrade(String src, String out, String to) {
     }
   }
   return grade;
+}
+
+class _BatchItem {
+  _BatchItem(this.job, this.completer);
+  final _Job job;
+  final Completer<String?> completer;
+}
+
+class _BatchGroup {
+  _BatchGroup(this.base, this.from, this.to);
+  final String base;
+  final String from;
+  final String to;
+  final List<_BatchItem> items = <_BatchItem>[];
+  Timer? timer;
 }
 
 class _Listener {
@@ -578,7 +595,149 @@ class AiFirstTranslator {
       .trim();
 
   /// یک درخواست به /api/translate-text (Worker اول D1 را می‌بیند، بعد AI می‌زند و برای همه ذخیره می‌کند).
+  // ═══════════════ 📦 دسته‌ایِ AI ═══════════════
+  // درخواست‌های هم‌زمانِ AI (لغاتِ یک صفحه، جمله‌های یک داستان/زیرنویس) ۸۰ms جمع و تا ۲۰ تایی در «یک» درخواستِ
+  // /api/translate-batch فرستاده می‌شوند (هزینه‌ی توکن ~۳ تا ۵ برابر کمتر؛ Worker کش‌ها را همان‌جا جواب می‌دهد).
+  // تک‌درخواست یا Workerِ قدیمی (۴۰۴) = همان مسیرِ تک‌به‌تکِ قبلی. موردِ نامعتبرِ دسته → یک‌بار تک‌به‌تک.
+  static final Map<String, _BatchGroup> _groups = <String, _BatchGroup>{};
+  static bool _batchOff = false;
+
   static Future<String?> _askAi(_Job j) {
+    if (_paused()) return Future<String?>.value(null);
+    if (_batchOff) return _askSingle(j);
+    final key = '${j.base}|${j.from.isEmpty ? 'auto' : j.from}|${j.to}';
+    final g = _groups.putIfAbsent(key, () => _BatchGroup(j.base, j.from, j.to));
+    final c = Completer<String?>();
+    g.items.add(_BatchItem(j, c));
+    if (g.items.length >= _kBatchMax) {
+      g.timer?.cancel();
+      g.timer = null;
+      unawaited(_flushGroup(key));
+    } else {
+      g.timer ??= Timer(_kBatchWindow, () => unawaited(_flushGroup(key)));
+    }
+    return c.future;
+  }
+
+  static Future<void> _flushGroup(String key) async {
+    final g = _groups.remove(key);
+    if (g == null) return;
+    g.timer?.cancel();
+    final items = g.items;
+    void done(_BatchItem it, String? v) {
+      if (!it.completer.isCompleted) it.completer.complete(v);
+    }
+
+    void single(_BatchItem it) {
+      unawaited(_askSingle(it.job).then((v) => done(it, v), onError: (_) => done(it, null)));
+    }
+
+    try {
+      if (items.length == 1 || _batchOff) {
+        items.forEach(single);
+        return;
+      }
+      final res = await _askBatch(g, items);
+      if (res == null) {
+        if (_batchOff) {
+          items.forEach(single); // Workerِ قدیمی: تک‌به‌تک
+        } else {
+          for (final it in items) {
+            done(it, null);
+          }
+        }
+        return;
+      }
+      for (var i = 0; i < items.length; i++) {
+        final v = i < res.length ? res[i] : null;
+        if (v != null) {
+          done(items[i], v);
+        } else if (items[i].job.invalid < 2) {
+          single(items[i]); // نامعتبر/ردشده در دسته → یک‌بار تک‌به‌تک
+        } else {
+          done(items[i], null);
+        }
+      }
+    } catch (_) {
+      for (final it in items) {
+        done(it, null);
+      }
+    }
+  }
+
+  static String? _acceptAi(_Job j, dynamic out) {
+    if (out is! String) return null;
+    final cleaned = _clean(stripAIReasoning(out));
+    if (cleaned.isEmpty ||
+        looksLikeAIReasoning(cleaned) ||
+        looksLikeGuardOutput(cleaned) ||
+        !_good(j, cleaned)) {
+      j.invalid++;
+      return null;
+    }
+    return cleaned;
+  }
+
+  static Future<List<String?>?> _askBatch(
+      _BatchGroup g, List<_BatchItem> items) {
+    if (_paused()) return Future<List<String?>?>.value(null);
+    return _aiGate.run<List<String?>?>(() async {
+      if (_paused()) return null;
+      try {
+        final res = await _dio
+            .post(
+              '${g.base}/api/translate-batch',
+              data: {
+                'items': [for (final it in items) it.job.text.trim()],
+                'source_lang_code': g.from.isEmpty ? 'auto' : g.from,
+                'target_lang_code': g.to,
+              },
+              options: Options(
+                contentType: 'application/json',
+                sendTimeout: const Duration(seconds: 10),
+                receiveTimeout: const Duration(seconds: 35),
+              ),
+            )
+            .timeout(const Duration(seconds: 40));
+        final st = res.statusCode ?? 0;
+        if (st >= 200 && st < 300) {
+          final data = res.data;
+          final arr = data is Map ? data['results'] : null;
+          if (arr is! List || arr.length != items.length) {
+            _badCall();
+            return null;
+          }
+          _okCall();
+          return <String?>[
+            for (var i = 0; i < items.length; i++) _acceptAi(items[i].job, arr[i]),
+          ];
+        }
+        if (st == 404 || st == 405) {
+          _batchOff = true; // Workerِ قدیمی
+          return null;
+        }
+        if (st == 429) {
+          final code = res.data is Map ? res.data['code']?.toString() : null;
+          _pause(code == 'daily_feature_limit'
+              ? const Duration(minutes: 60)
+              : const Duration(minutes: 5));
+          return null;
+        }
+        if (st == 402) {
+          _pause(const Duration(minutes: 60));
+          return null;
+        }
+        _badCall();
+        return null;
+      } catch (_) {
+        _badCall();
+        return null;
+      }
+    });
+  }
+
+  /// یک درخواست به /api/translate-text (تک‌به‌تک).
+  static Future<String?> _askSingle(_Job j) {
     if (_paused()) return Future<String?>.value(null);
     return _aiGate.run<String?>(() async {
       if (_paused()) return null;

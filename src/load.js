@@ -19,7 +19,7 @@
 // اگر D1 خراب/نبود، هر دو سقف بی‌صدا خاموش می‌شوند (کاربر الکی قفل نشود).
 // ---------------------------------------------------------------------------
 import { verifySessionToken } from "./auth.js";
-import { isPro, isVipEmail } from "./usage.js";
+import { isPro, isVipEmail, featureOf } from "./usage.js";
 
 const MSG_BUSY = "الان شلوغه، چند لحظه دیگه (try again in 5s)";
 // پیامِ سقفِ per-user عمداً مثلِ خطای موقتِ AI است (نه «سقف/محدودیت»)؛ اپ ۵xx را «AI جواب نمی‌دهد» نشان می‌دهد.
@@ -97,6 +97,57 @@ async function takeUser(env, userId, pro) {
     return { ok: true };
   } catch (e) {
     console.error("[FAIL-OPEN] user daily cap error", String(e));
+    return { ok: true };
+  }
+}
+
+// ───────────── ۱.۶) امتیازِ ماهانه‌ی هر کاربر (Credits) — فقط سمتِ سرور، نامرئی برای کاربر ─────────────
+// PRO_MONTHLY_CREDITS (پیش‌فرض ۹۰۰۰) / FREE_MONTHLY_CREDITS (پیش‌فرض ۰ = خاموش). ۰ = بدونِ سقف.
+// هزینه‌ی هر درخواستِ «واقعاً AI» (کش‌ها هیچ‌وقت شمرده نمی‌شوند): ترجمه ۱، ویدیوکال ۲، داستان ۱۰ (قابلِ تغییر با CREDIT_COSTS).
+// کاربر هیچ نشانگر/پیامی نمی‌بیند: وقتی تمام شد، ترجمه بی‌صدا به ML Kit/کش برمی‌گردد (۴۲۹ با کدِ «ai_busy» که اپ
+// بی‌صدا ۵ دقیقه مکث می‌کند)، بخش‌های بی‌جایگزین (داستان/ویدیوکال) همان پیامِ عمومیِ «AI موقتاً در دسترس نیست».
+// ادمین: ردیفِ user_credits (capped_at) و بخشِ «رسیده به سقفِ امتیاز» در /admin/usage-report.
+const DEFAULT_COSTS = { story: 10, videocall: 2, ytsub: 3, grammar: 2, chat: 1, example: 1, translate: 1 };
+function creditCostOf(env, feature, override) {
+  if (Number.isFinite(override) && override > 0) return Math.floor(override);
+  let map = DEFAULT_COSTS;
+  if (env.CREDIT_COSTS) {
+    try { map = { ...DEFAULT_COSTS, ...JSON.parse(env.CREDIT_COSTS) }; } catch { /* پیش‌فرض */ }
+  }
+  return Math.max(1, Math.floor(Number(map[feature]) || 1));
+}
+
+let creditsReady = false;
+async function takeCredits(env, userId, pro, cost) {
+  const cap = intVar(env, pro ? "PRO_MONTHLY_CREDITS" : "FREE_MONTHLY_CREDITS", pro ? 9000 : 0);
+  if (!cap || !env.TR_DB || !userId) return { ok: true };
+  try {
+    if (!creditsReady) {
+      await env.TR_DB.prepare(
+        "CREATE TABLE IF NOT EXISTS user_credits (user_id TEXT NOT NULL, month TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0, " +
+          "capped_at INTEGER, PRIMARY KEY (user_id, month))"
+      ).run();
+      creditsReady = true;
+    }
+    const month = new Date().toISOString().slice(0, 7);
+    const r = await env.TR_DB.prepare(
+      "INSERT INTO user_credits (user_id, month, used) VALUES (?1, ?2, ?3) " +
+        "ON CONFLICT(user_id, month) DO UPDATE SET used = used + ?3 WHERE used + ?3 <= ?4 RETURNING used"
+    ).bind(userId, month, cost, cap).first();
+    if (!r) {
+      await env.TR_DB.prepare(
+        "UPDATE user_credits SET capped_at = COALESCE(capped_at, ?3) WHERE user_id = ?1 AND month = ?2"
+      ).bind(userId, month, Date.now()).run();
+      console.warn(`[CAP] credits user=${userId} month=${month} cap=${cap} pro=${pro}`);
+      return { ok: false };
+    }
+    if (Math.random() < 0.005) {
+      const old = new Date(Date.now() - 100 * 86400000).toISOString().slice(0, 7);
+      await env.TR_DB.prepare("DELETE FROM user_credits WHERE month < ?1").bind(old).run();
+    }
+    return { ok: true, used: r.used };
+  } catch (e) {
+    console.error("[FAIL-OPEN] credits error", String(e));
     return { ok: true };
   }
 }
@@ -236,6 +287,22 @@ export async function beginAi(request, env, kind, cors, opts = {}) {
     if (!u.ok) {
       return {
         deny: jsonResp({ error: MSG_UNAVAILABLE, code: "ai_unavailable" }, 503, cors),
+        release: noop,
+      };
+    }
+  }
+  // 🪙 امتیازِ ماهانه (نامرئی): قبل از صف و سقفِ سراسری
+  if (sess && !vip && kind !== "whisper") {
+    let feat = opts.feature || "";
+    if (!feat) {
+      try { feat = featureOf(request, new URL(request.url)) || "translate"; } catch { feat = "translate"; }
+    }
+    const c = await takeCredits(env, sess.sub, pro, creditCostOf(env, feat, opts.cost));
+    if (!c.ok) {
+      return {
+        deny: opts.silent === "translate"
+          ? jsonResp({ error: MSG_UNAVAILABLE, code: "ai_busy" }, 429, cors, { "Retry-After": "3600" })
+          : jsonResp({ error: MSG_UNAVAILABLE, code: "ai_unavailable" }, 503, cors),
         release: noop,
       };
     }

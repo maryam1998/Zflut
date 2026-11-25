@@ -123,8 +123,28 @@ export async function handleAdminReport(request, env, url) {
     const perDay = await q(`SELECT day, email, user_id uid, SUM(CASE WHEN cached=0 THEN calls ELSE 0 END) api_calls, SUM(cost_micro) cost FROM ai_usage_daily WHERE ${where} GROUP BY day, user_id`);
     const alerts = perDay.filter((r) => r.cost > aCost || r.api_calls > aCalls);
 
+    // 🪙 امتیازِ ماهانه (فقط ادمین می‌بیند؛ کاربر هیچ نشانگری ندارد): چه کسانی کِی به سقف رسیدند + پرمصرف‌ترین‌ها
+    const month = /^\d{4}-\d{2}$/.test(url.searchParams.get("month") || "") ? url.searchParams.get("month") : today.slice(0, 7);
+    let capped = [], topCredits = [], globalToday = null;
+    try {
+      await env.TR_DB.prepare(
+        "CREATE TABLE IF NOT EXISTS user_credits (user_id TEXT NOT NULL, month TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0, " +
+          "capped_at INTEGER, PRIMARY KEY (user_id, month))"
+      ).run();
+      const em = "(SELECT email FROM ai_usage_daily u WHERE u.user_id = c.user_id AND u.email != '' LIMIT 1)";
+      capped = (await env.TR_DB.prepare(
+        `SELECT c.user_id uid, ${em} email, c.used, c.capped_at FROM user_credits c WHERE c.month = ?1 AND c.capped_at IS NOT NULL ORDER BY c.capped_at DESC LIMIT 200`
+      ).bind(month).all()).results || [];
+      topCredits = (await env.TR_DB.prepare(
+        `SELECT c.user_id uid, ${em} email, c.used, c.capped_at FROM user_credits c WHERE c.month = ?1 ORDER BY c.used DESC LIMIT 30`
+      ).bind(month).all()).results || [];
+      globalToday = await env.TR_DB.prepare("SELECT ai_count, whisper_count FROM global_daily WHERE day = ?1").bind(today).first();
+    } catch { /* جدول‌ها هنوز ساخته نشده‌اند */ }
+    const fmtT = (ms) => (ms ? new Date(ms).toISOString().replace("T", " ").slice(0, 16) + " UTC" : "—");
+    const capCap = Number(env.GLOBAL_DAILY_AI) > 0 ? Number(env.GLOBAL_DAILY_AI) : 0;
+
     if (url.searchParams.get("format") === "json") {
-      return new Response(JSON.stringify({ from, to, byFeature, byProvider, byUser, byDay, alerts }, null, 1),
+      return new Response(JSON.stringify({ from, to, byFeature, byProvider, byUser, byDay, alerts, month, capped, topCredits, globalToday }, null, 1),
         { headers: { "Content-Type": "application/json; charset=utf-8" } });
     }
     const H = ["", "درخواست", "از کش", "به API", "توکن ورودی*", "توکن خروجی*", "هزینه*"];
@@ -138,6 +158,9 @@ small{color:#666}</style>
 <small>* توکن و هزینه تخمینی‌اند (چهار کاراکتر لاتین یا دو کاراکتر غیرلاتین ≈ یک توکن؛ تعرفه از AI_PRICING). «از کش» هزینه‌ی API ندارد.
 ترجمه‌ی رایگان/کلاینتی و صدای آنلاین (TTS) اینجا شمرده نمی‌شوند.</small>
 ${alerts.length ? table("⚠️ هشدار مصرف غیرعادی", ["روز", "کاربر", "درخواست API", "هزینه*"], alerts.map((r) => [r.day, r.email || r.uid, r.api_calls, usd(r.cost)])) : ""}
+${globalToday ? `<p>⚖️ سقفِ سراسریِ AI امروز: <b>${esc(globalToday.ai_count)}</b>${capCap ? " از " + esc(capCap) + " (" + Math.round((globalToday.ai_count / capCap) * 100) + "٪)" : ""}</p>` : ""}
+${table("🪙 رسیده به سقفِ امتیازِ ماهانه — " + month + " (" + capped.length + " نفر)", ["کاربر", "امتیازِ مصرفی", "زمانِ رسیدن"], capped.map((r) => [r.email || r.uid, r.used, fmtT(r.capped_at)]))}
+${table("🪙 پرمصرف‌ترین‌ها از نظرِ امتیاز — " + month, ["کاربر", "امتیازِ مصرفی", "رسیده به سقف؟"], topCredits.map((r) => [r.email || r.uid, r.used, r.capped_at ? fmtT(r.capped_at) : "—"]))}
 ${table("هر قابلیت", ["قابلیت", ...H.slice(1)], byFeature.map(row))}
 ${table("هر ارائه‌دهنده (فقط درخواست‌های API)", ["ارائه‌دهنده", ...H.slice(1)], byProvider.map(row))}
 ${table("هر کاربر (۲۰۰ مورد اول؛ برای جزئیات ?user=email)", ["کاربر", ...H.slice(1)], byUser.map((r) => row({ ...r, k: r.k || r.uid })))}

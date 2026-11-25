@@ -1,10 +1,17 @@
-پچ (تجمعی): معماریِ ترجمه‌ی مقاوم در برابر بار + پیش‌نویسِ دو‌سطحی
-Worker: src/index.js, src/load.js, src/metrics.js, wrangler.toml  → npx wrangler deploy
-اپ: lib/core/translate/ai_first_translator.dart, shared_translations.dart → بیلد مجدد
+پچ (تجمعی): ترجمه‌ی مقاوم + امتیازِ ماهانه + دسته‌ای‌کردن + پیش‌ترجمه‌ی لغات
 
-متغیرهای جدید (wrangler.toml): GLOBAL_DAILY_AI=30000 (بر اساس بودجه تنظیم کن)، PRO_RESERVE_PCT=20،
-REVIEW_OFF_PCT=70، AI_PROVIDER_REVIEW، TR_REVIEW_TIMEOUT_MS، TR_TOTAL_BUDGET_MS، CB_FAILS، CB_COOL_MS
-اگر Secret کلیدِ Groq/Cerebras ست نشده باشد، بازبینی بی‌صدا همان ترجمه‌ی اول را برمی‌گرداند.
+Worker  → npx wrangler deploy
+  src/index.js  src/load.js  src/metrics.js  src/auth.js  wrangler.toml
+اپ      → بیلد مجدد
+  lib/core/translate/ai_first_translator.dart  lib/core/translate/shared_translations.dart
+اسکریپت
+  scripts/pretranslate-words.mjs
 
-پیش‌نویس در اپ: نمره ۲ (خوب) بعد از ~۱ ثانیه؛ نمره ۱ (متوسط) ~۱٫۵ ثانیه‌ی دیگر و فقط اگر چیزِ بهتری نرسید؛
-نمره ۰ (خراب) هرگز. هر ترجمه‌ی معتبرِ کش/AI بی‌صدا جایگزین می‌شود.
+۱) امتیازِ ماهانه (نامرئی): PRO_MONTHLY_CREDITS=9000، CREDIT_COSTS (ترجمه ۱، ویدیوکال ۲، داستان ۱۰، زیرنویس ۳).
+   فقط درخواست‌های «واقعاً AI» می‌شمارند. تمام‌شدن: ترجمه → ۴۲۹ کدِ ai_busy (اپ بی‌صدا ML Kit/کش)،
+   بقیه → همان خطای عمومیِ «AI موقتاً در دسترس نیست». گزارشِ ادمین: /admin/usage-report?key=...
+   (بخش «رسیده به سقفِ امتیاز» + پرمصرف‌ترین‌ها + مصرفِ سقفِ سراسری امروز)
+۲) دسته‌ای: /api/translate-batch (تا ۲۰ متن) + جمع‌کردنِ ۸۰ms در اپ. Workerِ قدیمی (۴۰۴) = تک‌به‌تک.
+۳) زنجیره: DeepSeek → رایگان‌ها → گران‌ها؛ gemini آخر (translate/strong/عمومی).
+۴) لغات: node scripts/pretranslate-words.mjs [--upload|--upload-only|--report] [--max-cost=3.5]
+   (قابلِ ادامه؛ پیشرفت در tr_seed/). آپلودِ D1 با سقفِ PRETR_D1_DAILY_ROWS (پیش‌فرض ۹۰ هزار ردیف).

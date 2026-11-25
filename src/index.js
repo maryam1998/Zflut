@@ -184,6 +184,11 @@ export default {
       return handleTranslateText(request, env, ctx);
     }
 
+    // 📦 ترجمه‌ی دسته‌ایِ متن‌های کوتاه (تا ۲۰ تا در یک درخواست): کش‌ها همان‌جا جواب می‌گیرند، فقط کش‌نشده‌ها با «یک» تماسِ AI
+    if (url.pathname === "/api/translate-batch" && request.method === "POST") {
+      return handleTranslateBatch(request, env, ctx);
+    }
+
     // 🗄️ کشِ مشترکِ ترجمه‌های اصلاح‌شده (↻ کاربرها) — بدونِ AI، فقط D1
     if (url.pathname === "/api/tr-share" && request.method === "POST") {
       return handleTrShare(request, env, ctx, CORS_HEADERS, { genCacheKey, genCacheGet, genCachePut, trCacheKey });
@@ -381,7 +386,7 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
   if (over) return none(over);
   // ⚖️ سقفِ سراسریِ روزانه (فقط کش‌نشده‌ها؛ بدونِ صف چون ترجمه‌های کوتاه موازی می‌آیند)
   //    افتِ تدریجی: سهمِ رزروِ Pro، و pct برای خاموش‌کردنِ بازبینی در بار بالا
-  const capGate = await beginAi(request, env, "ai", CORS_HEADERS, { queue: false });
+  const capGate = await beginAi(request, env, "ai", CORS_HEADERS, { queue: false, cost: 1, feature: "translate", silent: "translate" });
   if (capGate.deny) return none(capGate.deny);
 
   const label = TT_LANGS[target];
@@ -434,6 +439,158 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
   }
   console.error("[AI-FAIL] /api/translate-text همه‌ی پرووایدرها خطا دادند:", errors.join(" | ").slice(0, 900));
   return none(json({ error: errors.join(" | ") }, 502));
+}
+
+// 📦 /api/translate-batch ------------------------------------------------------
+// ورودی: { items: [text, ...≤۲۰], source_lang_code, target_lang_code } → { results: [string|null, ...], provider }
+// • کش‌ها با «یک» کوئریِ D1 جواب می‌گیرند و هیچ سهمیه‌ای مصرف نمی‌کنند.
+// • کش‌نشده‌ها با «یک» تماسِ AI (JSON) ترجمه می‌شوند؛ امتیازِ ماهانه = تعدادِ کش‌نشده‌ها (cost).
+// • بازبینی (TR_REVIEW=1) هم «یک» تماسِ دسته‌ایِ رایگان است (مثلِ translate-text؛ در بارِ بالا خاموش).
+// • مورد نامعتبر = null (کلاینت همان را تک‌به‌تک امتحان می‌کند).
+const TB_MAX = 20;
+
+function parseJsonObject(raw) {
+  const t = sanitizeAiText(raw).trim().replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
+  try { return JSON.parse(t); } catch { /* ادامه */ }
+  const m = t.match(/\{[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch { /* ادامه */ } }
+  return null;
+}
+
+async function handleTranslateBatch(request, env, ctx) {
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+  const target = String(body?.target_lang_code ?? "").toLowerCase();
+  const source = String(body?.source_lang_code ?? "auto").toLowerCase() || "auto";
+  if (!TT_LANGS[target]) return json({ error: "unsupported target language" }, 400);
+  if (source !== "auto" && !TT_LANGS[source]) return json({ error: "unsupported source language" }, 400);
+  const raw = Array.isArray(body?.items) ? body.items.slice(0, TB_MAX) : [];
+  const texts = raw.map((x) => String(x ?? "").trim());
+  const valid = texts.map((t) => !!t && t.length <= 300 && /\p{L}/u.test(t));
+  const results = texts.map(() => null);
+  if (!valid.some(Boolean)) return json({ results, provider: "none" });
+
+  // ۱) کش: یک کوئری برای همه
+  const keys = await Promise.all(texts.map((t, i) => (valid[i] ? trCacheKey(env, source, target, t) : null)));
+  const rows = new Map();
+  try {
+    const uniq = [...new Set(keys.filter(Boolean))];
+    if (env.TR_DB && uniq.length) {
+      await genCacheInit(env);
+      const ph = uniq.map((_, i) => `?${i + 1}`).join(",");
+      const res = await env.TR_DB.prepare(`SELECT k, v FROM gen_cache WHERE k IN (${ph})`).bind(...uniq).all();
+      for (const r of res.results || []) rows.set(r.k, r.v);
+    }
+  } catch { /* کش خراب = همه miss */ }
+  const miss = [];
+  texts.forEach((t, i) => {
+    if (!valid[i]) return;
+    const v = rows.get(keys[i]);
+    if (v) results[i] = v; else miss.push(i);
+  });
+  if (!miss.length) {
+    ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
+    return json({ results, provider: "cache", cached: true });
+  }
+
+  // ۲) سهمیه‌ها فقط برای کش‌نشده‌ها
+  const over = await missGate(request, env);
+  if (over) return over;
+  const capGate = await beginAi(request, env, "ai", CORS_HEADERS,
+    { queue: false, cost: miss.length, feature: "translate", silent: "translate" });
+  if (capGate.deny) return capGate.deny;
+
+  // ۳) یک تماسِ AI برای همه‌ی کش‌نشده‌ها
+  const label = TT_LANGS[target];
+  const list = miss.map((idx, n) => ({ i: n, text: texts[idx] }));
+  const prompt =
+    `Translate every item below into ${label} by meaning, the way a native speaker would naturally say it. ` +
+    `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word. ` +
+    trStyle(target) +
+    `Return ONLY a JSON object {"t":[...]} with exactly ${miss.length} strings (no quotes around them, no explanations, no original text), in the same order as the items.\n\n` +
+    JSON.stringify(list);
+  const totalLen = miss.reduce((a, idx) => a + texts[idx].length, 0);
+  const maxTokens = Math.min(Math.max(totalLen + 64 * miss.length, 400), 3500);
+  const { chain: trChain, env: trEnv, strong } = translateSetup(env);
+  const perProviderMs = Math.min(30000, 8000 + maxTokens * 8);
+  const deadline = Date.now() + numVar(env, "TR_TOTAL_BUDGET_MS", 22000);
+  const errors = [];
+  for (const provider of trChain) {
+    const left = deadline - Date.now();
+    if (left < 1500) { errors.push("budget exhausted"); break; }
+    if (cbOpen(provider)) { errors.push(`${provider}: circuit-open`); continue; }
+    try {
+      const mt = strong && provider === "gemini" ? maxTokens + 2000 : maxTokens;
+      const rawOut = await withTimeout(callProvider(provider, prompt, mt, trEnv), Math.min(perProviderMs, left), provider);
+      const obj = parseJsonObject(rawOut);
+      const arr = obj && Array.isArray(obj.t) ? obj.t : null;
+      if (!arr || arr.length !== miss.length) throw new Error("unusable output (bad-json)");
+      const outs = miss.map((idx, n) => {
+        let o = typeof arr[n] === "string" ? sanitizeAiText(arr[n]).trim().replace(/^["“”«»]+|["“”«»]+$/g, "").trim() : "";
+        if (!o || badAiOutputReason(o, prompt) || !trScriptOk(target, texts[idx], o)) return null;
+        if (o.toLowerCase() === texts[idx].toLowerCase() && texts[idx].split(/\s+/).length > 2) return null;
+        return o;
+      });
+      if (!outs.some(Boolean)) throw new Error("unusable output (all-invalid)");
+      cbOk(provider);
+      // 🔎 بازبینیِ دسته‌ایِ رایگان (بارِ بالا = خاموش)
+      const loadHigh = typeof capGate.pct === "number" && capGate.pct >= numVar(env, "REVIEW_OFF_PCT", 70);
+      const rleft = deadline - Date.now();
+      if (String(env.TR_REVIEW || "") === "1" && !loadHigh && rleft > 1500) {
+        const okIdx = outs.map((o, n) => (o ? n : -1)).filter((n) => n >= 0);
+        const revised = await trReviewBatchFree(env, okIdx.map((n) => ({ src: texts[miss[n]], out: outs[n] })), label, target, maxTokens, rleft);
+        okIdx.forEach((n, k) => { outs[n] = revised[k]; });
+      }
+      miss.forEach((idx, n) => {
+        if (!outs[n]) return;
+        results[idx] = outs[n];
+        ctx.waitUntil(genCachePut(env, keys[idx], outs[n], provider));
+      });
+      ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider, cached: false, prompt, text: outs.filter(Boolean).join("\n") }));
+      return json({ results, provider });
+    } catch (e) {
+      cbFail(env, provider);
+      errors.push(`${provider}: ${e.message}`);
+    }
+  }
+  console.error("[AI-FAIL] /api/translate-batch همه‌ی پرووایدرها خطا دادند:", errors.join(" | ").slice(0, 900));
+  return json({ error: errors.join(" | ") }, 502);
+}
+
+// 🔎 بازبینیِ دسته‌ایِ ترجمه با مدل‌های رایگان؛ هر خطا/مورد مشکوک = همان ترجمه‌ی اول. خروجی هم‌طولِ ورودی.
+async function trReviewBatchFree(env, pairs, label, target, maxTokens, leftMs) {
+  const outs = pairs.map((p) => p.out);
+  if (!pairs.length) return outs;
+  const { chain, env: rEnv } = reviewSetup(env);
+  const timeoutMs = Math.min(numVar(env, "TR_REVIEW_TIMEOUT_MS", 3500) * 2, leftMs);
+  const rp =
+    `You are a strict ${label} translation reviewer. For each item, if the proposed translation is accurate, complete and sounds natural to a native ${label} speaker, return it exactly unchanged; ` +
+    `otherwise return a corrected ${label} translation (by meaning; idioms and slang rendered naturally, never word for word). ` +
+    trStyle(target) +
+    `Return ONLY a JSON object {"t":[...]} with exactly ${pairs.length} strings, in the same order, no explanations.\n\n` +
+    JSON.stringify(pairs.map((p, i) => ({ i, source: p.src, translation: p.out })));
+  let tried = 0;
+  for (const provider of chain) {
+    if (tried >= 2) break;
+    if (cbOpen(provider)) continue;
+    tried++;
+    try {
+      const rawOut = await withTimeout(callProvider(provider, rp, maxTokens, rEnv), timeoutMs, provider);
+      const obj = parseJsonObject(rawOut);
+      const arr = obj && Array.isArray(obj.t) ? obj.t : null;
+      if (!arr || arr.length !== pairs.length) throw new Error("bad-json");
+      cbOk(provider);
+      return pairs.map((p, i) => {
+        const rev = typeof arr[i] === "string" ? sanitizeAiText(arr[i]).trim().replace(/^["“”«»]+|["“”«»]+$/g, "").trim() : "";
+        if (!rev || badAiOutputReason(rev, rp) || !trScriptOk(target, p.src, rev)) return p.out;
+        if (rev.length > p.out.length * 3 + 60 || rev.length < p.out.length * 0.4) return p.out;
+        return rev;
+      });
+    } catch {
+      cbFail(env, provider);
+    }
+  }
+  return outs;
 }
 
 // 🛡️ آیا خروجی خطِ زبانِ مقصد را دارد؟ (فقط برای متن‌های ≥ ۲ کلمه؛ اسمِ تکی مثل Netflix می‌تواند بدونِ تغییر بماند)
