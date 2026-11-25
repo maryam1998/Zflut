@@ -38,7 +38,10 @@ class _P {
   final String leadLang;
   final String target; // آنچه کاربر باید بگوید
   final String lang; // زبانِ target
-  const _P(this.lead, this.leadLang, this.target, this.lang);
+  // true = فقط گوش می‌دهد (زبانِ مبدا و مقصد یکی است): ضبطِ میکروفون و انتظارِ تلفظ ندارد
+  final bool listenOnly;
+  const _P(this.lead, this.leadLang, this.target, this.lang,
+      {this.listenOnly = false});
 }
 
 /// پلِ بینِ دکمه‌ی ردیفِ «Mark range read / Clear range» و پنلِ تمرین.
@@ -501,6 +504,25 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     // زبانِ مقصد = زبانِ خودِ لغت → نه ترجمه می‌شود نه STT چک می‌شود؛ مستقیم می‌رود سراغ زبانِ بعدی
     final langs = [for (final l in _langs) if (!_sameLang(l, w.lang)) l];
     final skippedSameLang = langs.length != _langs.length;
+    // 🔇 زبانِ مبدا و مقصد یکی است (مثلاً هر دو آلمانی): کاربر تلفظِ زبانِ خودش را بلد است؛
+    // AI لغت (و مثال) را فقط می‌گوید و بدونِ ضبط و انتظار می‌رود سراغِ لغتِ بعدی
+    if (skippedSameLang && langs.isEmpty) {
+      final same = <_P>[_P(word, w.lang, '', w.lang, listenOnly: true)];
+      if (_withExample) {
+        try {
+          final ex = ref
+              .read(wordExamplesStoreProvider)
+              .load(word, w.lang)
+              .map((e) => e.text.trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
+          if (ex.isNotEmpty) {
+            same.add(_P(ex.first, w.lang, '', w.lang, listenOnly: true));
+          }
+        } catch (_) {}
+      }
+      return same;
+    }
     final trs = await Future.wait([for (final l in langs) _translate(w, l)]);
     final out = <_P>[];
     var sawSame = skippedSameLang;
@@ -647,10 +669,27 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
     return t;
   }
 
+  /// 🔇 نوبتِ «فقط گوش بده» (زبانِ مبدا = مقصد) گفته شد → بدونِ ضبط و انتظار، نوبتِ بعدی.
+  Future<CallTurn?> _aiContinue() async {
+    final p = await _peek();
+    if (p == null || !p.listenOnly) return null;
+    _hintWi = _wi;
+    _hintPi = _pi;
+    _pi++;
+    final nx = await _peek();
+    _prefetch();
+    if (nx != null) _hlWord();
+    final t = nx == null
+        ? CallTurn(_doneMsg, <CallFix>[], lang: 'en')
+        : CallTurn(nx.lead, <CallFix>[], lang: nx.leadLang);
+    _lastTurn = t;
+    return t;
+  }
+
   /// 💡 راهنما: معنی (یا جمله‌ی مثال) برای نوبتِ فعلی.
   Future<String?> _hint() async {
     final p = await _peek();
-    if (p == null) return null;
+    if (p == null || p.listenOnly) return null;
     _langOf[p.target] = p.lang;
     _hlWord();
     _hintWi = _wi;
@@ -679,6 +718,7 @@ class _WordVoicePracticeState extends ConsumerState<WordVoicePractice> {
           onUserSaid: _reply,
           onEnd: _end,
           onHint: _hint,
+          onAiContinue: _aiContinue,
           onRedial: _redial,
           onContinue: _resumeCall,
           resume: _resumeNonce == _nonce,
