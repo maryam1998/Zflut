@@ -8,6 +8,7 @@ import '../../core/providers/words_filter_provider.dart';
 import '../../core/widgets/category_grid.dart';
 import '../words/widgets/stage_chips_bar.dart';
 import '../words/widgets/word_list_view.dart';
+import 'listening_practice_page.dart';
 import 'question_practice_page.dart';
 
 /// نمای «Primary School ▸ A1» در تبِ دیکشنری من:
@@ -64,44 +65,28 @@ class PrimarySchoolView extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (gridMode && level == 'A2')
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                      builder: (_) => const QuestionPracticePage()),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: context.appColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: context.appColors.gold),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.quiz_rounded, color: context.appColors.gold),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          (ui == 'fa' || ui == 'ar')
-                              ? 'تمرین ساخت سؤال'
-                              : 'Build the Question',
-                          style: TextStyle(
-                              color: context.appColors.ink,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15),
-                        ),
-                      ),
-                      Icon(Icons.chevron_right_rounded,
-                          color: context.appColors.inkSoft),
-                    ],
-                  ),
-                ),
+          if (gridMode && level == 'A2') ...[
+            _PracticeCard(
+              icon: Icons.headphones_rounded,
+              title: (ui == 'fa' || ui == 'ar')
+                  ? 'تمرین درک شنیداری'
+                  : 'Listening Practice',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                    builder: (_) => const ListeningPracticePage()),
               ),
             ),
+            _PracticeCard(
+              icon: Icons.quiz_rounded,
+              title: (ui == 'fa' || ui == 'ar')
+                  ? 'تمرین ساخت سؤال'
+                  : 'Build the Question',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                    builder: (_) => const QuestionPracticePage()),
+              ),
+            ),
+          ],
           if (gridMode)
             CategoryGrid(
               list: 'daily',
@@ -140,6 +125,49 @@ class PrimarySchoolView extends ConsumerWidget {
       freeSource: all,
       lockedInfo: null,
       levelAvailability: null,
+    );
+  }
+}
+
+/// کارتِ ورود به یک تمرین (بالای شبکه‌ی موضوع‌های A2)
+class _PracticeCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  const _PracticeCard(
+      {required this.icon, required this.title, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: c.gold),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: c.gold),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                      color: c.ink, fontWeight: FontWeight.w800, fontSize: 15),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

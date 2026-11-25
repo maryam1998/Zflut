@@ -18,3 +18,8 @@
 - assets/data/primary_a2_questions.json (۱۰ مجموعه، ۸۰ سؤال با معنی فارسی)
 - lib/features/tabs/question_practice_page.dart (فایل جدید)
 - primary_school_view.dart: کارت «تمرین ساخت سؤال» بالای شبکه‌ی موضوع‌های A2 (فقط در تب لغات)
+
+افزوده‌ی جدید — تمرین درک شنیداری (A2):
+- assets/data/primary_a2_listening.json (۱۰ مجموعه، ۴۰ متن کوتاه، ۸۰ سؤال چهارگزینه‌ای)
+- lib/features/tabs/listening_practice_page.dart (فایل جدید)
+- primary_school_view.dart: کارت «تمرین درک شنیداری» بالای کارت «ساخت سؤال» (فقط A2، فقط تب لغات)

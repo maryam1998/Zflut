@@ -1,0 +1,1286 @@
+{
+ "v": 1,
+ "level": "A2",
+ "sets": [
+  {
+   "key": "numbers",
+   "fa": "عدد، قیمت و ساعت",
+   "en": "Numbers, Prices and Times",
+   "tip": "در شنیدن عددها مراقب جفت‌های شبیه باشید: thirteen با thirty (تکیه روی آخر اولی است)، fifteen با fifty. «a quarter past nine» یعنی ۹:۱۵ و «half past» یعنی نیم‌ساعت بعد.",
+   "clips": [
+    {
+     "title": "Bus times",
+     "titleFa": "ساعت اتوبوس",
+     "text": "The next bus to the city centre leaves at a quarter past nine. The trip takes twenty minutes. A ticket costs two pounds fifty, and you can pay the driver.",
+     "fa": "اتوبوس بعدی به مرکز شهر ساعت ۹ و ربع حرکت می‌کند. سفر بیست دقیقه طول می‌کشد. بلیت دو پوند و پنجاه پنس است و می‌توانید به راننده پول بدهید.",
+     "questions": [
+      {
+       "en": "What time does the bus leave?",
+       "fa": "اتوبوس ساعت چند حرکت می‌کند؟",
+       "options": [
+        "9:45",
+        "9:15",
+        "8:15"
+       ],
+       "answer": 1,
+       "why": "«a quarter past nine» یعنی ۹ و ربع، یعنی ۹:۱۵."
+      },
+      {
+       "en": "How much is a ticket?",
+       "fa": "بلیت چقدر است؟",
+       "options": [
+        "£2.50",
+        "£2.15",
+        "£5.20"
+       ],
+       "answer": 0,
+       "why": "«two pounds fifty» یعنی ۲/۵۰ پوند."
+      }
+     ]
+    },
+    {
+     "title": "The library",
+     "titleFa": "کتابخانه",
+     "text": "The library opens at eight thirty in the morning and closes at six in the evening. On Saturdays it closes at one o'clock. It is closed on Sundays.",
+     "fa": "کتابخانه ساعت هشت و نیم صبح باز می‌شود و شش عصر بسته می‌شود. شنبه‌ها ساعت یک بسته می‌شود. یکشنبه‌ها تعطیل است.",
+     "questions": [
+      {
+       "en": "When does the library close on Saturday?",
+       "fa": "کتابخانه شنبه کی بسته می‌شود؟",
+       "options": [
+        "At 6:00",
+        "At 8:30",
+        "At 1:00"
+       ],
+       "answer": 2,
+       "why": "ساعت ۶ مال روزهای عادی است؛ شنبه «at one o'clock»."
+      },
+      {
+       "en": "Which day is the library closed?",
+       "fa": "کتابخانه کدام روز تعطیل است؟",
+       "options": [
+        "Saturday",
+        "Sunday",
+        "Monday"
+       ],
+       "answer": 1,
+       "why": "آخر متن: «It is closed on Sundays»."
+      }
+     ]
+    },
+    {
+     "title": "At the market",
+     "titleFa": "در بازار",
+     "text": "These apples are three dollars a kilo. The oranges are four dollars a kilo. If you buy two kilos of apples, I will give you a small bag of grapes for free.",
+     "fa": "این سیب‌ها کیلویی سه دلار است. پرتقال‌ها کیلویی چهار دلار. اگر دو کیلو سیب بخرید، یک کیسه‌ی کوچک انگور رایگان می‌دهم.",
+     "questions": [
+      {
+       "en": "How much are the oranges?",
+       "fa": "پرتقال‌ها چند است؟",
+       "options": [
+        "$4 a kilo",
+        "$3 a kilo",
+        "$2 a kilo"
+       ],
+       "answer": 0,
+       "why": "سه دلار قیمت سیب است؛ پرتقال «four dollars a kilo»."
+      },
+      {
+       "en": "What do you get free with two kilos of apples?",
+       "fa": "با دو کیلو سیب چه چیزی رایگان می‌گیرید؟",
+       "options": [
+        "A kilo of oranges",
+        "A small cake",
+        "A bag of grapes"
+       ],
+       "answer": 2,
+       "why": "«a small bag of grapes for free» یعنی یک کیسه انگور رایگان."
+      }
+     ]
+    },
+    {
+     "title": "Birthday party",
+     "titleFa": "جشن تولد",
+     "text": "Hi, it's Tom. My birthday party is on Saturday the twelfth of May. It starts at seven in the evening at my house, number thirty-five Green Street. Please bring a friend!",
+     "fa": "سلام، من تام هستم. جشن تولدم شنبه ۱۲ می است. ساعت هفت عصر در خانه‌ام، پلاک ۳۵ خیابان گرین شروع می‌شود. لطفاً یک دوست هم بیاور!",
+     "questions": [
+      {
+       "en": "When is the party?",
+       "fa": "جشن کی است؟",
+       "options": [
+        "On May 2nd",
+        "On May 12th",
+        "On June 12th"
+       ],
+       "answer": 1,
+       "why": "«the twelfth of May» یعنی ۱۲ مه."
+      },
+      {
+       "en": "What is the house number?",
+       "fa": "پلاک خانه چند است؟",
+       "options": [
+        "35",
+        "15",
+        "53"
+       ],
+       "answer": 0,
+       "why": "«thirty-five» یعنی ۳۵؛ thirty با تکیه روی ابتدا و fifteen با تکیه روی آخر فرق دارد."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "shopping",
+   "fa": "خرید",
+   "en": "Shopping",
+   "tip": "در خرید معمولاً دنبال سه چیز باشید: چه چیزی (what)، چند (how much / how many) و چرا نخرید. کلمه‌های but و only معمولاً مشکل را نشان می‌دهند.",
+   "clips": [
+    {
+     "title": "A new jacket",
+     "titleFa": "یک کت جدید",
+     "text": "Maria is in a clothes shop. She likes a blue jacket, but the shop only has it in medium, and that is too small for her. The shop assistant shows her a black one in large. It costs forty-five dollars, and Maria decides to buy it.",
+     "fa": "ماریا در یک مغازه‌ی لباس است. کت آبی را دوست دارد، اما مغازه فقط سایز متوسطش را دارد که برایش کوچک است. فروشنده یک کت مشکی سایز بزرگ نشانش می‌دهد. قیمتش چهل و پنج دلار است و ماریا تصمیم می‌گیرد آن را بخرد.",
+     "questions": [
+      {
+       "en": "Why doesn't Maria buy the blue jacket?",
+       "fa": "چرا ماریا کت آبی را نمی‌خرد؟",
+       "options": [
+        "It is too expensive.",
+        "She doesn't like the colour.",
+        "It is too small."
+       ],
+       "answer": 2,
+       "why": "«only has it in medium, and that is too small» یعنی سایزش کوچک است."
+      },
+      {
+       "en": "How much is the black jacket?",
+       "fa": "کت مشکی چقدر است؟",
+       "options": [
+        "$14",
+        "$45",
+        "$54"
+       ],
+       "answer": 1,
+       "why": "«forty-five dollars» = ۴۵ دلار؛ fourteen و forty-five را با هم اشتباه نگیرید."
+      }
+     ]
+    },
+    {
+     "title": "Sale announcement",
+     "titleFa": "اعلام حراج",
+     "text": "Attention, shoppers. Today there is a big sale on the second floor. All shoes are half price, and T-shirts are two for ten dollars. The sale finishes at eight o'clock tonight.",
+     "fa": "توجه خریداران. امروز حراج بزرگی در طبقه‌ی دوم برگزار می‌شود. همه‌ی کفش‌ها نصف قیمت‌اند و تی‌شرت‌ها دوتا ده دلار. حراج امشب ساعت هشت تمام می‌شود.",
+     "questions": [
+      {
+       "en": "Where is the sale?",
+       "fa": "حراج کجاست؟",
+       "options": [
+        "On the second floor",
+        "On the first floor",
+        "Outside the shop"
+       ],
+       "answer": 0,
+       "why": "«on the second floor» یعنی طبقه‌ی دوم."
+      },
+      {
+       "en": "What time does the sale finish?",
+       "fa": "حراج ساعت چند تمام می‌شود؟",
+       "options": [
+        "At 10:00 tonight",
+        "At 8:00 tomorrow",
+        "At 8:00 tonight"
+       ],
+       "answer": 2,
+       "why": "«finishes at eight o'clock tonight» یعنی امشب ساعت ۸."
+      }
+     ]
+    },
+    {
+     "title": "A present for Mum",
+     "titleFa": "هدیه برای مامان",
+     "text": "Hi Dad, it's Ali. I'm at the mall now, and I can't find a birthday present for Mum. She likes books and flowers, but she doesn't like perfume. I think I'll buy a cooking book and some flowers. I'll be home at five.",
+     "fa": "سلام بابا، من علی‌ام. الان در پاساژم و نمی‌توانم هدیه‌ی تولد مامان را پیدا کنم. او کتاب و گل دوست دارد اما عطر دوست ندارد. فکر می‌کنم یک کتاب آشپزی و کمی گل بخرم. ساعت پنج خانه‌ام.",
+     "questions": [
+      {
+       "en": "What won't Ali buy?",
+       "fa": "علی چه چیزی نمی‌خرد؟",
+       "options": [
+        "A book",
+        "Perfume",
+        "Flowers"
+       ],
+       "answer": 1,
+       "why": "مادرش perfume (عطر) را دوست ندارد، پس نمی‌خرد."
+      },
+      {
+       "en": "What time will Ali be home?",
+       "fa": "علی چه ساعتی خانه است؟",
+       "options": [
+        "At five",
+        "At four",
+        "At six"
+       ],
+       "answer": 0,
+       "why": "آخر پیام: «I'll be home at five»."
+      }
+     ]
+    },
+    {
+     "title": "At the cash desk",
+     "titleFa": "کنار صندوق",
+     "text": "Excuse me, I'd like to pay for these two shirts and this hat. The shirts are twelve dollars each, and the hat is eight dollars. That makes thirty-two dollars. I wanted to use my card, but the machine isn't working, so I have to pay in cash.",
+     "fa": "ببخشید، می‌خواهم پول این دو پیراهن و این کلاه را بدهم. پیراهن‌ها هرکدام دوازده دلار و کلاه هشت دلار است. جمعاً می‌شود سی و دو دلار. می‌خواستم با کارت بپردازم اما دستگاه کار نمی‌کند، پس باید نقد بدهم.",
+     "questions": [
+      {
+       "en": "How much is the total?",
+       "fa": "جمع کل چقدر است؟",
+       "options": [
+        "$20",
+        "$40",
+        "$32"
+       ],
+       "answer": 2,
+       "why": "۱۲ + ۱۲ + ۸ = ۳۲ دلار؛ در متن هم «thirty-two dollars» آمد."
+      },
+      {
+       "en": "Why does the speaker pay in cash?",
+       "fa": "چرا گوینده نقد می‌پردازد؟",
+       "options": [
+        "He has no card.",
+        "The card machine isn't working.",
+        "Cash is cheaper."
+       ],
+       "answer": 1,
+       "why": "«the machine isn't working» یعنی دستگاه کارت خراب است."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "restaurant",
+   "fa": "رستوران",
+   "en": "At the Restaurant",
+   "tip": "در رستوران دنبال این‌ها بگردید: غذا (چه سفارش دادند)، تعداد نفرات، ساعت رزرو و حساسیت یا محدودیت غذایی مثل allergy یا vegetarian.",
+   "clips": [
+    {
+     "title": "Ordering lunch",
+     "titleFa": "سفارش ناهار",
+     "text": "Lisa and her friend are at a small restaurant. Lisa wants chicken soup and a salad. Her friend doesn't eat meat, so she orders vegetable pasta. For drinks, they both want orange juice with no ice.",
+     "fa": "لیزا و دوستش در یک رستوران کوچک‌اند. لیزا سوپ مرغ و سالاد می‌خواهد. دوستش گوشت نمی‌خورد، پس پاستای سبزیجات سفارش می‌دهد. هر دو آب‌پرتقال بدون یخ می‌خواهند.",
+     "questions": [
+      {
+       "en": "What does Lisa order?",
+       "fa": "لیزا چه سفارش می‌دهد؟",
+       "options": [
+        "Chicken soup and a salad",
+        "Vegetable pasta",
+        "Orange juice only"
+       ],
+       "answer": 0,
+       "why": "«Lisa wants chicken soup and a salad». پاستا مال دوستش است."
+      },
+      {
+       "en": "Why does her friend order pasta?",
+       "fa": "چرا دوستش پاستا سفارش می‌دهد؟",
+       "options": [
+        "She doesn't like soup.",
+        "The soup is finished.",
+        "She doesn't eat meat."
+       ],
+       "answer": 2,
+       "why": "«doesn't eat meat, so she orders…» یعنی گوشت نمی‌خورد."
+      }
+     ]
+    },
+    {
+     "title": "Booking a table",
+     "titleFa": "رزرو میز",
+     "text": "Good afternoon. This is a message for Mr Evans. We would like to book a table for six people on Friday evening at half past seven. One of our guests has a nut allergy. Please call us back. Thank you.",
+     "fa": "بعدازظهر بخیر. این پیام برای آقای اوانز است. می‌خواهیم برای جمعه عصر ساعت هفت و نیم یک میز برای شش نفر رزرو کنیم. یکی از مهمان‌ها به آجیل حساسیت دارد. لطفاً تماس بگیرید. متشکرم.",
+     "questions": [
+      {
+       "en": "How many people are coming?",
+       "fa": "چند نفر می‌آیند؟",
+       "options": [
+        "Four",
+        "Six",
+        "Seven"
+       ],
+       "answer": 1,
+       "why": "«a table for six people»."
+      },
+      {
+       "en": "What is special about one guest?",
+       "fa": "درباره‌ی یکی از مهمان‌ها چه نکته‌ی ویژه‌ای هست؟",
+       "options": [
+        "He is allergic to nuts.",
+        "He is vegetarian.",
+        "He is a child."
+       ],
+       "answer": 0,
+       "why": "«has a nut allergy» یعنی به آجیل حساسیت دارد."
+      }
+     ]
+    },
+    {
+     "title": "Today's specials",
+     "titleFa": "غذاهای ویژه‌ی امروز",
+     "text": "Today's specials are grilled fish with rice and a mushroom pizza. The fish is fourteen dollars, and the pizza is eleven. Dessert is free with every main meal today, so you can choose ice cream or fruit cake.",
+     "fa": "غذاهای ویژه‌ی امروز ماهی کبابی با برنج و پیتزای قارچ است. ماهی چهارده دلار و پیتزا یازده دلار است. امروز با هر غذای اصلی دسر رایگان است، پس می‌توانید بستنی یا کیک میوه‌ای انتخاب کنید.",
+     "questions": [
+      {
+       "en": "Which dish is cheaper?",
+       "fa": "کدام غذا ارزان‌تر است؟",
+       "options": [
+        "The fish",
+        "They cost the same",
+        "The pizza"
+       ],
+       "answer": 2,
+       "why": "پیتزا ۱۱ دلار و ماهی ۱۴ دلار است."
+      },
+      {
+       "en": "What is free today?",
+       "fa": "امروز چه چیزی رایگان است؟",
+       "options": [
+        "A drink",
+        "Dessert",
+        "The salad"
+       ],
+       "answer": 1,
+       "why": "«Dessert is free with every main meal»."
+      }
+     ]
+    },
+    {
+     "title": "A slow dinner",
+     "titleFa": "یک شام کند",
+     "text": "Last night we went to a new restaurant. The food was very good, but the service was slow. We waited forty minutes for our main meal. The waiter was kind. He said sorry and gave us a free coffee. We will probably go back.",
+     "fa": "دیشب به یک رستوران جدید رفتیم. غذا خیلی خوب بود اما سرویس‌دهی کند بود. چهل دقیقه منتظر غذای اصلی ماندیم. گارسون مهربان بود. عذرخواهی کرد و یک قهوه‌ی رایگان به ما داد. احتمالاً دوباره می‌رویم.",
+     "questions": [
+      {
+       "en": "What was the problem?",
+       "fa": "مشکل چه بود؟",
+       "options": [
+        "The service was slow.",
+        "The food was bad.",
+        "The restaurant was dirty."
+       ],
+       "answer": 0,
+       "why": "«the food was very good, but the service was slow»."
+      },
+      {
+       "en": "What did the waiter give them?",
+       "fa": "گارسون چه چیزی به آن‌ها داد؟",
+       "options": [
+        "A free dessert",
+        "A discount card",
+        "A free coffee"
+       ],
+       "answer": 2,
+       "why": "«gave us a free coffee»."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "directions",
+   "fa": "مسیر و مکان‌ها",
+   "en": "Directions and Places",
+   "tip": "در مسیریابی کلمه‌های ترتیب را بگیرید: first, then, after, next to, opposite, between. هر turn left / turn right را در ذهنت دنبال کن.",
+   "clips": [
+    {
+     "title": "To the post office",
+     "titleFa": "به سمت اداره‌ی پست",
+     "text": "To get to the post office, go straight along this road for two blocks. Turn left at the traffic lights. The post office is on your right, between the bank and a bakery. It takes about five minutes on foot.",
+     "fa": "برای رفتن به اداره‌ی پست، این خیابان را دو بلوک مستقیم بروید. سر چراغ راهنما به چپ بپیچید. اداره‌ی پست سمت راستتان، بین بانک و یک نانوایی است. پیاده حدود پنج دقیقه طول می‌کشد.",
+     "questions": [
+      {
+       "en": "Where do you turn left?",
+       "fa": "کجا به چپ می‌پیچید؟",
+       "options": [
+        "At the bank",
+        "At the traffic lights",
+        "At the bakery"
+       ],
+       "answer": 1,
+       "why": "«Turn left at the traffic lights»."
+      },
+      {
+       "en": "Where is the post office?",
+       "fa": "اداره‌ی پست کجاست؟",
+       "options": [
+        "Between the bank and a bakery",
+        "Next to the school",
+        "Opposite the park"
+       ],
+       "answer": 0,
+       "why": "«between the bank and a bakery» یعنی بین بانک و نانوایی."
+      }
+     ]
+    },
+    {
+     "title": "The bus to the museum",
+     "titleFa": "اتوبوس موزه",
+     "text": "Take bus number twelve from the stop across the street. Get off at the fourth stop, after the big park. The museum is opposite the park. The ride takes about twenty minutes.",
+     "fa": "اتوبوس شماره‌ی ۱۲ را از ایستگاه آن‌طرف خیابان سوار شوید. در ایستگاه چهارم، بعد از پارک بزرگ، پیاده شوید. موزه روبه‌روی پارک است. سفر حدود بیست دقیقه طول می‌کشد.",
+     "questions": [
+      {
+       "en": "Which bus goes to the museum?",
+       "fa": "کدام اتوبوس به موزه می‌رود؟",
+       "options": [
+        "Number 2",
+        "Number 20",
+        "Number 12"
+       ],
+       "answer": 2,
+       "why": "«number twelve» یعنی ۱۲؛ twelve و twenty را اشتباه نگیرید."
+      },
+      {
+       "en": "Where is the museum?",
+       "fa": "موزه کجاست؟",
+       "options": [
+        "Next to the bus stop",
+        "Opposite the park",
+        "Behind the station"
+       ],
+       "answer": 1,
+       "why": "«opposite the park» یعنی روبه‌روی پارک."
+      }
+     ]
+    },
+    {
+     "title": "A lost tourist",
+     "titleFa": "توریستِ گم‌شده",
+     "text": "A tourist is lost near the station. He wants to go to the Grand Hotel. A woman tells him to cross the bridge and turn right. The hotel is next to the cinema. It isn't far, but she says a taxi is quick if it rains.",
+     "fa": "یک توریست نزدیک ایستگاه گم شده است. می‌خواهد به هتل گرند برود. زنی به او می‌گوید از روی پل رد شود و به راست بپیچد. هتل کنار سینماست. دور نیست اما می‌گوید اگر باران ببارد تاکسی سریع است.",
+     "questions": [
+      {
+       "en": "What does the tourist need to cross?",
+       "fa": "توریست باید از چه چیزی رد شود؟",
+       "options": [
+        "A bridge",
+        "A park",
+        "A river by boat"
+       ],
+       "answer": 0,
+       "why": "«cross the bridge» یعنی از پل رد شو."
+      },
+      {
+       "en": "What is the hotel next to?",
+       "fa": "هتل کنار چیست؟",
+       "options": [
+        "The station",
+        "The bank",
+        "The cinema"
+       ],
+       "answer": 2,
+       "why": "«next to the cinema» یعنی کنار سینما."
+      }
+     ]
+    },
+    {
+     "title": "Station announcement",
+     "titleFa": "اعلام ایستگاه",
+     "text": "Attention, please. The train to Manchester now leaves from platform five, not platform three. It leaves at ten forty. Passengers must change trains at Leeds. We are sorry for the change.",
+     "fa": "توجه لطفاً. قطار منچستر اکنون از سکوی پنج حرکت می‌کند، نه سکوی سه. ساعت ده و چهل دقیقه حرکت می‌کند. مسافران باید در لیدز قطار عوض کنند. بابت این تغییر عذرخواهیم.",
+     "questions": [
+      {
+       "en": "Which platform does the train leave from now?",
+       "fa": "قطار حالا از کدام سکو حرکت می‌کند؟",
+       "options": [
+        "Platform 3",
+        "Platform 5",
+        "Platform 15"
+       ],
+       "answer": 1,
+       "why": "«now leaves from platform five, not platform three»."
+      },
+      {
+       "en": "Where must passengers change trains?",
+       "fa": "مسافران کجا باید قطار عوض کنند؟",
+       "options": [
+        "At Leeds",
+        "At Manchester",
+        "At the airport"
+       ],
+       "answer": 0,
+       "why": "«change trains at Leeds»."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "hotel",
+   "fa": "هتل و سفر",
+   "en": "Hotels and Travel",
+   "tip": "در هتل و سفر دنبال تعداد شب، ساعت‌ها و مشکل‌ها بگردید. عبارت‌های «I'd like to…» و «Could someone…?» درخواست مؤدبانه‌اند.",
+   "clips": [
+    {
+     "title": "Booking a room",
+     "titleFa": "رزرو اتاق",
+     "text": "Hello, I'd like to book a double room for three nights from the tenth of June. Is breakfast included? I also need a parking space for one car. My name is Daniel Green.",
+     "fa": "سلام، می‌خواهم از دهم ژوئن یک اتاق دو نفره برای سه شب رزرو کنم. صبحانه هم شامل است؟ یک جای پارک برای یک ماشین هم لازم دارم. اسمم دنیل گرین است.",
+     "questions": [
+      {
+       "en": "How many nights does he want?",
+       "fa": "او چند شب می‌خواهد؟",
+       "options": [
+        "Ten",
+        "Two",
+        "Three"
+       ],
+       "answer": 2,
+       "why": "«for three nights»؛ ten مربوط به تاریخ ۱۰ ژوئن است."
+      },
+      {
+       "en": "What else does he need?",
+       "fa": "او چه چیز دیگری لازم دارد؟",
+       "options": [
+        "A taxi",
+        "A parking space",
+        "A single bed"
+       ],
+       "answer": 1,
+       "why": "«I also need a parking space»."
+      }
+     ]
+    },
+    {
+     "title": "Welcome to the hotel",
+     "titleFa": "خوش‌آمدگویی هتل",
+     "text": "Welcome to the Sunrise Hotel. Breakfast is served from seven to ten in the restaurant on the ground floor. The swimming pool is on the top floor, and it closes at nine in the evening. The Wi-Fi password is on your room card.",
+     "fa": "به هتل سان‌رایز خوش آمدید. صبحانه از هفت تا ده در رستوران طبقه‌ی همکف سرو می‌شود. استخر در طبقه‌ی آخر است و ساعت نه شب بسته می‌شود. رمز وای‌فای روی کارت اتاق شماست.",
+     "questions": [
+      {
+       "en": "Where is breakfast served?",
+       "fa": "صبحانه کجا سرو می‌شود؟",
+       "options": [
+        "In the restaurant on the ground floor",
+        "In your room",
+        "By the pool"
+       ],
+       "answer": 0,
+       "why": "«in the restaurant on the ground floor»."
+      },
+      {
+       "en": "What time does the pool close?",
+       "fa": "استخر ساعت چند بسته می‌شود؟",
+       "options": [
+        "At 7 a.m.",
+        "At 10 a.m.",
+        "At 9 p.m."
+       ],
+       "answer": 2,
+       "why": "«closes at nine in the evening» یعنی ۹ شب."
+      }
+     ]
+    },
+    {
+     "title": "A problem in the room",
+     "titleFa": "مشکل در اتاق",
+     "text": "Excuse me, this is room two-oh-six. The air conditioning doesn't work, and the room is very hot. Could someone come and fix it, please? If that isn't possible, I'd like to change rooms.",
+     "fa": "ببخشید، این اتاق ۲۰۶ است. کولر کار نمی‌کند و اتاق خیلی گرم است. لطفاً کسی بیاید و درستش کند؟ اگر ممکن نیست، می‌خواهم اتاقم را عوض کنم.",
+     "questions": [
+      {
+       "en": "What is the problem?",
+       "fa": "مشکل چیست؟",
+       "options": [
+        "The bed is too small.",
+        "The air conditioning doesn't work.",
+        "The TV is broken."
+       ],
+       "answer": 1,
+       "why": "«The air conditioning doesn't work»."
+      },
+      {
+       "en": "What does the guest want if it can't be fixed?",
+       "fa": "اگر درست نشود مهمان چه می‌خواهد؟",
+       "options": [
+        "To change rooms",
+        "To leave the hotel",
+        "To get a free breakfast"
+       ],
+       "answer": 0,
+       "why": "«I'd like to change rooms»."
+      }
+     ]
+    },
+    {
+     "title": "An early flight",
+     "titleFa": "یک پرواز صبح زود",
+     "text": "My flight to Istanbul leaves at six in the morning, so I need to be at the airport by four. My brother is taking me there by car. I only have one small bag, so I don't need to check it in. I hope I won't be late.",
+     "fa": "پرواز من به استانبول ساعت شش صبح است، پس باید تا ساعت چهار در فرودگاه باشم. برادرم با ماشین مرا می‌رساند. فقط یک ساک کوچک دارم، پس لازم نیست تحویلش بدهم. امیدوارم دیر نکنم.",
+     "questions": [
+      {
+       "en": "When must he be at the airport?",
+       "fa": "او کی باید در فرودگاه باشد؟",
+       "options": [
+        "At 6:00",
+        "At 2:00",
+        "At 4:00"
+       ],
+       "answer": 2,
+       "why": "پرواز ساعت ۶ است اما باید ساعت ۴ در فرودگاه باشد."
+      },
+      {
+       "en": "How is he getting to the airport?",
+       "fa": "او چطور به فرودگاه می‌رود؟",
+       "options": [
+        "By taxi",
+        "By car with his brother",
+        "By train"
+       ],
+       "answer": 1,
+       "why": "«My brother is taking me there by car»."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "routine",
+   "fa": "زندگی روزمره",
+   "en": "Daily Routine",
+   "tip": "در برنامه‌ی روزانه کلمه‌های تکرار (always, usually, never) و ترتیب (then, after, before) را بگیر. گذشته‌ها مثل woke up و didn't ring را هم دقیق گوش بده.",
+   "clips": [
+    {
+     "title": "Nina's morning",
+     "titleFa": "صبح نینا",
+     "text": "Nina gets up at six thirty every day. She has a quick shower, eats toast with cheese and drinks tea. Then she walks to the bus stop and takes the bus to school. She never goes by car.",
+     "fa": "نینا هر روز ساعت شش و نیم بیدار می‌شود. یک دوش سریع می‌گیرد، نان تست با پنیر می‌خورد و چای می‌نوشد. بعد تا ایستگاه اتوبوس پیاده می‌رود و با اتوبوس به مدرسه می‌رود. هرگز با ماشین نمی‌رود.",
+     "questions": [
+      {
+       "en": "What does Nina eat for breakfast?",
+       "fa": "نینا برای صبحانه چه می‌خورد؟",
+       "options": [
+        "Toast with cheese",
+        "Eggs and rice",
+        "Cereal with milk"
+       ],
+       "answer": 0,
+       "why": "«eats toast with cheese»."
+      },
+      {
+       "en": "How does Nina get to school?",
+       "fa": "نینا چطور به مدرسه می‌رود؟",
+       "options": [
+        "By car",
+        "By bike",
+        "By bus"
+       ],
+       "answer": 2,
+       "why": "«takes the bus to school»؛ «never goes by car» یعنی هرگز با ماشین نمی‌رود."
+      }
+     ]
+    },
+    {
+     "title": "Weekdays and weekends",
+     "titleFa": "روزهای کاری و آخر هفته",
+     "text": "On weekdays I'm always very busy. I work from nine to five, and then I go to the gym. But on weekends I relax. I usually sleep until ten, and on Sunday afternoon I visit my grandmother.",
+     "fa": "در روزهای کاری همیشه خیلی مشغولم. از نه تا پنج کار می‌کنم و بعد به باشگاه می‌روم. اما آخر هفته‌ها استراحت می‌کنم. معمولاً تا ده می‌خوابم و یکشنبه بعدازظهر به دیدن مادربزرگم می‌روم.",
+     "questions": [
+      {
+       "en": "What does he do after work on weekdays?",
+       "fa": "او در روزهای کاری بعد از کار چه می‌کند؟",
+       "options": [
+        "He visits his grandmother.",
+        "He goes to the gym.",
+        "He sleeps."
+       ],
+       "answer": 1,
+       "why": "«I work from nine to five, and then I go to the gym»."
+      },
+      {
+       "en": "When does he visit his grandmother?",
+       "fa": "کی به دیدن مادربزرگش می‌رود؟",
+       "options": [
+        "On Sunday afternoon",
+        "On Saturday morning",
+        "Every weekday"
+       ],
+       "answer": 0,
+       "why": "«on Sunday afternoon I visit my grandmother»."
+      }
+     ]
+    },
+    {
+     "title": "Late for class",
+     "titleFa": "دیر رسیدن به کلاس",
+     "text": "I was late for class this morning. My alarm didn't ring, so I woke up at eight instead of seven. I didn't have breakfast and I ran to the bus stop. Luckily, the bus was late too, so I arrived on time.",
+     "fa": "امروز صبح به کلاس دیر کردم. زنگ ساعتم نخورد، برای همین به‌جای هفت ساعت هشت بیدار شدم. صبحانه نخوردم و تا ایستگاه دویدم. خوشبختانه اتوبوس هم دیر آمد، برای همین به‌موقع رسیدم.",
+     "questions": [
+      {
+       "en": "Why did the speaker wake up late?",
+       "fa": "چرا گوینده دیر بیدار شد؟",
+       "options": [
+        "He went to bed late.",
+        "He was ill.",
+        "His alarm didn't ring."
+       ],
+       "answer": 2,
+       "why": "«My alarm didn't ring» یعنی زنگ ساعت نخورد."
+      },
+      {
+       "en": "What happened in the end?",
+       "fa": "در پایان چه شد؟",
+       "options": [
+        "He missed the class.",
+        "He arrived on time.",
+        "He took a taxi."
+       ],
+       "answer": 1,
+       "why": "«the bus was late too, so I arrived on time»."
+      }
+     ]
+    },
+    {
+     "title": "Tom's evening",
+     "titleFa": "عصر تام",
+     "text": "After dinner, Tom usually does his homework for an hour. Then he plays video games with his brother until nine. At half past nine he brushes his teeth and goes to bed. He reads a book for ten minutes before he sleeps.",
+     "fa": "بعد از شام، تام معمولاً یک ساعت تکالیفش را انجام می‌دهد. بعد تا ساعت نه با برادرش بازی ویدیویی می‌کند. ساعت نه و نیم مسواک می‌زند و می‌خوابد. قبل از خواب ده دقیقه کتاب می‌خواند.",
+     "questions": [
+      {
+       "en": "How long does Tom do his homework?",
+       "fa": "تام چقدر تکلیف می‌نویسد؟",
+       "options": [
+        "For an hour",
+        "For ten minutes",
+        "Until nine"
+       ],
+       "answer": 0,
+       "why": "«does his homework for an hour»."
+      },
+      {
+       "en": "What time does Tom go to bed?",
+       "fa": "تام ساعت چند می‌خوابد؟",
+       "options": [
+        "At 9:00",
+        "At 10:00",
+        "At 9:30"
+       ],
+       "answer": 2,
+       "why": "«At half past nine» یعنی ۹:۳۰."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "weather",
+   "fa": "هوا و برنامه‌ها",
+   "en": "Weather and Plans",
+   "tip": "برای آینده دنبال going to / will / next / tomorrow بگرد. در گزارش هوا مکان‌ها (north, south) و صفت‌ها (cloudy, sunny, windy) را جدا از هم بگیر.",
+   "clips": [
+    {
+     "title": "Weather report",
+     "titleFa": "گزارش هوا",
+     "text": "Good morning. Today will be cloudy in the north, with some rain in the afternoon. In the south, it will be sunny and warm, about twenty-five degrees. Tomorrow will be colder and windy everywhere.",
+     "fa": "صبح بخیر. امروز در شمال هوا ابری است و بعدازظهر کمی باران می‌بارد. در جنوب آفتابی و گرم است، حدود بیست و پنج درجه. فردا همه‌جا سردتر و بادی خواهد بود.",
+     "questions": [
+      {
+       "en": "What will the weather be like in the south today?",
+       "fa": "امروز هوا در جنوب چطور است؟",
+       "options": [
+        "Cloudy and rainy",
+        "Sunny and warm",
+        "Cold and windy"
+       ],
+       "answer": 1,
+       "why": "«In the south, it will be sunny and warm»."
+      },
+      {
+       "en": "What will tomorrow be like?",
+       "fa": "فردا هوا چطور است؟",
+       "options": [
+        "Colder and windy",
+        "Hot and sunny",
+        "Rainy in the north only"
+       ],
+       "answer": 0,
+       "why": "«Tomorrow will be colder and windy everywhere»."
+      }
+     ]
+    },
+    {
+     "title": "Picnic plan",
+     "titleFa": "برنامه‌ی پیک‌نیک",
+     "text": "We're going to have a picnic on Saturday if the weather is nice. Anna will bring sandwiches, and Paul will bring drinks. I'm going to make a chocolate cake. If it rains, we will have the picnic at my house.",
+     "fa": "اگر هوا خوب باشد شنبه پیک‌نیک می‌کنیم. آنا ساندویچ می‌آورد و پاول نوشیدنی. من یک کیک شکلاتی درست می‌کنم. اگر باران ببارد، پیک‌نیک را در خانه‌ی من می‌گیریم.",
+     "questions": [
+      {
+       "en": "What will Anna bring?",
+       "fa": "آنا چه می‌آورد؟",
+       "options": [
+        "Drinks",
+        "A chocolate cake",
+        "Sandwiches"
+       ],
+       "answer": 2,
+       "why": "نوشیدنی مال پاول و کیک مال گوینده است؛ آنا «sandwiches» می‌آورد."
+      },
+      {
+       "en": "Where will they have the picnic if it rains?",
+       "fa": "اگر باران ببارد پیک‌نیک کجاست؟",
+       "options": [
+        "In the park",
+        "At the speaker's house",
+        "At Anna's house"
+       ],
+       "answer": 1,
+       "why": "«If it rains, we will have the picnic at my house»."
+      }
+     ]
+    },
+    {
+     "title": "A winter holiday",
+     "titleFa": "تعطیلات زمستانی",
+     "text": "Next month my family is going to visit my aunt in Canada. It will be very cold there, so I'm going to buy a warm coat and boots. We are going to stay for two weeks, and I hope we will see snow.",
+     "fa": "ماه بعد خانواده‌ام برای دیدن خاله‌ام به کانادا می‌رود. آنجا خیلی سرد است، برای همین یک کت گرم و چکمه می‌خرم. دو هفته می‌مانیم و امیدوارم برف ببینیم.",
+     "questions": [
+      {
+       "en": "Where is the family going?",
+       "fa": "خانواده کجا می‌رود؟",
+       "options": [
+        "To Canada",
+        "To Turkey",
+        "To a ski centre in the mountains"
+       ],
+       "answer": 0,
+       "why": "«visit my aunt in Canada»."
+      },
+      {
+       "en": "What is the speaker going to buy?",
+       "fa": "گوینده چه چیزی می‌خرد؟",
+       "options": [
+        "A suitcase",
+        "A camera",
+        "A warm coat and boots"
+       ],
+       "answer": 2,
+       "why": "«I'm going to buy a warm coat and boots»."
+      }
+     ]
+    },
+    {
+     "title": "A cancelled match",
+     "titleFa": "مسابقه‌ی لغو شده",
+     "text": "I'm sorry, but tomorrow's football match is cancelled because of the storm. The new date is next Sunday at three o'clock. Please tell your friends. Your tickets will still be good.",
+     "fa": "متأسفم، اما مسابقه‌ی فوتبال فردا به‌خاطر طوفان لغو شده است. تاریخ جدید یکشنبه‌ی آینده ساعت سه است. لطفاً به دوستانتان بگویید. بلیت‌هایتان معتبر می‌مانند.",
+     "questions": [
+      {
+       "en": "Why is the match cancelled?",
+       "fa": "چرا مسابقه لغو شده؟",
+       "options": [
+        "Because of a broken field",
+        "Because of a storm",
+        "Because players are ill"
+       ],
+       "answer": 1,
+       "why": "«cancelled because of the storm»."
+      },
+      {
+       "en": "When is the new date?",
+       "fa": "تاریخ جدید کی است؟",
+       "options": [
+        "Next Sunday at 3:00",
+        "Tomorrow at 3:00",
+        "Next Saturday at 5:00"
+       ],
+       "answer": 0,
+       "why": "«next Sunday at three o'clock»."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "health",
+   "fa": "سلامت و پزشک",
+   "en": "Health and the Doctor",
+   "tip": "در متن‌های پزشکی دنبال علائم (headache, fever)، مدت (since Monday, for three days) و دستور (take, drink, rest) باش. «must» یعنی باید و «don't need to» یعنی لازم نیست.",
+   "clips": [
+    {
+     "title": "At the doctor's",
+     "titleFa": "نزد پزشک",
+     "text": "Sam has had a sore throat and a headache since Monday. The doctor says he has a cold. He must drink a lot of water, rest for three days and stay home from school. He doesn't need any medicine.",
+     "fa": "سام از دوشنبه گلودرد و سردرد دارد. دکتر می‌گوید سرماخورده است. باید زیاد آب بنوشد، سه روز استراحت کند و در خانه بماند. به هیچ دارویی نیاز ندارد.",
+     "questions": [
+      {
+       "en": "How long has Sam been ill?",
+       "fa": "سام از کی بیمار است؟",
+       "options": [
+        "Since Friday",
+        "For three weeks",
+        "Since Monday"
+       ],
+       "answer": 2,
+       "why": "«since Monday» یعنی از دوشنبه."
+      },
+      {
+       "en": "Does Sam need medicine?",
+       "fa": "آیا سام دارو لازم دارد؟",
+       "options": [
+        "Yes, two tablets a day.",
+        "No, he doesn't.",
+        "Yes, a cough syrup."
+       ],
+       "answer": 1,
+       "why": "«He doesn't need any medicine»."
+      }
+     ]
+    },
+    {
+     "title": "At the pharmacy",
+     "titleFa": "در داروخانه",
+     "text": "Take one tablet three times a day, after meals. Don't take more than six tablets in one day. If you still have a fever after three days, please come back and see the doctor.",
+     "fa": "روزی سه بار، بعد از غذا، یک قرص بخورید. بیشتر از شش قرص در روز نخورید. اگر بعد از سه روز هنوز تب داشتید، لطفاً برگردید و پزشک را ببینید.",
+     "questions": [
+      {
+       "en": "How often should you take the tablet?",
+       "fa": "هر چند وقت یک‌بار باید قرص بخوری؟",
+       "options": [
+        "Three times a day",
+        "Once a day",
+        "Six times a day"
+       ],
+       "answer": 0,
+       "why": "«three times a day, after meals»؛ six حداکثر قرص‌های یک روز است."
+      },
+      {
+       "en": "When should you see the doctor again?",
+       "fa": "کی باید دوباره پزشک را ببینی؟",
+       "options": [
+        "After every meal",
+        "Tomorrow morning",
+        "If you still have a fever after three days"
+       ],
+       "answer": 2,
+       "why": "«If you still have a fever after three days»."
+      }
+     ]
+    },
+    {
+     "title": "An appointment",
+     "titleFa": "وقت ملاقات",
+     "text": "Good morning, this is Dr Khan's office. Ms Lee, your appointment is on Thursday at ten past four. Please arrive ten minutes early and bring your ID card. If you can't come, please call us one day before.",
+     "fa": "صبح بخیر، اینجا مطب دکتر خان است. خانم لی، وقت شما پنجشنبه ساعت چهار و ده دقیقه است. لطفاً ده دقیقه زودتر بیایید و کارت شناسایی‌تان را همراه بیاورید. اگر نمی‌توانید بیایید لطفاً یک روز قبل تماس بگیرید.",
+     "questions": [
+      {
+       "en": "What time is the appointment?",
+       "fa": "وقت ملاقات ساعت چند است؟",
+       "options": [
+        "4:50",
+        "4:10",
+        "10:04"
+       ],
+       "answer": 1,
+       "why": "«ten past four» یعنی ۴:۱۰."
+      },
+      {
+       "en": "What should Ms Lee bring?",
+       "fa": "خانم لی چه چیزی همراه بیاورد؟",
+       "options": [
+        "Her ID card",
+        "Her medicine",
+        "A friend"
+       ],
+       "answer": 0,
+       "why": "«bring your ID card»."
+      }
+     ]
+    },
+    {
+     "title": "Healthy habits",
+     "titleFa": "عادت‌های سالم",
+     "text": "My doctor says I should sleep eight hours every night and eat more fruit and vegetables. I should also walk for thirty minutes every day. Before, I drank five cups of coffee a day. Now I only drink one.",
+     "fa": "دکترم می‌گوید باید هر شب هشت ساعت بخوابم و میوه و سبزی بیشتری بخورم. همچنین باید هر روز سی دقیقه پیاده‌روی کنم. قبلاً روزی پنج فنجان قهوه می‌خوردم. حالا فقط یکی می‌خورم.",
+     "questions": [
+      {
+       "en": "How long should he walk every day?",
+       "fa": "او باید هر روز چقدر پیاده‌روی کند؟",
+       "options": [
+        "Eight hours",
+        "One hour",
+        "Thirty minutes"
+       ],
+       "answer": 2,
+       "why": "«walk for thirty minutes»؛ eight hours مربوط به خواب است."
+      },
+      {
+       "en": "How many cups of coffee does he drink now?",
+       "fa": "او حالا چند فنجان قهوه می‌خورد؟",
+       "options": [
+        "Five",
+        "One",
+        "None"
+       ],
+       "answer": 1,
+       "why": "«Before, five cups… Now I only drink one»."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "school",
+   "fa": "مدرسه و کلاس",
+   "en": "School Announcements",
+   "tip": "در اعلان‌های مدرسه دنبال تغییر برنامه (moved, changed, cancelled)، مکان، ساعت و چیزهایی که باید بیاوری (bring) باش. Don't یعنی ممنوع.",
+   "clips": [
+    {
+     "title": "Morning announcement",
+     "titleFa": "اعلان صبحگاهی",
+     "text": "Good morning, students. Today there is a change in the timetable. The maths test is moved from Wednesday to Friday. On Wednesday you will have an art class in room eight. Please bring your pencils and a notebook.",
+     "fa": "صبح بخیر دانش‌آموزان. امروز در برنامه‌ی کلاسی تغییری هست. آزمون ریاضی از چهارشنبه به جمعه منتقل شده است. چهارشنبه کلاس نقاشی در اتاق هشت دارید. لطفاً مداد و دفترچه بیاورید.",
+     "questions": [
+      {
+       "en": "When is the maths test now?",
+       "fa": "آزمون ریاضی حالا کی است؟",
+       "options": [
+        "On Friday",
+        "On Wednesday",
+        "On Monday"
+       ],
+       "answer": 0,
+       "why": "«moved from Wednesday to Friday» یعنی از چهارشنبه به جمعه."
+      },
+      {
+       "en": "What will the students have on Wednesday?",
+       "fa": "دانش‌آموزان چهارشنبه چه کلاسی دارند؟",
+       "options": [
+        "A maths test",
+        "A sports class",
+        "An art class"
+       ],
+       "answer": 2,
+       "why": "«On Wednesday you will have an art class in room eight»."
+      }
+     ]
+    },
+    {
+     "title": "The school trip",
+     "titleFa": "گردش مدرسه",
+     "text": "Class 6B, our school trip is next Tuesday. We will go to the science museum by bus. The bus leaves at eight fifteen from the front gate. Bring a packed lunch and wear comfortable shoes. Don't bring your phones.",
+     "fa": "کلاس ششم ب، گردش مدرسه سه‌شنبه‌ی آینده است. با اتوبوس به موزه‌ی علوم می‌رویم. اتوبوس ساعت هشت و ربع از درِ جلوی مدرسه حرکت می‌کند. ناهار همراه بیاورید و کفش راحت بپوشید. تلفن همراه نیاورید.",
+     "questions": [
+      {
+       "en": "Where is the class going?",
+       "fa": "کلاس به کجا می‌رود؟",
+       "options": [
+        "To the zoo",
+        "To the science museum",
+        "To a park"
+       ],
+       "answer": 1,
+       "why": "«to the science museum by bus»."
+      },
+      {
+       "en": "What should students bring?",
+       "fa": "دانش‌آموزان چه چیزی بیاورند؟",
+       "options": [
+        "A packed lunch",
+        "Their phones",
+        "A camera"
+       ],
+       "answer": 0,
+       "why": "«Bring a packed lunch»؛ «Don't bring your phones» یعنی تلفن نیاورید."
+      }
+     ]
+    },
+    {
+     "title": "A new student",
+     "titleFa": "یک دانش‌آموز جدید",
+     "text": "Our class has a new student today. His name is Omar, and he's from Egypt. He speaks Arabic and English, and he likes football and drawing. He sits next to Lina, so please be kind and help him find his classes.",
+     "fa": "امروز یک دانش‌آموز جدید در کلاس ما هست. اسمش عمر است و اهل مصر است. عربی و انگلیسی صحبت می‌کند و فوتبال و نقاشی را دوست دارد. کنار لینا می‌نشیند، پس لطفاً مهربان باشید و کمکش کنید کلاس‌هایش را پیدا کند.",
+     "questions": [
+      {
+       "en": "Where is Omar from?",
+       "fa": "عمر اهل کجاست؟",
+       "options": [
+        "England",
+        "Iran",
+        "Egypt"
+       ],
+       "answer": 2,
+       "why": "«he's from Egypt»."
+      },
+      {
+       "en": "What does Omar like?",
+       "fa": "عمر چه چیزی را دوست دارد؟",
+       "options": [
+        "Music and cooking",
+        "Football and drawing",
+        "Reading and swimming"
+       ],
+       "answer": 1,
+       "why": "«he likes football and drawing»."
+      }
+     ]
+    },
+    {
+     "title": "Library rules",
+     "titleFa": "قوانین کتابخانه",
+     "text": "Welcome to the school library. You can borrow three books at a time for two weeks. Please keep quiet and don't eat in the library. If you lose a book, you must tell the librarian. The library is open until four o'clock.",
+     "fa": "به کتابخانه‌ی مدرسه خوش آمدید. هر بار می‌توانید سه کتاب برای دو هفته امانت بگیرید. لطفاً ساکت باشید و در کتابخانه چیزی نخورید. اگر کتابی را گم کردید باید به کتابدار بگویید. کتابخانه تا ساعت چهار باز است.",
+     "questions": [
+      {
+       "en": "How many books can you borrow?",
+       "fa": "چند کتاب می‌توان امانت گرفت؟",
+       "options": [
+        "Three",
+        "Two",
+        "Four"
+       ],
+       "answer": 0,
+       "why": "«borrow three books at a time»؛ two مربوط به مدت امانت (دو هفته) است."
+      },
+      {
+       "en": "What must you do if you lose a book?",
+       "fa": "اگر کتابی را گم کنید چه باید بکنید؟",
+       "options": [
+        "Buy a new book",
+        "Do nothing",
+        "Tell the librarian"
+       ],
+       "answer": 2,
+       "why": "«you must tell the librarian»."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "phone",
+   "fa": "تلفن و پیام",
+   "en": "Phone Calls and Messages",
+   "tip": "در پیام صوتی یا ایمیل اول بفهم چه کسی به چه کسی و برای چه کاری پیام داده، بعد دنبال جزئیات (ساعت، مکان) بگرد. but معمولاً مشکل یا تغییر را معرفی می‌کند.",
+   "clips": [
+    {
+     "title": "A voicemail from a friend",
+     "titleFa": "پیام صوتی یک دوست",
+     "text": "Hi Nora, it's Jack. I'm calling about Saturday. Instead of the cinema, can we go to the park? It's going to be a lovely day. Let's meet at eleven at the main gate. Text me if that's OK.",
+     "fa": "سلام نورا، من جک‌ام. درباره‌ی شنبه زنگ زدم. به‌جای سینما، می‌شود به پارک برویم؟ روز قشنگی می‌شود. ساعت یازده جلوی درِ اصلی همدیگر را ببینیم. اگر خوب است برایم پیامک بده.",
+     "questions": [
+      {
+       "en": "What change does Jack want?",
+       "fa": "جک چه تغییری می‌خواهد؟",
+       "options": [
+        "Meet on Sunday",
+        "Go to the park instead of the cinema",
+        "Go to Nora's house"
+       ],
+       "answer": 1,
+       "why": "«Instead of the cinema, can we go to the park?»"
+      },
+      {
+       "en": "Where will they meet?",
+       "fa": "کجا همدیگر را می‌بینند؟",
+       "options": [
+        "At the main gate",
+        "At the cinema",
+        "At Nora's house"
+       ],
+       "answer": 0,
+       "why": "«Let's meet at eleven at the main gate»."
+      }
+     ]
+    },
+    {
+     "title": "A wrong number",
+     "titleFa": "شماره‌ی اشتباه",
+     "text": "Hello? Is this the dentist's office? Oh, it isn't? I'm sorry, I think I have the wrong number. I wanted the dentist, but this is a flower shop? Oh dear. Sorry for bothering you. Goodbye.",
+     "fa": "الو؟ اینجا مطب دندانپزشک است؟ آه، نیست؟ ببخشید، فکر کنم شماره را اشتباه گرفته‌ام. دندانپزشک می‌خواستم اما اینجا گل‌فروشی است؟ وای. ببخشید مزاحم شدم. خداحافظ.",
+     "questions": [
+      {
+       "en": "Who did the caller want to speak to?",
+       "fa": "تماس‌گیرنده می‌خواست با چه کسی صحبت کند؟",
+       "options": [
+        "A flower shop",
+        "A friend",
+        "The dentist"
+       ],
+       "answer": 2,
+       "why": "«I wanted the dentist»."
+      },
+      {
+       "en": "What kind of place did he call by mistake?",
+       "fa": "او اشتباهاً با چه مکانی تماس گرفت؟",
+       "options": [
+        "A restaurant",
+        "A flower shop",
+        "A school"
+       ],
+       "answer": 1,
+       "why": "«this is a flower shop?»"
+      }
+     ]
+    },
+    {
+     "title": "A short email",
+     "titleFa": "یک ایمیل کوتاه",
+     "text": "Hi Emma, thanks for your invitation. I would love to come to your party, but I have to work until eight on Friday. I can arrive at nine, if that's OK. Can I bring something? Maybe some cake or drinks? Best wishes, Kate.",
+     "fa": "سلام اما، ممنون از دعوتت. خیلی دوست دارم به مهمانی‌ات بیایم اما جمعه تا ساعت هشت باید کار کنم. اگر اشکالی ندارد ساعت نه می‌رسم. چیزی بیاورم؟ شاید کمی کیک یا نوشیدنی؟ با آرزوی بهترین‌ها، کیت.",
+     "questions": [
+      {
+       "en": "Why can't Kate arrive earlier?",
+       "fa": "چرا کیت نمی‌تواند زودتر برسد؟",
+       "options": [
+        "She has to work.",
+        "She is ill.",
+        "She has no car."
+       ],
+       "answer": 0,
+       "why": "«I have to work until eight on Friday»."
+      },
+      {
+       "en": "What does Kate offer to bring?",
+       "fa": "کیت پیشنهاد می‌کند چه چیزی بیاورد؟",
+       "options": [
+        "Flowers",
+        "Nothing",
+        "Cake or drinks"
+       ],
+       "answer": 2,
+       "why": "«Maybe some cake or drinks?»"
+      }
+     ]
+    },
+    {
+     "title": "An office message",
+     "titleFa": "پیام پاسخگوی دفتر",
+     "text": "You have reached Blue Sky Travel. Our office is now closed. We are open Monday to Friday, from nine to five. For urgent help, please call our emergency line. To leave a message, please speak after the beep.",
+     "fa": "شما با شرکت مسافرتی بلو اسکای تماس گرفته‌اید. دفتر ما الان بسته است. ما دوشنبه تا جمعه از نه تا پنج باز هستیم. برای کمک فوری لطفاً با خط اضطراری تماس بگیرید. برای گذاشتن پیام بعد از صدای بوق صحبت کنید.",
+     "questions": [
+      {
+       "en": "When is the office open?",
+       "fa": "دفتر کی باز است؟",
+       "options": [
+        "Every day, 9 to 5",
+        "Monday to Friday, 9 to 5",
+        "Saturday and Sunday"
+       ],
+       "answer": 1,
+       "why": "«open Monday to Friday, from nine to five»."
+      },
+      {
+       "en": "What should you do for urgent help?",
+       "fa": "برای کمک فوری چه باید کرد؟",
+       "options": [
+        "Call the emergency line",
+        "Send an email",
+        "Come to the office"
+       ],
+       "answer": 0,
+       "why": "«For urgent help, please call our emergency line»."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
