@@ -47,7 +47,7 @@ class ConversationRepository {
     _cache.clear();
     _pending.clear();
     if (_loaded && ProStatus.isPro) {
-      final ids = [for (final t in _all) t.id];
+      final ids = [for (final t in _all) if (t.kind != 'primary') t.id];
       Future.delayed(const Duration(seconds: 1),
           () => unawaited(PaidContent.prefetchTopics(ids)));
     }
@@ -82,11 +82,36 @@ class ConversationRepository {
             scenarios: const [],
           ),
       ];
+      // 🎒 مکالمه‌های Primary School ▸ A1 (فایلِ جدا؛ برای همه باز)
+      try {
+        final pr = await rootBundle
+            .loadString('assets/data/primary_conversations_index.json');
+        final pj = jsonDecode(pr) as Map<String, dynamic>;
+        final pl = pj['list'];
+        if (pl is List) {
+          final extra = <ConversationTopic>[];
+          for (final e in pl) {
+            final m = e as Map;
+            final name = m['topic']?.toString() ?? '';
+            if (name.isEmpty) continue;
+            ProStatus.freeExtraTopics.add(name);
+            extra.add(ConversationTopic(
+              id: m['id']?.toString() ?? '',
+              kind: 'primary',
+              topic: name,
+              scenarios: const [],
+            ));
+          }
+          _all = [..._all, ...extra];
+        }
+      } catch (e) {
+        debugPrint('ConversationRepository primary: $e');
+      }
       _loaded = true;
       _error = null;
       // 🚀 Pro: متنِ موضوع‌ها را در پس‌زمینه پیش‌دانلود کن تا با لمس فوری باز شوند
       if (ProStatus.isPro) {
-        final ids = [for (final t in _all) t.id];
+        final ids = [for (final t in _all) if (t.kind != 'primary') t.id];
         Future.delayed(const Duration(seconds: 1),
             () => unawaited(PaidContent.prefetchTopics(ids)));
       }

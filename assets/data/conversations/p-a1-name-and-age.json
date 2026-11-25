@@ -1,0 +1,169 @@
+{
+ "topic": "Name and Age",
+ "scenarios": [
+  {
+   "scenario": "Asking for a name",
+   "context": "Someone asks how to spell a name.",
+   "speakerA": [
+    {
+     "en": "Hello! What's your name?",
+     "level": "A1"
+    },
+    {
+     "en": "How do you spell it?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you, Sara.",
+     "level": "A1"
+    },
+    {
+     "en": "My name is Ben.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "My name is Sara.",
+     "level": "A1"
+    },
+    {
+     "en": "S-A-R-A.",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome. What's your name?",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "At the front desk",
+   "context": "A receptionist fills in a form.",
+   "speakerA": [
+    {
+     "en": "What's your name, please?",
+     "level": "A1"
+    },
+    {
+     "en": "How old are you, Hana?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. Please sit here.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "My name is Hana Kim.",
+     "level": "A1"
+    },
+    {
+     "en": "I'm twenty-eight.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Talking about friends",
+   "context": "Two friends talk about their brothers and sisters.",
+   "speakerA": [
+    {
+     "en": "How old is your brother?",
+     "level": "A1"
+    },
+    {
+     "en": "And your sister?",
+     "level": "A1"
+    },
+    {
+     "en": "How old are you?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "He is twenty-two.",
+     "level": "A1"
+    },
+    {
+     "en": "She is nineteen.",
+     "level": "A1"
+    },
+    {
+     "en": "I am twenty-five.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A birthday question",
+   "context": "Two coworkers talk about birthdays.",
+   "speakerA": [
+    {
+     "en": "When is your birthday?",
+     "level": "A1"
+    },
+    {
+     "en": "Mine is in June.",
+     "level": "A1"
+    },
+    {
+     "en": "I'm thirty. And you?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's in May. And yours?",
+     "level": "A1"
+    },
+    {
+     "en": "How old are you now?",
+     "level": "A1"
+    },
+    {
+     "en": "I'm thirty-one.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A name on a coffee cup",
+   "context": "A barista writes a name on a cup.",
+   "speakerA": [
+    {
+     "en": "Hi! Your name, please?",
+     "level": "A1"
+    },
+    {
+     "en": "Alex, with an X?",
+     "level": "A1"
+    },
+    {
+     "en": "OK. One coffee for Alex!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's Alex.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, A-L-E-X.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you!",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

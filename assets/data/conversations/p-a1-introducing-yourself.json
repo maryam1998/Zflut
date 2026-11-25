@@ -1,0 +1,165 @@
+{
+ "topic": "Introducing Yourself",
+ "scenarios": [
+  {
+   "scenario": "Meeting a new neighbor",
+   "context": "Two neighbors meet for the first time.",
+   "speakerA": [
+    {
+     "en": "Hello! I'm Sara. I live in 5B.",
+     "level": "A1"
+    },
+    {
+     "en": "Nice to meet you, Ali. Are you new here?",
+     "level": "A1"
+    },
+    {
+     "en": "Welcome! I'm happy to meet you.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Hi Sara! I'm Ali. Nice to meet you.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I am. I live in 6B.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. See you soon!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "First day at work",
+   "context": "A new employee meets a coworker.",
+   "speakerA": [
+    {
+     "en": "Good morning! I'm Mina. I'm new.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. Where is my desk?",
+     "level": "A1"
+    },
+    {
+     "en": "Great! Thanks, David.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Good morning, Mina. I'm David. Welcome!",
+     "level": "A1"
+    },
+    {
+     "en": "It's here. This is your desk.",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "In a language class",
+   "context": "Two students meet on the first day.",
+   "speakerA": [
+    {
+     "en": "Hello! I'm Lina. I'm from Spain.",
+     "level": "A1"
+    },
+    {
+     "en": "Nice to meet you, Omar.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I am. And you?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Hi Lina! I'm Omar. I'm from Egypt.",
+     "level": "A1"
+    },
+    {
+     "en": "Nice to meet you too. Are you a student?",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I am. I like English.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "At a party",
+   "context": "Two guests talk at a party.",
+   "speakerA": [
+    {
+     "en": "Hi! I'm Tom. What's your name?",
+     "level": "A1"
+    },
+    {
+     "en": "Nice to meet you, Nora. Do you know Anna?",
+     "level": "A1"
+    },
+    {
+     "en": "She is my friend too!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Hi Tom. My name is Nora.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, she is my friend.",
+     "level": "A1"
+    },
+    {
+     "en": "That's nice!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "An online class",
+   "context": "Two people check their sound at the start of a video class.",
+   "speakerA": [
+    {
+     "en": "Hello, everyone. I'm Paul.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I can hear you. Can you hear me?",
+     "level": "A1"
+    },
+    {
+     "en": "Nice to meet you too.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Hello, Paul. I'm Eva. Can you hear me?",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I can. Nice to meet you.",
+     "level": "A1"
+    },
+    {
+     "en": "Okay, let's start.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

@@ -19,6 +19,17 @@ const _brown = Color(0xFF8B5E3C);
 TopicVisual visualForTopic(String topic) {
   final t = topic.toLowerCase();
 
+  // ═══ Primary School ▸ A1 ═══
+  if (t.contains('introducing yourself')) return const TopicVisual(Icons.waving_hand_rounded, _teal);
+  if (t.contains('name and age')) return const TopicVisual(Icons.badge_rounded, _blue);
+  if (t.contains('my family')) return const TopicVisual(Icons.family_restroom_rounded, _purple);
+  if (t.contains('what is this')) return const TopicVisual(Icons.help_outline_rounded, _gold);
+  if (t.contains('colors and numbers')) return const TopicVisual(Icons.palette_rounded, _rose);
+  if (t.contains('animals i know')) return const TopicVisual(Icons.pets_rounded, _brown);
+  if (t.contains('how do you feel')) return const TopicVisual(Icons.mood_rounded, _rose);
+  if (t.contains('water, food or help')) return const TopicVisual(Icons.local_drink_rounded, _blue);
+  if (t.startsWith('i want')) return const TopicVisual(Icons.thumbs_up_down_rounded, _green);
+
   // ═══ روزمره ═══
   if (t.contains('greetings')) return const TopicVisual(Icons.waving_hand_rounded, _teal);
   if (t.contains('introducing people')) return const TopicVisual(Icons.person_add_alt_1_rounded, _purple);

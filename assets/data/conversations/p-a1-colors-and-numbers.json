@@ -1,0 +1,161 @@
+{
+ "topic": "Colors and Numbers",
+ "scenarios": [
+  {
+   "scenario": "Buying apples",
+   "context": "A customer buys fruit.",
+   "speakerA": [
+    {
+     "en": "Hello! How many apples do you want?",
+     "level": "A1"
+    },
+    {
+     "en": "Red or green?",
+     "level": "A1"
+    },
+    {
+     "en": "Here you are. That's two dollars.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Five apples, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Red, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Favorite color",
+   "context": "Two friends talk about colors.",
+   "speakerA": [
+    {
+     "en": "What is your favorite color?",
+     "level": "A1"
+    },
+    {
+     "en": "I like green.",
+     "level": "A1"
+    },
+    {
+     "en": "No, it's white.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "My favorite color is blue. And yours?",
+     "level": "A1"
+    },
+    {
+     "en": "Is your car green?",
+     "level": "A1"
+    },
+    {
+     "en": "Mine is black.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Counting people",
+   "context": "Two people count a group.",
+   "speakerA": [
+    {
+     "en": "How many people are here?",
+     "level": "A1"
+    },
+    {
+     "en": "How many men?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "There are ten people.",
+     "level": "A1"
+    },
+    {
+     "en": "Four men and six women.",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A phone number",
+   "context": "Someone gives a phone number.",
+   "speakerA": [
+    {
+     "en": "What is your phone number?",
+     "level": "A1"
+    },
+    {
+     "en": "Five, five, five, zero, one, two, three. Is that right?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's five, five, five, zero, one, two, three.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, that's right.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Buying a shirt",
+   "context": "A customer asks about a shirt.",
+   "speakerA": [
+    {
+     "en": "Do you have this shirt in blue?",
+     "level": "A1"
+    },
+    {
+     "en": "How much is it?",
+     "level": "A1"
+    },
+    {
+     "en": "OK. I want two, please.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, we do.",
+     "level": "A1"
+    },
+    {
+     "en": "It's twenty dollars.",
+     "level": "A1"
+    },
+    {
+     "en": "Sure.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

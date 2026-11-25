@@ -1,0 +1,169 @@
+{
+ "topic": "My Family",
+ "scenarios": [
+  {
+   "scenario": "A family photo",
+   "context": "Someone shows a photo on a phone.",
+   "speakerA": [
+    {
+     "en": "Who is this?",
+     "level": "A1"
+    },
+    {
+     "en": "She is very nice. And who is this?",
+     "level": "A1"
+    },
+    {
+     "en": "Do you have a brother?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "This is my mother.",
+     "level": "A1"
+    },
+    {
+     "en": "This is my father. He is tall.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I have one brother and one sister.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Do you have children?",
+   "context": "Two parents talk.",
+   "speakerA": [
+    {
+     "en": "Do you have any children?",
+     "level": "A1"
+    },
+    {
+     "en": "Boys or girls?",
+     "level": "A1"
+    },
+    {
+     "en": "How old are they?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, I have two children.",
+     "level": "A1"
+    },
+    {
+     "en": "One boy and one girl.",
+     "level": "A1"
+    },
+    {
+     "en": "My son is six and my daughter is four.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Grandparents",
+   "context": "Two friends talk about their grandparents.",
+   "speakerA": [
+    {
+     "en": "Where do your grandparents live?",
+     "level": "A1"
+    },
+    {
+     "en": "Do you see them?",
+     "level": "A1"
+    },
+    {
+     "en": "That's nice. I love my grandmother.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "They live in a small town.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I see them on weekends.",
+     "level": "A1"
+    },
+    {
+     "en": "Me too. She makes good soup.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A big family",
+   "context": "Two people talk about their homes.",
+   "speakerA": [
+    {
+     "en": "Is your family big?",
+     "level": "A1"
+    },
+    {
+     "en": "Wow! Who lives in your house?",
+     "level": "A1"
+    },
+    {
+     "en": "I live with my sister.",
+     "level": "A1"
+    },
+    {
+     "en": "No, she is younger.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, it is. We are six people.",
+     "level": "A1"
+    },
+    {
+     "en": "My parents, my two brothers and my grandmother.",
+     "level": "A1"
+    },
+    {
+     "en": "Is she older than you?",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "My husband and my wife",
+   "context": "Two coworkers talk about their partners.",
+   "speakerA": [
+    {
+     "en": "Are you married?",
+     "level": "A1"
+    },
+    {
+     "en": "Do you have a photo?",
+     "level": "A1"
+    },
+    {
+     "en": "She is beautiful!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, I am. My wife's name is Laura.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, here. This is my wife.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you!",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

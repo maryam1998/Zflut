@@ -1,0 +1,165 @@
+{
+ "topic": "I Want / I Don't Want",
+ "scenarios": [
+  {
+   "scenario": "Tea or coffee",
+   "context": "A host asks a guest.",
+   "speakerA": [
+    {
+     "en": "Do you want tea or coffee?",
+     "level": "A1"
+    },
+    {
+     "en": "With sugar?",
+     "level": "A1"
+    },
+    {
+     "en": "Here is your tea.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I want tea, please.",
+     "level": "A1"
+    },
+    {
+     "en": "No, I don't want sugar.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Dinner plans",
+   "context": "Two people choose dinner.",
+   "speakerA": [
+    {
+     "en": "What do you want for dinner?",
+     "level": "A1"
+    },
+    {
+     "en": "I don't want chicken. I want fish.",
+     "level": "A1"
+    },
+    {
+     "en": "Great! Let's cook.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I want rice and chicken.",
+     "level": "A1"
+    },
+    {
+     "en": "OK, fish is good. I want fish too.",
+     "level": "A1"
+    },
+    {
+     "en": "Good idea.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Shopping for a bag",
+   "context": "A customer looks at bags.",
+   "speakerA": [
+    {
+     "en": "Do you want this bag?",
+     "level": "A1"
+    },
+    {
+     "en": "Do you want that one?",
+     "level": "A1"
+    },
+    {
+     "en": "It's thirty dollars.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "No, I don't want it. It's too big.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I want that one. It's small and nice.",
+     "level": "A1"
+    },
+    {
+     "en": "OK, I want it.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Weekend plans",
+   "context": "Two friends plan a day.",
+   "speakerA": [
+    {
+     "en": "What do you want to do today?",
+     "level": "A1"
+    },
+    {
+     "en": "I want to go to the park.",
+     "level": "A1"
+    },
+    {
+     "en": "OK, let's go tomorrow.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I want to stay home.",
+     "level": "A1"
+    },
+    {
+     "en": "I don't want to walk. I'm tired.",
+     "level": "A1"
+    },
+    {
+     "en": "Good, thank you.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Saying no politely",
+   "context": "A host offers food and drink.",
+   "speakerA": [
+    {
+     "en": "Do you want some cake?",
+     "level": "A1"
+    },
+    {
+     "en": "Do you want some tea?",
+     "level": "A1"
+    },
+    {
+     "en": "OK. One tea.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "No, thank you. I'm not hungry.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, please. I want some tea.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

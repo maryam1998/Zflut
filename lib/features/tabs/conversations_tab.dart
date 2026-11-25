@@ -29,6 +29,7 @@ import '../../core/widgets/level_chips.dart';
 import '../../core/widgets/range_card.dart';
 import '../../core/widgets/sync_item_card.dart';
 import '../shell/widgets/shell_header.dart';
+import '../words/widgets/stage_chips_bar.dart' show StageChips;
 import '../shell/widgets/spotlight_tour.dart' show TourTarget, SpotlightTour;
 import '_hope_panel.dart' show uiContentDirection;
 import 'scenario_practice.dart' show ScenarioPracticeSection;
@@ -242,6 +243,16 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   final TextEditingController _searchCtrl = TextEditingController();
   final GlobalKey _searchKey = GlobalKey(); // با رفتن به حالتِ «بدون نتیجه» فوکوسِ کیبورد نپرد
   Set<String> _levels = <String>{};
+
+  /// 🎒 true = «Primary School ▸ A1» (فقط موضوع‌های kind=='primary')
+  bool _primary = false;
+
+  void _setPrimary(bool v) => setState(() {
+        _primary = v;
+        _levels = <String>{}; // سطح در این نما معنا ندارد
+        _rangeFrom = 1;
+        _rangeTo = 65;
+      });
 
   // ───────────── 🔍 جستجوی سراسریِ تبِ Talk ─────────────
   // متنِ مکالمه‌ها «تنبل» لود می‌شود (در لیستِ موضوع‌ها scenarios خالی است)؛
@@ -510,7 +521,10 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   Widget _buildBody(BuildContext context) {
     final c = context.appColors;
     ref.watch(isProProvider); // با عوض شدنِ وضعیتِ Pro قفل‌ها به‌روز شوند
-    final topics = ref.watch(allTopicsProvider);
+    final topics = [
+      for (final t in ref.watch(allTopicsProvider))
+        if ((t.kind == 'primary') == _primary) t,
+    ];
     // 📚 شمارشِ جمله‌ی هر موضوع به‌تفکیکِ سطح (همه لازم دارند: متنِ موضوع‌ها لود تنبل است)
     final index = ref.watch(conversationsIndexProvider).valueOrNull;
 
@@ -563,15 +577,24 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            LevelChipsMulti(
-              selected: _levels,
-              onChanged: (v) => setState(() {
-                _levels = v;
-                _rangeFrom = 1;
-                _rangeTo = 65;
-              }),
+            StageChips(
+              primary: _primary,
+              onAll: () => _setPrimary(false),
+              onPrimary: () => _setPrimary(true),
+              onLevel: () => _setPrimary(true),
             ),
             const SizedBox(height: 8),
+            if (!_primary) ...[
+              LevelChipsMulti(
+                selected: _levels,
+                onChanged: (v) => setState(() {
+                  _levels = v;
+                  _rangeFrom = 1;
+                  _rangeTo = 65;
+                }),
+              ),
+              const SizedBox(height: 8),
+            ],
             _searchField(),
           ],
         ),

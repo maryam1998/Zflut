@@ -1,0 +1,161 @@
+{
+ "topic": "What Is This?",
+ "scenarios": [
+  {
+   "scenario": "In an office",
+   "context": "Two coworkers talk about things on a desk.",
+   "speakerA": [
+    {
+     "en": "What is this?",
+     "level": "A1"
+    },
+    {
+     "en": "And what is that?",
+     "level": "A1"
+    },
+    {
+     "en": "Is it your notebook?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's a pen.",
+     "level": "A1"
+    },
+    {
+     "en": "That is a notebook.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, it is.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A lost bag",
+   "context": "Someone finds a bag in a room.",
+   "speakerA": [
+    {
+     "en": "Excuse me, is this your bag?",
+     "level": "A1"
+    },
+    {
+     "en": "Is that your bag?",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "No, it isn't. My bag is black.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, it is! Thank you!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Moving to a new apartment",
+   "context": "Two friends carry boxes.",
+   "speakerA": [
+    {
+     "en": "What's in this box?",
+     "level": "A1"
+    },
+    {
+     "en": "And in that box?",
+     "level": "A1"
+    },
+    {
+     "en": "Where is the table?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Books and cups.",
+     "level": "A1"
+    },
+    {
+     "en": "A lamp and a clock.",
+     "level": "A1"
+    },
+    {
+     "en": "It's next to the window.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "In a classroom",
+   "context": "A teacher and a student in an English class.",
+   "speakerA": [
+    {
+     "en": "Open your book, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Page ten.",
+     "level": "A1"
+    },
+    {
+     "en": "Here, take my pen.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Which page?",
+     "level": "A1"
+    },
+    {
+     "en": "I don't have my pen.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Words in English",
+   "context": "A learner asks for English words.",
+   "speakerA": [
+    {
+     "en": "What is this in English?",
+     "level": "A1"
+    },
+    {
+     "en": "And this?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. I like English.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's a spoon.",
+     "level": "A1"
+    },
+    {
+     "en": "It's a fork.",
+     "level": "A1"
+    },
+    {
+     "en": "Me too.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

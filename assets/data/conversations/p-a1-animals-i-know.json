@@ -1,0 +1,165 @@
+{
+ "topic": "Animals I Know",
+ "scenarios": [
+  {
+   "scenario": "A neighbor's dog",
+   "context": "Two people see a dog.",
+   "speakerA": [
+    {
+     "en": "Look! A dog!",
+     "level": "A1"
+    },
+    {
+     "en": "No, it's my neighbor's dog.",
+     "level": "A1"
+    },
+    {
+     "en": "Its name is Max.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's a big dog. Is it yours?",
+     "level": "A1"
+    },
+    {
+     "en": "What's its name?",
+     "level": "A1"
+    },
+    {
+     "en": "I like dogs.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Do you have a pet?",
+   "context": "Two coworkers talk about pets.",
+   "speakerA": [
+    {
+     "en": "Do you have a pet?",
+     "level": "A1"
+    },
+    {
+     "en": "What color is it?",
+     "level": "A1"
+    },
+    {
+     "en": "What's its name?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, I have a cat.",
+     "level": "A1"
+    },
+    {
+     "en": "It's white and black.",
+     "level": "A1"
+    },
+    {
+     "en": "Luna. She is very small.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "At the zoo",
+   "context": "Two friends visit a zoo.",
+   "speakerA": [
+    {
+     "en": "Look at the elephant!",
+     "level": "A1"
+    },
+    {
+     "en": "Do you like monkeys?",
+     "level": "A1"
+    },
+    {
+     "en": "Let's go and see them.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's so big!",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I do. They are funny.",
+     "level": "A1"
+    },
+    {
+     "en": "OK, let's go.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Birds and fish",
+   "context": "Two people talk about animals at home.",
+   "speakerA": [
+    {
+     "en": "Do you have birds in your garden?",
+     "level": "A1"
+    },
+    {
+     "en": "What do they eat?",
+     "level": "A1"
+    },
+    {
+     "en": "I have two fish at home.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, I have many birds.",
+     "level": "A1"
+    },
+    {
+     "en": "They eat bread.",
+     "level": "A1"
+    },
+    {
+     "en": "Fish are nice.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Cats or dogs?",
+   "context": "Two friends talk about what they like.",
+   "speakerA": [
+    {
+     "en": "Do you like cats?",
+     "level": "A1"
+    },
+    {
+     "en": "I don't like cats. I like dogs.",
+     "level": "A1"
+    },
+    {
+     "en": "Do you have a dog?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, I do. I like cats very much.",
+     "level": "A1"
+    },
+    {
+     "en": "Dogs are good too.",
+     "level": "A1"
+    },
+    {
+     "en": "No, I don't.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

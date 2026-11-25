@@ -37,8 +37,13 @@ class ProStatus {
   static final ValueNotifier<bool> pro = ValueNotifier<bool>(false);
   static bool get isPro => pro.value;
 
+  /// 🎒 موضوع‌های مکالمه‌ی Primary School (A1) — برای همه باز؛ ConversationRepository پرشان می‌کند.
+  static final Set<String> freeExtraTopics = <String>{};
+
   static bool topicLocked(String topic) =>
-      !isPro && !kFreeConversationTopics.contains(topic);
+      !isPro &&
+      !kFreeConversationTopics.contains(topic) &&
+      !freeExtraTopics.contains(topic);
 }
 
 /// برای ویجت‌ها: با عوض‌شدنِ وضعیتِ Pro دوباره build می‌شوند.

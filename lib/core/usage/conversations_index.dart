@@ -157,7 +157,17 @@ Future<ConversationsIndex?> _load() async {
   try {
     final raw =
         await rootBundle.loadString('assets/data/conversations_index.json');
-    return ConversationsIndex.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    final j = jsonDecode(raw) as Map<String, dynamic>;
+    // 🎒 شمارشِ موضوع‌های Primary School ▸ A1 (همه رایگان)
+    try {
+      final pr = await rootBundle
+          .loadString('assets/data/primary_conversations_index.json');
+      final pj = jsonDecode(pr) as Map<String, dynamic>;
+      final pt = pj['topics'];
+      final base = j['topics'];
+      if (pt is Map && base is Map) base.addAll(pt);
+    } catch (_) {}
+    return ConversationsIndex.fromJson(j);
   } catch (e) {
     debugPrint('ConversationsIndex: $e');
     return null;

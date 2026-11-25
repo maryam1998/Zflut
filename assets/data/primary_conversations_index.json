@@ -1,0 +1,225 @@
+{
+ "v": 1,
+ "stage": "primary",
+ "level": "A1",
+ "list": [
+  {
+   "id": "p-a1-introducing-yourself",
+   "kind": "primary",
+   "topic": "Introducing Yourself"
+  },
+  {
+   "id": "p-a1-name-and-age",
+   "kind": "primary",
+   "topic": "Name and Age"
+  },
+  {
+   "id": "p-a1-my-family",
+   "kind": "primary",
+   "topic": "My Family"
+  },
+  {
+   "id": "p-a1-what-is-this",
+   "kind": "primary",
+   "topic": "What Is This?"
+  },
+  {
+   "id": "p-a1-colors-and-numbers",
+   "kind": "primary",
+   "topic": "Colors and Numbers"
+  },
+  {
+   "id": "p-a1-animals-i-know",
+   "kind": "primary",
+   "topic": "Animals I Know"
+  },
+  {
+   "id": "p-a1-how-do-you-feel",
+   "kind": "primary",
+   "topic": "How Do You Feel?"
+  },
+  {
+   "id": "p-a1-water-food-help",
+   "kind": "primary",
+   "topic": "Asking for Water, Food or Help"
+  },
+  {
+   "id": "p-a1-i-want-i-dont-want",
+   "kind": "primary",
+   "topic": "I Want / I Don't Want"
+  }
+ ],
+ "topics": {
+  "Introducing Yourself": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Name and Age": {
+   "s": 5,
+   "t": [
+    31,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    31,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "My Family": {
+   "s": 5,
+   "t": [
+    31,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    31,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "What Is This?": {
+   "s": 5,
+   "t": [
+    29,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    29,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Colors and Numbers": {
+   "s": 5,
+   "t": [
+    29,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    29,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Animals I Know": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "How Do You Feel?": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Asking for Water, Food or Help": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "I Want / I Don't Want": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  }
+ }
+}

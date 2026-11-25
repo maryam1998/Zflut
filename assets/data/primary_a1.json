@@ -11,233 +11,233 @@
     {
      "id": 900001,
      "level": "A1",
-     "pos": "letter",
-     "en": "A",
-     "fa": "حرف A — مثل Apple (سیب)"
+     "pos": "other",
+     "en": "A for Apple",
+     "fa": ""
     },
     {
      "id": 900002,
      "level": "A1",
-     "pos": "letter",
-     "en": "B",
-     "fa": "حرف B — مثل Ball (توپ)"
+     "pos": "other",
+     "en": "B for Ball",
+     "fa": ""
     },
     {
      "id": 900003,
      "level": "A1",
-     "pos": "letter",
-     "en": "C",
-     "fa": "حرف C — مثل Cat (گربه)"
+     "pos": "other",
+     "en": "C for Cat",
+     "fa": ""
     },
     {
      "id": 900004,
      "level": "A1",
-     "pos": "letter",
-     "en": "D",
-     "fa": "حرف D — مثل Dog (سگ)"
+     "pos": "other",
+     "en": "D for Dog",
+     "fa": ""
     },
     {
      "id": 900005,
      "level": "A1",
-     "pos": "letter",
-     "en": "E",
-     "fa": "حرف E — مثل Egg (تخم‌مرغ)"
+     "pos": "other",
+     "en": "E for Egg",
+     "fa": ""
     },
     {
      "id": 900006,
      "level": "A1",
-     "pos": "letter",
-     "en": "F",
-     "fa": "حرف F — مثل Fish (ماهی)"
+     "pos": "other",
+     "en": "F for Fish",
+     "fa": ""
     },
     {
      "id": 900007,
      "level": "A1",
-     "pos": "letter",
-     "en": "G",
-     "fa": "حرف G — مثل Girl (دختر)"
+     "pos": "other",
+     "en": "G for Girl",
+     "fa": ""
     },
     {
      "id": 900008,
      "level": "A1",
-     "pos": "letter",
-     "en": "H",
-     "fa": "حرف H — مثل Hat (کلاه)"
+     "pos": "other",
+     "en": "H for Hat",
+     "fa": ""
     },
     {
      "id": 900009,
      "level": "A1",
-     "pos": "letter",
-     "en": "I",
-     "fa": "حرف I — مثل Ice (یخ)"
+     "pos": "other",
+     "en": "I for Ice",
+     "fa": ""
     },
     {
      "id": 900010,
      "level": "A1",
-     "pos": "letter",
-     "en": "J",
-     "fa": "حرف J — مثل Juice (آبمیوه)"
+     "pos": "other",
+     "en": "J for Juice",
+     "fa": ""
     },
     {
      "id": 900011,
      "level": "A1",
-     "pos": "letter",
-     "en": "K",
-     "fa": "حرف K — مثل Key (کلید)"
+     "pos": "other",
+     "en": "K for Key",
+     "fa": ""
     },
     {
      "id": 900012,
      "level": "A1",
-     "pos": "letter",
-     "en": "L",
-     "fa": "حرف L — مثل Lion (شیر)"
+     "pos": "other",
+     "en": "L for Lion",
+     "fa": ""
     },
     {
      "id": 900013,
      "level": "A1",
-     "pos": "letter",
-     "en": "M",
-     "fa": "حرف M — مثل Moon (ماه)"
+     "pos": "other",
+     "en": "M for Moon",
+     "fa": ""
     },
     {
      "id": 900014,
      "level": "A1",
-     "pos": "letter",
-     "en": "N",
-     "fa": "حرف N — مثل Nose (بینی)"
+     "pos": "other",
+     "en": "N for Nose",
+     "fa": ""
     },
     {
      "id": 900015,
      "level": "A1",
-     "pos": "letter",
-     "en": "O",
-     "fa": "حرف O — مثل Orange (پرتقال)"
+     "pos": "other",
+     "en": "O for Orange",
+     "fa": ""
     },
     {
      "id": 900016,
      "level": "A1",
-     "pos": "letter",
-     "en": "P",
-     "fa": "حرف P — مثل Pen (خودکار)"
+     "pos": "other",
+     "en": "P for Pen",
+     "fa": ""
     },
     {
      "id": 900017,
      "level": "A1",
-     "pos": "letter",
-     "en": "Q",
-     "fa": "حرف Q — مثل Queen (ملکه)"
+     "pos": "other",
+     "en": "Q for Queen",
+     "fa": ""
     },
     {
      "id": 900018,
      "level": "A1",
-     "pos": "letter",
-     "en": "R",
-     "fa": "حرف R — مثل Red (قرمز)"
+     "pos": "other",
+     "en": "R for Red",
+     "fa": ""
     },
     {
      "id": 900019,
      "level": "A1",
-     "pos": "letter",
-     "en": "S",
-     "fa": "حرف S — مثل Sun (خورشید)"
+     "pos": "other",
+     "en": "S for Sun",
+     "fa": ""
     },
     {
      "id": 900020,
      "level": "A1",
-     "pos": "letter",
-     "en": "T",
-     "fa": "حرف T — مثل Tree (درخت)"
+     "pos": "other",
+     "en": "T for Tree",
+     "fa": ""
     },
     {
      "id": 900021,
      "level": "A1",
-     "pos": "letter",
-     "en": "U",
-     "fa": "حرف U — مثل Umbrella (چتر)"
+     "pos": "other",
+     "en": "U for Umbrella",
+     "fa": ""
     },
     {
      "id": 900022,
      "level": "A1",
-     "pos": "letter",
-     "en": "V",
-     "fa": "حرف V — مثل Van (ون)"
+     "pos": "other",
+     "en": "V for Van",
+     "fa": ""
     },
     {
      "id": 900023,
      "level": "A1",
-     "pos": "letter",
-     "en": "W",
-     "fa": "حرف W — مثل Water (آب)"
+     "pos": "other",
+     "en": "W for Water",
+     "fa": ""
     },
     {
      "id": 900024,
      "level": "A1",
-     "pos": "letter",
-     "en": "X",
-     "fa": "حرف X — مثل Box (جعبه (صدای ks))"
+     "pos": "other",
+     "en": "X for X-ray",
+     "fa": ""
     },
     {
      "id": 900025,
      "level": "A1",
-     "pos": "letter",
-     "en": "Y",
-     "fa": "حرف Y — مثل Yellow (زرد)"
+     "pos": "other",
+     "en": "Y for Yellow",
+     "fa": ""
     },
     {
      "id": 900026,
      "level": "A1",
-     "pos": "letter",
-     "en": "Z",
-     "fa": "حرف Z — مثل Zebra (گورخر)"
+     "pos": "other",
+     "en": "Z for Zebra",
+     "fa": ""
     },
     {
      "id": 900027,
      "level": "A1",
      "pos": "noun",
      "en": "alphabet",
-     "fa": "الفبا"
+     "fa": ""
     },
     {
      "id": 900028,
      "level": "A1",
      "pos": "noun",
      "en": "letter",
-     "fa": "حرف"
+     "fa": ""
     },
     {
      "id": 900029,
      "level": "A1",
      "pos": "noun",
      "en": "word",
-     "fa": "کلمه"
+     "fa": ""
     },
     {
      "id": 900030,
      "level": "A1",
      "pos": "noun",
      "en": "sound",
-     "fa": "صدا"
+     "fa": ""
     },
     {
      "id": 900031,
      "level": "A1",
      "pos": "noun",
      "en": "vowel",
-     "fa": "حرف صدادار"
+     "fa": ""
     },
     {
      "id": 900032,
      "level": "A1",
      "pos": "noun",
      "en": "consonant",
-     "fa": "حرف بی‌صدا"
+     "fa": ""
     },
     {
      "id": 900033,
      "level": "A1",
      "pos": "verb",
      "en": "spell",
-     "fa": "هجی کردن"
+     "fa": ""
     }
    ]
   },
@@ -552,7 +552,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "gray",
-     "fa": "خاکستری"
+     "fa": ""
     },
     {
      "id": 101983,
@@ -580,7 +580,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "color",
-     "fa": "رنگ"
+     "fa": ""
     }
    ]
   },
@@ -608,14 +608,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "triangle",
-     "fa": "مثلث"
+     "fa": ""
     },
     {
      "id": 900037,
      "level": "A1",
      "pos": "noun",
      "en": "rectangle",
-     "fa": "مستطیل"
+     "fa": ""
     },
     {
      "id": 104194,
@@ -636,7 +636,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "oval",
-     "fa": "بیضی"
+     "fa": ""
     },
     {
      "id": 101259,
@@ -741,14 +741,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "duck",
-     "fa": "اردک"
+     "fa": ""
     },
     {
      "id": 900040,
      "level": "A1",
      "pos": "noun",
      "en": "rabbit",
-     "fa": "خرگوش"
+     "fa": ""
     },
     {
      "id": 102858,
@@ -769,7 +769,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "tiger",
-     "fa": "ببر"
+     "fa": ""
     },
     {
      "id": 100412,
@@ -804,42 +804,42 @@
      "level": "A1",
      "pos": "noun",
      "en": "turtle",
-     "fa": "لاک‌پشت"
+     "fa": ""
     },
     {
      "id": 900043,
      "level": "A1",
      "pos": "noun",
      "en": "butterfly",
-     "fa": "پروانه"
+     "fa": ""
     },
     {
      "id": 900044,
      "level": "A1",
      "pos": "noun",
      "en": "giraffe",
-     "fa": "زرافه"
+     "fa": ""
     },
     {
      "id": 900045,
      "level": "A1",
      "pos": "noun",
      "en": "zebra",
-     "fa": "گورخر"
+     "fa": ""
     },
     {
      "id": 900046,
      "level": "A1",
      "pos": "noun",
      "en": "goat",
-     "fa": "بز"
+     "fa": ""
     },
     {
      "id": 900047,
      "level": "A1",
      "pos": "noun",
      "en": "donkey",
-     "fa": "الاغ"
+     "fa": ""
     },
     {
      "id": 100421,
@@ -853,7 +853,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "ant",
-     "fa": "مورچه"
+     "fa": ""
     },
     {
      "id": 104152,
@@ -867,63 +867,63 @@
      "level": "A1",
      "pos": "noun",
      "en": "wolf",
-     "fa": "گرگ"
+     "fa": ""
     },
     {
      "id": 900050,
      "level": "A1",
      "pos": "noun",
      "en": "fox",
-     "fa": "روباه"
+     "fa": ""
     },
     {
      "id": 900051,
      "level": "A1",
      "pos": "noun",
      "en": "deer",
-     "fa": "آهو"
+     "fa": ""
     },
     {
      "id": 900052,
      "level": "A1",
      "pos": "noun",
      "en": "camel",
-     "fa": "شتر"
+     "fa": ""
     },
     {
      "id": 900053,
      "level": "A1",
      "pos": "noun",
      "en": "owl",
-     "fa": "جغد"
+     "fa": ""
     },
     {
      "id": 900054,
      "level": "A1",
      "pos": "noun",
      "en": "eagle",
-     "fa": "عقاب"
+     "fa": ""
     },
     {
      "id": 900055,
      "level": "A1",
      "pos": "noun",
      "en": "dolphin",
-     "fa": "دلفین"
+     "fa": ""
     },
     {
      "id": 900056,
      "level": "A1",
      "pos": "noun",
      "en": "shark",
-     "fa": "کوسه"
+     "fa": ""
     },
     {
      "id": 900057,
      "level": "A1",
      "pos": "noun",
      "en": "whale",
-     "fa": "نهنگ"
+     "fa": ""
     },
     {
      "id": 104072,
@@ -1021,7 +1021,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "teeth",
-     "fa": "دندان‌ها"
+     "fa": ""
     },
     {
      "id": 104536,
@@ -1042,7 +1042,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "chin",
-     "fa": "چانه"
+     "fa": ""
     },
     {
      "id": 102906,
@@ -1112,7 +1112,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "feet",
-     "fa": "کف پاها"
+     "fa": ""
     },
     {
      "id": 104526,
@@ -1168,7 +1168,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "mom",
-     "fa": "مامان"
+     "fa": ""
     },
     {
      "id": 101110,
@@ -1217,14 +1217,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "grandma",
-     "fa": "مادربزرگ (خودمانی)"
+     "fa": ""
     },
     {
      "id": 900063,
      "level": "A1",
      "pos": "noun",
      "en": "grandpa",
-     "fa": "پدربزرگ (خودمانی)"
+     "fa": ""
     },
     {
      "id": 104653,
@@ -1280,7 +1280,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "children",
-     "fa": "کودکان"
+     "fa": ""
     },
     {
      "id": 102189,
@@ -1469,7 +1469,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "pizza",
-     "fa": "پیتزا"
+     "fa": ""
     },
     {
      "id": 100594,
@@ -1546,7 +1546,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "grape",
-     "fa": "انگور"
+     "fa": ""
     },
     {
      "id": 102551,
@@ -1560,35 +1560,35 @@
      "level": "A1",
      "pos": "noun",
      "en": "strawberry",
-     "fa": "توت‌فرنگی"
+     "fa": ""
     },
     {
      "id": 900068,
      "level": "A1",
      "pos": "noun",
      "en": "watermelon",
-     "fa": "هندوانه"
+     "fa": ""
     },
     {
      "id": 900069,
      "level": "A1",
      "pos": "noun",
      "en": "peach",
-     "fa": "هلو"
+     "fa": ""
     },
     {
      "id": 900070,
      "level": "A1",
      "pos": "noun",
      "en": "pear",
-     "fa": "گلابی"
+     "fa": ""
     },
     {
      "id": 900071,
      "level": "A1",
      "pos": "noun",
      "en": "cherry",
-     "fa": "گیلاس"
+     "fa": ""
     },
     {
      "id": 104532,
@@ -1623,7 +1623,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "cucumber",
-     "fa": "خیار"
+     "fa": ""
     }
    ]
   },
@@ -1672,21 +1672,21 @@
      "level": "A1",
      "pos": "noun",
      "en": "eraser",
-     "fa": "پاک‌کن"
+     "fa": ""
     },
     {
      "id": 900074,
      "level": "A1",
      "pos": "noun",
      "en": "ruler",
-     "fa": "خط‌کش"
+     "fa": ""
     },
     {
      "id": 900075,
      "level": "A1",
      "pos": "noun",
      "en": "scissors",
-     "fa": "قیچی"
+     "fa": ""
     },
     {
      "id": 100371,
@@ -1847,14 +1847,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "doll",
-     "fa": "عروسک"
+     "fa": ""
     },
     {
      "id": 900077,
      "level": "A1",
      "pos": "noun",
      "en": "kite",
-     "fa": "بادبادک"
+     "fa": ""
     },
     {
      "id": 100378,
@@ -1945,7 +1945,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "sleepy",
-     "fa": "خواب‌آلود"
+     "fa": ""
     },
     {
      "id": 103996,
@@ -2041,30 +2041,30 @@
     {
      "id": 900079,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "good morning",
-     "fa": "صبح بخیر"
+     "fa": ""
     },
     {
      "id": 900080,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "good afternoon",
-     "fa": "ظهر/عصر بخیر"
+     "fa": ""
     },
     {
      "id": 900081,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "good evening",
-     "fa": "عصر بخیر"
+     "fa": ""
     },
     {
      "id": 900082,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "good night",
-     "fa": "شب بخیر"
+     "fa": ""
     },
     {
      "id": 104451,
@@ -2076,16 +2076,16 @@
     {
      "id": 900083,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "thank you",
-     "fa": "متشکرم"
+     "fa": ""
     },
     {
      "id": 900084,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "you're welcome",
-     "fa": "خواهش می‌کنم"
+     "fa": ""
     },
     {
      "id": 103270,
@@ -2104,9 +2104,9 @@
     {
      "id": 900085,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "excuse me",
-     "fa": "ببخشید (برای جلب توجه)"
+     "fa": ""
     },
     {
      "id": 104941,
@@ -2132,30 +2132,30 @@
     {
      "id": 900086,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "nice to meet you",
-     "fa": "از آشنایی با شما خوشحالم"
+     "fa": ""
     },
     {
      "id": 900087,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "how are you?",
-     "fa": "حال شما چطور است؟"
+     "fa": ""
     },
     {
      "id": 900088,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I'm fine",
-     "fa": "من خوبم"
+     "fa": ""
     },
     {
      "id": 900089,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "see you later",
-     "fa": "بعداً می‌بینمت"
+     "fa": ""
     }
    ]
   },
@@ -2167,142 +2167,142 @@
     {
      "id": 900090,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "My name is ...",
-     "fa": "اسم من ... است"
+     "fa": ""
     },
     {
      "id": 900091,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I am ...",
-     "fa": "من ... هستم"
+     "fa": ""
     },
     {
      "id": 900092,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I am ... years old.",
-     "fa": "من ... ساله‌ام."
+     "fa": ""
     },
     {
      "id": 900093,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I have ...",
-     "fa": "من ... دارم"
+     "fa": ""
     },
     {
      "id": 900094,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I like ...",
-     "fa": "من ... را دوست دارم"
+     "fa": ""
     },
     {
      "id": 900095,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I want ...",
-     "fa": "من ... می‌خواهم"
+     "fa": ""
     },
     {
      "id": 900096,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I don't want ...",
-     "fa": "من ... نمی‌خواهم"
+     "fa": ""
     },
     {
      "id": 900097,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "What's your name?",
-     "fa": "اسمت چیست؟"
+     "fa": ""
     },
     {
      "id": 900098,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "How old are you?",
-     "fa": "چند سال داری؟"
+     "fa": ""
     },
     {
      "id": 900099,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "What is this?",
-     "fa": "این چیست؟"
+     "fa": ""
     },
     {
      "id": 900100,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "It's a cat.",
-     "fa": "این یک گربه است."
+     "fa": ""
     },
     {
      "id": 900101,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "This is my mother.",
-     "fa": "این مادر من است."
+     "fa": ""
     },
     {
      "id": 900102,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "What color is it?",
-     "fa": "چه رنگی است؟"
+     "fa": ""
     },
     {
      "id": 900103,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "How many?",
-     "fa": "چند تا؟"
+     "fa": ""
     },
     {
      "id": 900104,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I'm hungry.",
-     "fa": "من گرسنه‌ام."
+     "fa": ""
     },
     {
      "id": 900105,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I'm thirsty.",
-     "fa": "من تشنه‌ام."
+     "fa": ""
     },
     {
      "id": 900106,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "Can I have some water?",
-     "fa": "می‌توانم کمی آب بخورم؟"
+     "fa": ""
     },
     {
      "id": 900107,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "Can you help me?",
-     "fa": "می‌توانی کمکم کنی؟"
+     "fa": ""
     },
     {
      "id": 900108,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I need help.",
-     "fa": "به کمک نیاز دارم."
+     "fa": ""
     },
     {
      "id": 900109,
      "level": "A1",
-     "pos": "phrase",
+     "pos": "other",
      "en": "I don't understand.",
-     "fa": "متوجه نمی‌شوم."
+     "fa": ""
     }
    ]
   },
@@ -2414,7 +2414,7 @@
      "level": "A1",
      "pos": "verb",
      "en": "wake up",
-     "fa": "بیدار شدن"
+     "fa": ""
     },
     {
      "id": 101432,

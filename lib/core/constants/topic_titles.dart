@@ -10,6 +10,16 @@ final RegExp _faChars = RegExp(r'[\u0600-\u06FF]');
 final RegExp _paren = RegExp(r'^(.*?)\s*\(([^()]*)\)\s*$');
 
 const Map<String, String> _kDailyFa = {
+  // 🎒 Primary School ▸ A1
+  'Introducing Yourself': 'معرفی خود',
+  'Name and Age': 'نام و سن',
+  'My Family': 'خانواده‌ی من',
+  'What Is This?': 'این چیست؟',
+  'Colors and Numbers': 'رنگ‌ها و اعداد',
+  'Animals I Know': 'حیوان‌هایی که می‌شناسم',
+  'How Do You Feel?': 'حال شما چطور است؟',
+  'Asking for Water, Food or Help': 'درخواست آب، غذا یا کمک',
+  "I Want / I Don't Want": 'می‌خواهم / نمی‌خواهم',
   'Greetings and Small Talk': 'سلام و احوال‌پرسی',
   'Introducing People': 'معرفی کردن افراد',
   'Visiting an Old Friend': 'دیدار با دوست قدیمی',

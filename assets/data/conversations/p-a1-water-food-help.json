@@ -1,0 +1,165 @@
+{
+ "topic": "Asking for Water, Food or Help",
+ "scenarios": [
+  {
+   "scenario": "Asking for water",
+   "context": "A guest asks for a drink.",
+   "speakerA": [
+    {
+     "en": "Excuse me, can I have some water, please?",
+     "level": "A1"
+    },
+    {
+     "en": "Cold, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you very much.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Of course. Hot or cold?",
+     "level": "A1"
+    },
+    {
+     "en": "Here you are.",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "At a café",
+   "context": "A customer orders.",
+   "speakerA": [
+    {
+     "en": "Hello. A coffee and a sandwich, please.",
+     "level": "A1"
+    },
+    {
+     "en": "No, thank you. How much is it?",
+     "level": "A1"
+    },
+    {
+     "en": "Here you are.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Anything else?",
+     "level": "A1"
+    },
+    {
+     "en": "It's seven dollars.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. Enjoy!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Asking for help",
+   "context": "A visitor needs the bus stop.",
+   "speakerA": [
+    {
+     "en": "Excuse me. I need help.",
+     "level": "A1"
+    },
+    {
+     "en": "Where is the bus stop?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you for your help.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes. What do you need?",
+     "level": "A1"
+    },
+    {
+     "en": "It's over there, next to the bank.",
+     "level": "A1"
+    },
+    {
+     "en": "No problem.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "I don't understand",
+   "context": "A learner asks someone to repeat.",
+   "speakerA": [
+    {
+     "en": "Sorry, I don't understand. Can you repeat, please?",
+     "level": "A1"
+    },
+    {
+     "en": "Please speak slowly.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you, Peter. Now I understand.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Sure. My name is Peter.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. My... name... is... Peter.",
+     "level": "A1"
+    },
+    {
+     "en": "Good!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A heavy bag",
+   "context": "Someone asks for help with a bag.",
+   "speakerA": [
+    {
+     "en": "Can you help me, please? My bag is heavy.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you so much.",
+     "level": "A1"
+    },
+    {
+     "en": "On the table, please.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Sure. Give me the bag.",
+     "level": "A1"
+    },
+    {
+     "en": "No problem. Where do you want it?",
+     "level": "A1"
+    },
+    {
+     "en": "Here you go.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

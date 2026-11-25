@@ -1,0 +1,165 @@
+{
+ "topic": "How Do You Feel?",
+ "scenarios": [
+  {
+   "scenario": "How are you today?",
+   "context": "Two friends meet in the morning.",
+   "speakerA": [
+    {
+     "en": "How are you today?",
+     "level": "A1"
+    },
+    {
+     "en": "I'm tired.",
+     "level": "A1"
+    },
+    {
+     "en": "I don't sleep well.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'm happy. And you?",
+     "level": "A1"
+    },
+    {
+     "en": "Why are you tired?",
+     "level": "A1"
+    },
+    {
+     "en": "Go home and rest.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Hungry and thirsty",
+   "context": "Two coworkers want lunch.",
+   "speakerA": [
+    {
+     "en": "Are you hungry?",
+     "level": "A1"
+    },
+    {
+     "en": "Me too. And I'm thirsty.",
+     "level": "A1"
+    },
+    {
+     "en": "Good idea!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, I'm very hungry.",
+     "level": "A1"
+    },
+    {
+     "en": "Let's eat lunch.",
+     "level": "A1"
+    },
+    {
+     "en": "Let's go.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Feeling sick",
+   "context": "A friend is not well.",
+   "speakerA": [
+    {
+     "en": "Are you OK?",
+     "level": "A1"
+    },
+    {
+     "en": "I'm sorry. Do you want water?",
+     "level": "A1"
+    },
+    {
+     "en": "Here you are. Sit down.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "No, I'm sick. My head hurts.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Cold and hot",
+   "context": "Two people in a room.",
+   "speakerA": [
+    {
+     "en": "I'm cold. Close the window, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, thank you.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, of course.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Sure. Are you OK now?",
+     "level": "A1"
+    },
+    {
+     "en": "I'm hot. Can I open the door?",
+     "level": "A1"
+    },
+    {
+     "en": "Thanks.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Good news",
+   "context": "A friend has a new job.",
+   "speakerA": [
+    {
+     "en": "Why are you happy today?",
+     "level": "A1"
+    },
+    {
+     "en": "That's great! I'm happy for you.",
+     "level": "A1"
+    },
+    {
+     "en": "Don't worry. You are good.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I have a new job!",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. I'm a little scared too.",
+     "level": "A1"
+    },
+    {
+     "en": "Thanks.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

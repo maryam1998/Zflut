@@ -6,24 +6,26 @@ import '../../../core/providers/primary_school_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/widgets/category_grid.dart' show categoryAllOpenProvider;
 
-/// ردیفِ بالای تبِ «دیکشنری من»:
+/// ردیفِ چیپ‌های مرحله (مشترک بین تبِ لغات و تبِ مکالمه):
 ///   [همه]  [Primary School]
 /// و وقتی Primary School انتخاب است، زیرش چیپِ سطح: [A1]
-class StageChipsBar extends ConsumerWidget {
-  const StageChipsBar({super.key});
+class StageChips extends StatelessWidget {
+  final bool primary;
+  final VoidCallback onAll;
+  final VoidCallback onPrimary;
+  final VoidCallback onLevel;
+  const StageChips({
+    super.key,
+    required this.primary,
+    required this.onAll,
+    required this.onPrimary,
+    required this.onLevel,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final stage = ref.watch(wordsStageProvider);
+  Widget build(BuildContext context) {
     final ui = Localizations.localeOf(context).languageCode;
     final allLabel = (ui == 'fa' || ui == 'ar') ? 'همه' : 'All';
-    final primary = stage == kStagePrimary;
-
-    void reset() {
-      ref.read(primaryTopicProvider.notifier).state = null;
-      ref.read(categoryAllOpenProvider('primary').notifier).state = false;
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -36,10 +38,7 @@ class StageChipsBar extends ConsumerWidget {
                 child: _StageChip(
                   label: allLabel,
                   active: !primary,
-                  onTap: () {
-                    reset();
-                    ref.read(wordsStageProvider.notifier).state = null;
-                  },
+                  onTap: onAll,
                 ),
               ),
               const SizedBox(width: 7),
@@ -48,11 +47,7 @@ class StageChipsBar extends ConsumerWidget {
                   label: kPrimaryChipLabel,
                   icon: Icons.school_rounded,
                   active: primary,
-                  onTap: () {
-                    reset();
-                    ref.read(wordsStageProvider.notifier).state =
-                        kStagePrimary;
-                  },
+                  onTap: onPrimary,
                 ),
               ),
             ],
@@ -71,7 +66,7 @@ class StageChipsBar extends ConsumerWidget {
                     active: true,
                     color: levelColor('A1'),
                     small: true,
-                    onTap: reset, // برگشت به شبکه‌ی موضوع‌ها
+                    onTap: onLevel, // برگشت به شبکه‌ی موضوع‌ها
                   ),
                 ),
               ],
@@ -79,6 +74,34 @@ class StageChipsBar extends ConsumerWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// نسخه‌ی تبِ لغات (با providerها)
+class StageChipsBar extends ConsumerWidget {
+  const StageChipsBar({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final primary = ref.watch(wordsStageProvider) == kStagePrimary;
+
+    void reset() {
+      ref.read(primaryTopicProvider.notifier).state = null;
+      ref.read(categoryAllOpenProvider('primary').notifier).state = false;
+    }
+
+    return StageChips(
+      primary: primary,
+      onAll: () {
+        reset();
+        ref.read(wordsStageProvider.notifier).state = null;
+      },
+      onPrimary: () {
+        reset();
+        ref.read(wordsStageProvider.notifier).state = kStagePrimary;
+      },
+      onLevel: reset,
     );
   }
 }
