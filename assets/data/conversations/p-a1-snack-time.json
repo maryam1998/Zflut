@@ -1,0 +1,165 @@
+{
+ "topic": "Snack Time",
+ "scenarios": [
+  {
+   "scenario": "It's snack time",
+   "context": "A teacher talks to the children at school.",
+   "speakerA": [
+    {
+     "en": "It's snack time, children.",
+     "level": "A1"
+    },
+    {
+     "en": "Wash your hands first.",
+     "level": "A1"
+    },
+    {
+     "en": "Now sit down, please.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yay! I'm hungry.",
+     "level": "A1"
+    },
+    {
+     "en": "OK, Miss Kim.",
+     "level": "A1"
+    },
+    {
+     "en": "I'm ready.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "What do you have?",
+   "context": "Two children at the table.",
+   "speakerA": [
+    {
+     "en": "What do you have today?",
+     "level": "A1"
+    },
+    {
+     "en": "I have a sandwich.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I do. I love cheese.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I have an apple and a banana.",
+     "level": "A1"
+    },
+    {
+     "en": "Do you like cheese?",
+     "level": "A1"
+    },
+    {
+     "en": "Me too!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Can I have one?",
+   "context": "Two friends share their snack.",
+   "speakerA": [
+    {
+     "en": "Can I have a cookie, please?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. It's very good.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, please. I like grapes.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes. Take one.",
+     "level": "A1"
+    },
+    {
+     "en": "Do you want some grapes?",
+     "level": "A1"
+    },
+    {
+     "en": "Here you are.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Something to drink",
+   "context": "A teacher and a child.",
+   "speakerA": [
+    {
+     "en": "What do you want to drink?",
+     "level": "A1"
+    },
+    {
+     "en": "Here is your cup.",
+     "level": "A1"
+    },
+    {
+     "en": "Don't spill it. Be careful.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Water, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you, Miss.",
+     "level": "A1"
+    },
+    {
+     "en": "I'm careful.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Clean up",
+   "context": "Snack time is over.",
+   "speakerA": [
+    {
+     "en": "Snack time is over.",
+     "level": "A1"
+    },
+    {
+     "en": "Put it in the bin.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, but wash your hands first.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Where does this go?",
+     "level": "A1"
+    },
+    {
+     "en": "Done! Can I play now?",
+     "level": "A1"
+    },
+    {
+     "en": "OK, Miss Kim.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

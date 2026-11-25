@@ -29,9 +29,24 @@
    "topic": "My House and Rooms"
   },
   {
+   "id": "p-a1-my-morning",
+   "kind": "primary",
+   "topic": "My Morning"
+  },
+  {
+   "id": "p-a1-washing-hands-and-brushing-teeth",
+   "kind": "primary",
+   "topic": "Washing Hands and Brushing Teeth"
+  },
+  {
    "id": "p-a1-getting-dressed",
    "kind": "primary",
    "topic": "Getting Dressed"
+  },
+  {
+   "id": "p-a1-snack-time",
+   "kind": "primary",
+   "topic": "Snack Time"
   },
   {
    "id": "p-a1-weather-today",
@@ -371,6 +386,63 @@
    ]
   },
   "I Want / I Don't Want": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "My Morning": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Washing Hands and Brushing Teeth": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Snack Time": {
    "s": 5,
    "t": [
     30,

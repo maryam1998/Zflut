@@ -1,0 +1,165 @@
+{
+ "topic": "Washing Hands and Brushing Teeth",
+ "scenarios": [
+  {
+   "scenario": "Wash your hands",
+   "context": "A mother and a child before lunch.",
+   "speakerA": [
+    {
+     "en": "Wash your hands, please.",
+     "level": "A1"
+    },
+    {
+     "en": "They're dirty. Look!",
+     "level": "A1"
+    },
+    {
+     "en": "Use soap and water.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Why, Mom?",
+     "level": "A1"
+    },
+    {
+     "en": "Oh, yes. I played with the ball.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. I'm washing my hands.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Soap and water",
+   "context": "A child and a father at the sink.",
+   "speakerA": [
+    {
+     "en": "Is the water hot?",
+     "level": "A1"
+    },
+    {
+     "en": "Rub your hands. One, two, three.",
+     "level": "A1"
+    },
+    {
+     "en": "Great! Dry them with the towel.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "No, it's cold.",
+     "level": "A1"
+    },
+    {
+     "en": "My hands are clean now.",
+     "level": "A1"
+    },
+    {
+     "en": "I like the blue towel.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Brush your teeth",
+   "context": "A father and his daughter at night.",
+   "speakerA": [
+    {
+     "en": "Time to brush your teeth.",
+     "level": "A1"
+    },
+    {
+     "en": "It's on the sink. Here.",
+     "level": "A1"
+    },
+    {
+     "en": "Put a little toothpaste on it.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Where is my toothbrush?",
+     "level": "A1"
+    },
+    {
+     "en": "I need toothpaste.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Now I brush.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Morning and night",
+   "context": "Two friends talk about brushing teeth.",
+   "speakerA": [
+    {
+     "en": "Do you brush your teeth every day?",
+     "level": "A1"
+    },
+    {
+     "en": "Do you like your toothpaste?",
+     "level": "A1"
+    },
+    {
+     "en": "Brush for two minutes.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes. In the morning and at night.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I like mint.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. I count: one, two, three.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Clean teeth",
+   "context": "A dentist looks at a boy's teeth.",
+   "speakerA": [
+    {
+     "en": "Open your mouth, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Your teeth are clean. Good job!",
+     "level": "A1"
+    },
+    {
+     "en": "Don't eat too much candy.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Ahh.",
+     "level": "A1"
+    },
+    {
+     "en": "I brush them every day.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. I eat fruit.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

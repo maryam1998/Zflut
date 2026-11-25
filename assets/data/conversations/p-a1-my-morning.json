@@ -1,0 +1,165 @@
+{
+ "topic": "My Morning",
+ "scenarios": [
+  {
+   "scenario": "Wake up!",
+   "context": "A mother wakes her daughter in the morning.",
+   "speakerA": [
+    {
+     "en": "Good morning, Lily. Wake up!",
+     "level": "A1"
+    },
+    {
+     "en": "It's seven o'clock. Time to get up.",
+     "level": "A1"
+    },
+    {
+     "en": "OK, five minutes. Then breakfast.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Good morning, Mom. I'm sleepy.",
+     "level": "A1"
+    },
+    {
+     "en": "Can I sleep five more minutes?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you, Mom.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Look outside",
+   "context": "A father opens the window for his son.",
+   "speakerA": [
+    {
+     "en": "Get up, Tom. Look outside!",
+     "level": "A1"
+    },
+    {
+     "en": "Yes! The sun is up.",
+     "level": "A1"
+    },
+    {
+     "en": "Good boy. Open the window, please.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Is it sunny?",
+     "level": "A1"
+    },
+    {
+     "en": "I'm awake now.",
+     "level": "A1"
+    },
+    {
+     "en": "OK, Dad. It's bright!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Breakfast is ready",
+   "context": "A mother and a child at the table.",
+   "speakerA": [
+    {
+     "en": "Breakfast is ready.",
+     "level": "A1"
+    },
+    {
+     "en": "Do you want milk or juice?",
+     "level": "A1"
+    },
+    {
+     "en": "Eat your egg, too.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'm hungry!",
+     "level": "A1"
+    },
+    {
+     "en": "Milk, please.",
+     "level": "A1"
+    },
+    {
+     "en": "It's good. Thank you.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "What do you eat?",
+   "context": "Two friends talk about breakfast.",
+   "speakerA": [
+    {
+     "en": "What do you eat for breakfast?",
+     "level": "A1"
+    },
+    {
+     "en": "I eat cereal with milk.",
+     "level": "A1"
+    },
+    {
+     "en": "No, I drink juice.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I eat bread and cheese. And you?",
+     "level": "A1"
+    },
+    {
+     "en": "Do you drink tea?",
+     "level": "A1"
+    },
+    {
+     "en": "Me too. I like juice.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Ready for school",
+   "context": "A mother and her daughter before school.",
+   "speakerA": [
+    {
+     "en": "Are you ready, Anna?",
+     "level": "A1"
+    },
+    {
+     "en": "It's by the door.",
+     "level": "A1"
+    },
+    {
+     "en": "Hurry up. The bus is here.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Not yet. Where is my bag?",
+     "level": "A1"
+    },
+    {
+     "en": "Got it. Now my shoes.",
+     "level": "A1"
+    },
+    {
+     "en": "Bye, Mom! See you later.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}
