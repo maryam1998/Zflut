@@ -602,7 +602,7 @@ class AiFirstTranslator {
   static final Map<String, _BatchGroup> _groups = <String, _BatchGroup>{};
   static bool _batchOff = false;
 
-  static Future<String?> _askAi(_Job j) {
+  static Future<String?> _askAi(_Job j, {Duration window = _kBatchWindow}) {
     if (_paused()) return Future<String?>.value(null);
     if (_batchOff) return _askSingle(j);
     final key = '${j.base}|${j.from.isEmpty ? 'auto' : j.from}|${j.to}';
@@ -614,7 +614,7 @@ class AiFirstTranslator {
       g.timer = null;
       unawaited(_flushGroup(key));
     } else {
-      g.timer ??= Timer(_kBatchWindow, () => unawaited(_flushGroup(key)));
+      g.timer ??= Timer(window, () => unawaited(_flushGroup(key)));
     }
     return c.future;
   }
@@ -736,13 +736,94 @@ class AiFirstTranslator {
     });
   }
 
+  // ═══════════════ 🧩 دسته‌ایِ AI برای مثال‌ها ═══════════════
+  /// ترجمه‌ی «یک مثالِ مشکوک» با AI از مسیرِ دسته‌ای: درخواست‌های هم‌زمانِ مثال‌ها (تا [window]) جمع و
+  /// تا ۲۰ تا در «یک» درخواستِ /api/translate-batch فرستاده می‌شوند. null = ترجمه نشد
+  /// (خطا، سهمیه، مکث، خروجیِ نامعتبر) و تصمیمش با صدازننده است. کش‌گذاری با صدازننده است.
+  static Future<String?> askAiBatched({
+    required TranslationService svc,
+    required String base,
+    required String text,
+    required String from,
+    required String to,
+    Duration window = const Duration(milliseconds: 400),
+  }) async {
+    final t = text.trim();
+    if (t.isEmpty || t.length > _kStoryItemMax || _paused()) return null;
+    if (!_kWorkerLangs.contains(to)) return null;
+    if (from.isNotEmpty && from != 'auto' && !_kWorkerLangs.contains(from)) {
+      return null;
+    }
+    try {
+      if (t.length > _kMaxChars) {
+        // مسیرِ تک‌درخواستِ قدیمی سقفِ ۳۰۰ دارد؛ متنِ بلند مستقیم به مسیرِ دسته‌ای می‌رود
+        final r = await translateStoryBatch(
+            base: base, from: from, to: to, texts: [t]);
+        return r.isEmpty ? null : r.first;
+      }
+      return await _askAi(
+          _Job('ex|$from>$to|$t', svc, base, t, from, to),
+          window: window);
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ═══════════════ 📖 دسته‌ایِ AI برای پاراگراف‌های داستان ═══════════════
   // پاراگراف‌های (مشکوکِ) داستان که تا ۲۰۰۰ کاراکترند، در گروه‌های حداکثر ۳۰۰۰ کاراکتر/۲۰ تایی
   // با «یک» درخواستِ /api/translate-batch ترجمه می‌شوند. خروجی هم‌طولِ ورودی است؛
   // null = این مورد ترجمه نشد (طولِ بیش‌ازحد، رد شدن، خطا، مکث) و تصمیمش با صدازننده است.
   // کیفیتِ نهایی را صدازننده می‌سنجد؛ اینجا فقط خروجیِ استدلال/گارد حذف می‌شود.
   static const int _kStoryItemMax = 2000;
+  static const int _kStoryPiece = 1500; // پاراگرافِ بلندتر از سقف به تکه‌هایی تا این اندازه شکسته می‌شود
   static const int _kStoryChunkChars = 3000;
+  static const Set<String> _kNoSpaceJoin = {'zh', 'ja'};
+
+  /// شکستنِ متنِ بلند به تکه‌های ≤ ~۱۵۰۰ کاراکتر، سرِ پایانِ جمله (و در نهایت سرِ فاصله).
+  /// هیچ کاراکتری گم نمی‌شود: join همان متن را می‌دهد.
+  static List<String> _splitLong(String t) {
+    const ends = '.!?؟。…';
+    final sents = <String>[];
+    var start = 0;
+    for (var i = 0; i < t.length; i++) {
+      final ch = t[i];
+      final atEnd = i + 1 >= t.length;
+      if (ends.contains(ch) &&
+          (atEnd || ch == '。' || t[i + 1] == ' ' || t[i + 1] == '\n')) {
+        sents.add(t.substring(start, i + 1).trim());
+        start = i + 1;
+      }
+    }
+    if (start < t.length) sents.add(t.substring(start).trim());
+
+    final pieces = <String>[];
+    var cur = '';
+    void flushCur() {
+      if (cur.isNotEmpty) {
+        pieces.add(cur);
+        cur = '';
+      }
+    }
+
+    for (final s0 in sents) {
+      var sent = s0;
+      if (sent.isEmpty) continue;
+      while (sent.length > _kStoryItemMax) {
+        flushCur();
+        var cut = sent.lastIndexOf(' ', _kStoryPiece);
+        if (cut < _kStoryPiece ~/ 2) cut = _kStoryPiece;
+        pieces.add(sent.substring(0, cut).trim());
+        sent = sent.substring(cut).trim();
+      }
+      if (sent.isEmpty) continue;
+      if (cur.isNotEmpty && cur.length + 1 + sent.length > _kStoryPiece) {
+        flushCur();
+      }
+      cur = cur.isEmpty ? sent : '$cur $sent';
+    }
+    flushCur();
+    return pieces;
+  }
 
   static Future<List<String?>> translateStoryBatch({
     required String base,
@@ -756,33 +837,60 @@ class AiFirstTranslator {
     if (from.isNotEmpty && from != 'auto' && !_kWorkerLangs.contains(from)) {
       return out;
     }
-    // گروه‌بندی بر اساسِ تعداد و مجموعِ کاراکتر
+
+    // ۱) پاراگراف‌های بلند → تکه‌ها (هر تکه یک مورد در دسته)
+    final flat = <String>[]; // متنِ هر مورد
+    final owner = <int>[]; // این مورد مالِ کدام پاراگراف است
+    for (var i = 0; i < texts.length; i++) {
+      final t = texts[i].trim();
+      if (t.isEmpty) continue;
+      final parts = t.length <= _kStoryItemMax ? <String>[t] : _splitLong(t);
+      for (final p in parts) {
+        if (p.isEmpty) continue;
+        flat.add(p);
+        owner.add(i);
+      }
+    }
+
+    // ۲) گروه‌بندی بر اساسِ تعداد و مجموعِ کاراکتر
     final chunks = <List<int>>[];
     var cur = <int>[];
     var acc = 0;
-    for (var i = 0; i < texts.length; i++) {
-      final t = texts[i].trim();
-      if (t.isEmpty || t.length > _kStoryItemMax) continue;
+    for (var i = 0; i < flat.length; i++) {
+      final len = flat[i].length;
       if (cur.isNotEmpty &&
-          (cur.length >= _kBatchMax || acc + t.length > _kStoryChunkChars)) {
+          (cur.length >= _kBatchMax || acc + len > _kStoryChunkChars)) {
         chunks.add(cur);
         cur = <int>[];
         acc = 0;
       }
       cur.add(i);
-      acc += t.length;
+      acc += len;
     }
     if (cur.isNotEmpty) chunks.add(cur);
 
+    final flatOut = List<String?>.filled(flat.length, null);
     for (final idxs in chunks) {
       if (_paused() || _batchOff) break;
       final res = await _askStoryChunk(
-          base, from, to, [for (final i in idxs) texts[i].trim()]);
+          base, from, to, [for (final i in idxs) flat[i]]);
       if (res == null) continue;
       for (var k = 0; k < idxs.length; k++) {
-        out[idxs[k]] = res[k];
+        flatOut[idxs[k]] = res[k];
       }
     }
+
+    // ۳) سرِ هم کردنِ تکه‌ها؛ اگر حتی یک تکه نیامد، کلِ آن پاراگراف null می‌ماند
+    final sep = _kNoSpaceJoin.contains(to) ? '' : ' ';
+    final bucket = <int, List<String?>>{};
+    for (var i = 0; i < flat.length; i++) {
+      bucket.putIfAbsent(owner[i], () => <String?>[]).add(flatOut[i]);
+    }
+    bucket.forEach((o, parts) {
+      if (parts.isNotEmpty && parts.every((x) => x != null && x.isNotEmpty)) {
+        out[o] = parts.join(sep);
+      }
+    });
     return out;
   }
 

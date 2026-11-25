@@ -7,6 +7,7 @@ import '../../core/providers/example_favorites_provider.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/speech_provider.dart';
 import '../../core/providers/translation_provider.dart';
+import '../../core/translate/example_translate.dart' show translateExample;
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/widgets/selection_card.dart' show SelectableSyncText;
 import '../../core/widgets/sync_item_card.dart' show NeuralPathButton;
@@ -184,13 +185,13 @@ class _FavTranslationState extends ConsumerState<_FavTranslation> {
 
   Future<void> _load() async {
     try {
-      final t = await ref.read(translationServiceProvider).translate(
-            text: widget.fav.text,
-            targetLang: widget.target,
-            sourceLang: widget.fav.lang,
-            aiSettings: ref.read(aiSettingsProvider),
-            forceVerify: true,
-          );
+      final t = await translateExample(
+        svc: ref.read(translationServiceProvider),
+        ai: ref.read(aiSettingsProvider),
+        text: widget.fav.text,
+        from: widget.fav.lang,
+        to: widget.target,
+      );
       if (!mounted) return;
       final v = t.trim();
       if (v.isEmpty || v == widget.fav.text.trim()) {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../usage/free_limit.dart';
 import '../usage/pro_status.dart';
 import '../../app.dart';
@@ -8,6 +9,7 @@ import '../ai/word_examples.dart';
 import '../constants/supported_languages.dart';
 import '../providers/ai_settings_provider.dart';
 import '../providers/translation_provider.dart';
+import '../translate/example_translate.dart' show translateExample;
 import '../providers/example_favorites_provider.dart';
 import '../providers/speech_provider.dart';
 import '../../features/reader/widgets/neural_path_dialog.dart';
@@ -652,44 +654,29 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
     }
   }
 
-  /// ⚡ دو مرحله‌ای: اول ترجمه‌ی سریع (ML Kit/کش/مترجم رایگان) فوراً نشان داده می‌شود؛
-  /// بعد در پس‌زمینه با ناظر AI بررسی می‌شود و اگر اصلاحی بود، جایگزین می‌شود.
-  /// (قبلاً تا پایانِ بررسیِ AI هیچ ترجمه‌ای نشان داده نمی‌شد.)
+  /// ⚡ کش ← ترجمه‌ی رایگان (ML Kit/آنلاین) ← فقط اگر مشکوک بود AI (دسته‌ای).
+  /// ترجمه‌ی سالم هیچ‌وقت AI نمی‌خورد؛ اگر مشکوک بود، پیش‌نویسِ رایگان فوراً نشان داده می‌شود
+  /// و بعد با نتیجه‌ی AI جایگزین می‌شود.
   Future<void> _load() async {
     final svc = ref.read(translationServiceProvider);
     final ai = ref.read(aiSettingsProvider);
     final src = widget.example.text.trim();
     bool bad(String t) => t.trim().isEmpty || t.trim() == src;
     try {
-      // مرحله ۱: سریع
-      var fast = '';
-      try {
-        fast = await svc.translate(
-          text: widget.example.text,
-          targetLang: widget.target,
-          sourceLang: widget.langCode,
-          aiSettings: ai,
-        );
-      } catch (_) {}
-      if (!mounted) return;
-      if (!bad(fast)) await _apply(fast.trim());
-
-      // مرحله ۲: بررسیِ AI در پس‌زمینه (کش را دور می‌زند تا واقعاً بررسی شود)
-      var verified = '';
-      try {
-        verified = await svc
-            .translateNetwork(
-              text: widget.example.text,
-              targetLang: widget.target,
-              sourceLang: widget.langCode,
-              aiSettings: ai,
-              forceVerify: true,
-            )
-            .timeout(const Duration(seconds: 25));
-      } catch (_) {}
-      if (!mounted || _refreshing) return;   // کاربر وسطِ کار رفرش زده؛ نتیجه‌ی او مقدم است
-      if (!bad(verified)) {
-        if (verified.trim() != _text) await _apply(verified.trim());
+      final result = await translateExample(
+        svc: svc,
+        ai: ai,
+        text: widget.example.text,
+        from: widget.langCode,
+        to: widget.target,
+        onDraft: (d) {
+          if (!mounted || _refreshing || bad(d)) return;
+          unawaited(_apply(d.trim()));
+        },
+      );
+      if (!mounted || _refreshing) return; // کاربر وسطِ کار رفرش زده؛ نتیجه‌ی او مقدم است
+      if (!bad(result)) {
+        if (result.trim() != _text) await _apply(result.trim());
       } else if (_text.isEmpty) {
         setState(() => _failed = true);
       }
