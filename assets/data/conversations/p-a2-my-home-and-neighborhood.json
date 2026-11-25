@@ -1,0 +1,165 @@
+{
+ "topic": "My Home and Neighborhood",
+ "scenarios": [
+  {
+   "scenario": "My apartment",
+   "context": "Two friends talk about a new home.",
+   "speakerA": [
+    {
+     "en": "Tell me about your new apartment.",
+     "level": "A2"
+    },
+    {
+     "en": "Is it on a high floor?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you have a balcony?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's small, but it's very bright. It has two bedrooms.",
+     "level": "A2"
+    },
+    {
+     "en": "It's on the fifth floor, and there's a lift.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, I have one. I drink my coffee there every morning.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Renting a flat",
+   "context": "A customer talks to an agent.",
+   "speakerA": [
+    {
+     "en": "I'm looking for a flat to rent. Do you have any?",
+     "level": "A2"
+    },
+    {
+     "en": "How many rooms does it have?",
+     "level": "A2"
+    },
+    {
+     "en": "How much is the rent?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes. There's one near the station.",
+     "level": "A2"
+    },
+    {
+     "en": "Three rooms, a kitchen and a bathroom.",
+     "level": "A2"
+    },
+    {
+     "en": "It's six hundred dollars a month.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Our neighborhood",
+   "context": "Two coworkers talk about where they live.",
+   "speakerA": [
+    {
+     "en": "Do you like your neighborhood?",
+     "level": "A2"
+    },
+    {
+     "en": "Are there any shops near you?",
+     "level": "A2"
+    },
+    {
+     "en": "Is there a park?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, it's quiet and safe.",
+     "level": "A2"
+    },
+    {
+     "en": "There's a supermarket and a small bakery on our street.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, we walk there on weekends.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Buying furniture",
+   "context": "Two friends plan a shopping trip.",
+   "speakerA": [
+    {
+     "en": "What furniture do you need for the living room?",
+     "level": "A2"
+    },
+    {
+     "en": "What about the bedroom?",
+     "level": "A2"
+    },
+    {
+     "en": "Let's go to the furniture store on Saturday.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "A sofa, a table and a lamp.",
+     "level": "A2"
+    },
+    {
+     "en": "I already have a bed, but I need a wardrobe.",
+     "level": "A2"
+    },
+    {
+     "en": "Good idea. I'll make a list.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A broken tap",
+   "context": "A tenant calls the landlord.",
+   "speakerA": [
+    {
+     "en": "Hello, the kitchen tap is broken.",
+     "level": "A2"
+    },
+    {
+     "en": "Water is coming out all the time.",
+     "level": "A2"
+    },
+    {
+     "en": "Can he come today? It's a big problem.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "What's wrong with it?",
+     "level": "A2"
+    },
+    {
+     "en": "I'll send a plumber tomorrow morning.",
+     "level": "A2"
+    },
+    {
+     "en": "Let me check. Yes, he can come at five o'clock.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

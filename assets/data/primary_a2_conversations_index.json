@@ -52,6 +52,76 @@
    "id": "p-a2-asking-the-time-and-date",
    "kind": "primary",
    "topic": "Asking the Time and Date"
+  },
+  {
+   "id": "p-a2-at-school",
+   "kind": "primary",
+   "topic": "At School"
+  },
+  {
+   "id": "p-a2-what-i-did-last-weekend",
+   "kind": "primary",
+   "topic": "What I Did Last Weekend"
+  },
+  {
+   "id": "p-a2-plans-for-tomorrow",
+   "kind": "primary",
+   "topic": "Plans for Tomorrow"
+  },
+  {
+   "id": "p-a2-phone-calls-and-messages",
+   "kind": "primary",
+   "topic": "Phone Calls and Messages"
+  },
+  {
+   "id": "p-a2-making-plans-with-friends",
+   "kind": "primary",
+   "topic": "Making Plans with Friends"
+  },
+  {
+   "id": "p-a2-a-visit-to-the-doctor",
+   "kind": "primary",
+   "topic": "A Visit to the Doctor"
+  },
+  {
+   "id": "p-a2-taking-public-transport",
+   "kind": "primary",
+   "topic": "Taking Public Transport"
+  },
+  {
+   "id": "p-a2-my-home-and-neighborhood",
+   "kind": "primary",
+   "topic": "My Home and Neighborhood"
+  },
+  {
+   "id": "p-a2-describing-people",
+   "kind": "primary",
+   "topic": "Describing People"
+  },
+  {
+   "id": "p-a2-talking-about-jobs",
+   "kind": "primary",
+   "topic": "Talking About Jobs"
+  },
+  {
+   "id": "p-a2-comparing-things",
+   "kind": "primary",
+   "topic": "Comparing Things"
+  },
+  {
+   "id": "p-a2-asking-for-help-in-english",
+   "kind": "primary",
+   "topic": "Asking for Help in English"
+  },
+  {
+   "id": "p-a2-texts-and-short-emails",
+   "kind": "primary",
+   "topic": "Texts and Short Emails"
+  },
+  {
+   "id": "p-a2-birthdays-and-celebrations",
+   "kind": "primary",
+   "topic": "Birthdays and Celebrations"
   }
  ],
  "topics": {
@@ -227,6 +297,272 @@
    ]
   },
   "Asking the Time and Date": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "At School": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "What I Did Last Weekend": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Plans for Tomorrow": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Phone Calls and Messages": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Making Plans with Friends": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "A Visit to the Doctor": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Taking Public Transport": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "My Home and Neighborhood": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Describing People": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Talking About Jobs": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Comparing Things": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Asking for Help in English": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Texts and Short Emails": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Birthdays and Celebrations": {
    "s": 5,
    "t": [
     0,

@@ -1,0 +1,165 @@
+{
+ "topic": "A Visit to the Doctor",
+ "scenarios": [
+  {
+   "scenario": "Making an appointment",
+   "context": "A patient calls the clinic.",
+   "speakerA": [
+    {
+     "en": "Good morning, doctor's office.",
+     "level": "A2"
+    },
+    {
+     "en": "What's the problem?",
+     "level": "A2"
+    },
+    {
+     "en": "The doctor can see you at four o'clock today.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Hello. I'd like to see the doctor, please.",
+     "level": "A2"
+    },
+    {
+     "en": "I have a pain in my stomach since yesterday.",
+     "level": "A2"
+    },
+    {
+     "en": "That's fine. Thank you.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "In the doctor's office",
+   "context": "A patient describes the problem.",
+   "speakerA": [
+    {
+     "en": "Come in. How are you feeling?",
+     "level": "A2"
+    },
+    {
+     "en": "How long have you felt like this?",
+     "level": "A2"
+    },
+    {
+     "en": "Let me check your temperature. Open your mouth, please.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Not good. I have a fever and my back hurts.",
+     "level": "A2"
+    },
+    {
+     "en": "For two days. I can't sleep well.",
+     "level": "A2"
+    },
+    {
+     "en": "Is it serious, doctor?",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "The doctor's advice",
+   "context": "A doctor explains the treatment.",
+   "speakerA": [
+    {
+     "en": "You have the flu. You need to rest.",
+     "level": "A2"
+    },
+    {
+     "en": "No, please stay home for three days.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, take these pills and drink a lot of water.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Can I go to work tomorrow?",
+     "level": "A2"
+    },
+    {
+     "en": "Should I take any medicine?",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you, doctor.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A toothache",
+   "context": "A patient visits the dentist.",
+   "speakerA": [
+    {
+     "en": "Hello. What seems to be the problem?",
+     "level": "A2"
+    },
+    {
+     "en": "Open wide, please. Yes, I can see it.",
+     "level": "A2"
+    },
+    {
+     "en": "No, I can fix it today. It won't hurt much.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I have a bad toothache on the left side.",
+     "level": "A2"
+    },
+    {
+     "en": "Do you need to take it out?",
+     "level": "A2"
+    },
+    {
+     "en": "That's a relief. Thank you.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A sports injury",
+   "context": "A patient talks about a fall.",
+   "speakerA": [
+    {
+     "en": "What happened to your leg?",
+     "level": "A2"
+    },
+    {
+     "en": "Does your knee hurt when you walk?",
+     "level": "A2"
+    },
+    {
+     "en": "You should not play sports for two weeks.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I fell while playing football on Sunday.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, a lot. It's also a little swollen.",
+     "level": "A2"
+    },
+    {
+     "en": "OK. Should I put ice on it?",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

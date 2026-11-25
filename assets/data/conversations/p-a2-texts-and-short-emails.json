@@ -1,0 +1,165 @@
+{
+ "topic": "Texts and Short Emails",
+ "scenarios": [
+  {
+   "scenario": "Writing to a friend",
+   "context": "A learner asks for writing help.",
+   "speakerA": [
+    {
+     "en": "I want to write an email to my friend. Can you help?",
+     "level": "A2"
+    },
+    {
+     "en": "Then I write that I'm coming on Friday?",
+     "level": "A2"
+    },
+    {
+     "en": "How do I end the email?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Sure. Start with \"Hi\" and his name.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, and ask if he is free.",
+     "level": "A2"
+    },
+    {
+     "en": "Write \"See you soon\" and then your name.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A short apology",
+   "context": "A worker writes to a manager.",
+   "speakerA": [
+    {
+     "en": "I can't come to the meeting tomorrow.",
+     "level": "A2"
+    },
+    {
+     "en": "What should I write?",
+     "level": "A2"
+    },
+    {
+     "en": "Should I say thank you?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Send your manager a short email.",
+     "level": "A2"
+    },
+    {
+     "en": "Write: \"I'm sorry, but I can't come tomorrow because I'm sick.\"",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, end with \"Thank you for understanding.\"",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Asking for information",
+   "context": "A learner writes to a school.",
+   "speakerA": [
+    {
+     "en": "I'm writing to ask about the English course.",
+     "level": "A2"
+    },
+    {
+     "en": "The price, the days and the start date.",
+     "level": "A2"
+    },
+    {
+     "en": "Should I write \"Dear Sir or Madam\"?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Good. What do you want to know?",
+     "level": "A2"
+    },
+    {
+     "en": "Then write three short questions.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, and end with \"Best regards\".",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Reading a message",
+   "context": "Two friends read a text.",
+   "speakerA": [
+    {
+     "en": "Did you read Anna's message?",
+     "level": "A2"
+    },
+    {
+     "en": "How late?",
+     "level": "A2"
+    },
+    {
+     "en": "Let's reply that we'll wait at the cafe.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes. She says she's going to be late.",
+     "level": "A2"
+    },
+    {
+     "en": "About twenty minutes. She's stuck in traffic.",
+     "level": "A2"
+    },
+    {
+     "en": "OK. I'll send it now.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A missing file",
+   "context": "Two coworkers talk about an email.",
+   "speakerA": [
+    {
+     "en": "Did you get my email with the photos?",
+     "level": "A2"
+    },
+    {
+     "en": "I think so. Let me check. Oh, I forgot!",
+     "level": "A2"
+    },
+    {
+     "en": "Done. Can you see it now?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Not yet. Did you attach the file?",
+     "level": "A2"
+    },
+    {
+     "en": "No problem. Send it again, please.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, I got it. Thanks!",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

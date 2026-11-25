@@ -1,0 +1,165 @@
+{
+ "topic": "Asking for Help in English",
+ "scenarios": [
+  {
+   "scenario": "I don't understand",
+   "context": "A student talks to a coworker.",
+   "speakerA": [
+    {
+     "en": "Sorry, I don't understand. Can you repeat that?",
+     "level": "A2"
+    },
+    {
+     "en": "Could you speak more slowly, please?",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you. Now I understand.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Of course. I said the meeting is at three.",
+     "level": "A2"
+    },
+    {
+     "en": "Sure. The meeting is at three o'clock.",
+     "level": "A2"
+    },
+    {
+     "en": "No problem. Ask me anytime.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "How do you say it?",
+   "context": "Two classmates practice words.",
+   "speakerA": [
+    {
+     "en": "How do you say this word in English?",
+     "level": "A2"
+    },
+    {
+     "en": "How do you spell it?",
+     "level": "A2"
+    },
+    {
+     "en": "Thanks. Can you write it for me?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's \"umbrella\".",
+     "level": "A2"
+    },
+    {
+     "en": "U-M-B-R-E-L-L-A.",
+     "level": "A2"
+    },
+    {
+     "en": "Sure. Here, I'll write it in your notebook.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "The meaning of a word",
+   "context": "A student asks a teacher.",
+   "speakerA": [
+    {
+     "en": "What does \"delay\" mean?",
+     "level": "A2"
+    },
+    {
+     "en": "Can you give me an example?",
+     "level": "A2"
+    },
+    {
+     "en": "Oh, I see. Thank you!",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It means something happens later than planned.",
+     "level": "A2"
+    },
+    {
+     "en": "The train is delayed, so we are waiting at the station.",
+     "level": "A2"
+    },
+    {
+     "en": "You're welcome.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Help with a form",
+   "context": "A visitor asks a clerk.",
+   "speakerA": [
+    {
+     "en": "Excuse me, can you help me with this form?",
+     "level": "A2"
+    },
+    {
+     "en": "I don't know what to write here.",
+     "level": "A2"
+    },
+    {
+     "en": "And this box?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Of course. What's the problem?",
+     "level": "A2"
+    },
+    {
+     "en": "That's for your address. Write your street and number.",
+     "level": "A2"
+    },
+    {
+     "en": "That's for your phone number.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Practicing together",
+   "context": "Two classmates make a plan.",
+   "speakerA": [
+    {
+     "en": "Can we practice English together?",
+     "level": "A2"
+    },
+    {
+     "en": "OK. Where should we meet?",
+     "level": "A2"
+    },
+    {
+     "en": "Great. I'll bring my notebook.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Good idea. How about every Wednesday?",
+     "level": "A2"
+    },
+    {
+     "en": "At the library. It's quiet there.",
+     "level": "A2"
+    },
+    {
+     "en": "And I'll bring some questions for us.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

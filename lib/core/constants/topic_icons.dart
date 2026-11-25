@@ -31,6 +31,21 @@ TopicVisual visualForTopic(String topic) {
   if (t.contains('at the pharmacy')) return const TopicVisual(Icons.local_pharmacy_rounded, _green);
   if (t.contains('asking the time')) return const TopicVisual(Icons.schedule_rounded, _blue);
 
+  if (t.contains('at school')) return const TopicVisual(Icons.school_rounded, _purple);
+  if (t.contains('last weekend')) return const TopicVisual(Icons.history_rounded, _brown);
+  if (t.contains('plans for tomorrow')) return const TopicVisual(Icons.event_rounded, _blue);
+  if (t.contains('phone calls and messages')) return const TopicVisual(Icons.phone_in_talk_rounded, _teal);
+  if (t.contains('making plans with friends')) return const TopicVisual(Icons.groups_rounded, _green);
+  if (t.contains('visit to the doctor')) return const TopicVisual(Icons.medical_services_rounded, _rose);
+  if (t.contains('public transport')) return const TopicVisual(Icons.directions_transit_rounded, _orange);
+  if (t.contains('my home and neighborhood')) return const TopicVisual(Icons.home_rounded, _brown);
+  if (t.contains('describing people')) return const TopicVisual(Icons.face_rounded, _purple);
+  if (t.contains('talking about jobs')) return const TopicVisual(Icons.work_rounded, _blue);
+  if (t.contains('comparing things')) return const TopicVisual(Icons.compare_arrows_rounded, _teal);
+  if (t.contains('asking for help in english')) return const TopicVisual(Icons.translate_rounded, _gold);
+  if (t.contains('texts and short emails')) return const TopicVisual(Icons.mail_rounded, _blue);
+  if (t.contains('birthdays and celebrations')) return const TopicVisual(Icons.cake_rounded, _rose);
+
   // ═══ Primary School ▸ A1 ═══
   if (t.contains('introducing yourself')) return const TopicVisual(Icons.waving_hand_rounded, _teal);
   if (t.contains('name and age')) return const TopicVisual(Icons.badge_rounded, _blue);

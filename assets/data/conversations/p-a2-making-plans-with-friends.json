@@ -1,0 +1,165 @@
+{
+ "topic": "Making Plans with Friends",
+ "scenarios": [
+  {
+   "scenario": "Inviting a friend",
+   "context": "Two friends plan a movie night.",
+   "speakerA": [
+    {
+     "en": "Do you want to see a movie on Friday?",
+     "level": "A2"
+    },
+    {
+     "en": "Then let's go to the late show.",
+     "level": "A2"
+    },
+    {
+     "en": "At the cinema at eight thirty.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'd love to, but I have to work until eight.",
+     "level": "A2"
+    },
+    {
+     "en": "That works. Where should we meet?",
+     "level": "A2"
+    },
+    {
+     "en": "Great. I'll buy the tickets.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Dinner at my place",
+   "context": "A host invites a neighbor.",
+   "speakerA": [
+    {
+     "en": "Would you like to come to dinner on Saturday?",
+     "level": "A2"
+    },
+    {
+     "en": "Come at seven. Is there anything you don't eat?",
+     "level": "A2"
+    },
+    {
+     "en": "No problem. Can you bring some juice?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, thanks! What time?",
+     "level": "A2"
+    },
+    {
+     "en": "I don't eat fish, but I like everything else.",
+     "level": "A2"
+    },
+    {
+     "en": "Sure. See you on Saturday.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Saying no politely",
+   "context": "A friend invites a coworker.",
+   "speakerA": [
+    {
+     "en": "We're going to the beach on Sunday. Do you want to come?",
+     "level": "A2"
+    },
+    {
+     "en": "That's too bad. Maybe next time?",
+     "level": "A2"
+    },
+    {
+     "en": "OK. Have a nice lunch!",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Thank you, but I can't. I have a family lunch.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, please ask me again.",
+     "level": "A2"
+    },
+    {
+     "en": "Thanks. Have fun at the beach!",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Choosing a place",
+   "context": "Two friends decide where to eat.",
+   "speakerA": [
+    {
+     "en": "Where do you want to eat tonight?",
+     "level": "A2"
+    },
+    {
+     "en": "Maybe Italian food? There's a good place near the park.",
+     "level": "A2"
+    },
+    {
+     "en": "No, it's cheap and the portions are big.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I don't mind. What do you feel like?",
+     "level": "A2"
+    },
+    {
+     "en": "Pizza sounds great. Is it expensive?",
+     "level": "A2"
+    },
+    {
+     "en": "Perfect. Let's go there.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Changing plans",
+   "context": "A friend cancels by phone.",
+   "speakerA": [
+    {
+     "en": "I'm sorry, I can't come tonight. I'm sick.",
+     "level": "A2"
+    },
+    {
+     "en": "No, just a cold, but I want to stay in bed.",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you for understanding.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Oh no! Is it serious?",
+     "level": "A2"
+    },
+    {
+     "en": "Don't worry. Let's meet next week.",
+     "level": "A2"
+    },
+    {
+     "en": "Of course. Get well soon!",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

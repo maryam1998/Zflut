@@ -1,0 +1,165 @@
+{
+ "topic": "Comparing Things",
+ "scenarios": [
+  {
+   "scenario": "Two phones",
+   "context": "A customer compares phones.",
+   "speakerA": [
+    {
+     "en": "Which phone is better, this one or that one?",
+     "level": "A2"
+    },
+    {
+     "en": "Is the camera good?",
+     "level": "A2"
+    },
+    {
+     "en": "Hmm. The cheaper one is bigger.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "This one is newer, but it's more expensive.",
+     "level": "A2"
+    },
+    {
+     "en": "It's much better than the old one.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, but the battery is not as good.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Two cities",
+   "context": "Two friends talk about travel.",
+   "speakerA": [
+    {
+     "en": "Do you prefer Paris or London?",
+     "level": "A2"
+    },
+    {
+     "en": "But London has more museums, doesn't it?",
+     "level": "A2"
+    },
+    {
+     "en": "Which city is more expensive?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Paris. It's smaller and more relaxed.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, and the weather is colder.",
+     "level": "A2"
+    },
+    {
+     "en": "London, I think. Everything costs more there.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Bus or train?",
+   "context": "Two coworkers plan a trip.",
+   "speakerA": [
+    {
+     "en": "Is it faster to take the bus or the train?",
+     "level": "A2"
+    },
+    {
+     "en": "How much cheaper?",
+     "level": "A2"
+    },
+    {
+     "en": "Then I'll take the bus. I'm not in a hurry.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "The train is faster, but the bus is cheaper.",
+     "level": "A2"
+    },
+    {
+     "en": "The bus ticket is five dollars less.",
+     "level": "A2"
+    },
+    {
+     "en": "Good choice. The seats are more comfortable too.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Two restaurants",
+   "context": "Two friends choose a place to eat.",
+   "speakerA": [
+    {
+     "en": "Is this restaurant better than the one near work?",
+     "level": "A2"
+    },
+    {
+     "en": "Which one has bigger portions?",
+     "level": "A2"
+    },
+    {
+     "en": "Wow. Then it's the best choice.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "The food is similar, but this one is quieter.",
+     "level": "A2"
+    },
+    {
+     "en": "This one. And it's the cheapest in town.",
+     "level": "A2"
+    },
+    {
+     "en": "I think so. Let's come here again.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "The tallest building",
+   "context": "A tourist asks a local.",
+   "speakerA": [
+    {
+     "en": "Which is the tallest building in your city?",
+     "level": "A2"
+    },
+    {
+     "en": "Is it the oldest one too?",
+     "level": "A2"
+    },
+    {
+     "en": "Which one is the most famous?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "The Blue Tower. It's more than two hundred meters.",
+     "level": "A2"
+    },
+    {
+     "en": "No, the oldest is the church in the old town.",
+     "level": "A2"
+    },
+    {
+     "en": "I think the Blue Tower. Everyone takes a photo of it.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

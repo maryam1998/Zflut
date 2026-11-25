@@ -1,0 +1,165 @@
+{
+ "topic": "Describing People",
+ "scenarios": [
+  {
+   "scenario": "Who is that?",
+   "context": "Two coworkers talk at a party.",
+   "speakerA": [
+    {
+     "en": "Who is the woman over there?",
+     "level": "A2"
+    },
+    {
+     "en": "She looks friendly. What does she do?",
+     "level": "A2"
+    },
+    {
+     "en": "How old is she?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "She's my new colleague. Her name is Julia.",
+     "level": "A2"
+    },
+    {
+     "en": "She's an accountant. She's also very funny.",
+     "level": "A2"
+    },
+    {
+     "en": "I think she's about thirty.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "At the airport",
+   "context": "A friend waits for a relative.",
+   "speakerA": [
+    {
+     "en": "What does your brother look like? I want to find him.",
+     "level": "A2"
+    },
+    {
+     "en": "Is he wearing glasses?",
+     "level": "A2"
+    },
+    {
+     "en": "I think I can see him. Is that him?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "He's tall, with short dark hair.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, and a blue jacket.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, that's him. Thank you!",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "The boss",
+   "context": "Two coworkers talk about a manager.",
+   "speakerA": [
+    {
+     "en": "What is your boss like?",
+     "level": "A2"
+    },
+    {
+     "en": "Is he strict?",
+     "level": "A2"
+    },
+    {
+     "en": "He sounds like a good boss.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "He's serious, but he's very fair.",
+     "level": "A2"
+    },
+    {
+     "en": "A little. He likes everyone to be on time.",
+     "level": "A2"
+    },
+    {
+     "en": "He is. I really like working for him.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Two sisters",
+   "context": "Two friends compare family members.",
+   "speakerA": [
+    {
+     "en": "Are you and your sister similar?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you look similar?",
+     "level": "A2"
+    },
+    {
+     "en": "Who is taller?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Not really. She's quiet, and I'm very talkative.",
+     "level": "A2"
+    },
+    {
+     "en": "A little. We both have brown eyes.",
+     "level": "A2"
+    },
+    {
+     "en": "She is. She's ten centimeters taller than me.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A lost husband",
+   "context": "A shopper talks to a store worker.",
+   "speakerA": [
+    {
+     "en": "Excuse me, I'm looking for my husband.",
+     "level": "A2"
+    },
+    {
+     "en": "He's short and a bit heavy. He has a gray beard.",
+     "level": "A2"
+    },
+    {
+     "en": "A green sweater and brown trousers.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "What does he look like?",
+     "level": "A2"
+    },
+    {
+     "en": "What is he wearing?",
+     "level": "A2"
+    },
+    {
+     "en": "I'll call him on the speaker. Please wait here.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

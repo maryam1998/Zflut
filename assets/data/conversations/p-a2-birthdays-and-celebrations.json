@@ -1,0 +1,165 @@
+{
+ "topic": "Birthdays and Celebrations",
+ "scenarios": [
+  {
+   "scenario": "Birthday wishes",
+   "context": "Two friends meet on a birthday.",
+   "speakerA": [
+    {
+     "en": "Happy birthday! How old are you today?",
+     "level": "A2"
+    },
+    {
+     "en": "Are you going to have a party?",
+     "level": "A2"
+    },
+    {
+     "en": "That sounds lovely. Here's a small gift for you.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Thank you! I'm thirty-two.",
+     "level": "A2"
+    },
+    {
+     "en": "Just a small dinner with my family.",
+     "level": "A2"
+    },
+    {
+     "en": "How kind of you! I love it.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A surprise party",
+   "context": "Two coworkers make a plan.",
+   "speakerA": [
+    {
+     "en": "Sara's birthday is next Friday. Let's plan a surprise party.",
+     "level": "A2"
+    },
+    {
+     "en": "At my house. I'll invite her friends.",
+     "level": "A2"
+    },
+    {
+     "en": "Remember, it's a secret!",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Good idea. Where can we have it?",
+     "level": "A2"
+    },
+    {
+     "en": "I'll buy the cake and some balloons.",
+     "level": "A2"
+    },
+    {
+     "en": "Don't worry. I won't say a word.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Holiday plans",
+   "context": "Two neighbors talk before a holiday.",
+   "speakerA": [
+    {
+     "en": "What are you doing for the holiday?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you celebrate with a big meal?",
+     "level": "A2"
+    },
+    {
+     "en": "That sounds wonderful.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "We're going to visit my grandparents.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, the whole family comes. We cook for two days.",
+     "level": "A2"
+    },
+    {
+     "en": "It is. What about you?",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A wedding invitation",
+   "context": "A friend shares good news.",
+   "speakerA": [
+    {
+     "en": "I have some good news. We're getting married in June.",
+     "level": "A2"
+    },
+    {
+     "en": "We'd love you to come. Here's your invitation.",
+     "level": "A2"
+    },
+    {
+     "en": "In a small garden near the lake.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Congratulations! That's wonderful.",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you. Where is the wedding?",
+     "level": "A2"
+    },
+    {
+     "en": "I can't wait. I'll buy a new dress.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "New Year plans",
+   "context": "Two friends talk on New Year's Day.",
+   "speakerA": [
+    {
+     "en": "Happy New Year! Do you have any plans for this year?",
+     "level": "A2"
+    },
+    {
+     "en": "Those are great plans.",
+     "level": "A2"
+    },
+    {
+     "en": "I'm going to save money and buy a car.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I want to learn to swim and travel more.",
+     "level": "A2"
+    },
+    {
+     "en": "What about you?",
+     "level": "A2"
+    },
+    {
+     "en": "Good luck with that!",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

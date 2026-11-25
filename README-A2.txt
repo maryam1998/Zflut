@@ -1,8 +1,8 @@
 پچ Primary School ▸ A2 (لغات + مکالمه‌ها) — جایگزین زیپ قبلی primary-school-a2-vocab-patch
 فایل‌های داده:
-- assets/data/primary_a2.json (لغات: ۱۴ موضوع، ۶۹۰ لغت/عبارت)
+- assets/data/primary_a2.json (لغات: ۲۱ موضوع، (لغات) لغت/عبارت)
 - assets/data/primary_a2_conversations_index.json
-- assets/data/conversations/p-a2-*.json (۱۰ موضوع، ۵۰ سناریو، ۳۰۱ جمله)
+- assets/data/conversations/p-a2-*.json (۲۴ موضوع، ۱۲۰ سناریو، ۷۲۱ جمله)
 فایل‌های Dart (جایگزین کامل؛ اگر بعد از آپلود قبلی تغییر کرده‌اند اول مقایسه کن):
 - lib/core/providers/primary_school_provider.dart
 - lib/core/data/conversation_repository.dart

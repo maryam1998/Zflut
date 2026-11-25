@@ -1,0 +1,165 @@
+{
+ "topic": "What I Did Last Weekend",
+ "scenarios": [
+  {
+   "scenario": "Saturday",
+   "context": "Two coworkers talk on Monday.",
+   "speakerA": [
+    {
+     "en": "What did you do on Saturday?",
+     "level": "A2"
+    },
+    {
+     "en": "Did you cook?",
+     "level": "A2"
+    },
+    {
+     "en": "Lucky you! Did you stay the night?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I visited my parents. We had lunch together.",
+     "level": "A2"
+    },
+    {
+     "en": "No, my mother cooked. She made my favorite soup.",
+     "level": "A2"
+    },
+    {
+     "en": "No, I came home early because I had work on Sunday.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A day in the city",
+   "context": "Two friends talk about a trip.",
+   "speakerA": [
+    {
+     "en": "How was your trip to the city?",
+     "level": "A2"
+    },
+    {
+     "en": "Did you take any photos?",
+     "level": "A2"
+    },
+    {
+     "en": "What did you eat for lunch?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It was great. We walked around the old town.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, lots of them. I'll show you later.",
+     "level": "A2"
+    },
+    {
+     "en": "We found a small cafe and had fish and rice.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A bad morning",
+   "context": "A coworker looks tired.",
+   "speakerA": [
+    {
+     "en": "You look tired. What happened?",
+     "level": "A2"
+    },
+    {
+     "en": "Oh no. Were you late?",
+     "level": "A2"
+    },
+    {
+     "en": "I'm sorry. Did you have a good evening at least?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I missed the bus and walked to work.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, twenty minutes late. My boss wasn't happy.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, I watched a movie and slept early.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A lost phone",
+   "context": "Two friends talk about yesterday.",
+   "speakerA": [
+    {
+     "en": "I lost my phone yesterday.",
+     "level": "A2"
+    },
+    {
+     "en": "I think I left it in a taxi.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, and they found it this morning.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Where did you lose it?",
+     "level": "A2"
+    },
+    {
+     "en": "Did you call the taxi company?",
+     "level": "A2"
+    },
+    {
+     "en": "That's wonderful news!",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Holiday memories",
+   "context": "Two coworkers talk about last summer.",
+   "speakerA": [
+    {
+     "en": "Where did you go on holiday last summer?",
+     "level": "A2"
+    },
+    {
+     "en": "Was the weather good?",
+     "level": "A2"
+    },
+    {
+     "en": "Did you swim a lot?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "We went to the sea for a week.",
+     "level": "A2"
+    },
+    {
+     "en": "It was hot and sunny every day.",
+     "level": "A2"
+    },
+    {
+     "en": "Every morning, and we ate fresh fish in the evening.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

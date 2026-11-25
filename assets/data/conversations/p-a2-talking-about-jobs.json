@@ -1,0 +1,165 @@
+{
+ "topic": "Talking About Jobs",
+ "scenarios": [
+  {
+   "scenario": "What do you do?",
+   "context": "Two people meet at a party.",
+   "speakerA": [
+    {
+     "en": "What do you do for a living?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you like your job?",
+     "level": "A2"
+    },
+    {
+     "en": "When do you start work?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'm a nurse. I work at a big hospital.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, I love helping people, but the hours are long.",
+     "level": "A2"
+    },
+    {
+     "en": "At seven in the morning.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A job interview",
+   "context": "A manager interviews a candidate.",
+   "speakerA": [
+    {
+     "en": "Tell me about yourself, please.",
+     "level": "A2"
+    },
+    {
+     "en": "Why do you want this job?",
+     "level": "A2"
+    },
+    {
+     "en": "Can you start next Monday?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'm Ali. I have three years of experience as a cashier.",
+     "level": "A2"
+    },
+    {
+     "en": "I like working with customers, and I learn quickly.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, I can start any day.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Work hours and pay",
+   "context": "Two friends talk about their work.",
+   "speakerA": [
+    {
+     "en": "How many hours do you work a week?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you work on weekends?",
+     "level": "A2"
+    },
+    {
+     "en": "Is the pay good?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Forty hours, from Monday to Friday.",
+     "level": "A2"
+    },
+    {
+     "en": "Sometimes, but I get a day off in the week.",
+     "level": "A2"
+    },
+    {
+     "en": "It's OK. I'd like to earn a little more.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A new colleague",
+   "context": "A new employee arrives.",
+   "speakerA": [
+    {
+     "en": "Hi, I'm the new accountant. My name is Lina.",
+     "level": "A2"
+    },
+    {
+     "en": "Where can I have lunch here?",
+     "level": "A2"
+    },
+    {
+     "en": "Great. Is it cheap?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Welcome, Lina! I'm Mark. I work in sales.",
+     "level": "A2"
+    },
+    {
+     "en": "There's a cafeteria on the second floor.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, and the food is good. I'll show you at lunchtime.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A dream job",
+   "context": "Two friends talk about the past.",
+   "speakerA": [
+    {
+     "en": "What did you want to be when you were young?",
+     "level": "A2"
+    },
+    {
+     "en": "Really? Why didn't you become one?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you like engineering?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I wanted to be a pilot.",
+     "level": "A2"
+    },
+    {
+     "en": "It was too expensive, so I studied engineering.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, I do. It's interesting, and I'm good at it.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

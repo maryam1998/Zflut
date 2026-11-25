@@ -1,0 +1,165 @@
+{
+ "topic": "Taking Public Transport",
+ "scenarios": [
+  {
+   "scenario": "Buying a ticket",
+   "context": "A traveler buys train tickets.",
+   "speakerA": [
+    {
+     "en": "Two tickets to the city center, please.",
+     "level": "A2"
+    },
+    {
+     "en": "Return, please. How much is that?",
+     "level": "A2"
+    },
+    {
+     "en": "What time does it leave?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "One way or return?",
+     "level": "A2"
+    },
+    {
+     "en": "Eight dollars. The next train leaves from platform three.",
+     "level": "A2"
+    },
+    {
+     "en": "At ten forty. Don't be late!",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Which platform?",
+   "context": "A traveler asks a station worker.",
+   "speakerA": [
+    {
+     "en": "Excuse me, is this the train to the airport?",
+     "level": "A2"
+    },
+    {
+     "en": "How do I get there?",
+     "level": "A2"
+    },
+    {
+     "en": "Thanks. Is the train on time?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "No, you need platform five.",
+     "level": "A2"
+    },
+    {
+     "en": "Go down the stairs and turn right.",
+     "level": "A2"
+    },
+    {
+     "en": "It's five minutes late today.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Taking a taxi",
+   "context": "A passenger gets in a taxi.",
+   "speakerA": [
+    {
+     "en": "Where to?",
+     "level": "A2"
+    },
+    {
+     "en": "OK. It's about fifteen minutes from here.",
+     "level": "A2"
+    },
+    {
+     "en": "About twenty dollars. You can pay by card.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "To the Grand Hotel, please.",
+     "level": "A2"
+    },
+    {
+     "en": "How much will it cost?",
+     "level": "A2"
+    },
+    {
+     "en": "That's fine. Thank you.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Getting off the bus",
+   "context": "A passenger asks another passenger.",
+   "speakerA": [
+    {
+     "en": "Excuse me, does this bus stop at the hospital?",
+     "level": "A2"
+    },
+    {
+     "en": "Could you tell me when we arrive?",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you so much.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, it's the fourth stop.",
+     "level": "A2"
+    },
+    {
+     "en": "Sure. I'm going there too.",
+     "level": "A2"
+    },
+    {
+     "en": "No problem. Here is our stop now.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Missed the bus",
+   "context": "Two coworkers wait at a bus stop.",
+   "speakerA": [
+    {
+     "en": "Oh no, I missed my bus!",
+     "level": "A2"
+    },
+    {
+     "en": "But I'm going to be late for work.",
+     "level": "A2"
+    },
+    {
+     "en": "Good idea. Where is the nearest station?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Don't worry. There's another one in ten minutes.",
+     "level": "A2"
+    },
+    {
+     "en": "Why not take the metro? It's faster.",
+     "level": "A2"
+    },
+    {
+     "en": "Just across the road, behind the bank.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

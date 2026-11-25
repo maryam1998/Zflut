@@ -1,0 +1,165 @@
+{
+ "topic": "Phone Calls and Messages",
+ "scenarios": [
+  {
+   "scenario": "Calling a friend",
+   "context": "A short phone call.",
+   "speakerA": [
+    {
+     "en": "Hello? Is that Sara?",
+     "level": "A2"
+    },
+    {
+     "en": "It's Tom. Are you free this evening?",
+     "level": "A2"
+    },
+    {
+     "en": "Sure. Call me when you're ready.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, it is. Who's calling?",
+     "level": "A2"
+    },
+    {
+     "en": "I'm busy until seven. Can I call you back?",
+     "level": "A2"
+    },
+    {
+     "en": "OK, talk to you later.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Wrong number",
+   "context": "A caller dials the wrong number.",
+   "speakerA": [
+    {
+     "en": "Hello, can I speak to Mr. Brown?",
+     "level": "A2"
+    },
+    {
+     "en": "Is this 555-0142?",
+     "level": "A2"
+    },
+    {
+     "en": "Oh, I'm sorry about that.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'm sorry, there's no Mr. Brown here.",
+     "level": "A2"
+    },
+    {
+     "en": "No, this is 555-0124. You have the wrong number.",
+     "level": "A2"
+    },
+    {
+     "en": "That's OK. Goodbye.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Leaving a message",
+   "context": "A caller talks to an assistant.",
+   "speakerA": [
+    {
+     "en": "Hello, can I speak to Ms. Green, please?",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, please tell her that Paul called.",
+     "level": "A2"
+    },
+    {
+     "en": "I think so, but it's 555-0187 just in case.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "She isn't here right now. Can I take a message?",
+     "level": "A2"
+    },
+    {
+     "en": "Does she have your number?",
+     "level": "A2"
+    },
+    {
+     "en": "Got it. I'll give her the message.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A bad line",
+   "context": "A phone call with a bad connection.",
+   "speakerA": [
+    {
+     "en": "Hello? I can't hear you very well.",
+     "level": "A2"
+    },
+    {
+     "en": "A little. Could you speak louder?",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, much better. Thanks.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Sorry, the line is bad. Can you hear me now?",
+     "level": "A2"
+    },
+    {
+     "en": "Is this better?",
+     "level": "A2"
+    },
+    {
+     "en": "Good. I'm calling about tomorrow's meeting.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A text message",
+   "context": "Two friends arrange to meet.",
+   "speakerA": [
+    {
+     "en": "I got your text. Where should we meet?",
+     "level": "A2"
+    },
+    {
+     "en": "What time? The movie starts at eight.",
+     "level": "A2"
+    },
+    {
+     "en": "OK. I'll send you a message when I arrive.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Let's meet in front of the cinema.",
+     "level": "A2"
+    },
+    {
+     "en": "How about seven thirty?",
+     "level": "A2"
+    },
+    {
+     "en": "Perfect. See you there!",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

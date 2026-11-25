@@ -1,0 +1,165 @@
+{
+ "topic": "Plans for Tomorrow",
+ "scenarios": [
+  {
+   "scenario": "Tomorrow's schedule",
+   "context": "Two friends talk about tomorrow.",
+   "speakerA": [
+    {
+     "en": "What are you going to do tomorrow?",
+     "level": "A2"
+    },
+    {
+     "en": "And in the afternoon?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you want to have dinner together?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'm going to visit the dentist in the morning.",
+     "level": "A2"
+    },
+    {
+     "en": "I'll probably stay home and rest.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, that sounds good. I'll call you at six.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Next weekend",
+   "context": "Two coworkers talk on Friday.",
+   "speakerA": [
+    {
+     "en": "Do you have any plans for next weekend?",
+     "level": "A2"
+    },
+    {
+     "en": "How will you get there?",
+     "level": "A2"
+    },
+    {
+     "en": "How long is the trip?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "We're going to visit my aunt in another city.",
+     "level": "A2"
+    },
+    {
+     "en": "We'll take the train. It's cheaper than driving.",
+     "level": "A2"
+    },
+    {
+     "en": "About two hours.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A new job",
+   "context": "Two friends share news.",
+   "speakerA": [
+    {
+     "en": "I'm going to start a new job next month.",
+     "level": "A2"
+    },
+    {
+     "en": "I'll work in a bank, in the customer service team.",
+     "level": "A2"
+    },
+    {
+     "en": "Maybe. The new office is far from my home.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Congratulations! What will you do there?",
+     "level": "A2"
+    },
+    {
+     "en": "Are you going to move to a new house?",
+     "level": "A2"
+    },
+    {
+     "en": "Well, I'm sure everything will be fine.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Planning a party",
+   "context": "Two neighbors plan a party.",
+   "speakerA": [
+    {
+     "en": "I'm going to have a party on Saturday.",
+     "level": "A2"
+    },
+    {
+     "en": "About ten friends. Can you help me cook?",
+     "level": "A2"
+    },
+    {
+     "en": "I'll make rice and chicken. Can you bring a cake?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Great! Who is coming?",
+     "level": "A2"
+    },
+    {
+     "en": "Of course. What are we going to make?",
+     "level": "A2"
+    },
+    {
+     "en": "Sure, I'll buy one from the bakery.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "After the course",
+   "context": "Two classmates talk about the future.",
+   "speakerA": [
+    {
+     "en": "What are you going to do after the English course?",
+     "level": "A2"
+    },
+    {
+     "en": "Will you study in another country?",
+     "level": "A2"
+    },
+    {
+     "en": "I think you'll do very well.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'm going to take a test next year.",
+     "level": "A2"
+    },
+    {
+     "en": "Maybe. I'll decide after the test.",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you. I hope you're right.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

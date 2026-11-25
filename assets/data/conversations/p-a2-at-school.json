@@ -1,0 +1,165 @@
+{
+ "topic": "At School",
+ "scenarios": [
+  {
+   "scenario": "First day of class",
+   "context": "A new student arrives in class.",
+   "speakerA": [
+    {
+     "en": "Hi, is this the English class?",
+     "level": "A2"
+    },
+    {
+     "en": "My name is Karim. Where should I put my bag?",
+     "level": "A2"
+    },
+    {
+     "en": "Do I need a notebook and a pen?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, it is. Please sit down. What's your name?",
+     "level": "A2"
+    },
+    {
+     "en": "You can put it under the desk. We start in five minutes.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, and please bring a dictionary tomorrow.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Parent and teacher",
+   "context": "A parent meets a teacher.",
+   "speakerA": [
+    {
+     "en": "Thank you for meeting me. How is my son doing?",
+     "level": "A2"
+    },
+    {
+     "en": "Does he do his homework every day?",
+     "level": "A2"
+    },
+    {
+     "en": "I'm sorry. I'll talk to him tonight.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "He's doing well. He's good at math and likes science.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, he does. But he's sometimes late for class.",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you. It's a small problem, and he's a very kind student.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Class schedule",
+   "context": "Two students compare their timetables.",
+   "speakerA": [
+    {
+     "en": "What subjects do you have on Monday?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you have any classes in the afternoon?",
+     "level": "A2"
+    },
+    {
+     "en": "Which one is your favorite?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I have math at nine and history at eleven.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, English at two and sport at three thirty.",
+     "level": "A2"
+    },
+    {
+     "en": "English, because the teacher is very funny.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Asking the teacher",
+   "context": "A student asks about a word.",
+   "speakerA": [
+    {
+     "en": "Excuse me, I don't understand this word.",
+     "level": "A2"
+    },
+    {
+     "en": "This one. What does \"borrow\" mean?",
+     "level": "A2"
+    },
+    {
+     "en": "Can I borrow your pen, then?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Which one? Show me.",
+     "level": "A2"
+    },
+    {
+     "en": "It means to take something and give it back later.",
+     "level": "A2"
+    },
+    {
+     "en": "Of course. Here you are.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Exam day",
+   "context": "Two classmates talk the day before a test.",
+   "speakerA": [
+    {
+     "en": "Are you ready for the exam tomorrow?",
+     "level": "A2"
+    },
+    {
+     "en": "Don't worry. You always do well.",
+     "level": "A2"
+    },
+    {
+     "en": "At nine o'clock in room twelve.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Not really. I studied for three hours, but I'm still worried.",
+     "level": "A2"
+    },
+    {
+     "en": "I hope so. What time does it start?",
+     "level": "A2"
+    },
+    {
+     "en": "Then I'll go to bed early tonight.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}
