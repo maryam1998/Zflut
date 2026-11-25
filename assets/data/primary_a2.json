@@ -41,7 +41,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "student",
-     "fa": "دانشجو"
+     "fa": ""
     },
     {
      "id": 702217,
@@ -55,7 +55,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "subject",
-     "fa": "موضوع"
+     "fa": ""
     },
     {
      "id": 910241,
@@ -76,7 +76,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "science",
-     "fa": "علم"
+     "fa": ""
     },
     {
      "id": 910242,
@@ -111,7 +111,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "homework",
-     "fa": "مشق"
+     "fa": ""
     },
     {
      "id": 701402,
@@ -125,14 +125,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "test",
-     "fa": "تست"
+     "fa": ""
     },
     {
      "id": 701732,
      "level": "B1",
      "pos": "noun",
      "en": "grade",
-     "fa": "نمره"
+     "fa": ""
     },
     {
      "id": 910243,
@@ -153,14 +153,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "desk",
-     "fa": "میز"
+     "fa": ""
     },
     {
      "id": 700425,
      "level": "A2",
      "pos": "noun",
      "en": "board",
-     "fa": "تخته"
+     "fa": ""
     },
     {
      "id": 702775,
@@ -202,14 +202,14 @@
      "level": "A1",
      "pos": "adjective",
      "en": "correct",
-     "fa": "درست"
+     "fa": ""
     },
     {
      "id": 703602,
      "level": "A1",
      "pos": "verb",
      "en": "spell",
-     "fa": "هجی کردن"
+     "fa": ""
     },
     {
      "id": 102534,
@@ -230,7 +230,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "study",
-     "fa": "مطالعه"
+     "fa": ""
     },
     {
      "id": 104662,
@@ -293,7 +293,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "course",
-     "fa": "دوره"
+     "fa": ""
     },
     {
      "id": 702225,
@@ -307,14 +307,14 @@
      "level": "A2",
      "pos": "noun",
      "en": "uniform",
-     "fa": "یونیفرم"
+     "fa": ""
     },
     {
      "id": 700458,
      "level": "A1",
      "pos": "noun",
      "en": "break",
-     "fa": "شکستن"
+     "fa": ""
     },
     {
      "id": 910079,
@@ -4115,7 +4115,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "change",
-     "fa": "تغییر"
+     "fa": ""
     },
     {
      "id": 703137,
@@ -4129,14 +4129,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "bag",
-     "fa": "کیف"
+     "fa": ""
     },
     {
      "id": 703506,
      "level": "A2",
      "pos": "noun",
      "en": "size",
-     "fa": "اندازه"
+     "fa": ""
     },
     {
      "id": 703530,
@@ -4171,7 +4171,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "sale",
-     "fa": "فروش"
+     "fa": ""
     },
     {
      "id": 100587,
@@ -4227,7 +4227,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "return",
-     "fa": "بازگشت"
+     "fa": ""
     },
     {
      "id": 910004,
@@ -4395,14 +4395,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "jacket",
-     "fa": "کت"
+     "fa": ""
     },
     {
      "id": 700663,
      "level": "A1",
      "pos": "noun",
      "en": "coat",
-     "fa": "کت"
+     "fa": ""
     },
     {
      "id": 103971,
@@ -4430,7 +4430,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "dress",
-     "fa": "لباس"
+     "fa": ""
     },
     {
      "id": 104044,
@@ -4556,7 +4556,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "uniform",
-     "fa": "یونیفرم"
+     "fa": ""
     },
     {
      "id": 702854,
@@ -4584,7 +4584,7 @@
      "level": "A2",
      "pos": "adjective",
      "en": "fit",
-     "fa": "مناسب"
+     "fa": ""
     },
     {
      "id": 910023,
@@ -4612,14 +4612,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "watch",
-     "fa": "ساعت"
+     "fa": ""
     },
     {
      "id": 703279,
      "level": "A2",
      "pos": "noun",
      "en": "ring",
-     "fa": "حلقه"
+     "fa": ""
     },
     {
      "id": 910025,
@@ -4654,7 +4654,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "style",
-     "fa": "سبک"
+     "fa": ""
     },
     {
      "id": 910027,
@@ -4675,7 +4675,7 @@
      "level": "B1",
      "pos": "adjective",
      "en": "tight",
-     "fa": "سفت"
+     "fa": ""
     },
     {
      "id": 910028,
@@ -4689,7 +4689,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "short",
-     "fa": "کوتاه"
+     "fa": ""
     },
     {
      "id": 702272,
@@ -4710,7 +4710,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "old",
-     "fa": "قدیمی"
+     "fa": ""
     },
     {
      "id": 704260,
@@ -4801,7 +4801,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "tip",
-     "fa": "نوک"
+     "fa": ""
     },
     {
      "id": 910030,
@@ -5011,7 +5011,7 @@
      "level": "B1",
      "pos": "adjective",
      "en": "spicy",
-     "fa": "تند"
+     "fa": ""
     },
     {
      "id": 703789,
@@ -5032,14 +5032,14 @@
      "level": "A1",
      "pos": "adjective",
      "en": "hot",
-     "fa": "گرم"
+     "fa": ""
     },
     {
      "id": 100783,
      "level": "A1",
      "pos": "adjective",
      "en": "cold",
-     "fa": "سرد"
+     "fa": ""
     },
     {
      "id": 910041,
@@ -5137,7 +5137,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "egg",
-     "fa": "تخم مرغ"
+     "fa": ""
     },
     {
      "id": 700600,
@@ -5186,7 +5186,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "full",
-     "fa": "پر"
+     "fa": ""
     },
     {
      "id": 104481,
@@ -5214,7 +5214,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "town",
-     "fa": "شهر"
+     "fa": ""
     },
     {
      "id": 104765,
@@ -5242,7 +5242,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "park",
-     "fa": "پارک"
+     "fa": ""
     },
     {
      "id": 700330,
@@ -5382,7 +5382,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "gym",
-     "fa": "باشگاه ورزشی"
+     "fa": ""
     },
     {
      "id": 910050,
@@ -5396,14 +5396,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "garden",
-     "fa": "باغ"
+     "fa": ""
     },
     {
      "id": 703630,
      "level": "A2",
      "pos": "adjective",
      "en": "square",
-     "fa": "مربع"
+     "fa": ""
     },
     {
      "id": 700468,
@@ -5445,7 +5445,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "gallery",
-     "fa": "گالری"
+     "fa": ""
     },
     {
      "id": 703635,
@@ -5550,7 +5550,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "right",
-     "fa": "درست"
+     "fa": ""
     },
     {
      "id": 703677,
@@ -5564,7 +5564,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "turn",
-     "fa": "نوبت"
+     "fa": ""
     },
     {
      "id": 702512,
@@ -5592,7 +5592,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "opposite",
-     "fa": "مخالف"
+     "fa": ""
     },
     {
      "id": 700373,
@@ -5620,7 +5620,7 @@
      "level": "A1",
      "pos": "adverb",
      "en": "across",
-     "fa": "در سراسر"
+     "fa": ""
     },
     {
      "id": 910058,
@@ -5641,7 +5641,7 @@
      "level": "B1",
      "pos": "noun",
      "en": "block",
-     "fa": "بلوک"
+     "fa": ""
     },
     {
      "id": 702565,
@@ -5760,7 +5760,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "past",
-     "fa": "گذشته"
+     "fa": ""
     },
     {
      "id": 704082,
@@ -5823,14 +5823,14 @@
      "level": "A2",
      "pos": "noun",
      "en": "sign",
-     "fa": "علامت"
+     "fa": ""
     },
     {
      "id": 701110,
      "level": "A2",
      "pos": "noun",
      "en": "direction",
-     "fa": "جهت"
+     "fa": ""
     },
     {
      "id": 910067,
@@ -5907,7 +5907,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "book",
-     "fa": "کتاب"
+     "fa": ""
     },
     {
      "id": 703142,
@@ -5921,7 +5921,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "key",
-     "fa": "کلیدی"
+     "fa": ""
     },
     {
      "id": 701575,
@@ -5991,7 +5991,7 @@
      "level": "A1",
      "pos": "verb",
      "en": "stay",
-     "fa": "ماندن"
+     "fa": ""
     },
     {
      "id": 910075,
@@ -6012,7 +6012,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "shower",
-     "fa": "دوش"
+     "fa": ""
     },
     {
      "id": 104555,
@@ -6033,7 +6033,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "view",
-     "fa": "نمایش"
+     "fa": ""
     },
     {
      "id": 910076,
@@ -6089,7 +6089,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "trip",
-     "fa": "سفر"
+     "fa": ""
     },
     {
      "id": 102142,
@@ -6110,7 +6110,7 @@
      "level": "B1",
      "pos": "noun",
      "en": "journey",
-     "fa": "سفر"
+     "fa": ""
     },
     {
      "id": 100275,
@@ -6124,7 +6124,7 @@
      "level": "A1",
      "pos": "verb",
      "en": "leave",
-     "fa": "ترک کردن"
+     "fa": ""
     },
     {
      "id": 500261,
@@ -6208,7 +6208,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "gate",
-     "fa": "دروازه"
+     "fa": ""
     },
     {
      "id": 702841,
@@ -6229,14 +6229,14 @@
      "level": "A2",
      "pos": "adjective",
      "en": "single",
-     "fa": "مجرد"
+     "fa": ""
     },
     {
      "id": 701187,
      "level": "A2",
      "pos": "adjective",
      "en": "double",
-     "fa": "دوتایی"
+     "fa": ""
     },
     {
      "id": 910080,
@@ -6278,7 +6278,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "brush",
-     "fa": "برس"
+     "fa": ""
     },
     {
      "id": 104810,
@@ -6292,7 +6292,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "shower",
-     "fa": "دوش"
+     "fa": ""
     },
     {
      "id": 910084,
@@ -6313,7 +6313,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "work",
-     "fa": "کار"
+     "fa": ""
     },
     {
      "id": 104197,
@@ -6355,42 +6355,42 @@
      "level": "A1",
      "pos": "verb",
      "en": "cook",
-     "fa": "پختن"
+     "fa": ""
     },
     {
      "id": 100744,
      "level": "A1",
      "pos": "adjective",
      "en": "clean",
-     "fa": "تمیز"
+     "fa": ""
     },
     {
      "id": 703915,
      "level": "A2",
      "pos": "adjective",
      "en": "tidy",
-     "fa": "مرتب"
+     "fa": ""
     },
     {
      "id": 104261,
      "level": "A1",
      "pos": "noun",
      "en": "study",
-     "fa": "مطالعه"
+     "fa": ""
     },
     {
      "id": 701859,
      "level": "A1",
      "pos": "noun",
      "en": "homework",
-     "fa": "مشق"
+     "fa": ""
     },
     {
      "id": 103653,
      "level": "A1",
      "pos": "verb",
      "en": "relax",
-     "fa": "آرامش"
+     "fa": ""
     },
     {
      "id": 910086,
@@ -6607,7 +6607,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "weather",
-     "fa": "آب و هوا"
+     "fa": ""
     },
     {
      "id": 910101,
@@ -6698,7 +6698,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "storm",
-     "fa": "طوفان"
+     "fa": ""
     },
     {
      "id": 910108,
@@ -6747,14 +6747,14 @@
      "level": "A1",
      "pos": "adjective",
      "en": "hot",
-     "fa": "گرم"
+     "fa": ""
     },
     {
      "id": 104804,
      "level": "A1",
      "pos": "adjective",
      "en": "warm",
-     "fa": "گرم"
+     "fa": ""
     },
     {
      "id": 100990,
@@ -6852,7 +6852,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "climate",
-     "fa": "آب و هوا"
+     "fa": ""
     },
     {
      "id": 703514,
@@ -6866,7 +6866,7 @@
      "level": "A2",
      "pos": "adjective",
      "en": "clear",
-     "fa": "واضح"
+     "fa": ""
     },
     {
      "id": 702411,
@@ -6880,7 +6880,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "heat",
-     "fa": "حرارت"
+     "fa": ""
     },
     {
      "id": 910114,
@@ -6957,28 +6957,28 @@
      "level": "A1",
      "pos": "verb",
      "en": "sing",
-     "fa": "خواندن"
+     "fa": ""
     },
     {
      "id": 700965,
      "level": "A1",
      "pos": "noun",
      "en": "dance",
-     "fa": "رقص"
+     "fa": ""
     },
     {
      "id": 701200,
      "level": "A1",
      "pos": "verb",
      "en": "draw",
-     "fa": "نقاشی کردن"
+     "fa": ""
     },
     {
      "id": 702715,
      "level": "A1",
      "pos": "noun",
      "en": "paint",
-     "fa": "رنگ"
+     "fa": ""
     },
     {
      "id": 702807,
@@ -7013,14 +7013,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "garden",
-     "fa": "باغ"
+     "fa": ""
     },
     {
      "id": 104593,
      "level": "A1",
      "pos": "noun",
      "en": "travel",
-     "fa": "سفر"
+     "fa": ""
     },
     {
      "id": 102862,
@@ -7097,7 +7097,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "cycle",
-     "fa": "چرخه"
+     "fa": ""
     },
     {
      "id": 910119,
@@ -7111,7 +7111,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "camping",
-     "fa": "کمپینگ"
+     "fa": ""
     },
     {
      "id": 701555,
@@ -7153,14 +7153,14 @@
      "level": "A2",
      "pos": "verb",
      "en": "collect",
-     "fa": "جمع آوری کردن"
+     "fa": ""
     },
     {
      "id": 701491,
      "level": "A2",
      "pos": "noun",
      "en": "fan",
-     "fa": "فن"
+     "fa": ""
     },
     {
      "id": 703821,
@@ -7174,21 +7174,21 @@
      "level": "A1",
      "pos": "noun",
      "en": "play",
-     "fa": "بازی"
+     "fa": ""
     },
     {
      "id": 702111,
      "level": "A1",
      "pos": "verb",
      "en": "join",
-     "fa": "پیوستن"
+     "fa": ""
     },
     {
      "id": 700656,
      "level": "A1",
      "pos": "noun",
      "en": "club",
-     "fa": "باشگاه"
+     "fa": ""
     },
     {
      "id": 700754,
@@ -7209,14 +7209,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "fun",
-     "fa": "سرگرمی"
+     "fa": ""
     },
     {
      "id": 701328,
      "level": "A1",
      "pos": "verb",
      "en": "enjoy",
-     "fa": "لذت بردن"
+     "fa": ""
     },
     {
      "id": 702058,
@@ -7237,7 +7237,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "favourite",
-     "fa": "محبوب"
+     "fa": ""
     },
     {
      "id": 910124,
@@ -7293,7 +7293,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "medicine",
-     "fa": "پزشکی"
+     "fa": ""
     },
     {
      "id": 910129,
@@ -7307,14 +7307,14 @@
      "level": "A2",
      "pos": "noun",
      "en": "tablet",
-     "fa": "تبلت"
+     "fa": ""
     },
     {
      "id": 700908,
      "level": "A1",
      "pos": "noun",
      "en": "cream",
-     "fa": "خامه"
+     "fa": ""
     },
     {
      "id": 910130,
@@ -7398,7 +7398,7 @@
      "level": "A2",
      "pos": "other",
      "en": "sore throat",
-     "fa": "گلو درد"
+     "fa": ""
     },
     {
      "id": 200412,
@@ -7412,7 +7412,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "cold",
-     "fa": "سرد"
+     "fa": ""
     },
     {
      "id": 701580,
@@ -7433,7 +7433,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "temperature",
-     "fa": "دما"
+     "fa": ""
     },
     {
      "id": 910137,
@@ -7454,7 +7454,7 @@
      "level": "A2",
      "pos": "adjective",
      "en": "hurt",
-     "fa": "آسیب دیده"
+     "fa": ""
     },
     {
      "id": 102209,
@@ -7524,14 +7524,14 @@
      "level": "B1",
      "pos": "noun",
      "en": "injury",
-     "fa": "جراحت"
+     "fa": ""
     },
     {
      "id": 700956,
      "level": "A1",
      "pos": "verb",
      "en": "cut",
-     "fa": "بریدن"
+     "fa": ""
     },
     {
      "id": 700180,
@@ -7552,7 +7552,7 @@
      "level": "A1",
      "pos": "adverb",
      "en": "back",
-     "fa": "بازگشت"
+     "fa": ""
     },
     {
      "id": 703908,
@@ -7601,14 +7601,14 @@
      "level": "B1",
      "pos": "noun",
      "en": "appointment",
-     "fa": "قرار ملاقات"
+     "fa": ""
     },
     {
      "id": 703796,
      "level": "B1",
      "pos": "noun",
      "en": "symptom",
-     "fa": "علامت"
+     "fa": ""
     },
     {
      "id": 910145,
@@ -7643,28 +7643,28 @@
      "level": "A1",
      "pos": "noun",
      "en": "time",
-     "fa": "زمان"
+     "fa": ""
     },
     {
      "id": 100758,
      "level": "A1",
      "pos": "noun",
      "en": "clock",
-     "fa": "ساعت"
+     "fa": ""
     },
     {
      "id": 104813,
      "level": "A1",
      "pos": "noun",
      "en": "watch",
-     "fa": "ساعت"
+     "fa": ""
     },
     {
      "id": 102168,
      "level": "A1",
      "pos": "noun",
      "en": "hour",
-     "fa": "ساعت"
+     "fa": ""
     },
     {
      "id": 102800,
@@ -7678,14 +7678,14 @@
      "level": "A1",
      "pos": "determiner",
      "en": "second",
-     "fa": "دوم"
+     "fa": ""
     },
     {
      "id": 702590,
      "level": "A1",
      "pos": "adverb",
      "en": "o'clock",
-     "fa": "ساعت"
+     "fa": ""
     },
     {
      "id": 910148,
@@ -7860,7 +7860,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "May",
-     "fa": "مه"
+     "fa": ""
     },
     {
      "id": 702123,
@@ -7965,7 +7965,7 @@
      "level": "B1",
      "pos": "noun",
      "en": "appointment",
-     "fa": "قرار ملاقات"
+     "fa": ""
     },
     {
      "id": 500382,
@@ -8434,7 +8434,7 @@
      "level": "A1",
      "pos": "verb",
      "en": "read",
-     "fa": "خواندن"
+     "fa": ""
     },
     {
      "id": 910204,
@@ -8469,14 +8469,14 @@
      "level": "A1",
      "pos": "adjective",
      "en": "left",
-     "fa": "چپ"
+     "fa": ""
     },
     {
      "id": 702283,
      "level": "A2",
      "pos": "adjective",
      "en": "lost",
-     "fa": "گم شده"
+     "fa": ""
     },
     {
      "id": 910208,
@@ -8518,14 +8518,14 @@
      "level": "A2",
      "pos": "noun",
      "en": "thought",
-     "fa": "فکر"
+     "fa": ""
     },
     {
      "id": 700113,
      "level": "A1",
      "pos": "adverb",
      "en": "ago",
-     "fa": "پیش"
+     "fa": ""
     },
     {
      "id": 910213,
@@ -8581,7 +8581,7 @@
      "level": "A1",
      "pos": "auxiliary",
      "en": "will",
-     "fa": "خواهم"
+     "fa": ""
     },
     {
      "id": 910219,
@@ -8616,28 +8616,28 @@
      "level": "A2",
      "pos": "adverb",
      "en": "already",
-     "fa": "قبلاً"
+     "fa": ""
     },
     {
      "id": 704290,
      "level": "A2",
      "pos": "adverb",
      "en": "yet",
-     "fa": "هنوز"
+     "fa": ""
     },
     {
      "id": 702127,
      "level": "A1",
      "pos": "adverb",
      "en": "just",
-     "fa": "فقط"
+     "fa": ""
     },
     {
      "id": 703667,
      "level": "A1",
      "pos": "adverb",
      "en": "still",
-     "fa": "هنوز"
+     "fa": ""
     }
    ]
   },
@@ -8658,7 +8658,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "text",
-     "fa": "متن"
+     "fa": ""
     },
     {
      "id": 101485,
@@ -8679,7 +8679,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "reply",
-     "fa": "پاسخ"
+     "fa": ""
     },
     {
      "id": 703138,
@@ -8707,7 +8707,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "subject",
-     "fa": "موضوع"
+     "fa": ""
     },
     {
      "id": 910223,
@@ -8777,21 +8777,21 @@
      "level": "B1",
      "pos": "verb",
      "en": "contact",
-     "fa": "تماس گرفتن"
+     "fa": ""
     },
     {
      "id": 100597,
      "level": "A1",
      "pos": "noun",
      "en": "call",
-     "fa": "تماس"
+     "fa": ""
     },
     {
      "id": 703279,
      "level": "A2",
      "pos": "noun",
      "en": "ring",
-     "fa": "حلقه"
+     "fa": ""
     },
     {
      "id": 910231,
@@ -8847,21 +8847,21 @@
      "level": "A2",
      "pos": "noun",
      "en": "sign",
-     "fa": "علامت"
+     "fa": ""
     },
     {
      "id": 703458,
      "level": "A1",
      "pos": "adjective",
      "en": "short",
-     "fa": "کوتاه"
+     "fa": ""
     },
     {
      "id": 701614,
      "level": "A2",
      "pos": "adverb",
      "en": "forward",
-     "fa": "به جلو"
+     "fa": ""
     },
     {
      "id": 910236,
@@ -8903,7 +8903,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "link",
-     "fa": "پیوند"
+     "fa": ""
     },
     {
      "id": 702807,
@@ -8945,14 +8945,14 @@
      "level": "A1",
      "pos": "noun",
      "en": "job",
-     "fa": "کار"
+     "fa": ""
     },
     {
      "id": 104908,
      "level": "A1",
      "pos": "noun",
      "en": "work",
-     "fa": "کار"
+     "fa": ""
     },
     {
      "id": 101357,
@@ -8980,7 +8980,7 @@
      "level": "A1",
      "pos": "verb",
      "en": "cook",
-     "fa": "پختن"
+     "fa": ""
     },
     {
      "id": 104794,
@@ -9169,7 +9169,7 @@
      "level": "A2",
      "pos": "verb",
      "en": "earn",
-     "fa": "به دست آوردن"
+     "fa": ""
     },
     {
      "id": 701844,
@@ -9183,7 +9183,7 @@
      "level": "A2",
      "pos": "verb",
      "en": "apply",
-     "fa": "درخواست دادن"
+     "fa": ""
     }
    ]
   },
@@ -9211,7 +9211,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "flat",
-     "fa": "آپارتمان"
+     "fa": ""
     },
     {
      "id": 103793,
@@ -9253,7 +9253,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "garden",
-     "fa": "باغ"
+     "fa": ""
     },
     {
      "id": 910076,
@@ -9344,7 +9344,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "cooker",
-     "fa": "اجاق گاز"
+     "fa": ""
     },
     {
      "id": 910254,
@@ -9358,7 +9358,7 @@
      "level": "B1",
      "pos": "noun",
      "en": "rent",
-     "fa": "اجاره"
+     "fa": ""
     },
     {
      "id": 910255,
@@ -9386,14 +9386,14 @@
      "level": "A2",
      "pos": "adjective",
      "en": "safe",
-     "fa": "ایمن"
+     "fa": ""
     },
     {
      "id": 700471,
      "level": "A2",
      "pos": "adjective",
      "en": "bright",
-     "fa": "روشن"
+     "fa": ""
     },
     {
      "id": 910256,
@@ -9414,7 +9414,7 @@
      "level": "A2",
      "pos": "noun",
      "en": "furniture",
-     "fa": "مبلمان"
+     "fa": ""
     },
     {
      "id": 703444,
@@ -9442,28 +9442,28 @@
      "level": "A1",
      "pos": "adjective",
      "en": "tall",
-     "fa": "بلند"
+     "fa": ""
     },
     {
      "id": 703458,
      "level": "A1",
      "pos": "adjective",
      "en": "short",
-     "fa": "کوتاه"
+     "fa": ""
     },
     {
      "id": 703889,
      "level": "A2",
      "pos": "adjective",
      "en": "thin",
-     "fa": "نازک"
+     "fa": ""
     },
     {
      "id": 701815,
      "level": "A2",
      "pos": "adjective",
      "en": "heavy",
-     "fa": "سنگین"
+     "fa": ""
     },
     {
      "id": 704293,
@@ -9477,7 +9477,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "old",
-     "fa": "قدیمی"
+     "fa": ""
     },
     {
      "id": 910258,
@@ -9505,21 +9505,21 @@
      "level": "A1",
      "pos": "adjective",
      "en": "dark",
-     "fa": "تاریک"
+     "fa": ""
     },
     {
      "id": 700948,
      "level": "A2",
      "pos": "adjective",
      "en": "curly",
-     "fa": "مجعد"
+     "fa": ""
     },
     {
      "id": 703677,
      "level": "A2",
      "pos": "adjective",
      "en": "straight",
-     "fa": "مستقیم"
+     "fa": ""
     },
     {
      "id": 910260,
@@ -9540,21 +9540,21 @@
      "level": "A1",
      "pos": "adjective",
      "en": "friendly",
-     "fa": "دوستانه"
+     "fa": ""
     },
     {
      "id": 701665,
      "level": "A1",
      "pos": "adjective",
      "en": "funny",
-     "fa": "خنده دار"
+     "fa": ""
     },
     {
      "id": 702140,
      "level": "A1",
      "pos": "noun",
      "en": "kind",
-     "fa": "نوع"
+     "fa": ""
     },
     {
      "id": 103994,
@@ -9659,7 +9659,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "different",
-     "fa": "مختلف"
+     "fa": ""
     },
     {
      "id": 102189,
@@ -9778,7 +9778,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "stop",
-     "fa": "توقف"
+     "fa": ""
     },
     {
      "id": 702749,
@@ -9806,7 +9806,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "park",
-     "fa": "پارک"
+     "fa": ""
     },
     {
      "id": 703373,
@@ -9834,21 +9834,21 @@
      "level": "A1",
      "pos": "noun",
      "en": "change",
-     "fa": "تغییر"
+     "fa": ""
     },
     {
      "id": 702434,
      "level": "A1",
      "pos": "verb",
      "en": "miss",
-     "fa": "از دست دادن"
+     "fa": ""
     },
     {
      "id": 700552,
      "level": "A2",
      "pos": "verb",
      "en": "catch",
-     "fa": "گرفتن"
+     "fa": ""
     }
    ]
   },
@@ -9869,7 +9869,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "party",
-     "fa": "حزب"
+     "fa": ""
     },
     {
      "id": 101965,
@@ -9883,7 +9883,7 @@
      "level": "A1",
      "pos": "adjective",
      "en": "present",
-     "fa": "حاضر"
+     "fa": ""
     },
     {
      "id": 700512,
@@ -9932,7 +9932,7 @@
      "level": "A1",
      "pos": "noun",
      "en": "festival",
-     "fa": "جشنواره"
+     "fa": ""
     },
     {
      "id": 910274,
@@ -9960,14 +9960,14 @@
      "level": "A2",
      "pos": "noun",
      "en": "wish",
-     "fa": "آرزو"
+     "fa": ""
     },
     {
      "id": 703769,
      "level": "A2",
      "pos": "noun",
      "en": "surprise",
-     "fa": "سورپرایز"
+     "fa": ""
     },
     {
      "id": 100623,
@@ -9995,7 +9995,7 @@
      "level": "A2",
      "pos": "adjective",
      "en": "secret",
-     "fa": "مخفی"
+     "fa": ""
     },
     {
      "id": 910277,
@@ -10163,7 +10163,7 @@
      "level": "A1",
      "pos": "conjunction",
      "en": "than",
-     "fa": "از"
+     "fa": ""
     },
     {
      "id": 910297,
