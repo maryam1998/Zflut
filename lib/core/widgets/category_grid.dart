@@ -72,18 +72,22 @@ class CategoryGrid extends StatelessWidget {
   final String list;
   final List<CategoryItem> items;
   final ValueChanged<String?> onTap;
+
+  /// فاصله‌ی پایینِ شبکه (برای بخش‌های میانیِ شبکه‌ی گروه‌بندی‌شده کم می‌شود)
+  final double bottomPadding;
   const CategoryGrid({
     super.key,
     required this.list,
     required this.items,
     required this.onTap,
+    this.bottomPadding = 90,
   });
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 90),
+      padding: EdgeInsets.fromLTRB(12, 6, 12, bottomPadding),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),

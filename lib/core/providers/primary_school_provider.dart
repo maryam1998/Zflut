@@ -25,11 +25,15 @@ class PrimaryTopic {
   final String fa;
   final String en;
   final List<DailyWord> words;
+
+  /// گروهِ موضوع در شبکه (مثلاً 'school' یا 'life')؛ خالی = بدونِ گروه‌بندی
+  final String group;
   const PrimaryTopic({
     required this.key,
     required this.fa,
     required this.en,
     required this.words,
+    this.group = '',
   });
 
   String label(String ui) => ui == 'fa' ? fa : en;
@@ -46,6 +50,7 @@ Future<List<PrimaryTopic>> _loadPrimaryTopics(String asset) async {
         key: m['key']?.toString() ?? '',
         fa: m['fa']?.toString() ?? '',
         en: m['en']?.toString() ?? '',
+        group: m['group']?.toString() ?? '',
         words: [
           for (final w in (m['words'] as List<dynamic>))
             DailyWord.fromJson(w as Map<String, dynamic>),

@@ -7,6 +7,7 @@
    "key": "school",
    "fa": "مدرسه و کلاس",
    "en": "School & Class",
+   "group": "school",
    "words": [
     {
      "id": 703356,
@@ -329,6 +330,7 @@
    "key": "instructions",
    "fa": "زبان کلاس",
    "en": "Classroom Language",
+   "group": "school",
    "words": [
     {
      "id": 920001,
@@ -728,6 +730,7 @@
    "key": "science",
    "fa": "علوم",
    "en": "Science",
+   "group": "school",
    "words": [
     {
      "id": 920057,
@@ -1064,6 +1067,7 @@
    "key": "math",
    "fa": "ریاضی",
    "en": "Maths",
+   "group": "school",
    "words": [
     {
      "id": 920103,
@@ -1351,6 +1355,7 @@
    "key": "geography",
    "fa": "جغرافیا و جهان",
    "en": "Geography & the World",
+   "group": "school",
    "words": [
     {
      "id": 920143,
@@ -1631,6 +1636,7 @@
    "key": "countries",
    "fa": "کشورها و ملیت‌ها",
    "en": "Countries & Nationalities",
+   "group": "school",
    "words": [
     {
      "id": 920182,
@@ -2002,6 +2008,7 @@
    "key": "plants",
    "fa": "گیاهان و باغچه",
    "en": "Plants & Gardens",
+   "group": "school",
    "words": [
     {
      "id": 920234,
@@ -2268,6 +2275,7 @@
    "key": "habitats",
    "fa": "حیوانات و زیستگاه",
    "en": "Animals & Habitats",
+   "group": "school",
    "words": [
     {
      "id": 920271,
@@ -2471,6 +2479,7 @@
    "key": "art",
    "fa": "هنر و کاردستی",
    "en": "Art & Crafts",
+   "group": "school",
    "words": [
     {
      "id": 920299,
@@ -2681,6 +2690,7 @@
    "key": "music",
    "fa": "موسیقی",
    "en": "Music",
+   "group": "school",
    "words": [
     {
      "id": 920328,
@@ -3038,6 +3048,7 @@
    "key": "pe",
    "fa": "ورزش و تربیت‌بدنی",
    "en": "PE & Sports",
+   "group": "school",
    "words": [
     {
      "id": 920378,
@@ -3402,6 +3413,7 @@
    "key": "computers",
    "fa": "رایانه و فناوری",
    "en": "Computers & Technology",
+   "group": "school",
    "words": [
     {
      "id": 920428,
@@ -3724,6 +3736,7 @@
    "key": "community",
    "fa": "آدم‌هایی که کمکمان می‌کنند",
    "en": "People Who Help Us",
+   "group": "school",
    "words": [
     {
      "id": 920472,
@@ -4011,6 +4024,7 @@
    "key": "safety",
    "fa": "ایمنی و قوانین",
    "en": "Safety & Rules",
+   "group": "school",
    "words": [
     {
      "id": 920511,
@@ -4333,6 +4347,7 @@
    "key": "environment",
    "fa": "محیط زیست و بازیافت",
    "en": "Environment & Recycling",
+   "group": "school",
    "words": [
     {
      "id": 920553,
@@ -4571,6 +4586,7 @@
    "key": "space",
    "fa": "فضا و ستاره‌ها",
    "en": "Space",
+   "group": "school",
    "words": [
     {
      "id": 920584,
@@ -4837,6 +4853,7 @@
    "key": "habits",
    "fa": "عادت‌های سالم",
    "en": "Healthy Habits",
+   "group": "school",
    "words": [
     {
      "id": 920421,
@@ -5061,6 +5078,7 @@
    "key": "stories",
    "fa": "داستان و کتاب",
    "en": "Stories & Books",
+   "group": "school",
    "words": [
     {
      "id": 920647,
@@ -5397,6 +5415,7 @@
    "key": "cooking",
    "fa": "آشپزی و آشپزخانه",
    "en": "Cooking & Kitchen",
+   "group": "school",
    "words": [
     {
      "id": 920693,
@@ -5733,6 +5752,7 @@
    "key": "vehicles",
    "fa": "وسیله‌های نقلیه",
    "en": "Vehicles",
+   "group": "school",
    "words": [
     {
      "id": 920736,
@@ -6006,6 +6026,7 @@
    "key": "friends",
    "fa": "دوستی و احساسات",
    "en": "Friends & Feelings",
+   "group": "school",
    "words": [
     {
      "id": 920771,
@@ -6286,6 +6307,7 @@
    "key": "history",
    "fa": "دایناسورها و گذشته",
    "en": "Dinosaurs & the Past",
+   "group": "school",
    "words": [
     {
      "id": 920808,
@@ -6545,6 +6567,7 @@
    "key": "shopping",
    "fa": "خرید و فروشگاه",
    "en": "Shopping",
+   "group": "life",
    "words": [
     {
      "id": 103978,
@@ -6923,6 +6946,7 @@
    "key": "clothes",
    "fa": "لباس",
    "en": "Clothes",
+   "group": "life",
    "words": [
     {
      "id": 102430,
@@ -7273,6 +7297,7 @@
    "key": "restaurant",
    "fa": "رستوران و سفارش غذا",
    "en": "Restaurant & Ordering Food",
+   "group": "life",
    "words": [
     {
      "id": 103733,
@@ -7735,6 +7760,7 @@
    "key": "places",
    "fa": "مکان‌های شهر",
    "en": "Places in Town",
+   "group": "life",
    "words": [
     {
      "id": 100728,
@@ -8050,6 +8076,7 @@
    "key": "directions",
    "fa": "آدرس و مسیر",
    "en": "Asking for Directions",
+   "group": "life",
    "words": [
     {
      "id": 100077,
@@ -8400,6 +8427,7 @@
    "key": "hotel",
    "fa": "هتل و سفر",
    "en": "Hotel & Travel",
+   "group": "life",
    "words": [
     {
      "id": 102167,
@@ -8792,6 +8820,7 @@
    "key": "routine",
    "fa": "برنامه روزانه",
    "en": "Daily Routine",
+   "group": "life",
    "words": [
     {
      "id": 910082,
@@ -9135,6 +9164,7 @@
    "key": "weather",
    "fa": "آب‌وهوا",
    "en": "Weather",
+   "group": "life",
    "words": [
     {
      "id": 104825,
@@ -9450,6 +9480,7 @@
    "key": "hobbies",
    "fa": "سرگرمی‌ها",
    "en": "Hobbies & Free Time",
+   "group": "life",
    "words": [
     {
      "id": 701851,
@@ -9814,6 +9845,7 @@
    "key": "pharmacy",
    "fa": "داروخانه و سلامت",
    "en": "Pharmacy & Health",
+   "group": "life",
    "words": [
     {
      "id": 704382,
@@ -10171,6 +10203,7 @@
    "key": "time",
    "fa": "ساعت و تاریخ",
    "en": "Time & Date",
+   "group": "life",
    "words": [
     {
      "id": 104514,
@@ -10605,6 +10638,7 @@
    "key": "phrases",
    "fa": "الگوهای پرکاربرد",
    "en": "Useful Phrases & Questions",
+   "group": "life",
    "words": [
     {
      "id": 910155,
@@ -10857,6 +10891,7 @@
    "key": "past_future",
    "fa": "گذشته و آینده",
    "en": "Past & Future",
+   "group": "life",
    "words": [
     {
      "id": 910189,
@@ -11179,6 +11214,7 @@
    "key": "messages",
    "fa": "پیام کوتاه و ایمیل",
    "en": "Messages & Email",
+   "group": "life",
    "words": [
     {
      "id": 102769,
@@ -11473,6 +11509,7 @@
    "key": "jobs",
    "fa": "شغل‌ها",
    "en": "Jobs & Work",
+   "group": "life",
    "words": [
     {
      "id": 102438,
@@ -11725,6 +11762,7 @@
    "key": "home",
    "fa": "خانه و محله",
    "en": "Home & Neighborhood",
+   "group": "life",
    "words": [
     {
      "id": 102169,
@@ -11970,6 +12008,7 @@
    "key": "people",
    "fa": "توصیف آدم‌ها",
    "en": "Describing People",
+   "group": "life",
    "words": [
     {
      "id": 703811,
@@ -12215,6 +12254,7 @@
    "key": "transport",
    "fa": "حمل‌ونقل",
    "en": "Transport",
+   "group": "life",
    "words": [
     {
      "id": 100579,
@@ -12390,6 +12430,7 @@
    "key": "celebrations",
    "fa": "تولد و جشن‌ها",
    "en": "Birthdays & Celebrations",
+   "group": "life",
    "words": [
     {
      "id": 100470,
@@ -12544,6 +12585,7 @@
    "key": "comparison",
    "fa": "مقایسه",
    "en": "Comparing Things",
+   "group": "life",
    "words": [
     {
      "id": 910278,
