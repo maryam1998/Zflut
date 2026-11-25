@@ -583,29 +583,20 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             StageChips(
-              primary: _primary,
-              onAll: () => _setPrimary(false),
-              onPrimary: () => _setPrimary(true),
-              onLevel: () => _setPrimary(true),
-              levels: const ['A1', 'A2'],
-              level: _primaryLevel,
-              onLevelChanged: (lv) {
-                _primaryLevel = lv;
-                _setPrimary(true);
+              selected: _primary
+                  ? _primaryLevel
+                  : (_levels.length == 1 ? _levels.first : null),
+              onSelect: (lv) {
+                if (lv == 'A1' || lv == 'A2') {
+                  _primaryLevel = lv!;
+                  _setPrimary(true);
+                } else {
+                  _setPrimary(false);
+                  setState(() => _levels = lv == null ? <String>{} : {lv});
+                }
               },
             ),
             const SizedBox(height: 8),
-            if (!_primary) ...[
-              LevelChipsMulti(
-                selected: _levels,
-                onChanged: (v) => setState(() {
-                  _levels = v;
-                  _rangeFrom = 1;
-                  _rangeTo = 65;
-                }),
-              ),
-              const SizedBox(height: 8),
-            ],
             _searchField(),
           ],
         ),

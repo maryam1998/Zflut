@@ -87,6 +87,7 @@ class WordsTab extends ConsumerWidget {
       gridMode: gridMode,
       hasAnyData: all.isNotEmpty || personal.isNotEmpty,
       topSlot: const StageChipsBar(),
+      hideLevelChips: true, // سطح‌ها حالا داخلِ ردیفِ StageChips هستند
       loading: ref.watch(dailyWordsLoaderProvider).isLoading,
       afterHeading: Column(
         mainAxisSize: MainAxisSize.min,

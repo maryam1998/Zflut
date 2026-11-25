@@ -10,7 +10,8 @@ import '../models/daily_word.dart';
 const String kStagePrimary = 'primary';
 
 /// برچسبِ چیپ (برای تغییرِ اسم فقط همین‌جا را عوض کن)
-const String kPrimaryChipLabel = 'Primary School';
+const String kPrimaryChipLabel = 'Primary School'; // A2
+const String kPreschoolChipLabel = 'Preschool'; // A1
 
 final wordsStageProvider = StateProvider<String?>((ref) => null);
 

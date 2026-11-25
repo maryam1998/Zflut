@@ -3,94 +3,74 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/level_colors.dart';
 import '../../../core/providers/primary_school_provider.dart';
+import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/widgets/category_grid.dart' show categoryAllOpenProvider;
 
 /// ردیفِ چیپ‌های مرحله (مشترک بین تبِ لغات و تبِ مکالمه):
-///   [همه]  [Primary School]
-/// و وقتی Primary School انتخاب است، زیرش چیپِ سطح: [A1]
+///   [همه] [Preschool·A1] [Primary School·A2] [Lower Secondary·B1]
+///   [Upper Secondary·B2] [Undergraduate / Master's·C1] [Postgraduate / Doctorate·C2]
+/// [selected] = null → «همه»؛ وگرنه کدِ سطح ('A1'…'C2').
 class StageChips extends StatelessWidget {
-  final bool primary;
-  final VoidCallback onAll;
-  final VoidCallback onPrimary;
-  final VoidCallback onLevel;
-
-  /// سطح‌هایی که زیرِ Primary School نشان داده می‌شوند (تبِ مکالمه فعلاً فقط A1)
-  final List<String> levels;
-  final String level;
-  final ValueChanged<String>? onLevelChanged;
+  final String? selected;
+  final ValueChanged<String?> onSelect;
   const StageChips({
     super.key,
-    required this.primary,
-    required this.onAll,
-    required this.onPrimary,
-    required this.onLevel,
-    this.levels = const ['A1'],
-    this.level = 'A1',
-    this.onLevelChanged,
+    required this.selected,
+    required this.onSelect,
   });
+
+  static const List<(String, String)> stages = [
+    ('A1', kPreschoolChipLabel),
+    ('A2', kPrimaryChipLabel),
+    ('B1', 'Lower Secondary'),
+    ('B2', 'Upper Secondary'),
+    ('C1', "Undergraduate / Master's"),
+    ('C2', 'Postgraduate / Doctorate'),
+  ];
+
+  static IconData _icon(String lv) {
+    switch (lv) {
+      case 'A1':
+        return Icons.child_care_rounded;
+      case 'A2':
+        return Icons.school_rounded;
+      default:
+        return Icons.workspace_premium_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final ui = Localizations.localeOf(context).languageCode;
     final allLabel = (ui == 'fa' || ui == 'ar') ? 'همه' : 'All';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          height: 38,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              Center(
-                child: _StageChip(
-                  label: allLabel,
-                  active: !primary,
-                  onTap: onAll,
-                ),
-              ),
-              const SizedBox(width: 7),
-              Center(
-                child: _StageChip(
-                  label: kPrimaryChipLabel,
-                  icon: Icons.school_rounded,
-                  active: primary,
-                  onTap: onPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (primary) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 34,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                for (final lv in levels) ...[
-                  Center(
-                    child: _StageChip(
-                      label: lv,
-                      active: lv == level,
-                      color: levelColor(lv),
-                      small: true,
-                      onTap: () {
-                        if (lv == level) {
-                          onLevel(); // برگشت به شبکه‌ی موضوع‌ها
-                        } else {
-                          onLevelChanged?.call(lv);
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 7),
-                ],
-              ],
+    return SizedBox(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          Center(
+            child: _StageChip(
+              label: allLabel,
+              active: selected == null,
+              onTap: () => onSelect(null),
             ),
           ),
+          for (final st in stages) ...[
+            const SizedBox(width: 7),
+            Center(
+              child: _StageChip(
+                label: st.$2,
+                sub: st.$1,
+                icon: _icon(st.$1),
+                active: selected == st.$1,
+                color: levelColor(st.$1),
+                onTap: () => onSelect(st.$1),
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -101,7 +81,11 @@ class StageChipsBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final primary = ref.watch(wordsStageProvider) == kStagePrimary;
+    final inPrimary = ref.watch(wordsStageProvider) == kStagePrimary;
+    final levels = ref.watch(wordsFilterProvider.select((f) => f.levels));
+    final String? selected = inPrimary
+        ? ref.watch(primaryLevelProvider)
+        : (levels.length == 1 ? levels.first : null);
 
     void reset() {
       ref.read(primaryTopicProvider.notifier).state = null;
@@ -109,21 +93,17 @@ class StageChipsBar extends ConsumerWidget {
     }
 
     return StageChips(
-      primary: primary,
-      onAll: () {
+      selected: selected,
+      onSelect: (lv) {
         reset();
-        ref.read(wordsStageProvider.notifier).state = null;
-      },
-      onPrimary: () {
-        reset();
-        ref.read(wordsStageProvider.notifier).state = kStagePrimary;
-      },
-      onLevel: reset,
-      levels: const ['A1', 'A2'],
-      level: ref.watch(primaryLevelProvider),
-      onLevelChanged: (lv) {
-        reset();
-        ref.read(primaryLevelProvider.notifier).state = lv;
+        ref.read(wordsFilterProvider.notifier).setLevels(
+            lv == null || lv == 'A1' || lv == 'A2' ? <String>{} : {lv});
+        if (lv == 'A1' || lv == 'A2') {
+          ref.read(primaryLevelProvider.notifier).state = lv!;
+          ref.read(wordsStageProvider.notifier).state = kStagePrimary;
+        } else {
+          ref.read(wordsStageProvider.notifier).state = null;
+        }
       },
     );
   }
@@ -136,6 +116,7 @@ class _StageChip extends StatelessWidget {
   final IconData? icon;
   final Color? color;
   final bool small;
+  final String? sub; // زیرنویسِ سطح (مثلاً A1)
   const _StageChip({
     required this.label,
     required this.active,
@@ -143,6 +124,7 @@ class _StageChip extends StatelessWidget {
     this.icon,
     this.color,
     this.small = false,
+    this.sub,
   });
 
   @override
@@ -169,13 +151,28 @@ class _StageChip extends StatelessWidget {
               Icon(icon, size: 16, color: active ? tone : c.inkSoft),
               const SizedBox(width: 6),
             ],
-            Text(
-              label,
-              style: TextStyle(
-                color: active ? c.ink : c.inkSoft,
-                fontSize: small ? 12.5 : 13.5,
-                fontWeight: FontWeight.w700,
-              ),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: active ? c.ink : c.inkSoft,
+                    fontSize: small ? 12.5 : 13.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (sub != null)
+                  Text(
+                    sub!,
+                    style: TextStyle(
+                      color: active ? tone : c.inkSoft,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
