@@ -181,6 +181,11 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
   final Map<String, String> _tr = {};
   final Set<String> _inflight = {};
   final Set<String> _failed = {};
+  /// پاراگراف‌هایی که ترجمه‌ی ذخیره‌شده (بازبینی‌شده) دارند ولی تعدادِ جمله‌هایشان با مبدأ نمی‌خواند:
+  /// در حالتِ جمله‌به‌جمله به‌جای ترجمه‌ی دوباره‌ی جمله‌ها، همان ترجمه‌ی ذخیره‌شده نشان داده می‌شود.
+  final Set<String> _paraOnly = {};
+  /// آخرین متنِ ذخیره‌شده‌ای که برای هر پاراگراف seed شده (برای تشخیصِ تغییرِ ترجمه‌ی ذخیره‌شده)
+  final Map<String, String> _seeded = {};
   final Set<String> _retrying = {};
   final Map<int, GlobalKey> _pk = {};
 
@@ -632,11 +637,42 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
         if (t.isEmpty) continue;
         // ترجمه‌ی قدیمیِ ناموفق (همان متن مبدأ) ترجمه حساب نمی‌شود → دوباره ترجمه می‌شود
         if (t.toLowerCase() == paras[i].text.trim().toLowerCase()) continue;
-        _tr.putIfAbsent(_k(lang, paras[i].text), () => t);
-        final ts = widget.splitSentences(t);
-        if (paras[i].sents.length > 1 && ts.length == paras[i].sents.length) {
-          for (var k = 0; k < ts.length; k++) {
-            _tr.putIfAbsent(_k(lang, paras[i].sents[k]), () => ts[k]);
+        final pk = _k(lang, paras[i].text);
+        // ✅ ترجمه‌ی ذخیره‌شده‌ی داستان (که ممکن است AI بازبینی کرده باشد) بر ترجمه‌ی موقتِ
+        // رایگان مقدم است: اگر تازه یا عوض‌شده بود، جایگزین می‌شود (نه فقط putIfAbsent).
+        final changed = _seeded[pk] != t;
+        _seeded[pk] = t;
+        if (changed) {
+          _tr[pk] = t;
+          _failed.remove(pk);
+        } else {
+          _tr.putIfAbsent(pk, () => t);
+        }
+        final sents = paras[i].sents;
+        if (sents.length > 1) {
+          final ts = widget.splitSentences(t);
+          if (ts.length == sents.length) {
+            _paraOnly.remove(pk);
+            for (var k = 0; k < ts.length; k++) {
+              final sk = _k(lang, sents[k]);
+              if (changed) {
+                _tr[sk] = ts[k];
+                _failed.remove(sk);
+              } else {
+                _tr.putIfAbsent(sk, () => ts[k]);
+              }
+            }
+          } else {
+            // تعدادِ جمله‌ها نمی‌خواند → در حالتِ جمله‌به‌جمله کلِ ترجمه‌ی ذخیره‌شده نشان داده می‌شود
+            _paraOnly.add(pk);
+          }
+        } else if (sents.length == 1) {
+          final sk = _k(lang, sents[0]);
+          if (changed) {
+            _tr[sk] = t;
+            _failed.remove(sk);
+          } else {
+            _tr.putIfAbsent(sk, () => t);
           }
         }
       }
@@ -647,14 +683,20 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     if (!mounted || _mode == 0) return;
     final langs = _langs;
     if (langs.isEmpty) return;
-    final units = <String>[
-      for (final p in _structure()) ...(_mode == 1 ? [p.text] : p.sents),
-    ];
+    final paras = _structure();
     final jobs = <_Job>[];
     final svc = ref.read(translationServiceProvider);
     var fromCache = false;
     for (final lang in langs) {
-      for (final src in units) {
+      for (final p in paras) {
+        // ترجمه‌ی ذخیره‌شده‌ی پاراگراف (بازبینی‌شده) → جمله‌ها دوباره با موتورِ رایگان ترجمه نمی‌شوند
+        if (_mode == 2 &&
+            p.sents.length > 1 &&
+            _paraOnly.contains(_k(lang, p.text)) &&
+            _tr.containsKey(_k(lang, p.text))) {
+          continue;
+        }
+        for (final src in (_mode == 1 ? [p.text] : p.sents)) {
         final key = _k(lang, src);
         if (_tr.containsKey(key) ||
             _inflight.contains(key) ||
@@ -670,6 +712,7 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
         }
         _inflight.add(key);
         jobs.add(_Job(lang, src, key));
+        }
       }
     }
     if (fromCache) setState(() {});
@@ -1359,10 +1402,21 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
       final rows = <Widget>[];
 
       if (_mode == 2) {
+        // زبان‌هایی که ترجمه‌ی ذخیره‌شده‌ی پاراگراف دارند (و جمله‌به‌جمله تقسیم نمی‌شوند)
+        final poLangs = <String>{
+          if (p.sents.length > 1)
+            for (final l in _langs)
+              if (_paraOnly.contains(_k(l, p.text)) &&
+                  _tr.containsKey(_k(l, p.text)))
+                l,
+        };
         for (var si = 0; si < p.sents.length; si++) {
           final gi = p.firstGi + si;
           rows.add(_unit(
             c, tp,
+            skipLangs: poLangs,
+            paraTrSrc: si == p.sents.length - 1 ? p.text : null,
+            paraTrIdx: pi,
             src: p.sents[si],
             id: '${widget.storyId}-s$gi',
             active: (audio != null && audio.activeIndex == gi) ||
@@ -1440,6 +1494,9 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     required bool boldText,
     required bool showTr,
     required int? paraIdx,
+    Set<String> skipLangs = const {},
+    String? paraTrSrc,
+    int? paraTrIdx,
   }) {
     final dir = autoDir(src);
     final rtl = dir == TextDirection.rtl;
@@ -1508,7 +1565,11 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
             ],
           ),
           if (showTr)
-            for (final lang in _langs) _trRow(c, tp, lang, src, id, paraIdx),
+            for (final lang in _langs)
+              if (!skipLangs.contains(lang))
+                _trRow(c, tp, lang, src, id, paraIdx)
+              else if (paraTrSrc != null)
+                _trRow(c, tp, lang, paraTrSrc, id, paraTrIdx),
         ],
       ),
     ),
