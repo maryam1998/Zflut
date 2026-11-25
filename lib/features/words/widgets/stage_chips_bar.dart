@@ -14,12 +14,20 @@ class StageChips extends StatelessWidget {
   final VoidCallback onAll;
   final VoidCallback onPrimary;
   final VoidCallback onLevel;
+
+  /// سطح‌هایی که زیرِ Primary School نشان داده می‌شوند (تبِ مکالمه فعلاً فقط A1)
+  final List<String> levels;
+  final String level;
+  final ValueChanged<String>? onLevelChanged;
   const StageChips({
     super.key,
     required this.primary,
     required this.onAll,
     required this.onPrimary,
     required this.onLevel,
+    this.levels = const ['A1'],
+    this.level = 'A1',
+    this.onLevelChanged,
   });
 
   @override
@@ -60,15 +68,24 @@ class StageChips extends StatelessWidget {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                Center(
-                  child: _StageChip(
-                    label: 'A1',
-                    active: true,
-                    color: levelColor('A1'),
-                    small: true,
-                    onTap: onLevel, // برگشت به شبکه‌ی موضوع‌ها
+                for (final lv in levels) ...[
+                  Center(
+                    child: _StageChip(
+                      label: lv,
+                      active: lv == level,
+                      color: levelColor(lv),
+                      small: true,
+                      onTap: () {
+                        if (lv == level) {
+                          onLevel(); // برگشت به شبکه‌ی موضوع‌ها
+                        } else {
+                          onLevelChanged?.call(lv);
+                        }
+                      },
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 7),
+                ],
               ],
             ),
           ),
@@ -102,6 +119,12 @@ class StageChipsBar extends ConsumerWidget {
         ref.read(wordsStageProvider.notifier).state = kStagePrimary;
       },
       onLevel: reset,
+      levels: const ['A1', 'A2'],
+      level: ref.watch(primaryLevelProvider),
+      onLevelChanged: (lv) {
+        reset();
+        ref.read(primaryLevelProvider.notifier).state = lv;
+      },
     );
   }
 }

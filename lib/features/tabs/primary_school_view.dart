@@ -16,7 +16,8 @@ class PrimarySchoolView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(primaryA1TopicsProvider);
+    final async = ref.watch(primaryTopicsProvider);
+    final level = ref.watch(primaryLevelProvider);
     final topics = async.valueOrNull ?? const <PrimaryTopic>[];
     final all = ref.watch(primaryA1AllWordsProvider);
     final topicKey = ref.watch(primaryTopicProvider);
@@ -49,8 +50,8 @@ class PrimarySchoolView extends ConsumerWidget {
     }
 
     return WordListView(
-      key: ValueKey('primary-${topicKey ?? (allOpen ? 'all' : 'grid')}'),
-      listId: 'words_primary_a1',
+      key: ValueKey('primary-$level-${topicKey ?? (allOpen ? 'all' : 'grid')}'),
+      listId: 'words_primary_${level.toLowerCase()}',
       words: shown,
       gridMode: gridMode,
       hasAnyData: all.isNotEmpty,

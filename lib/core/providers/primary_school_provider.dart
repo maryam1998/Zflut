@@ -14,6 +14,9 @@ const String kPrimaryChipLabel = 'Primary School';
 
 final wordsStageProvider = StateProvider<String?>((ref) => null);
 
+/// سطحِ انتخاب‌شده‌ی مرحله‌ی Primary در تبِ لغات: 'A1' یا 'A2'
+final primaryLevelProvider = StateProvider<String>((ref) => 'A1');
+
 /// موضوعِ بازِ مرحله‌ی Primary (null = شبکه‌ی موضوع‌ها)
 final primaryTopicProvider = StateProvider<String?>((ref) => null);
 
@@ -32,12 +35,9 @@ class PrimaryTopic {
   String label(String ui) => ui == 'fa' ? fa : en;
 }
 
-/// موضوع‌های Primary A1 از `assets/data/primary_a1.json`.
-/// شناسه‌ی لغاتِ موجود همان شناسه‌ی اصلی است (علاقه‌مندی/خوانده‌شده یکی می‌ماند)،
-/// لغاتِ جدید شناسه‌ی ۹۰۰۰۰۱ به بالا دارند.
-final primaryA1TopicsProvider = FutureProvider<List<PrimaryTopic>>((ref) async {
+Future<List<PrimaryTopic>> _loadPrimaryTopics(String asset) async {
   try {
-    final raw = await rootBundle.loadString('assets/data/primary_a1.json');
+    final raw = await rootBundle.loadString(asset);
     final j = jsonDecode(raw) as Map<String, dynamic>;
     final out = <PrimaryTopic>[];
     for (final t in (j['topics'] as List<dynamic>)) {
@@ -56,12 +56,29 @@ final primaryA1TopicsProvider = FutureProvider<List<PrimaryTopic>>((ref) async {
   } catch (_) {
     return const <PrimaryTopic>[];
   }
+}
+
+/// موضوع‌های Primary A1 از `assets/data/primary_a1.json`.
+/// شناسه‌ی لغاتِ موجود همان شناسه‌ی اصلی است (علاقه‌مندی/خوانده‌شده یکی می‌ماند)،
+/// لغاتِ جدید شناسه‌ی ۹۰۰۰۰۱ به بالا دارند.
+final primaryA1TopicsProvider = FutureProvider<List<PrimaryTopic>>(
+    (ref) => _loadPrimaryTopics('assets/data/primary_a1.json'));
+
+/// موضوع‌های Primary A2 از `assets/data/primary_a2.json` (لغاتِ جدید: ۹۱۰۰۰۱ به بالا).
+final primaryA2TopicsProvider = FutureProvider<List<PrimaryTopic>>(
+    (ref) => _loadPrimaryTopics('assets/data/primary_a2.json'));
+
+/// موضوع‌های سطحِ انتخاب‌شده (A1 یا A2)
+final primaryTopicsProvider = Provider<AsyncValue<List<PrimaryTopic>>>((ref) {
+  return ref.watch(ref.watch(primaryLevelProvider) == 'A2'
+      ? primaryA2TopicsProvider
+      : primaryA1TopicsProvider);
 });
 
-/// همه‌ی لغاتِ Primary A1 بدونِ تکرار (لغتی که در دو موضوع هست یک‌بار می‌آید).
+/// همه‌ی لغاتِ Primary (سطحِ انتخاب‌شده) بدونِ تکرار (لغتی که در دو موضوع هست یک‌بار می‌آید).
 final primaryA1AllWordsProvider = Provider<List<DailyWord>>((ref) {
   final topics =
-      ref.watch(primaryA1TopicsProvider).valueOrNull ?? const <PrimaryTopic>[];
+      ref.watch(primaryTopicsProvider).valueOrNull ?? const <PrimaryTopic>[];
   final seen = <String>{};
   final out = <DailyWord>[];
   for (final t in topics) {
