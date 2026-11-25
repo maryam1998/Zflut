@@ -10,6 +10,7 @@ import '../words/widgets/stage_chips_bar.dart';
 import '../words/widgets/word_list_view.dart';
 import 'listening_practice_page.dart';
 import 'question_practice_page.dart';
+import 'writing_practice_page.dart';
 
 /// نمای «Primary School ▸ A1» در تبِ دیکشنری من:
 /// شبکه‌ی موضوع‌ها (الفبا، اعداد، رنگ‌ها، حیوان‌ها، ...) و داخلِ هر موضوع لیستِ لغات.
@@ -84,6 +85,16 @@ class PrimarySchoolView extends ConsumerWidget {
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                     builder: (_) => const QuestionPracticePage()),
+              ),
+            ),
+            _PracticeCard(
+              icon: Icons.edit_note_rounded,
+              title: (ui == 'fa' || ui == 'ar')
+                  ? 'تمرین نوشتن پیام و ایمیل'
+                  : 'Writing Practice',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                    builder: (_) => const WritingPracticePage()),
               ),
             ),
           ],

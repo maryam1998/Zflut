@@ -23,3 +23,8 @@
 - assets/data/primary_a2_listening.json (۱۰ مجموعه، ۴۰ متن کوتاه، ۸۰ سؤال چهارگزینه‌ای)
 - lib/features/tabs/listening_practice_page.dart (فایل جدید)
 - primary_school_view.dart: کارت «تمرین درک شنیداری» بالای کارت «ساخت سؤال» (فقط A2، فقط تب لغات)
+
+افزوده‌ی جدید — تمرین نوشتن پیام و ایمیل (A2):
+- assets/data/primary_a2_writing.json (۱۰ مجموعه، ۳۰ تمرین؛ هر کدام چک‌لیست، عبارت‌های کمکی و جواب نمونه)
+- lib/features/tabs/writing_practice_page.dart (فایل جدید)
+- primary_school_view.dart: کارت سوم «تمرین نوشتن پیام و ایمیل» (فقط A2، فقط تب لغات)

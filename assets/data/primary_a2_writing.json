@@ -1,0 +1,1539 @@
+{
+ "v": 1,
+ "level": "A2",
+ "sets": [
+  {
+   "key": "thanks",
+   "fa": "تشکر و احوال‌پرسی",
+   "en": "Thanks and Greetings",
+   "tip": "پیام کوتاه با سلام شروع و با یک جمله‌ی پایانی تمام می‌شود. برای تشکر: Thank you for + اسم یا فعل‌ing (Thank you for the gift / for helping me).",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "به دوستت پیام بده و برای هدیه‌ی تولدت (یک کتاب) تشکر کن. بگو کتاب را دوست داری و می‌خواهی این آخر هفته بخوانی‌اش.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "تشکر",
+       "any": [
+        "thank"
+       ]
+      },
+      {
+       "fa": "کتاب (book)",
+       "any": [
+        "\\bbook\\b"
+       ]
+      },
+      {
+       "fa": "خواندن در آخر هفته",
+       "any": [
+        "weekend",
+        "read"
+       ]
+      }
+     ],
+     "minWords": 18,
+     "model": "Hi Sara, thank you for the book! I love it. I am going to read it this weekend. See you soon, Ali",
+     "modelFa": "سلام سارا، ممنون بابت کتاب! دوستش دارم. این آخر هفته می‌خوانمش. به زودی می‌بینمت، علی",
+     "phrases": [
+      {
+       "en": "Thank you for…",
+       "fa": "ممنون بابت…"
+      },
+      {
+       "en": "I love it.",
+       "fa": "دوستش دارم."
+      },
+      {
+       "en": "I'm going to…",
+       "fa": "می‌خواهم… (قصد آینده)"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "برای کسی که دیشب تو را شام دعوت کرده بود پیام تشکر بنویس. بگو غذا خوشمزه بود و از او برای دعوتش ممنونی.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "تشکر برای شام یا دعوت",
+       "any": [
+        "thank"
+       ]
+      },
+      {
+       "fa": "خوشمزه بودن غذا",
+       "any": [
+        "delicious|tasty|good|great|lovely"
+       ]
+      },
+      {
+       "fa": "دعوت یا شام",
+       "any": [
+        "dinner|invit|meal|food"
+       ]
+      }
+     ],
+     "minWords": 18,
+     "model": "Hello Mrs Brown, thank you for the dinner last night. The food was delicious. Thanks for inviting us. Best wishes, Nina",
+     "modelFa": "سلام خانم براون، ممنون بابت شام دیشب. غذا خوشمزه بود. ممنون که ما را دعوت کردید. با آرزوی بهترین‌ها، نینا",
+     "phrases": [
+      {
+       "en": "The food was delicious.",
+       "fa": "غذا خوشمزه بود."
+      },
+      {
+       "en": "Thanks for inviting us.",
+       "fa": "ممنون که دعوتمان کردید."
+      },
+      {
+       "en": "last night",
+       "fa": "دیشب"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "به همکلاسی‌ات پیام بده، بپرس حالش چطور است و بگو دلتنگش شده‌ای چون چند روز مدرسه نیامده است.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "پرسیدن حال",
+       "any": [
+        "how are you|how r you|how do you feel|are you (ok|okay|well|better)"
+       ]
+      },
+      {
+       "fa": "دلتنگی",
+       "any": [
+        "miss"
+       ]
+      },
+      {
+       "fa": "مدرسه یا کلاس",
+       "any": [
+        "school|class"
+       ]
+      }
+     ],
+     "minWords": 16,
+     "model": "Hi Tom, how are you? I miss you at school. You are not in class this week. Are you OK? Please write to me soon.",
+     "modelFa": "سلام تام، حالت چطور است؟ در مدرسه دلم برایت تنگ شده. این هفته سر کلاس نیستی. خوبی؟ لطفاً زود برایم بنویس.",
+     "phrases": [
+      {
+       "en": "How are you?",
+       "fa": "حالت چطور است؟"
+      },
+      {
+       "en": "I miss you.",
+       "fa": "دلم برایت تنگ شده."
+      },
+      {
+       "en": "Please write soon.",
+       "fa": "لطفاً زود بنویس."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "invite",
+   "fa": "دعوت و پاسخ",
+   "en": "Invitations and Replies",
+   "tip": "در دعوت چهار چیز بگو: چه (what)، کی (when)، کجا (where) و درخواست پاسخ. برای قبول: I'd love to come. برای رد: I'm sorry, I can't, because…",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "دوستت را به جشن تولدت دعوت کن. بگو جشن شنبه ساعت شش در خانه‌ی توست و از او بخواه جواب بدهد.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "جشن تولد",
+       "any": [
+        "birthday|party"
+       ]
+      },
+      {
+       "fa": "روز و ساعت",
+       "any": [
+        "saturday.*(6|six)|(6|six).*saturday|saturday"
+       ]
+      },
+      {
+       "fa": "خانه",
+       "any": [
+        "\\bhouse\\b|\\bhome\\b|\\bmy place\\b"
+       ]
+      },
+      {
+       "fa": "درخواست پاسخ",
+       "any": [
+        "let me know|reply|answer|text me|call me|can you come|will you come|can you"
+       ]
+      }
+     ],
+     "minWords": 22,
+     "model": "Hi Maya, I'm having a birthday party on Saturday at six o'clock. It is at my house. Can you come? Please let me know. Bye, Sam",
+     "modelFa": "سلام مایا، شنبه ساعت شش جشن تولد دارم. در خانه‌ی من است. می‌توانی بیایی؟ لطفاً خبر بده. خداحافظ، سام",
+     "phrases": [
+      {
+       "en": "I'm having a party on…",
+       "fa": "… جشن دارم"
+      },
+      {
+       "en": "Can you come?",
+       "fa": "می‌توانی بیایی؟"
+      },
+      {
+       "en": "Please let me know.",
+       "fa": "لطفاً خبر بده."
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "دعوت دوستت به سینما را قبول کن. بگو خوشحال می‌شوی بیایی، بپرس فیلم ساعت چند شروع می‌شود و کجا همدیگر را ببینید.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "قبول کردن",
+       "any": [
+        "love to|would like to|i'd like|happy to|yes|sure|ok|okay|great idea"
+       ]
+      },
+      {
+       "fa": "پرسش ساعت",
+       "any": [
+        "what time|when does|what's the time|what is the time"
+       ]
+      },
+      {
+       "fa": "پرسش مکان",
+       "any": [
+        "where"
+       ]
+      }
+     ],
+     "minWords": 18,
+     "model": "Hi Ben, yes, I'd love to come to the cinema! What time does the film start? And where can we meet? See you, Leo",
+     "modelFa": "سلام بن، بله، خوشحال می‌شوم به سینما بیایم! فیلم ساعت چند شروع می‌شود؟ و کجا همدیگر را ببینیم؟ می‌بینمت، لئو",
+     "phrases": [
+      {
+       "en": "I'd love to come.",
+       "fa": "خوشحال می‌شوم بیایم."
+      },
+      {
+       "en": "What time does it start?",
+       "fa": "ساعت چند شروع می‌شود؟"
+      },
+      {
+       "en": "Where can we meet?",
+       "fa": "کجا همدیگر را ببینیم؟"
+      }
+     ]
+    },
+    {
+     "kind": "email",
+     "fa": "به یک مهمانی دعوت شده‌ای اما نمی‌توانی بروی چون باید درس بخوانی. مؤدبانه رد کن، دلیلت را بگو و برای آن‌ها روز خوبی آرزو کن.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "متأسفی یا نمی‌توانی",
+       "any": [
+        "sorry|can't|cannot|can not|unfortunately"
+       ]
+      },
+      {
+       "fa": "دلیل (because یا study)",
+       "any": [
+        "because|study|exam|homework|test"
+       ]
+      },
+      {
+       "fa": "آرزوی خوب",
+       "any": [
+        "have a (great|good|nice|lovely)|enjoy|hope you"
+       ]
+      }
+     ],
+     "minWords": 24,
+     "model": "Dear Anna, thank you for the invitation. I'm sorry, I can't come to your party because I have to study for a test. I hope you have a great time. Best wishes, Reza",
+     "modelFa": "آنای عزیز، ممنون از دعوتت. متأسفم، نمی‌توانم به مهمانی‌ات بیایم چون باید برای یک آزمون درس بخوانم. امیدوارم خوش بگذرد. با آرزوی بهترین‌ها، رضا",
+     "phrases": [
+      {
+       "en": "I'm sorry, I can't come.",
+       "fa": "متأسفم، نمی‌توانم بیایم."
+      },
+      {
+       "en": "because I have to…",
+       "fa": "چون باید…"
+      },
+      {
+       "en": "I hope you have a great time.",
+       "fa": "امیدوارم خوش بگذرد."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "plans",
+   "fa": "برنامه و قرار",
+   "en": "Plans and Meetings",
+   "tip": "برای قرار: Let's meet at + ساعت / Shall we…? برای تغییر برنامه: Can we change… to…? و برای آینده از going to یا will استفاده کن.",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "به دوستت پیام بده و پیشنهاد کن فردا عصر با هم فوتبال بازی کنید. ساعت و مکان را هم بگو.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "فوتبال",
+       "any": [
+        "football|soccer"
+       ]
+      },
+      {
+       "fa": "فردا",
+       "any": [
+        "tomorrow"
+       ]
+      },
+      {
+       "fa": "ساعت",
+       "any": [
+        "\\b\\d{1,2}(:\\d\\d)?\\b|o'clock|\\b(one|two|three|four|five|six|seven)\\b"
+       ]
+      },
+      {
+       "fa": "مکان",
+       "any": [
+        "\\bpark\\b|\\bfield\\b|\\bschool\\b|\\bat\\b.*\\b(my|your|the)\\b|\\bin the\\b"
+       ]
+      }
+     ],
+     "minWords": 20,
+     "model": "Hi Omid, let's play football tomorrow afternoon. Shall we meet at four o'clock in the park? Text me back. Bye, Sina",
+     "modelFa": "سلام امید، بیا فردا عصر فوتبال بازی کنیم. ساعت چهار در پارک همدیگر را ببینیم؟ جواب بده. خداحافظ، سینا",
+     "phrases": [
+      {
+       "en": "Let's play…",
+       "fa": "بیا … بازی کنیم."
+      },
+      {
+       "en": "Shall we meet at…?",
+       "fa": "… همدیگر را ببینیم؟"
+      },
+      {
+       "en": "tomorrow afternoon",
+       "fa": "فردا عصر"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "قرارت با دوستت ساعت پنج است اما ساعت شش می‌توانی بیایی. بخواه ساعت قرار عوض شود و عذرخواهی کن.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "درخواست تغییر ساعت",
+       "any": [
+        "change|move|later|instead|can we meet|could we meet|is it ok|is that ok|is it okay"
+       ]
+      },
+      {
+       "fa": "ساعت شش",
+       "any": [
+        "\\b6\\b|six"
+       ]
+      },
+      {
+       "fa": "عذرخواهی",
+       "any": [
+        "sorry|apolog"
+       ]
+      }
+     ],
+     "minWords": 18,
+     "model": "Hi Lina, I'm sorry. I can't meet you at five. Can we meet at six instead? Is that OK? Thank you, Mina",
+     "modelFa": "سلام لینا، متأسفم. نمی‌توانم ساعت پنج بیایم. می‌شود ساعت شش همدیگر را ببینیم؟ اشکالی ندارد؟ ممنون، مینا",
+     "phrases": [
+      {
+       "en": "Can we meet at… instead?",
+       "fa": "می‌شود به‌جایش … همدیگر را ببینیم؟"
+      },
+      {
+       "en": "Is that OK?",
+       "fa": "اشکالی ندارد؟"
+      },
+      {
+       "en": "I'm sorry, I can't…",
+       "fa": "متأسفم، نمی‌توانم…"
+      }
+     ]
+    },
+    {
+     "kind": "email",
+     "fa": "به دوستی که در شهر دیگری است ایمیل بزن. بگو ماه بعد می‌خواهی به دیدنش بروی، سه روز می‌مانی و بپرس آن هفته وقت دارد یا نه.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "آینده: ماه بعد",
+       "any": [
+        "next month"
+       ]
+      },
+      {
+       "fa": "مدت: سه روز",
+       "any": [
+        "three days|3 days|for three|for 3"
+       ]
+      },
+      {
+       "fa": "پرسش وقت داشتن",
+       "any": [
+        "are you free|do you have time|will you be free|are you busy|is that ok|is that okay"
+       ]
+      }
+     ],
+     "minWords": 26,
+     "model": "Dear Hamid, I'm going to visit you next month. I'm going to stay for three days. Are you free that week? Please write back soon. Love, Ali",
+     "modelFa": "حمید عزیز، ماه بعد می‌خواهم به دیدنت بیایم. سه روز می‌مانم. آن هفته وقت داری؟ لطفاً زود جواب بده. دوستدار تو، علی",
+     "phrases": [
+      {
+       "en": "I'm going to visit you.",
+       "fa": "می‌خواهم به دیدنت بیایم."
+      },
+      {
+       "en": "I'm going to stay for…",
+       "fa": "… می‌مانم."
+      },
+      {
+       "en": "Are you free that week?",
+       "fa": "آن هفته وقت داری؟"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "sorry",
+   "fa": "عذرخواهی و دلیل",
+   "en": "Apologies and Excuses",
+   "tip": "برای عذرخواهی: I'm sorry (that)… / I'm sorry for + اسم یا فعل‌ing. بعدش با because دلیل بیاور. اگر دیر کرده‌ای: I'm sorry I'm late.",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "به معلمت پیام بده. بگو امروز بیمار هستی و نمی‌توانی به مدرسه بیایی. بگو فردا برمی‌گردی.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "بیمار بودن",
+       "any": [
+        "\\bill\\b|sick|not well|fever|headache|cold|\\bflu\\b"
+       ]
+      },
+      {
+       "fa": "نیامدن به مدرسه",
+       "any": [
+        "can't come|cannot come|can not come|not come|won't be|will not be|not in school|can't go"
+       ]
+      },
+      {
+       "fa": "فردا",
+       "any": [
+        "tomorrow"
+       ]
+      }
+     ],
+     "minWords": 20,
+     "model": "Dear Mr Smith, I'm ill today and I can't come to school. I'm sorry. I will come back tomorrow. Thank you, Sara",
+     "modelFa": "آقای اسمیت عزیز، امروز بیمارم و نمی‌توانم به مدرسه بیایم. متأسفم. فردا برمی‌گردم. ممنون، سارا",
+     "phrases": [
+      {
+       "en": "I'm ill today.",
+       "fa": "امروز بیمارم."
+      },
+      {
+       "en": "I can't come to school.",
+       "fa": "نمی‌توانم به مدرسه بیایم."
+      },
+      {
+       "en": "I will come back tomorrow.",
+       "fa": "فردا برمی‌گردم."
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "به دوستت پیام بده که دیر می‌رسی چون اتوبوس دیر کرده است. بگو حدود ده دقیقه دیگر می‌رسی.",
+     "points": [
+      {
+       "fa": "عذرخواهی یا سلام",
+       "any": [
+        "sorry|hi|hello|hey"
+       ]
+      },
+      {
+       "fa": "دیر رسیدن",
+       "any": [
+        "late|delay|behind"
+       ]
+      },
+      {
+       "fa": "اتوبوس",
+       "any": [
+        "bus"
+       ]
+      },
+      {
+       "fa": "ده دقیقه",
+       "any": [
+        "10 minutes|ten minutes|10 min"
+       ]
+      }
+     ],
+     "minWords": 14,
+     "model": "Hi, I'm sorry. I'm going to be late because the bus is late. I will be there in ten minutes.",
+     "modelFa": "سلام، متأسفم. دیر می‌رسم چون اتوبوس دیر کرده است. ده دقیقه‌ی دیگر آنجا هستم.",
+     "phrases": [
+      {
+       "en": "I'm going to be late.",
+       "fa": "دیر می‌رسم."
+      },
+      {
+       "en": "because the bus is late",
+       "fa": "چون اتوبوس دیر کرده"
+      },
+      {
+       "en": "I will be there in…",
+       "fa": "… دیگر آنجا هستم."
+      }
+     ]
+    },
+    {
+     "kind": "email",
+     "fa": "تکلیفت را به‌موقع نفرستاده‌ای. به معلمت ایمیل بزن، عذرخواهی کن، دلیل بیاور (مثلاً کامپیوترت خراب شد) و بگو فردا می‌فرستی.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "عذرخواهی",
+       "any": [
+        "sorry|apolog"
+       ]
+      },
+      {
+       "fa": "دلیل: کامپیوتر خراب",
+       "any": [
+        "computer|laptop|broke|broken|not work|doesn't work|didn't work|wifi|internet"
+       ]
+      },
+      {
+       "fa": "ارسال فردا",
+       "any": [
+        "tomorrow"
+       ]
+      }
+     ],
+     "minWords": 26,
+     "model": "Dear Ms Green, I'm sorry about my homework. My computer didn't work last night. I will send it to you tomorrow. Thank you for understanding. Best wishes, Nima",
+     "modelFa": "خانم گرین عزیز، بابت تکلیفم متأسفم. دیشب کامپیوترم کار نکرد. فردا برایتان می‌فرستم. ممنون از درکتان. با آرزوی بهترین‌ها، نیما",
+     "phrases": [
+      {
+       "en": "I'm sorry about…",
+       "fa": "بابت … متأسفم."
+      },
+      {
+       "en": "I will send it tomorrow.",
+       "fa": "فردا می‌فرستمش."
+      },
+      {
+       "en": "Thank you for understanding.",
+       "fa": "ممنون از درکتان."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "request",
+   "fa": "درخواست و سؤال",
+   "en": "Requests and Questions",
+   "tip": "درخواست مؤدبانه: Can you…? / Could you…? / Would you…? و در پایان Thank you. برای پرسیدن اطلاعات: Could you tell me…?",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "به همسایه‌ات پیام بده و از او بخواه امشب به گربه‌ات غذا بدهد چون تو سفر هستی. تشکر کن.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "درخواست مؤدبانه",
+       "any": [
+        "can you|could you|would you|please"
+       ]
+      },
+      {
+       "fa": "گربه و غذا",
+       "any": [
+        "cat.*(food|feed)|feed.*cat|food.*cat"
+       ]
+      },
+      {
+       "fa": "تشکر",
+       "any": [
+        "thank"
+       ]
+      }
+     ],
+     "minWords": 18,
+     "model": "Hi Mrs Lee, could you feed my cat tonight, please? I'm away on a trip. Thank you very much! Maryam",
+     "modelFa": "سلام خانم لی، لطفاً می‌توانید امشب به گربه‌ی من غذا بدهید؟ من در سفرم. خیلی ممنون! مریم",
+     "phrases": [
+      {
+       "en": "Could you… please?",
+       "fa": "لطفاً می‌توانید…؟"
+      },
+      {
+       "en": "feed my cat",
+       "fa": "به گربه‌ام غذا بدهید"
+      },
+      {
+       "en": "Thank you very much!",
+       "fa": "خیلی ممنون!"
+      }
+     ]
+    },
+    {
+     "kind": "email",
+     "fa": "به یک باشگاه ورزشی ایمیل بزن. بپرس ساعت کاریشان چیست، یک ماه عضویت چقدر است و آیا استخر دارند.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "پرسش ساعت کار",
+       "any": [
+        "opening hours|open|what time|hours"
+       ]
+      },
+      {
+       "fa": "پرسش قیمت",
+       "any": [
+        "how much|price|cost"
+       ]
+      },
+      {
+       "fa": "پرسش استخر",
+       "any": [
+        "pool|swim"
+       ]
+      }
+     ],
+     "minWords": 26,
+     "model": "Dear Sir or Madam, could you tell me your opening hours, please? How much is one month? Do you have a swimming pool? Thank you. Best wishes, Kian",
+     "modelFa": "جناب یا سرکار، لطفاً ساعت کاری‌تان را بگویید؟ یک ماه عضویت چقدر است؟ استخر دارید؟ ممنون. با آرزوی بهترین‌ها، کیان",
+     "phrases": [
+      {
+       "en": "Could you tell me…?",
+       "fa": "می‌توانید به من بگویید…؟"
+      },
+      {
+       "en": "How much is…?",
+       "fa": "… چقدر است؟"
+      },
+      {
+       "en": "Do you have…?",
+       "fa": "آیا … دارید؟"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "از دوستت بخواه جزوه‌ی دیروز را به تو قرض بدهد چون مریض بودی. بگو فردا پس می‌دهی.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "درخواست قرض گرفتن",
+       "any": [
+        "borrow|lend|can i have|could i have|can you give|could you give|can you send|could you send"
+       ]
+      },
+      {
+       "fa": "جزوه یا دفتر",
+       "any": [
+        "notes|notebook|homework|lesson|class"
+       ]
+      },
+      {
+       "fa": "پس دادن فردا",
+       "any": [
+        "tomorrow|back"
+       ]
+      }
+     ],
+     "minWords": 18,
+     "model": "Hi Ali, I was ill yesterday. Could you lend me your notes from class, please? I will give them back tomorrow. Thanks!",
+     "modelFa": "سلام علی، دیروز مریض بودم. لطفاً می‌توانی جزوه‌ی کلاس را به من قرض بدهی؟ فردا پس می‌دهم. ممنون!",
+     "phrases": [
+      {
+       "en": "Could you lend me…?",
+       "fa": "می‌توانی … را به من قرض بدهی؟"
+      },
+      {
+       "en": "I will give it back.",
+       "fa": "پس می‌دهم."
+      },
+      {
+       "en": "I was ill yesterday.",
+       "fa": "دیروز مریض بودم."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "orders",
+   "fa": "خرید و شکایت",
+   "en": "Shopping and Complaints",
+   "tip": "در شکایت مؤدب بمان: ابتدا مشکل (The … doesn't work / is broken)، بعد درخواستت (Can I have a new one? / I'd like my money back).",
+   "tasks": [
+    {
+     "kind": "email",
+     "fa": "یک کفش اینترنتی خریده‌ای که سایزش اشتباه است. به فروشگاه ایمیل بزن، مشکل را بگو و بخواه آن را با سایز بزرگ‌تر عوض کنند.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "خرید کفش",
+       "any": [
+        "shoes|boots|trainers"
+       ]
+      },
+      {
+       "fa": "مشکل سایز",
+       "any": [
+        "size|too small|too big|small|wrong"
+       ]
+      },
+      {
+       "fa": "درخواست تعویض",
+       "any": [
+        "change|exchange|replace|bigger|larger|new pair|send me"
+       ]
+      }
+     ],
+     "minWords": 26,
+     "model": "Dear Sir or Madam, I bought a pair of shoes from your shop last week. They are too small. Could you change them for a bigger size, please? Thank you. Best wishes, Sara",
+     "modelFa": "جناب یا سرکار، هفته‌ی پیش یک جفت کفش از فروشگاه شما خریدم. برایم کوچک است. لطفاً می‌توانید با سایز بزرگ‌تر عوضش کنید؟ ممنون. با آرزوی بهترین‌ها، سارا",
+     "phrases": [
+      {
+       "en": "I bought… last week.",
+       "fa": "هفته‌ی پیش … خریدم."
+      },
+      {
+       "en": "It's too small.",
+       "fa": "خیلی کوچک است."
+      },
+      {
+       "en": "Could you change it for…?",
+       "fa": "می‌توانید آن را با … عوض کنید؟"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "به دوستت پیام بده که می‌خواهی با هم به بازار بروی. بگو چه چیزی لازم داری (مثلاً یک کیف) و بودجه‌ات حدود بیست دلار است.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "رفتن به بازار یا مغازه",
+       "any": [
+        "shop|shopping|market|mall|store"
+       ]
+      },
+      {
+       "fa": "چیز موردنیاز",
+       "any": [
+        "need|want|buy|looking for"
+       ]
+      },
+      {
+       "fa": "بودجه بیست دلار",
+       "any": [
+        "20|twenty"
+       ]
+      }
+     ],
+     "minWords": 18,
+     "model": "Hi Neda, do you want to go shopping with me? I need a new bag. I only have twenty dollars. Please text me.",
+     "modelFa": "سلام ندا، می‌خواهی با من به خرید بیایی؟ یک کیف جدید لازم دارم. فقط بیست دلار دارم. لطفاً جواب بده.",
+     "phrases": [
+      {
+       "en": "I need a new…",
+       "fa": "یک … جدید لازم دارم."
+      },
+      {
+       "en": "I only have… dollars.",
+       "fa": "فقط … دلار دارم."
+      },
+      {
+       "en": "Do you want to go shopping?",
+       "fa": "می‌خواهی به خرید برویم؟"
+      }
+     ]
+    },
+    {
+     "kind": "email",
+     "fa": "غذای سفارشی‌ات سرد و دیر رسید. به رستوران ایمیل بزن، مشکل را مؤدبانه بگو و بخواه پولت را برگردانند.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "سفارش غذا",
+       "any": [
+        "order|pizza|food|meal|dinner|lunch"
+       ]
+      },
+      {
+       "fa": "سرد یا دیر",
+       "any": [
+        "cold|late|slow|forty|waited|wait"
+       ]
+      },
+      {
+       "fa": "درخواست پول",
+       "any": [
+        "money back|refund|my money|pay me back"
+       ]
+      }
+     ],
+     "minWords": 26,
+     "model": "Dear Sir or Madam, I ordered a pizza last night. It was cold and it arrived very late. I'd like my money back, please. Thank you. Best wishes, Kamran",
+     "modelFa": "جناب یا سرکار، دیشب یک پیتزا سفارش دادم. سرد بود و خیلی دیر رسید. لطفاً پولم را برگردانید. ممنون. با آرزوی بهترین‌ها، کامران",
+     "phrases": [
+      {
+       "en": "It was cold and late.",
+       "fa": "سرد و دیر بود."
+      },
+      {
+       "en": "I'd like my money back.",
+       "fa": "پولم را می‌خواهم."
+      },
+      {
+       "en": "I ordered… last night.",
+       "fa": "دیشب … سفارش دادم."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "travel",
+   "fa": "سفر و هتل",
+   "en": "Travel and Hotels",
+   "tip": "در ایمیل رزرو بگو: چه زمانی (from… to…)، برای چند نفر، چه نوع اتاق و درخواست‌های ویژه. با I'd like to book… شروع کن.",
+   "tasks": [
+    {
+     "kind": "email",
+     "fa": "به یک هتل ایمیل بزن و برای ۲ شب از ۱۰ ژوئن یک اتاق دو نفره رزرو کن. بپرس صبحانه شامل است یا نه.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "رزرو اتاق",
+       "any": [
+        "book|reserve|booking|reservation"
+       ]
+      },
+      {
+       "fa": "دو شب",
+       "any": [
+        "two nights|2 nights|for two|for 2"
+       ]
+      },
+      {
+       "fa": "تاریخ ۱۰ ژوئن",
+       "any": [
+        "10|tenth|june"
+       ]
+      },
+      {
+       "fa": "پرسش صبحانه",
+       "any": [
+        "breakfast"
+       ]
+      }
+     ],
+     "minWords": 26,
+     "model": "Dear Sir or Madam, I'd like to book a double room for two nights from the tenth of June. Is breakfast included? Thank you. Best wishes, Daniel Green",
+     "modelFa": "جناب یا سرکار، می‌خواهم از دهم ژوئن یک اتاق دو نفره برای دو شب رزرو کنم. صبحانه شامل است؟ ممنون. با آرزوی بهترین‌ها، دنیل گرین",
+     "phrases": [
+      {
+       "en": "I'd like to book…",
+       "fa": "می‌خواهم … رزرو کنم."
+      },
+      {
+       "en": "a double room",
+       "fa": "اتاق دو نفره"
+      },
+      {
+       "en": "Is breakfast included?",
+       "fa": "صبحانه شامل است؟"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "از سفر برای دوستت کارت‌پستال (پیام کوتاه) بنویس. بگو کجایی، هوا چطور است و چه کاری کرده‌ای.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "نام مکان: I'm in…",
+       "any": [
+        "i'm in|i am in|we are in|we're in|here in|i'm here|i am here|we're here|we are here|greetings from"
+       ]
+      },
+      {
+       "fa": "هوا",
+       "any": [
+        "weather|sunny|hot|warm|cold|rain|snow|cloudy"
+       ]
+      },
+      {
+       "fa": "کاری که کردی",
+       "any": [
+        "visited|went|saw|swam|ate|walked|played|bought|we went|i went|i saw|i visited"
+       ]
+      }
+     ],
+     "minWords": 22,
+     "model": "Hi Sara, greetings from Antalya! I'm here with my family. The weather is sunny and hot. Yesterday we went to the beach and swam. See you soon, Reza",
+     "modelFa": "سلام سارا، از آنتالیا سلام! با خانواده‌ام اینجا هستم. هوا آفتابی و گرم است. دیروز به ساحل رفتیم و شنا کردیم. به زودی می‌بینمت، رضا",
+     "phrases": [
+      {
+       "en": "Greetings from…",
+       "fa": "سلام از …"
+      },
+      {
+       "en": "The weather is…",
+       "fa": "هوا … است."
+      },
+      {
+       "en": "Yesterday we went to…",
+       "fa": "دیروز به … رفتیم."
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "هتلت مشکلی دارد: اتاق گرم است و کولر کار نمی‌کند. به پذیرش پیام بده و مؤدبانه بخواه کسی بیاید یا اتاقت را عوض کنند.",
+     "points": [
+      {
+       "fa": "شماره‌ی اتاق یا سلام",
+       "any": [
+        "room|hello|hi|dear|excuse me"
+       ]
+      },
+      {
+       "fa": "مشکل کولر",
+       "any": [
+        "air condition|\\bac\\b|fan|heating|hot"
+       ]
+      },
+      {
+       "fa": "کار نمی‌کند",
+       "any": [
+        "doesn't work|does not work|not working|broken|isn't working|is not working"
+       ]
+      },
+      {
+       "fa": "درخواست مؤدبانه",
+       "any": [
+        "could|can|please|would"
+       ]
+      }
+     ],
+     "minWords": 20,
+     "model": "Hello, this is room 206. The air conditioning doesn't work and the room is very hot. Could someone come and fix it, please? Thank you.",
+     "modelFa": "سلام، اینجا اتاق ۲۰۶ است. کولر کار نمی‌کند و اتاق خیلی گرم است. لطفاً کسی می‌تواند بیاید و درستش کند؟ ممنون.",
+     "phrases": [
+      {
+       "en": "This is room…",
+       "fa": "اینجا اتاق … است."
+      },
+      {
+       "en": "doesn't work",
+       "fa": "کار نمی‌کند"
+      },
+      {
+       "en": "Could someone come and fix it?",
+       "fa": "کسی می‌تواند بیاید و درستش کند؟"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "school",
+   "fa": "مدرسه و کار",
+   "en": "School and Work",
+   "tip": "در ایمیل رسمی: Dear + نام، سه تا چهار جمله‌ی کوتاه، بعد Best wishes یا Kind regards و نامت. از جمله‌های ساده و روشن استفاده کن.",
+   "tasks": [
+    {
+     "kind": "email",
+     "fa": "به معلم انگلیسی‌ات ایمیل بزن و بپرس آزمون بعدی کی است و درباره‌ی چه درس‌هایی است.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "سؤال زمان آزمون",
+       "any": [
+        "when is|when's|what day|what time|which day|date"
+       ]
+      },
+      {
+       "fa": "آزمون",
+       "any": [
+        "test|exam|quiz"
+       ]
+      },
+      {
+       "fa": "سؤال درباره‌ی درس‌ها",
+       "any": [
+        "unit|lesson|chapter|topic|about|what"
+       ]
+      }
+     ],
+     "minWords": 24,
+     "model": "Dear Mr Taylor, when is the next English test? Which units are in the test? Please let me know. Thank you. Best wishes, Mina",
+     "modelFa": "آقای تیلور عزیز، آزمون بعدی انگلیسی کی است؟ کدام درس‌ها در آزمون هست؟ لطفاً خبر بدهید. ممنون. با آرزوی بهترین‌ها، مینا",
+     "phrases": [
+      {
+       "en": "When is the next…?",
+       "fa": "… بعدی کی است؟"
+      },
+      {
+       "en": "Which units…?",
+       "fa": "کدام درس‌ها…؟"
+      },
+      {
+       "en": "Please let me know.",
+       "fa": "لطفاً خبر بدهید."
+      }
+     ]
+    },
+    {
+     "kind": "email",
+     "fa": "برای یک آگهی کار پاره‌وقت در کافه ایمیل بزن. خودت را معرفی کن، بگو چه روزهایی وقت داری و بگو انگلیسی بلدی.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "معرفی: نام و سن",
+       "any": [
+        "my name is|i'm|i am"
+       ]
+      },
+      {
+       "fa": "روزها: دوشنبه… یا weekend",
+       "any": [
+        "monday|tuesday|wednesday|thursday|friday|saturday|sunday|weekend|weekdays|evenings|afternoons"
+       ]
+      },
+      {
+       "fa": "زبان انگلیسی",
+       "any": [
+        "english|speak"
+       ]
+      }
+     ],
+     "minWords": 28,
+     "model": "Dear Sir or Madam, my name is Arash and I'm seventeen. I'd like to work in your cafe. I'm free on Saturday and Sunday. I speak English and Persian. Best wishes, Arash",
+     "modelFa": "جناب یا سرکار، اسم من آرش است و هفده سال دارم. می‌خواهم در کافه‌ی شما کار کنم. شنبه و یکشنبه آزادم. انگلیسی و فارسی صحبت می‌کنم. با آرزوی بهترین‌ها، آرش",
+     "phrases": [
+      {
+       "en": "My name is… and I'm…",
+       "fa": "اسمم … است و … سال دارم."
+      },
+      {
+       "en": "I'm free on…",
+       "fa": "روز … آزادم."
+      },
+      {
+       "en": "I speak…",
+       "fa": "… صحبت می‌کنم."
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "به هم‌گروهی‌ات پیام بده. بگو برای پروژه‌ی گروهی فردا ساعت چهار در کتابخانه باید همدیگر را ببینید و بخواه کامپیوترش را بیاورد.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "پروژه",
+       "any": [
+        "project|group work|homework"
+       ]
+      },
+      {
+       "fa": "فردا و ساعت چهار",
+       "any": [
+        "tomorrow.*(4|four)|(4|four).*tomorrow|tomorrow"
+       ]
+      },
+      {
+       "fa": "کتابخانه",
+       "any": [
+        "library"
+       ]
+      },
+      {
+       "fa": "آوردن چیزی",
+       "any": [
+        "bring"
+       ]
+      }
+     ],
+     "minWords": 20,
+     "model": "Hi Kate, let's meet tomorrow at four o'clock in the library for our project. Can you bring your laptop, please? Thanks, Leo",
+     "modelFa": "سلام کیت، فردا ساعت چهار در کتابخانه برای پروژه همدیگر را ببینیم. لطفاً لپ‌تاپت را می‌آوری؟ ممنون، لئو",
+     "phrases": [
+      {
+       "en": "Let's meet…",
+       "fa": "بیا همدیگر را ببینیم…"
+      },
+      {
+       "en": "Can you bring…?",
+       "fa": "می‌توانی … را بیاوری؟"
+      },
+      {
+       "en": "for our project",
+       "fa": "برای پروژه‌مان"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "news",
+   "fa": "خبر و گزارش به دوست",
+   "en": "News to a Friend",
+   "tip": "وقتی درباره‌ی گذشته می‌نویسی از زمان گذشته استفاده کن: went, saw, had, was. کلمه‌های ربط First, Then, After that کمک می‌کنند متن مرتب شود.",
+   "tasks": [
+    {
+     "kind": "email",
+     "fa": "برای دوستت ایمیل بنویس و درباره‌ی آخر هفته‌ات تعریف کن. بگو کجا رفتی، با چه کسی بودی و آیا خوش گذشت.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "رفتن به جایی: went",
+       "any": [
+        "went|we went|i went|visited|was at|were at"
+       ]
+      },
+      {
+       "fa": "با چه کسی",
+       "any": [
+        "with my|with a|with the|with \\w+"
+       ]
+      },
+      {
+       "fa": "خوش گذشت",
+       "any": [
+        "fun|great|nice|enjoy|good time|lovely|wonderful|happy"
+       ]
+      }
+     ],
+     "minWords": 28,
+     "model": "Hi Ali, how are you? Last weekend I went to the mountains with my family. We walked and had a picnic. It was great! What about you? Bye, Sina",
+     "modelFa": "سلام علی، حالت چطور است؟ آخر هفته‌ی پیش با خانواده‌ام به کوه رفتم. پیاده‌روی کردیم و پیک‌نیک داشتیم. عالی بود! تو چطور؟ خداحافظ، سینا",
+     "phrases": [
+      {
+       "en": "Last weekend I went to…",
+       "fa": "آخر هفته‌ی پیش به … رفتم."
+      },
+      {
+       "en": "It was great!",
+       "fa": "عالی بود!"
+      },
+      {
+       "en": "What about you?",
+       "fa": "تو چطور؟"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "به دوستت خبر خوب بده: در مسابقه‌ی مدرسه برنده شده‌ای. بگو چه مسابقه‌ای بود و چه حسی داری.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "برنده شدن",
+       "any": [
+        "won|win|first place|first prize"
+       ]
+      },
+      {
+       "fa": "نوع مسابقه",
+       "any": [
+        "race|match|game|competition|contest|quiz|prize"
+       ]
+      },
+      {
+       "fa": "احساس",
+       "any": [
+        "happy|excited|proud|great|amazing|glad"
+       ]
+      }
+     ],
+     "minWords": 18,
+     "model": "Hi Mina, I have good news! I won the running race at school today. I'm so happy and excited. Call me later! Bye, Pouya",
+     "modelFa": "سلام مینا، خبر خوب دارم! امروز در مسابقه‌ی دو مدرسه برنده شدم. خیلی خوشحال و هیجان‌زده‌ام. بعداً زنگ بزن! خداحافظ، پویا",
+     "phrases": [
+      {
+       "en": "I have good news!",
+       "fa": "خبر خوب دارم!"
+      },
+      {
+       "en": "I won the…",
+       "fa": "من در … برنده شدم."
+      },
+      {
+       "en": "I'm so happy.",
+       "fa": "خیلی خوشحالم."
+      }
+     ]
+    },
+    {
+     "kind": "email",
+     "fa": "به دوست خارجی‌ات ایمیل بزن و خودت و خانواده‌ات را معرفی کن: چند نفرید، کجا زندگی می‌کنی و سرگرمی‌ات چیست.",
+     "points": [
+      {
+       "fa": "سلام یا Dear",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "نام",
+       "any": [
+        "my name is|i'm|i am"
+       ]
+      },
+      {
+       "fa": "خانواده",
+       "any": [
+        "family|brother|sister|mother|father|mum|dad|parents"
+       ]
+      },
+      {
+       "fa": "محل زندگی",
+       "any": [
+        "live|from"
+       ]
+      },
+      {
+       "fa": "سرگرمی",
+       "any": [
+        "like|love|hobby|play|enjoy"
+       ]
+      }
+     ],
+     "minWords": 32,
+     "model": "Hi Tom, my name is Sara. I live in Tehran with my family. There are four people in my family: my mum, my dad, my brother and me. I love music and I play the piano. Write to me soon! Sara",
+     "modelFa": "سلام تام، اسمم سارا است. با خانواده‌ام در تهران زندگی می‌کنم. خانواده‌ام چهار نفر است: مامان، بابا، برادرم و من. موسیقی را دوست دارم و پیانو می‌زنم. زود برایم بنویس! سارا",
+     "phrases": [
+      {
+       "en": "I live in… with my family.",
+       "fa": "با خانواده‌ام در … زندگی می‌کنم."
+      },
+      {
+       "en": "There are… people in my family.",
+       "fa": "خانواده‌ام … نفر است."
+      },
+      {
+       "en": "I love… and I play…",
+       "fa": "… را دوست دارم و … می‌زنم."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "notes",
+   "fa": "یادداشت و پیام کوتاه",
+   "en": "Notes and Short Messages",
+   "tip": "در یادداشت کوتاه لازم نیست همه‌ی کلمه‌ها را بنویسی؛ ولی هنوز باید معنی روشن باشد: کی، کجا، چه کاری. با Thanks یا See you تمامش کن.",
+   "tasks": [
+    {
+     "kind": "note",
+     "fa": "برای خانواده‌ات یادداشت بگذار. بگو به مغازه رفته‌ای، ساعت شش برمی‌گردی و شام در یخچال است.",
+     "points": [
+      {
+       "fa": "سلام یا Hi",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "رفتن به مغازه",
+       "any": [
+        "shop|store|supermarket|market"
+       ]
+      },
+      {
+       "fa": "ساعت شش",
+       "any": [
+        "6|six"
+       ]
+      },
+      {
+       "fa": "شام یا غذا",
+       "any": [
+        "dinner|supper|food|lunch"
+       ]
+      },
+      {
+       "fa": "یخچال",
+       "any": [
+        "fridge|refrigerator"
+       ]
+      }
+     ],
+     "minWords": 16,
+     "model": "Hi Mum, I'm at the shop. I'll be back at six. Your dinner is in the fridge. Love, Ali",
+     "modelFa": "سلام مامان، من مغازه‌ام. ساعت شش برمی‌گردم. شامت در یخچال است. دوستدار تو، علی",
+     "phrases": [
+      {
+       "en": "I'll be back at…",
+       "fa": "… برمی‌گردم."
+      },
+      {
+       "en": "It's in the fridge.",
+       "fa": "در یخچال است."
+      },
+      {
+       "en": "I'm at the…",
+       "fa": "من در … هستم."
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "در راه هستی و دوستت منتظر توست. به او پیام بده کجایی، بگو ۵ دقیقه‌ی دیگر می‌رسی و بپرس کجا ایستاده است.",
+     "points": [
+      {
+       "fa": "کجا هستم",
+       "any": [
+        "i'm at|i am at|i'm near|i am near|i'm on|i am on|i'm in|i am in|i'm outside|almost there|on my way"
+       ]
+      },
+      {
+       "fa": "پنج دقیقه",
+       "any": [
+        "5|five"
+       ]
+      },
+      {
+       "fa": "رسیدن",
+       "any": [
+        "arrive|be there|get there|coming|on my way"
+       ]
+      },
+      {
+       "fa": "پرسش مکان",
+       "any": [
+        "where are you|where r you|where are u|where do you|where.*(stand|wait)"
+       ]
+      }
+     ],
+     "minWords": 14,
+     "model": "I'm on my way. I'll be there in five minutes. Where are you? See you soon!",
+     "modelFa": "در راهم. پنج دقیقه‌ی دیگر آنجا هستم. کجایی؟ به زودی می‌بینمت!",
+     "phrases": [
+      {
+       "en": "I'm on my way.",
+       "fa": "در راهم."
+      },
+      {
+       "en": "I'll be there in… minutes.",
+       "fa": "… دقیقه‌ی دیگر آنجا هستم."
+      },
+      {
+       "en": "Where are you?",
+       "fa": "کجایی؟"
+      }
+     ]
+    },
+    {
+     "kind": "note",
+     "fa": "برای هم‌خانه‌ات یادداشت بگذار. بخواه ظرف‌ها را بشوید، بگو شب دیر می‌آیی و بخواه در را قفل کند.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "شستن ظرف‌ها",
+       "any": [
+        "dishes|wash|plates"
+       ]
+      },
+      {
+       "fa": "دیر آمدن",
+       "any": [
+        "late|after|midnight|back at|home at"
+       ]
+      },
+      {
+       "fa": "قفل در",
+       "any": [
+        "lock|door"
+       ]
+      },
+      {
+       "fa": "مؤدبانه (please یا thanks)",
+       "any": [
+        "please|thanks|thank"
+       ]
+      }
+     ],
+     "minWords": 18,
+     "model": "Hi Sam, can you wash the dishes, please? I'll be home late tonight. Please lock the door. Thanks!",
+     "modelFa": "سلام سم، لطفاً می‌توانی ظرف‌ها را بشویی؟ امشب دیر می‌آیم. لطفاً در را قفل کن. ممنون!",
+     "phrases": [
+      {
+       "en": "Can you… please?",
+       "fa": "لطفاً می‌توانی…؟"
+      },
+      {
+       "en": "I'll be home late.",
+       "fa": "دیر می‌آیم خانه."
+      },
+      {
+       "en": "Please lock the door.",
+       "fa": "لطفاً در را قفل کن."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
