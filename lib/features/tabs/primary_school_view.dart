@@ -32,7 +32,8 @@ class PrimarySchoolView extends ConsumerWidget {
     final q = filter.query.trim().toLowerCase();
     final searching = q.isNotEmpty;
     final allOpen = ref.watch(categoryAllOpenProvider('primary'));
-    final gridMode = topicKey == null && !allOpen && !searching;
+    final practice = ref.watch(primaryPracticeOpenProvider) && level == 'A2';
+    final gridMode = practice || (topicKey == null && !allOpen && !searching);
 
     PrimaryTopic? current;
     for (final t in topics) {
@@ -54,7 +55,8 @@ class PrimarySchoolView extends ConsumerWidget {
     }
 
     return WordListView(
-      key: ValueKey('primary-$level-${topicKey ?? (allOpen ? 'all' : 'grid')}'),
+      key: ValueKey(
+          'primary-$level-${practice ? 'practice' : (topicKey ?? (allOpen ? 'all' : 'grid'))}'),
       listId: 'words_primary_${level.toLowerCase()}',
       words: shown,
       gridMode: gridMode,
@@ -66,7 +68,7 @@ class PrimarySchoolView extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (gridMode && level == 'A2') ...[
+          if (practice) ...[
             _PracticeCard(
               icon: Icons.headphones_rounded,
               title: (ui == 'fa' || ui == 'ar')
@@ -98,7 +100,9 @@ class PrimarySchoolView extends ConsumerWidget {
               ),
             ),
           ],
-          if (gridMode)
+          if (practice)
+            const SizedBox(height: 90)
+          else if (gridMode)
             ..._gridSections(
               topics: topics,
               allTotal: all.length,

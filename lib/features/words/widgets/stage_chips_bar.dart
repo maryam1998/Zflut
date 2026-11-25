@@ -7,6 +7,9 @@ import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/widgets/category_grid.dart' show categoryAllOpenProvider;
 
+/// آیا چیپِ «تمرین‌ها» (کنارِ A2) باز است؟ (تمرین‌های درک شنیداری، ساخت سؤال، نوشتن)
+final primaryPracticeOpenProvider = StateProvider<bool>((ref) => false);
+
 /// ردیفِ چیپ‌های مرحله (مشترک بین تبِ لغات و تبِ مکالمه):
 ///   [همه] [Preschool·A1] [Primary School·A2] [Lower Secondary·B1]
 ///   [Upper Secondary·B2] [Undergraduate / Master's·C1] [Postgraduate / Doctorate·C2]
@@ -14,10 +17,16 @@ import '../../../core/widgets/category_grid.dart' show categoryAllOpenProvider;
 class StageChips extends StatelessWidget {
   final String? selected;
   final ValueChanged<String?> onSelect;
+
+  /// اگر داده شود، کنارِ چیپِ A2 چیپِ «تمرین‌ها» نشان داده می‌شود (فقط تبِ لغات)
+  final VoidCallback? onPractice;
+  final bool practiceActive;
   const StageChips({
     super.key,
     required this.selected,
     required this.onSelect,
+    this.onPractice,
+    this.practiceActive = false,
   });
 
   static const List<(String, String)> stages = [
@@ -52,7 +61,7 @@ class StageChips extends StatelessWidget {
           Center(
             child: _StageChip(
               label: allLabel,
-              active: selected == null,
+              active: selected == null && !practiceActive,
               onTap: () => onSelect(null),
             ),
           ),
@@ -63,11 +72,23 @@ class StageChips extends StatelessWidget {
                 label: st.$2,
                 sub: st.$1,
                 icon: _icon(st.$1),
-                active: selected == st.$1,
+                active: selected == st.$1 && !practiceActive,
                 color: levelColor(st.$1),
                 onTap: () => onSelect(st.$1),
               ),
             ),
+            if (st.$1 == 'A2' && onPractice != null) ...[
+              const SizedBox(width: 7),
+              Center(
+                child: _StageChip(
+                  label: (ui == 'fa' || ui == 'ar') ? 'تمرین‌ها' : 'Practice',
+                  icon: Icons.fitness_center_rounded,
+                  active: practiceActive,
+                  color: levelColor('A2'),
+                  onTap: onPractice!,
+                ),
+              ),
+            ],
           ],
         ],
       ),
@@ -87,13 +108,24 @@ class StageChipsBar extends ConsumerWidget {
         ? ref.watch(primaryLevelProvider)
         : (levels.length == 1 ? levels.first : null);
 
+    final practice = ref.watch(primaryPracticeOpenProvider);
+
     void reset() {
       ref.read(primaryTopicProvider.notifier).state = null;
       ref.read(categoryAllOpenProvider('primary').notifier).state = false;
+      ref.read(primaryPracticeOpenProvider.notifier).state = false;
     }
 
     return StageChips(
       selected: selected,
+      practiceActive: practice,
+      onPractice: () {
+        reset();
+        ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
+        ref.read(primaryLevelProvider.notifier).state = 'A2';
+        ref.read(wordsStageProvider.notifier).state = kStagePrimary;
+        ref.read(primaryPracticeOpenProvider.notifier).state = true;
+      },
       onSelect: (lv) {
         reset();
         ref.read(wordsFilterProvider.notifier).setLevels(
