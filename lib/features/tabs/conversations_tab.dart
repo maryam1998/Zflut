@@ -583,28 +583,27 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ردیفِ قدیمیِ سطح‌ها (همه + A1…C2) — دست‌نخورده؛ همه‌ی موضوع‌های اصلی
-            LevelChipsMulti(
-              selected: _primary ? const <String>{'-'} : _levels,
-              onChanged: (s) {
-                _setPrimary(false);
-                setState(() => _levels = {for (final l in s) if (l != '-') l});
-              },
-            ),
-            const SizedBox(height: 8),
-            // ردیفِ چیپ‌های جدید (مکالمه‌های تازه‌ی مدرسه) — جدا از «همه»
+            // ردیفِ اصلی: [همه] + مقاطعِ تحصیلیِ جدید (Preschool، Primary School، …)
             StageChips(
               levelsPlusPrimary: true,
-              selected: _primary
-                  ? 'P-$_primaryLevel'
-                  : null,
+              selected: _primary ? 'P-$_primaryLevel' : null,
               onSelect: (lv) {
                 if (lv != null && lv.startsWith('P-')) {
                   _primaryLevel = lv.substring(2);
                   _setPrimary(true);
+                } else if (_primary) {
+                  _setPrimary(false); // برگشت به «همه»
                 }
               },
             ),
+            // زیرمجموعه‌ی «همه»: سطح‌های قدیمی (همه سطح‌ها + A1…C2) — دست‌نخورده
+            if (!_primary) ...[
+              const SizedBox(height: 8),
+              LevelChipsMulti(
+                selected: _levels,
+                onChanged: (s) => setState(() => _levels = s),
+              ),
+            ],
             const SizedBox(height: 8),
             _searchField(),
           ],

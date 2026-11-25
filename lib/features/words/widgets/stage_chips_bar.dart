@@ -22,7 +22,7 @@ class StageChips extends StatelessWidget {
   final VoidCallback? onPractice;
   final bool practiceActive;
 
-  /// true (فقط تبِ مکالمه): فقط ردیفِ چیپ‌های جدیدِ مرحله‌ها (زیرِ ردیفِ قدیمیِ سطح‌ها)؛
+  /// true (فقط تبِ مکالمه): [همه] + چیپ‌های جدیدِ مقاطعِ تحصیلی؛
   /// چیپ‌های جدیدِ مرحله‌ها (Preschool … Postgraduate) با کدِ 'P-A1' … 'P-C2'. (تبِ «همه» و سطح‌هایش دست‌نخورده می‌مانند)
   final bool levelsPlusPrimary;
   const StageChips({
@@ -59,19 +59,31 @@ class StageChips extends StatelessWidget {
     final ui = Localizations.localeOf(context).languageCode;
     final allLabel = (ui == 'fa' || ui == 'ar') ? 'همه' : 'All';
     if (levelsPlusPrimary) {
+      // تبِ مکالمه: [همه] + مقاطعِ تحصیلیِ جدید (کدِ 'P-A1' … 'P-C1' = پیشوندِ شناسه‌ی مکالمه‌ها p-a1-…)
       return SizedBox(
         height: 50,
         child: ListView(
           scrollDirection: Axis.horizontal,
           children: [
-            // چیپ‌های جدیدِ مرحله‌ها (محتوای جدا از «همه»): کد = 'P-A1' … 'P-C2'
-            for (final st in stages) ...[
-              if (st.$1 != 'A1') const SizedBox(width: 7),
+            Center(
+              child: _StageChip(
+                label: allLabel,
+                active: selected == null,
+                onTap: () => onSelect(null),
+              ),
+            ),
+            for (final st in const <(String, String, IconData)>[
+              ('A1', kPreschoolChipLabel, Icons.child_care_rounded),
+              ('A2', kPrimaryChipLabel, Icons.school_rounded),
+              ('B1', 'Secondary School', Icons.workspace_premium_rounded),
+              ('B2', 'Sixth Form / College', Icons.workspace_premium_rounded),
+              ('C1', 'University', Icons.workspace_premium_rounded),
+            ]) ...[
+              const SizedBox(width: 7),
               Center(
                 child: _StageChip(
                   label: st.$2,
-                  sub: st.$1,
-                  icon: _icon(st.$1),
+                  icon: st.$3,
                   active: selected == 'P-${st.$1}',
                   color: levelColor(st.$1),
                   onTap: () => onSelect('P-${st.$1}'),
