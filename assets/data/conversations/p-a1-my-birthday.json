@@ -1,0 +1,165 @@
+{
+ "topic": "My Birthday",
+ "scenarios": [
+  {
+   "scenario": "Happy birthday!",
+   "context": "A friend says happy birthday at school.",
+   "speakerA": [
+    {
+     "en": "Happy birthday!",
+     "level": "A1"
+    },
+    {
+     "en": "How old are you now?",
+     "level": "A1"
+    },
+    {
+     "en": "Five! Wow!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Thank you!",
+     "level": "A1"
+    },
+    {
+     "en": "I'm five.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes! Today is my birthday.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "The birthday cake",
+   "context": "A mother brings a cake to the table.",
+   "speakerA": [
+    {
+     "en": "Look at the cake!",
+     "level": "A1"
+    },
+    {
+     "en": "Make a wish.",
+     "level": "A1"
+    },
+    {
+     "en": "Now blow out the candles.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Wow! It's big.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. I have a wish.",
+     "level": "A1"
+    },
+    {
+     "en": "One, two, three! Phew!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "The birthday party",
+   "context": "Two children talk about a party.",
+   "speakerA": [
+    {
+     "en": "Do you have a party?",
+     "level": "A1"
+    },
+    {
+     "en": "Who comes?",
+     "level": "A1"
+    },
+    {
+     "en": "Can I come too?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, I have a party on Saturday.",
+     "level": "A1"
+    },
+    {
+     "en": "My friends and my family.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, please come!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A birthday present",
+   "context": "A child gives a present to a friend.",
+   "speakerA": [
+    {
+     "en": "This is for you.",
+     "level": "A1"
+    },
+    {
+     "en": "Open it.",
+     "level": "A1"
+    },
+    {
+     "en": "Do you like it?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "A present? Thank you!",
+     "level": "A1"
+    },
+    {
+     "en": "Oh, a toy car! I love it.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, very much.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "When is your birthday?",
+   "context": "Two friends talk in the classroom.",
+   "speakerA": [
+    {
+     "en": "When is your birthday?",
+     "level": "A1"
+    },
+    {
+     "en": "Mine is in June.",
+     "level": "A1"
+    },
+    {
+     "en": "I'm six.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's in May.",
+     "level": "A1"
+    },
+    {
+     "en": "How old are you?",
+     "level": "A1"
+    },
+    {
+     "en": "Me too!",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

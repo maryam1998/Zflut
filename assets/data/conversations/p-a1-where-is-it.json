@@ -1,0 +1,165 @@
+{
+ "topic": "Where Is It?",
+ "scenarios": [
+  {
+   "scenario": "Where is my ball?",
+   "context": "A child looks for a ball at home.",
+   "speakerA": [
+    {
+     "en": "Where is my ball?",
+     "level": "A1"
+    },
+    {
+     "en": "No, it isn't.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes! I see it. Thank you.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Is it in the box?",
+     "level": "A1"
+    },
+    {
+     "en": "Look! It's under the bed.",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Where is the cat?",
+   "context": "Two children look for their pets.",
+   "speakerA": [
+    {
+     "en": "Where is the cat?",
+     "level": "A1"
+    },
+    {
+     "en": "Yes! And where is the dog?",
+     "level": "A1"
+    },
+    {
+     "en": "Ha! The dog is hiding.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's on the chair.",
+     "level": "A1"
+    },
+    {
+     "en": "It's behind the door.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes. And the cat is sleeping.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "In, on, next to",
+   "context": "A teacher asks about things in the classroom.",
+   "speakerA": [
+    {
+     "en": "Where is the book?",
+     "level": "A1"
+    },
+    {
+     "en": "Where is the pen?",
+     "level": "A1"
+    },
+    {
+     "en": "Good. Where is the bag?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's on the table.",
+     "level": "A1"
+    },
+    {
+     "en": "It's in the bag.",
+     "level": "A1"
+    },
+    {
+     "en": "It's next to the chair.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Where is my shoe?",
+   "context": "A child gets ready for school.",
+   "speakerA": [
+    {
+     "en": "Where is my shoe?",
+     "level": "A1"
+    },
+    {
+     "en": "I see it! And my hat?",
+     "level": "A1"
+    },
+    {
+     "en": "Ha ha! Yes!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's behind the door.",
+     "level": "A1"
+    },
+    {
+     "en": "It's on your head.",
+     "level": "A1"
+    },
+    {
+     "en": "Now let's go.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Look at the photo",
+   "context": "Two friends look at a photo.",
+   "speakerA": [
+    {
+     "en": "Look at this photo.",
+     "level": "A1"
+    },
+    {
+     "en": "That's me. I'm in front of the tree.",
+     "level": "A1"
+    },
+    {
+     "en": "That's my brother. The dog is behind us.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Who is in front of the tree?",
+     "level": "A1"
+    },
+    {
+     "en": "And who is next to you?",
+     "level": "A1"
+    },
+    {
+     "en": "I like your dog.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

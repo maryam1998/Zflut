@@ -14,6 +14,11 @@
    "topic": "Please, Thank You and Sorry"
   },
   {
+   "id": "p-a1-can-i",
+   "kind": "primary",
+   "topic": "Asking Permission: Can I ...?"
+  },
+  {
    "id": "p-a1-introducing-yourself",
    "kind": "primary",
    "topic": "Introducing Yourself"
@@ -64,6 +69,11 @@
    "topic": "What Is This?"
   },
   {
+   "id": "p-a1-where-is-it",
+   "kind": "primary",
+   "topic": "Where Is It?"
+  },
+  {
    "id": "p-a1-colors-and-numbers",
    "kind": "primary",
    "topic": "Colors and Numbers"
@@ -72,6 +82,11 @@
    "id": "p-a1-days-of-the-week",
    "kind": "primary",
    "topic": "Days of the Week"
+  },
+  {
+   "id": "p-a1-my-birthday",
+   "kind": "primary",
+   "topic": "My Birthday"
   },
   {
    "id": "p-a1-animals-i-know",
@@ -515,6 +530,63 @@
    ]
   },
   "Days of the Week": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "My Birthday": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Where Is It?": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Asking Permission: Can I ...?": {
    "s": 5,
    "t": [
     30,

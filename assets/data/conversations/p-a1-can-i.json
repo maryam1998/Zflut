@@ -1,0 +1,165 @@
+{
+ "topic": "Asking Permission: Can I ...?",
+ "scenarios": [
+  {
+   "scenario": "Can I go to the toilet?",
+   "context": "A child asks the teacher.",
+   "speakerA": [
+    {
+     "en": "Excuse me, teacher.",
+     "level": "A1"
+    },
+    {
+     "en": "Can I go to the toilet?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes?",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, you can.",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome. Come back soon.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Can I play with you?",
+   "context": "A child asks a friend to play.",
+   "speakerA": [
+    {
+     "en": "Can I play with you?",
+     "level": "A1"
+    },
+    {
+     "en": "Can I have the red ball?",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Can I play with the blue ball?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, you can.",
+     "level": "A1"
+    },
+    {
+     "en": "Sorry, no. It's my ball.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes! Here you are.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Can I watch TV?",
+   "context": "A child asks a parent after homework.",
+   "speakerA": [
+    {
+     "en": "Mom, can I watch TV?",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, it is.",
+     "level": "A1"
+    },
+    {
+     "en": "Only ten minutes?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Is your homework done?",
+     "level": "A1"
+    },
+    {
+     "en": "OK. You can watch for ten minutes.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes. Then we eat dinner.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Can I sit here?",
+   "context": "A new child is on the school bus.",
+   "speakerA": [
+    {
+     "en": "Hello. Can I sit here?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. My name is Sam.",
+     "level": "A1"
+    },
+    {
+     "en": "Nice to meet you, Ben.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, you can.",
+     "level": "A1"
+    },
+    {
+     "en": "Hi, Sam. I'm Ben.",
+     "level": "A1"
+    },
+    {
+     "en": "Nice to meet you too.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "May I come in?",
+   "context": "A child arrives late to class.",
+   "speakerA": [
+    {
+     "en": "Excuse me. May I come in?",
+     "level": "A1"
+    },
+    {
+     "en": "I'm sorry. I'm late.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you, teacher.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, come in.",
+     "level": "A1"
+    },
+    {
+     "en": "That's OK. Please sit down.",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}
