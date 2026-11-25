@@ -55,6 +55,9 @@ TopicVisual visualForTopic(String topic) {
   if (t.contains('my morning')) return const TopicVisual(Icons.wb_twilight_rounded, _gold);
   if (t.contains('washing hands')) return const TopicVisual(Icons.clean_hands_rounded, _blue);
   if (t.contains('snack time')) return const TopicVisual(Icons.bakery_dining_rounded, _orange);
+  if (t.contains('park and zoo')) return const TopicVisual(Icons.park_rounded, _green);
+  if (t.contains('please, thank you')) return const TopicVisual(Icons.favorite_rounded, _rose);
+  if (t.contains('days of the week')) return const TopicVisual(Icons.calendar_month_rounded, _teal);
   if (t.contains('toys and playing')) return const TopicVisual(Icons.toys_rounded, _orange);
   if (t.contains('weather today')) return const TopicVisual(Icons.wb_sunny_rounded, _gold);
   if (t.contains('introducing yourself')) return const TopicVisual(Icons.waving_hand_rounded, _teal);

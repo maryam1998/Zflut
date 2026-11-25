@@ -1,0 +1,165 @@
+{
+ "topic": "Days of the Week",
+ "scenarios": [
+  {
+   "scenario": "What day is it?",
+   "context": "A mother and her child talk in the morning.",
+   "speakerA": [
+    {
+     "en": "What day is it today?",
+     "level": "A1"
+    },
+    {
+     "en": "Yes. Is it a school day?",
+     "level": "A1"
+    },
+    {
+     "en": "Good. What day is tomorrow?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's Monday.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes. I go to school on Monday.",
+     "level": "A1"
+    },
+    {
+     "en": "Tomorrow is Tuesday.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "The weekend",
+   "context": "Two friends talk about the weekend.",
+   "speakerA": [
+    {
+     "en": "Do you go to school on Sunday?",
+     "level": "A1"
+    },
+    {
+     "en": "What do you do on Sunday?",
+     "level": "A1"
+    },
+    {
+     "en": "I love the weekend!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "No. Saturday and Sunday are the weekend.",
+     "level": "A1"
+    },
+    {
+     "en": "I visit my grandma.",
+     "level": "A1"
+    },
+    {
+     "en": "Me too. I play all day.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "My favorite day",
+   "context": "Two friends talk about their favorite day.",
+   "speakerA": [
+    {
+     "en": "What's your favorite day?",
+     "level": "A1"
+    },
+    {
+     "en": "Why?",
+     "level": "A1"
+    },
+    {
+     "en": "I like Saturday. I play football.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Friday!",
+     "level": "A1"
+    },
+    {
+     "en": "We have art class on Friday.",
+     "level": "A1"
+    },
+    {
+     "en": "That's fun.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Seven days",
+   "context": "A teacher and a student in the classroom.",
+   "speakerA": [
+    {
+     "en": "How many days are in a week?",
+     "level": "A1"
+    },
+    {
+     "en": "Right. Can you say them?",
+     "level": "A1"
+    },
+    {
+     "en": "Good. What's next?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Seven.",
+     "level": "A1"
+    },
+    {
+     "en": "Monday, Tuesday, Wednesday.",
+     "level": "A1"
+    },
+    {
+     "en": "Thursday, Friday, Saturday and Sunday.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Today and tomorrow",
+   "context": "A father and his daughter at home.",
+   "speakerA": [
+    {
+     "en": "What day is today?",
+     "level": "A1"
+    },
+    {
+     "en": "What day is tomorrow?",
+     "level": "A1"
+    },
+    {
+     "en": "And yesterday?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's Wednesday.",
+     "level": "A1"
+    },
+    {
+     "en": "Thursday.",
+     "level": "A1"
+    },
+    {
+     "en": "It was Tuesday.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

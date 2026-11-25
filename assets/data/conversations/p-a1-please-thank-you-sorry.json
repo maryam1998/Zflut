@@ -1,0 +1,165 @@
+{
+ "topic": "Please, Thank You and Sorry",
+ "scenarios": [
+  {
+   "scenario": "Say please",
+   "context": "A child asks his mother for water.",
+   "speakerA": [
+    {
+     "en": "Can I have some water, Mom?",
+     "level": "A1"
+    },
+    {
+     "en": "Please!",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you, Mom.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "What's the magic word?",
+     "level": "A1"
+    },
+    {
+     "en": "Here you are.",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A present",
+   "context": "A boy gets a gift from his aunt.",
+   "speakerA": [
+    {
+     "en": "This is for you, Ben.",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome. Do you like it?",
+     "level": "A1"
+    },
+    {
+     "en": "I'm happy.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Wow, a book! Thank you.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I love it. Thanks a lot!",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you, Aunt Sara.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "I'm sorry",
+   "context": "Two children bump into each other.",
+   "speakerA": [
+    {
+     "en": "Oh, sorry! Are you OK?",
+     "level": "A1"
+    },
+    {
+     "en": "I'm very sorry.",
+     "level": "A1"
+    },
+    {
+     "en": "Let's play together.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, I'm OK.",
+     "level": "A1"
+    },
+    {
+     "en": "That's OK. No problem.",
+     "level": "A1"
+    },
+    {
+     "en": "Good idea!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Excuse me",
+   "context": "Two children in the classroom.",
+   "speakerA": [
+    {
+     "en": "Excuse me, is this seat free?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you very much.",
+     "level": "A1"
+    },
+    {
+     "en": "Excuse me, can I use your pencil?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, please sit.",
+     "level": "A1"
+    },
+    {
+     "en": "You're welcome.",
+     "level": "A1"
+    },
+    {
+     "en": "Of course. Here you are.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Good manners",
+   "context": "A teacher talks to a student.",
+   "speakerA": [
+    {
+     "en": "Say please when you ask.",
+     "level": "A1"
+    },
+    {
+     "en": "And say thank you.",
+     "level": "A1"
+    },
+    {
+     "en": "Good manners! Well done.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "OK, Mr. Brown.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I always say thank you.",
+     "level": "A1"
+    },
+    {
+     "en": "Thanks, Mr. Brown!",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

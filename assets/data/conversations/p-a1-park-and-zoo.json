@@ -1,0 +1,165 @@
+{
+ "topic": "Park and Zoo",
+ "scenarios": [
+  {
+   "scenario": "Let's go to the park",
+   "context": "A mother and her son at home.",
+   "speakerA": [
+    {
+     "en": "Let's go to the park today.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, take your ball.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, it's big and green.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes! Can I take my ball?",
+     "level": "A1"
+    },
+    {
+     "en": "Is the park big?",
+     "level": "A1"
+    },
+    {
+     "en": "I want to run!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Playing in the park",
+   "context": "Two children at the playground.",
+   "speakerA": [
+    {
+     "en": "Look! A swing!",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Hold on tight.",
+     "level": "A1"
+    },
+    {
+     "en": "Now it's my turn.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I like the swing. Push me, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Higher! Higher!",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Here you go.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "At the zoo",
+   "context": "A father and his daughter at the zoo.",
+   "speakerA": [
+    {
+     "en": "We are at the zoo!",
+     "level": "A1"
+    },
+    {
+     "en": "It's very big.",
+     "level": "A1"
+    },
+    {
+     "en": "What does the monkey eat?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I see an elephant.",
+     "level": "A1"
+    },
+    {
+     "en": "Look at the monkey. It's funny.",
+     "level": "A1"
+    },
+    {
+     "en": "It eats bananas.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "My favorite animal",
+   "context": "Two friends talk at the zoo.",
+   "speakerA": [
+    {
+     "en": "What animal do you like?",
+     "level": "A1"
+    },
+    {
+     "en": "I like the giraffe.",
+     "level": "A1"
+    },
+    {
+     "en": "It's tall. Its neck is long.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I like the lion. It's strong.",
+     "level": "A1"
+    },
+    {
+     "en": "Why?",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, it's nice.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Time to go home",
+   "context": "A mother and her child leave the zoo.",
+   "speakerA": [
+    {
+     "en": "It's late. Time to go home.",
+     "level": "A1"
+    },
+    {
+     "en": "Say goodbye to the animals.",
+     "level": "A1"
+    },
+    {
+     "en": "Do you like the zoo?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Oh, no. I'm not tired.",
+     "level": "A1"
+    },
+    {
+     "en": "Bye-bye, lion!",
+     "level": "A1"
+    },
+    {
+     "en": "Yes! I love the zoo.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

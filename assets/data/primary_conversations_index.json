@@ -9,6 +9,11 @@
    "topic": "Hello and Goodbye"
   },
   {
+   "id": "p-a1-please-thank-you-sorry",
+   "kind": "primary",
+   "topic": "Please, Thank You and Sorry"
+  },
+  {
    "id": "p-a1-introducing-yourself",
    "kind": "primary",
    "topic": "Introducing Yourself"
@@ -64,6 +69,11 @@
    "topic": "Colors and Numbers"
   },
   {
+   "id": "p-a1-days-of-the-week",
+   "kind": "primary",
+   "topic": "Days of the Week"
+  },
+  {
    "id": "p-a1-animals-i-know",
    "kind": "primary",
    "topic": "Animals I Know"
@@ -72,6 +82,11 @@
    "id": "p-a1-toys-and-yard",
    "kind": "primary",
    "topic": "Toys and Playing in the Yard"
+  },
+  {
+   "id": "p-a1-park-and-zoo",
+   "kind": "primary",
+   "topic": "Park and Zoo"
   },
   {
    "id": "p-a1-in-the-classroom",
@@ -443,6 +458,63 @@
    ]
   },
   "Snack Time": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Park and Zoo": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Please, Thank You and Sorry": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Days of the Week": {
    "s": 5,
    "t": [
     30,
