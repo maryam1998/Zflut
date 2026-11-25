@@ -708,36 +708,82 @@ class _StoryTabState extends ConsumerState<StoryTab> {
         .toList();
     if (paras.isEmpty) return;
     if (mounted) setState(() => _storyTranslating = true);
-    final result = <String, List<String>>{};
+    final result = <String, List<String>>{
+      for (final code in langs) code: List<String>.filled(paras.length, ''),
+    };
+    // 💾 ذخیره‌ی تدریجی: هر پاراگراف که تمام شد (حداکثر هر ~۱ ثانیه یک‌بار) در داستان ذخیره می‌شود؛
+    // نه یک‌جا در پایانِ کار. فقط جاهای پُرشده نوشته می‌شود و ترجمه‌ی قبلیِ همان متن حفظ می‌ماند.
+    var lastFlush = DateTime.fromMillisecondsSinceEpoch(0);
+    var dirty = false;
+    var textChanged = false;
+    void flush({bool force = false}) {
+      if (!dirty || textChanged || !mounted) return;
+      final now = DateTime.now();
+      if (!force && now.difference(lastFlush).inMilliseconds < 1000) return;
+      final cur = _libGet(story.id);
+      if (cur == null) return;
+      if (cur.text != story.text) {
+        textChanged = true; // متن در این فاصله ویرایش شده؛ ترجمه‌ی متنِ قدیمی نوشته نشود
+        return;
+      }
+      lastFlush = now;
+      dirty = false;
+      final map = <String, List<String>>{
+        for (final e in cur.translations.entries)
+          e.key: List<String>.from(e.value),
+      };
+      for (final e in result.entries) {
+        final list = map.putIfAbsent(e.key, () => <String>[]);
+        while (list.length < paras.length) {
+          list.add('');
+        }
+        for (var i = 0; i < paras.length; i++) {
+          if (e.value[i].isNotEmpty) list[i] = e.value[i];
+        }
+      }
+      _libPut(cur.copyWith(translations: map));
+    }
+
     try {
       final svc = ref.read(translationServiceProvider);
       final ai = ref.read(aiSettingsProvider);
       for (final code in langs) {
-        final out = await runWithConcurrencyLimit<String, String>(
+        await runWithConcurrencyLimit<String, String>(
           paras,
           3,
-          (p, _) async {
+          (p, i) async {
+            var r = '';
             try {
-              final r = await svc.translate(
+              final raw = await svc.translate(
                 text: p,
                 targetLang: code,
                 sourceLang: story.langCode,
                 aiSettings: ai,
               );
-              return _okTr(p, r, code, story.langCode);
+              r = _okTr(p, raw, code, story.langCode);
+              // اگر فیلترِ سخت‌گیر رد کرد ولی ترجمه‌ی غیرخالیِ متفاوت از مبدأ داریم،
+              // خالی ذخیره نمی‌کنیم (قبلاً AI/مترجم کار کرده بود)
+              if (r.isEmpty) {
+                final t = raw.trim();
+                if (t.isNotEmpty && t.toLowerCase() != p.trim().toLowerCase()) {
+                  r = t;
+                }
+              }
             } catch (_) {
-              return '';
+              r = '';
             }
+            if (r.isNotEmpty) {
+              result[code]![i] = r;
+              dirty = true;
+              flush();
+            }
+            return r;
           },
         );
-        result[code] = out;
-      }
-      final updated = story.copyWith(translations: result);
-      ref.read(storyLibraryProvider.notifier).update(updated);
-      if (mounted && _result?.id == story.id) {
-        setState(() => _result = updated);
+        flush(force: true);
       }
     } finally {
+      flush(force: true);
       if (mounted) setState(() => _storyTranslating = false);
     }
   }
