@@ -1,0 +1,165 @@
+{
+ "topic": "Hello and Goodbye",
+ "scenarios": [
+  {
+   "scenario": "Good morning",
+   "context": "A child meets the teacher at the school gate.",
+   "speakerA": [
+    {
+     "en": "Good morning, Mr. Brown!",
+     "level": "A1"
+    },
+    {
+     "en": "I'm fine, thank you. And you?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. See you in class!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Good morning, Lisa. How are you?",
+     "level": "A1"
+    },
+    {
+     "en": "I'm very well, thanks. Come in.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, see you in class.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Hi, friend",
+   "context": "Two friends meet at the park.",
+   "speakerA": [
+    {
+     "en": "Hi, Tom!",
+     "level": "A1"
+    },
+    {
+     "en": "I'm good. Do you want to play?",
+     "level": "A1"
+    },
+    {
+     "en": "Great! Come with me.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Hi, Anna! How are you?",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I do. Let's go.",
+     "level": "A1"
+    },
+    {
+     "en": "OK, I'm coming.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Good afternoon",
+   "context": "Two neighbors meet in the street.",
+   "speakerA": [
+    {
+     "en": "Good afternoon, Mrs. Green!",
+     "level": "A1"
+    },
+    {
+     "en": "She's fine, thank you.",
+     "level": "A1"
+    },
+    {
+     "en": "I will. Have a nice day!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Good afternoon, Sam. How is your mother?",
+     "level": "A1"
+    },
+    {
+     "en": "That's good. Say hello to her.",
+     "level": "A1"
+    },
+    {
+     "en": "You too. Goodbye!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Good night",
+   "context": "A mother and a child at bedtime.",
+   "speakerA": [
+    {
+     "en": "Good night, Mom.",
+     "level": "A1"
+    },
+    {
+     "en": "Can I have a hug?",
+     "level": "A1"
+    },
+    {
+     "en": "I love you too.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Good night, my dear. Sleep well.",
+     "level": "A1"
+    },
+    {
+     "en": "Of course. I love you.",
+     "level": "A1"
+    },
+    {
+     "en": "See you in the morning. Sweet dreams!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Saying goodbye",
+   "context": "Two classmates leave school.",
+   "speakerA": [
+    {
+     "en": "Bye, Maya! See you tomorrow.",
+     "level": "A1"
+    },
+    {
+     "en": "Thanks. You too.",
+     "level": "A1"
+    },
+    {
+     "en": "Oh, thank you! Goodbye!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Bye, Ben! Have a good evening.",
+     "level": "A1"
+    },
+    {
+     "en": "Don't forget your bag.",
+     "level": "A1"
+    },
+    {
+     "en": "See you! Bye!",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

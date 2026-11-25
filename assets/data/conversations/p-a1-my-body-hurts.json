@@ -1,0 +1,165 @@
+{
+ "topic": "My Body Hurts / At the Doctor",
+ "scenarios": [
+  {
+   "scenario": "My head hurts",
+   "context": "A boy talks to his mother in the morning.",
+   "speakerA": [
+    {
+     "en": "Mom, my head hurts.",
+     "level": "A1"
+    },
+    {
+     "en": "I don't know. I feel hot.",
+     "level": "A1"
+    },
+    {
+     "en": "Can I stay home today?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Oh no! Do you have a fever?",
+     "level": "A1"
+    },
+    {
+     "en": "Let me check. Yes, you have a fever.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, go to bed and rest.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A sore stomach",
+   "context": "A girl is not feeling well.",
+   "speakerA": [
+    {
+     "en": "My stomach hurts.",
+     "level": "A1"
+    },
+    {
+     "en": "I ate a lot of cake.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Thank you.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "What did you eat?",
+     "level": "A1"
+    },
+    {
+     "en": "Drink some water and sit down.",
+     "level": "A1"
+    },
+    {
+     "en": "Tell me if you feel worse.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "At the doctor",
+   "context": "A patient visits the doctor.",
+   "speakerA": [
+    {
+     "en": "Hello. What's the problem?",
+     "level": "A1"
+    },
+    {
+     "en": "Open your mouth, please.",
+     "level": "A1"
+    },
+    {
+     "en": "It's a little red. Drink warm water.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "My throat hurts.",
+     "level": "A1"
+    },
+    {
+     "en": "Ah... is it bad?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you, doctor.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "My leg hurts",
+   "context": "A child falls on the playground.",
+   "speakerA": [
+    {
+     "en": "Ouch! My leg hurts!",
+     "level": "A1"
+    },
+    {
+     "en": "Here. It hurts a lot.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. It's better now.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Are you OK? Show me.",
+     "level": "A1"
+    },
+    {
+     "en": "It's a small cut. I have a bandage.",
+     "level": "A1"
+    },
+    {
+     "en": "Good. Be careful next time.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Medicine and rest",
+   "context": "The doctor gives advice.",
+   "speakerA": [
+    {
+     "en": "Doctor, I have a cough.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, a little.",
+     "level": "A1"
+    },
+    {
+     "en": "Should I go to school?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Do you have a headache too?",
+     "level": "A1"
+    },
+    {
+     "en": "Take this medicine two times a day.",
+     "level": "A1"
+    },
+    {
+     "en": "No. Stay home and sleep.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

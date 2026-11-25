@@ -37,6 +37,10 @@ const Map<String, String> _kDailyFa = {
   'Birthdays and Celebrations': 'تولد و جشن‌ها',
   // 🎒 Primary School ▸ A1
   'Introducing Yourself': 'معرفی خود',
+  'Hello and Goodbye': 'سلام و خداحافظی',
+  'In the Classroom': 'در کلاس',
+  'My Body Hurts / At the Doctor': 'بدنم درد می‌کند / نزد دکتر',
+  'My House and Rooms': 'خانه‌ی من و اتاق‌ها',
   'Name and Age': 'نام و سن',
   'My Family': 'خانواده‌ی من',
   'What Is This?': 'این چیست؟',

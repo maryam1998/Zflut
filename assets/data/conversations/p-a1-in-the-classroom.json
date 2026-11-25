@@ -1,0 +1,165 @@
+{
+ "topic": "In the Classroom",
+ "scenarios": [
+  {
+   "scenario": "Sit down, please",
+   "context": "The teacher starts the lesson.",
+   "speakerA": [
+    {
+     "en": "Good morning, class. Sit down, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Open your book to page ten.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, it is. Look at the picture.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Good morning, teacher.",
+     "level": "A1"
+    },
+    {
+     "en": "Is this the right page?",
+     "level": "A1"
+    },
+    {
+     "en": "I see a cat.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Listen and repeat",
+   "context": "The teacher says a new word.",
+   "speakerA": [
+    {
+     "en": "Listen and repeat: apple.",
+     "level": "A1"
+    },
+    {
+     "en": "Good! Say it again, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, very good. Now write it.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Apple.",
+     "level": "A1"
+    },
+    {
+     "en": "Apple! Is that right?",
+     "level": "A1"
+    },
+    {
+     "en": "OK. I'm writing.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Be quiet",
+   "context": "The class is noisy.",
+   "speakerA": [
+    {
+     "en": "Please be quiet, everyone.",
+     "level": "A1"
+    },
+    {
+     "en": "Raise your hand when you know the answer.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, Omar. Stand up and tell us.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Sorry, teacher.",
+     "level": "A1"
+    },
+    {
+     "en": "I know! I know!",
+     "level": "A1"
+    },
+    {
+     "en": "The answer is five.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Pencil and paper",
+   "context": "The teacher gives out work.",
+   "speakerA": [
+    {
+     "en": "Take a pencil and a paper.",
+     "level": "A1"
+    },
+    {
+     "en": "Here is a pencil. Write your name at the top.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, very good. Now draw a house.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I don't have a pencil.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Is this good?",
+     "level": "A1"
+    },
+    {
+     "en": "I like drawing!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Time to go",
+   "context": "The lesson is finished.",
+   "speakerA": [
+    {
+     "en": "Class, stand up, please.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes. Put your books in your bag.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes. Read page ten at home.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Is the lesson finished?",
+     "level": "A1"
+    },
+    {
+     "en": "Is there homework?",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Goodbye, teacher!",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

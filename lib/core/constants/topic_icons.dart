@@ -47,6 +47,10 @@ TopicVisual visualForTopic(String topic) {
   if (t.contains('birthdays and celebrations')) return const TopicVisual(Icons.cake_rounded, _rose);
 
   // ═══ Primary School ▸ A1 ═══
+  if (t.contains('hello and goodbye')) return const TopicVisual(Icons.waving_hand_rounded, _teal);
+  if (t.contains('in the classroom')) return const TopicVisual(Icons.school_rounded, _purple);
+  if (t.contains('my body hurts')) return const TopicVisual(Icons.healing_rounded, _rose);
+  if (t.contains('my house and rooms')) return const TopicVisual(Icons.house_rounded, _brown);
   if (t.contains('introducing yourself')) return const TopicVisual(Icons.waving_hand_rounded, _teal);
   if (t.contains('name and age')) return const TopicVisual(Icons.badge_rounded, _blue);
   if (t.contains('my family')) return const TopicVisual(Icons.family_restroom_rounded, _purple);

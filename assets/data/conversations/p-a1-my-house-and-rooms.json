@@ -1,0 +1,165 @@
+{
+ "topic": "My House and Rooms",
+ "scenarios": [
+  {
+   "scenario": "My house",
+   "context": "A girl shows her house to a friend.",
+   "speakerA": [
+    {
+     "en": "This is my house.",
+     "level": "A1"
+    },
+    {
+     "en": "There are five rooms.",
+     "level": "A1"
+    },
+    {
+     "en": "Not very big, but it's nice.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's beautiful! How many rooms are there?",
+     "level": "A1"
+    },
+    {
+     "en": "Is it big?",
+     "level": "A1"
+    },
+    {
+     "en": "I like it.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "In the kitchen",
+   "context": "A boy looks for his mother.",
+   "speakerA": [
+    {
+     "en": "Where is Mom?",
+     "level": "A1"
+    },
+    {
+     "en": "What is she doing?",
+     "level": "A1"
+    },
+    {
+     "en": "I'm hungry. Can I help?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "She's in the kitchen.",
+     "level": "A1"
+    },
+    {
+     "en": "She's making dinner.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes. Put the plates on the table.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "In the bedroom",
+   "context": "A girl shows her bedroom.",
+   "speakerA": [
+    {
+     "en": "This is my bedroom.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes. And that's my desk.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, I read here at night.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Nice! Is that your bed?",
+     "level": "A1"
+    },
+    {
+     "en": "There is a lamp on the desk.",
+     "level": "A1"
+    },
+    {
+     "en": "It's a lovely room.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Bathroom and living room",
+   "context": "A guest arrives at a friend's home.",
+   "speakerA": [
+    {
+     "en": "Where is the bathroom, please?",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. Where do we sit?",
+     "level": "A1"
+    },
+    {
+     "en": "Can I watch TV?",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's next to the kitchen.",
+     "level": "A1"
+    },
+    {
+     "en": "Sit in the living room, on the sofa.",
+     "level": "A1"
+    },
+    {
+     "en": "Sure. The remote is on the table.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Where is the cat?",
+   "context": "Two children look for their cat.",
+   "speakerA": [
+    {
+     "en": "Where is the cat?",
+     "level": "A1"
+    },
+    {
+     "en": "It isn't there.",
+     "level": "A1"
+    },
+    {
+     "en": "Found it! It's sleeping.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's under the bed.",
+     "level": "A1"
+    },
+    {
+     "en": "Look behind the sofa.",
+     "level": "A1"
+    },
+    {
+     "en": "Shh! Don't wake it up.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

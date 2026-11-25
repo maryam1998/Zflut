@@ -4,6 +4,11 @@
  "level": "A1",
  "list": [
   {
+   "id": "p-a1-hello-and-goodbye",
+   "kind": "primary",
+   "topic": "Hello and Goodbye"
+  },
+  {
    "id": "p-a1-introducing-yourself",
    "kind": "primary",
    "topic": "Introducing Yourself"
@@ -17,6 +22,11 @@
    "id": "p-a1-my-family",
    "kind": "primary",
    "topic": "My Family"
+  },
+  {
+   "id": "p-a1-my-house-and-rooms",
+   "kind": "primary",
+   "topic": "My House and Rooms"
   },
   {
    "id": "p-a1-what-is-this",
@@ -34,9 +44,19 @@
    "topic": "Animals I Know"
   },
   {
+   "id": "p-a1-in-the-classroom",
+   "kind": "primary",
+   "topic": "In the Classroom"
+  },
+  {
    "id": "p-a1-how-do-you-feel",
    "kind": "primary",
    "topic": "How Do You Feel?"
+  },
+  {
+   "id": "p-a1-my-body-hurts",
+   "kind": "primary",
+   "topic": "My Body Hurts / At the Doctor"
   },
   {
    "id": "p-a1-water-food-help",
@@ -50,6 +70,25 @@
   }
  ],
  "topics": {
+  "Hello and Goodbye": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
   "Introducing Yourself": {
    "s": 5,
    "t": [
@@ -100,6 +139,25 @@
    ],
    "f": [
     31,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "My House and Rooms": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
     0,
     0,
     0,
@@ -164,7 +222,45 @@
     0
    ]
   },
+  "In the Classroom": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
   "How Do You Feel?": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "My Body Hurts / At the Doctor": {
    "s": 5,
    "t": [
     30,
