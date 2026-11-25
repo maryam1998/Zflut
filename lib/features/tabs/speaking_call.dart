@@ -2538,6 +2538,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
   int _speechFrames = 0;
   int _silentFrames = 0;
   int _recFrames = 0;
+  // 🔇 تشخیصِ تطبیقیِ سکوت (برای صداهای پس‌زمینه مثلِ تلویزیونِ اتاقِ دیگر)
+  final List<double> _dbHist = <double>[]; // سطحِ صدای فریم‌های همین ضبط
+  double _peakDb = -90; // اوجِ آهسته‌کاهندهٔ صدای خودِ کاربر
 
   bool _needModel = false;
   bool _dlRunning = false;
@@ -3940,6 +3943,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
       _speechFrames = 0;
       _silentFrames = 0;
       _recFrames = 0;
+      _dbHist.clear();
+      _peakDb = -90;
       _stopping = false;
       _ampSub?.cancel();
       var ampBusy = false;
@@ -3981,8 +3986,32 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     final db = a.current;
     _level.value = ((db + 55) / 55).clamp(0.0, 1.0);
     _recFrames++;
-    if (db > -38) {
-      _speechFrames++;
+    // آستانه‌ی «حرف» = بیشینه‌ی (−۳۸ dB ، کفِ نویزِ همین ضبط + ۱۰ dB).
+    // کفِ نویز = صدکِ ۲۰ام فریم‌ها؛ پس صدای ثابتِ تلویزیون/پس‌زمینه حرف حساب نمی‌شود.
+    // در اتاقِ ساکت کفِ نویز پایین است و رفتار همانِ قبل (−۳۸) می‌ماند.
+    _dbHist.add(db);
+    // ۸ فریمِ اول (۰٫۸ ثانیه) فقط برای سنجشِ کفِ نویز است؛ تصمیمی گرفته نمی‌شود
+    if (_dbHist.length < 8) return;
+    final sorted = List<double>.from(_dbHist)..sort();
+    final floor = sorted[(sorted.length * 0.2).floor()];
+    final thr = (floor + 10).clamp(-38.0, -30.0).toDouble();
+    if (_dbHist.length == 8) {
+      // فریم‌های اولیه را با آستانه‌ی واقعی دوباره می‌شماریم
+      for (final d in _dbHist) {
+        if (d > thr) {
+          _speechFrames++;
+          if (d > _peakDb) _peakDb = d;
+        }
+      }
+    } else {
+      if (db > thr) _speechFrames++;
+      // اوجِ صدای کاربر (آهسته کم می‌شود). سکوت = افتادن چند dB زیرِ اوج،
+      // پس تلویزیونِ دورِ آرام‌تر از کاربر «ادامه‌ی حرف» حساب نمی‌شود.
+      _peakDb = db > thr && db > _peakDb ? db : _peakDb - 0.05;
+    }
+    final silenceThr =
+        _speechFrames >= 3 && _peakDb - 14 > thr ? _peakDb - 14 : thr;
+    if (db > silenceThr) {
       _silentFrames = 0;
     } else {
       _silentFrames++;
