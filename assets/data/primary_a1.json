@@ -938,6 +938,279 @@
      "pos": "noun",
      "en": "animal",
      "fa": "حیوان"
+    },
+    {
+     "id": 900111,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pet",
+     "fa": "حیوان خانگی"
+    },
+    {
+     "id": 900112,
+     "level": "A1",
+     "pos": "noun",
+     "en": "puppy",
+     "fa": "توله‌سگ"
+    },
+    {
+     "id": 900113,
+     "level": "A1",
+     "pos": "noun",
+     "en": "kitten",
+     "fa": "بچه‌گربه"
+    },
+    {
+     "id": 900114,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hamster",
+     "fa": "همستر"
+    },
+    {
+     "id": 900115,
+     "level": "A1",
+     "pos": "noun",
+     "en": "parrot",
+     "fa": "طوطی"
+    },
+    {
+     "id": 900116,
+     "level": "A1",
+     "pos": "noun",
+     "en": "goldfish",
+     "fa": "ماهی قرمز"
+    },
+    {
+     "id": 900117,
+     "level": "A1",
+     "pos": "noun",
+     "en": "chick",
+     "fa": "جوجه"
+    },
+    {
+     "id": 900118,
+     "level": "A1",
+     "pos": "noun",
+     "en": "duckling",
+     "fa": "جوجه‌اردک"
+    },
+    {
+     "id": 900119,
+     "level": "A1",
+     "pos": "noun",
+     "en": "calf",
+     "fa": "گوساله"
+    },
+    {
+     "id": 900120,
+     "level": "A1",
+     "pos": "noun",
+     "en": "lamb",
+     "fa": "بره"
+    },
+    {
+     "id": 900121,
+     "level": "A1",
+     "pos": "noun",
+     "en": "piglet",
+     "fa": "بچه‌خوک"
+    },
+    {
+     "id": 900122,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bunny",
+     "fa": "خرگوش کوچولو"
+    },
+    {
+     "id": 900123,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cub",
+     "fa": "توله (شیر، خرس)"
+    },
+    {
+     "id": 900124,
+     "level": "A1",
+     "pos": "noun",
+     "en": "farm",
+     "fa": "مزرعه"
+    },
+    {
+     "id": 900125,
+     "level": "A1",
+     "pos": "noun",
+     "en": "barn",
+     "fa": "طویله"
+    },
+    {
+     "id": 900126,
+     "level": "A1",
+     "pos": "noun",
+     "en": "zoo",
+     "fa": "باغ‌وحش"
+    },
+    {
+     "id": 900127,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cage",
+     "fa": "قفس"
+    },
+    {
+     "id": 900128,
+     "level": "A1",
+     "pos": "noun",
+     "en": "nest",
+     "fa": "لانه‌ی پرنده"
+    },
+    {
+     "id": 900129,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pond",
+     "fa": "برکه"
+    },
+    {
+     "id": 900130,
+     "level": "A1",
+     "pos": "noun",
+     "en": "aquarium",
+     "fa": "آکواریوم"
+    },
+    {
+     "id": 900131,
+     "level": "A1",
+     "pos": "noun",
+     "en": "octopus",
+     "fa": "هشت‌پا"
+    },
+    {
+     "id": 900132,
+     "level": "A1",
+     "pos": "noun",
+     "en": "crab",
+     "fa": "خرچنگ"
+    },
+    {
+     "id": 900133,
+     "level": "A1",
+     "pos": "noun",
+     "en": "starfish",
+     "fa": "ستاره‌ی دریایی"
+    },
+    {
+     "id": 900134,
+     "level": "A1",
+     "pos": "noun",
+     "en": "jellyfish",
+     "fa": "عروس دریایی"
+    },
+    {
+     "id": 900135,
+     "level": "A1",
+     "pos": "noun",
+     "en": "seal",
+     "fa": "فوک"
+    },
+    {
+     "id": 900136,
+     "level": "A1",
+     "pos": "noun",
+     "en": "seahorse",
+     "fa": "اسب دریایی"
+    },
+    {
+     "id": 900137,
+     "level": "A1",
+     "pos": "noun",
+     "en": "penguin",
+     "fa": "پنگوئن"
+    },
+    {
+     "id": 900138,
+     "level": "A1",
+     "pos": "noun",
+     "en": "insect",
+     "fa": "حشره"
+    },
+    {
+     "id": 900139,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ladybug",
+     "fa": "کفشدوزک"
+    },
+    {
+     "id": 900140,
+     "level": "A1",
+     "pos": "noun",
+     "en": "worm",
+     "fa": "کرم"
+    },
+    {
+     "id": 900141,
+     "level": "A1",
+     "pos": "noun",
+     "en": "snail",
+     "fa": "حلزون"
+    },
+    {
+     "id": 900142,
+     "level": "A1",
+     "pos": "noun",
+     "en": "mosquito",
+     "fa": "پشه"
+    },
+    {
+     "id": 900143,
+     "level": "A1",
+     "pos": "noun",
+     "en": "caterpillar",
+     "fa": "کرم پروانه"
+    },
+    {
+     "id": 900144,
+     "level": "A1",
+     "pos": "noun",
+     "en": "dragonfly",
+     "fa": "سنجاقک"
+    },
+    {
+     "id": 900145,
+     "level": "A1",
+     "pos": "noun",
+     "en": "tail",
+     "fa": "دم"
+    },
+    {
+     "id": 900146,
+     "level": "A1",
+     "pos": "noun",
+     "en": "wing",
+     "fa": "بال"
+    },
+    {
+     "id": 900147,
+     "level": "A1",
+     "pos": "noun",
+     "en": "paw",
+     "fa": "پنجه"
+    },
+    {
+     "id": 900148,
+     "level": "A1",
+     "pos": "noun",
+     "en": "fur",
+     "fa": "خز، پشم"
+    },
+    {
+     "id": 900149,
+     "level": "A1",
+     "pos": "noun",
+     "en": "feather",
+     "fa": "پَر"
     }
    ]
   },
@@ -1624,6 +1897,111 @@
      "pos": "noun",
      "en": "cucumber",
      "fa": ""
+    },
+    {
+     "id": 900150,
+     "level": "A1",
+     "pos": "noun",
+     "en": "snack",
+     "fa": "تنقلات"
+    },
+    {
+     "id": 900151,
+     "level": "A1",
+     "pos": "noun",
+     "en": "biscuit",
+     "fa": "بیسکویت"
+    },
+    {
+     "id": 900152,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cookie",
+     "fa": "کلوچه"
+    },
+    {
+     "id": 900153,
+     "level": "A1",
+     "pos": "noun",
+     "en": "candy",
+     "fa": "آب‌نبات"
+    },
+    {
+     "id": 900154,
+     "level": "A1",
+     "pos": "noun",
+     "en": "honey",
+     "fa": "عسل"
+    },
+    {
+     "id": 900155,
+     "level": "A1",
+     "pos": "noun",
+     "en": "jam",
+     "fa": "مربا"
+    },
+    {
+     "id": 900156,
+     "level": "A1",
+     "pos": "noun",
+     "en": "yoghurt",
+     "fa": "ماست"
+    },
+    {
+     "id": 900157,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hamburger",
+     "fa": "همبرگر"
+    },
+    {
+     "id": 900158,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hot dog",
+     "fa": "هات‌داگ"
+    },
+    {
+     "id": 900159,
+     "level": "A1",
+     "pos": "noun",
+     "en": "chips",
+     "fa": "چیپس"
+    },
+    {
+     "id": 900160,
+     "level": "A1",
+     "pos": "noun",
+     "en": "popcorn",
+     "fa": "ذرت بوداده"
+    },
+    {
+     "id": 900161,
+     "level": "A1",
+     "pos": "noun",
+     "en": "soda",
+     "fa": "نوشابه"
+    },
+    {
+     "id": 900162,
+     "level": "A1",
+     "pos": "noun",
+     "en": "noodles",
+     "fa": "نودل"
+    },
+    {
+     "id": 900163,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sausage",
+     "fa": "سوسیس"
+    },
+    {
+     "id": 900164,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ice lolly",
+     "fa": "بستنی یخی"
     }
    ]
   },
@@ -2499,6 +2877,174 @@
      "pos": "noun",
      "en": "help",
      "fa": "کمک"
+    },
+    {
+     "id": 900165,
+     "level": "A1",
+     "pos": "verb",
+     "en": "kick",
+     "fa": "لگد زدن"
+    },
+    {
+     "id": 900166,
+     "level": "A1",
+     "pos": "verb",
+     "en": "throw",
+     "fa": "پرتاب کردن"
+    },
+    {
+     "id": 900167,
+     "level": "A1",
+     "pos": "verb",
+     "en": "catch",
+     "fa": "گرفتن (توپ)"
+    },
+    {
+     "id": 900168,
+     "level": "A1",
+     "pos": "verb",
+     "en": "climb",
+     "fa": "بالا رفتن"
+    },
+    {
+     "id": 900169,
+     "level": "A1",
+     "pos": "verb",
+     "en": "push",
+     "fa": "هل دادن"
+    },
+    {
+     "id": 900170,
+     "level": "A1",
+     "pos": "verb",
+     "en": "pull",
+     "fa": "کشیدن"
+    },
+    {
+     "id": 900171,
+     "level": "A1",
+     "pos": "verb",
+     "en": "clap",
+     "fa": "دست زدن"
+    },
+    {
+     "id": 900172,
+     "level": "A1",
+     "pos": "verb",
+     "en": "hug",
+     "fa": "بغل کردن"
+    },
+    {
+     "id": 900173,
+     "level": "A1",
+     "pos": "verb",
+     "en": "swim",
+     "fa": "شنا کردن"
+    },
+    {
+     "id": 900174,
+     "level": "A1",
+     "pos": "verb",
+     "en": "fly",
+     "fa": "پرواز کردن"
+    },
+    {
+     "id": 900175,
+     "level": "A1",
+     "pos": "verb",
+     "en": "cut",
+     "fa": "بریدن"
+    },
+    {
+     "id": 900176,
+     "level": "A1",
+     "pos": "verb",
+     "en": "paint",
+     "fa": "نقاشی کردن (رنگ زدن)"
+    },
+    {
+     "id": 900177,
+     "level": "A1",
+     "pos": "verb",
+     "en": "make",
+     "fa": "ساختن"
+    },
+    {
+     "id": 900178,
+     "level": "A1",
+     "pos": "verb",
+     "en": "put",
+     "fa": "گذاشتن"
+    },
+    {
+     "id": 900179,
+     "level": "A1",
+     "pos": "verb",
+     "en": "find",
+     "fa": "پیدا کردن"
+    },
+    {
+     "id": 900180,
+     "level": "A1",
+     "pos": "verb",
+     "en": "hold",
+     "fa": "نگه داشتن"
+    },
+    {
+     "id": 900181,
+     "level": "A1",
+     "pos": "verb",
+     "en": "carry",
+     "fa": "حمل کردن"
+    },
+    {
+     "id": 900182,
+     "level": "A1",
+     "pos": "verb",
+     "en": "ride",
+     "fa": "سوار شدن"
+    },
+    {
+     "id": 900183,
+     "level": "A1",
+     "pos": "verb",
+     "en": "hop",
+     "fa": "لی‌لی کردن"
+    },
+    {
+     "id": 900184,
+     "level": "A1",
+     "pos": "verb",
+     "en": "wave",
+     "fa": "دست تکان دادن"
+    },
+    {
+     "id": 900185,
+     "level": "A1",
+     "pos": "verb",
+     "en": "kiss",
+     "fa": "بوسیدن"
+    },
+    {
+     "id": 900186,
+     "level": "A1",
+     "pos": "verb",
+     "en": "dig",
+     "fa": "کندن"
+    },
+    {
+     "id": 900187,
+     "level": "A1",
+     "pos": "verb",
+     "en": "build",
+     "fa": "ساختن (بنا کردن)"
+    },
+    {
+     "id": 900188,
+     "level": "A1",
+     "pos": "verb",
+     "en": "hide",
+     "fa": "قایم شدن"
     }
    ]
   }
