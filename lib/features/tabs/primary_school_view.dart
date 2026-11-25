@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/models/daily_word.dart';
+import '../../core/theme/app_theme_colors.dart';
 import '../../core/providers/primary_school_provider.dart';
 import '../../core/providers/words_filter_provider.dart';
 import '../../core/widgets/category_grid.dart';
 import '../words/widgets/stage_chips_bar.dart';
 import '../words/widgets/word_list_view.dart';
+import 'question_practice_page.dart';
 
 /// نمای «Primary School ▸ A1» در تبِ دیکشنری من:
 /// شبکه‌ی موضوع‌ها (الفبا، اعداد، رنگ‌ها، حیوان‌ها، ...) و داخلِ هر موضوع لیستِ لغات.
@@ -62,6 +64,44 @@ class PrimarySchoolView extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (gridMode && level == 'A2')
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) => const QuestionPracticePage()),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: context.appColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: context.appColors.gold),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.quiz_rounded, color: context.appColors.gold),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          (ui == 'fa' || ui == 'ar')
+                              ? 'تمرین ساخت سؤال'
+                              : 'Build the Question',
+                          style: TextStyle(
+                              color: context.appColors.ink,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded,
+                          color: context.appColors.inkSoft),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           if (gridMode)
             CategoryGrid(
               list: 'daily',

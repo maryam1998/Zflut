@@ -13,3 +13,8 @@
 - lib/core/constants/topic_titles.dart
 - lib/core/constants/topic_icons.dart
 هنوز کامپایل و اجرا نشده.
+
+افزوده‌ی جدید — تمرین ساخت سؤال (A2):
+- assets/data/primary_a2_questions.json (۱۰ مجموعه، ۸۰ سؤال با معنی فارسی)
+- lib/features/tabs/question_practice_page.dart (فایل جدید)
+- primary_school_view.dart: کارت «تمرین ساخت سؤال» بالای شبکه‌ی موضوع‌های A2 (فقط در تب لغات)

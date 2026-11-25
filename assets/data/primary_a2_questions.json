@@ -1,0 +1,406 @@
+{
+ "v": 1,
+ "level": "A2",
+ "sets": [
+  {
+   "key": "wh",
+   "fa": "کلمه‌های پرسشی",
+   "en": "Question Words",
+   "tip": "بعد از What / Where / When / Why / How معمولاً do/does یا is/are می‌آید و بعد فاعل: Where + do + you + live?",
+   "items": [
+    {
+     "en": "Where do you live?",
+     "fa": "کجا زندگی می‌کنی؟"
+    },
+    {
+     "en": "What time does the shop open?",
+     "fa": "فروشگاه ساعت چند باز می‌شود؟"
+    },
+    {
+     "en": "Why are you late today?",
+     "fa": "چرا امروز دیر کرده‌ای؟"
+    },
+    {
+     "en": "Who is your English teacher?",
+     "fa": "معلم انگلیسی تو کیست؟"
+    },
+    {
+     "en": "How do you go to work?",
+     "fa": "چطور به سر کار می‌روی؟"
+    },
+    {
+     "en": "When does the class start?",
+     "fa": "کلاس کی شروع می‌شود؟"
+    },
+    {
+     "en": "What kind of music do you like?",
+     "fa": "چه نوع موسیقی‌ای دوست داری؟"
+    },
+    {
+     "en": "Which bus goes to the museum?",
+     "fa": "کدام اتوبوس به موزه می‌رود؟"
+    }
+   ]
+  },
+  {
+   "key": "do",
+   "fa": "سؤال‌های Do و Does",
+   "en": "Do / Does",
+   "tip": "برای سؤال بله/خیر در زمان حال: Do (I, you, we, they) یا Does (he, she, it) + فاعل + فعل ساده. بعد از does فعل s نمی‌گیرد.",
+   "items": [
+    {
+     "en": "Do you have a larger size?",
+     "fa": "سایز بزرگ‌تر دارید؟"
+    },
+    {
+     "en": "Does this bus stop at the airport?",
+     "fa": "این اتوبوس در فرودگاه توقف می‌کند؟"
+    },
+    {
+     "en": "Do you work on weekends?",
+     "fa": "آخر هفته‌ها کار می‌کنی؟"
+    },
+    {
+     "en": "Does she speak English at work?",
+     "fa": "او سر کار انگلیسی صحبت می‌کند؟"
+    },
+    {
+     "en": "Do they live near the park?",
+     "fa": "آن‌ها نزدیک پارک زندگی می‌کنند؟"
+    },
+    {
+     "en": "Does the hotel have free wifi?",
+     "fa": "هتل وای‌فای رایگان دارد؟"
+    },
+    {
+     "en": "Do you take this medicine every day?",
+     "fa": "این دارو را هر روز مصرف می‌کنی؟"
+    },
+    {
+     "en": "Does your brother like football?",
+     "fa": "برادرت فوتبال دوست دارد؟"
+    }
+   ]
+  },
+  {
+   "key": "be",
+   "fa": "سؤال‌های Is و Are",
+   "en": "Is / Are / Was / Were",
+   "tip": "با فعل to be، فعل می‌آید اول جمله: Is / Are / Was / Were + فاعل ...؟",
+   "items": [
+    {
+     "en": "Is the bank near here?",
+     "fa": "بانک این نزدیکی است؟"
+    },
+    {
+     "en": "Are you ready to order?",
+     "fa": "آماده‌ی سفارش دادن هستید؟"
+    },
+    {
+     "en": "Is breakfast included in the price?",
+     "fa": "صبحانه در قیمت هست؟"
+    },
+    {
+     "en": "Are there any shops on this street?",
+     "fa": "در این خیابان مغازه‌ای هست؟"
+    },
+    {
+     "en": "Was the weather good last weekend?",
+     "fa": "آخر هفته‌ی پیش هوا خوب بود؟"
+    },
+    {
+     "en": "Were you at home yesterday evening?",
+     "fa": "دیروز عصر خانه بودی؟"
+    },
+    {
+     "en": "Is this seat free?",
+     "fa": "این صندلی خالی است؟"
+    },
+    {
+     "en": "Are they your neighbors?",
+     "fa": "آن‌ها همسایه‌های تو هستند؟"
+    }
+   ]
+  },
+  {
+   "key": "can",
+   "fa": "درخواست مؤدبانه",
+   "en": "Can / Could / Would",
+   "tip": "برای درخواست مؤدبانه: Can I ...؟ Could you ...؟ Would you like ...؟ فعل بعدی ساده است.",
+   "items": [
+    {
+     "en": "Can I pay by card?",
+     "fa": "می‌توانم با کارت پرداخت کنم؟"
+    },
+    {
+     "en": "Could you speak more slowly, please?",
+     "fa": "لطفاً می‌توانید آهسته‌تر صحبت کنید؟"
+    },
+    {
+     "en": "Can you help me with this form?",
+     "fa": "می‌توانید در پر کردن این فرم کمکم کنید؟"
+    },
+    {
+     "en": "Could I have the bill, please?",
+     "fa": "لطفاً می‌توانم صورتحساب را داشته باشم؟"
+    },
+    {
+     "en": "Would you like some more water?",
+     "fa": "کمی آب بیشتر می‌خواهید؟"
+    },
+    {
+     "en": "Can we sit by the window?",
+     "fa": "می‌توانیم کنار پنجره بنشینیم؟"
+    },
+    {
+     "en": "Could you repeat that, please?",
+     "fa": "لطفاً می‌توانید تکرار کنید؟"
+    },
+    {
+     "en": "Can I try this jacket on?",
+     "fa": "می‌توانم این کت را امتحان کنم؟"
+    }
+   ]
+  },
+  {
+   "key": "how",
+   "fa": "How much / many / long",
+   "en": "How much / How many / How long",
+   "tip": "How much برای چیزهای نشمردنی و قیمت، How many برای چیزهای شمردنی، How long برای مدت، How often برای تکرار.",
+   "items": [
+    {
+     "en": "How much is this jacket?",
+     "fa": "این کت چند است؟"
+    },
+    {
+     "en": "How many people are in your family?",
+     "fa": "خانواده‌ی تو چند نفر است؟"
+    },
+    {
+     "en": "How long does the trip take?",
+     "fa": "سفر چقدر طول می‌کشد؟"
+    },
+    {
+     "en": "How often do you go to the gym?",
+     "fa": "هر چند وقت به باشگاه می‌روی؟"
+    },
+    {
+     "en": "How old is your sister?",
+     "fa": "خواهرت چند سال دارد؟"
+    },
+    {
+     "en": "How far is the station from here?",
+     "fa": "ایستگاه از اینجا چقدر دور است؟"
+    },
+    {
+     "en": "How much does a ticket cost?",
+     "fa": "یک بلیت چقدر قیمت دارد؟"
+    },
+    {
+     "en": "How many rooms does the flat have?",
+     "fa": "آپارتمان چند اتاق دارد؟"
+    }
+   ]
+  },
+  {
+   "key": "past",
+   "fa": "سؤال‌های گذشته",
+   "en": "Past Questions (Did)",
+   "tip": "در گذشته‌ی ساده: Did + فاعل + فعل ساده. بعد از did فعل به شکل ساده می‌ماند (go نه went).",
+   "items": [
+    {
+     "en": "Did you sleep well last night?",
+     "fa": "دیشب خوب خوابیدی؟"
+    },
+    {
+     "en": "What did you do yesterday?",
+     "fa": "دیروز چه کار کردی؟"
+    },
+    {
+     "en": "Where did you go on holiday?",
+     "fa": "تعطیلات کجا رفتی؟"
+    },
+    {
+     "en": "Did you call the taxi company?",
+     "fa": "به شرکت تاکسی زنگ زدی؟"
+    },
+    {
+     "en": "When did you start this job?",
+     "fa": "کی این کار را شروع کردی؟"
+    },
+    {
+     "en": "Who did you meet at the party?",
+     "fa": "در مهمانی با چه کسی آشنا شدی؟"
+    },
+    {
+     "en": "Did she buy a new coat?",
+     "fa": "او یک پالتوی جدید خرید؟"
+    },
+    {
+     "en": "What did you eat for lunch?",
+     "fa": "برای ناهار چه خوردی؟"
+    }
+   ]
+  },
+  {
+   "key": "future",
+   "fa": "سؤال‌های آینده",
+   "en": "Future Questions (going to / will)",
+   "tip": "برای آینده: Are you going to ...؟ یا Will you ...؟ هر دو با فعل ساده ادامه پیدا می‌کنند.",
+   "items": [
+    {
+     "en": "What are you going to do tomorrow?",
+     "fa": "فردا می‌خواهی چه کار کنی؟"
+    },
+    {
+     "en": "Are you going to take a class?",
+     "fa": "قرار است کلاس بروی؟"
+    },
+    {
+     "en": "Will it rain this afternoon?",
+     "fa": "امروز بعدازظهر باران می‌آید؟"
+    },
+    {
+     "en": "Where will you stay in Paris?",
+     "fa": "در پاریس کجا می‌مانی؟"
+    },
+    {
+     "en": "Is she going to move to a new house?",
+     "fa": "او قرار است به خانه‌ی جدیدی نقل مکان کند؟"
+    },
+    {
+     "en": "What time will the meeting finish?",
+     "fa": "جلسه ساعت چند تمام می‌شود؟"
+    },
+    {
+     "en": "Are they going to come to the party?",
+     "fa": "آن‌ها به مهمانی می‌آیند؟"
+    },
+    {
+     "en": "Will you call me tonight?",
+     "fa": "امشب به من زنگ می‌زنی؟"
+    }
+   ]
+  },
+  {
+   "key": "shop",
+   "fa": "در فروشگاه و رستوران",
+   "en": "Shopping & Restaurant",
+   "tip": "سؤال‌های پرکاربرد در خرید و رستوران را با همین الگوها بساز.",
+   "items": [
+    {
+     "en": "Is the sale only today?",
+     "fa": "حراج فقط امروز است؟"
+    },
+    {
+     "en": "Do you have this in blue?",
+     "fa": "این را به رنگ آبی دارید؟"
+    },
+    {
+     "en": "Where is the fitting room?",
+     "fa": "اتاق پرو کجاست؟"
+    },
+    {
+     "en": "Is the tip included?",
+     "fa": "انعام حساب شده است؟"
+    },
+    {
+     "en": "What do you recommend?",
+     "fa": "چه چیزی پیشنهاد می‌کنید؟"
+    },
+    {
+     "en": "Can I have the receipt?",
+     "fa": "می‌توانم رسید را داشته باشم؟"
+    },
+    {
+     "en": "Is this dish vegetarian?",
+     "fa": "این غذا گیاهی است؟"
+    },
+    {
+     "en": "Could we have some more bread?",
+     "fa": "می‌توانیم کمی نان بیشتر داشته باشیم؟"
+    }
+   ]
+  },
+  {
+   "key": "travel",
+   "fa": "در مسیر و هتل",
+   "en": "Directions & Hotel",
+   "tip": "سؤال‌هایی که در سفر، ایستگاه و هتل زیاد لازم می‌شوند.",
+   "items": [
+    {
+     "en": "How do I get to the station?",
+     "fa": "چطور به ایستگاه برسم؟"
+    },
+    {
+     "en": "Is it far from here?",
+     "fa": "از اینجا دور است؟"
+    },
+    {
+     "en": "Which platform does the train leave from?",
+     "fa": "قطار از کدام سکو حرکت می‌کند؟"
+    },
+    {
+     "en": "What time is check out?",
+     "fa": "ساعت تخلیه‌ی اتاق چند است؟"
+    },
+    {
+     "en": "Do you have a room for two nights?",
+     "fa": "برای دو شب اتاق دارید؟"
+    },
+    {
+     "en": "Can I leave my suitcase here?",
+     "fa": "می‌توانم چمدانم را اینجا بگذارم؟"
+    },
+    {
+     "en": "Where can I buy a ticket?",
+     "fa": "از کجا می‌توانم بلیت بخرم؟"
+    },
+    {
+     "en": "Is there a pharmacy near here?",
+     "fa": "نزدیک اینجا داروخانه‌ای هست؟"
+    }
+   ]
+  },
+  {
+   "key": "time",
+   "fa": "ساعت و زندگی روزمره",
+   "en": "Time & Daily Life",
+   "tip": "سؤال درباره‌ی ساعت، تاریخ و برنامه با What time / When / Is ... OK?",
+   "items": [
+    {
+     "en": "What time is it?",
+     "fa": "ساعت چند است؟"
+    },
+    {
+     "en": "What is the date today?",
+     "fa": "امروز چندم است؟"
+    },
+    {
+     "en": "When is your birthday?",
+     "fa": "تولد تو کی است؟"
+    },
+    {
+     "en": "What time do you get up?",
+     "fa": "چه ساعتی از خواب بلند می‌شوی؟"
+    },
+    {
+     "en": "Do you have time for a coffee?",
+     "fa": "وقت یک قهوه را داری؟"
+    },
+    {
+     "en": "What day is the meeting?",
+     "fa": "جلسه چه روزی است؟"
+    },
+    {
+     "en": "Is Thursday at ten OK for you?",
+     "fa": "پنجشنبه ساعت ده برایت خوب است؟"
+    },
+    {
+     "en": "When does the next train leave?",
+     "fa": "قطار بعدی کی حرکت می‌کند؟"
+    }
+   ]
+  }
+ ]
+}
