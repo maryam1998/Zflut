@@ -29,6 +29,16 @@
    "topic": "My House and Rooms"
   },
   {
+   "id": "p-a1-getting-dressed",
+   "kind": "primary",
+   "topic": "Getting Dressed"
+  },
+  {
+   "id": "p-a1-weather-today",
+   "kind": "primary",
+   "topic": "How Is the Weather Today?"
+  },
+  {
    "id": "p-a1-what-is-this",
    "kind": "primary",
    "topic": "What Is This?"
@@ -42,6 +52,11 @@
    "id": "p-a1-animals-i-know",
    "kind": "primary",
    "topic": "Animals I Know"
+  },
+  {
+   "id": "p-a1-toys-and-yard",
+   "kind": "primary",
+   "topic": "Toys and Playing in the Yard"
   },
   {
    "id": "p-a1-in-the-classroom",
@@ -165,6 +180,44 @@
     0
    ]
   },
+  "Getting Dressed": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "How Is the Weather Today?": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
   "What Is This?": {
    "s": 5,
    "t": [
@@ -204,6 +257,25 @@
    ]
   },
   "Animals I Know": {
+   "s": 5,
+   "t": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    30,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Toys and Playing in the Yard": {
    "s": 5,
    "t": [
     30,

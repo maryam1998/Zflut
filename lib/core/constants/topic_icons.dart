@@ -51,6 +51,9 @@ TopicVisual visualForTopic(String topic) {
   if (t.contains('in the classroom')) return const TopicVisual(Icons.school_rounded, _purple);
   if (t.contains('my body hurts')) return const TopicVisual(Icons.healing_rounded, _rose);
   if (t.contains('my house and rooms')) return const TopicVisual(Icons.house_rounded, _brown);
+  if (t.contains('getting dressed')) return const TopicVisual(Icons.checkroom_rounded, _purple);
+  if (t.contains('toys and playing')) return const TopicVisual(Icons.toys_rounded, _orange);
+  if (t.contains('weather today')) return const TopicVisual(Icons.wb_sunny_rounded, _gold);
   if (t.contains('introducing yourself')) return const TopicVisual(Icons.waving_hand_rounded, _teal);
   if (t.contains('name and age')) return const TopicVisual(Icons.badge_rounded, _blue);
   if (t.contains('my family')) return const TopicVisual(Icons.family_restroom_rounded, _purple);

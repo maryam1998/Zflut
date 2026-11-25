@@ -1,0 +1,165 @@
+{
+ "topic": "How Is the Weather Today?",
+ "scenarios": [
+  {
+   "scenario": "A sunny day",
+   "context": "Two friends plan their day.",
+   "speakerA": [
+    {
+     "en": "How is the weather today?",
+     "level": "A1"
+    },
+    {
+     "en": "Great! Can we go to the park?",
+     "level": "A1"
+    },
+    {
+     "en": "OK. I love sunny days.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's sunny and warm.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes. Wear your hat.",
+     "level": "A1"
+    },
+    {
+     "en": "Me too.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A rainy day",
+   "context": "A mother and a child at the window.",
+   "speakerA": [
+    {
+     "en": "Look! It's raining.",
+     "level": "A1"
+    },
+    {
+     "en": "We can't go out today.",
+     "level": "A1"
+    },
+    {
+     "en": "Let's draw and read a book.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Oh no. I want to play outside.",
+     "level": "A1"
+    },
+    {
+     "en": "What can we do?",
+     "level": "A1"
+    },
+    {
+     "en": "Good idea!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Cold and windy",
+   "context": "Two people before leaving home.",
+   "speakerA": [
+    {
+     "en": "It's windy and cold today.",
+     "level": "A1"
+    },
+    {
+     "en": "Is it cloudy?",
+     "level": "A1"
+    },
+    {
+     "en": "Take your umbrella, then.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes. I need my coat.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes. Maybe it will rain.",
+     "level": "A1"
+    },
+    {
+     "en": "Good idea. Thanks!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A snow day",
+   "context": "Two children look outside.",
+   "speakerA": [
+    {
+     "en": "Look outside! It's snowing!",
+     "level": "A1"
+    },
+    {
+     "en": "No. It's a snow day.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, but wear warm clothes.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Wow! Is there school today?",
+     "level": "A1"
+    },
+    {
+     "en": "Great! Can we play in the snow?",
+     "level": "A1"
+    },
+    {
+     "en": "I'll get my gloves!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "A hot day",
+   "context": "Two friends in summer.",
+   "speakerA": [
+    {
+     "en": "It's so hot today.",
+     "level": "A1"
+    },
+    {
+     "en": "I want some cold water.",
+     "level": "A1"
+    },
+    {
+     "en": "Good idea. The sun is strong.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, it's 35 degrees.",
+     "level": "A1"
+    },
+    {
+     "en": "Me too. Let's sit in the shade.",
+     "level": "A1"
+    },
+    {
+     "en": "Let's go swimming later.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

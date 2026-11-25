@@ -1,0 +1,165 @@
+{
+ "topic": "Getting Dressed",
+ "scenarios": [
+  {
+   "scenario": "Time to get dressed",
+   "context": "A mother helps her son in the morning.",
+   "speakerA": [
+    {
+     "en": "Time to get dressed, Sam.",
+     "level": "A1"
+    },
+    {
+     "en": "They're on the bed.",
+     "level": "A1"
+    },
+    {
+     "en": "Look under the chair.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "OK, Mom. Where are my socks?",
+     "level": "A1"
+    },
+    {
+     "en": "I can't find my shoes.",
+     "level": "A1"
+    },
+    {
+     "en": "Found them! Thank you.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Shirt and pants",
+   "context": "A child chooses clothes for the day.",
+   "speakerA": [
+    {
+     "en": "What do you want to wear today?",
+     "level": "A1"
+    },
+    {
+     "en": "Put on your pants too.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, the black ones. You look nice.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I want my blue shirt.",
+     "level": "A1"
+    },
+    {
+     "en": "Which pants? These?",
+     "level": "A1"
+    },
+    {
+     "en": "Thanks! I'm ready.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "It's cold",
+   "context": "A mother and a child before going out.",
+   "speakerA": [
+    {
+     "en": "It's cold outside. Wear your coat.",
+     "level": "A1"
+    },
+    {
+     "en": "Then wear a sweater and a hat.",
+     "level": "A1"
+    },
+    {
+     "en": "They're in your bag.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I don't like my coat.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Where are my gloves?",
+     "level": "A1"
+    },
+    {
+     "en": "Now I'm warm.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Zip and shoes",
+   "context": "A child needs help with a jacket.",
+   "speakerA": [
+    {
+     "en": "Mom, help me, please.",
+     "level": "A1"
+    },
+    {
+     "en": "I can't close my jacket.",
+     "level": "A1"
+    },
+    {
+     "en": "I did it! Thank you.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "What's the problem?",
+     "level": "A1"
+    },
+    {
+     "en": "Pull the zip up. Like this.",
+     "level": "A1"
+    },
+    {
+     "en": "Well done! Now your shoes.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Dirty clothes",
+   "context": "A child comes home after playing.",
+   "speakerA": [
+    {
+     "en": "Your shirt is dirty.",
+     "level": "A1"
+    },
+    {
+     "en": "Put it in the wash basket.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, it's clean.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I know. I played in the mud.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Can I wear the red one?",
+     "level": "A1"
+    },
+    {
+     "en": "Thanks, Mom.",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}

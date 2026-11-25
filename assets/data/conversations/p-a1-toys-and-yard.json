@@ -1,0 +1,165 @@
+{
+ "topic": "Toys and Playing in the Yard",
+ "scenarios": [
+  {
+   "scenario": "My new toy",
+   "context": "Two friends in the yard.",
+   "speakerA": [
+    {
+     "en": "Look! I have a new toy.",
+     "level": "A1"
+    },
+    {
+     "en": "It's a robot. Do you like it?",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, but be careful.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Wow! What is it?",
+     "level": "A1"
+    },
+    {
+     "en": "Yes! Can I play with it?",
+     "level": "A1"
+    },
+    {
+     "en": "I will. Thank you!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Playing ball",
+   "context": "Two children play outside.",
+   "speakerA": [
+    {
+     "en": "Let's play ball in the yard.",
+     "level": "A1"
+    },
+    {
+     "en": "Catch!",
+     "level": "A1"
+    },
+    {
+     "en": "Nice! Throw it again.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Good idea! Throw it to me.",
+     "level": "A1"
+    },
+    {
+     "en": "I got it! Now you catch.",
+     "level": "A1"
+    },
+    {
+     "en": "Here it comes!",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "On the swing",
+   "context": "Two children at the playground.",
+   "speakerA": [
+    {
+     "en": "Push me, please!",
+     "level": "A1"
+    },
+    {
+     "en": "Higher, please!",
+     "level": "A1"
+    },
+    {
+     "en": "OK. It's so fun!",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Hold on tight.",
+     "level": "A1"
+    },
+    {
+     "en": "Not too high. Be careful.",
+     "level": "A1"
+    },
+    {
+     "en": "Now it's my turn.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Share your toys",
+   "context": "Two children want the same doll.",
+   "speakerA": [
+    {
+     "en": "That's my doll!",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Let's share it.",
+     "level": "A1"
+    },
+    {
+     "en": "We can play together.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I want to play too.",
+     "level": "A1"
+    },
+    {
+     "en": "Thank you. You are kind.",
+     "level": "A1"
+    },
+    {
+     "en": "Yes, let's play house.",
+     "level": "A1"
+    }
+   ]
+  },
+  {
+   "scenario": "Time to go inside",
+   "context": "A father calls his daughter.",
+   "speakerA": [
+    {
+     "en": "It's late. Come inside.",
+     "level": "A1"
+    },
+    {
+     "en": "No. It's time for dinner.",
+     "level": "A1"
+    },
+    {
+     "en": "Put them in the box.",
+     "level": "A1"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Five more minutes, please.",
+     "level": "A1"
+    },
+    {
+     "en": "OK. Where do I put my toys?",
+     "level": "A1"
+    },
+    {
+     "en": "Done. I'm hungry now!",
+     "level": "A1"
+    }
+   ]
+  }
+ ]
+}
