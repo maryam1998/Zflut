@@ -25,6 +25,7 @@ const MSG_BUSY = "الان شلوغه، چند لحظه دیگه (try again in 5
 // پیامِ سقفِ per-user عمداً مثلِ خطای موقتِ AI است (نه «سقف/محدودیت»)؛ اپ ۵xx را «AI جواب نمی‌دهد» نشان می‌دهد.
 const MSG_UNAVAILABLE = "AI service is temporarily unavailable. Please try again in a few minutes.";
 const MSG_CAP = "ظرفیتِ هوش مصنوعیِ امروز تکمیل شده؛ فردا دوباره امتحان کن.";
+const MSG_CAP_FREE = "ظرفیتِ رایگانِ هوش مصنوعیِ امروز تکمیل شده؛ ترجمه‌ی دستگاه و کشِ مشترک فعال می‌ماند.";
 
 function intVar(env, key, dflt) {
   const raw = env[key];
@@ -183,12 +184,17 @@ async function acquireSlot(env, userId) {
   }
 }
 
-// ───────────── ۲) سقفِ سراسریِ روزانه ─────────────
-/** {ok}. kind = "ai" | "whisper". D1 خراب → ok. */
-export async function takeGlobal(env, kind) {
+// ───────────── ۲) سقفِ سراسریِ روزانه (افتِ تدریجی + سهمِ رزروِ Pro) ─────────────
+// GLOBAL_DAILY_AI = سقفِ کل. PRO_RESERVE_PCT (پیش‌فرض ۲۰) درصدی از سقف که فقط Pro/VIP می‌تواند مصرف کند:
+//   رایگان‌ها فقط تا (۱۰۰ − PRO_RESERVE_PCT)٪ سقف، Pro تا ۱۰۰٪. هر دو در «یک» کوئریِ اتمیکِ D1.
+// REVIEW_OFF_PCT (پیش‌فرض ۷۰): از این درصدِ مصرفِ سراسری به بعد، بازبینیِ ترجمه خاموش می‌شود (در index.js).
+/** {ok, n, cap, pct}. kind = "ai" | "whisper". pro=true → سقفِ کامل. D1 خراب → ok. */
+export async function takeGlobal(env, kind, pro = false) {
   const isAi = kind !== "whisper";
-  const cap = intVar(env, isAi ? "GLOBAL_DAILY_AI" : "GLOBAL_DAILY_WHISPER", isAi ? 5000 : 3000);
+  const cap = intVar(env, isAi ? "GLOBAL_DAILY_AI" : "GLOBAL_DAILY_WHISPER", isAi ? 30000 : 3000);
   if (!cap || !env.TR_DB) return { ok: true };
+  const reservePct = isAi ? Math.min(intVar(env, "PRO_RESERVE_PCT", 20), 90) : 0;
+  const myCap = pro || !reservePct ? cap : Math.max(1, Math.floor((cap * (100 - reservePct)) / 100));
   try {
     await ensure(env);
     const day = new Date().toISOString().slice(0, 10);
@@ -196,16 +202,17 @@ export async function takeGlobal(env, kind) {
     const r = await env.TR_DB.prepare(
       `INSERT INTO global_daily (day, ai_count, whisper_count) VALUES (?1, ?2, ?3) ` +
         `ON CONFLICT(day) DO UPDATE SET ${col} = ${col} + 1 WHERE ${col} < ?4 RETURNING ${col} AS n`
-    ).bind(day, isAi ? 1 : 0, isAi ? 0 : 1, cap).first();
+    ).bind(day, isAi ? 1 : 0, isAi ? 0 : 1, myCap).first();
     if (!r) {
-      console.warn(`[LIMIT] global_daily_cap kind=${kind} cap=${cap}`);
-      return { ok: false };
+      console.warn(`[LIMIT] global_daily_cap kind=${kind} cap=${cap} myCap=${myCap} pro=${pro}`);
+      // «free_share» = سهمِ رایگان پر شده ولی Pro هنوز جا دارد؛ «global» = کلِ سقف پر شده
+      return { ok: false, scope: myCap < cap ? "free_share" : "global", cap };
     }
     if (Math.random() < 0.01) {
       const old = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
       await env.TR_DB.prepare("DELETE FROM global_daily WHERE day < ?1").bind(old).run();
     }
-    return { ok: true, n: r.n };
+    return { ok: true, n: r.n, cap, pct: Math.round((r.n / cap) * 100) };
   } catch (e) {
     console.error("[FAIL-OPEN] global daily cap error — سقفِ سراسری بی‌صدا خاموش شد", String(e));
     return { ok: true };
@@ -247,15 +254,19 @@ export async function beginAi(request, env, kind, cors, opts = {}) {
     }
   }
   // 👑 VIP: سقفِ سراسریِ AI هم رویش اعمال نمی‌شود (Whisper مستثنا نیست چون سقفِ خودِ Cloudflare دارد)
-  const g = vip && kind !== "whisper" ? { ok: true } : await takeGlobal(env, kind);
+  const g = vip && kind !== "whisper" ? { ok: true } : await takeGlobal(env, kind, pro);
   if (!g.ok) {
     await release();
     return {
       // code=daily_limit تا اپِ فعلی بدونِ تلاشِ دوباره، همان لحظه پیامِ «سقفِ امروز تمام شد» را نشان بدهد
-      deny: jsonResp({ error: MSG_CAP, code: "daily_limit", scope: "global" }, 429, cors),
+      // scope=free_share: فقط سهمِ رایگان پر شده (Pro ادامه دارد) → اپ ترجمه‌ی دستگاه/کش را نگه می‌دارد
+      deny: jsonResp(
+        { error: g.scope === "free_share" ? MSG_CAP_FREE : MSG_CAP, code: "daily_limit", scope: g.scope || "global" },
+        429, cors, { "Retry-After": "300" }
+      ),
       release: noop,
       capped: true,
     };
   }
-  return { deny: null, release };
+  return { deny: null, release, pct: g.pct, pro };
 }

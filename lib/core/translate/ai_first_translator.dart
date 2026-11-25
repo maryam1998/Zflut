@@ -7,13 +7,17 @@
 //      (بعد از آپدیت اپ هم می‌ماند؛ در همان دیتابیسِ کشِ ترجمه است).
 //   ۳. 🗄️ کشِ مشترکِ سرور (D1): اگر کاربرِ دیگری قبلاً گرفته → رایگان و بدون AI.
 //   ۴. 🤖 AI (/api/translate-text؛ Worker خودش نتیجه را در D1 برای همه ذخیره می‌کند).
-//   ۵. ⏱️ اگر AI تا ~۰٫۹ ثانیه جواب نداد، موقتاً ML Kit/آنلاین نشان داده می‌شود؛
-//      وقتی AI رسید بی‌صدا جایگزین می‌شود. اگر AI خطا داد، در پس‌زمینه خودکار دوباره تلاش می‌شود.
+//   ۵. ⏱️ اگر AI/کشِ مشترک تا ~۱ ثانیه جواب نداد، پیش‌نویسِ ML Kit/آنلاین نشان داده می‌شود (نمره‌ی ۲ = خوب).
+//      پیش‌نویسِ «متوسط» (نمره‌ی ۱: نسبتِ طولِ مشکوک / عددِ گم‌شده) ~۱٫۵ ثانیه‌ی دیگر صبر می‌کند و اگر چیزِ
+//      بهتری نرسید نشان داده می‌شود؛ پیش‌نویسِ خراب (نمره‌ی ۰: تکرارِ بی‌معنی، ترجمه‌نشده) هیچ‌وقت. کاربر منتظر نمی‌ماند.
+//      وقتی کشِ مشترک/AI رسید بی‌صدا جایگزین می‌شود. اگر AI خطا داد یا مکث بود، در پس‌زمینه
+//      کشِ مشترک (رایگان، بدونِ سهمیه‌ی AI) دوره‌ای دوباره چک می‌شود و AI با تأخیرِ jitterدار تکرار می‌شود.
 //
 // این فایل فقط از API عمومیِ TranslationService / SharedTranslations / TranslationCacheDb استفاده می‌کند
 // و به هیچ بخشِ دیگری دست نمی‌زند. بقیه‌ی تب‌ها مثل قبل کار می‌کنند.
 
 import 'dart:async';
+import 'dart:math' show Random;
 
 import 'package:dio/dio.dart';
 
@@ -26,7 +30,8 @@ import 'translation_service.dart';
 const int _kMaxChars = 300; // سقفِ Worker برای /api/translate-text
 const int _kAiConcurrency = 4; // هم‌زمانیِ درخواست‌های AI از این گوشی
 const int _kProvConcurrency = 3; // هم‌زمانیِ ترجمه‌ی موقت (ML Kit/آنلاین)
-const Duration _kGrace = Duration(milliseconds: 2500);
+const Duration _kGrace = Duration(milliseconds: 1000); // تا این‌قدر منتظرِ کش/AI؛ بعد پیش‌نویسِ خوب نشان داده می‌شود
+const Duration _kSoftGrace = Duration(milliseconds: 1500); // پیش‌نویسِ «متوسط» فقط اگر بعد از این هم چیزِ بهتری نرسید
 // تلاش‌های خودکارِ پس‌زمینه: اول سریع (کاربر منتظر است)، بعد کم‌کم کندتر
 const List<Duration> _kRetryDelays = <Duration>[
   Duration(seconds: 3),
@@ -149,6 +154,45 @@ class _Gate {
   }
 }
 
+final Random _rnd = Random();
+
+/// ±۲۰٪ پراکندگی تا با هجومِ کاربرها همه‌ی گوشی‌ها همزمان retry نکنند.
+Duration _jitter(Duration d) {
+  final f = 0.8 + _rnd.nextDouble() * 0.4;
+  return Duration(milliseconds: (d.inMilliseconds * f).round());
+}
+
+/// 🚦 نمره‌ی کیفیتِ ترجمه‌ی موقت (ML Kit/آنلاین): ۲ = خوب، ۱ = متوسط (فقط اگر چیزِ بهتری نرسید)، ۰ = خراب (هرگز).
+int _provisionalGrade(String src, String out, String to) {
+  final s = src.trim();
+  final o = out.trim();
+  if (o.isEmpty) return 0;
+  final srcWords = s.split(RegExp(r'\s+')).length;
+  // مقصدِ غیرلاتین ولی خروجی عمدتاً لاتین = ترجمه‌نشده/نیمه‌کاره
+  if (_kNonLatinTargets.contains(to) && srcWords >= 2) {
+    final letters = RegExp(r'\p{L}', unicode: true).allMatches(o).length;
+    final latin = RegExp(r'[A-Za-z]').allMatches(o).length;
+    if (letters > 0 && latin / letters > 0.5) return 0;
+  }
+  // خروجیِ تکراریِ بی‌معنی («the the the …»)
+  final ow = o.split(RegExp(r'\s+'));
+  if (ow.length >= 6 && ow.toSet().length * 3 <= ow.length) return 0;
+  var grade = 2;
+  // نسبتِ طولِ مشکوک (برای متن‌های بلندتر؛ CJK کوتاه‌تر است)
+  const cjk = {'zh', 'ja', 'ko'};
+  if (s.length >= 20 && !cjk.contains(to)) {
+    final r = o.length / s.length;
+    if (r < 0.35 || r > 3.5) grade = 1;
+  }
+  // عددهای متن باید در خروجی بمانند (فقط مقصدِ لاتین؛ فارسی/عربی ارقام را عوض می‌کنند)
+  if (!_kNonLatinTargets.contains(to)) {
+    for (final m in RegExp(r'\d+').allMatches(s)) {
+      if (!o.contains(m.group(0)!)) grade = 1;
+    }
+  }
+  return grade;
+}
+
 class _Listener {
   _Listener(this.onValue, this.onGiveUp);
   final void Function(String text, bool isFinal) onValue;
@@ -168,6 +212,7 @@ class _Job {
   bool latestFinal = false;
   bool gaveUp = false;
   int invalid = 0; // چند بار AI خروجیِ نامعتبر داد (بیش از ۲ بار → دیگر تلاش نکن)
+  String? softDraft; // پیش‌نویسِ «متوسط» (نمره‌ی ۱) — فقط اگر چیزِ بهتری نرسید نشان داده می‌شود
 }
 
 class AiFirstTranslator {
@@ -389,8 +434,15 @@ class AiFirstTranslator {
       ]);
       if (!aiDone) {
         final prov = await _provisional(j);
-        if (prov != null && !aiDone && j.latest == null) {
-          _emit(j, prov, false);
+        if (prov != null) {
+          if (!aiDone && j.latest == null) _emit(j, prov, false);
+        } else if (j.softDraft != null) {
+          // پیش‌نویسِ متوسط: کمی صبر کن؛ اگر کش/AI نرسید همین نشان داده شود (کاربر خالی نمی‌ماند)
+          await Future.any<void>(<Future<void>>[
+            aiFut.then((_) {}),
+            Future<void>.delayed(_kSoftGrace),
+          ]);
+          if (!aiDone && j.latest == null) _emit(j, j.softDraft!, false);
         }
       }
     }
@@ -404,10 +456,7 @@ class AiFirstTranslator {
 
     // AI جواب نداد (چه دیر، چه «سریع و با خطا / مکثِ سهمیه»): همین حالا ML Kit/آنلاین.
     // (قبلاً اگر AI سریع خطا می‌داد این مرحله رد می‌شد و «ترجمه نشد» می‌آمد.)
-    if (j.latest == null) {
-      final prov = await _provisional(j);
-      if (prov != null && j.latest == null) _emit(j, prov, false);
-    }
+    await _showDraft(j);
 
     // 🔁 تلاش‌های خودکارِ پس‌زمینه (فقط تا وقتی کسی منتظرِ این ترجمه است).
     // وقتی AI برسد، ترجمه‌ی موقت بی‌صدا جایگزین می‌شود؛ نیازی به دکمه‌ی رفرش نیست.
@@ -426,23 +475,36 @@ class AiFirstTranslator {
             ? Duration(seconds: left > 30000 ? 30 : (left ~/ 1000) + 1)
             : Duration(
                 milliseconds: left + 500 > 300000 ? 300000 : left + 500);
-        await Future<void>.delayed(nap);
+        await Future<void>.delayed(_jitter(nap));
         if (j.listeners.isEmpty) break;
+        // کشِ مشترک سهمیه‌ی AI نمی‌خواهد → حتی در مکث هم چک می‌شود (جایگزینیِ سریعِ ترجمه‌ی موقت)
+        final sh = await _pollShared(j);
+        if (sh != null) {
+          await _commit(j, sh);
+          _emit(j, sh, true);
+          return;
+        }
         if (j.latest == null && provTries < 6) {
           provTries++;
-          final prov = await _provisional(j);
-          if (prov != null && j.latest == null) _emit(j, prov, false);
+          await _showDraft(j);
           rounds++;
           if (rounds >= 2 && j.latest == null) _giveUp(j);
         }
         continue;
       }
 
-      await Future<void>.delayed(attempt < _kRetryDelays.length
+      await Future<void>.delayed(_jitter(attempt < _kRetryDelays.length
           ? _kRetryDelays[attempt]
-          : const Duration(minutes: 10));
+          : const Duration(minutes: 10)));
       attempt++;
       if (j.listeners.isEmpty) break;
+      // اول کشِ مشترک (رایگان)، بعد AI
+      final sh = await _pollShared(j);
+      if (sh != null) {
+        await _commit(j, sh);
+        _emit(j, sh, true);
+        return;
+      }
       ai = await _askAi(j);
       if (ai != null) {
         await _commit(j, ai);
@@ -450,10 +512,7 @@ class AiFirstTranslator {
         return;
       }
       // هنوز چیزی برای نشان‌دادن نیست؟ دوباره ترجمه‌ی موقت (مثلاً مدل ML Kit تازه دانلود شده)
-      if (j.latest == null) {
-        final prov = await _provisional(j);
-        if (prov != null && j.latest == null) _emit(j, prov, false);
-      }
+      await _showDraft(j);
       rounds++;
       // بعد از دو دورِ ناموفق، رابط «ترجمه نشد» نشان می‌دهد؛ ولی تلاش ادامه دارد
       // و اگر چیزی رسید خودکار جایگزین می‌شود.
@@ -477,11 +536,41 @@ class AiFirstTranslator {
           return null; // سرویس‌ها نتوانستند (برگرداندنِ خودِ متن)
         }
         if (!_good(j, r) || !_namesKept(j.text, r, j.to)) return null;
+        final g = _provisionalGrade(j.text, r, j.to);
+        if (g == 0) return null; // خراب → هرگز
+        if (g == 1) {
+          j.softDraft = r; // متوسط → فقط اگر چیزِ بهتری نرسید
+          return null;
+        }
         return r;
       } catch (_) {
         return null;
       }
     }).timeout(const Duration(seconds: 14), onTimeout: () => null);
+  }
+
+  /// 🗄️ بازخوانیِ رایگانِ کشِ مشترک (بدونِ مصرفِ سهمیه‌ی AI). اگر کاربرِ دیگری در این فاصله ترجمه‌ی معتبر
+  /// را به کش رسانده باشد، همان را برمی‌گرداند؛ وگرنه null.
+  static Future<String?> _pollShared(_Job j) async {
+    try {
+      final shared = await SharedTranslations.fetchOne(
+          j.base, j.from, j.to, j.text,
+          force: true);
+      if (shared != null && _good(j, shared)) return shared.trim();
+    } catch (_) {}
+    return null;
+  }
+
+  /// نشان‌دادنِ بهترین پیش‌نویسِ موجود: اول «خوب»، وگرنه «متوسط»؛ «خراب» هرگز.
+  static Future<void> _showDraft(_Job j) async {
+    if (j.latest != null) return;
+    final prov = await _provisional(j);
+    if (j.latest != null) return;
+    if (prov != null) {
+      _emit(j, prov, false);
+    } else if (j.softDraft != null) {
+      _emit(j, j.softDraft!, false);
+    }
   }
 
   static String _clean(String s) => s

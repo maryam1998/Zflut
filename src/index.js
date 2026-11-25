@@ -294,6 +294,36 @@ const TT_LANGS = {
   es: "Spanish", de: "German", fr: "French", zh: "Chinese", ko: "Korean", ru: "Russian", ja: "Japanese",
 };
 
+// 🔌 قطع‌کننده‌ی مدار (per-isolate): پرووایدری که پشتِ‌هم خطا بدهد چند ثانیه کنار گذاشته می‌شود تا صف پشتِ یک سرویسِ خراب نماند.
+//   CB_FAILS (پیش‌فرض ۳) خطای پشتِ‌هم → CB_COOL_MS (پیش‌فرض ۶۰ ثانیه) کنار.
+const CB_STATE = new Map();
+function numVar(env, key, dflt) {
+  const raw = env && env[key];
+  if (raw === undefined || raw === null || String(raw).trim() === "") return dflt;
+  const v = Number(raw);
+  return Number.isFinite(v) && v >= 0 ? v : dflt;
+}
+function cbOpen(p) {
+  const s = CB_STATE.get(p);
+  return !!(s && s.until > Date.now());
+}
+function cbOk(p) {
+  CB_STATE.delete(p);
+}
+function cbFail(env, p) {
+  const s = CB_STATE.get(p) || { fails: 0, until: 0 };
+  s.fails++;
+  if (s.fails >= numVar(env, "CB_FAILS", 3)) {
+    s.until = Date.now() + numVar(env, "CB_COOL_MS", 60000);
+    s.fails = 0;
+    console.warn(`[CB] provider=${p} کنار گذاشته شد`);
+  }
+  CB_STATE.set(p, s);
+}
+
+// 🤝 ادغامِ درخواست‌های هم‌زمانِ یک متن (per-isolate): ۵۰ نفر همزمان یک جمله → فقط «یک» تماسِ AI؛ بقیه منتظرِ همان نتیجه می‌مانند.
+const TT_INFLIGHT = new Map();
+
 async function handleTranslateText(request, env, ctx) {
   let body;
   try {
@@ -316,12 +346,43 @@ async function handleTranslateText(request, env, ctx) {
     return json({ text: hit, provider: "cache", cached: true });
   }
 
+  // 🤝 اگر همین متن همین الان در همین isolate در حالِ ترجمه است، منتظرِ همان بمان (بدونِ مصرفِ سهمیه/AI)
+  const pending = TT_INFLIGHT.get(cacheKey);
+  if (pending) {
+    try {
+      const r = await pending;
+      ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
+      return json({ text: r.text, provider: r.provider, cached: true, coalesced: true });
+    } catch {
+      // رهبر شکست خورد/رد شد → خودمان امتحان می‌کنیم (سهمیه‌ی خودمان را هم می‌دهیم)
+    }
+  }
+  let settle, fail;
+  const flight = new Promise((res, rej) => { settle = res; fail = rej; });
+  flight.catch(() => {});
+  TT_INFLIGHT.set(cacheKey, flight);
+  try {
+    const { resp, result } = await translateLeader(request, env, ctx, { text, target, source, cacheKey });
+    if (result) settle(result); else fail(new Error("leader-failed"));
+    return resp;
+  } catch (e) {
+    fail(e);
+    throw e;
+  } finally {
+    TT_INFLIGHT.delete(cacheKey);
+  }
+}
+
+async function translateLeader(request, env, ctx, { text, target, source, cacheKey }) {
+  const none = (resp) => ({ resp, result: null });
+
   // 🌐 فقط ترجمه‌ی کش‌نشده (واقعاً AI) از سقفِ روزانه‌ی DAILY_TRANSLATE مصرف می‌کند
   const over = await missGate(request, env);
-  if (over) return over;
+  if (over) return none(over);
   // ⚖️ سقفِ سراسریِ روزانه (فقط کش‌نشده‌ها؛ بدونِ صف چون ترجمه‌های کوتاه موازی می‌آیند)
+  //    افتِ تدریجی: سهمِ رزروِ Pro، و pct برای خاموش‌کردنِ بازبینی در بار بالا
   const capGate = await beginAi(request, env, "ai", CORS_HEADERS, { queue: false });
-  if (capGate.deny) return capGate.deny;
+  if (capGate.deny) return none(capGate.deny);
 
   const label = TT_LANGS[target];
   const prompt =
@@ -335,12 +396,18 @@ async function handleTranslateText(request, env, ctx) {
   // 🧠 ترجمه با مدل‌های قوی‌تر (فقط وقتی AI_PROVIDER_TRANSLATE / *_MODEL_TRANSLATE ست شده)؛ نتیجه در D1 برای همه می‌ماند
   const { chain: trChain, env: trEnv, strong } = translateSetup(env);
   const perProviderMs = Math.min(30000, (strong ? 12000 : 4000) + maxTokens * 10);
+  // ⏱️ سقفِ کلِ زمانِ زنجیره (به‌جای جمعِ تایم‌اوتِ همه‌ی پرووایدرها) — زیرِ بارِ زیاد درخواست بی‌نهایت معلق نمی‌ماند
+  const budgetMs = numVar(env, "TR_TOTAL_BUDGET_MS", 22000);
+  const deadline = Date.now() + budgetMs;
   const errors = [];
   for (const provider of trChain) {
+    const left = deadline - Date.now();
+    if (left < 1500) { errors.push("budget exhausted"); break; }
+    if (cbOpen(provider)) { errors.push(`${provider}: circuit-open`); continue; }
     try {
       // Gemini 2.5 Pro «فکر» می‌کند و فکر از سقفِ توکن کم می‌شود → سقفِ بیشتر تا خروجی خالی نشود
       const mt = strong && provider === "gemini" ? maxTokens + 2000 : maxTokens;
-      const raw = await withTimeout(callProvider(provider, prompt, mt, trEnv), perProviderMs, provider);
+      const raw = await withTimeout(callProvider(provider, prompt, mt, trEnv), Math.min(perProviderMs, left), provider);
       let out = sanitizeAiText(raw).trim();
       // گیومه‌ی دورِ خروجی را بردار
       out = out.replace(/^["“”«»]+|["“”«»]+$/g, "").trim();
@@ -348,19 +415,25 @@ async function handleTranslateText(request, env, ctx) {
       if (bad) throw new Error(`unusable output (${bad})`);
       // 🛡️ قبل از ورود به کشِ مشترکِ همه‌ی کاربرها: خروجی باید واقعاً به زبانِ مقصد باشد
       if (!trScriptOk(target, text, out)) throw new Error("unusable output (wrong-script)");
-      // 🔎 بازبینیِ دوم (TR_REVIEW="1"): همان مدل ترجمه را یک بار نقد می‌کند؛ هر خطا/خروجیِ مشکوک = همان ترجمه‌ی اول
-      if (String(env.TR_REVIEW || "") === "1") {
-        out = await trReview(provider, trEnv, text, out, label, target, perProviderMs, maxTokens);
+      cbOk(provider);
+      // 🔎 بازبینیِ دوم (TR_REVIEW="1") — با «مدل‌های رایگان/ارزان» (AI_PROVIDER_REVIEW)، نه همان مدلِ ترجمه:
+      //   • وقتی مصرفِ سراسری ≥ REVIEW_OFF_PCT (پیش‌فرض ۷۰٪) خاموش است (افتِ تدریجی؛ اول بازبینی قطع می‌شود)
+      //   • بودجه‌ی زمانیِ محدود (TR_REVIEW_TIMEOUT_MS)؛ هر خطا/تایم‌اوت/خروجیِ مشکوک = همان ترجمه‌ی اول
+      const loadHigh = typeof capGate.pct === "number" && capGate.pct >= numVar(env, "REVIEW_OFF_PCT", 70);
+      if (String(env.TR_REVIEW || "") === "1" && !loadHigh) {
+        const rleft = deadline - Date.now();
+        if (rleft > 1500) out = await trReviewFree(env, text, out, label, target, maxTokens, rleft);
       }
       ctx.waitUntil(genCachePut(env, cacheKey, out, provider));
       ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider, cached: false, prompt, text: out }));
-      return json({ text: out, provider });
+      return { resp: json({ text: out, provider }), result: { text: out, provider } };
     } catch (e) {
+      cbFail(env, provider);
       errors.push(`${provider}: ${e.message}`);
     }
   }
   console.error("[AI-FAIL] /api/translate-text همه‌ی پرووایدرها خطا دادند:", errors.join(" | ").slice(0, 900));
-  return json({ error: errors.join(" | ") }, 502);
+  return none(json({ error: errors.join(" | ") }, 502));
 }
 
 // 🛡️ آیا خروجی خطِ زبانِ مقصد را دارد؟ (فقط برای متن‌های ≥ ۲ کلمه؛ اسمِ تکی مثل Netflix می‌تواند بدونِ تغییر بماند)
@@ -386,26 +459,56 @@ function trStyle(target) {
   );
 }
 
-// 🔎 بازبینیِ ترجمه: «درست و طبیعی است؟ همان را برگردان؛ وگرنه اصلاحش کن». هر مشکلی (خطا، تایم‌اوت، خروجیِ مشکوک) = ترجمه‌ی اول بدونِ تغییر.
-async function trReview(provider, trEnv, text, out, label, target, timeoutMs, maxTokens) {
-  try {
-    const rp =
-      `You are a strict ${label} translation reviewer.\n` +
-      `Source text: ${text}\n` +
-      `Proposed ${label} translation: ${out}\n` +
-      `If the translation is accurate, complete and sounds natural to a native ${label} speaker, output it exactly unchanged. ` +
-      `Otherwise output a corrected ${label} translation (by meaning; idioms and slang rendered naturally, never word for word). ` +
-      trStyle(target) +
-      `Output ONLY the final ${label} text — no quotes, no explanation, nothing else.`;
-    const raw = await withTimeout(callProvider(provider, rp, maxTokens, trEnv), timeoutMs, provider);
-    const rev = sanitizeAiText(raw).trim().replace(/^["“”«»]+|["“”«»]+$/g, "").trim();
-    if (!rev || badAiOutputReason(rev, rp)) return out;
-    if (!trScriptOk(target, text, rev)) return out;
-    if (rev.length > out.length * 3 + 60) return out;
-    return rev;
-  } catch {
-    return out;
+// 🔎 بازبینیِ ترجمه با مدل‌های رایگان/ارزان: «درست و طبیعی است؟ همان را برگردان؛ وگرنه اصلاحش کن».
+//   AI_PROVIDER_REVIEW (پیش‌فرض groq,cerebras,llm7,kilocode) و <NAME>_MODEL_REVIEW برای مدلِ بازبین.
+//   حداکثر دو بازبین امتحان می‌شود؛ هر مشکلی (خطا، تایم‌اوت، خروجیِ مشکوک) = ترجمه‌ی اول بدونِ تغییر.
+const REVIEW_DEFAULT_CHAIN = "groq,cerebras,llm7,kilocode";
+function reviewSetup(env) {
+  const raw = String(env.AI_PROVIDER_REVIEW || REVIEW_DEFAULT_CHAIN).toLowerCase();
+  const chain = raw.split(",").map((p) => p.trim()).filter((p) => VALID_PROVIDERS.includes(p));
+  const e = { ...env };
+  for (const v of TR_MODEL_VARS) {
+    if (env[v + "_REVIEW"]) e[v] = env[v + "_REVIEW"];
   }
+  return { chain, env: e };
+}
+
+async function trReviewFree(env, text, out, label, target, maxTokens, leftMs) {
+  const { chain, env: rEnv } = reviewSetup(env);
+  const timeoutMs = Math.min(numVar(env, "TR_REVIEW_TIMEOUT_MS", 3500), leftMs);
+  let tried = 0;
+  for (const provider of chain) {
+    if (tried >= 2) break;
+    if (cbOpen(provider)) continue;
+    tried++;
+    try {
+      const rev = await trReviewOnce(provider, rEnv, text, out, label, target, timeoutMs, maxTokens);
+      cbOk(provider);
+      return rev;
+    } catch {
+      cbFail(env, provider);
+    }
+  }
+  return out;
+}
+
+// خطای پرووایدر (تایم‌اوت، بدونِ کلید، …) را پرتاب می‌کند؛ خروجیِ مشکوک = همان out.
+async function trReviewOnce(provider, rEnv, text, out, label, target, timeoutMs, maxTokens) {
+  const rp =
+    `You are a strict ${label} translation reviewer.\n` +
+    `Source text: ${text}\n` +
+    `Proposed ${label} translation: ${out}\n` +
+    `If the translation is accurate, complete and sounds natural to a native ${label} speaker, output it exactly unchanged. ` +
+    `Otherwise output a corrected ${label} translation (by meaning; idioms and slang rendered naturally, never word for word). ` +
+    trStyle(target) +
+    `Output ONLY the final ${label} text — no quotes, no explanation, nothing else.`;
+  const raw = await withTimeout(callProvider(provider, rp, maxTokens, rEnv), timeoutMs, provider);
+  const rev = sanitizeAiText(raw).trim().replace(/^["“”«»]+|["“”«»]+$/g, "").trim();
+  if (!rev || badAiOutputReason(rev, rp)) return out;
+  if (!trScriptOk(target, text, rev)) return out;
+  if (rev.length > out.length * 3 + 60) return out;
+  if (rev.length < out.length * 0.4) return out; // بازبین نباید ترجمه را به‌شدت کوتاه کند (حذفِ محتوا)
+  return rev;
 }
 
 // 🧠 زنجیره و مدل‌های «قوی‌تر» برای /api/translate-text.

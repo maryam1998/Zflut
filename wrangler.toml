@@ -99,7 +99,14 @@ PRO_QUEUE_MAX = "10"
 PRO_QUEUE_WAIT_MS = "60000"
 #   سقفِ سراسریِ روزانه (همه‌ی کاربران، حتی Pro) — فقط درخواست‌هایی که واقعاً به AI/Whisper می‌رسند (نه کش/استخر).
 #   پر شد → فقط از کش و استخر جواب داده می‌شود. شمارنده در D1 (جدول global_daily) و هر روز (UTC) صفر می‌شود.
-GLOBAL_DAILY_AI = "5000"
+GLOBAL_DAILY_AI = "30000"   # سقفِ کلِ درخواست‌های AIِ کش‌نشده در روز (با DeepSeek ≈ ۳ تا ۴ دلار؛ بر اساسِ بودجه‌ات تنظیم کن)
+PRO_RESERVE_PCT = "20"      # ۲۰٪ سقف فقط برای Pro/VIP رزرو است؛ رایگان‌ها تا ۸۰٪
+REVIEW_OFF_PCT = "70"       # از ۷۰٪ مصرفِ سراسری، بازبینیِ ترجمه خاموش می‌شود
+AI_PROVIDER_REVIEW = "groq,cerebras,llm7,kilocode"   # بازبینی فقط با مدل‌های رایگان/ارزان (نه DeepSeek)
+TR_REVIEW_TIMEOUT_MS = "3500"
+TR_TOTAL_BUDGET_MS = "22000"  # سقفِ کلِ زمانِ زنجیره‌ی ترجمه در Worker
+CB_FAILS = "3"
+CB_COOL_MS = "60000"
 # 👤 سقفِ روزانه‌ی هر کاربر (UTC) روی درخواست‌هایی که واقعاً به AI می‌رسند — علاوه بر سقفِ سراسریِ بالا.
 #   پر شد → ۵۰۳ با پیامِ «AI موقتاً در دسترس نیست» (عمداً بدونِ ذکرِ سقف). ۰ = خاموش.
 USER_DAILY_AI = "50"
@@ -109,7 +116,7 @@ GLOBAL_DAILY_WHISPER = "3000"
 # 📊 گزارشِ مصرفِ AI (اختیاری) — پنل: https://<worker>/admin/usage-report?key=<ADMIN_KEY>
 #   ADMIN_KEY را secret بگذار:  npx wrangler secret put ADMIN_KEY
 #   تعرفه (دلار برای هر ۱M توکن [ورودی, خروجی]) و آستانه‌ی هشدار؛ بدونِ تعرفه هزینه ۰ ثبت می‌شود:
-AI_PRICING = '{"gemini":[0.30,2.50],"deepseek":[0.28,0.42],"default":[0,0]}'
+AI_PRICING = '{"gemini":[1.25,10.00],"deepseek":[0.28,0.42],"default":[0,0]}'
 AI_ALERT_COST_USD = "0.50"
 AI_ALERT_CALLS = "400"
 

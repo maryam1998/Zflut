@@ -1,0 +1,10 @@
+پچ (تجمعی): معماریِ ترجمه‌ی مقاوم در برابر بار + پیش‌نویسِ دو‌سطحی
+Worker: src/index.js, src/load.js, src/metrics.js, wrangler.toml  → npx wrangler deploy
+اپ: lib/core/translate/ai_first_translator.dart, shared_translations.dart → بیلد مجدد
+
+متغیرهای جدید (wrangler.toml): GLOBAL_DAILY_AI=30000 (بر اساس بودجه تنظیم کن)، PRO_RESERVE_PCT=20،
+REVIEW_OFF_PCT=70، AI_PROVIDER_REVIEW، TR_REVIEW_TIMEOUT_MS، TR_TOTAL_BUDGET_MS، CB_FAILS، CB_COOL_MS
+اگر Secret کلیدِ Groq/Cerebras ست نشده باشد، بازبینی بی‌صدا همان ترجمه‌ی اول را برمی‌گرداند.
+
+پیش‌نویس در اپ: نمره ۲ (خوب) بعد از ~۱ ثانیه؛ نمره ۱ (متوسط) ~۱٫۵ ثانیه‌ی دیگر و فقط اگر چیزِ بهتری نرسید؛
+نمره ۰ (خراب) هرگز. هر ترجمه‌ی معتبرِ کش/AI بی‌صدا جایگزین می‌شود.

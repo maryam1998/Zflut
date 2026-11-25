@@ -65,12 +65,17 @@ class SharedTranslations {
   static final Map<String, _PendingBatch> _pending = {};
 
   /// یک متن (برای مسیرِ عمومیِ ترجمه در همه‌ی تب‌ها). null = نبود/نشد.
+  ///
+  /// [force] = true: «نبود»ِ قبلی در این نشست نادیده گرفته می‌شود (کاربرِ دیگری ممکن است در این فاصله
+  /// ترجمه‌ی معتبرش را به کشِ مشترک رسانده باشد). فقط برای بازبینیِ دوره‌ایِ ترجمه‌ی موقت.
   static Future<String?> fetchOne(
-      String baseUrl, String from, String to, String text) {
+      String baseUrl, String from, String to, String text,
+      {bool force = false}) {
     final t = text.trim();
     if (!eligible(t) || !RegExp(r'\p{L}', unicode: true).hasMatch(t)) {
       return Future<String?>.value(null);
     }
+    if (force) _missed.remove(_mk(from, to, t));
     if (_missed.contains(_mk(from, to, t))) return Future<String?>.value(null);
     final key = '$baseUrl|${_src(from)}|$to';
     final b = _pending.putIfAbsent(key, () => _PendingBatch(baseUrl, from, to));
