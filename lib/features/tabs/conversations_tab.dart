@@ -538,6 +538,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
       return ListView(
         children: [
           const ShellHeader(),
+          if (_primary) _levelBar(), // چیپِ جدیدِ بدونِ محتوا: چیپ‌ها بمانند تا بشود برگشت
           Padding(
             padding: const EdgeInsets.all(40),
             child: Center(
@@ -582,17 +583,25 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // ردیفِ قدیمیِ سطح‌ها (همه + A1…C2) — دست‌نخورده؛ همه‌ی موضوع‌های اصلی
+            LevelChipsMulti(
+              selected: _primary ? const <String>{'-'} : _levels,
+              onChanged: (s) {
+                _setPrimary(false);
+                setState(() => _levels = {for (final l in s) if (l != '-') l});
+              },
+            ),
+            const SizedBox(height: 8),
+            // ردیفِ چیپ‌های جدید (مکالمه‌های تازه‌ی مدرسه) — جدا از «همه»
             StageChips(
+              levelsPlusPrimary: true,
               selected: _primary
-                  ? _primaryLevel
-                  : (_levels.length == 1 ? _levels.first : null),
+                  ? 'P-$_primaryLevel'
+                  : null,
               onSelect: (lv) {
-                if (lv == 'A1' || lv == 'A2') {
-                  _primaryLevel = lv!;
+                if (lv != null && lv.startsWith('P-')) {
+                  _primaryLevel = lv.substring(2);
                   _setPrimary(true);
-                } else {
-                  _setPrimary(false);
-                  setState(() => _levels = lv == null ? <String>{} : {lv});
                 }
               },
             ),

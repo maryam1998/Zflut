@@ -21,12 +21,17 @@ class StageChips extends StatelessWidget {
   /// اگر داده شود، کنارِ چیپِ A2 چیپِ «تمرین‌ها» نشان داده می‌شود (فقط تبِ لغات)
   final VoidCallback? onPractice;
   final bool practiceActive;
+
+  /// true (فقط تبِ مکالمه): فقط ردیفِ چیپ‌های جدیدِ مرحله‌ها (زیرِ ردیفِ قدیمیِ سطح‌ها)؛
+  /// چیپ‌های جدیدِ مرحله‌ها (Preschool … Postgraduate) با کدِ 'P-A1' … 'P-C2'. (تبِ «همه» و سطح‌هایش دست‌نخورده می‌مانند)
+  final bool levelsPlusPrimary;
   const StageChips({
     super.key,
     required this.selected,
     required this.onSelect,
     this.onPractice,
     this.practiceActive = false,
+    this.levelsPlusPrimary = false,
   });
 
   static const List<(String, String)> stages = [
@@ -53,6 +58,30 @@ class StageChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = Localizations.localeOf(context).languageCode;
     final allLabel = (ui == 'fa' || ui == 'ar') ? 'همه' : 'All';
+    if (levelsPlusPrimary) {
+      return SizedBox(
+        height: 50,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            // چیپ‌های جدیدِ مرحله‌ها (محتوای جدا از «همه»): کد = 'P-A1' … 'P-C2'
+            for (final st in stages) ...[
+              if (st.$1 != 'A1') const SizedBox(width: 7),
+              Center(
+                child: _StageChip(
+                  label: st.$2,
+                  sub: st.$1,
+                  icon: _icon(st.$1),
+                  active: selected == 'P-${st.$1}',
+                  color: levelColor(st.$1),
+                  onTap: () => onSelect('P-${st.$1}'),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
     return SizedBox(
       height: 50,
       child: ListView(
