@@ -36,6 +36,9 @@ import '../../core/providers/translation_provider.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/translate/translation_service.dart'
     show runWithConcurrencyLimit, kLastAiError, looksLikelyMistranslated, RetryFlag;
+import '../../core/translate/ai_first_translator.dart' show AiFirstTranslator;
+import '../../core/translate/reviewed_translate.dart'
+    show isSuspiciousTranslation;
 import '../../core/web/reading_io_stub.dart'
     if (dart.library.html) '../../core/web/reading_io_web.dart';
 import 'package:flutter/gestures.dart';
@@ -748,29 +751,28 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       final svc = ref.read(translationServiceProvider);
       final ai = ref.read(aiSettingsProvider);
       for (final code in langs) {
+        // ۱) ترجمه‌ی رایگان (کش ← ML Kit ← مترجم‌های آنلاین) — بدونِ AI؛ هر پاراگراف که تمام شد ذخیره می‌شود
+        final suspects = <int>[];
         await runWithConcurrencyLimit<String, String>(
           paras,
           3,
           (p, i) async {
+            var raw = '';
             var r = '';
             try {
-              final raw = await svc.translate(
+              raw = (await svc.translate(
                 text: p,
                 targetLang: code,
                 sourceLang: story.langCode,
-                aiSettings: ai,
-              );
+              ))
+                  .trim();
               r = _okTr(p, raw, code, story.langCode);
-              // اگر فیلترِ سخت‌گیر رد کرد ولی ترجمه‌ی غیرخالیِ متفاوت از مبدأ داریم،
-              // خالی ذخیره نمی‌کنیم (قبلاً AI/مترجم کار کرده بود)
-              if (r.isEmpty) {
-                final t = raw.trim();
-                if (t.isNotEmpty && t.toLowerCase() != p.trim().toLowerCase()) {
-                  r = t;
-                }
-              }
             } catch (_) {
               r = '';
+            }
+            if (r.isEmpty ||
+                isSuspiciousTranslation(p, raw, story.langCode, code)) {
+              suspects.add(i);
             }
             if (r.isNotEmpty) {
               result[code]![i] = r;
@@ -781,6 +783,45 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           },
         );
         flush(force: true);
+
+        // ۲) فقط مشکوک‌ها → AI، دسته‌ای (چند پاراگراف در «یک» درخواست)؛ نتیجه‌ی هر گروه فوری ذخیره می‌شود
+        if (suspects.isEmpty || !mounted) continue;
+        suspects.sort();
+        const group = 6; // هر بار حداکثر ۶ پاراگراف → نتیجه زود می‌رسد و ذخیره می‌شود
+        for (var g = 0; g < suspects.length && mounted; g += group) {
+          final idxs = suspects.sublist(
+              g, g + group > suspects.length ? suspects.length : g + group);
+          List<String?> outs;
+          try {
+            outs = await AiFirstTranslator.translateStoryBatch(
+              base: ai.baseUrl,
+              from: story.langCode,
+              to: code,
+              texts: [for (final i in idxs) paras[i]],
+            );
+          } catch (_) {
+            break;
+          }
+          for (var k = 0; k < idxs.length; k++) {
+            final i = idxs[k];
+            final o = (k < outs.length ? outs[k] : null)?.trim() ?? '';
+            if (o.isEmpty) continue;
+            var good = _okTr(paras[i], o, code, story.langCode);
+            // فیلترِ سخت‌گیر رد کرد ولی خروجیِ AI غیرخالی و هم‌اندازه‌ی منطقی است → خالی نگذار
+            if (good.isEmpty &&
+                o.toLowerCase() != paras[i].trim().toLowerCase() &&
+                o.length >= paras[i].length * 0.3 &&
+                o.length <= paras[i].length * 3.5) {
+              good = o;
+            }
+            if (good.isEmpty) continue;
+            result[code]![i] = good;
+            dirty = true;
+            // برای دفعه‌های بعد (کش گوشی) هم نگه داشته می‌شود
+            unawaited(svc.cachePut(paras[i], story.langCode, code, good));
+          }
+          flush(force: true);
+        }
       }
     } finally {
       flush(force: true);

@@ -736,6 +736,123 @@ class AiFirstTranslator {
     });
   }
 
+  // ═══════════════ 📖 دسته‌ایِ AI برای پاراگراف‌های داستان ═══════════════
+  // پاراگراف‌های (مشکوکِ) داستان که تا ۲۰۰۰ کاراکترند، در گروه‌های حداکثر ۳۰۰۰ کاراکتر/۲۰ تایی
+  // با «یک» درخواستِ /api/translate-batch ترجمه می‌شوند. خروجی هم‌طولِ ورودی است؛
+  // null = این مورد ترجمه نشد (طولِ بیش‌ازحد، رد شدن، خطا، مکث) و تصمیمش با صدازننده است.
+  // کیفیتِ نهایی را صدازننده می‌سنجد؛ اینجا فقط خروجیِ استدلال/گارد حذف می‌شود.
+  static const int _kStoryItemMax = 2000;
+  static const int _kStoryChunkChars = 3000;
+
+  static Future<List<String?>> translateStoryBatch({
+    required String base,
+    required String from,
+    required String to,
+    required List<String> texts,
+  }) async {
+    final out = List<String?>.filled(texts.length, null);
+    if (texts.isEmpty || _paused() || _batchOff) return out;
+    if (!_kWorkerLangs.contains(to)) return out;
+    if (from.isNotEmpty && from != 'auto' && !_kWorkerLangs.contains(from)) {
+      return out;
+    }
+    // گروه‌بندی بر اساسِ تعداد و مجموعِ کاراکتر
+    final chunks = <List<int>>[];
+    var cur = <int>[];
+    var acc = 0;
+    for (var i = 0; i < texts.length; i++) {
+      final t = texts[i].trim();
+      if (t.isEmpty || t.length > _kStoryItemMax) continue;
+      if (cur.isNotEmpty &&
+          (cur.length >= _kBatchMax || acc + t.length > _kStoryChunkChars)) {
+        chunks.add(cur);
+        cur = <int>[];
+        acc = 0;
+      }
+      cur.add(i);
+      acc += t.length;
+    }
+    if (cur.isNotEmpty) chunks.add(cur);
+
+    for (final idxs in chunks) {
+      if (_paused() || _batchOff) break;
+      final res = await _askStoryChunk(
+          base, from, to, [for (final i in idxs) texts[i].trim()]);
+      if (res == null) continue;
+      for (var k = 0; k < idxs.length; k++) {
+        out[idxs[k]] = res[k];
+      }
+    }
+    return out;
+  }
+
+  static Future<List<String?>?> _askStoryChunk(
+      String base, String from, String to, List<String> items) {
+    return _aiGate.run<List<String?>?>(() async {
+      if (_paused()) return null;
+      try {
+        final res = await _dio
+            .post(
+              '$base/api/translate-batch',
+              data: {
+                'items': items,
+                'source_lang_code': from.isEmpty ? 'auto' : from,
+                'target_lang_code': to,
+              },
+              options: Options(
+                contentType: 'application/json',
+                sendTimeout: const Duration(seconds: 15),
+                receiveTimeout: const Duration(seconds: 45),
+              ),
+            )
+            .timeout(const Duration(seconds: 50));
+        final st = res.statusCode ?? 0;
+        if (st >= 200 && st < 300) {
+          final data = res.data;
+          final arr = data is Map ? data['results'] : null;
+          if (arr is! List || arr.length != items.length) {
+            _badCall();
+            return null;
+          }
+          _okCall();
+          return <String?>[
+            for (final v in arr)
+              () {
+                if (v is! String) return null;
+                final c = _clean(stripAIReasoning(v));
+                if (c.isEmpty ||
+                    looksLikeAIReasoning(c) ||
+                    looksLikeGuardOutput(c)) {
+                  return null;
+                }
+                return c;
+              }(),
+          ];
+        }
+        if (st == 404 || st == 405) {
+          _batchOff = true; // Workerِ قدیمی
+          return null;
+        }
+        if (st == 429) {
+          final code = res.data is Map ? res.data['code']?.toString() : null;
+          _pause(code == 'daily_feature_limit'
+              ? const Duration(minutes: 60)
+              : const Duration(minutes: 5));
+          return null;
+        }
+        if (st == 402) {
+          _pause(const Duration(minutes: 60));
+          return null;
+        }
+        _badCall();
+        return null;
+      } catch (_) {
+        _badCall();
+        return null;
+      }
+    });
+  }
+
   /// یک درخواست به /api/translate-text (تک‌به‌تک).
   static Future<String?> _askSingle(_Job j) {
     if (_paused()) return Future<String?>.value(null);

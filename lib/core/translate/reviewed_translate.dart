@@ -134,6 +134,10 @@ bool _suspicious(String src, String draft, String from, String to) {
   return false;
 }
 
+/// نسخه‌ی عمومیِ چکِ «مشکوک» (رایگان و همگام) برای بقیه‌ی بخش‌ها (مثلاً دسته‌ای‌کردنِ AI در داستان‌ساز)
+bool isSuspiciousTranslation(String src, String draft, String from, String to) =>
+    _suspicious(src, draft, from, to);
+
 // ───────────────────────── اجرا ─────────────────────────
 
 Future<String> _run(TranslationService svc, AiSettings? ai, String text,

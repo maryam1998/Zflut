@@ -442,11 +442,14 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
 }
 
 // 📦 /api/translate-batch ------------------------------------------------------
-// ورودی: { items: [text, ...≤۲۰], source_lang_code, target_lang_code } → { results: [string|null, ...], provider }
+// ورودی: { items: [text, ...≤۲۰ (هر کدام تا ۲۰۰۰ کاراکتر)], source_lang_code, target_lang_code } → { results: [string|null, ...], provider }
 // • کش‌ها با «یک» کوئریِ D1 جواب می‌گیرند و هیچ سهمیه‌ای مصرف نمی‌کنند.
 // • کش‌نشده‌ها با «یک» تماسِ AI (JSON) ترجمه می‌شوند؛ امتیازِ ماهانه = تعدادِ کش‌نشده‌ها (cost).
 // • بازبینی (TR_REVIEW=1) هم «یک» تماسِ دسته‌ایِ رایگان است (مثلِ translate-text؛ در بارِ بالا خاموش).
 // • مورد نامعتبر = null (کلاینت همان را تک‌به‌تک امتحان می‌کند).
+// • 📖 پاراگراف‌های داستان: هر مورد تا TB_MAX_ITEM_CHARS (پیش‌فرض ۲۰۰۰) کاراکتر؛ مجموعِ متن‌های کش‌نشده‌ی یک درخواست تا
+//   TB_MAX_TOTAL_CHARS (پیش‌فرض ۵۰۰۰) — موردهای اضافه null برمی‌گردند (کلاینت در درخواستِ بعدی می‌فرستد).
+//   سهمیه = مجموعِ ceil(طول / TB_COST_CHARS) (پیش‌فرض ۳۰۰) برای هر مورد؛ پس متنِ کوتاه مثلِ قبل «۱» حساب می‌شود.
 const TB_MAX = 20;
 
 function parseJsonObject(raw) {
@@ -466,7 +469,8 @@ async function handleTranslateBatch(request, env, ctx) {
   if (source !== "auto" && !TT_LANGS[source]) return json({ error: "unsupported source language" }, 400);
   const raw = Array.isArray(body?.items) ? body.items.slice(0, TB_MAX) : [];
   const texts = raw.map((x) => String(x ?? "").trim());
-  const valid = texts.map((t) => !!t && t.length <= 300 && /\p{L}/u.test(t));
+  const itemMax = Math.max(300, Math.min(4000, numVar(env, "TB_MAX_ITEM_CHARS", 2000)));
+  const valid = texts.map((t) => !!t && t.length <= itemMax && /\p{L}/u.test(t));
   const results = texts.map(() => null);
   if (!valid.some(Boolean)) return json({ results, provider: "none" });
 
@@ -482,12 +486,25 @@ async function handleTranslateBatch(request, env, ctx) {
       for (const r of res.results || []) rows.set(r.k, r.v);
     }
   } catch { /* کش خراب = همه miss */ }
-  const miss = [];
+  let miss = [];
   texts.forEach((t, i) => {
     if (!valid[i]) return;
     const v = rows.get(keys[i]);
     if (v) results[i] = v; else miss.push(i);
   });
+  // 📏 سقفِ مجموعِ کاراکترِ کش‌نشده‌ها در یک تماسِ AI (اولین مورد همیشه می‌ماند)
+  {
+    const totalMax = Math.max(itemMax, numVar(env, "TB_MAX_TOTAL_CHARS", 5000));
+    let acc = 0;
+    const kept = [];
+    for (const idx of miss) {
+      const len = texts[idx].length;
+      if (kept.length && acc + len > totalMax) continue;
+      acc += len;
+      kept.push(idx);
+    }
+    miss = kept;
+  }
   if (!miss.length) {
     ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
     return json({ results, provider: "cache", cached: true });
@@ -496,8 +513,10 @@ async function handleTranslateBatch(request, env, ctx) {
   // ۲) سهمیه‌ها فقط برای کش‌نشده‌ها
   const over = await missGate(request, env);
   if (over) return over;
+  const costChars = Math.max(100, numVar(env, "TB_COST_CHARS", 300));
+  const costUnits = miss.reduce((a, idx) => a + Math.max(1, Math.ceil(texts[idx].length / costChars)), 0);
   const capGate = await beginAi(request, env, "ai", CORS_HEADERS,
-    { queue: false, cost: miss.length, feature: "translate", silent: "translate" });
+    { queue: false, cost: costUnits, feature: "translate", silent: "translate" });
   if (capGate.deny) return capGate.deny;
 
   // ۳) یک تماسِ AI برای همه‌ی کش‌نشده‌ها
@@ -510,10 +529,10 @@ async function handleTranslateBatch(request, env, ctx) {
     `Return ONLY a JSON object {"t":[...]} with exactly ${miss.length} strings (no quotes around them, no explanations, no original text), in the same order as the items.\n\n` +
     JSON.stringify(list);
   const totalLen = miss.reduce((a, idx) => a + texts[idx].length, 0);
-  const maxTokens = Math.min(Math.max(totalLen + 64 * miss.length, 400), 3500);
+  const maxTokens = Math.min(Math.max(totalLen + 64 * miss.length, 400), Math.max(1000, numVar(env, "TB_MAX_TOKENS", 6000)));
   const { chain: trChain, env: trEnv, strong } = translateSetup(env);
   const perProviderMs = Math.min(30000, 8000 + maxTokens * 8);
-  const deadline = Date.now() + numVar(env, "TR_TOTAL_BUDGET_MS", 22000);
+  const deadline = Date.now() + numVar(env, "TB_TOTAL_BUDGET_MS", Math.max(22000, numVar(env, "TR_TOTAL_BUDGET_MS", 22000)));
   const errors = [];
   for (const provider of trChain) {
     const left = deadline - Date.now();
