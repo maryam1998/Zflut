@@ -247,6 +247,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
   /// 🎒 true = «Primary School ▸ A1» (فقط موضوع‌های kind=='primary')
   bool _primary = false;
 
+  /// سطحِ انتخاب‌شده زیرِ Primary School: 'A1' یا 'A2' (شناسه‌ی موضوع‌ها p-a1-… / p-a2-…)
+  String _primaryLevel = 'A1';
+
   void _setPrimary(bool v) => setState(() {
         _primary = v;
         _levels = <String>{}; // سطح در این نما معنا ندارد
@@ -523,7 +526,9 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     ref.watch(isProProvider); // با عوض شدنِ وضعیتِ Pro قفل‌ها به‌روز شوند
     final topics = [
       for (final t in ref.watch(allTopicsProvider))
-        if ((t.kind == 'primary') == _primary) t,
+        if ((t.kind == 'primary') == _primary &&
+            (!_primary || t.id.startsWith('p-${_primaryLevel.toLowerCase()}-')))
+          t,
     ];
     // 📚 شمارشِ جمله‌ی هر موضوع به‌تفکیکِ سطح (همه لازم دارند: متنِ موضوع‌ها لود تنبل است)
     final index = ref.watch(conversationsIndexProvider).valueOrNull;
@@ -582,6 +587,12 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
               onAll: () => _setPrimary(false),
               onPrimary: () => _setPrimary(true),
               onLevel: () => _setPrimary(true),
+              levels: const ['A1', 'A2'],
+              level: _primaryLevel,
+              onLevelChanged: (lv) {
+                _primaryLevel = lv;
+                _setPrimary(true);
+              },
             ),
             const SizedBox(height: 8),
             if (!_primary) ...[

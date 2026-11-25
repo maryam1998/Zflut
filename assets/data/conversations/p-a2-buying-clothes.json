@@ -1,0 +1,165 @@
+{
+ "topic": "Buying Clothes",
+ "scenarios": [
+  {
+   "scenario": "Looking for a jacket",
+   "context": "A customer talks to a shop assistant.",
+   "speakerA": [
+    {
+     "en": "How much is this jacket?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you have a larger size?",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, please. Where is the fitting room?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's thirty dollars.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, we do. Do you want to try it on?",
+     "level": "A2"
+    },
+    {
+     "en": "It's at the back of the store, next to the shoes.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Too small",
+   "context": "A customer is in the fitting room.",
+   "speakerA": [
+    {
+     "en": "How does it fit?",
+     "level": "A2"
+    },
+    {
+     "en": "Let me get you a medium.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, we have it in blue and black.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's too small. The sleeves are very short.",
+     "level": "A2"
+    },
+    {
+     "en": "Thanks. And do you have it in blue?",
+     "level": "A2"
+    },
+    {
+     "en": "I'll take the blue one.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "New shoes",
+   "context": "A customer needs shoes for work.",
+   "speakerA": [
+    {
+     "en": "Can I help you?",
+     "level": "A2"
+    },
+    {
+     "en": "What size are you?",
+     "level": "A2"
+    },
+    {
+     "en": "They are very popular. Would you like to try them?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'm looking for black shoes for work.",
+     "level": "A2"
+    },
+    {
+     "en": "I'm size forty-two. These look comfortable.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, they fit well. I'll buy them.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A sweater as a gift",
+   "context": "A customer is buying a present.",
+   "speakerA": [
+    {
+     "en": "I want to buy a sweater for my husband.",
+     "level": "A2"
+    },
+    {
+     "en": "He usually wears gray or dark green.",
+     "level": "A2"
+    },
+    {
+     "en": "It's lovely, but it's a little expensive.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "What color does he like?",
+     "level": "A2"
+    },
+    {
+     "en": "This wool sweater is warm and soft.",
+     "level": "A2"
+    },
+    {
+     "en": "We have a cotton one for twenty dollars.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Winter clothes",
+   "context": "Two friends go shopping.",
+   "speakerA": [
+    {
+     "en": "It's getting cold. I need a new coat.",
+     "level": "A2"
+    },
+    {
+     "en": "Look at this long coat. I love the color.",
+     "level": "A2"
+    },
+    {
+     "en": "It's perfect. I also need gloves and a scarf.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Me too. Let's check the winter sale.",
+     "level": "A2"
+    },
+    {
+     "en": "It looks great on you. Try it on.",
+     "level": "A2"
+    },
+    {
+     "en": "They are over there, next to the hats.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

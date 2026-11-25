@@ -1,0 +1,249 @@
+{
+ "v": 1,
+ "stage": "primary",
+ "level": "A2",
+ "list": [
+  {
+   "id": "p-a2-shopping-at-a-store",
+   "kind": "primary",
+   "topic": "Shopping at a Store"
+  },
+  {
+   "id": "p-a2-ordering-food-at-a-restaurant",
+   "kind": "primary",
+   "topic": "Ordering Food at a Restaurant"
+  },
+  {
+   "id": "p-a2-asking-the-way",
+   "kind": "primary",
+   "topic": "Asking the Way"
+  },
+  {
+   "id": "p-a2-booking-a-hotel-room",
+   "kind": "primary",
+   "topic": "Booking a Hotel Room"
+  },
+  {
+   "id": "p-a2-my-daily-routine",
+   "kind": "primary",
+   "topic": "My Daily Routine"
+  },
+  {
+   "id": "p-a2-talking-about-the-weather",
+   "kind": "primary",
+   "topic": "Talking About the Weather"
+  },
+  {
+   "id": "p-a2-talking-about-hobbies",
+   "kind": "primary",
+   "topic": "Talking About Hobbies"
+  },
+  {
+   "id": "p-a2-buying-clothes",
+   "kind": "primary",
+   "topic": "Buying Clothes"
+  },
+  {
+   "id": "p-a2-at-the-pharmacy",
+   "kind": "primary",
+   "topic": "At the Pharmacy"
+  },
+  {
+   "id": "p-a2-asking-the-time-and-date",
+   "kind": "primary",
+   "topic": "Asking the Time and Date"
+  }
+ ],
+ "topics": {
+  "Shopping at a Store": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Ordering Food at a Restaurant": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Asking the Way": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Booking a Hotel Room": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "My Daily Routine": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Talking About the Weather": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Talking About Hobbies": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Buying Clothes": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "At the Pharmacy": {
+   "s": 5,
+   "t": [
+    0,
+    31,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    31,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "Asking the Time and Date": {
+   "s": 5,
+   "t": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ],
+   "f": [
+    0,
+    30,
+    0,
+    0,
+    0,
+    0
+   ]
+  }
+ }
+}

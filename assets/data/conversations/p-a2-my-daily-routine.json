@@ -1,0 +1,165 @@
+{
+ "topic": "My Daily Routine",
+ "scenarios": [
+  {
+   "scenario": "A busy morning",
+   "context": "Two coworkers talk before work.",
+   "speakerA": [
+    {
+     "en": "What time do you get up on weekdays?",
+     "level": "A2"
+    },
+    {
+     "en": "That's early! What do you do first?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you go to work by car?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I usually get up at six thirty.",
+     "level": "A2"
+    },
+    {
+     "en": "I take a shower, then I have breakfast.",
+     "level": "A2"
+    },
+    {
+     "en": "No, I take the bus. It leaves at seven forty.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "After work",
+   "context": "Two friends talk about their evenings.",
+   "speakerA": [
+    {
+     "en": "What do you do after work?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you ever go to the gym?",
+     "level": "A2"
+    },
+    {
+     "en": "I never have time. I get home very late.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I go home, cook dinner and relax.",
+     "level": "A2"
+    },
+    {
+     "en": "Sometimes, on Tuesdays and Thursdays.",
+     "level": "A2"
+    },
+    {
+     "en": "Maybe you can try on the weekend.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A night worker",
+   "context": "A nurse talks about her schedule.",
+   "speakerA": [
+    {
+     "en": "Your schedule is different from mine. When do you sleep?",
+     "level": "A2"
+    },
+    {
+     "en": "Is it difficult?",
+     "level": "A2"
+    },
+    {
+     "en": "What do you eat before work?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I work at night, so I sleep in the morning.",
+     "level": "A2"
+    },
+    {
+     "en": "A little, but I like the quiet hours.",
+     "level": "A2"
+    },
+    {
+     "en": "Eggs and coffee, usually at eight in the evening.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Weekdays and weekends",
+   "context": "Two neighbors talk about Saturdays.",
+   "speakerA": [
+    {
+     "en": "What do you do on Saturdays?",
+     "level": "A2"
+    },
+    {
+     "en": "Do you go out in the evening?",
+     "level": "A2"
+    },
+    {
+     "en": "Sounds nice. I usually stay at home and watch TV.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I sleep late and clean the house.",
+     "level": "A2"
+    },
+    {
+     "en": "Often. I meet my friends at a cafe.",
+     "level": "A2"
+    },
+    {
+     "en": "You should come with us next time.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Yesterday",
+   "context": "Two coworkers talk about yesterday.",
+   "speakerA": [
+    {
+     "en": "How was your day yesterday?",
+     "level": "A2"
+    },
+    {
+     "en": "What time did you finish work?",
+     "level": "A2"
+    },
+    {
+     "en": "Did you cook dinner?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It was busy. I had three meetings.",
+     "level": "A2"
+    },
+    {
+     "en": "I finished at seven and went straight home.",
+     "level": "A2"
+    },
+    {
+     "en": "No, I was too tired, so I ordered pizza.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,165 @@
+{
+ "topic": "Ordering Food at a Restaurant",
+ "scenarios": [
+  {
+   "scenario": "Booking a table",
+   "context": "A customer calls a restaurant.",
+   "speakerA": [
+    {
+     "en": "Good evening. Can I book a table for tomorrow night?",
+     "level": "A2"
+    },
+    {
+     "en": "Four people, at seven o'clock.",
+     "level": "A2"
+    },
+    {
+     "en": "Perfect. My name is Daniel Rossi.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Of course. For how many people?",
+     "level": "A2"
+    },
+    {
+     "en": "Let me check. Yes, we have a table by the window.",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you, Mr. Rossi. We'll see you tomorrow.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Ordering the meal",
+   "context": "A waiter takes an order.",
+   "speakerA": [
+    {
+     "en": "Are you ready to order?",
+     "level": "A2"
+    },
+    {
+     "en": "Would you like something to drink?",
+     "level": "A2"
+    },
+    {
+     "en": "Anything else?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes. I'd like the chicken soup and the grilled fish.",
+     "level": "A2"
+    },
+    {
+     "en": "A glass of orange juice, please.",
+     "level": "A2"
+    },
+    {
+     "en": "No, thanks. That's all for now.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Food allergies",
+   "context": "A customer asks the waiter about a dish.",
+   "speakerA": [
+    {
+     "en": "Excuse me, is this dish vegetarian?",
+     "level": "A2"
+    },
+    {
+     "en": "I'm allergic to nuts. Does the pasta have any?",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you. That's very kind.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "No, it has chicken in it. But the pasta is vegetarian.",
+     "level": "A2"
+    },
+    {
+     "en": "No, it doesn't. I'll ask the chef to be sure.",
+     "level": "A2"
+    },
+    {
+     "en": "You're welcome. I'll be back in a minute.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Something is wrong",
+   "context": "A waiter checks on a table.",
+   "speakerA": [
+    {
+     "en": "Is everything OK with your meal?",
+     "level": "A2"
+    },
+    {
+     "en": "I'm so sorry. I'll bring you a hot one.",
+     "level": "A2"
+    },
+    {
+     "en": "Of course. I'll bring a bottle for the table.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Actually, my soup is cold.",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you. And could we have more water?",
+     "level": "A2"
+    },
+    {
+     "en": "Great. Everything else is delicious.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Paying the bill",
+   "context": "Two friends finish dinner.",
+   "speakerA": [
+    {
+     "en": "Could we have the bill, please?",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, by card. Is the tip included?",
+     "level": "A2"
+    },
+    {
+     "en": "OK. We'll add ten percent.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Certainly. Would you like to pay together?",
+     "level": "A2"
+    },
+    {
+     "en": "No, it isn't. Service is not included.",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you very much. Have a nice evening!",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

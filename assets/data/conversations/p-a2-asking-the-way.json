@@ -1,0 +1,165 @@
+{
+ "topic": "Asking the Way",
+ "scenarios": [
+  {
+   "scenario": "Where is the bank?",
+   "context": "A tourist asks a passer-by.",
+   "speakerA": [
+    {
+     "en": "Excuse me, where is the bank?",
+     "level": "A2"
+    },
+    {
+     "en": "Is it far from here?",
+     "level": "A2"
+    },
+    {
+     "en": "Is it next to the post office?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Go straight and turn left at the traffic light.",
+     "level": "A2"
+    },
+    {
+     "en": "No, it's about five minutes on foot.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, it's right next to it.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Taking a bus",
+   "context": "A visitor asks about the bus.",
+   "speakerA": [
+    {
+     "en": "Excuse me, which bus goes to the museum?",
+     "level": "A2"
+    },
+    {
+     "en": "How long does it take?",
+     "level": "A2"
+    },
+    {
+     "en": "And how much is a ticket?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Take number twelve. The bus stop is across the street.",
+     "level": "A2"
+    },
+    {
+     "en": "About twenty minutes, if there isn't much traffic.",
+     "level": "A2"
+    },
+    {
+     "en": "Two dollars. You can pay the driver.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Lost in the city",
+   "context": "A traveler needs help.",
+   "speakerA": [
+    {
+     "en": "Sorry, I'm lost. Can you help me?",
+     "level": "A2"
+    },
+    {
+     "en": "I'm looking for the train station.",
+     "level": "A2"
+    },
+    {
+     "en": "Turn right at the bridge. Then?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Sure. Where do you want to go?",
+     "level": "A2"
+    },
+    {
+     "en": "It's not far. Walk down this road and turn right at the bridge.",
+     "level": "A2"
+    },
+    {
+     "en": "You'll see the station in front of you.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Using a map",
+   "context": "Two tourists look at a map.",
+   "speakerA": [
+    {
+     "en": "Can you show me where we are on the map?",
+     "level": "A2"
+    },
+    {
+     "en": "And where is the hotel?",
+     "level": "A2"
+    },
+    {
+     "en": "Is it better to walk or take a taxi?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "We're here, near the park.",
+     "level": "A2"
+    },
+    {
+     "en": "It's on Green Street, between the bakery and the bank.",
+     "level": "A2"
+    },
+    {
+     "en": "Walk. It's only ten minutes, and the weather is nice.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Finding the entrance",
+   "context": "A phone call between two friends.",
+   "speakerA": [
+    {
+     "en": "I'm outside your building, but I can't find the entrance.",
+     "level": "A2"
+    },
+    {
+     "en": "I see a red door. Is that it?",
+     "level": "A2"
+    },
+    {
+     "en": "OK. Which apartment is yours?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Go around the corner. The door is on the left side.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes! Take the lift to the third floor.",
+     "level": "A2"
+    },
+    {
+     "en": "Number twelve, at the end of the hall.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

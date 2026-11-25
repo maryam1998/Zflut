@@ -1,0 +1,165 @@
+{
+ "topic": "Talking About Hobbies",
+ "scenarios": [
+  {
+   "scenario": "Free time",
+   "context": "Two coworkers talk about their hobbies.",
+   "speakerA": [
+    {
+     "en": "What do you like to do in your free time?",
+     "level": "A2"
+    },
+    {
+     "en": "That's interesting. Do you sell your paintings?",
+     "level": "A2"
+    },
+    {
+     "en": "I play the guitar and I'm learning to sing.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I love painting. I paint every Sunday.",
+     "level": "A2"
+    },
+    {
+     "en": "No, it's just a hobby. What about you?",
+     "level": "A2"
+    },
+    {
+     "en": "Wonderful! Maybe we can play together one day.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Joining a club",
+   "context": "Two friends talk about sports.",
+   "speakerA": [
+    {
+     "en": "I want to join a sports club. Do you know a good one?",
+     "level": "A2"
+    },
+    {
+     "en": "Is it expensive?",
+     "level": "A2"
+    },
+    {
+     "en": "Can beginners join?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "There's a tennis club near my house.",
+     "level": "A2"
+    },
+    {
+     "en": "Not really. It's forty dollars a month.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, they have lessons on Mondays and Wednesdays.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A weekend trip",
+   "context": "Two friends talk on Monday morning.",
+   "speakerA": [
+    {
+     "en": "Did you do anything fun last weekend?",
+     "level": "A2"
+    },
+    {
+     "en": "Sounds great. Did you go fishing?",
+     "level": "A2"
+    },
+    {
+     "en": "Were you cold at night?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, we went camping near the lake.",
+     "level": "A2"
+    },
+    {
+     "en": "We did, but we didn't catch anything.",
+     "level": "A2"
+    },
+    {
+     "en": "A little, but the stars were beautiful.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Movies and music",
+   "context": "Two friends make a plan.",
+   "speakerA": [
+    {
+     "en": "Do you like watching movies?",
+     "level": "A2"
+    },
+    {
+     "en": "Have you seen the new one at the cinema?",
+     "level": "A2"
+    },
+    {
+     "en": "Sure. What time does it start?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, especially comedies. I watch one every Friday.",
+     "level": "A2"
+    },
+    {
+     "en": "Not yet. Do you want to go together on Saturday?",
+     "level": "A2"
+    },
+    {
+     "en": "At eight. Let's meet at seven thirty.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Learning something new",
+   "context": "Two friends talk about this year.",
+   "speakerA": [
+    {
+     "en": "I'm going to learn cooking this year.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, a class starts next month.",
+     "level": "A2"
+    },
+    {
+     "en": "Pasta, I think. It looks easy.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "That's a great hobby. Are you going to take a class?",
+     "level": "A2"
+    },
+    {
+     "en": "What are you going to cook first?",
+     "level": "A2"
+    },
+    {
+     "en": "Invite me when you're ready to cook for guests!",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

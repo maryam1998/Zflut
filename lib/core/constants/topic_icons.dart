@@ -19,6 +19,18 @@ const _brown = Color(0xFF8B5E3C);
 TopicVisual visualForTopic(String topic) {
   final t = topic.toLowerCase();
 
+  // ═══ Primary School ▸ A2 (قبل از قاعده‌های عمومیِ روزمره) ═══
+  if (t.contains('shopping at a store')) return const TopicVisual(Icons.shopping_bag_rounded, _purple);
+  if (t.contains('ordering food')) return const TopicVisual(Icons.restaurant_rounded, _orange);
+  if (t.contains('asking the way')) return const TopicVisual(Icons.explore_rounded, _teal);
+  if (t.contains('booking a hotel')) return const TopicVisual(Icons.hotel_rounded, _blue);
+  if (t.contains('my daily routine')) return const TopicVisual(Icons.alarm_rounded, _gold);
+  if (t.contains('talking about the weather')) return const TopicVisual(Icons.wb_sunny_rounded, _gold);
+  if (t.contains('talking about hobbies')) return const TopicVisual(Icons.palette_rounded, _rose);
+  if (t.contains('buying clothes')) return const TopicVisual(Icons.checkroom_rounded, _purple);
+  if (t.contains('at the pharmacy')) return const TopicVisual(Icons.local_pharmacy_rounded, _green);
+  if (t.contains('asking the time')) return const TopicVisual(Icons.schedule_rounded, _blue);
+
   // ═══ Primary School ▸ A1 ═══
   if (t.contains('introducing yourself')) return const TopicVisual(Icons.waving_hand_rounded, _teal);
   if (t.contains('name and age')) return const TopicVisual(Icons.badge_rounded, _blue);

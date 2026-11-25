@@ -82,30 +82,34 @@ class ConversationRepository {
             scenarios: const [],
           ),
       ];
-      // 🎒 مکالمه‌های Primary School ▸ A1 (فایلِ جدا؛ برای همه باز)
-      try {
-        final pr = await rootBundle
-            .loadString('assets/data/primary_conversations_index.json');
-        final pj = jsonDecode(pr) as Map<String, dynamic>;
-        final pl = pj['list'];
-        if (pl is List) {
-          final extra = <ConversationTopic>[];
-          for (final e in pl) {
-            final m = e as Map;
-            final name = m['topic']?.toString() ?? '';
-            if (name.isEmpty) continue;
-            ProStatus.freeExtraTopics.add(name);
-            extra.add(ConversationTopic(
-              id: m['id']?.toString() ?? '',
-              kind: 'primary',
-              topic: name,
-              scenarios: const [],
-            ));
+      // 🎒 مکالمه‌های Primary School ▸ A1 و A2 (فایل‌های جدا؛ برای همه باز)
+      for (final pf in const [
+        'assets/data/primary_conversations_index.json',
+        'assets/data/primary_a2_conversations_index.json',
+      ]) {
+        try {
+          final pr = await rootBundle.loadString(pf);
+          final pj = jsonDecode(pr) as Map<String, dynamic>;
+          final pl = pj['list'];
+          if (pl is List) {
+            final extra = <ConversationTopic>[];
+            for (final e in pl) {
+              final m = e as Map;
+              final name = m['topic']?.toString() ?? '';
+              if (name.isEmpty) continue;
+              ProStatus.freeExtraTopics.add(name);
+              extra.add(ConversationTopic(
+                id: m['id']?.toString() ?? '',
+                kind: 'primary',
+                topic: name,
+                scenarios: const [],
+              ));
+            }
+            _all = [..._all, ...extra];
           }
-          _all = [..._all, ...extra];
+        } catch (e) {
+          debugPrint('ConversationRepository primary ($pf): $e');
         }
-      } catch (e) {
-        debugPrint('ConversationRepository primary: $e');
       }
       _loaded = true;
       _error = null;

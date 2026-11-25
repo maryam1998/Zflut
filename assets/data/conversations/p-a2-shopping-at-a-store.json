@@ -1,0 +1,165 @@
+{
+ "topic": "Shopping at a Store",
+ "scenarios": [
+  {
+   "scenario": "Looking for a gift",
+   "context": "Two friends are in a gift shop.",
+   "speakerA": [
+    {
+     "en": "I'm looking for a gift for my sister.",
+     "level": "A2"
+    },
+    {
+     "en": "She likes books and tea.",
+     "level": "A2"
+    },
+    {
+     "en": "Oh, it's nice. How much is it?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "What does she like?",
+     "level": "A2"
+    },
+    {
+     "en": "How about this tea set? It's on sale today.",
+     "level": "A2"
+    },
+    {
+     "en": "It's twenty-five dollars, and it comes in a gift box.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "At the checkout",
+   "context": "A customer pays at the supermarket.",
+   "speakerA": [
+    {
+     "en": "Hello. Do you have a bag, please?",
+     "level": "A2"
+    },
+    {
+     "en": "Yes. Can I pay by card?",
+     "level": "A2"
+    },
+    {
+     "en": "Here you go. Can I have the receipt?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, it costs ten cents. Is that all?",
+     "level": "A2"
+    },
+    {
+     "en": "Of course. Please put your card here.",
+     "level": "A2"
+    },
+    {
+     "en": "Sure. Have a nice day!",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Is it on sale?",
+   "context": "Two coworkers talk at the mall.",
+   "speakerA": [
+    {
+     "en": "Look at this sign. Everything is half price.",
+     "level": "A2"
+    },
+    {
+     "en": "No, it ends on Sunday.",
+     "level": "A2"
+    },
+    {
+     "en": "Good idea. I need a small wallet too.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Really? Is the sale only today?",
+     "level": "A2"
+    },
+    {
+     "en": "I want a new bag. Let's go in.",
+     "level": "A2"
+    },
+    {
+     "en": "Great, then we can have lunch after that.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Wrong change",
+   "context": "A customer talks to a cashier.",
+   "speakerA": [
+    {
+     "en": "Excuse me, I think there is a mistake.",
+     "level": "A2"
+    },
+    {
+     "en": "I gave you twenty dollars, but my change is only five.",
+     "level": "A2"
+    },
+    {
+     "en": "No problem. It happens.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "What's the problem?",
+     "level": "A2"
+    },
+    {
+     "en": "Let me check. You're right. I'm sorry about that.",
+     "level": "A2"
+    },
+    {
+     "en": "Here is your change. Thank you for telling me.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Returning an item",
+   "context": "A customer is at the service desk.",
+   "speakerA": [
+    {
+     "en": "Hi, I bought this lamp yesterday, but it doesn't work.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, here it is.",
+     "level": "A2"
+    },
+    {
+     "en": "A refund, please. I paid with cash.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'm sorry about that. Do you have the receipt?",
+     "level": "A2"
+    },
+    {
+     "en": "Would you like a refund or a new lamp?",
+     "level": "A2"
+    },
+    {
+     "en": "OK. Please wait a moment while I get the money.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

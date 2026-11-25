@@ -1,0 +1,165 @@
+{
+ "topic": "Asking the Time and Date",
+ "scenarios": [
+  {
+   "scenario": "What time is it?",
+   "context": "A traveler asks a stranger at the station.",
+   "speakerA": [
+    {
+     "en": "Excuse me, what time is it?",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you. When does the next train leave?",
+     "level": "A2"
+    },
+    {
+     "en": "Then I have fifteen minutes.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's a quarter past four.",
+     "level": "A2"
+    },
+    {
+     "en": "At half past four, I think.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, you have time for a coffee.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Making an appointment",
+   "context": "A patient calls a dentist's office.",
+   "speakerA": [
+    {
+     "en": "I'd like to make an appointment with the dentist.",
+     "level": "A2"
+    },
+    {
+     "en": "I work on Tuesday. What about Thursday?",
+     "level": "A2"
+    },
+    {
+     "en": "Perfect. Thursday at ten fifteen.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Certainly. Is Tuesday morning OK?",
+     "level": "A2"
+    },
+    {
+     "en": "We have a free time at ten fifteen.",
+     "level": "A2"
+    },
+    {
+     "en": "Great. Please arrive ten minutes early.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "What's the date today?",
+   "context": "Two coworkers talk in the office.",
+   "speakerA": [
+    {
+     "en": "What's the date today?",
+     "level": "A2"
+    },
+    {
+     "en": "Oh no, my passport ends next month!",
+     "level": "A2"
+    },
+    {
+     "en": "When is the passport office open?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's the twenty-fifth of November.",
+     "level": "A2"
+    },
+    {
+     "en": "Don't worry. You still have time.",
+     "level": "A2"
+    },
+    {
+     "en": "From nine to five, Monday to Friday.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A birthday dinner",
+   "context": "Two friends make plans.",
+   "speakerA": [
+    {
+     "en": "When is your birthday?",
+     "level": "A2"
+    },
+    {
+     "en": "That's a Sunday this year, isn't it?",
+     "level": "A2"
+    },
+    {
+     "en": "Good idea. What time is best?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's on the third of March.",
+     "level": "A2"
+    },
+    {
+     "en": "No, it's on a Wednesday. Let's have dinner on Saturday.",
+     "level": "A2"
+    },
+    {
+     "en": "Around seven in the evening.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Running late",
+   "context": "A manager calls an employee.",
+   "speakerA": [
+    {
+     "en": "Hi, where are you? The meeting starts at nine.",
+     "level": "A2"
+    },
+    {
+     "en": "It's already five past nine.",
+     "level": "A2"
+    },
+    {
+     "en": "OK. We'll wait for you.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Sorry, I'm late. I'll be there in ten minutes.",
+     "level": "A2"
+    },
+    {
+     "en": "I know. The bus was late this morning.",
+     "level": "A2"
+    },
+    {
+     "en": "Thanks. I'll arrive before nine fifteen.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

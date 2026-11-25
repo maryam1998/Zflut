@@ -1,0 +1,165 @@
+{
+ "topic": "Talking About the Weather",
+ "scenarios": [
+  {
+   "scenario": "Today's weather",
+   "context": "Two neighbors talk at the door.",
+   "speakerA": [
+    {
+     "en": "What's the weather like today?",
+     "level": "A2"
+    },
+    {
+     "en": "Oh no. I don't have an umbrella.",
+     "level": "A2"
+    },
+    {
+     "en": "Thanks. Is it cold outside?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It's cloudy, and it's going to rain this afternoon.",
+     "level": "A2"
+    },
+    {
+     "en": "You can borrow mine. It's by the door.",
+     "level": "A2"
+    },
+    {
+     "en": "A little. Take a jacket too.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A hot day",
+   "context": "Two coworkers talk at lunch.",
+   "speakerA": [
+    {
+     "en": "It's so hot today!",
+     "level": "A2"
+    },
+    {
+     "en": "Let's go to the beach after work.",
+     "level": "A2"
+    },
+    {
+     "en": "Don't forget to bring sun cream.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I know. The temperature is thirty-five degrees.",
+     "level": "A2"
+    },
+    {
+     "en": "Good idea. The water will be nice.",
+     "level": "A2"
+    },
+    {
+     "en": "I won't. See you at five.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Favorite season",
+   "context": "Two friends talk about seasons.",
+   "speakerA": [
+    {
+     "en": "Which season do you like best?",
+     "level": "A2"
+    },
+    {
+     "en": "I prefer summer because I can swim.",
+     "level": "A2"
+    },
+    {
+     "en": "What's winter like in your city?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I like autumn. The weather is mild and the trees are beautiful.",
+     "level": "A2"
+    },
+    {
+     "en": "Summer is too hot for me.",
+     "level": "A2"
+    },
+    {
+     "en": "It's very cold, and it snows a lot.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Planning a picnic",
+   "context": "Two friends plan for the weekend.",
+   "speakerA": [
+    {
+     "en": "Is it going to be sunny on Saturday?",
+     "level": "A2"
+    },
+    {
+     "en": "Great! Let's have a picnic in the park.",
+     "level": "A2"
+    },
+    {
+     "en": "Sure. Should I bring a blanket?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, the forecast says sunny and warm.",
+     "level": "A2"
+    },
+    {
+     "en": "I'll make sandwiches. Can you bring the drinks?",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, please. And a hat for the sun.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "The storm last night",
+   "context": "Two neighbors talk in the morning.",
+   "speakerA": [
+    {
+     "en": "Did you hear the storm last night?",
+     "level": "A2"
+    },
+    {
+     "en": "I couldn't sleep at all.",
+     "level": "A2"
+    },
+    {
+     "en": "Really? Is everything OK?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, the thunder was very loud.",
+     "level": "A2"
+    },
+    {
+     "en": "The wind was so strong that it broke a tree in my garden.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, and today is much better. It's clear and sunny.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

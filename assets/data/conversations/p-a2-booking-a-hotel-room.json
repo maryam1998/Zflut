@@ -1,0 +1,165 @@
+{
+ "topic": "Booking a Hotel Room",
+ "scenarios": [
+  {
+   "scenario": "Making a reservation",
+   "context": "A guest calls a hotel.",
+   "speakerA": [
+    {
+     "en": "Hello, I'd like to book a room for two nights.",
+     "level": "A2"
+    },
+    {
+     "en": "From the tenth to the twelfth of May.",
+     "level": "A2"
+    },
+    {
+     "en": "A double room, please. How much is it per night?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Certainly. What dates are you coming?",
+     "level": "A2"
+    },
+    {
+     "en": "Would you like a single or a double room?",
+     "level": "A2"
+    },
+    {
+     "en": "It's ninety dollars, and breakfast is included.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Checking in",
+   "context": "A guest arrives at the front desk.",
+   "speakerA": [
+    {
+     "en": "Good afternoon. I have a reservation under Maria Lopez.",
+     "level": "A2"
+    },
+    {
+     "en": "Here you are.",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you. What time is breakfast?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, I see it. May I have your passport, please?",
+     "level": "A2"
+    },
+    {
+     "en": "Your room is on the fourth floor. Here is your key.",
+     "level": "A2"
+    },
+    {
+     "en": "From seven to ten, in the restaurant downstairs.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A problem with the room",
+   "context": "A guest calls the reception.",
+   "speakerA": [
+    {
+     "en": "Excuse me, the air conditioning in my room doesn't work.",
+     "level": "A2"
+    },
+    {
+     "en": "It's four-oh-six.",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you. Could I have an extra towel too?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I'm very sorry. What's your room number?",
+     "level": "A2"
+    },
+    {
+     "en": "I'll send someone right away.",
+     "level": "A2"
+    },
+    {
+     "en": "Of course. We'll bring it with the technician.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Asking about the hotel",
+   "context": "A guest asks about services.",
+   "speakerA": [
+    {
+     "en": "Is there free wifi in the hotel?",
+     "level": "A2"
+    },
+    {
+     "en": "Great. Is there a gym or a swimming pool?",
+     "level": "A2"
+    },
+    {
+     "en": "And is there a good restaurant nearby?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Yes, the password is on your key card.",
+     "level": "A2"
+    },
+    {
+     "en": "We have both. The pool opens at six in the morning.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, there's a nice one around the corner.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Checking out",
+   "context": "A guest leaves the hotel.",
+   "speakerA": [
+    {
+     "en": "I'd like to check out, please. Room 406.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, it was wonderful. The room was very clean.",
+     "level": "A2"
+    },
+    {
+     "en": "Can I leave my suitcase here until the evening?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Of course. Did you enjoy your stay?",
+     "level": "A2"
+    },
+    {
+     "en": "I'm glad to hear that. Here is your bill.",
+     "level": "A2"
+    },
+    {
+     "en": "No problem. We'll keep it behind the desk.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}

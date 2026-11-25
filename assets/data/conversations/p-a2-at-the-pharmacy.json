@@ -1,0 +1,169 @@
+{
+ "topic": "At the Pharmacy",
+ "scenarios": [
+  {
+   "scenario": "A headache",
+   "context": "A customer talks to the pharmacist.",
+   "speakerA": [
+    {
+     "en": "Good morning. How can I help you?",
+     "level": "A2"
+    },
+    {
+     "en": "How long have you had it?",
+     "level": "A2"
+    },
+    {
+     "en": "Take one of these tablets twice a day, after meals.",
+     "level": "A2"
+    },
+    {
+     "en": "No, you don't. It's sixteen dollars.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "I have a headache and I feel tired.",
+     "level": "A2"
+    },
+    {
+     "en": "Since yesterday evening.",
+     "level": "A2"
+    },
+    {
+     "en": "Thank you. Do I need a prescription?",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A bad cold",
+   "context": "A customer has a cough.",
+   "speakerA": [
+    {
+     "en": "I have a bad cough and a sore throat.",
+     "level": "A2"
+    },
+    {
+     "en": "A little. My temperature is thirty-seven point eight.",
+     "level": "A2"
+    },
+    {
+     "en": "How often do I take it?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Do you have a fever?",
+     "level": "A2"
+    },
+    {
+     "en": "Try this syrup. Drink a lot of water and rest.",
+     "level": "A2"
+    },
+    {
+     "en": "Three times a day. If you don't feel better in three days, see a doctor.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "Picking up a prescription",
+   "context": "A customer collects medicine.",
+   "speakerA": [
+    {
+     "en": "Hello, I'm here to pick up my prescription.",
+     "level": "A2"
+    },
+    {
+     "en": "Anna Petrova.",
+     "level": "A2"
+    },
+    {
+     "en": "Is it OK to take it with food?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Can I have your name, please?",
+     "level": "A2"
+    },
+    {
+     "en": "Here it is. Take one pill every morning.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, it's better with breakfast.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "An allergy",
+   "context": "A customer asks for advice.",
+   "speakerA": [
+    {
+     "en": "Excuse me, my eyes are red and I sneeze a lot.",
+     "level": "A2"
+    },
+    {
+     "en": "No, nothing.",
+     "level": "A2"
+    },
+    {
+     "en": "Then I'll take one in the evening.",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "It could be an allergy. Do you take any other medicine?",
+     "level": "A2"
+    },
+    {
+     "en": "These allergy tablets can help. They may make you sleepy.",
+     "level": "A2"
+    },
+    {
+     "en": "Good idea. Don't drive after taking one.",
+     "level": "A2"
+    }
+   ]
+  },
+  {
+   "scenario": "A small cut",
+   "context": "A customer has a minor injury.",
+   "speakerA": [
+    {
+     "en": "I cut my finger in the kitchen.",
+     "level": "A2"
+    },
+    {
+     "en": "Do I need a bandage?",
+     "level": "A2"
+    },
+    {
+     "en": "Should I put some cream on it?",
+     "level": "A2"
+    }
+   ],
+   "speakerB": [
+    {
+     "en": "Let me see. It isn't deep. I'll clean it first.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, and change it every day.",
+     "level": "A2"
+    },
+    {
+     "en": "Yes, this cream will help. Keep it clean and dry.",
+     "level": "A2"
+    }
+   ]
+  }
+ ]
+}
