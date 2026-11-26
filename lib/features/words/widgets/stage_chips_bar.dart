@@ -175,8 +175,10 @@ class StageChipsBar extends ConsumerWidget {
       onSelect: (lv) {
         reset();
         ref.read(wordsFilterProvider.notifier).setLevels(
-            lv == null || lv == 'A1' || lv == 'A2' ? <String>{} : {lv});
-        if (lv == 'A1' || lv == 'A2') {
+            lv == null || lv == 'A1' || lv == 'A2' || lv == 'B1'
+                ? <String>{}
+                : {lv});
+        if (lv == 'A1' || lv == 'A2' || lv == 'B1') {
           ref.read(primaryLevelProvider.notifier).state = lv!;
           ref.read(wordsStageProvider.notifier).state = kStagePrimary;
         } else {

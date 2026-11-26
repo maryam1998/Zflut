@@ -15,7 +15,7 @@ const String kPreschoolChipLabel = 'Preschool'; // A1
 
 final wordsStageProvider = StateProvider<String?>((ref) => null);
 
-/// سطحِ انتخاب‌شده‌ی مرحله‌ی Primary در تبِ لغات: 'A1' یا 'A2'
+/// سطحِ انتخاب‌شده‌ی مرحله‌ی Primary در تبِ لغات: 'A1'، 'A2' یا 'B1'
 final primaryLevelProvider = StateProvider<String>((ref) => 'A1');
 
 /// موضوعِ بازِ مرحله‌ی Primary (null = شبکه‌ی موضوع‌ها)
@@ -74,11 +74,20 @@ final primaryA1TopicsProvider = FutureProvider<List<PrimaryTopic>>(
 final primaryA2TopicsProvider = FutureProvider<List<PrimaryTopic>>(
     (ref) => _loadPrimaryTopics('assets/data/primary_a2.json'));
 
-/// موضوع‌های سطحِ انتخاب‌شده (A1 یا A2)
+/// موضوع‌های Lower Secondary ▸ B1 از `assets/data/primary_b1.json` (لغاتِ جدید: ۹۳۰۰۰۱ به بالا).
+final primaryB1TopicsProvider = FutureProvider<List<PrimaryTopic>>(
+    (ref) => _loadPrimaryTopics('assets/data/primary_b1.json'));
+
+/// موضوع‌های سطحِ انتخاب‌شده (A1، A2 یا B1)
 final primaryTopicsProvider = Provider<AsyncValue<List<PrimaryTopic>>>((ref) {
-  return ref.watch(ref.watch(primaryLevelProvider) == 'A2'
-      ? primaryA2TopicsProvider
-      : primaryA1TopicsProvider);
+  switch (ref.watch(primaryLevelProvider)) {
+    case 'B1':
+      return ref.watch(primaryB1TopicsProvider);
+    case 'A2':
+      return ref.watch(primaryA2TopicsProvider);
+    default:
+      return ref.watch(primaryA1TopicsProvider);
+  }
 });
 
 /// همه‌ی لغاتِ Primary (سطحِ انتخاب‌شده) بدونِ تکرار (لغتی که در دو موضوع هست یک‌بار می‌آید).
