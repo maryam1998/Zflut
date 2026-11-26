@@ -6705,6 +6705,504 @@
    ]
   },
   {
+   "key": "pronouns",
+   "fa": "ضمیرها",
+   "en": "Pronouns",
+   "group": "life",
+   "words": [
+    {
+     "id": 900401,
+     "level": "A1",
+     "pos": "other",
+     "en": "I",
+     "fa": ""
+    },
+    {
+     "id": 900402,
+     "level": "A1",
+     "pos": "other",
+     "en": "you",
+     "fa": ""
+    },
+    {
+     "id": 900403,
+     "level": "A1",
+     "pos": "other",
+     "en": "he",
+     "fa": ""
+    },
+    {
+     "id": 900404,
+     "level": "A1",
+     "pos": "other",
+     "en": "she",
+     "fa": ""
+    },
+    {
+     "id": 900405,
+     "level": "A1",
+     "pos": "other",
+     "en": "it",
+     "fa": ""
+    },
+    {
+     "id": 900406,
+     "level": "A1",
+     "pos": "other",
+     "en": "we",
+     "fa": ""
+    },
+    {
+     "id": 900407,
+     "level": "A1",
+     "pos": "other",
+     "en": "they",
+     "fa": ""
+    },
+    {
+     "id": 900408,
+     "level": "A1",
+     "pos": "other",
+     "en": "me",
+     "fa": ""
+    },
+    {
+     "id": 900409,
+     "level": "A1",
+     "pos": "other",
+     "en": "him",
+     "fa": ""
+    },
+    {
+     "id": 900410,
+     "level": "A1",
+     "pos": "other",
+     "en": "her",
+     "fa": ""
+    },
+    {
+     "id": 900411,
+     "level": "A1",
+     "pos": "other",
+     "en": "us",
+     "fa": ""
+    },
+    {
+     "id": 900412,
+     "level": "A1",
+     "pos": "other",
+     "en": "them",
+     "fa": ""
+    },
+    {
+     "id": 900417,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "my",
+     "fa": ""
+    },
+    {
+     "id": 900418,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "your",
+     "fa": ""
+    },
+    {
+     "id": 900419,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "his",
+     "fa": ""
+    },
+    {
+     "id": 900422,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "its",
+     "fa": ""
+    },
+    {
+     "id": 900420,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "our",
+     "fa": ""
+    },
+    {
+     "id": 900421,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "their",
+     "fa": ""
+    },
+    {
+     "id": 931001,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "mine",
+     "fa": ""
+    },
+    {
+     "id": 931002,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "yours",
+     "fa": ""
+    },
+    {
+     "id": 931003,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "hers",
+     "fa": ""
+    },
+    {
+     "id": 931004,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "ours",
+     "fa": ""
+    },
+    {
+     "id": 931005,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "theirs",
+     "fa": ""
+    },
+    {
+     "id": 931006,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "myself",
+     "fa": ""
+    },
+    {
+     "id": 931007,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "yourself",
+     "fa": ""
+    },
+    {
+     "id": 931008,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "himself",
+     "fa": ""
+    },
+    {
+     "id": 931009,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "herself",
+     "fa": ""
+    },
+    {
+     "id": 931010,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "itself",
+     "fa": ""
+    },
+    {
+     "id": 931011,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "ourselves",
+     "fa": ""
+    },
+    {
+     "id": 931012,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "yourselves",
+     "fa": ""
+    },
+    {
+     "id": 931013,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "themselves",
+     "fa": ""
+    },
+    {
+     "id": 900413,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "this",
+     "fa": ""
+    },
+    {
+     "id": 900414,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "that",
+     "fa": ""
+    },
+    {
+     "id": 900415,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "these",
+     "fa": ""
+    },
+    {
+     "id": 900416,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "those",
+     "fa": ""
+    },
+    {
+     "id": 931014,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "someone",
+     "fa": ""
+    },
+    {
+     "id": 931015,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "somebody",
+     "fa": ""
+    },
+    {
+     "id": 931016,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "something",
+     "fa": ""
+    },
+    {
+     "id": 931017,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "anyone",
+     "fa": ""
+    },
+    {
+     "id": 931018,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "anybody",
+     "fa": ""
+    },
+    {
+     "id": 931019,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "anything",
+     "fa": ""
+    },
+    {
+     "id": 931020,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "no one",
+     "fa": ""
+    },
+    {
+     "id": 931021,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "nobody",
+     "fa": ""
+    },
+    {
+     "id": 931022,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "nothing",
+     "fa": ""
+    },
+    {
+     "id": 931023,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "everyone",
+     "fa": ""
+    },
+    {
+     "id": 931024,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "everybody",
+     "fa": ""
+    },
+    {
+     "id": 931025,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "everything",
+     "fa": ""
+    },
+    {
+     "id": 931026,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "somewhere",
+     "fa": ""
+    },
+    {
+     "id": 931027,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "anywhere",
+     "fa": ""
+    },
+    {
+     "id": 931028,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "nowhere",
+     "fa": ""
+    },
+    {
+     "id": 931029,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "everywhere",
+     "fa": ""
+    },
+    {
+     "id": 103033,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "one",
+     "fa": ""
+    },
+    {
+     "id": 931030,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "another",
+     "fa": ""
+    },
+    {
+     "id": 931031,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "other",
+     "fa": ""
+    },
+    {
+     "id": 931032,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "others",
+     "fa": ""
+    },
+    {
+     "id": 931033,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "each",
+     "fa": ""
+    },
+    {
+     "id": 700441,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "both",
+     "fa": ""
+    },
+    {
+     "id": 931034,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "either",
+     "fa": ""
+    },
+    {
+     "id": 931035,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "neither",
+     "fa": ""
+    },
+    {
+     "id": 900721,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "all",
+     "fa": ""
+    },
+    {
+     "id": 900718,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "some",
+     "fa": ""
+    },
+    {
+     "id": 931036,
+     "level": "A1",
+     "pos": "pronoun",
+     "en": "any",
+     "fa": ""
+    },
+    {
+     "id": 931037,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "none",
+     "fa": ""
+    },
+    {
+     "id": 900429,
+     "level": "A1",
+     "pos": "other",
+     "en": "who",
+     "fa": ""
+    },
+    {
+     "id": 931038,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "whom",
+     "fa": ""
+    },
+    {
+     "id": 931039,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "whose",
+     "fa": ""
+    },
+    {
+     "id": 931040,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "which",
+     "fa": ""
+    },
+    {
+     "id": 900430,
+     "level": "A1",
+     "pos": "other",
+     "en": "what",
+     "fa": ""
+    },
+    {
+     "id": 931041,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "each other",
+     "fa": ""
+    },
+    {
+     "id": 931042,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "one another",
+     "fa": ""
+    }
+   ]
+  },
+  {
    "key": "describing",
    "fa": "توصیف چیزها",
    "en": "Describing Things",
