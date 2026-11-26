@@ -79,6 +79,8 @@ class PrimarySchoolView extends ConsumerWidget {
                     builder: (_) => ListeningPracticePage(level: level)),
               ),
             ),
+            // سؤال‌سازی و نوشتن فعلاً فقط برای A1/A2 فایل دارند (B1 بعداً اضافه می‌شود)
+            if (level != 'B1')
             _PracticeCard(
               icon: Icons.quiz_rounded,
               title: (ui == 'fa' || ui == 'ar')
@@ -89,6 +91,7 @@ class PrimarySchoolView extends ConsumerWidget {
                     builder: (_) => QuestionPracticePage(level: level)),
               ),
             ),
+            if (level != 'B1')
             _PracticeCard(
               icon: Icons.edit_note_rounded,
               title: (ui == 'fa' || ui == 'ar')

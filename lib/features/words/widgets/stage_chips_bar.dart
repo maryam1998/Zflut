@@ -242,7 +242,52 @@ class StageChipsBar extends ConsumerWidget {
       ],
     );
 
-    // ── گروهِ ۲: مقطعِ تحصیلی (رنگِ هر چیپ = رنگِ سطحِ معادلش A1…C1) ──
+    // ── گروهِ ۲: مقطعِ تحصیلی (رنگِ هر چیپ = رنگِ سطحِ معادلش) ──
+    // زیرِ تب‌های Preschool / Primary / Lower Secondary چیپِ Practice همان تب قرار دارد.
+    Widget stageColumn((String, String, IconData) st) {
+      final hasPractice = st.$1 == 'A1' || st.$1 == 'A2' || st.$1 == 'B1';
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _EduChip(
+            label: st.$2,
+            icon: st.$3,
+            color: _eduColor(st.$1),
+            active: eduSelected == st.$1 && !practice,
+            onTap: () {
+              reset();
+              ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
+              if (st.$1 == kStageUpper || st.$1 == kStageUniversity) {
+                ref.read(wordsStageProvider.notifier).state = st.$1;
+              } else {
+                ref.read(primaryLevelProvider.notifier).state = st.$1;
+                ref.read(wordsStageProvider.notifier).state = kStagePrimary;
+              }
+            },
+          ),
+          if (hasPractice) ...[
+            const SizedBox(height: 6),
+            _EduChip(
+              label: fa ? 'تمرین‌ها' : 'Practice',
+              icon: Icons.fitness_center_rounded,
+              color: levelColor(st.$1),
+              active: practice &&
+                  stage == kStagePrimary &&
+                  primaryLevel == st.$1,
+              onTap: () {
+                reset();
+                ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
+                ref.read(primaryLevelProvider.notifier).state = st.$1;
+                ref.read(wordsStageProvider.notifier).state = kStagePrimary;
+                ref.read(primaryPracticeOpenProvider.notifier).state = true;
+              },
+            ),
+          ],
+        ],
+      );
+    }
+
     final eduGroup = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,44 +295,12 @@ class StageChipsBar extends ConsumerWidget {
         heading(fa ? 'مقطع تحصیلی' : 'Education stage'),
         const SizedBox(height: 6),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final st in _eduStages) ...[
               if (st != _eduStages.first) const SizedBox(width: 7),
-              _EduChip(
-                label: st.$2,
-                icon: st.$3,
-                color: _eduColor(st.$1),
-                active: eduSelected == st.$1 && !practice,
-                onTap: () {
-                  reset();
-                  ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
-                  if (st.$1 == kStageUpper || st.$1 == kStageUniversity) {
-                    ref.read(wordsStageProvider.notifier).state = st.$1;
-                  } else {
-                    ref.read(primaryLevelProvider.notifier).state = st.$1;
-                    ref.read(wordsStageProvider.notifier).state = kStagePrimary;
-                  }
-                },
-              ),
-              if (st.$1 == 'A1' || st.$1 == 'A2') ...[
-                const SizedBox(width: 7),
-                _EduChip(
-                  label: fa ? 'تمرین‌ها' : 'Practice',
-                  icon: Icons.fitness_center_rounded,
-                  color: levelColor(st.$1),
-                  active: practice &&
-                      stage == kStagePrimary &&
-                      primaryLevel == st.$1,
-                  onTap: () {
-                    reset();
-                    ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
-                    ref.read(primaryLevelProvider.notifier).state = st.$1;
-                    ref.read(wordsStageProvider.notifier).state = kStagePrimary;
-                    ref.read(primaryPracticeOpenProvider.notifier).state = true;
-                  },
-                ),
-              ],
+              stageColumn(st),
             ],
           ],
         ),
@@ -296,7 +309,7 @@ class StageChipsBar extends ConsumerWidget {
 
     // دو گروه کنارِ هم (هر کدام عنوان + چیپ‌های زیرش)؛ با هم افقی اسکرول می‌شوند.
     return SizedBox(
-      height: 68,
+      height: 108,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
