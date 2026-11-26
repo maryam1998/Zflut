@@ -473,6 +473,272 @@
    ]
   },
   {
+   "key": "time",
+   "fa": "روز، ماه و زمان",
+   "en": "Days, Months & Time",
+   "words": [
+    {
+     "id": 900319,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "today",
+     "fa": "امروز"
+    },
+    {
+     "id": 900320,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "tomorrow",
+     "fa": "فردا"
+    },
+    {
+     "id": 900321,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "yesterday",
+     "fa": "دیروز"
+    },
+    {
+     "id": 900322,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "now",
+     "fa": "الان"
+    },
+    {
+     "id": 900323,
+     "level": "A1",
+     "pos": "noun",
+     "en": "day",
+     "fa": "روز"
+    },
+    {
+     "id": 900324,
+     "level": "A1",
+     "pos": "noun",
+     "en": "night",
+     "fa": "شب"
+    },
+    {
+     "id": 900325,
+     "level": "A1",
+     "pos": "noun",
+     "en": "morning",
+     "fa": "صبح"
+    },
+    {
+     "id": 900326,
+     "level": "A1",
+     "pos": "noun",
+     "en": "afternoon",
+     "fa": "بعدازظهر"
+    },
+    {
+     "id": 900327,
+     "level": "A1",
+     "pos": "noun",
+     "en": "evening",
+     "fa": "عصر"
+    },
+    {
+     "id": 900328,
+     "level": "A1",
+     "pos": "noun",
+     "en": "week",
+     "fa": "هفته"
+    },
+    {
+     "id": 900329,
+     "level": "A1",
+     "pos": "noun",
+     "en": "weekend",
+     "fa": "آخر هفته"
+    },
+    {
+     "id": 900330,
+     "level": "A1",
+     "pos": "noun",
+     "en": "month",
+     "fa": "ماه"
+    },
+    {
+     "id": 900331,
+     "level": "A1",
+     "pos": "noun",
+     "en": "year",
+     "fa": "سال"
+    },
+    {
+     "id": 900332,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hour",
+     "fa": "ساعت (۶۰ دقیقه)"
+    },
+    {
+     "id": 900333,
+     "level": "A1",
+     "pos": "noun",
+     "en": "minute",
+     "fa": "دقیقه"
+    },
+    {
+     "id": 900334,
+     "level": "A1",
+     "pos": "noun",
+     "en": "second",
+     "fa": "ثانیه"
+    },
+    {
+     "id": 900335,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "early",
+     "fa": "زود"
+    },
+    {
+     "id": 900336,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "late",
+     "fa": "دیر"
+    },
+    {
+     "id": 900337,
+     "level": "A1",
+     "pos": "noun",
+     "en": "Monday",
+     "fa": "دوشنبه"
+    },
+    {
+     "id": 900338,
+     "level": "A1",
+     "pos": "noun",
+     "en": "Tuesday",
+     "fa": "سه‌شنبه"
+    },
+    {
+     "id": 900339,
+     "level": "A1",
+     "pos": "noun",
+     "en": "Wednesday",
+     "fa": "چهارشنبه"
+    },
+    {
+     "id": 900340,
+     "level": "A1",
+     "pos": "noun",
+     "en": "Thursday",
+     "fa": "پنجشنبه"
+    },
+    {
+     "id": 900341,
+     "level": "A1",
+     "pos": "noun",
+     "en": "Friday",
+     "fa": "جمعه"
+    },
+    {
+     "id": 900342,
+     "level": "A1",
+     "pos": "noun",
+     "en": "Saturday",
+     "fa": "شنبه"
+    },
+    {
+     "id": 900343,
+     "level": "A1",
+     "pos": "noun",
+     "en": "Sunday",
+     "fa": "یکشنبه"
+    },
+    {
+     "id": 900344,
+     "level": "A1",
+     "pos": "noun",
+     "en": "January",
+     "fa": "ژانویه"
+    },
+    {
+     "id": 900345,
+     "level": "A1",
+     "pos": "noun",
+     "en": "February",
+     "fa": "فوریه"
+    },
+    {
+     "id": 900346,
+     "level": "A1",
+     "pos": "noun",
+     "en": "March",
+     "fa": "مارس"
+    },
+    {
+     "id": 900347,
+     "level": "A1",
+     "pos": "noun",
+     "en": "April",
+     "fa": "آوریل"
+    },
+    {
+     "id": 900348,
+     "level": "A1",
+     "pos": "noun",
+     "en": "May",
+     "fa": "مه"
+    },
+    {
+     "id": 900349,
+     "level": "A1",
+     "pos": "noun",
+     "en": "June",
+     "fa": "ژوئن"
+    },
+    {
+     "id": 900350,
+     "level": "A1",
+     "pos": "noun",
+     "en": "July",
+     "fa": "ژوئیه"
+    },
+    {
+     "id": 900351,
+     "level": "A1",
+     "pos": "noun",
+     "en": "August",
+     "fa": "اوت"
+    },
+    {
+     "id": 900352,
+     "level": "A1",
+     "pos": "noun",
+     "en": "September",
+     "fa": "سپتامبر"
+    },
+    {
+     "id": 900353,
+     "level": "A1",
+     "pos": "noun",
+     "en": "October",
+     "fa": "اکتبر"
+    },
+    {
+     "id": 900354,
+     "level": "A1",
+     "pos": "noun",
+     "en": "November",
+     "fa": "نوامبر"
+    },
+    {
+     "id": 900355,
+     "level": "A1",
+     "pos": "noun",
+     "en": "December",
+     "fa": "دسامبر"
+    }
+   ]
+  },
+  {
    "key": "colors",
    "fa": "رنگ‌ها",
    "en": "Colors",
@@ -1411,6 +1677,209 @@
    ]
   },
   {
+   "key": "clothes",
+   "fa": "لباس‌ها",
+   "en": "Clothes",
+   "words": [
+    {
+     "id": 900189,
+     "level": "A1",
+     "pos": "noun",
+     "en": "clothes",
+     "fa": "لباس‌ها"
+    },
+    {
+     "id": 900190,
+     "level": "A1",
+     "pos": "noun",
+     "en": "shirt",
+     "fa": "پیراهن"
+    },
+    {
+     "id": 900191,
+     "level": "A1",
+     "pos": "noun",
+     "en": "T-shirt",
+     "fa": "تی‌شرت"
+    },
+    {
+     "id": 900192,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pants",
+     "fa": "شلوار"
+    },
+    {
+     "id": 900193,
+     "level": "A1",
+     "pos": "noun",
+     "en": "jeans",
+     "fa": "شلوار جین"
+    },
+    {
+     "id": 900194,
+     "level": "A1",
+     "pos": "noun",
+     "en": "shorts",
+     "fa": "شلوارک"
+    },
+    {
+     "id": 900195,
+     "level": "A1",
+     "pos": "noun",
+     "en": "skirt",
+     "fa": "دامن"
+    },
+    {
+     "id": 900196,
+     "level": "A1",
+     "pos": "noun",
+     "en": "dress",
+     "fa": "پیراهن زنانه"
+    },
+    {
+     "id": 900197,
+     "level": "A1",
+     "pos": "noun",
+     "en": "jacket",
+     "fa": "کاپشن"
+    },
+    {
+     "id": 900198,
+     "level": "A1",
+     "pos": "noun",
+     "en": "coat",
+     "fa": "پالتو"
+    },
+    {
+     "id": 900199,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sweater",
+     "fa": "پلیور"
+    },
+    {
+     "id": 900200,
+     "level": "A1",
+     "pos": "noun",
+     "en": "socks",
+     "fa": "جوراب"
+    },
+    {
+     "id": 900201,
+     "level": "A1",
+     "pos": "noun",
+     "en": "shoes",
+     "fa": "کفش"
+    },
+    {
+     "id": 900202,
+     "level": "A1",
+     "pos": "noun",
+     "en": "boots",
+     "fa": "چکمه"
+    },
+    {
+     "id": 900203,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sandals",
+     "fa": "صندل"
+    },
+    {
+     "id": 102073,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hat",
+     "fa": "کلاه"
+    },
+    {
+     "id": 900204,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cap",
+     "fa": "کلاه لبه‌دار"
+    },
+    {
+     "id": 900205,
+     "level": "A1",
+     "pos": "noun",
+     "en": "scarf",
+     "fa": "شال‌گردن"
+    },
+    {
+     "id": 900206,
+     "level": "A1",
+     "pos": "noun",
+     "en": "gloves",
+     "fa": "دستکش"
+    },
+    {
+     "id": 900207,
+     "level": "A1",
+     "pos": "noun",
+     "en": "belt",
+     "fa": "کمربند"
+    },
+    {
+     "id": 900208,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pajamas",
+     "fa": "پیژامه"
+    },
+    {
+     "id": 900209,
+     "level": "A1",
+     "pos": "noun",
+     "en": "uniform",
+     "fa": "لباس فرم"
+    },
+    {
+     "id": 900210,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pocket",
+     "fa": "جیب"
+    },
+    {
+     "id": 900211,
+     "level": "A1",
+     "pos": "noun",
+     "en": "button",
+     "fa": "دکمه"
+    },
+    {
+     "id": 900212,
+     "level": "A1",
+     "pos": "noun",
+     "en": "glasses",
+     "fa": "عینک"
+    },
+    {
+     "id": 900213,
+     "level": "A1",
+     "pos": "verb",
+     "en": "wear",
+     "fa": "پوشیدن"
+    },
+    {
+     "id": 900214,
+     "level": "A1",
+     "pos": "verb",
+     "en": "put on",
+     "fa": "پوشیدن (تن کردن)"
+    },
+    {
+     "id": 900215,
+     "level": "A1",
+     "pos": "verb",
+     "en": "take off",
+     "fa": "درآوردن (لباس)"
+    }
+   ]
+  },
+  {
    "key": "family",
    "fa": "خانواده",
    "en": "Family",
@@ -1603,6 +2072,251 @@
      "pos": "noun",
      "en": "friend",
      "fa": "دوست"
+    }
+   ]
+  },
+  {
+   "key": "home",
+   "fa": "خانه و اتاق‌ها",
+   "en": "Home & Rooms",
+   "words": [
+    {
+     "id": 900216,
+     "level": "A1",
+     "pos": "noun",
+     "en": "house",
+     "fa": "خانه"
+    },
+    {
+     "id": 900217,
+     "level": "A1",
+     "pos": "noun",
+     "en": "home",
+     "fa": "خانه (محل زندگی)"
+    },
+    {
+     "id": 900218,
+     "level": "A1",
+     "pos": "noun",
+     "en": "apartment",
+     "fa": "آپارتمان"
+    },
+    {
+     "id": 900219,
+     "level": "A1",
+     "pos": "noun",
+     "en": "room",
+     "fa": "اتاق"
+    },
+    {
+     "id": 900220,
+     "level": "A1",
+     "pos": "noun",
+     "en": "living room",
+     "fa": "اتاق نشیمن"
+    },
+    {
+     "id": 900221,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bedroom",
+     "fa": "اتاق خواب"
+    },
+    {
+     "id": 900222,
+     "level": "A1",
+     "pos": "noun",
+     "en": "kitchen",
+     "fa": "آشپزخانه"
+    },
+    {
+     "id": 900223,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bathroom",
+     "fa": "حمام"
+    },
+    {
+     "id": 900224,
+     "level": "A1",
+     "pos": "noun",
+     "en": "toilet",
+     "fa": "توالت"
+    },
+    {
+     "id": 900225,
+     "level": "A1",
+     "pos": "noun",
+     "en": "garden",
+     "fa": "باغچه"
+    },
+    {
+     "id": 900226,
+     "level": "A1",
+     "pos": "noun",
+     "en": "garage",
+     "fa": "پارکینگ"
+    },
+    {
+     "id": 900227,
+     "level": "A1",
+     "pos": "noun",
+     "en": "roof",
+     "fa": "سقف (بام)"
+    },
+    {
+     "id": 900228,
+     "level": "A1",
+     "pos": "noun",
+     "en": "floor",
+     "fa": "کف"
+    },
+    {
+     "id": 900229,
+     "level": "A1",
+     "pos": "noun",
+     "en": "wall",
+     "fa": "دیوار"
+    },
+    {
+     "id": 900230,
+     "level": "A1",
+     "pos": "noun",
+     "en": "stairs",
+     "fa": "پله‌ها"
+    },
+    {
+     "id": 900231,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sofa",
+     "fa": "مبل"
+    },
+    {
+     "id": 900232,
+     "level": "A1",
+     "pos": "noun",
+     "en": "TV",
+     "fa": "تلویزیون"
+    },
+    {
+     "id": 900233,
+     "level": "A1",
+     "pos": "noun",
+     "en": "fridge",
+     "fa": "یخچال"
+    },
+    {
+     "id": 900234,
+     "level": "A1",
+     "pos": "noun",
+     "en": "stove",
+     "fa": "اجاق"
+    },
+    {
+     "id": 900235,
+     "level": "A1",
+     "pos": "noun",
+     "en": "oven",
+     "fa": "فر"
+    },
+    {
+     "id": 900236,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sink",
+     "fa": "سینک"
+    },
+    {
+     "id": 900237,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bathtub",
+     "fa": "وان"
+    },
+    {
+     "id": 900238,
+     "level": "A1",
+     "pos": "noun",
+     "en": "shower",
+     "fa": "دوش"
+    },
+    {
+     "id": 900239,
+     "level": "A1",
+     "pos": "noun",
+     "en": "mirror",
+     "fa": "آینه"
+    },
+    {
+     "id": 900240,
+     "level": "A1",
+     "pos": "noun",
+     "en": "carpet",
+     "fa": "فرش"
+    },
+    {
+     "id": 900241,
+     "level": "A1",
+     "pos": "noun",
+     "en": "curtain",
+     "fa": "پرده"
+    },
+    {
+     "id": 900242,
+     "level": "A1",
+     "pos": "noun",
+     "en": "shelf",
+     "fa": "قفسه"
+    },
+    {
+     "id": 900243,
+     "level": "A1",
+     "pos": "noun",
+     "en": "towel",
+     "fa": "حوله"
+    },
+    {
+     "id": 900244,
+     "level": "A1",
+     "pos": "noun",
+     "en": "soap",
+     "fa": "صابون"
+    },
+    {
+     "id": 900245,
+     "level": "A1",
+     "pos": "noun",
+     "en": "toothbrush",
+     "fa": "مسواک"
+    },
+    {
+     "id": 900246,
+     "level": "A1",
+     "pos": "noun",
+     "en": "blanket",
+     "fa": "پتو"
+    },
+    {
+     "id": 900247,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pillow",
+     "fa": "بالش"
+    },
+    {
+     "id": 900248,
+     "level": "A1",
+     "pos": "noun",
+     "en": "light",
+     "fa": "چراغ"
+    },
+    {
+     "id": 900249,
+     "level": "A1",
+     "pos": "noun",
+     "en": "fan",
+     "fa": "پنکه"
     }
    ]
   },
@@ -2261,6 +2975,573 @@
      "pos": "noun",
      "en": "shoe",
      "fa": "کفش"
+    }
+   ]
+  },
+  {
+   "key": "toys",
+   "fa": "اسباب‌بازی‌ها",
+   "en": "Toys & Play",
+   "words": [
+    {
+     "id": 104559,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "toy",
+     "fa": "اسباب بازی"
+    },
+    {
+     "id": 900250,
+     "level": "A1",
+     "pos": "noun",
+     "en": "teddy bear",
+     "fa": "خرس عروسکی"
+    },
+    {
+     "id": 900076,
+     "level": "A1",
+     "pos": "noun",
+     "en": "doll",
+     "fa": ""
+    },
+    {
+     "id": 900251,
+     "level": "A1",
+     "pos": "noun",
+     "en": "car",
+     "fa": "ماشین"
+    },
+    {
+     "id": 900252,
+     "level": "A1",
+     "pos": "noun",
+     "en": "blocks",
+     "fa": "بلوک‌ها"
+    },
+    {
+     "id": 900253,
+     "level": "A1",
+     "pos": "noun",
+     "en": "puzzle",
+     "fa": "پازل"
+    },
+    {
+     "id": 900254,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bike",
+     "fa": "دوچرخه"
+    },
+    {
+     "id": 100376,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ball",
+     "fa": "توپ"
+    },
+    {
+     "id": 900077,
+     "level": "A1",
+     "pos": "noun",
+     "en": "kite",
+     "fa": ""
+    },
+    {
+     "id": 100378,
+     "level": "B2",
+     "pos": "noun",
+     "en": "balloon",
+     "fa": "بادکنک"
+    },
+    {
+     "id": 900255,
+     "level": "A1",
+     "pos": "noun",
+     "en": "robot",
+     "fa": "ربات"
+    },
+    {
+     "id": 900256,
+     "level": "A1",
+     "pos": "noun",
+     "en": "game",
+     "fa": "بازی"
+    },
+    {
+     "id": 900257,
+     "level": "A1",
+     "pos": "noun",
+     "en": "board game",
+     "fa": "بازی رومیزی"
+    },
+    {
+     "id": 900258,
+     "level": "A1",
+     "pos": "noun",
+     "en": "card",
+     "fa": "کارت (ورق)"
+    },
+    {
+     "id": 900259,
+     "level": "A1",
+     "pos": "noun",
+     "en": "swing",
+     "fa": "تاب"
+    },
+    {
+     "id": 900260,
+     "level": "A1",
+     "pos": "noun",
+     "en": "slide",
+     "fa": "سرسره"
+    },
+    {
+     "id": 900261,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sandbox",
+     "fa": "جعبه شن"
+    },
+    {
+     "id": 900262,
+     "level": "A1",
+     "pos": "noun",
+     "en": "playground",
+     "fa": "زمین بازی"
+    },
+    {
+     "id": 900263,
+     "level": "A1",
+     "pos": "noun",
+     "en": "drum",
+     "fa": "طبل"
+    },
+    {
+     "id": 900264,
+     "level": "A1",
+     "pos": "noun",
+     "en": "crayon",
+     "fa": "مداد شمعی"
+    },
+    {
+     "id": 900265,
+     "level": "A1",
+     "pos": "noun",
+     "en": "scooter",
+     "fa": "اسکوتر"
+    },
+    {
+     "id": 900266,
+     "level": "A1",
+     "pos": "noun",
+     "en": "skateboard",
+     "fa": "اسکیت‌برد"
+    },
+    {
+     "id": 900267,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bubble",
+     "fa": "حباب"
+    }
+   ]
+  },
+  {
+   "key": "transport",
+   "fa": "وسیله‌های نقلیه",
+   "en": "Vehicles",
+   "words": [
+    {
+     "id": 900251,
+     "level": "A1",
+     "pos": "noun",
+     "en": "car",
+     "fa": "ماشین"
+    },
+    {
+     "id": 900268,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bus",
+     "fa": "اتوبوس"
+    },
+    {
+     "id": 900254,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bike",
+     "fa": "دوچرخه"
+    },
+    {
+     "id": 900269,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bicycle",
+     "fa": "دوچرخه"
+    },
+    {
+     "id": 900270,
+     "level": "A1",
+     "pos": "noun",
+     "en": "train",
+     "fa": "قطار"
+    },
+    {
+     "id": 900271,
+     "level": "A1",
+     "pos": "noun",
+     "en": "plane",
+     "fa": "هواپیما"
+    },
+    {
+     "id": 900272,
+     "level": "A1",
+     "pos": "noun",
+     "en": "boat",
+     "fa": "قایق"
+    },
+    {
+     "id": 900273,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ship",
+     "fa": "کشتی"
+    },
+    {
+     "id": 900274,
+     "level": "A1",
+     "pos": "noun",
+     "en": "taxi",
+     "fa": "تاکسی"
+    },
+    {
+     "id": 900275,
+     "level": "A1",
+     "pos": "noun",
+     "en": "truck",
+     "fa": "کامیون"
+    },
+    {
+     "id": 900276,
+     "level": "A1",
+     "pos": "noun",
+     "en": "motorcycle",
+     "fa": "موتورسیکلت"
+    },
+    {
+     "id": 900277,
+     "level": "A1",
+     "pos": "noun",
+     "en": "helicopter",
+     "fa": "هلیکوپتر"
+    },
+    {
+     "id": 900278,
+     "level": "A1",
+     "pos": "noun",
+     "en": "subway",
+     "fa": "مترو"
+    },
+    {
+     "id": 900279,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ambulance",
+     "fa": "آمبولانس"
+    },
+    {
+     "id": 900280,
+     "level": "A1",
+     "pos": "noun",
+     "en": "fire truck",
+     "fa": "ماشین آتش‌نشانی"
+    },
+    {
+     "id": 900281,
+     "level": "A1",
+     "pos": "noun",
+     "en": "police car",
+     "fa": "ماشین پلیس"
+    },
+    {
+     "id": 900282,
+     "level": "A1",
+     "pos": "noun",
+     "en": "tractor",
+     "fa": "تراکتور"
+    },
+    {
+     "id": 900283,
+     "level": "A1",
+     "pos": "noun",
+     "en": "rocket",
+     "fa": "موشک"
+    },
+    {
+     "id": 900284,
+     "level": "A1",
+     "pos": "noun",
+     "en": "road",
+     "fa": "جاده"
+    },
+    {
+     "id": 900285,
+     "level": "A1",
+     "pos": "noun",
+     "en": "street",
+     "fa": "خیابان"
+    },
+    {
+     "id": 900286,
+     "level": "A1",
+     "pos": "noun",
+     "en": "station",
+     "fa": "ایستگاه"
+    },
+    {
+     "id": 900287,
+     "level": "A1",
+     "pos": "noun",
+     "en": "airport",
+     "fa": "فرودگاه"
+    },
+    {
+     "id": 900288,
+     "level": "A1",
+     "pos": "noun",
+     "en": "driver",
+     "fa": "راننده"
+    },
+    {
+     "id": 900289,
+     "level": "A1",
+     "pos": "noun",
+     "en": "wheel",
+     "fa": "چرخ"
+    },
+    {
+     "id": 900290,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ticket",
+     "fa": "بلیت"
+    }
+   ]
+  },
+  {
+   "key": "weather",
+   "fa": "آب‌وهوا و فصل‌ها",
+   "en": "Weather & Seasons",
+   "words": [
+    {
+     "id": 900291,
+     "level": "A1",
+     "pos": "noun",
+     "en": "weather",
+     "fa": "آب‌وهوا"
+    },
+    {
+     "id": 900292,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "sunny",
+     "fa": "آفتابی"
+    },
+    {
+     "id": 900293,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "cloudy",
+     "fa": "ابری"
+    },
+    {
+     "id": 900294,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "rainy",
+     "fa": "بارانی"
+    },
+    {
+     "id": 900295,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "windy",
+     "fa": "بادی"
+    },
+    {
+     "id": 900296,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "snowy",
+     "fa": "برفی"
+    },
+    {
+     "id": 900297,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "foggy",
+     "fa": "مه‌آلود"
+    },
+    {
+     "id": 900298,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "stormy",
+     "fa": "طوفانی"
+    },
+    {
+     "id": 900299,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sun",
+     "fa": "خورشید"
+    },
+    {
+     "id": 900300,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cloud",
+     "fa": "ابر"
+    },
+    {
+     "id": 900301,
+     "level": "A1",
+     "pos": "noun",
+     "en": "rain",
+     "fa": "باران"
+    },
+    {
+     "id": 900302,
+     "level": "A1",
+     "pos": "noun",
+     "en": "snow",
+     "fa": "برف"
+    },
+    {
+     "id": 900303,
+     "level": "A1",
+     "pos": "noun",
+     "en": "wind",
+     "fa": "باد"
+    },
+    {
+     "id": 900304,
+     "level": "A1",
+     "pos": "noun",
+     "en": "storm",
+     "fa": "طوفان"
+    },
+    {
+     "id": 900305,
+     "level": "A1",
+     "pos": "noun",
+     "en": "thunder",
+     "fa": "رعد"
+    },
+    {
+     "id": 900306,
+     "level": "A1",
+     "pos": "noun",
+     "en": "lightning",
+     "fa": "برق (آسمان)"
+    },
+    {
+     "id": 900307,
+     "level": "A1",
+     "pos": "noun",
+     "en": "rainbow",
+     "fa": "رنگین‌کمان"
+    },
+    {
+     "id": 900308,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ice",
+     "fa": "یخ"
+    },
+    {
+     "id": 900309,
+     "level": "A1",
+     "pos": "noun",
+     "en": "fog",
+     "fa": "مه"
+    },
+    {
+     "id": 102166,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "hot",
+     "fa": "گرم"
+    },
+    {
+     "id": 900310,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "warm",
+     "fa": "ولرم، گرم"
+    },
+    {
+     "id": 900311,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "cool",
+     "fa": "خنک"
+    },
+    {
+     "id": 100783,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "cold",
+     "fa": "سرد"
+    },
+    {
+     "id": 900312,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "wet",
+     "fa": "خیس"
+    },
+    {
+     "id": 900313,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "dry",
+     "fa": "خشک"
+    },
+    {
+     "id": 900314,
+     "level": "A1",
+     "pos": "noun",
+     "en": "season",
+     "fa": "فصل"
+    },
+    {
+     "id": 900315,
+     "level": "A1",
+     "pos": "noun",
+     "en": "spring",
+     "fa": "بهار"
+    },
+    {
+     "id": 900316,
+     "level": "A1",
+     "pos": "noun",
+     "en": "summer",
+     "fa": "تابستان"
+    },
+    {
+     "id": 900317,
+     "level": "A1",
+     "pos": "noun",
+     "en": "autumn",
+     "fa": "پاییز"
+    },
+    {
+     "id": 900318,
+     "level": "A1",
+     "pos": "noun",
+     "en": "winter",
+     "fa": "زمستان"
     }
    ]
   },
@@ -3045,6 +4326,727 @@
      "pos": "verb",
      "en": "hide",
      "fa": "قایم شدن"
+    }
+   ]
+  },
+  {
+   "key": "opposites",
+   "fa": "ضدها",
+   "en": "Opposites",
+   "words": [
+    {
+     "id": 900356,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "big",
+     "fa": "بزرگ"
+    },
+    {
+     "id": 900357,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "small",
+     "fa": "کوچک"
+    },
+    {
+     "id": 900358,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "long",
+     "fa": "بلند (طولانی)"
+    },
+    {
+     "id": 900359,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "short",
+     "fa": "کوتاه"
+    },
+    {
+     "id": 900360,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "tall",
+     "fa": "قدبلند"
+    },
+    {
+     "id": 900361,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "fast",
+     "fa": "سریع"
+    },
+    {
+     "id": 900362,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "slow",
+     "fa": "آهسته"
+    },
+    {
+     "id": 900363,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "up",
+     "fa": "بالا"
+    },
+    {
+     "id": 900364,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "down",
+     "fa": "پایین"
+    },
+    {
+     "id": 900365,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "old",
+     "fa": "پیر، قدیمی"
+    },
+    {
+     "id": 900366,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "new",
+     "fa": "جدید"
+    },
+    {
+     "id": 900367,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "young",
+     "fa": "جوان"
+    },
+    {
+     "id": 900368,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "clean",
+     "fa": "تمیز"
+    },
+    {
+     "id": 900369,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "dirty",
+     "fa": "کثیف"
+    },
+    {
+     "id": 900370,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "full",
+     "fa": "پر"
+    },
+    {
+     "id": 900371,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "empty",
+     "fa": "خالی"
+    },
+    {
+     "id": 900372,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "heavy",
+     "fa": "سنگین"
+    },
+    {
+     "id": 900373,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "light (not heavy)",
+     "fa": "سبک"
+    },
+    {
+     "id": 900374,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "hard",
+     "fa": "سفت"
+    },
+    {
+     "id": 900375,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "soft",
+     "fa": "نرم"
+    },
+    {
+     "id": 900376,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "good",
+     "fa": "خوب"
+    },
+    {
+     "id": 900377,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "bad",
+     "fa": "بد"
+    },
+    {
+     "id": 900378,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "easy",
+     "fa": "آسان"
+    },
+    {
+     "id": 900379,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "difficult",
+     "fa": "سخت"
+    },
+    {
+     "id": 102166,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "hot",
+     "fa": "گرم"
+    },
+    {
+     "id": 100783,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "cold",
+     "fa": "سرد"
+    },
+    {
+     "id": 900312,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "wet",
+     "fa": "خیس"
+    },
+    {
+     "id": 900313,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "dry",
+     "fa": "خشک"
+    },
+    {
+     "id": 103039,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "open",
+     "fa": "باز"
+    },
+    {
+     "id": 100759,
+     "level": "A1",
+     "pos": "verb",
+     "en": "close",
+     "fa": "بستن"
+    },
+    {
+     "id": 102062,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "happy",
+     "fa": "خوشحال"
+    },
+    {
+     "id": 103823,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "sad",
+     "fa": "غمگین"
+    }
+   ]
+  },
+  {
+   "key": "position",
+   "fa": "جای چیزها",
+   "en": "Where Is It?",
+   "words": [
+    {
+     "id": 900380,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "in",
+     "fa": "در"
+    },
+    {
+     "id": 900381,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "on",
+     "fa": "روی"
+    },
+    {
+     "id": 900382,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "under",
+     "fa": "زیر"
+    },
+    {
+     "id": 900383,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "next to",
+     "fa": "کنارِ"
+    },
+    {
+     "id": 900384,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "behind",
+     "fa": "پشتِ"
+    },
+    {
+     "id": 900385,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "in front of",
+     "fa": "جلوی"
+    },
+    {
+     "id": 900386,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "between",
+     "fa": "بین"
+    },
+    {
+     "id": 900387,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "above",
+     "fa": "بالای"
+    },
+    {
+     "id": 900388,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "below",
+     "fa": "پایینِ"
+    },
+    {
+     "id": 900389,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "near",
+     "fa": "نزدیکِ"
+    },
+    {
+     "id": 900390,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "far",
+     "fa": "دور"
+    },
+    {
+     "id": 900391,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "inside",
+     "fa": "داخل"
+    },
+    {
+     "id": 900392,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "outside",
+     "fa": "بیرون"
+    },
+    {
+     "id": 900393,
+     "level": "A1",
+     "pos": "noun",
+     "en": "left",
+     "fa": "چپ"
+    },
+    {
+     "id": 900394,
+     "level": "A1",
+     "pos": "noun",
+     "en": "right",
+     "fa": "راست"
+    },
+    {
+     "id": 900395,
+     "level": "A1",
+     "pos": "noun",
+     "en": "top",
+     "fa": "بالا (سر)"
+    },
+    {
+     "id": 900396,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bottom",
+     "fa": "ته (پایین)"
+    },
+    {
+     "id": 900397,
+     "level": "A1",
+     "pos": "noun",
+     "en": "middle",
+     "fa": "وسط"
+    },
+    {
+     "id": 900398,
+     "level": "A1",
+     "pos": "noun",
+     "en": "front",
+     "fa": "جلو"
+    },
+    {
+     "id": 100361,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "back",
+     "fa": "بازگشت"
+    },
+    {
+     "id": 900399,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "here",
+     "fa": "اینجا"
+    },
+    {
+     "id": 900400,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "there",
+     "fa": "آنجا"
+    },
+    {
+     "id": 900363,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "up",
+     "fa": "بالا"
+    },
+    {
+     "id": 900364,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "down",
+     "fa": "پایین"
+    }
+   ]
+  },
+  {
+   "key": "pronouns",
+   "fa": "کلمه‌های کوچک و ضمیرها",
+   "en": "Small Words & Pronouns",
+   "words": [
+    {
+     "id": 900401,
+     "level": "A1",
+     "pos": "other",
+     "en": "I",
+     "fa": "من"
+    },
+    {
+     "id": 900402,
+     "level": "A1",
+     "pos": "other",
+     "en": "you",
+     "fa": "تو، شما"
+    },
+    {
+     "id": 900403,
+     "level": "A1",
+     "pos": "other",
+     "en": "he",
+     "fa": "او (مرد)"
+    },
+    {
+     "id": 900404,
+     "level": "A1",
+     "pos": "other",
+     "en": "she",
+     "fa": "او (زن)"
+    },
+    {
+     "id": 900405,
+     "level": "A1",
+     "pos": "other",
+     "en": "it",
+     "fa": "آن (چیز)"
+    },
+    {
+     "id": 900406,
+     "level": "A1",
+     "pos": "other",
+     "en": "we",
+     "fa": "ما"
+    },
+    {
+     "id": 900407,
+     "level": "A1",
+     "pos": "other",
+     "en": "they",
+     "fa": "آن‌ها"
+    },
+    {
+     "id": 900408,
+     "level": "A1",
+     "pos": "other",
+     "en": "me",
+     "fa": "مرا، به من"
+    },
+    {
+     "id": 900409,
+     "level": "A1",
+     "pos": "other",
+     "en": "him",
+     "fa": "او را (مرد)"
+    },
+    {
+     "id": 900410,
+     "level": "A1",
+     "pos": "other",
+     "en": "her",
+     "fa": "او را / مالِ او (زن)"
+    },
+    {
+     "id": 900411,
+     "level": "A1",
+     "pos": "other",
+     "en": "us",
+     "fa": "ما را"
+    },
+    {
+     "id": 900412,
+     "level": "A1",
+     "pos": "other",
+     "en": "them",
+     "fa": "آن‌ها را"
+    },
+    {
+     "id": 900413,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "this",
+     "fa": "این"
+    },
+    {
+     "id": 900414,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "that",
+     "fa": "آن"
+    },
+    {
+     "id": 900415,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "these",
+     "fa": "این‌ها"
+    },
+    {
+     "id": 900416,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "those",
+     "fa": "آن‌ها"
+    },
+    {
+     "id": 900417,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "my",
+     "fa": "مالِ من"
+    },
+    {
+     "id": 900418,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "your",
+     "fa": "مالِ تو"
+    },
+    {
+     "id": 900419,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "his",
+     "fa": "مالِ او (مرد)"
+    },
+    {
+     "id": 900420,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "our",
+     "fa": "مالِ ما"
+    },
+    {
+     "id": 900421,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "their",
+     "fa": "مالِ آن‌ها"
+    },
+    {
+     "id": 900422,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "its",
+     "fa": "مالِ آن"
+    },
+    {
+     "id": 900399,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "here",
+     "fa": "اینجا"
+    },
+    {
+     "id": 900400,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "there",
+     "fa": "آنجا"
+    },
+    {
+     "id": 900423,
+     "level": "A1",
+     "pos": "other",
+     "en": "and",
+     "fa": "و"
+    },
+    {
+     "id": 900424,
+     "level": "A1",
+     "pos": "other",
+     "en": "but",
+     "fa": "اما"
+    },
+    {
+     "id": 900425,
+     "level": "A1",
+     "pos": "other",
+     "en": "or",
+     "fa": "یا"
+    },
+    {
+     "id": 900426,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "a",
+     "fa": "یک"
+    },
+    {
+     "id": 900427,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "an",
+     "fa": "یک"
+    },
+    {
+     "id": 900428,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "the",
+     "fa": "(حرف تعریف)"
+    },
+    {
+     "id": 900429,
+     "level": "A1",
+     "pos": "other",
+     "en": "who",
+     "fa": "چه کسی"
+    },
+    {
+     "id": 900430,
+     "level": "A1",
+     "pos": "other",
+     "en": "what",
+     "fa": "چه چیزی"
+    },
+    {
+     "id": 900431,
+     "level": "A1",
+     "pos": "other",
+     "en": "where",
+     "fa": "کجا"
+    },
+    {
+     "id": 900432,
+     "level": "A1",
+     "pos": "other",
+     "en": "when",
+     "fa": "کِی"
+    },
+    {
+     "id": 900433,
+     "level": "A1",
+     "pos": "other",
+     "en": "why",
+     "fa": "چرا"
+    },
+    {
+     "id": 900434,
+     "level": "A1",
+     "pos": "other",
+     "en": "how",
+     "fa": "چطور"
+    },
+    {
+     "id": 900435,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "not",
+     "fa": "نه، نیست"
+    },
+    {
+     "id": 900436,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "very",
+     "fa": "خیلی"
+    },
+    {
+     "id": 900437,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "too",
+     "fa": "هم، بیش‌ازحد"
+    },
+    {
+     "id": 900438,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "with",
+     "fa": "با"
+    },
+    {
+     "id": 900439,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "of",
+     "fa": "از (مالِ)"
+    },
+    {
+     "id": 900440,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "to",
+     "fa": "به"
+    },
+    {
+     "id": 900441,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "for",
+     "fa": "برای"
+    },
+    {
+     "id": 900442,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "from",
+     "fa": "از"
     }
    ]
   }
