@@ -1,0 +1,594 @@
+{
+ "v": 1,
+ "level": "A1",
+ "sets": [
+  {
+   "key": "numbers",
+   "fa": "عدد و رنگ",
+   "en": "Numbers and Colors",
+   "tip": "عددها را آهسته گوش کن: thirteen و thirty شبیه‌اند. رنگ‌ها را با چیزها ببین: red apple، blue sky.",
+   "clips": [
+    {
+     "title": "My toys",
+     "titleFa": "اسباب‌بازی‌های من",
+     "text": "I have three toys. I have a red ball, a blue car and a yellow bear.",
+     "fa": "من سه اسباب‌بازی دارم. یک توپ قرمز، یک ماشین آبی و یک خرس زرد دارم.",
+     "questions": [
+      {
+       "en": "How many toys?",
+       "fa": "چند اسباب‌بازی؟",
+       "options": [
+        "Two",
+        "Three",
+        "Four"
+       ],
+       "answer": 1,
+       "why": "«three toys» یعنی سه تا."
+      },
+      {
+       "en": "What color is the car?",
+       "fa": "ماشین چه رنگی است؟",
+       "options": [
+        "Red",
+        "Yellow",
+        "Blue"
+       ],
+       "answer": 2,
+       "why": "«a blue car» یعنی ماشین آبی."
+      }
+     ]
+    },
+    {
+     "title": "At the park",
+     "titleFa": "در پارک",
+     "text": "I see five birds. Two birds are brown. Three birds are black.",
+     "fa": "من پنج پرنده می‌بینم. دو پرنده قهوه‌ای‌اند. سه پرنده سیاه‌اند.",
+     "questions": [
+      {
+       "en": "How many birds are there?",
+       "fa": "چند پرنده هست؟",
+       "options": [
+        "Five",
+        "Three",
+        "Two"
+       ],
+       "answer": 0,
+       "why": "«five birds» یعنی پنج پرنده."
+      },
+      {
+       "en": "What color are the three birds?",
+       "fa": "سه پرنده چه رنگی‌اند؟",
+       "options": [
+        "Brown",
+        "Black",
+        "White"
+       ],
+       "answer": 1,
+       "why": "«Three birds are black.»"
+      }
+     ]
+    },
+    {
+     "title": "Ten apples",
+     "titleFa": "ده سیب",
+     "text": "Look! Ten apples. Six apples are red. Four apples are green.",
+     "fa": "ببین! ده سیب. شش سیب قرمزند. چهار سیب سبزند.",
+     "questions": [
+      {
+       "en": "How many apples are green?",
+       "fa": "چند سیب سبز است؟",
+       "options": [
+        "Six",
+        "Ten",
+        "Four"
+       ],
+       "answer": 2,
+       "why": "«Four apples are green.»"
+      },
+      {
+       "en": "How many apples are there?",
+       "fa": "در مجموع چند سیب است؟",
+       "options": [
+        "Ten",
+        "Six",
+        "Four"
+       ],
+       "answer": 0,
+       "why": "ابتدا گفته: «Ten apples»."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "family",
+   "fa": "خانواده",
+   "en": "My Family",
+   "tip": "mom و mother هر دو یعنی مادر. brother برادر و sister خواهر است.",
+   "clips": [
+    {
+     "title": "My family",
+     "titleFa": "خانواده‌ی من",
+     "text": "Hello. My name is Sam. I am seven. I have a mom, a dad and a sister. My sister is Lily.",
+     "fa": "سلام. اسم من سم است. من هفت ساله‌ام. من مامان، بابا و یک خواهر دارم. خواهرم لیلی است.",
+     "questions": [
+      {
+       "en": "How old is Sam?",
+       "fa": "سم چند ساله است؟",
+       "options": [
+        "Six",
+        "Seven",
+        "Eight"
+       ],
+       "answer": 1,
+       "why": "«I am seven.»"
+      },
+      {
+       "en": "What is his sister's name?",
+       "fa": "اسم خواهرش چیست؟",
+       "options": [
+        "Mia",
+        "Lily",
+        "Anna"
+       ],
+       "answer": 1,
+       "why": "«My sister is Lily.»"
+      }
+     ]
+    },
+    {
+     "title": "My grandma",
+     "titleFa": "مادربزرگ من",
+     "text": "This is my grandma. She is old. She has a cat. I love my grandma.",
+     "fa": "این مادربزرگ من است. او پیر است. او یک گربه دارد. من مادربزرگم را دوست دارم.",
+     "questions": [
+      {
+       "en": "Who is old?",
+       "fa": "چه کسی پیر است؟",
+       "options": [
+        "My dad",
+        "My grandma",
+        "My sister"
+       ],
+       "answer": 1,
+       "why": "«She is old» درباره‌ی grandma است."
+      },
+      {
+       "en": "What does she have?",
+       "fa": "او چه چیزی دارد؟",
+       "options": [
+        "A dog",
+        "A bird",
+        "A cat"
+       ],
+       "answer": 2,
+       "why": "«She has a cat.»"
+      }
+     ]
+    },
+    {
+     "title": "Dad and me",
+     "titleFa": "بابا و من",
+     "text": "My dad is tall. I am short. We play football in the park every Sunday.",
+     "fa": "بابای من قدبلند است. من کوتاه‌ام. ما هر یکشنبه در پارک فوتبال بازی می‌کنیم.",
+     "questions": [
+      {
+       "en": "Who is tall?",
+       "fa": "چه کسی قدبلند است؟",
+       "options": [
+        "The dad",
+        "The child",
+        "The mom"
+       ],
+       "answer": 0,
+       "why": "«My dad is tall.»"
+      },
+      {
+       "en": "When do they play football?",
+       "fa": "کِی فوتبال بازی می‌کنند؟",
+       "options": [
+        "Every Monday",
+        "Every Sunday",
+        "Every Friday"
+       ],
+       "answer": 1,
+       "why": "«every Sunday» یعنی هر یکشنبه."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "animals",
+   "fa": "حیوان‌ها",
+   "en": "Animals",
+   "tip": "صدای حیوان‌ها: dog = woof، cat = meow، cow = moo، duck = quack.",
+   "clips": [
+    {
+     "title": "My dog",
+     "titleFa": "سگ من",
+     "text": "I have a dog. His name is Max. He is big and brown. He likes to run.",
+     "fa": "من یک سگ دارم. اسمش مکس است. او بزرگ و قهوه‌ای است. او دوست دارد بدود.",
+     "questions": [
+      {
+       "en": "What is the dog's name?",
+       "fa": "اسم سگ چیست؟",
+       "options": [
+        "Max",
+        "Sam",
+        "Ben"
+       ],
+       "answer": 0,
+       "why": "«His name is Max.»"
+      },
+      {
+       "en": "What does he like?",
+       "fa": "او چه چیزی را دوست دارد؟",
+       "options": [
+        "To sleep",
+        "To run",
+        "To eat"
+       ],
+       "answer": 1,
+       "why": "«He likes to run.»"
+      }
+     ]
+    },
+    {
+     "title": "At the zoo",
+     "titleFa": "در باغ‌وحش",
+     "text": "At the zoo I see a big elephant. I see a small monkey. The monkey can jump.",
+     "fa": "در باغ‌وحش یک فیل بزرگ می‌بینم. یک میمون کوچک می‌بینم. میمون می‌تواند بپرد.",
+     "questions": [
+      {
+       "en": "Which animal is big?",
+       "fa": "کدام حیوان بزرگ است؟",
+       "options": [
+        "The monkey",
+        "The elephant",
+        "The bird"
+       ],
+       "answer": 1,
+       "why": "«a big elephant»"
+      },
+      {
+       "en": "What can the monkey do?",
+       "fa": "میمون چه کاری می‌تواند بکند؟",
+       "options": [
+        "Jump",
+        "Swim",
+        "Fly"
+       ],
+       "answer": 0,
+       "why": "«The monkey can jump.»"
+      }
+     ]
+    },
+    {
+     "title": "On the farm",
+     "titleFa": "در مزرعه",
+     "text": "On the farm there are two cows, three sheep and four ducks. The ducks are in the pond.",
+     "fa": "در مزرعه دو گاو، سه گوسفند و چهار اردک هست. اردک‌ها در برکه‌اند.",
+     "questions": [
+      {
+       "en": "How many sheep are there?",
+       "fa": "چند گوسفند هست؟",
+       "options": [
+        "Two",
+        "Three",
+        "Four"
+       ],
+       "answer": 1,
+       "why": "«three sheep»"
+      },
+      {
+       "en": "Where are the ducks?",
+       "fa": "اردک‌ها کجا هستند؟",
+       "options": [
+        "In the pond",
+        "In the barn",
+        "In the house"
+       ],
+       "answer": 0,
+       "why": "«in the pond» یعنی در برکه."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "food",
+   "fa": "خوراکی‌ها",
+   "en": "Food and Drink",
+   "tip": "I like… یعنی «دوست دارم». I don't like… یعنی «دوست ندارم». hungry = گرسنه، thirsty = تشنه.",
+   "clips": [
+    {
+     "title": "Breakfast",
+     "titleFa": "صبحانه",
+     "text": "I eat bread and an egg for breakfast. I drink milk. I like breakfast.",
+     "fa": "من برای صبحانه نان و تخم‌مرغ می‌خورم. شیر می‌نوشم. من صبحانه را دوست دارم.",
+     "questions": [
+      {
+       "en": "What does he drink?",
+       "fa": "او چه می‌نوشد؟",
+       "options": [
+        "Juice",
+        "Milk",
+        "Tea"
+       ],
+       "answer": 1,
+       "why": "«I drink milk.»"
+      },
+      {
+       "en": "What does he eat?",
+       "fa": "او چه می‌خورد؟",
+       "options": [
+        "Bread and an egg",
+        "Rice",
+        "Pizza"
+       ],
+       "answer": 0,
+       "why": "«bread and an egg»"
+      }
+     ]
+    },
+    {
+     "title": "At lunch",
+     "titleFa": "سر ناهار",
+     "text": "I am hungry. I want a sandwich and an apple. I don't want a carrot.",
+     "fa": "من گرسنه‌ام. یک ساندویچ و یک سیب می‌خواهم. هویج نمی‌خواهم.",
+     "questions": [
+      {
+       "en": "What does she not want?",
+       "fa": "او چه چیزی نمی‌خواهد؟",
+       "options": [
+        "A sandwich",
+        "An apple",
+        "A carrot"
+       ],
+       "answer": 2,
+       "why": "«I don't want a carrot.»"
+      },
+      {
+       "en": "How does she feel?",
+       "fa": "او چه حسی دارد؟",
+       "options": [
+        "Hungry",
+        "Sleepy",
+        "Cold"
+       ],
+       "answer": 0,
+       "why": "«I am hungry.»"
+      }
+     ]
+    },
+    {
+     "title": "Ice cream",
+     "titleFa": "بستنی",
+     "text": "Mom, can I have an ice cream, please? It is hot today. I want a pink ice cream.",
+     "fa": "مامان، لطفاً می‌توانم بستنی بخورم؟ امروز هوا گرم است. من بستنی صورتی می‌خواهم.",
+     "questions": [
+      {
+       "en": "What color is the ice cream?",
+       "fa": "بستنی چه رنگی است؟",
+       "options": [
+        "Pink",
+        "Yellow",
+        "White"
+       ],
+       "answer": 0,
+       "why": "«a pink ice cream»"
+      },
+      {
+       "en": "How is the weather?",
+       "fa": "هوا چطور است؟",
+       "options": [
+        "Cold",
+        "Hot",
+        "Rainy"
+       ],
+       "answer": 1,
+       "why": "«It is hot today.»"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "school",
+   "fa": "در مدرسه",
+   "en": "At School",
+   "tip": "teacher = معلم، classroom = کلاس، bag = کیف. «Open your book» یعنی کتابت را باز کن.",
+   "clips": [
+    {
+     "title": "My school bag",
+     "titleFa": "کیف مدرسه‌ی من",
+     "text": "In my bag I have a book, two pencils and an eraser. My bag is green.",
+     "fa": "در کیفم یک کتاب، دو مداد و یک پاک‌کن دارم. کیفم سبز است.",
+     "questions": [
+      {
+       "en": "How many pencils?",
+       "fa": "چند مداد؟",
+       "options": [
+        "One",
+        "Two",
+        "Three"
+       ],
+       "answer": 1,
+       "why": "«two pencils»"
+      },
+      {
+       "en": "What color is the bag?",
+       "fa": "کیف چه رنگی است؟",
+       "options": [
+        "Green",
+        "Blue",
+        "Red"
+       ],
+       "answer": 0,
+       "why": "«My bag is green.»"
+      }
+     ]
+    },
+    {
+     "title": "The teacher says",
+     "titleFa": "معلم می‌گوید",
+     "text": "Good morning, children! Sit down, please. Open your books. Listen and read.",
+     "fa": "صبح بخیر بچه‌ها! لطفاً بنشینید. کتاب‌هایتان را باز کنید. گوش کنید و بخوانید.",
+     "questions": [
+      {
+       "en": "What do the children open?",
+       "fa": "بچه‌ها چه چیزی را باز می‌کنند؟",
+       "options": [
+        "The door",
+        "Their books",
+        "The window"
+       ],
+       "answer": 1,
+       "why": "«Open your books.»"
+      },
+      {
+       "en": "What does the teacher say first?",
+       "fa": "معلم اول چه می‌گوید؟",
+       "options": [
+        "Good morning",
+        "Goodbye",
+        "Thank you"
+       ],
+       "answer": 0,
+       "why": "«Good morning, children!»"
+      }
+     ]
+    },
+    {
+     "title": "Playtime",
+     "titleFa": "زنگ تفریح",
+     "text": "It is playtime. Ben plays with the ball. Mia plays on the swing. They are happy.",
+     "fa": "زنگ تفریح است. بن با توپ بازی می‌کند. میا روی تاب بازی می‌کند. آن‌ها خوشحال‌اند.",
+     "questions": [
+      {
+       "en": "Who plays on the swing?",
+       "fa": "چه کسی روی تاب بازی می‌کند؟",
+       "options": [
+        "Ben",
+        "Mia",
+        "The teacher"
+       ],
+       "answer": 1,
+       "why": "«Mia plays on the swing.»"
+      },
+      {
+       "en": "How are they?",
+       "fa": "آن‌ها چه حالی دارند؟",
+       "options": [
+        "Sad",
+        "Tired",
+        "Happy"
+       ],
+       "answer": 2,
+       "why": "«They are happy.»"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "weather",
+   "fa": "هوا و لباس",
+   "en": "Weather and Clothes",
+   "tip": "sunny = آفتابی، rainy = بارانی، snowy = برفی. در هوای سرد: coat، hat، gloves.",
+   "clips": [
+    {
+     "title": "A sunny day",
+     "titleFa": "یک روز آفتابی",
+     "text": "It is sunny today. It is hot. I wear a T-shirt and shorts. Let's go to the park!",
+     "fa": "امروز هوا آفتابی است. گرم است. من تی‌شرت و شلوارک می‌پوشم. بیا برویم پارک!",
+     "questions": [
+      {
+       "en": "How is the weather?",
+       "fa": "هوا چطور است؟",
+       "options": [
+        "Rainy",
+        "Sunny",
+        "Snowy"
+       ],
+       "answer": 1,
+       "why": "«It is sunny today.»"
+      },
+      {
+       "en": "What does he wear?",
+       "fa": "او چه می‌پوشد؟",
+       "options": [
+        "A coat",
+        "A T-shirt and shorts",
+        "Boots"
+       ],
+       "answer": 1,
+       "why": "«a T-shirt and shorts»"
+      }
+     ]
+    },
+    {
+     "title": "A rainy day",
+     "titleFa": "یک روز بارانی",
+     "text": "It is raining. I take my umbrella. I wear my boots. I jump in the water!",
+     "fa": "باران می‌بارد. چترم را برمی‌دارم. چکمه‌هایم را می‌پوشم. در آب می‌پرم!",
+     "questions": [
+      {
+       "en": "What does she take?",
+       "fa": "او چه چیزی برمی‌دارد؟",
+       "options": [
+        "A hat",
+        "An umbrella",
+        "A bag"
+       ],
+       "answer": 1,
+       "why": "«I take my umbrella.»"
+      },
+      {
+       "en": "What does she do in the water?",
+       "fa": "او در آب چه کار می‌کند؟",
+       "options": [
+        "Swims",
+        "Sleeps",
+        "Jumps"
+       ],
+       "answer": 2,
+       "why": "«I jump in the water!»"
+      }
+     ]
+    },
+    {
+     "title": "Winter",
+     "titleFa": "زمستان",
+     "text": "It is winter. It is cold and snowy. I wear a coat, a hat and gloves. I make a snowman.",
+     "fa": "زمستان است. هوا سرد و برفی است. من پالتو، کلاه و دستکش می‌پوشم. آدم‌برفی درست می‌کنم.",
+     "questions": [
+      {
+       "en": "What does he make?",
+       "fa": "او چه چیزی درست می‌کند؟",
+       "options": [
+        "A snowman",
+        "A cake",
+        "A kite"
+       ],
+       "answer": 0,
+       "why": "«I make a snowman.»"
+      },
+      {
+       "en": "Which one does he NOT wear?",
+       "fa": "او کدام را نمی‌پوشد؟",
+       "options": [
+        "A hat",
+        "Gloves",
+        "Sandals"
+       ],
+       "answer": 2,
+       "why": "پالتو، کلاه و دستکش گفته شد؛ صندل نه."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

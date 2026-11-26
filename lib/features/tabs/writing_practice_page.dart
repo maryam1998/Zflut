@@ -51,10 +51,10 @@ RegExp? _safeRx(String s) {
   }
 }
 
-Future<List<_WSet>> _loadWritingSets() async {
+Future<List<_WSet>> _loadWritingSets([String level = 'A2']) async {
   try {
     final raw =
-        await rootBundle.loadString('assets/data/primary_a2_writing.json');
+        await rootBundle.loadString('assets/data/primary_${level.toLowerCase()}_writing.json');
     final j = jsonDecode(raw) as Map<String, dynamic>;
     return [
       for (final s in (j['sets'] as List<dynamic>))
@@ -100,7 +100,9 @@ const _kGood = Color(0xFF2E9E7B);
 const _kBad = Color(0xFFD14B4B);
 
 class WritingPracticePage extends StatefulWidget {
-  const WritingPracticePage({super.key});
+  /// 'A1' (Preschool) یا 'A2' (Primary School)
+  final String level;
+  const WritingPracticePage({super.key, this.level = 'A2'});
 
   @override
   State<WritingPracticePage> createState() => _WritingPracticePageState();
@@ -122,7 +124,7 @@ class _WritingPracticePageState extends State<WritingPracticePage> {
   @override
   void initState() {
     super.initState();
-    _loadWritingSets().then((v) {
+    _loadWritingSets(widget.level).then((v) {
       if (mounted) setState(() => _sets = v);
     });
   }

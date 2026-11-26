@@ -44,10 +44,10 @@ class _LSet {
       clips.fold<int>(0, (a, c) => a + c.questions.length);
 }
 
-Future<List<_LSet>> _loadListeningSets() async {
+Future<List<_LSet>> _loadListeningSets([String level = 'A2']) async {
   try {
     final raw =
-        await rootBundle.loadString('assets/data/primary_a2_listening.json');
+        await rootBundle.loadString('assets/data/primary_${level.toLowerCase()}_listening.json');
     final j = jsonDecode(raw) as Map<String, dynamic>;
     return [
       for (final s in (j['sets'] as List<dynamic>))
@@ -87,7 +87,9 @@ const _kBad = Color(0xFFD14B4B);
 const _kSlowRate = 0.7;
 
 class ListeningPracticePage extends ConsumerStatefulWidget {
-  const ListeningPracticePage({super.key});
+  /// 'A1' (Preschool) یا 'A2' (Primary School)
+  final String level;
+  const ListeningPracticePage({super.key, this.level = 'A2'});
 
   @override
   ConsumerState<ListeningPracticePage> createState() =>
@@ -119,7 +121,7 @@ class _ListeningPracticePageState extends ConsumerState<ListeningPracticePage> {
     super.initState();
     _ctl = ref.read(speechControllerProvider.notifier);
     _prevRate = ref.read(speechControllerProvider).rate;
-    _loadListeningSets().then((v) {
+    _loadListeningSets(widget.level).then((v) {
       if (mounted) setState(() => _sets = v);
     });
   }

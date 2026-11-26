@@ -1,0 +1,198 @@
+{
+ "v": 1,
+ "level": "A1",
+ "sets": [
+  {
+   "key": "what",
+   "fa": "What …؟ (چه چیزی؟)",
+   "en": "What Questions",
+   "tip": "سؤال با What: What + is + this/that؟ مثل What is this? یا What is your name?",
+   "items": [
+    {
+     "en": "What is this?",
+     "fa": "این چیست؟"
+    },
+    {
+     "en": "What is your name?",
+     "fa": "اسم تو چیست؟"
+    },
+    {
+     "en": "What color is it?",
+     "fa": "چه رنگی است؟"
+    },
+    {
+     "en": "What is your favorite animal?",
+     "fa": "حیوان مورد علاقه‌ی تو چیست؟"
+    },
+    {
+     "en": "What do you like?",
+     "fa": "چه چیزی دوست داری؟"
+    },
+    {
+     "en": "What time is it?",
+     "fa": "ساعت چند است؟"
+    }
+   ]
+  },
+  {
+   "key": "where",
+   "fa": "Where …؟ (کجا؟)",
+   "en": "Where Questions",
+   "tip": "Where + is/are + چیز؟ مثل Where is my bag? یا Where are my shoes?",
+   "items": [
+    {
+     "en": "Where is my bag?",
+     "fa": "کیف من کجاست؟"
+    },
+    {
+     "en": "Where is Mom?",
+     "fa": "مامان کجاست؟"
+    },
+    {
+     "en": "Where are my shoes?",
+     "fa": "کفش‌های من کجاست؟"
+    },
+    {
+     "en": "Where do you live?",
+     "fa": "کجا زندگی می‌کنی؟"
+    },
+    {
+     "en": "Where is the toilet?",
+     "fa": "توالت کجاست؟"
+    },
+    {
+     "en": "Where is the cat?",
+     "fa": "گربه کجاست؟"
+    }
+   ]
+  },
+  {
+   "key": "can",
+   "fa": "Can …؟ (می‌توانم؟)",
+   "en": "Can Questions",
+   "tip": "Can + فاعل + فعل؟ مثل Can I play? یا Can you help me؟ جواب: Yes, I can. / No, I can't.",
+   "items": [
+    {
+     "en": "Can I play?",
+     "fa": "می‌توانم بازی کنم؟"
+    },
+    {
+     "en": "Can you help me?",
+     "fa": "می‌توانی کمکم کنی؟"
+    },
+    {
+     "en": "Can I have some water?",
+     "fa": "می‌توانم کمی آب بخورم؟"
+    },
+    {
+     "en": "Can you swim?",
+     "fa": "شنا بلدی؟"
+    },
+    {
+     "en": "Can I go to the toilet?",
+     "fa": "می‌توانم به توالت بروم؟"
+    },
+    {
+     "en": "Can we sit here?",
+     "fa": "می‌توانیم اینجا بنشینیم؟"
+    }
+   ]
+  },
+  {
+   "key": "do",
+   "fa": "Do you …؟ (آیا … دوست داری؟)",
+   "en": "Do You Questions",
+   "tip": "Do + you + فعل؟ مثل Do you like pizza؟ جواب: Yes, I do. / No, I don't.",
+   "items": [
+    {
+     "en": "Do you like pizza?",
+     "fa": "پیتزا دوست داری؟"
+    },
+    {
+     "en": "Do you have a pen?",
+     "fa": "خودکار داری؟"
+    },
+    {
+     "en": "Do you want some milk?",
+     "fa": "کمی شیر می‌خواهی؟"
+    },
+    {
+     "en": "Do you like cats?",
+     "fa": "گربه‌ها را دوست داری؟"
+    },
+    {
+     "en": "Do you have a brother?",
+     "fa": "برادر داری؟"
+    },
+    {
+     "en": "Do you play football?",
+     "fa": "فوتبال بازی می‌کنی؟"
+    }
+   ]
+  },
+  {
+   "key": "be",
+   "fa": "Is / Are …؟ (آیا … است؟)",
+   "en": "Is and Are Questions",
+   "tip": "Is/Are می‌آید اول جمله: Is it big؟ Are you hungry؟ جواب: Yes, it is. / No, I'm not.",
+   "items": [
+    {
+     "en": "Is it big?",
+     "fa": "بزرگ است؟"
+    },
+    {
+     "en": "Are you hungry?",
+     "fa": "گرسنه‌ای؟"
+    },
+    {
+     "en": "Is this your bag?",
+     "fa": "این کیف توست؟"
+    },
+    {
+     "en": "Are you happy?",
+     "fa": "خوشحالی؟"
+    },
+    {
+     "en": "Is it a dog?",
+     "fa": "سگ است؟"
+    },
+    {
+     "en": "Are they your friends?",
+     "fa": "آن‌ها دوستان تو هستند؟"
+    }
+   ]
+  },
+  {
+   "key": "how",
+   "fa": "How …؟ (چقدر؟ چند؟ چطور؟)",
+   "en": "How Questions",
+   "tip": "How are you? (حالت چطور است؟)، How old are you? (چند سال داری؟)، How many + اسم جمع؟ (چند تا؟)",
+   "items": [
+    {
+     "en": "How are you?",
+     "fa": "حالت چطور است؟"
+    },
+    {
+     "en": "How old are you?",
+     "fa": "چند سال داری؟"
+    },
+    {
+     "en": "How many apples?",
+     "fa": "چند تا سیب؟"
+    },
+    {
+     "en": "How many toys do you have?",
+     "fa": "چند تا اسباب‌بازی داری؟"
+    },
+    {
+     "en": "How do you spell it?",
+     "fa": "چطور هجی می‌شود؟"
+    },
+    {
+     "en": "How much is it?",
+     "fa": "قیمتش چقدر است؟"
+    }
+   ]
+  }
+ ]
+}

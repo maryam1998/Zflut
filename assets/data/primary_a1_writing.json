@@ -1,0 +1,720 @@
+{
+ "v": 1,
+ "level": "A1",
+ "sets": [
+  {
+   "key": "hello",
+   "fa": "سلام و معرفی",
+   "en": "Hello and My Name",
+   "tip": "جمله را با حرف بزرگ شروع کن و آخرش نقطه بگذار. اسم‌ها همیشه با حرف بزرگ نوشته می‌شوند: My name is Sam.",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "به دوستت سلام کن و بگو اسمت چیست و چند سال داری.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "اسم",
+       "any": [
+        "name|i am|i'm"
+       ]
+      },
+      {
+       "fa": "سن",
+       "any": [
+        "\\b\\d{1,2}\\b|years old|one|two|three|four|five|six|seven|eight|nine|ten"
+       ]
+      }
+     ],
+     "minWords": 8,
+     "model": "Hello! My name is Sam. I am seven years old.",
+     "modelFa": "سلام! اسم من سم است. من هفت ساله‌ام.",
+     "phrases": [
+      {
+       "en": "My name is…",
+       "fa": "اسم من … است."
+      },
+      {
+       "en": "I am … years old.",
+       "fa": "من … ساله‌ام."
+      },
+      {
+       "en": "Hello!",
+       "fa": "سلام!"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "به معلمت صبح بخیر بگو و بپرس حالش چطور است.",
+     "points": [
+      {
+       "fa": "صبح بخیر",
+       "any": [
+        "good morning"
+       ]
+      },
+      {
+       "fa": "معلم",
+       "any": [
+        "teacher|miss|mr|mrs|ms"
+       ]
+      },
+      {
+       "fa": "پرسیدن حال",
+       "any": [
+        "how are you"
+       ]
+      }
+     ],
+     "minWords": 6,
+     "model": "Good morning, teacher! How are you?",
+     "modelFa": "صبح بخیر، معلم! حالتان چطور است؟",
+     "phrases": [
+      {
+       "en": "Good morning",
+       "fa": "صبح بخیر"
+      },
+      {
+       "en": "How are you?",
+       "fa": "حالت چطور است؟"
+      },
+      {
+       "en": "teacher",
+       "fa": "معلم"
+      }
+     ]
+    },
+    {
+     "kind": "note",
+     "fa": "یک یادداشت کوتاه برای مامان بنویس: بگو او را دوست داری و ممنونی.",
+     "points": [
+      {
+       "fa": "مامان",
+       "any": [
+        "mom|mum|mother"
+       ]
+      },
+      {
+       "fa": "دوست داشتن",
+       "any": [
+        "love|like"
+       ]
+      },
+      {
+       "fa": "تشکر",
+       "any": [
+        "thank"
+       ]
+      }
+     ],
+     "minWords": 6,
+     "model": "Mom, I love you. Thank you!",
+     "modelFa": "مامان، دوستت دارم. ممنون!",
+     "phrases": [
+      {
+       "en": "I love you.",
+       "fa": "دوستت دارم."
+      },
+      {
+       "en": "Thank you!",
+       "fa": "ممنون!"
+      },
+      {
+       "en": "Mom",
+       "fa": "مامان"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "family",
+   "fa": "خانواده",
+   "en": "My Family",
+   "tip": "برای خانواده: I have a… (من … دارم) و This is my… (این … من است).",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "بنویس چه کسانی در خانواده‌ات هستند (مثلاً مامان، بابا و یک خواهر).",
+     "points": [
+      {
+       "fa": "اشاره به خانواده",
+       "any": [
+        "mom|mum|dad|mother|father|sister|brother|family|grandma|grandpa"
+       ]
+      },
+      {
+       "fa": "داشتن",
+       "any": [
+        "i have|we have|my"
+       ]
+      }
+     ],
+     "minWords": 8,
+     "model": "I have a mom, a dad and a sister.",
+     "modelFa": "من مامان، بابا و یک خواهر دارم.",
+     "phrases": [
+      {
+       "en": "I have a…",
+       "fa": "من یک … دارم."
+      },
+      {
+       "en": "my family",
+       "fa": "خانواده‌ی من"
+      },
+      {
+       "en": "and",
+       "fa": "و"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "بنویس مامانت یا بابات چه شکلی است (مثلاً قدبلند، مهربان).",
+     "points": [
+      {
+       "fa": "مامان یا بابا",
+       "any": [
+        "mom|mum|dad|mother|father"
+       ]
+      },
+      {
+       "fa": "توصیف",
+       "any": [
+        "tall|short|kind|nice|funny|happy|big|young|old|good"
+       ]
+      }
+     ],
+     "minWords": 6,
+     "model": "My dad is tall. He is kind.",
+     "modelFa": "بابای من قدبلند است. او مهربان است.",
+     "phrases": [
+      {
+       "en": "He is…",
+       "fa": "او … است."
+      },
+      {
+       "en": "She is…",
+       "fa": "او … است (زن)."
+      },
+      {
+       "en": "kind",
+       "fa": "مهربان"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "بنویس دوست داری با خانواده‌ات چه کار کنی (مثلاً بازی کردن).",
+     "points": [
+      {
+       "fa": "دوست داشتن",
+       "any": [
+        "like|love"
+       ]
+      },
+      {
+       "fa": "کار",
+       "any": [
+        "play|eat|go|read|watch|walk|run|swim"
+       ]
+      }
+     ],
+     "minWords": 7,
+     "model": "I like to play with my family.",
+     "modelFa": "دوست دارم با خانواده‌ام بازی کنم.",
+     "phrases": [
+      {
+       "en": "I like to…",
+       "fa": "دوست دارم … کنم."
+      },
+      {
+       "en": "with my family",
+       "fa": "با خانواده‌ام"
+      },
+      {
+       "en": "play",
+       "fa": "بازی کردن"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "likes",
+   "fa": "دوست دارم / ندارم",
+   "en": "I Like / I Don't Like",
+   "tip": "I like + اسم: I like cats. برای دوست نداشتن: I don't like + اسم.",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "بنویس چه غذایی دوست داری و چه غذایی دوست نداری.",
+     "points": [
+      {
+       "fa": "دوست دارم",
+       "any": [
+        "i like|i love"
+       ]
+      },
+      {
+       "fa": "دوست ندارم",
+       "any": [
+        "don't like|do not like|hate"
+       ]
+      }
+     ],
+     "minWords": 7,
+     "model": "I like pizza. I don't like carrots.",
+     "modelFa": "من پیتزا دوست دارم. هویج دوست ندارم.",
+     "phrases": [
+      {
+       "en": "I like…",
+       "fa": "دوست دارم…"
+      },
+      {
+       "en": "I don't like…",
+       "fa": "دوست ندارم…"
+      },
+      {
+       "en": "pizza",
+       "fa": "پیتزا"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "بنویس حیوان مورد علاقه‌ات چیست.",
+     "points": [
+      {
+       "fa": "علاقه",
+       "any": [
+        "favorite|favourite|like|love"
+       ]
+      },
+      {
+       "fa": "حیوان",
+       "any": [
+        "dog|cat|bird|fish|horse|rabbit|lion|tiger|elephant|monkey|cow|duck|animal"
+       ]
+      }
+     ],
+     "minWords": 6,
+     "model": "My favorite animal is a dog.",
+     "modelFa": "حیوان مورد علاقه‌ی من سگ است.",
+     "phrases": [
+      {
+       "en": "My favorite… is…",
+       "fa": "… مورد علاقه‌ی من … است."
+      },
+      {
+       "en": "animal",
+       "fa": "حیوان"
+      },
+      {
+       "en": "dog",
+       "fa": "سگ"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "بنویس رنگ مورد علاقه‌ات چیست و یک چیز با آن رنگ بگو.",
+     "points": [
+      {
+       "fa": "رنگ",
+       "any": [
+        "red|blue|green|yellow|pink|purple|orange|black|white|brown"
+       ]
+      },
+      {
+       "fa": "علاقه",
+       "any": [
+        "favorite|favourite|like|love"
+       ]
+      }
+     ],
+     "minWords": 8,
+     "model": "My favorite color is blue. I like the sky.",
+     "modelFa": "رنگ مورد علاقه‌ی من آبی است. آسمان را دوست دارم.",
+     "phrases": [
+      {
+       "en": "My favorite color is…",
+       "fa": "رنگ مورد علاقه‌ام … است."
+      },
+      {
+       "en": "the sky",
+       "fa": "آسمان"
+      },
+      {
+       "en": "blue",
+       "fa": "آبی"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "home",
+   "fa": "خانه و روز من",
+   "en": "My Home and My Day",
+   "tip": "برای ساعت: at seven o'clock = ساعت هفت. «I go to school» یعنی به مدرسه می‌روم.",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "بنویس صبح‌ها چه می‌خوری و چه می‌نوشی.",
+     "points": [
+      {
+       "fa": "خوردن",
+       "any": [
+        "eat|have"
+       ]
+      },
+      {
+       "fa": "صبحانه یا خوراکی",
+       "any": [
+        "breakfast|bread|egg|milk|cheese|rice|apple|cereal|toast|tea|juice"
+       ]
+      }
+     ],
+     "minWords": 8,
+     "model": "I eat bread and an egg. I drink milk.",
+     "modelFa": "من نان و تخم‌مرغ می‌خورم. شیر می‌نوشم.",
+     "phrases": [
+      {
+       "en": "I eat…",
+       "fa": "من … می‌خورم."
+      },
+      {
+       "en": "I drink…",
+       "fa": "من … می‌نوشم."
+      },
+      {
+       "en": "breakfast",
+       "fa": "صبحانه"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "بنویس به مدرسه چطور می‌روی (مثلاً با اتوبوس یا پیاده).",
+     "points": [
+      {
+       "fa": "رفتن به مدرسه",
+       "any": [
+        "go|walk|school"
+       ]
+      },
+      {
+       "fa": "وسیله",
+       "any": [
+        "bus|car|foot|walk|bike|taxi|train"
+       ]
+      }
+     ],
+     "minWords": 6,
+     "model": "I go to school by bus.",
+     "modelFa": "من با اتوبوس به مدرسه می‌روم.",
+     "phrases": [
+      {
+       "en": "I go to school.",
+       "fa": "به مدرسه می‌روم."
+      },
+      {
+       "en": "by bus",
+       "fa": "با اتوبوس"
+      },
+      {
+       "en": "on foot",
+       "fa": "پیاده"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "بنویس ساعت چند می‌خوابی.",
+     "points": [
+      {
+       "fa": "خواب",
+       "any": [
+        "bed|sleep"
+       ]
+      },
+      {
+       "fa": "ساعت",
+       "any": [
+        "\\b\\d{1,2}\\b|o'clock|seven|eight|nine|ten"
+       ]
+      }
+     ],
+     "minWords": 7,
+     "model": "I go to bed at eight o'clock.",
+     "modelFa": "من ساعت هشت می‌خوابم.",
+     "phrases": [
+      {
+       "en": "I go to bed.",
+       "fa": "می‌خوابم."
+      },
+      {
+       "en": "at … o'clock",
+       "fa": "ساعت …"
+      },
+      {
+       "en": "night",
+       "fa": "شب"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "places",
+   "fa": "جاها و هوا",
+   "en": "Places and Weather",
+   "tip": "There is… یعنی «… هست». It is sunny/rainy: برای هوا.",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "بنویس امروز هوا چطور است.",
+     "points": [
+      {
+       "fa": "هوا",
+       "any": [
+        "sunny|rainy|cloudy|windy|snowy|hot|cold|warm|cool"
+       ]
+      },
+      {
+       "fa": "امروز یا It is",
+       "any": [
+        "today|it is|it's"
+       ]
+      }
+     ],
+     "minWords": 5,
+     "model": "It is sunny today. It is hot.",
+     "modelFa": "امروز آفتابی است. هوا گرم است.",
+     "phrases": [
+      {
+       "en": "It is sunny.",
+       "fa": "آفتابی است."
+      },
+      {
+       "en": "It is rainy.",
+       "fa": "بارانی است."
+      },
+      {
+       "en": "today",
+       "fa": "امروز"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "بنویس در پارک چه چیزی می‌بینی (مثلاً درخت، پرنده).",
+     "points": [
+      {
+       "fa": "دیدن",
+       "any": [
+        "i see|there is|there are|i can see|look"
+       ]
+      },
+      {
+       "fa": "چیزی در پارک",
+       "any": [
+        "tree|bird|flower|dog|cat|swing|slide|ball|boy|girl|duck|grass"
+       ]
+      }
+     ],
+     "minWords": 6,
+     "model": "I see a tree and two birds.",
+     "modelFa": "من یک درخت و دو پرنده می‌بینم.",
+     "phrases": [
+      {
+       "en": "I see…",
+       "fa": "من … می‌بینم."
+      },
+      {
+       "en": "There is…",
+       "fa": "… هست."
+      },
+      {
+       "en": "tree",
+       "fa": "درخت"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "بنویس در اتاقت چه چیزی داری (مثلاً تخت، میز).",
+     "points": [
+      {
+       "fa": "داشتن",
+       "any": [
+        "i have|there is|there are|my room"
+       ]
+      },
+      {
+       "fa": "وسیله",
+       "any": [
+        "bed|desk|table|chair|lamp|toy|book|window|door|clock|bag"
+       ]
+      }
+     ],
+     "minWords": 7,
+     "model": "I have a bed and a desk in my room.",
+     "modelFa": "در اتاقم یک تخت و یک میز دارم.",
+     "phrases": [
+      {
+       "en": "in my room",
+       "fa": "در اتاقم"
+      },
+      {
+       "en": "I have a…",
+       "fa": "من یک … دارم."
+      },
+      {
+       "en": "bed",
+       "fa": "تخت"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "thanks",
+   "fa": "ممنون و ببخشید",
+   "en": "Thanks and Sorry",
+   "tip": "ادب: Please (لطفاً)، Thank you (ممنون)، Sorry (ببخشید).",
+   "tasks": [
+    {
+     "kind": "message",
+     "fa": "برای هدیه‌ی تولدت از دوستت تشکر کن.",
+     "points": [
+      {
+       "fa": "سلام",
+       "any": [
+        "\\b(hi|hello|dear|hey)\\b"
+       ]
+      },
+      {
+       "fa": "تشکر",
+       "any": [
+        "thank"
+       ]
+      },
+      {
+       "fa": "هدیه",
+       "any": [
+        "gift|present|toy|book|ball|birthday"
+       ]
+      }
+     ],
+     "minWords": 8,
+     "model": "Hi Sara! Thank you for the present. I love it!",
+     "modelFa": "سلام سارا! ممنون بابت هدیه. دوستش دارم!",
+     "phrases": [
+      {
+       "en": "Thank you for…",
+       "fa": "ممنون بابت…"
+      },
+      {
+       "en": "present",
+       "fa": "هدیه"
+      },
+      {
+       "en": "I love it!",
+       "fa": "دوستش دارم!"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "از دوستت عذرخواهی کن چون توپش را گم کرده‌ای.",
+     "points": [
+      {
+       "fa": "عذرخواهی",
+       "any": [
+        "sorry"
+       ]
+      },
+      {
+       "fa": "توپ",
+       "any": [
+        "ball"
+       ]
+      },
+      {
+       "fa": "گم کردن",
+       "any": [
+        "lost|lose|can't find|broke|broken"
+       ]
+      }
+     ],
+     "minWords": 6,
+     "model": "I'm sorry. I lost your ball.",
+     "modelFa": "متأسفم. توپت را گم کردم.",
+     "phrases": [
+      {
+       "en": "I'm sorry.",
+       "fa": "متأسفم."
+      },
+      {
+       "en": "I lost…",
+       "fa": "من … را گم کردم."
+      },
+      {
+       "en": "ball",
+       "fa": "توپ"
+      }
+     ]
+    },
+    {
+     "kind": "message",
+     "fa": "از معلمت با «لطفاً» بخواه به تو کمک کند.",
+     "points": [
+      {
+       "fa": "لطفاً",
+       "any": [
+        "please"
+       ]
+      },
+      {
+       "fa": "کمک",
+       "any": [
+        "help"
+       ]
+      },
+      {
+       "fa": "معلم",
+       "any": [
+        "teacher|miss|mr|mrs|ms"
+       ]
+      }
+     ],
+     "minWords": 6,
+     "model": "Teacher, can you help me, please?",
+     "modelFa": "معلم، لطفاً می‌توانید کمکم کنید؟",
+     "phrases": [
+      {
+       "en": "Can you help me?",
+       "fa": "می‌توانی کمکم کنی؟"
+      },
+      {
+       "en": "please",
+       "fa": "لطفاً"
+      },
+      {
+       "en": "teacher",
+       "fa": "معلم"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

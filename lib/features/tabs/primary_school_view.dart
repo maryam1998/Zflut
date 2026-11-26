@@ -32,7 +32,7 @@ class PrimarySchoolView extends ConsumerWidget {
     final q = filter.query.trim().toLowerCase();
     final searching = q.isNotEmpty;
     final allOpen = ref.watch(categoryAllOpenProvider('primary'));
-    final practice = ref.watch(primaryPracticeOpenProvider) && level == 'A2';
+    final practice = ref.watch(primaryPracticeOpenProvider);
     final gridMode = practice || (topicKey == null && !allOpen && !searching);
 
     PrimaryTopic? current;
@@ -76,7 +76,7 @@ class PrimarySchoolView extends ConsumerWidget {
                   : 'Listening Practice',
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                    builder: (_) => const ListeningPracticePage()),
+                    builder: (_) => ListeningPracticePage(level: level)),
               ),
             ),
             _PracticeCard(
@@ -86,7 +86,7 @@ class PrimarySchoolView extends ConsumerWidget {
                   : 'Build the Question',
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                    builder: (_) => const QuestionPracticePage()),
+                    builder: (_) => QuestionPracticePage(level: level)),
               ),
             ),
             _PracticeCard(
@@ -96,7 +96,7 @@ class PrimarySchoolView extends ConsumerWidget {
                   : 'Writing Practice',
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                    builder: (_) => const WritingPracticePage()),
+                    builder: (_) => WritingPracticePage(level: level)),
               ),
             ),
           ],

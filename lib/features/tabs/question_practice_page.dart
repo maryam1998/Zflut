@@ -30,9 +30,9 @@ class _Tile {
   const _Tile(this.id, this.text);
 }
 
-Future<List<_QSet>> _loadQuestionSets() async {
+Future<List<_QSet>> _loadQuestionSets([String level = 'A2']) async {
   try {
-    final raw = await rootBundle.loadString('assets/data/primary_a2_questions.json');
+    final raw = await rootBundle.loadString('assets/data/primary_${level.toLowerCase()}_questions.json');
     final j = jsonDecode(raw) as Map<String, dynamic>;
     return [
       for (final s in (j['sets'] as List<dynamic>))
@@ -53,7 +53,9 @@ Future<List<_QSet>> _loadQuestionSets() async {
 }
 
 class QuestionPracticePage extends StatefulWidget {
-  const QuestionPracticePage({super.key});
+  /// 'A1' (Preschool) یا 'A2' (Primary School)
+  final String level;
+  const QuestionPracticePage({super.key, this.level = 'A2'});
 
   @override
   State<QuestionPracticePage> createState() => _QuestionPracticePageState();
@@ -72,7 +74,7 @@ class _QuestionPracticePageState extends State<QuestionPracticePage> {
   @override
   void initState() {
     super.initState();
-    _loadQuestionSets().then((v) {
+    _loadQuestionSets(widget.level).then((v) {
       if (mounted) setState(() => _sets = v);
     });
   }

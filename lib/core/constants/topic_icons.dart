@@ -47,6 +47,22 @@ TopicVisual visualForTopic(String topic) {
   if (t.contains('birthdays and celebrations')) return const TopicVisual(Icons.cake_rounded, _rose);
 
   // ═══ Primary School ▸ A1 ═══
+  if (t.contains('at the supermarket')) return const TopicVisual(Icons.shopping_cart_rounded, _orange);
+  if (t.contains('lunch at school')) return const TopicVisual(Icons.lunch_dining_rounded, _green);
+  if (t.contains('bedtime')) return const TopicVisual(Icons.bedtime_rounded, _purple);
+  if (t.contains('on the school bus')) return const TopicVisual(Icons.directions_bus_rounded, _gold);
+  if (t.contains('at the beach')) return const TopicVisual(Icons.beach_access_rounded, _blue);
+  if (t.contains('making friends')) return const TopicVisual(Icons.people_alt_rounded, _rose);
+  if (t.contains('people who help us')) return const TopicVisual(Icons.volunteer_activism_rounded, _teal);
+  if (t.contains('big and small')) return const TopicVisual(Icons.swap_vert_rounded, _brown);
+  if (t.contains('seasons and clothes')) return const TopicVisual(Icons.checkroom_rounded, _blue);
+  if (t.contains('art time')) return const TopicVisual(Icons.brush_rounded, _rose);
+  if (t.contains('tidy-up time')) return const TopicVisual(Icons.cleaning_services_rounded, _green);
+  if (t.contains('my pet')) return const TopicVisual(Icons.pets_rounded, _brown);
+  if (t.contains('my five senses')) return const TopicVisual(Icons.visibility_rounded, _purple);
+  if (t.contains('on the farm')) return const TopicVisual(Icons.agriculture_rounded, _green);
+  if (t.contains('what time is it')) return const TopicVisual(Icons.schedule_rounded, _gold);
+  if (t.contains('simon says')) return const TopicVisual(Icons.sports_handball_rounded, _orange);
   if (t.contains('hello and goodbye')) return const TopicVisual(Icons.waving_hand_rounded, _teal);
   if (t.contains('in the classroom')) return const TopicVisual(Icons.school_rounded, _purple);
   if (t.contains('my body hurts')) return const TopicVisual(Icons.healing_rounded, _rose);
