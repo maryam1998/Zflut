@@ -182,8 +182,8 @@ class _PracticeCard extends StatelessWidget {
 }
 
 
-/// شبکه‌ی موضوع‌ها؛ اگر موضوع‌ها `group` داشته باشند (A2) در بخش‌های «مدرسه» و
-/// «زندگی روزمره» نشان داده می‌شوند، وگرنه همان شبکه‌ی ساده (A1).
+/// شبکه‌ی موضوع‌ها: کارتِ «همه» و بعد همه‌ی موضوع‌ها کنارِ هم، در یک شبکه
+/// (بدونِ عنوانِ بخش مثل «مدرسه» / «زندگی روزمره» و بدونِ فاصله‌ی خالی).
 List<Widget> _gridSections({
   required List<PrimaryTopic> topics,
   required int allTotal,
@@ -197,75 +197,11 @@ List<Widget> _gridSections({
         total: t.words.length,
       );
   final allItem = CategoryItem(key: null, label: allLabel, total: allTotal);
-
-  if (!topics.any((t) => t.group.isNotEmpty)) {
-    return [
-      CategoryGrid(
-        list: 'daily',
-        items: [allItem, for (final t in topics) item(t)],
-        onTap: onTap,
-      ),
-    ];
-  }
-
-  // گروه‌ها به ترتیبِ اولین دیدن
-  final groups = <String>[];
-  for (final t in topics) {
-    if (!groups.contains(t.group)) groups.add(t.group);
-  }
-  final isFa = ui == 'fa';
-  String title(String g) {
-    switch (g) {
-      case 'school':
-        return isFa ? 'مدرسه' : 'School';
-      case 'life':
-        return isFa ? 'زندگی روزمره' : 'Everyday Life';
-      default:
-        return g;
-    }
-  }
-
-  final out = <Widget>[
+  return [
     CategoryGrid(
       list: 'daily',
-      items: [allItem],
+      items: [allItem, for (final t in topics) item(t)],
       onTap: onTap,
-      bottomPadding: 0,
     ),
   ];
-  for (var i = 0; i < groups.length; i++) {
-    final g = groups[i];
-    out.add(_SectionHeader(text: title(g)));
-    out.add(CategoryGrid(
-      list: 'daily',
-      items: [
-        for (final t in topics)
-          if (t.group == g) item(t),
-      ],
-      onTap: onTap,
-      bottomPadding: i == groups.length - 1 ? 90 : 4,
-    ));
-  }
-  return out;
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String text;
-  const _SectionHeader({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.appColors;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 2),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: c.ink,
-          fontWeight: FontWeight.w800,
-          fontSize: 15,
-        ),
-      ),
-    );
-  }
 }
