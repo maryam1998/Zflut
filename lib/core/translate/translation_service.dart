@@ -186,7 +186,13 @@ String _fixFarewell(String src, String from, String to, String out) {
 final RegExp _idiomRe = RegExp(
   r'\b(see you later,?\s+alligator|in a while,?\s+crocodile|after a while,?\s+crocodile'
   r'|break a leg|raining cats and dogs|piece of cake|kick the bucket|spill the beans'
-  r'|under the weather|an arm and a leg|bite the bullet|once in a blue moon|hit the sack)\b',
+  r'|under the weather|an arm and a leg|bite the bullet|once in a blue moon|hit the sack'
+  r'|break the ice|call it a day|let the cat out of the bag|pull(?:ing)? (?:my|your|his|her) leg'
+  r'|get(?:ting)? cold feet|beat(?:ing)? around the bush|burn(?:ing)? the midnight oil'
+  r'|back to square one|blessing in disguise|easier said than done|the ball is in your court'
+  r'|out of the blue|a dime a dozen|speak of the devil|let sleeping dogs lie'
+  r'|barking up the wrong tree|the last straw|add insult to injury|over the moon|on cloud nine'
+  r'|in hot water|throw in the towel|jump on the bandwagon|miss the boat|go the extra mile)\b',
   caseSensitive: false,
 );
 
@@ -599,6 +605,7 @@ class TranslationService {
     String sourceLang = 'auto',
     AiSettings? aiSettings,
     bool forceVerify = false,
+    bool aiOnlyIfSuspicious = false,
   }) async {
     if (text.trim().isEmpty || targetLang.isEmpty) return text;
     if (sourceLang.isNotEmpty &&
@@ -647,6 +654,7 @@ class TranslationService {
         sourceLang: sourceLang,
         aiSettings: aiSettings,
         forceVerify: forceVerify,
+        aiOnlyIfSuspicious: aiOnlyIfSuspicious,
       ).then((v) {
         if (!done.isCompleted) done.complete(v);
       }).catchError((_) {
@@ -780,6 +788,7 @@ class TranslationService {
     required String sourceLang,
     AiSettings? aiSettings,
     bool forceVerify = false,
+    bool aiOnlyIfSuspicious = false,
   }) async {
     final hard = _hardcodedFarewell(text, sourceLang, targetLang);
     if (hard != null) return hard;
@@ -789,6 +798,7 @@ class TranslationService {
       sourceLang: sourceLang,
       aiSettings: aiSettings,
       forceVerify: forceVerify,
+      aiOnlyIfSuspicious: aiOnlyIfSuspicious,
     );
     return _fixFarewell(text, sourceLang, targetLang, r);
   }
@@ -799,6 +809,7 @@ class TranslationService {
     required String sourceLang,
     AiSettings? aiSettings,
     bool forceVerify = false,
+    bool aiOnlyIfSuspicious = false,
   }) async {
     // ۰. ML Kit روی گوشی: آنی، رایگان، بدون سقف و بدون هزینه‌ی Worker. اگر مدل آماده نبود
     //    دانلود در پس‌زمینه شروع می‌شود و همین‌بار از مسیر معمولِ زیر ترجمه می‌شود.
@@ -863,8 +874,15 @@ class TranslationService {
     }
 
     // آخرین چاره: بک‌اند AI — این نتیجه هم از فیلتر کیفیت رد می‌شود
+    // 💸 حالتِ کم‌هزینه (تب Talk): اگر هیچ پیش‌نویسِ رایگانی نبود (نه ML Kit و نه مترجمِ آنلاین؛
+    // مثلاً مدل هنوز دانلود نشده یا سقفِ MyMemory پر شده) این «مشکوک» حساب نمی‌شود، فقط «در دسترس
+    // نبود»؛ پس AI صدا زده نمی‌شود و متنِ اصلی برمی‌گردد تا دفعه‌ی بعد با ML Kit/کش ترجمه شود.
+    // AI فقط وقتی می‌رود که پیش‌نویس هست و مشکوک است (winner مشکوک، یا mlDraft مشکوکِ عمیق).
+    final noDraftAtAll = winner == null && (mlDraft == null || mlDraft.isEmpty);
+    final skipAiNoDraft = aiOnlyIfSuspicious && !forceVerify && noDraftAtAll;
+
     final aiKey = RetryFlag.keyFor('ai', text, '$sourceLang>$targetLang');
-    if (aiSettings != null && !RetryFlag.blocked(aiKey)) {
+    if (aiSettings != null && !skipAiNoDraft && !RetryFlag.blocked(aiKey)) {
       try {
         final result =
             await translateViaAI(text, targetLang, sourceLang, aiSettings);

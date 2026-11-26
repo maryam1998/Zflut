@@ -1597,7 +1597,11 @@ class _ChatPaneState extends ConsumerState<_ChatPane> {
       for (final s in segs) {
         try {
           final r = decodeHtmlEntities((await svc.translate(
-                  text: s, targetLang: native, sourceLang: from, aiSettings: ai))
+                  text: s,
+                  targetLang: native,
+                  sourceLang: from,
+                  aiSettings: ai,
+                  aiOnlyIfSuspicious: true))
               .trim());
           if (r.isNotEmpty && r != s.trim()) out.add(r);
         } catch (_) {}
@@ -2209,6 +2213,7 @@ Now respond to: "$sentence"
                   targetLang: lang,
                   sourceLang: native,
                   aiSettings: ref.read(aiSettingsProvider),
+                  aiOnlyIfSuspicious: true,
                 ))
             .trim());
       } catch (_) {
@@ -4005,6 +4010,7 @@ Now respond to: "$sentence"
                   targetLang: lang,
                   sourceLang: 'en',
                   aiSettings: ref.read(aiSettingsProvider),
+                  aiOnlyIfSuspicious: true,
                 ))
             .trim());
         out.add(r.isEmpty ? t : r);

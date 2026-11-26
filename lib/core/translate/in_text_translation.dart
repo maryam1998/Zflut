@@ -9,7 +9,9 @@
 //   ۱) ترجمه‌ی ذخیره‌شده در کش (peekCached) اگر سالم باشد
 //   ۲) معنیِ از‌پیش‌معلومِ خودِ اپ (known / KnownTranslations: لغات و مکالمات)
 //   ۳) متنِ چندخطی/بلند: خط‌به‌خط و تکه‌تکه (مثلِ ترجمه‌ی زیرِ پیام‌های AI)
-//   ۴) در آخر خودِ سرویسِ ترجمه (که اولش هم کش را می‌بیند)
+//   ۴) در آخر خودِ سرویسِ ترجمه: کش (گوشی + سراسری) ← ML Kit و مترجمِ آنلاینِ رایگان ←
+//      فیلترِ looksLikelyMistranslated / looksSuspiciousDeep / اصطلاح ← فقط در صورتِ مشکوک بودن AI.
+//      (aiOnlyIfSuspicious: true → اگر هیچ پیش‌نویسِ رایگانی نبود، AI صدا زده نمی‌شود)
 
 import 'dart:async';
 
@@ -100,7 +102,12 @@ Future<String> inTextTranslate({
       String r = '';
       try {
         r = decodeHtmlEntities((await svc.translate(
-                text: seg, targetLang: to, sourceLang: from, aiSettings: ai))
+                text: seg,
+                targetLang: to,
+                sourceLang: from,
+                aiSettings: ai,
+                // 💸 AI فقط برای ترجمه‌ی مشکوک/اصطلاح؛ نبودِ پیش‌نویسِ رایگان ≠ مشکوک
+                aiOnlyIfSuspicious: true))
             .trim());
       } catch (_) {}
       if (usable(seg, r)) return r;

@@ -3355,6 +3355,7 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                   targetLang: native,
                   sourceLang: widget.langCode,
                   aiSettings: ref.read(aiSettingsProvider),
+                  aiOnlyIfSuspicious: true,
                 ))
             .trim());
       }
