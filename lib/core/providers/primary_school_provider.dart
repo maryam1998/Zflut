@@ -9,9 +9,17 @@ import '../models/daily_word.dart';
 /// null = حالتِ عادی (همه‌ی لغات)، [kStagePrimary] = لغاتِ مدرسه‌ایِ A1.
 const String kStagePrimary = 'primary';
 
+/// مقاطعِ تحصیلیِ بعدی (فعلاً خالی؛ لغاتِ جدید بعداً اضافه می‌شود).
+/// این‌ها به CEFR وصل نیستند و لغاتِ B2/C1/C2 را نشان نمی‌دهند.
+const String kStageUpper = 'upper'; // Upper Secondary / Pre-University
+const String kStageUniversity = 'university'; // University & Adults
+
 /// برچسبِ چیپ (برای تغییرِ اسم فقط همین‌جا را عوض کن)
 const String kPrimaryChipLabel = 'Primary School'; // A2
 const String kPreschoolChipLabel = 'Preschool'; // A1
+const String kLowerSecondaryChipLabel = 'Lower Secondary'; // B1
+const String kUpperSecondaryChipLabel = 'Upper Secondary / Pre-University';
+const String kUniversityChipLabel = 'University & Adults';
 
 final wordsStageProvider = StateProvider<String?>((ref) => null);
 

@@ -36,6 +36,11 @@ class WordsTab extends ConsumerWidget {
     if (ref.watch(wordsStageProvider) == kStagePrimary) {
       return const PrimarySchoolView();
     }
+    // 🎓 Upper Secondary و University & Adults: فعلاً خالی (لغاتِ جدید بعداً اضافه می‌شود)
+    final stageNow = ref.watch(wordsStageProvider);
+    if (stageNow == kStageUpper || stageNow == kStageUniversity) {
+      return const _EducationEmptyView();
+    }
     final words = ref.watch(wordsTabItemsProvider);
     final base = ref.watch(wordsTabBaseItemsProvider);
     final all = ref.watch(allDailyWordsProvider);
@@ -137,6 +142,31 @@ class WordsTab extends ConsumerWidget {
       lockedInfo: lockedInfo,
       levelAvailability:
           isPro ? null : _levelAvailability(index, free, scope),
+    );
+  }
+}
+
+/// مقاطعِ تحصیلیِ هنوز بدونِ لغت (Upper Secondary / University & Adults)
+class _EducationEmptyView extends ConsumerWidget {
+  const _EducationEmptyView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ui = Localizations.localeOf(context).languageCode;
+    final fa = ui == 'fa' || ui == 'ar';
+    return WordListView(
+      key: ValueKey('edu-${ref.watch(wordsStageProvider)}'),
+      listId: 'words_education_empty',
+      words: const <DailyWord>[],
+      hasAnyData: true,
+      emptyMessage: fa
+          ? 'لغاتِ این بخش به‌زودی اضافه می‌شود.'
+          : 'Words for this stage are coming soon.',
+      topSlot: const StageChipsBar(),
+      hideLevelChips: true,
+      freeSource: const <DailyWord>[],
+      lockedInfo: null,
+      levelAvailability: null,
     );
   }
 }

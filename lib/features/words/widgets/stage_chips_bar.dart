@@ -141,19 +141,50 @@ class StageChips extends StatelessWidget {
   }
 }
 
-/// نسخه‌ی تبِ لغات (با providerها)
+/// نسخه‌ی تبِ لغات (با providerها): دو ردیفِ جدا
+///  ۱) CEFR:  [همه] [A1] [A2] [B1] [B2] [C1] [C2]   ← همه‌ی لغاتِ اصلی، فیلتر بر اساسِ سطح
+///  ۲) مقطعِ تحصیلی: [Preschool] [Primary School] [Lower Secondary]
+///     [Upper Secondary / Pre-University] [University & Adults]
+///     (دو مقطعِ آخر فعلاً خالی‌اند و بعداً با لغاتِ جدید پر می‌شوند)
 class StageChipsBar extends ConsumerWidget {
   const StageChipsBar({super.key});
 
+  static const List<(String, String, IconData)> _eduStages = [
+    ('A1', kPreschoolChipLabel, Icons.child_care_rounded),
+    ('A2', kPrimaryChipLabel, Icons.school_rounded),
+    ('B1', kLowerSecondaryChipLabel, Icons.workspace_premium_rounded),
+    (kStageUpper, kUpperSecondaryChipLabel, Icons.workspace_premium_rounded),
+    (kStageUniversity, kUniversityChipLabel, Icons.workspace_premium_rounded),
+  ];
+
+  static Color _eduColor(String key) {
+    switch (key) {
+      case kStageUpper:
+        return levelColor('B2');
+      case kStageUniversity:
+        return levelColor('C1');
+      default:
+        return levelColor(key);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final inPrimary = ref.watch(wordsStageProvider) == kStagePrimary;
+    final c = context.appColors;
+    final ui = Localizations.localeOf(context).languageCode;
+    final fa = ui == 'fa' || ui == 'ar';
+    final stage = ref.watch(wordsStageProvider); // null = دسته‌بندیِ CEFR
+    final inEdu = stage != null;
     final levels = ref.watch(wordsFilterProvider.select((f) => f.levels));
-    final String? selected = inPrimary
-        ? ref.watch(primaryLevelProvider)
-        : (levels.length == 1 ? levels.first : null);
-
     final practice = ref.watch(primaryPracticeOpenProvider);
+    final primaryLevel = ref.watch(primaryLevelProvider);
+
+    // چیپِ انتخاب‌شده در هر ردیف
+    final String? cefrSelected =
+        (!inEdu && levels.length == 1) ? levels.first : null;
+    final String? eduSelected = stage == kStagePrimary
+        ? primaryLevel
+        : (stage == kStageUpper || stage == kStageUniversity ? stage : null);
 
     void reset() {
       ref.read(primaryTopicProvider.notifier).state = null;
@@ -161,30 +192,115 @@ class StageChipsBar extends ConsumerWidget {
       ref.read(primaryPracticeOpenProvider.notifier).state = false;
     }
 
-    return StageChips(
-      selected: selected,
-      practiceActive: practice,
-      practiceLevel: ref.watch(primaryLevelProvider),
-      onPractice: (pl) {
-        reset();
-        ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
-        ref.read(primaryLevelProvider.notifier).state = pl;
-        ref.read(wordsStageProvider.notifier).state = kStagePrimary;
-        ref.read(primaryPracticeOpenProvider.notifier).state = true;
-      },
-      onSelect: (lv) {
-        reset();
-        ref.read(wordsFilterProvider.notifier).setLevels(
-            lv == null || lv == 'A1' || lv == 'A2' || lv == 'B1'
-                ? <String>{}
-                : {lv});
-        if (lv == 'A1' || lv == 'A2' || lv == 'B1') {
-          ref.read(primaryLevelProvider.notifier).state = lv!;
-          ref.read(wordsStageProvider.notifier).state = kStagePrimary;
-        } else {
-          ref.read(wordsStageProvider.notifier).state = null;
-        }
-      },
+    Widget heading(String text) => Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 2),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: c.inkSoft,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        );
+
+    // ── ردیفِ ۱: CEFR ──
+    final cefrRow = SizedBox(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          Center(
+            child: _StageChip(
+              label: fa ? 'همه' : 'All',
+              active: !inEdu && levels.isEmpty,
+              onTap: () {
+                reset();
+                ref.read(wordsStageProvider.notifier).state = null;
+                ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
+              },
+            ),
+          ),
+          for (final lv in const ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']) ...[
+            const SizedBox(width: 7),
+            Center(
+              child: _StageChip(
+                label: lv,
+                active: cefrSelected == lv,
+                color: levelColor(lv),
+                onTap: () {
+                  reset();
+                  ref.read(wordsStageProvider.notifier).state = null;
+                  ref.read(wordsFilterProvider.notifier).setLevels({lv});
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    // ── ردیفِ ۲: مقطعِ تحصیلی ──
+    final eduRow = SizedBox(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          for (final st in _eduStages) ...[
+            if (st != _eduStages.first) const SizedBox(width: 7),
+            Center(
+              child: _StageChip(
+                label: st.$2,
+                icon: st.$3,
+                active: eduSelected == st.$1 && !practice,
+                color: _eduColor(st.$1),
+                onTap: () {
+                  reset();
+                  ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
+                  if (st.$1 == kStageUpper || st.$1 == kStageUniversity) {
+                    ref.read(wordsStageProvider.notifier).state = st.$1;
+                  } else {
+                    ref.read(primaryLevelProvider.notifier).state = st.$1;
+                    ref.read(wordsStageProvider.notifier).state = kStagePrimary;
+                  }
+                },
+              ),
+            ),
+            if (st.$1 == 'A1' || st.$1 == 'A2') ...[
+              const SizedBox(width: 7),
+              Center(
+                child: _StageChip(
+                  label: fa ? 'تمرین‌ها' : 'Practice',
+                  icon: Icons.fitness_center_rounded,
+                  active: practice &&
+                      stage == kStagePrimary &&
+                      primaryLevel == st.$1,
+                  color: levelColor(st.$1),
+                  onTap: () {
+                    reset();
+                    ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
+                    ref.read(primaryLevelProvider.notifier).state = st.$1;
+                    ref.read(wordsStageProvider.notifier).state = kStagePrimary;
+                    ref.read(primaryPracticeOpenProvider.notifier).state = true;
+                  },
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        heading(fa ? 'استاندارد CEFR' : 'CEFR level'),
+        cefrRow,
+        const SizedBox(height: 4),
+        heading(fa ? 'مقطع تحصیلی' : 'Education stage'),
+        eduRow,
+      ],
     );
   }
 }
