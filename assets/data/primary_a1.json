@@ -5250,6 +5250,601 @@
      "pos": "other",
      "en": "I don't understand.",
      "fa": ""
+    },
+    {
+     "id": 900572,
+     "level": "A1",
+     "pos": "other",
+     "en": "I like pizza.",
+     "fa": "من پیتزا دوست دارم."
+    },
+    {
+     "id": 900573,
+     "level": "A1",
+     "pos": "other",
+     "en": "I like cats.",
+     "fa": "من گربه‌ها را دوست دارم."
+    },
+    {
+     "id": 900574,
+     "level": "A1",
+     "pos": "other",
+     "en": "I like to play.",
+     "fa": "من دوست دارم بازی کنم."
+    },
+    {
+     "id": 900575,
+     "level": "A1",
+     "pos": "other",
+     "en": "I like to draw.",
+     "fa": "من دوست دارم نقاشی بکشم."
+    },
+    {
+     "id": 900576,
+     "level": "A1",
+     "pos": "other",
+     "en": "I don't like spiders.",
+     "fa": "من از عنکبوت‌ها خوشم نمی‌آید."
+    },
+    {
+     "id": 900577,
+     "level": "A1",
+     "pos": "other",
+     "en": "I love my family.",
+     "fa": "من خانواده‌ام را دوست دارم."
+    },
+    {
+     "id": 900578,
+     "level": "A1",
+     "pos": "other",
+     "en": "My favorite color is blue.",
+     "fa": "رنگ مورد علاقه‌ی من آبی است."
+    },
+    {
+     "id": 900579,
+     "level": "A1",
+     "pos": "other",
+     "en": "My favorite animal is a dog.",
+     "fa": "حیوان مورد علاقه‌ی من سگ است."
+    },
+    {
+     "id": 900580,
+     "level": "A1",
+     "pos": "other",
+     "en": "I can run fast.",
+     "fa": "من می‌توانم سریع بدوم."
+    },
+    {
+     "id": 900581,
+     "level": "A1",
+     "pos": "other",
+     "en": "I can swim.",
+     "fa": "من می‌توانم شنا کنم."
+    },
+    {
+     "id": 900582,
+     "level": "A1",
+     "pos": "other",
+     "en": "I can't fly.",
+     "fa": "من نمی‌توانم پرواز کنم."
+    },
+    {
+     "id": 900583,
+     "level": "A1",
+     "pos": "other",
+     "en": "Can I play?",
+     "fa": "می‌توانم بازی کنم؟"
+    },
+    {
+     "id": 900584,
+     "level": "A1",
+     "pos": "other",
+     "en": "Can I go to the toilet?",
+     "fa": "می‌توانم به توالت بروم؟"
+    },
+    {
+     "id": 900585,
+     "level": "A1",
+     "pos": "other",
+     "en": "May I come in?",
+     "fa": "اجازه هست بیایم تو؟"
+    },
+    {
+     "id": 900586,
+     "level": "A1",
+     "pos": "other",
+     "en": "Can I have some juice, please?",
+     "fa": "لطفاً کمی آب‌میوه می‌دهید؟"
+    },
+    {
+     "id": 900587,
+     "level": "A1",
+     "pos": "other",
+     "en": "Let's play!",
+     "fa": "بیا بازی کنیم!"
+    },
+    {
+     "id": 900588,
+     "level": "A1",
+     "pos": "other",
+     "en": "Let's go!",
+     "fa": "بریم!"
+    },
+    {
+     "id": 900589,
+     "level": "A1",
+     "pos": "other",
+     "en": "Look at me!",
+     "fa": "به من نگاه کن!"
+    },
+    {
+     "id": 900590,
+     "level": "A1",
+     "pos": "other",
+     "en": "Look at that bird.",
+     "fa": "به آن پرنده نگاه کن."
+    },
+    {
+     "id": 900591,
+     "level": "A1",
+     "pos": "other",
+     "en": "Listen to me.",
+     "fa": "به من گوش کن."
+    },
+    {
+     "id": 900592,
+     "level": "A1",
+     "pos": "other",
+     "en": "Come here.",
+     "fa": "بیا اینجا."
+    },
+    {
+     "id": 900593,
+     "level": "A1",
+     "pos": "other",
+     "en": "Sit down, please.",
+     "fa": "لطفاً بنشین."
+    },
+    {
+     "id": 900594,
+     "level": "A1",
+     "pos": "other",
+     "en": "Stand up.",
+     "fa": "بلند شو."
+    },
+    {
+     "id": 900595,
+     "level": "A1",
+     "pos": "other",
+     "en": "Open your book.",
+     "fa": "کتابت را باز کن."
+    },
+    {
+     "id": 900596,
+     "level": "A1",
+     "pos": "other",
+     "en": "Close the door.",
+     "fa": "در را ببند."
+    },
+    {
+     "id": 900597,
+     "level": "A1",
+     "pos": "other",
+     "en": "Wash your hands.",
+     "fa": "دست‌هایت را بشور."
+    },
+    {
+     "id": 900598,
+     "level": "A1",
+     "pos": "other",
+     "en": "Brush your teeth.",
+     "fa": "مسواک بزن."
+    },
+    {
+     "id": 900599,
+     "level": "A1",
+     "pos": "other",
+     "en": "Good job!",
+     "fa": "آفرین!"
+    },
+    {
+     "id": 900600,
+     "level": "A1",
+     "pos": "other",
+     "en": "Well done!",
+     "fa": "دمت گرم! (عالی بود)"
+    },
+    {
+     "id": 900601,
+     "level": "A1",
+     "pos": "other",
+     "en": "I'm ready.",
+     "fa": "من آماده‌ام."
+    },
+    {
+     "id": 900602,
+     "level": "A1",
+     "pos": "other",
+     "en": "I'm done.",
+     "fa": "من تمام کردم."
+    },
+    {
+     "id": 900603,
+     "level": "A1",
+     "pos": "other",
+     "en": "I'm cold.",
+     "fa": "من سردم است."
+    },
+    {
+     "id": 900604,
+     "level": "A1",
+     "pos": "other",
+     "en": "I'm hot.",
+     "fa": "من گرمم است."
+    },
+    {
+     "id": 900605,
+     "level": "A1",
+     "pos": "other",
+     "en": "I'm happy today.",
+     "fa": "امروز خوشحالم."
+    },
+    {
+     "id": 900606,
+     "level": "A1",
+     "pos": "other",
+     "en": "I'm sad.",
+     "fa": "من ناراحتم."
+    },
+    {
+     "id": 900607,
+     "level": "A1",
+     "pos": "other",
+     "en": "I'm scared.",
+     "fa": "من می‌ترسم."
+    },
+    {
+     "id": 900608,
+     "level": "A1",
+     "pos": "other",
+     "en": "It's mine.",
+     "fa": "مالِ من است."
+    },
+    {
+     "id": 900609,
+     "level": "A1",
+     "pos": "other",
+     "en": "It's yours.",
+     "fa": "مالِ توست."
+    },
+    {
+     "id": 900610,
+     "level": "A1",
+     "pos": "other",
+     "en": "Give it to me.",
+     "fa": "آن را به من بده."
+    },
+    {
+     "id": 900611,
+     "level": "A1",
+     "pos": "other",
+     "en": "Where is my bag?",
+     "fa": "کیف من کجاست؟"
+    },
+    {
+     "id": 900612,
+     "level": "A1",
+     "pos": "other",
+     "en": "Where is Mom?",
+     "fa": "مامان کجاست؟"
+    },
+    {
+     "id": 900613,
+     "level": "A1",
+     "pos": "other",
+     "en": "Here you are.",
+     "fa": "بفرمایید."
+    },
+    {
+     "id": 900614,
+     "level": "A1",
+     "pos": "other",
+     "en": "This is my house.",
+     "fa": "این خانه‌ی من است."
+    },
+    {
+     "id": 900615,
+     "level": "A1",
+     "pos": "other",
+     "en": "That is my dog.",
+     "fa": "آن سگِ من است."
+    },
+    {
+     "id": 900616,
+     "level": "A1",
+     "pos": "other",
+     "en": "There is a cat.",
+     "fa": "یک گربه آنجاست."
+    },
+    {
+     "id": 900617,
+     "level": "A1",
+     "pos": "other",
+     "en": "There are two birds.",
+     "fa": "دو پرنده آنجا هستند."
+    },
+    {
+     "id": 900618,
+     "level": "A1",
+     "pos": "other",
+     "en": "What time is it?",
+     "fa": "ساعت چند است؟"
+    },
+    {
+     "id": 900619,
+     "level": "A1",
+     "pos": "other",
+     "en": "What's the weather like?",
+     "fa": "هوا چطور است؟"
+    },
+    {
+     "id": 900620,
+     "level": "A1",
+     "pos": "other",
+     "en": "It's sunny today.",
+     "fa": "امروز هوا آفتابی است."
+    },
+    {
+     "id": 900621,
+     "level": "A1",
+     "pos": "other",
+     "en": "It's raining.",
+     "fa": "باران می‌بارد."
+    },
+    {
+     "id": 900622,
+     "level": "A1",
+     "pos": "other",
+     "en": "I have a brother.",
+     "fa": "من یک برادر دارم."
+    },
+    {
+     "id": 900623,
+     "level": "A1",
+     "pos": "other",
+     "en": "I have two sisters.",
+     "fa": "من دو خواهر دارم."
+    },
+    {
+     "id": 900624,
+     "level": "A1",
+     "pos": "other",
+     "en": "He is my friend.",
+     "fa": "او دوستِ من است."
+    },
+    {
+     "id": 900625,
+     "level": "A1",
+     "pos": "other",
+     "en": "She is my teacher.",
+     "fa": "او معلمِ من است."
+    },
+    {
+     "id": 900626,
+     "level": "A1",
+     "pos": "other",
+     "en": "We are friends.",
+     "fa": "ما دوست هستیم."
+    },
+    {
+     "id": 900627,
+     "level": "A1",
+     "pos": "other",
+     "en": "They are in the park.",
+     "fa": "آن‌ها در پارک هستند."
+    },
+    {
+     "id": 900628,
+     "level": "A1",
+     "pos": "other",
+     "en": "I go to school.",
+     "fa": "من به مدرسه می‌روم."
+    },
+    {
+     "id": 900629,
+     "level": "A1",
+     "pos": "other",
+     "en": "I eat breakfast at seven.",
+     "fa": "من ساعت هفت صبحانه می‌خورم."
+    },
+    {
+     "id": 900630,
+     "level": "A1",
+     "pos": "other",
+     "en": "I wake up at seven.",
+     "fa": "من ساعت هفت بیدار می‌شوم."
+    },
+    {
+     "id": 900631,
+     "level": "A1",
+     "pos": "other",
+     "en": "I go to bed at eight.",
+     "fa": "من ساعت هشت می‌خوابم."
+    },
+    {
+     "id": 900632,
+     "level": "A1",
+     "pos": "other",
+     "en": "Time for lunch!",
+     "fa": "وقتِ ناهار است!"
+    },
+    {
+     "id": 900633,
+     "level": "A1",
+     "pos": "other",
+     "en": "Time to sleep.",
+     "fa": "وقتِ خواب است."
+    },
+    {
+     "id": 900634,
+     "level": "A1",
+     "pos": "other",
+     "en": "Don't touch!",
+     "fa": "دست نزن!"
+    },
+    {
+     "id": 900635,
+     "level": "A1",
+     "pos": "other",
+     "en": "Be careful!",
+     "fa": "مواظب باش!"
+    },
+    {
+     "id": 900636,
+     "level": "A1",
+     "pos": "other",
+     "en": "Don't run.",
+     "fa": "ندو."
+    },
+    {
+     "id": 900637,
+     "level": "A1",
+     "pos": "other",
+     "en": "Stop it!",
+     "fa": "بس کن!"
+    },
+    {
+     "id": 900638,
+     "level": "A1",
+     "pos": "other",
+     "en": "It's my turn.",
+     "fa": "نوبتِ من است."
+    },
+    {
+     "id": 900639,
+     "level": "A1",
+     "pos": "other",
+     "en": "It's your turn.",
+     "fa": "نوبتِ توست."
+    },
+    {
+     "id": 900640,
+     "level": "A1",
+     "pos": "other",
+     "en": "Me too!",
+     "fa": "من هم!"
+    },
+    {
+     "id": 900641,
+     "level": "A1",
+     "pos": "other",
+     "en": "I know.",
+     "fa": "می‌دانم."
+    },
+    {
+     "id": 900642,
+     "level": "A1",
+     "pos": "other",
+     "en": "I don't know.",
+     "fa": "نمی‌دانم."
+    },
+    {
+     "id": 900643,
+     "level": "A1",
+     "pos": "other",
+     "en": "Please help me.",
+     "fa": "لطفاً کمکم کن."
+    },
+    {
+     "id": 900644,
+     "level": "A1",
+     "pos": "other",
+     "en": "Thank you very much.",
+     "fa": "خیلی ممنون."
+    },
+    {
+     "id": 900645,
+     "level": "A1",
+     "pos": "other",
+     "en": "See you tomorrow.",
+     "fa": "فردا می‌بینمت."
+    },
+    {
+     "id": 900646,
+     "level": "A1",
+     "pos": "other",
+     "en": "Have a nice day!",
+     "fa": "روز خوبی داشته باشی!"
+    },
+    {
+     "id": 900647,
+     "level": "A1",
+     "pos": "other",
+     "en": "Happy birthday!",
+     "fa": "تولدت مبارک!"
+    },
+    {
+     "id": 900648,
+     "level": "A1",
+     "pos": "other",
+     "en": "Do you like ice cream?",
+     "fa": "بستنی دوست داری؟"
+    },
+    {
+     "id": 900649,
+     "level": "A1",
+     "pos": "other",
+     "en": "Yes, I do.",
+     "fa": "بله، دوست دارم."
+    },
+    {
+     "id": 900650,
+     "level": "A1",
+     "pos": "other",
+     "en": "No, I don't.",
+     "fa": "نه، دوست ندارم."
+    },
+    {
+     "id": 900651,
+     "level": "A1",
+     "pos": "other",
+     "en": "Are you hungry?",
+     "fa": "گرسنه‌ای؟"
+    },
+    {
+     "id": 900652,
+     "level": "A1",
+     "pos": "other",
+     "en": "Yes, I am.",
+     "fa": "بله، هستم."
+    },
+    {
+     "id": 900653,
+     "level": "A1",
+     "pos": "other",
+     "en": "No, I'm not.",
+     "fa": "نه، نیستم."
+    },
+    {
+     "id": 900654,
+     "level": "A1",
+     "pos": "other",
+     "en": "Do you have a pen?",
+     "fa": "خودکار داری؟"
+    },
+    {
+     "id": 900655,
+     "level": "A1",
+     "pos": "other",
+     "en": "How much is it?",
+     "fa": "قیمتش چقدر است؟"
+    },
+    {
+     "id": 900656,
+     "level": "A1",
+     "pos": "other",
+     "en": "I want to play outside.",
+     "fa": "می‌خواهم بیرون بازی کنم."
     }
    ]
   },
@@ -5618,6 +6213,251 @@
    ]
   },
   {
+   "key": "movement",
+   "fa": "روش‌های حرکت",
+   "en": "Ways to Move",
+   "words": [
+    {
+     "id": 104796,
+     "level": "A1",
+     "pos": "noun",
+     "en": "walk",
+     "fa": "راه رفتن"
+    },
+    {
+     "id": 103815,
+     "level": "A1",
+     "pos": "verb",
+     "en": "run",
+     "fa": "دویدن"
+    },
+    {
+     "id": 102452,
+     "level": "A2",
+     "pos": "noun",
+     "en": "jump",
+     "fa": "پرش"
+    },
+    {
+     "id": 900183,
+     "level": "A1",
+     "pos": "verb",
+     "en": "hop",
+     "fa": "لی‌لی کردن"
+    },
+    {
+     "id": 900657,
+     "level": "A1",
+     "pos": "verb",
+     "en": "skip",
+     "fa": "جست‌وخیز کردن"
+    },
+    {
+     "id": 900658,
+     "level": "A1",
+     "pos": "verb",
+     "en": "crawl",
+     "fa": "چهاردست‌وپا رفتن"
+    },
+    {
+     "id": 900346,
+     "level": "A1",
+     "pos": "noun",
+     "en": "March",
+     "fa": "مارس"
+    },
+    {
+     "id": 900659,
+     "level": "A1",
+     "pos": "verb",
+     "en": "tiptoe",
+     "fa": "پنجه‌پنجه رفتن"
+    },
+    {
+     "id": 900660,
+     "level": "A1",
+     "pos": "verb",
+     "en": "roll",
+     "fa": "غلتیدن"
+    },
+    {
+     "id": 900661,
+     "level": "A1",
+     "pos": "verb",
+     "en": "spin",
+     "fa": "چرخیدن (دور خود)"
+    },
+    {
+     "id": 900662,
+     "level": "A1",
+     "pos": "verb",
+     "en": "turn",
+     "fa": "برگشتن، چرخیدن"
+    },
+    {
+     "id": 900663,
+     "level": "A1",
+     "pos": "verb",
+     "en": "bend",
+     "fa": "خم شدن"
+    },
+    {
+     "id": 900664,
+     "level": "A1",
+     "pos": "verb",
+     "en": "stretch",
+     "fa": "کش و قوس آمدن"
+    },
+    {
+     "id": 900665,
+     "level": "A1",
+     "pos": "verb",
+     "en": "shake",
+     "fa": "تکان دادن"
+    },
+    {
+     "id": 900666,
+     "level": "A1",
+     "pos": "verb",
+     "en": "nod",
+     "fa": "سر تکان دادن"
+    },
+    {
+     "id": 900667,
+     "level": "A1",
+     "pos": "verb",
+     "en": "bounce",
+     "fa": "جهیدن (مثل توپ)"
+    },
+    {
+     "id": 900260,
+     "level": "A1",
+     "pos": "noun",
+     "en": "slide",
+     "fa": "سرسره"
+    },
+    {
+     "id": 900668,
+     "level": "A1",
+     "pos": "verb",
+     "en": "fall",
+     "fa": "افتادن"
+    },
+    {
+     "id": 900669,
+     "level": "A1",
+     "pos": "verb",
+     "en": "follow",
+     "fa": "دنبال کردن"
+    },
+    {
+     "id": 900670,
+     "level": "A1",
+     "pos": "verb",
+     "en": "chase",
+     "fa": "دنبال کردن (دویدن پشتِ)"
+    },
+    {
+     "id": 900671,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "quickly",
+     "fa": "سریع"
+    },
+    {
+     "id": 900672,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "slowly",
+     "fa": "آهسته"
+    },
+    {
+     "id": 900673,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "carefully",
+     "fa": "با احتیاط"
+    },
+    {
+     "id": 900674,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "quietly",
+     "fa": "بی‌صدا"
+    },
+    {
+     "id": 900675,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "loudly",
+     "fa": "بلند"
+    },
+    {
+     "id": 900676,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "forward",
+     "fa": "به جلو"
+    },
+    {
+     "id": 900677,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "backward",
+     "fa": "به عقب"
+    },
+    {
+     "id": 900678,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "around",
+     "fa": "دور، دوروبر"
+    },
+    {
+     "id": 900679,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "through",
+     "fa": "از میانِ"
+    },
+    {
+     "id": 900680,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "across",
+     "fa": "از آن‌سوی"
+    },
+    {
+     "id": 900681,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "over",
+     "fa": "بالای، از رویِ"
+    },
+    {
+     "id": 900682,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "into",
+     "fa": "به داخلِ"
+    },
+    {
+     "id": 900683,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "out of",
+     "fa": "بیرون از"
+    },
+    {
+     "id": 900684,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "along",
+     "fa": "در امتدادِ"
+    }
+   ]
+  },
+  {
    "key": "opposites",
    "fa": "ضدها",
    "en": "Opposites",
@@ -5845,6 +6685,314 @@
      "pos": "adjective",
      "en": "sad",
      "fa": "غمگین"
+    }
+   ]
+  },
+  {
+   "key": "size",
+   "fa": "اندازه و مقایسه",
+   "en": "Size & Comparing",
+   "words": [
+    {
+     "id": 900685,
+     "level": "A1",
+     "pos": "noun",
+     "en": "size",
+     "fa": "اندازه"
+    },
+    {
+     "id": 900686,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "little",
+     "fa": "کوچولو"
+    },
+    {
+     "id": 900687,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "huge",
+     "fa": "غول‌پیکر"
+    },
+    {
+     "id": 900688,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "tiny",
+     "fa": "ریزه"
+    },
+    {
+     "id": 900689,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "wide",
+     "fa": "پهن"
+    },
+    {
+     "id": 900690,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "narrow",
+     "fa": "باریک"
+    },
+    {
+     "id": 900691,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "thick",
+     "fa": "کلفت"
+    },
+    {
+     "id": 900692,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "thin",
+     "fa": "نازک، لاغر"
+    },
+    {
+     "id": 900693,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "fat",
+     "fa": "چاق"
+    },
+    {
+     "id": 900694,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "bigger",
+     "fa": "بزرگ‌تر"
+    },
+    {
+     "id": 900695,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "smaller",
+     "fa": "کوچک‌تر"
+    },
+    {
+     "id": 900696,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "taller",
+     "fa": "بلندتر (قد)"
+    },
+    {
+     "id": 900697,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "shorter",
+     "fa": "کوتاه‌تر"
+    },
+    {
+     "id": 900698,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "longer",
+     "fa": "بلندتر (طول)"
+    },
+    {
+     "id": 900699,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "faster",
+     "fa": "سریع‌تر"
+    },
+    {
+     "id": 900700,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "slower",
+     "fa": "آهسته‌تر"
+    },
+    {
+     "id": 900701,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "heavier",
+     "fa": "سنگین‌تر"
+    },
+    {
+     "id": 900702,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "lighter",
+     "fa": "سبک‌تر"
+    },
+    {
+     "id": 900703,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "older",
+     "fa": "مسن‌تر"
+    },
+    {
+     "id": 900704,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "younger",
+     "fa": "جوان‌تر"
+    },
+    {
+     "id": 900705,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "better",
+     "fa": "بهتر"
+    },
+    {
+     "id": 900706,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "worse",
+     "fa": "بدتر"
+    },
+    {
+     "id": 900707,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "biggest",
+     "fa": "بزرگ‌ترین"
+    },
+    {
+     "id": 900708,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "smallest",
+     "fa": "کوچک‌ترین"
+    },
+    {
+     "id": 900709,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "tallest",
+     "fa": "بلندترین (قد)"
+    },
+    {
+     "id": 900710,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "best",
+     "fa": "بهترین"
+    },
+    {
+     "id": 900711,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "more",
+     "fa": "بیشتر"
+    },
+    {
+     "id": 900712,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "less",
+     "fa": "کمتر"
+    },
+    {
+     "id": 900713,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "same",
+     "fa": "یکسان"
+    },
+    {
+     "id": 900714,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "different",
+     "fa": "متفاوت"
+    },
+    {
+     "id": 900715,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "many",
+     "fa": "تعداد زیاد"
+    },
+    {
+     "id": 900716,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "much",
+     "fa": "مقدار زیاد"
+    },
+    {
+     "id": 900717,
+     "level": "A1",
+     "pos": "other",
+     "en": "a lot",
+     "fa": "خیلی (زیاد)"
+    },
+    {
+     "id": 900718,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "some",
+     "fa": "مقداری"
+    },
+    {
+     "id": 900719,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "few",
+     "fa": "تعداد کم"
+    },
+    {
+     "id": 900720,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "enough",
+     "fa": "کافی"
+    },
+    {
+     "id": 900721,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "all",
+     "fa": "همه"
+    },
+    {
+     "id": 900722,
+     "level": "A1",
+     "pos": "noun",
+     "en": "half",
+     "fa": "نصف"
+    },
+    {
+     "id": 900723,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "whole",
+     "fa": "کامل"
+    },
+    {
+     "id": 900724,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pair",
+     "fa": "جفت"
+    },
+    {
+     "id": 900725,
+     "level": "A1",
+     "pos": "other",
+     "en": "bigger than",
+     "fa": "بزرگ‌تر از"
+    },
+    {
+     "id": 900726,
+     "level": "A1",
+     "pos": "other",
+     "en": "as big as",
+     "fa": "به بزرگیِ"
+    },
+    {
+     "id": 900727,
+     "level": "A1",
+     "pos": "other",
+     "en": "the same as",
+     "fa": "مثلِ، یکسان با"
     }
    ]
   },
