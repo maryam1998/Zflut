@@ -7203,6 +7203,1784 @@
    ]
   },
   {
+   "key": "prep_place",
+   "fa": "حروف اضافه مکان و حرکت",
+   "en": "Prepositions of Place & Movement",
+   "group": "life",
+   "words": [
+    {
+     "id": 900380,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "in",
+     "fa": ""
+    },
+    {
+     "id": 900381,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "on",
+     "fa": ""
+    },
+    {
+     "id": 932001,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "at",
+     "fa": ""
+    },
+    {
+     "id": 900382,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "under",
+     "fa": ""
+    },
+    {
+     "id": 900681,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "over",
+     "fa": ""
+    },
+    {
+     "id": 900387,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "above",
+     "fa": ""
+    },
+    {
+     "id": 900388,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "below",
+     "fa": ""
+    },
+    {
+     "id": 900384,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "behind",
+     "fa": ""
+    },
+    {
+     "id": 900385,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "in front of",
+     "fa": ""
+    },
+    {
+     "id": 900386,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "between",
+     "fa": ""
+    },
+    {
+     "id": 932002,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "among",
+     "fa": ""
+    },
+    {
+     "id": 900383,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "next to",
+     "fa": ""
+    },
+    {
+     "id": 932003,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "beside",
+     "fa": ""
+    },
+    {
+     "id": 900389,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "near",
+     "fa": ""
+    },
+    {
+     "id": 932004,
+     "level": "A2",
+     "pos": "preposition",
+     "en": "close to",
+     "fa": ""
+    },
+    {
+     "id": 932005,
+     "level": "A2",
+     "pos": "preposition",
+     "en": "far from",
+     "fa": ""
+    },
+    {
+     "id": 702649,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "opposite",
+     "fa": ""
+    },
+    {
+     "id": 900391,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "inside",
+     "fa": ""
+    },
+    {
+     "id": 900392,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "outside",
+     "fa": ""
+    },
+    {
+     "id": 900680,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "across",
+     "fa": ""
+    },
+    {
+     "id": 900684,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "along",
+     "fa": ""
+    },
+    {
+     "id": 900678,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "around",
+     "fa": ""
+    },
+    {
+     "id": 932006,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "against",
+     "fa": ""
+    },
+    {
+     "id": 932007,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "by",
+     "fa": ""
+    },
+    {
+     "id": 932008,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "on top of",
+     "fa": ""
+    },
+    {
+     "id": 932009,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "at the bottom of",
+     "fa": ""
+    },
+    {
+     "id": 900440,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "to",
+     "fa": ""
+    },
+    {
+     "id": 900442,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "from",
+     "fa": ""
+    },
+    {
+     "id": 900682,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "into",
+     "fa": ""
+    },
+    {
+     "id": 900683,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "out of",
+     "fa": ""
+    },
+    {
+     "id": 932010,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "onto",
+     "fa": ""
+    },
+    {
+     "id": 932011,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "off",
+     "fa": ""
+    },
+    {
+     "id": 900679,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "through",
+     "fa": ""
+    },
+    {
+     "id": 932012,
+     "level": "A2",
+     "pos": "preposition",
+     "en": "towards",
+     "fa": ""
+    },
+    {
+     "id": 900363,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "up",
+     "fa": ""
+    },
+    {
+     "id": 900364,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "down",
+     "fa": ""
+    },
+    {
+     "id": 702756,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "past",
+     "fa": ""
+    },
+    {
+     "id": 932013,
+     "level": "A2",
+     "pos": "preposition",
+     "en": "away from",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "prep_time",
+   "fa": "حروف اضافه زمان و سایر",
+   "en": "Prepositions of Time & Others",
+   "group": "life",
+   "words": [
+    {
+     "id": 932001,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "at",
+     "fa": ""
+    },
+    {
+     "id": 900380,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "in",
+     "fa": ""
+    },
+    {
+     "id": 900381,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "on",
+     "fa": ""
+    },
+    {
+     "id": 701222,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "during",
+     "fa": ""
+    },
+    {
+     "id": 900441,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "for",
+     "fa": ""
+    },
+    {
+     "id": 703491,
+     "level": "A2",
+     "pos": "preposition",
+     "en": "since",
+     "fa": ""
+    },
+    {
+     "id": 704082,
+     "level": "A1",
+     "pos": "conjunction",
+     "en": "until",
+     "fa": ""
+    },
+    {
+     "id": 700367,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "before",
+     "fa": ""
+    },
+    {
+     "id": 700102,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "after",
+     "fa": ""
+    },
+    {
+     "id": 932007,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "by",
+     "fa": ""
+    },
+    {
+     "id": 900442,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "from",
+     "fa": ""
+    },
+    {
+     "id": 932014,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "within",
+     "fa": ""
+    },
+    {
+     "id": 910061,
+     "level": "A2",
+     "pos": "other",
+     "en": "at the end of",
+     "fa": ""
+    },
+    {
+     "id": 932015,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "at the beginning of",
+     "fa": ""
+    },
+    {
+     "id": 932016,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "in the middle of",
+     "fa": ""
+    },
+    {
+     "id": 932017,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "in time",
+     "fa": ""
+    },
+    {
+     "id": 300018,
+     "level": "A2",
+     "pos": "idiom",
+     "en": "on time",
+     "fa": ""
+    },
+    {
+     "id": 900438,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "with",
+     "fa": ""
+    },
+    {
+     "id": 932018,
+     "level": "A2",
+     "pos": "preposition",
+     "en": "without",
+     "fa": ""
+    },
+    {
+     "id": 932019,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "about",
+     "fa": ""
+    },
+    {
+     "id": 900439,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "of",
+     "fa": ""
+    },
+    {
+     "id": 102579,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "like",
+     "fa": ""
+    },
+    {
+     "id": 932020,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "as",
+     "fa": ""
+    },
+    {
+     "id": 932021,
+     "level": "A2",
+     "pos": "preposition",
+     "en": "except",
+     "fa": ""
+    },
+    {
+     "id": 932022,
+     "level": "A2",
+     "pos": "preposition",
+     "en": "instead of",
+     "fa": ""
+    },
+    {
+     "id": 932023,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "because of",
+     "fa": ""
+    },
+    {
+     "id": 932024,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "according to",
+     "fa": ""
+    },
+    {
+     "id": 701065,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "despite",
+     "fa": ""
+    },
+    {
+     "id": 932025,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "in spite of",
+     "fa": ""
+    },
+    {
+     "id": 932026,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "such as",
+     "fa": ""
+    },
+    {
+     "id": 932027,
+     "level": "B1",
+     "pos": "preposition",
+     "en": "apart from",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "articles",
+   "fa": "حروف تعریف و صفات تعیینی",
+   "en": "Articles & Determiners",
+   "group": "life",
+   "words": [
+    {
+     "id": 900426,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "a",
+     "fa": ""
+    },
+    {
+     "id": 900427,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "an",
+     "fa": ""
+    },
+    {
+     "id": 900428,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "the",
+     "fa": ""
+    },
+    {
+     "id": 900413,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "this",
+     "fa": ""
+    },
+    {
+     "id": 900414,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "that",
+     "fa": ""
+    },
+    {
+     "id": 900415,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "these",
+     "fa": ""
+    },
+    {
+     "id": 900416,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "those",
+     "fa": ""
+    },
+    {
+     "id": 900417,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "my",
+     "fa": ""
+    },
+    {
+     "id": 900418,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "your",
+     "fa": ""
+    },
+    {
+     "id": 900419,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "his",
+     "fa": ""
+    },
+    {
+     "id": 900410,
+     "level": "A1",
+     "pos": "other",
+     "en": "her",
+     "fa": ""
+    },
+    {
+     "id": 900422,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "its",
+     "fa": ""
+    },
+    {
+     "id": 900420,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "our",
+     "fa": ""
+    },
+    {
+     "id": 900421,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "their",
+     "fa": ""
+    },
+    {
+     "id": 931039,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "whose",
+     "fa": ""
+    },
+    {
+     "id": 931040,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "which",
+     "fa": ""
+    },
+    {
+     "id": 900430,
+     "level": "A1",
+     "pos": "other",
+     "en": "what",
+     "fa": ""
+    },
+    {
+     "id": 931030,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "another",
+     "fa": ""
+    },
+    {
+     "id": 931031,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "other",
+     "fa": ""
+    },
+    {
+     "id": 932028,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "every",
+     "fa": ""
+    },
+    {
+     "id": 931033,
+     "level": "A2",
+     "pos": "pronoun",
+     "en": "each",
+     "fa": ""
+    },
+    {
+     "id": 931034,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "either",
+     "fa": ""
+    },
+    {
+     "id": 931035,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "neither",
+     "fa": ""
+    },
+    {
+     "id": 102939,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "no",
+     "fa": ""
+    },
+    {
+     "id": 932029,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "such",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "quantifiers",
+   "fa": "مقدارنماها",
+   "en": "Quantifiers & Amounts",
+   "group": "life",
+   "words": [
+    {
+     "id": 900718,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "some",
+     "fa": ""
+    },
+    {
+     "id": 931036,
+     "level": "A1",
+     "pos": "pronoun",
+     "en": "any",
+     "fa": ""
+    },
+    {
+     "id": 102939,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "no",
+     "fa": ""
+    },
+    {
+     "id": 931037,
+     "level": "B1",
+     "pos": "pronoun",
+     "en": "none",
+     "fa": ""
+    },
+    {
+     "id": 900716,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "much",
+     "fa": ""
+    },
+    {
+     "id": 900715,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "many",
+     "fa": ""
+    },
+    {
+     "id": 932030,
+     "level": "A2",
+     "pos": "determiner",
+     "en": "a lot of",
+     "fa": ""
+    },
+    {
+     "id": 932031,
+     "level": "A2",
+     "pos": "determiner",
+     "en": "lots of",
+     "fa": ""
+    },
+    {
+     "id": 932032,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "plenty of",
+     "fa": ""
+    },
+    {
+     "id": 932033,
+     "level": "A2",
+     "pos": "determiner",
+     "en": "a few",
+     "fa": ""
+    },
+    {
+     "id": 900719,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "few",
+     "fa": ""
+    },
+    {
+     "id": 932034,
+     "level": "A2",
+     "pos": "determiner",
+     "en": "a little",
+     "fa": ""
+    },
+    {
+     "id": 900686,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "little",
+     "fa": ""
+    },
+    {
+     "id": 932035,
+     "level": "A2",
+     "pos": "determiner",
+     "en": "several",
+     "fa": ""
+    },
+    {
+     "id": 900720,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "enough",
+     "fa": ""
+    },
+    {
+     "id": 932036,
+     "level": "A2",
+     "pos": "determiner",
+     "en": "too much",
+     "fa": ""
+    },
+    {
+     "id": 932037,
+     "level": "A2",
+     "pos": "determiner",
+     "en": "too many",
+     "fa": ""
+    },
+    {
+     "id": 932038,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "not enough",
+     "fa": ""
+    },
+    {
+     "id": 900711,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "more",
+     "fa": ""
+    },
+    {
+     "id": 932039,
+     "level": "A2",
+     "pos": "determiner",
+     "en": "most",
+     "fa": ""
+    },
+    {
+     "id": 900712,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "less",
+     "fa": ""
+    },
+    {
+     "id": 932040,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "fewer",
+     "fa": ""
+    },
+    {
+     "id": 932041,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "least",
+     "fa": ""
+    },
+    {
+     "id": 900721,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "all",
+     "fa": ""
+    },
+    {
+     "id": 700441,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "both",
+     "fa": ""
+    },
+    {
+     "id": 900722,
+     "level": "A1",
+     "pos": "noun",
+     "en": "half",
+     "fa": ""
+    },
+    {
+     "id": 932042,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "a bit of",
+     "fa": ""
+    },
+    {
+     "id": 932043,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "a couple of",
+     "fa": ""
+    },
+    {
+     "id": 932044,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "a number of",
+     "fa": ""
+    },
+    {
+     "id": 932045,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "hundreds of",
+     "fa": ""
+    },
+    {
+     "id": 932046,
+     "level": "B1",
+     "pos": "determiner",
+     "en": "the rest of",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "adv_freq",
+   "fa": "قیدهای تکرار و زمان",
+   "en": "Adverbs of Frequency & Time",
+   "group": "life",
+   "words": [
+    {
+     "id": 100174,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "always",
+     "fa": ""
+    },
+    {
+     "id": 104718,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "usually",
+     "fa": ""
+    },
+    {
+     "id": 932047,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "normally",
+     "fa": ""
+    },
+    {
+     "id": 103025,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "often",
+     "fa": ""
+    },
+    {
+     "id": 932048,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "frequently",
+     "fa": ""
+    },
+    {
+     "id": 104104,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "sometimes",
+     "fa": ""
+    },
+    {
+     "id": 932049,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "occasionally",
+     "fa": ""
+    },
+    {
+     "id": 932050,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "rarely",
+     "fa": ""
+    },
+    {
+     "id": 932051,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "seldom",
+     "fa": ""
+    },
+    {
+     "id": 932052,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "hardly ever",
+     "fa": ""
+    },
+    {
+     "id": 102923,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "never",
+     "fa": ""
+    },
+    {
+     "id": 932053,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "ever",
+     "fa": ""
+    },
+    {
+     "id": 932054,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "once",
+     "fa": ""
+    },
+    {
+     "id": 932055,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "twice",
+     "fa": ""
+    },
+    {
+     "id": 910087,
+     "level": "A2",
+     "pos": "other",
+     "en": "every day",
+     "fa": ""
+    },
+    {
+     "id": 932056,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "all the time",
+     "fa": ""
+    },
+    {
+     "id": 932057,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "from time to time",
+     "fa": ""
+    },
+    {
+     "id": 900322,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "now",
+     "fa": ""
+    },
+    {
+     "id": 932058,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "then",
+     "fa": ""
+    },
+    {
+     "id": 900319,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "today",
+     "fa": ""
+    },
+    {
+     "id": 703939,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "tonight",
+     "fa": ""
+    },
+    {
+     "id": 900320,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "tomorrow",
+     "fa": ""
+    },
+    {
+     "id": 900321,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "yesterday",
+     "fa": ""
+    },
+    {
+     "id": 104109,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "soon",
+     "fa": ""
+    },
+    {
+     "id": 102510,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "later",
+     "fa": ""
+    },
+    {
+     "id": 703141,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "recently",
+     "fa": ""
+    },
+    {
+     "id": 702172,
+     "level": "B2",
+     "pos": "adverb",
+     "en": "lately",
+     "fa": ""
+    },
+    {
+     "id": 700150,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "already",
+     "fa": ""
+    },
+    {
+     "id": 704290,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "yet",
+     "fa": ""
+    },
+    {
+     "id": 703667,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "still",
+     "fa": ""
+    },
+    {
+     "id": 702127,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "just",
+     "fa": ""
+    },
+    {
+     "id": 700113,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "ago",
+     "fa": ""
+    },
+    {
+     "id": 900335,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "early",
+     "fa": ""
+    },
+    {
+     "id": 900336,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "late",
+     "fa": ""
+    },
+    {
+     "id": 702580,
+     "level": "B2",
+     "pos": "adverb",
+     "en": "nowadays",
+     "fa": ""
+    },
+    {
+     "id": 701541,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "finally",
+     "fa": ""
+    },
+    {
+     "id": 701385,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "eventually",
+     "fa": ""
+    },
+    {
+     "id": 703733,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "suddenly",
+     "fa": ""
+    },
+    {
+     "id": 701918,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "immediately",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "adv_manner",
+   "fa": "قیدهای حالت و درجه",
+   "en": "Adverbs of Manner & Degree",
+   "group": "life",
+   "words": [
+    {
+     "id": 900671,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "quickly",
+     "fa": ""
+    },
+    {
+     "id": 900672,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "slowly",
+     "fa": ""
+    },
+    {
+     "id": 900673,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "carefully",
+     "fa": ""
+    },
+    {
+     "id": 932059,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "carelessly",
+     "fa": ""
+    },
+    {
+     "id": 932060,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "easily",
+     "fa": ""
+    },
+    {
+     "id": 932061,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "badly",
+     "fa": ""
+    },
+    {
+     "id": 932062,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "well",
+     "fa": ""
+    },
+    {
+     "id": 900374,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "hard",
+     "fa": ""
+    },
+    {
+     "id": 900361,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "fast",
+     "fa": ""
+    },
+    {
+     "id": 900675,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "loudly",
+     "fa": ""
+    },
+    {
+     "id": 900674,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "quietly",
+     "fa": ""
+    },
+    {
+     "id": 932063,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "happily",
+     "fa": ""
+    },
+    {
+     "id": 932064,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "sadly",
+     "fa": ""
+    },
+    {
+     "id": 932065,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "angrily",
+     "fa": ""
+    },
+    {
+     "id": 932066,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "politely",
+     "fa": ""
+    },
+    {
+     "id": 932067,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "patiently",
+     "fa": ""
+    },
+    {
+     "id": 932068,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "nervously",
+     "fa": ""
+    },
+    {
+     "id": 932069,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "safely",
+     "fa": ""
+    },
+    {
+     "id": 932070,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "clearly",
+     "fa": ""
+    },
+    {
+     "id": 932071,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "correctly",
+     "fa": ""
+    },
+    {
+     "id": 932072,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "perfectly",
+     "fa": ""
+    },
+    {
+     "id": 932073,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "beautifully",
+     "fa": ""
+    },
+    {
+     "id": 932074,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "kindly",
+     "fa": ""
+    },
+    {
+     "id": 932075,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "bravely",
+     "fa": ""
+    },
+    {
+     "id": 930223,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "honestly",
+     "fa": ""
+    },
+    {
+     "id": 932076,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "together",
+     "fa": ""
+    },
+    {
+     "id": 932077,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "alone",
+     "fa": ""
+    },
+    {
+     "id": 900436,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "very",
+     "fa": ""
+    },
+    {
+     "id": 932078,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "quite",
+     "fa": ""
+    },
+    {
+     "id": 932079,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "really",
+     "fa": ""
+    },
+    {
+     "id": 900437,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "too",
+     "fa": ""
+    },
+    {
+     "id": 932080,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "so",
+     "fa": ""
+    },
+    {
+     "id": 932081,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "rather",
+     "fa": ""
+    },
+    {
+     "id": 932082,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "extremely",
+     "fa": ""
+    },
+    {
+     "id": 932083,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "fairly",
+     "fa": ""
+    },
+    {
+     "id": 932084,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "pretty",
+     "fa": ""
+    },
+    {
+     "id": 932085,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "almost",
+     "fa": ""
+    },
+    {
+     "id": 932086,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "nearly",
+     "fa": ""
+    },
+    {
+     "id": 932087,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "completely",
+     "fa": ""
+    },
+    {
+     "id": 932088,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "totally",
+     "fa": ""
+    },
+    {
+     "id": 932089,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "a bit",
+     "fa": ""
+    },
+    {
+     "id": 900720,
+     "level": "A1",
+     "pos": "determiner",
+     "en": "enough",
+     "fa": ""
+    },
+    {
+     "id": 932090,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "only",
+     "fa": ""
+    },
+    {
+     "id": 920134,
+     "level": "A2",
+     "pos": "adjective",
+     "en": "even",
+     "fa": ""
+    },
+    {
+     "id": 932091,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "especially",
+     "fa": ""
+    },
+    {
+     "id": 932092,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "exactly",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "adv_place",
+   "fa": "قیدهای مکان و نظر",
+   "en": "Adverbs of Place & Opinion",
+   "group": "life",
+   "words": [
+    {
+     "id": 900399,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "here",
+     "fa": ""
+    },
+    {
+     "id": 900400,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "there",
+     "fa": ""
+    },
+    {
+     "id": 931029,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "everywhere",
+     "fa": ""
+    },
+    {
+     "id": 931026,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "somewhere",
+     "fa": ""
+    },
+    {
+     "id": 931027,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "anywhere",
+     "fa": ""
+    },
+    {
+     "id": 931028,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "nowhere",
+     "fa": ""
+    },
+    {
+     "id": 932093,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "nearby",
+     "fa": ""
+    },
+    {
+     "id": 700008,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "abroad",
+     "fa": ""
+    },
+    {
+     "id": 932094,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "away",
+     "fa": ""
+    },
+    {
+     "id": 100361,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "back",
+     "fa": ""
+    },
+    {
+     "id": 900217,
+     "level": "A1",
+     "pos": "noun",
+     "en": "home",
+     "fa": ""
+    },
+    {
+     "id": 932095,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "upstairs",
+     "fa": ""
+    },
+    {
+     "id": 932096,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "downstairs",
+     "fa": ""
+    },
+    {
+     "id": 900392,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "outside",
+     "fa": ""
+    },
+    {
+     "id": 900391,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "inside",
+     "fa": ""
+    },
+    {
+     "id": 900390,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "far",
+     "fa": ""
+    },
+    {
+     "id": 900389,
+     "level": "A1",
+     "pos": "preposition",
+     "en": "near",
+     "fa": ""
+    },
+    {
+     "id": 900676,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "forward",
+     "fa": ""
+    },
+    {
+     "id": 702979,
+     "level": "A1",
+     "pos": "adverb",
+     "en": "probably",
+     "fa": ""
+    },
+    {
+     "id": 932097,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "maybe",
+     "fa": ""
+    },
+    {
+     "id": 702786,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "perhaps",
+     "fa": ""
+    },
+    {
+     "id": 701014,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "definitely",
+     "fa": ""
+    },
+    {
+     "id": 932098,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "certainly",
+     "fa": ""
+    },
+    {
+     "id": 702605,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "obviously",
+     "fa": ""
+    },
+    {
+     "id": 700064,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "actually",
+     "fa": ""
+    },
+    {
+     "id": 930079,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "luckily",
+     "fa": ""
+    },
+    {
+     "id": 704062,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "unfortunately",
+     "fa": ""
+    },
+    {
+     "id": 701610,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "fortunately",
+     "fa": ""
+    },
+    {
+     "id": 932099,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "hopefully",
+     "fa": ""
+    },
+    {
+     "id": 300000,
+     "level": "A2",
+     "pos": "other",
+     "en": "of course",
+     "fa": ""
+    },
+    {
+     "id": 300006,
+     "level": "A2",
+     "pos": "other",
+     "en": "in fact",
+     "fa": ""
+    },
+    {
+     "id": 932100,
+     "level": "B1",
+     "pos": "adverb",
+     "en": "at least",
+     "fa": ""
+    },
+    {
+     "id": 932101,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "also",
+     "fa": ""
+    },
+    {
+     "id": 932102,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "as well",
+     "fa": ""
+    },
+    {
+     "id": 702025,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "instead",
+     "fa": ""
+    },
+    {
+     "id": 700195,
+     "level": "A2",
+     "pos": "adverb",
+     "en": "anyway",
+     "fa": ""
+    }
+   ]
+  },
+  {
    "key": "describing",
    "fa": "توصیف چیزها",
    "en": "Describing Things",
