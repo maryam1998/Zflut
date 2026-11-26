@@ -6,6 +6,7 @@ import '../../../core/providers/primary_school_provider.dart';
 import '../../../core/providers/words_filter_provider.dart';
 import '../../../core/theme/app_theme_colors.dart';
 import '../../../core/widgets/category_grid.dart' show categoryAllOpenProvider;
+import '../../../core/widgets/level_chips.dart' show LevelChip;
 
 /// آیا چیپِ «تمرین‌ها» (کنارِ A1 یا A2) باز است؟ (تمرین‌های درک شنیداری، ساخت سؤال، نوشتن)
 final primaryPracticeOpenProvider = StateProvider<bool>((ref) => false);
@@ -204,56 +205,60 @@ class StageChipsBar extends ConsumerWidget {
           ),
         );
 
-    // ── ردیفِ ۱: CEFR ──
-    final cefrRow = SizedBox(
-      height: 50,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          Center(
-            child: _StageChip(
-              label: fa ? 'همه' : 'All',
+    // ── گروهِ ۱: CEFR (چیپ‌های رنگیِ هر سطح، همان LevelChip که در بقیه‌ی تب‌ها هست) ──
+    final cefrGroup = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        heading(fa ? 'استاندارد CEFR' : 'CEFR level'),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            LevelChip(
+              level: 'all',
               active: !inEdu && levels.isEmpty,
+              allLabel: fa ? 'همه' : 'All',
               onTap: () {
                 reset();
                 ref.read(wordsStageProvider.notifier).state = null;
                 ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
               },
             ),
-          ),
-          for (final lv in const ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']) ...[
-            const SizedBox(width: 7),
-            Center(
-              child: _StageChip(
-                label: lv,
+            for (final lv in const ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']) ...[
+              const SizedBox(width: 7),
+              LevelChip(
+                level: lv,
                 active: cefrSelected == lv,
-                color: levelColor(lv),
                 onTap: () {
                   reset();
                   ref.read(wordsStageProvider.notifier).state = null;
                   ref.read(wordsFilterProvider.notifier).setLevels({lv});
                 },
               ),
-            ),
+            ],
           ],
-        ],
-      ),
+        ),
+      ],
     );
 
-    // ── ردیفِ ۲: مقطعِ تحصیلی ──
-    final eduRow = SizedBox(
-      height: 50,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          for (final st in _eduStages) ...[
-            if (st != _eduStages.first) const SizedBox(width: 7),
-            Center(
-              child: _StageChip(
+    // ── گروهِ ۲: مقطعِ تحصیلی (رنگِ هر چیپ = رنگِ سطحِ معادلش A1…C1) ──
+    final eduGroup = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        heading(fa ? 'مقطع تحصیلی' : 'Education stage'),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final st in _eduStages) ...[
+              if (st != _eduStages.first) const SizedBox(width: 7),
+              _EduChip(
                 label: st.$2,
                 icon: st.$3,
-                active: eduSelected == st.$1 && !practice,
                 color: _eduColor(st.$1),
+                active: eduSelected == st.$1 && !practice,
                 onTap: () {
                   reset();
                   ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
@@ -265,17 +270,15 @@ class StageChipsBar extends ConsumerWidget {
                   }
                 },
               ),
-            ),
-            if (st.$1 == 'A1' || st.$1 == 'A2') ...[
-              const SizedBox(width: 7),
-              Center(
-                child: _StageChip(
+              if (st.$1 == 'A1' || st.$1 == 'A2') ...[
+                const SizedBox(width: 7),
+                _EduChip(
                   label: fa ? 'تمرین‌ها' : 'Practice',
                   icon: Icons.fitness_center_rounded,
+                  color: levelColor(st.$1),
                   active: practice &&
                       stage == kStagePrimary &&
                       primaryLevel == st.$1,
-                  color: levelColor(st.$1),
                   onTap: () {
                     reset();
                     ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
@@ -284,23 +287,75 @@ class StageChipsBar extends ConsumerWidget {
                     ref.read(primaryPracticeOpenProvider.notifier).state = true;
                   },
                 ),
-              ),
+              ],
             ],
           ],
+        ),
+      ],
+    );
+
+    // دو گروه کنارِ هم (هر کدام عنوان + چیپ‌های زیرش)؛ با هم افقی اسکرول می‌شوند.
+    return SizedBox(
+      height: 68,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          cefrGroup,
+          const SizedBox(width: 22),
+          eduGroup,
         ],
       ),
     );
+  }
+}
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        heading(fa ? 'استاندارد CEFR' : 'CEFR level'),
-        cefrRow,
-        const SizedBox(height: 4),
-        heading(fa ? 'مقطع تحصیلی' : 'Education stage'),
-        eduRow,
-      ],
+/// چیپِ مقطعِ تحصیلی: دقیقاً هم‌سبکِ LevelChip (پس‌زمینه/حاشیه/متنِ رنگیِ سطح؛ فعال = طلایی)، با آیکن.
+class _EduChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool active;
+  final VoidCallback onTap;
+  const _EduChip({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final fill = active ? c.gold : color.withOpacity(0.14);
+    final border = active ? c.gold : color;
+    final text = active ? c.headerTo : color;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: fill,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: border, width: 1.1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: text),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: text,
+                fontSize: 12.5,
+                fontWeight: active ? FontWeight.w800 : FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
