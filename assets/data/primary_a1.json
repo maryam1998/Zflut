@@ -1481,6 +1481,230 @@
    ]
   },
   {
+   "key": "nature",
+   "fa": "طبیعت",
+   "en": "Nature",
+   "words": [
+    {
+     "id": 900443,
+     "level": "A1",
+     "pos": "noun",
+     "en": "flower",
+     "fa": "گل"
+    },
+    {
+     "id": 900444,
+     "level": "A1",
+     "pos": "noun",
+     "en": "grass",
+     "fa": "علف، چمن"
+    },
+    {
+     "id": 900445,
+     "level": "A1",
+     "pos": "noun",
+     "en": "tree",
+     "fa": "درخت"
+    },
+    {
+     "id": 900446,
+     "level": "A1",
+     "pos": "noun",
+     "en": "leaf",
+     "fa": "برگ"
+    },
+    {
+     "id": 900447,
+     "level": "A1",
+     "pos": "noun",
+     "en": "plant",
+     "fa": "گیاه"
+    },
+    {
+     "id": 900448,
+     "level": "A1",
+     "pos": "noun",
+     "en": "seed",
+     "fa": "دانه، تخم"
+    },
+    {
+     "id": 900449,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sky",
+     "fa": "آسمان"
+    },
+    {
+     "id": 900450,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sea",
+     "fa": "دریا"
+    },
+    {
+     "id": 900451,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ocean",
+     "fa": "اقیانوس"
+    },
+    {
+     "id": 900452,
+     "level": "A1",
+     "pos": "noun",
+     "en": "river",
+     "fa": "رودخانه"
+    },
+    {
+     "id": 900453,
+     "level": "A1",
+     "pos": "noun",
+     "en": "lake",
+     "fa": "دریاچه"
+    },
+    {
+     "id": 900454,
+     "level": "A1",
+     "pos": "noun",
+     "en": "beach",
+     "fa": "ساحل"
+    },
+    {
+     "id": 900455,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sand",
+     "fa": "شن"
+    },
+    {
+     "id": 900456,
+     "level": "A1",
+     "pos": "noun",
+     "en": "mountain",
+     "fa": "کوه"
+    },
+    {
+     "id": 900457,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hill",
+     "fa": "تپه"
+    },
+    {
+     "id": 900458,
+     "level": "A1",
+     "pos": "noun",
+     "en": "forest",
+     "fa": "جنگل"
+    },
+    {
+     "id": 900459,
+     "level": "A1",
+     "pos": "noun",
+     "en": "field",
+     "fa": "دشت، مزرعه"
+    },
+    {
+     "id": 900460,
+     "level": "A1",
+     "pos": "noun",
+     "en": "island",
+     "fa": "جزیره"
+    },
+    {
+     "id": 900461,
+     "level": "A1",
+     "pos": "noun",
+     "en": "rock",
+     "fa": "سنگ بزرگ"
+    },
+    {
+     "id": 900462,
+     "level": "A1",
+     "pos": "noun",
+     "en": "stone",
+     "fa": "سنگ"
+    },
+    {
+     "id": 900463,
+     "level": "A1",
+     "pos": "noun",
+     "en": "mud",
+     "fa": "گل (خاک خیس)"
+    },
+    {
+     "id": 900464,
+     "level": "A1",
+     "pos": "noun",
+     "en": "moon",
+     "fa": "ماه"
+    },
+    {
+     "id": 104194,
+     "level": "A1",
+     "pos": "noun",
+     "en": "star",
+     "fa": "ستاره"
+    },
+    {
+     "id": 900299,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sun",
+     "fa": "خورشید"
+    },
+    {
+     "id": 900301,
+     "level": "A1",
+     "pos": "noun",
+     "en": "rain",
+     "fa": "باران"
+    },
+    {
+     "id": 900300,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cloud",
+     "fa": "ابر"
+    },
+    {
+     "id": 900303,
+     "level": "A1",
+     "pos": "noun",
+     "en": "wind",
+     "fa": "باد"
+    },
+    {
+     "id": 900465,
+     "level": "A1",
+     "pos": "noun",
+     "en": "fire",
+     "fa": "آتش"
+    },
+    {
+     "id": 900466,
+     "level": "A1",
+     "pos": "noun",
+     "en": "air",
+     "fa": "هوا"
+    },
+    {
+     "id": 900467,
+     "level": "A1",
+     "pos": "noun",
+     "en": "earth",
+     "fa": "زمین (سیاره)"
+    },
+    {
+     "id": 900468,
+     "level": "A1",
+     "pos": "noun",
+     "en": "world",
+     "fa": "جهان"
+    }
+   ]
+  },
+  {
    "key": "body",
    "fa": "اعضای بدن",
    "en": "Body",
@@ -1673,6 +1897,237 @@
      "pos": "noun",
      "en": "stomach",
      "fa": "معده"
+    }
+   ]
+  },
+  {
+   "key": "senses",
+   "fa": "حس‌های پنج‌گانه",
+   "en": "Five Senses",
+   "words": [
+    {
+     "id": 900554,
+     "level": "A1",
+     "pos": "verb",
+     "en": "see",
+     "fa": "دیدن"
+    },
+    {
+     "id": 900555,
+     "level": "A1",
+     "pos": "verb",
+     "en": "hear",
+     "fa": "شنیدن"
+    },
+    {
+     "id": 900556,
+     "level": "A1",
+     "pos": "verb",
+     "en": "smell",
+     "fa": "بو کردن، بو"
+    },
+    {
+     "id": 900557,
+     "level": "A1",
+     "pos": "verb",
+     "en": "taste",
+     "fa": "چشیدن، مزه"
+    },
+    {
+     "id": 900558,
+     "level": "A1",
+     "pos": "verb",
+     "en": "touch",
+     "fa": "لمس کردن"
+    },
+    {
+     "id": 900559,
+     "level": "A1",
+     "pos": "verb",
+     "en": "feel",
+     "fa": "حس کردن"
+    },
+    {
+     "id": 102627,
+     "level": "A1",
+     "pos": "verb",
+     "en": "look",
+     "fa": "نگاه کردن"
+    },
+    {
+     "id": 102596,
+     "level": "A1",
+     "pos": "verb",
+     "en": "listen",
+     "fa": "گوش دادن"
+    },
+    {
+     "id": 101695,
+     "level": "A1",
+     "pos": "noun",
+     "en": "eye",
+     "fa": "چشم"
+    },
+    {
+     "id": 101421,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ear",
+     "fa": "گوش"
+    },
+    {
+     "id": 102960,
+     "level": "A1",
+     "pos": "noun",
+     "en": "nose",
+     "fa": "بینی"
+    },
+    {
+     "id": 102859,
+     "level": "A1",
+     "pos": "noun",
+     "en": "mouth",
+     "fa": "دهان"
+    },
+    {
+     "id": 104536,
+     "level": "B1",
+     "pos": "noun",
+     "en": "tongue",
+     "fa": "زبان"
+    },
+    {
+     "id": 900560,
+     "level": "A1",
+     "pos": "noun",
+     "en": "skin",
+     "fa": "پوست"
+    },
+    {
+     "id": 102053,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hand",
+     "fa": "دست"
+    },
+    {
+     "id": 900030,
+     "level": "A1",
+     "pos": "noun",
+     "en": "sound",
+     "fa": ""
+    },
+    {
+     "id": 900561,
+     "level": "A1",
+     "pos": "noun",
+     "en": "noise",
+     "fa": "سروصدا"
+    },
+    {
+     "id": 900562,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "loud",
+     "fa": "بلند (صدا)"
+    },
+    {
+     "id": 900548,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "quiet",
+     "fa": "ساکت"
+    },
+    {
+     "id": 900563,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "sweet",
+     "fa": "شیرین"
+    },
+    {
+     "id": 900564,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "sour",
+     "fa": "ترش"
+    },
+    {
+     "id": 900565,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "salty",
+     "fa": "شور"
+    },
+    {
+     "id": 900566,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "bitter",
+     "fa": "تلخ"
+    },
+    {
+     "id": 900567,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "spicy",
+     "fa": "تند (فلفلی)"
+    },
+    {
+     "id": 900568,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "delicious",
+     "fa": "خوشمزه"
+    },
+    {
+     "id": 900375,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "soft",
+     "fa": "نرم"
+    },
+    {
+     "id": 900374,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "hard",
+     "fa": "سفت"
+    },
+    {
+     "id": 900569,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "rough",
+     "fa": "زبر"
+    },
+    {
+     "id": 900570,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "smooth",
+     "fa": "صاف، نرم"
+    },
+    {
+     "id": 102166,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "hot",
+     "fa": "گرم"
+    },
+    {
+     "id": 100783,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "cold",
+     "fa": "سرد"
+    },
+    {
+     "id": 900571,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "bright",
+     "fa": "روشن"
     }
    ]
   },
@@ -2076,6 +2531,181 @@
    ]
   },
   {
+   "key": "helpers",
+   "fa": "آدم‌های اطراف",
+   "en": "People Around Us",
+   "words": [
+    {
+     "id": 900507,
+     "level": "A1",
+     "pos": "noun",
+     "en": "person",
+     "fa": "آدم"
+    },
+    {
+     "id": 900508,
+     "level": "A1",
+     "pos": "noun",
+     "en": "people",
+     "fa": "مردم"
+    },
+    {
+     "id": 900509,
+     "level": "A1",
+     "pos": "noun",
+     "en": "doctor",
+     "fa": "دکتر"
+    },
+    {
+     "id": 900510,
+     "level": "A1",
+     "pos": "noun",
+     "en": "nurse",
+     "fa": "پرستار"
+    },
+    {
+     "id": 900511,
+     "level": "A1",
+     "pos": "noun",
+     "en": "dentist",
+     "fa": "دندان‌پزشک"
+    },
+    {
+     "id": 900488,
+     "level": "A1",
+     "pos": "noun",
+     "en": "teacher",
+     "fa": "معلم"
+    },
+    {
+     "id": 900288,
+     "level": "A1",
+     "pos": "noun",
+     "en": "driver",
+     "fa": "راننده"
+    },
+    {
+     "id": 900512,
+     "level": "A1",
+     "pos": "noun",
+     "en": "police officer",
+     "fa": "پلیس"
+    },
+    {
+     "id": 900513,
+     "level": "A1",
+     "pos": "noun",
+     "en": "police",
+     "fa": "پلیس (نیروی)"
+    },
+    {
+     "id": 900514,
+     "level": "A1",
+     "pos": "noun",
+     "en": "firefighter",
+     "fa": "آتش‌نشان"
+    },
+    {
+     "id": 900515,
+     "level": "A1",
+     "pos": "noun",
+     "en": "baker",
+     "fa": "نانوا"
+    },
+    {
+     "id": 900516,
+     "level": "A1",
+     "pos": "noun",
+     "en": "farmer",
+     "fa": "کشاورز"
+    },
+    {
+     "id": 900517,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cook",
+     "fa": "آشپز"
+    },
+    {
+     "id": 900518,
+     "level": "A1",
+     "pos": "noun",
+     "en": "chef",
+     "fa": "سرآشپز"
+    },
+    {
+     "id": 900519,
+     "level": "A1",
+     "pos": "noun",
+     "en": "waiter",
+     "fa": "گارسون"
+    },
+    {
+     "id": 900520,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pilot",
+     "fa": "خلبان"
+    },
+    {
+     "id": 900521,
+     "level": "A1",
+     "pos": "noun",
+     "en": "postman",
+     "fa": "پستچی"
+    },
+    {
+     "id": 900522,
+     "level": "A1",
+     "pos": "noun",
+     "en": "shopkeeper",
+     "fa": "مغازه‌دار"
+    },
+    {
+     "id": 900523,
+     "level": "A1",
+     "pos": "noun",
+     "en": "builder",
+     "fa": "بنّا"
+    },
+    {
+     "id": 900524,
+     "level": "A1",
+     "pos": "noun",
+     "en": "worker",
+     "fa": "کارگر"
+    },
+    {
+     "id": 900525,
+     "level": "A1",
+     "pos": "noun",
+     "en": "singer",
+     "fa": "خواننده"
+    },
+    {
+     "id": 900526,
+     "level": "A1",
+     "pos": "noun",
+     "en": "artist",
+     "fa": "هنرمند"
+    },
+    {
+     "id": 900527,
+     "level": "A1",
+     "pos": "noun",
+     "en": "neighbor",
+     "fa": "همسایه"
+    },
+    {
+     "id": 900528,
+     "level": "A1",
+     "pos": "noun",
+     "en": "customer",
+     "fa": "مشتری"
+    }
+   ]
+  },
+  {
    "key": "home",
    "fa": "خانه و اتاق‌ها",
    "en": "Home & Rooms",
@@ -2317,6 +2947,440 @@
      "pos": "noun",
      "en": "fan",
      "fa": "پنکه"
+    }
+   ]
+  },
+  {
+   "key": "places",
+   "fa": "جاها",
+   "en": "Places",
+   "words": [
+    {
+     "id": 900217,
+     "level": "A1",
+     "pos": "noun",
+     "en": "home",
+     "fa": "خانه (محل زندگی)"
+    },
+    {
+     "id": 900469,
+     "level": "A1",
+     "pos": "noun",
+     "en": "school",
+     "fa": "مدرسه"
+    },
+    {
+     "id": 900470,
+     "level": "A1",
+     "pos": "noun",
+     "en": "park",
+     "fa": "پارک"
+    },
+    {
+     "id": 900471,
+     "level": "A1",
+     "pos": "noun",
+     "en": "shop",
+     "fa": "مغازه"
+    },
+    {
+     "id": 900472,
+     "level": "A1",
+     "pos": "noun",
+     "en": "store",
+     "fa": "فروشگاه"
+    },
+    {
+     "id": 900473,
+     "level": "A1",
+     "pos": "noun",
+     "en": "supermarket",
+     "fa": "سوپرمارکت"
+    },
+    {
+     "id": 900474,
+     "level": "A1",
+     "pos": "noun",
+     "en": "market",
+     "fa": "بازار"
+    },
+    {
+     "id": 900126,
+     "level": "A1",
+     "pos": "noun",
+     "en": "zoo",
+     "fa": "باغ‌وحش"
+    },
+    {
+     "id": 900124,
+     "level": "A1",
+     "pos": "noun",
+     "en": "farm",
+     "fa": "مزرعه"
+    },
+    {
+     "id": 900475,
+     "level": "A1",
+     "pos": "noun",
+     "en": "hospital",
+     "fa": "بیمارستان"
+    },
+    {
+     "id": 900476,
+     "level": "A1",
+     "pos": "noun",
+     "en": "library",
+     "fa": "کتابخانه"
+    },
+    {
+     "id": 900477,
+     "level": "A1",
+     "pos": "noun",
+     "en": "restaurant",
+     "fa": "رستوران"
+    },
+    {
+     "id": 900478,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bank",
+     "fa": "بانک"
+    },
+    {
+     "id": 900479,
+     "level": "A1",
+     "pos": "noun",
+     "en": "post office",
+     "fa": "اداره پست"
+    },
+    {
+     "id": 900480,
+     "level": "A1",
+     "pos": "noun",
+     "en": "cinema",
+     "fa": "سینما"
+    },
+    {
+     "id": 900481,
+     "level": "A1",
+     "pos": "noun",
+     "en": "museum",
+     "fa": "موزه"
+    },
+    {
+     "id": 900482,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bakery",
+     "fa": "نانوایی"
+    },
+    {
+     "id": 900483,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pharmacy",
+     "fa": "داروخانه"
+    },
+    {
+     "id": 900262,
+     "level": "A1",
+     "pos": "noun",
+     "en": "playground",
+     "fa": "زمین بازی"
+    },
+    {
+     "id": 900287,
+     "level": "A1",
+     "pos": "noun",
+     "en": "airport",
+     "fa": "فرودگاه"
+    },
+    {
+     "id": 900286,
+     "level": "A1",
+     "pos": "noun",
+     "en": "station",
+     "fa": "ایستگاه"
+    },
+    {
+     "id": 900484,
+     "level": "A1",
+     "pos": "noun",
+     "en": "city",
+     "fa": "شهر"
+    },
+    {
+     "id": 900485,
+     "level": "A1",
+     "pos": "noun",
+     "en": "town",
+     "fa": "شهرک"
+    },
+    {
+     "id": 900486,
+     "level": "A1",
+     "pos": "noun",
+     "en": "village",
+     "fa": "روستا"
+    },
+    {
+     "id": 900285,
+     "level": "A1",
+     "pos": "noun",
+     "en": "street",
+     "fa": "خیابان"
+    },
+    {
+     "id": 900487,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bridge",
+     "fa": "پل"
+    }
+   ]
+  },
+  {
+   "key": "school",
+   "fa": "مدرسه‌ی کوچک",
+   "en": "Little School",
+   "words": [
+    {
+     "id": 900469,
+     "level": "A1",
+     "pos": "noun",
+     "en": "school",
+     "fa": "مدرسه"
+    },
+    {
+     "id": 900488,
+     "level": "A1",
+     "pos": "noun",
+     "en": "teacher",
+     "fa": "معلم"
+    },
+    {
+     "id": 900489,
+     "level": "A1",
+     "pos": "noun",
+     "en": "student",
+     "fa": "دانش‌آموز"
+    },
+    {
+     "id": 900490,
+     "level": "A1",
+     "pos": "noun",
+     "en": "class",
+     "fa": "کلاس (گروه)"
+    },
+    {
+     "id": 900491,
+     "level": "A1",
+     "pos": "noun",
+     "en": "classroom",
+     "fa": "کلاس درس"
+    },
+    {
+     "id": 900492,
+     "level": "A1",
+     "pos": "noun",
+     "en": "board",
+     "fa": "تخته"
+    },
+    {
+     "id": 900493,
+     "level": "A1",
+     "pos": "noun",
+     "en": "whiteboard",
+     "fa": "وایت‌برد"
+    },
+    {
+     "id": 101891,
+     "level": "A1",
+     "pos": "noun",
+     "en": "friend",
+     "fa": "دوست"
+    },
+    {
+     "id": 101228,
+     "level": "A1",
+     "pos": "noun",
+     "en": "desk",
+     "fa": "میز"
+    },
+    {
+     "id": 100671,
+     "level": "A1",
+     "pos": "noun",
+     "en": "chair",
+     "fa": "صندلی"
+    },
+    {
+     "id": 100505,
+     "level": "A1",
+     "pos": "noun",
+     "en": "book",
+     "fa": "کتاب"
+    },
+    {
+     "id": 102965,
+     "level": "B2",
+     "pos": "noun",
+     "en": "notebook",
+     "fa": "دفترچه"
+    },
+    {
+     "id": 103191,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pencil",
+     "fa": "مداد"
+    },
+    {
+     "id": 103189,
+     "level": "A1",
+     "pos": "noun",
+     "en": "pen",
+     "fa": "خودکار"
+    },
+    {
+     "id": 900073,
+     "level": "A1",
+     "pos": "noun",
+     "en": "eraser",
+     "fa": ""
+    },
+    {
+     "id": 900074,
+     "level": "A1",
+     "pos": "noun",
+     "en": "ruler",
+     "fa": ""
+    },
+    {
+     "id": 200574,
+     "level": "B2",
+     "pos": "noun",
+     "en": "backpack",
+     "fa": "کوله پشتی"
+    },
+    {
+     "id": 900264,
+     "level": "A1",
+     "pos": "noun",
+     "en": "crayon",
+     "fa": "مداد شمعی"
+    },
+    {
+     "id": 900494,
+     "level": "A1",
+     "pos": "noun",
+     "en": "glue",
+     "fa": "چسب"
+    },
+    {
+     "id": 900495,
+     "level": "A1",
+     "pos": "noun",
+     "en": "homework",
+     "fa": "تکلیف"
+    },
+    {
+     "id": 900496,
+     "level": "A1",
+     "pos": "noun",
+     "en": "lesson",
+     "fa": "درس"
+    },
+    {
+     "id": 900497,
+     "level": "A1",
+     "pos": "noun",
+     "en": "test",
+     "fa": "امتحان"
+    },
+    {
+     "id": 900498,
+     "level": "A1",
+     "pos": "noun",
+     "en": "question",
+     "fa": "سؤال"
+    },
+    {
+     "id": 900499,
+     "level": "A1",
+     "pos": "noun",
+     "en": "answer",
+     "fa": "جواب"
+    },
+    {
+     "id": 900500,
+     "level": "A1",
+     "pos": "noun",
+     "en": "page",
+     "fa": "صفحه"
+    },
+    {
+     "id": 900501,
+     "level": "A1",
+     "pos": "noun",
+     "en": "picture",
+     "fa": "تصویر"
+    },
+    {
+     "id": 900502,
+     "level": "A1",
+     "pos": "noun",
+     "en": "bell",
+     "fa": "زنگ"
+    },
+    {
+     "id": 900503,
+     "level": "A1",
+     "pos": "noun",
+     "en": "recess",
+     "fa": "زنگ تفریح"
+    },
+    {
+     "id": 900504,
+     "level": "A1",
+     "pos": "verb",
+     "en": "learn",
+     "fa": "یاد گرفتن"
+    },
+    {
+     "id": 900505,
+     "level": "A1",
+     "pos": "verb",
+     "en": "teach",
+     "fa": "یاد دادن"
+    },
+    {
+     "id": 900506,
+     "level": "A1",
+     "pos": "verb",
+     "en": "ask",
+     "fa": "پرسیدن"
+    },
+    {
+     "id": 103568,
+     "level": "A1",
+     "pos": "verb",
+     "en": "read",
+     "fa": "خواندن"
+    },
+    {
+     "id": 104931,
+     "level": "A1",
+     "pos": "verb",
+     "en": "write",
+     "fa": "نوشتن"
+    },
+    {
+     "id": 101389,
+     "level": "A1",
+     "pos": "verb",
+     "en": "draw",
+     "fa": "نقاشی کردن"
     }
    ]
   },
@@ -3661,6 +4725,230 @@
      "pos": "preposition",
      "en": "like",
      "fa": "مثل"
+    }
+   ]
+  },
+  {
+   "key": "hygiene",
+   "fa": "بهداشت و ادب",
+   "en": "Hygiene & Manners",
+   "words": [
+    {
+     "id": 900529,
+     "level": "A1",
+     "pos": "verb",
+     "en": "wash hands",
+     "fa": "دست‌ها را شستن"
+    },
+    {
+     "id": 900530,
+     "level": "A1",
+     "pos": "verb",
+     "en": "brush teeth",
+     "fa": "مسواک زدن"
+    },
+    {
+     "id": 900531,
+     "level": "A1",
+     "pos": "verb",
+     "en": "wash face",
+     "fa": "صورت را شستن"
+    },
+    {
+     "id": 900532,
+     "level": "A1",
+     "pos": "verb",
+     "en": "take a shower",
+     "fa": "دوش گرفتن"
+    },
+    {
+     "id": 900533,
+     "level": "A1",
+     "pos": "verb",
+     "en": "comb hair",
+     "fa": "شانه کردن مو"
+    },
+    {
+     "id": 900534,
+     "level": "A1",
+     "pos": "verb",
+     "en": "tidy up",
+     "fa": "مرتب کردن"
+    },
+    {
+     "id": 900535,
+     "level": "A1",
+     "pos": "verb",
+     "en": "clean up",
+     "fa": "تمیز کردن"
+    },
+    {
+     "id": 900536,
+     "level": "A1",
+     "pos": "verb",
+     "en": "share",
+     "fa": "شریک شدن، سهیم کردن"
+    },
+    {
+     "id": 900537,
+     "level": "A1",
+     "pos": "verb",
+     "en": "take turns",
+     "fa": "نوبتی انجام دادن"
+    },
+    {
+     "id": 900538,
+     "level": "A1",
+     "pos": "verb",
+     "en": "line up",
+     "fa": "در صف ایستادن"
+    },
+    {
+     "id": 104793,
+     "level": "A1",
+     "pos": "verb",
+     "en": "wait",
+     "fa": "منتظر ماندن"
+    },
+    {
+     "id": 102596,
+     "level": "A1",
+     "pos": "verb",
+     "en": "listen",
+     "fa": "گوش دادن"
+    },
+    {
+     "id": 102104,
+     "level": "A1",
+     "pos": "noun",
+     "en": "help",
+     "fa": "کمک"
+    },
+    {
+     "id": 900539,
+     "level": "A1",
+     "pos": "verb",
+     "en": "say sorry",
+     "fa": "عذرخواهی کردن"
+    },
+    {
+     "id": 900540,
+     "level": "A1",
+     "pos": "verb",
+     "en": "say please",
+     "fa": "«لطفاً» گفتن"
+    },
+    {
+     "id": 900541,
+     "level": "A1",
+     "pos": "verb",
+     "en": "say thank you",
+     "fa": "«ممنون» گفتن"
+    },
+    {
+     "id": 900542,
+     "level": "A1",
+     "pos": "verb",
+     "en": "cover your mouth",
+     "fa": "جلوی دهان را گرفتن"
+    },
+    {
+     "id": 900543,
+     "level": "A1",
+     "pos": "verb",
+     "en": "cough",
+     "fa": "سرفه کردن"
+    },
+    {
+     "id": 900544,
+     "level": "A1",
+     "pos": "verb",
+     "en": "sneeze",
+     "fa": "عطسه کردن"
+    },
+    {
+     "id": 900545,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "kind",
+     "fa": "مهربان"
+    },
+    {
+     "id": 900546,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "polite",
+     "fa": "مؤدب"
+    },
+    {
+     "id": 900547,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "careful",
+     "fa": "مراقب"
+    },
+    {
+     "id": 900548,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "quiet",
+     "fa": "ساکت"
+    },
+    {
+     "id": 900368,
+     "level": "A1",
+     "pos": "adjective",
+     "en": "clean",
+     "fa": "تمیز"
+    },
+    {
+     "id": 900244,
+     "level": "A1",
+     "pos": "noun",
+     "en": "soap",
+     "fa": "صابون"
+    },
+    {
+     "id": 900549,
+     "level": "A1",
+     "pos": "noun",
+     "en": "toothpaste",
+     "fa": "خمیردندان"
+    },
+    {
+     "id": 900245,
+     "level": "A1",
+     "pos": "noun",
+     "en": "toothbrush",
+     "fa": "مسواک"
+    },
+    {
+     "id": 900550,
+     "level": "A1",
+     "pos": "noun",
+     "en": "comb",
+     "fa": "شانه"
+    },
+    {
+     "id": 900551,
+     "level": "A1",
+     "pos": "noun",
+     "en": "tissue",
+     "fa": "دستمال کاغذی"
+    },
+    {
+     "id": 900552,
+     "level": "A1",
+     "pos": "noun",
+     "en": "trash",
+     "fa": "زباله"
+    },
+    {
+     "id": 900553,
+     "level": "A1",
+     "pos": "noun",
+     "en": "trash can",
+     "fa": "سطل زباله"
     }
    ]
   },

@@ -91,6 +91,9 @@ const Map<String, TopicVisual> _dict = {
   'opposites': TopicVisual(Icons.swap_vert_rounded, _teal),
   'position': TopicVisual(Icons.pin_drop_rounded, _blue),
   'pronouns': TopicVisual(Icons.text_fields_rounded, _purple),
+  'helpers': TopicVisual(Icons.engineering_rounded, _orange),
+  'hygiene': TopicVisual(Icons.clean_hands_rounded, _teal),
+  'senses': TopicVisual(Icons.visibility_rounded, _purple),
 };
 
 const Map<String, TopicVisual> _slang = {
