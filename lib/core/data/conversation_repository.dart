@@ -82,10 +82,11 @@ class ConversationRepository {
             scenarios: const [],
           ),
       ];
-      // 🎒 مکالمه‌های Primary School ▸ A1 و A2 (فایل‌های جدا؛ برای همه باز)
+      // 🎒 مکالمه‌های Primary School ▸ A1 و A2 (+ Lower Secondary ▸ B1) (فایل‌های جدا؛ برای همه باز)
       for (final pf in const [
         'assets/data/primary_conversations_index.json',
         'assets/data/primary_a2_conversations_index.json',
+        'assets/data/primary_b1_conversations_index.json',
       ]) {
         try {
           final pr = await rootBundle.loadString(pf);

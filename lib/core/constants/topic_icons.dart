@@ -46,6 +46,11 @@ TopicVisual visualForTopic(String topic) {
   if (t.contains('texts and short emails')) return const TopicVisual(Icons.mail_rounded, _blue);
   if (t.contains('birthdays and celebrations')) return const TopicVisual(Icons.cake_rounded, _rose);
 
+  // ═══ Lower Secondary ▸ B1 ═══
+  if (t.contains('relationships and feelings')) return const TopicVisual(Icons.diversity_1_rounded, _rose);
+  if (t.contains('unexpected event')) return const TopicVisual(Icons.bolt_rounded, _gold);
+  if (t.contains('planning a trip')) return const TopicVisual(Icons.luggage_rounded, _blue);
+
   // ═══ Primary School ▸ A1 ═══
   if (t.contains('at the supermarket')) return const TopicVisual(Icons.shopping_cart_rounded, _orange);
   if (t.contains('lunch at school')) return const TopicVisual(Icons.lunch_dining_rounded, _green);
