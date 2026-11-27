@@ -66,6 +66,7 @@ class WordCard extends StatelessWidget {
       isRead: isRead,
       onToggleRead: onToggleRead,
       lang: lang,
+      isExpression: pos == 'idiom' || pos == 'slang',
     );
   }
 

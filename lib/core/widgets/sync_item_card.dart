@@ -58,6 +58,9 @@ class SyncItemCard extends ConsumerStatefulWidget {
   /// تا رسیدنِ AI ترجمه‌ی موقتِ ML Kit/آنلاین و بعد جایگزینیِ بی‌صدا.
   final bool aiFirst;
 
+  /// 🎭 لغتِ اصطلاح/عامیانه (pos از دیتابیس): ترجمه‌ی رایگانش مشکوک حساب می‌شود و برای بازبینی (دسته‌ای) به AI می‌رود.
+  final bool isExpression;
+
   const SyncItemCard({
     super.key,
     required this.id,
@@ -74,6 +77,7 @@ class SyncItemCard extends ConsumerStatefulWidget {
     this.onToggleRead,
     this.lang = 'en',
     this.aiFirst = false,
+    this.isExpression = false,
   });
 
   @override
@@ -282,6 +286,7 @@ class _SyncItemCardState extends ConsumerState<SyncItemCard> {
                 gutter: gutter,
                 sourceLang: widget.lang,
                 aiFirst: widget.aiFirst,
+                isExpression: widget.isExpression,
               ),
 
             if (widget.showActions) ...[
@@ -452,6 +457,9 @@ class SyncTranslationRow extends ConsumerStatefulWidget {
   /// 🤖 ترجمه‌ی «اول AI» (به SyncItemCard.aiFirst نگاه کن)
   final bool aiFirst;
 
+  /// 🎭 اصطلاح/عامیانه (به SyncItemCard.isExpression نگاه کن)
+  final bool isExpression;
+
   const SyncTranslationRow({
     super.key,
     required this.itemId,
@@ -463,6 +471,7 @@ class SyncTranslationRow extends ConsumerStatefulWidget {
     this.sideActions,
     this.sourceLang = 'en',
     this.aiFirst = false,
+    this.isExpression = false,
   });
 
   @override
@@ -643,6 +652,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
         targetLang: code,
         sourceLang: widget.sourceLang,
         aiSettings: ai,
+        treatAsIdiom: widget.isExpression,
       );
     } catch (_) {
       result = null;

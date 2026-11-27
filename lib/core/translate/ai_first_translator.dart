@@ -34,6 +34,7 @@ const int _kAiConcurrency = 4; // هم‌زمانیِ درخواست‌های AI
 const int _kProvConcurrency = 3; // هم‌زمانیِ ترجمه‌ی موقت (ML Kit/آنلاین)
 const Duration _kGrace = Duration(milliseconds: 1000); // تا این‌قدر منتظرِ کش/AI؛ بعد پیش‌نویسِ خوب نشان داده می‌شود
 const int _kBatchMax = 20; // حداکثر متن در یک درخواستِ /api/translate-batch
+const Duration _kReviewWindow = Duration(milliseconds: 400); // پنجره‌ی جمع‌کردنِ مشکوک‌ها برای بازبینیِ دسته‌ای
 const Duration _kBatchWindow = Duration(milliseconds: 80); // جمع‌کردنِ درخواست‌های هم‌زمان
 // تلاش‌های خودکارِ پس‌زمینه: اول سریع (کاربر منتظر است)، بعد کم‌کم کندتر
 const List<Duration> _kRetryDelays = <Duration>[
@@ -506,7 +507,9 @@ class AiFirstTranslator {
     // ۶: مشکوک/اصطلاح → فقط همین‌ها به Worker (DeepSeek) با پیش‌نویس می‌روند
     j.draft = d;
     var aiDone = false;
-    final aiFut = _askAi(j).then<String?>((v) => v, onError: (_) => null);
+    // پنجره‌ی ۴۰۰ms: مشکوک‌های یک صفحه (که با فاصله‌ی کمی از ML Kit می‌رسند) در «یک» درخواست جمع می‌شوند
+    final aiFut = _askAi(j, window: _kReviewWindow)
+        .then<String?>((v) => v, onError: (_) => null);
     unawaited(aiFut.whenComplete(() => aiDone = true));
     if (j.latest == null) {
       await Future.any<void>(<Future<void>>[

@@ -633,6 +633,8 @@ class TranslationService {
     AiSettings? aiSettings,
     bool forceVerify = false,
     bool aiOnlyIfSuspicious = kAiOnlyIfSuspiciousDefault,
+    // 🎭 لغتِ نوعِ «اصطلاح/عامیانه» (pos از دیتابیس): مثلِ اصطلاح، ترجمه‌ی رایگانش مشکوک حساب می‌شود
+    bool treatAsIdiom = false,
   }) async {
     if (text.trim().isEmpty || targetLang.isEmpty) return text;
     if (sourceLang.isNotEmpty &&
@@ -682,6 +684,7 @@ class TranslationService {
         aiSettings: aiSettings,
         forceVerify: forceVerify,
         aiOnlyIfSuspicious: aiOnlyIfSuspicious,
+        treatAsIdiom: treatAsIdiom,
       ).then((v) {
         if (!done.isCompleted) done.complete(v);
       }).catchError((_) {
@@ -817,6 +820,7 @@ class TranslationService {
     AiSettings? aiSettings,
     bool forceVerify = false,
     bool aiOnlyIfSuspicious = kAiOnlyIfSuspiciousDefault,
+    bool treatAsIdiom = false,
   }) async {
     final hard = _hardcodedFarewell(text, sourceLang, targetLang);
     if (hard != null) return hard;
@@ -827,6 +831,7 @@ class TranslationService {
       aiSettings: aiSettings,
       forceVerify: forceVerify,
       aiOnlyIfSuspicious: aiOnlyIfSuspicious,
+      treatAsIdiom: treatAsIdiom,
     );
     return _fixFarewell(text, sourceLang, targetLang, r);
   }
@@ -838,7 +843,9 @@ class TranslationService {
     AiSettings? aiSettings,
     bool forceVerify = false,
     bool aiOnlyIfSuspicious = kAiOnlyIfSuspiciousDefault,
+    bool treatAsIdiom = false,
   }) async {
+    final isIdiom = treatAsIdiom || _looksIdiomatic(text);
     // ۰. ML Kit روی گوشی: آنی، رایگان، بدون سقف و بدون هزینه‌ی Worker. اگر مدل آماده نبود
     //    دانلود در پس‌زمینه شروع می‌شود و همین‌بار از مسیر معمولِ زیر ترجمه می‌شود.
     String? mlDraft; // نتیجه‌ی ML Kit که مشکوکِ عمیق بود؛ اگر هیچ‌چیز بهتر نشد همین برمی‌گردد
@@ -853,7 +860,7 @@ class TranslationService {
               sourceLang: sourceLang)) {
         // اصطلاح یا مشکوکِ عمیق: پیش‌نویسِ ML Kit نگه داشته می‌شود (برای بازبینیِ AI و به‌عنوان پشتیبان)،
         // نه دور ریخته؛ وگرنه اگر مترجمِ آنلاین هم جواب نمی‌داد، AI هیچ‌وقت صدا زده نمی‌شد.
-        if ((aiSettings != null && _looksIdiomatic(text)) ||
+        if ((aiSettings != null && isIdiom) ||
             (_deepReviewOn(aiSettings) &&
                 looksSuspiciousDeep(text, ml, sourceLang, targetLang))) {
           mlDraft = ml.trim();
@@ -877,7 +884,7 @@ class TranslationService {
       var aiFixed = false;
       if (aiSettings != null &&
           (forceVerify ||
-              _looksIdiomatic(text) ||
+              isIdiom ||
               looksLikelyMistranslated(text, result, targetLang,
                   sourceLang: sourceLang) ||
               (_deepReviewOn(aiSettings) &&
@@ -1262,7 +1269,7 @@ class TranslationService {
     if (settings == null) throw Exception('translate-ai-no-settings');
     // 🗄️ اول کشِ مشترکِ سرور (ترجمه‌ی قبلیِ بقیه‌ی کاربرها)؛ اگر نبود/در دسترس نبود همان مسیرِ قبلی.
     if (useShared) {
-      final shared = await _viaSharedCache(text, target, source, settings);
+      final shared = await _aiBatched(text, target, source, settings);
       if (shared != null) return shared;
     }
     final targetLabel = englishLangName(target);
@@ -1395,6 +1402,143 @@ class TranslationService {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // 📦 دسته‌ایِ AI برای ترجمه‌های مشکوک
+  // جمله‌ها/لغت‌های مشکوکِ یک صفحه (تا ۴۰۰ms جمع می‌شوند، حداکثر ۲۰ تا) در «یک» درخواستِ
+  // /api/translate-batch (با drafts) به Worker (DeepSeek) می‌روند؛ یک مورد تنها = همان /api/translate-text.
+  // null = نشد (Workerِ قدیمی، سقف/مکث، خروجیِ نامعتبر) و تصمیمش با صدازننده است.
+  // ═══════════════════════════════════════════════════════════════
+  static const int _kRvWindowMs = 400;
+  static const int _kRvMax = 20;
+  final Map<String, _RvGroup> _rvGroups = <String, _RvGroup>{};
+  bool _rvBatchOff = false; // Workerِ قدیمی (۴۰۴/۴۰۵): همه تک‌به‌تک
+  int _rvPausedUntil = 0; // سقف/سهمیه پر شد: چند دقیقه AI صدا نزن
+
+  Future<String?> _aiBatched(
+      String text, String target, String source, AiSettings settings,
+      {String draft = ''}) {
+    final t = text.trim();
+    if (t.isEmpty || t.length > _kSharedMaxChars) {
+      return Future<String?>.value(null);
+    }
+    if (!_englishNames.containsKey(target)) return Future<String?>.value(null);
+    final src = source.isEmpty ? 'auto' : source;
+    if (src != 'auto' && !_englishNames.containsKey(src)) {
+      return Future<String?>.value(null);
+    }
+    if (_rvBatchOff) {
+      return _viaSharedCache(t, target, src, settings, draft: draft);
+    }
+    if (DateTime.now().millisecondsSinceEpoch < _rvPausedUntil) {
+      return Future<String?>.value(null);
+    }
+    final key = '${settings.baseUrl}|$src|$target';
+    final g = _rvGroups.putIfAbsent(
+        key, () => _RvGroup(settings.baseUrl, src, target, settings));
+    final c = Completer<String?>();
+    final it = g.items.putIfAbsent(t, () => _RvItem(t, draft.trim()));
+    it.waiters.add(c);
+    if (g.items.length >= _kRvMax) {
+      g.timer?.cancel();
+      g.timer = null;
+      unawaited(_flushRv(key));
+    } else {
+      g.timer ??= Timer(
+          const Duration(milliseconds: _kRvWindowMs), () => unawaited(_flushRv(key)));
+    }
+    return c.future;
+  }
+
+  Future<void> _flushRv(String key) async {
+    final g = _rvGroups.remove(key);
+    if (g == null) return;
+    g.timer?.cancel();
+    final items = g.items.values.toList();
+    void done(_RvItem it, String? v) {
+      for (final c in it.waiters) {
+        if (!c.isCompleted) c.complete(v);
+      }
+    }
+
+    void single(_RvItem it) {
+      unawaited(_viaSharedCache(it.text, g.target, g.src, g.settings,
+              draft: it.draft)
+          .then((v) => done(it, v), onError: (_) => done(it, null)));
+    }
+
+    try {
+      if (items.length == 1) {
+        single(items.first);
+        return;
+      }
+      final res = await _postRvBatch(g, items);
+      if (res == null) {
+        if (_rvBatchOff) {
+          items.forEach(single);
+        } else {
+          for (final it in items) {
+            done(it, null);
+          }
+        }
+        return;
+      }
+      for (var i = 0; i < items.length; i++) {
+        done(items[i], i < res.length ? res[i] : null);
+      }
+    } catch (_) {
+      for (final it in items) {
+        done(it, null);
+      }
+    }
+  }
+
+  Future<List<String?>?> _postRvBatch(_RvGroup g, List<_RvItem> items) async {
+    try {
+      final hasDraft = items.any((it) => it.draft.isNotEmpty);
+      final res = await _aiDio
+          .post(
+            '${g.base}/api/translate-batch',
+            data: {
+              'items': [for (final it in items) it.text],
+              if (hasDraft) 'drafts': [for (final it in items) it.draft],
+              'source_lang_code': g.src,
+              'target_lang_code': g.target,
+            },
+            options: Options(
+              contentType: 'application/json',
+              sendTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 35),
+            ),
+          )
+          .timeout(const Duration(seconds: 40));
+      final st = res.statusCode ?? 0;
+      if (st >= 200 && st < 300) {
+        final data = _json(res.data);
+        final arr = data is Map ? data['results'] : null;
+        if (arr is! List || arr.length != items.length) return null;
+        return <String?>[
+          for (final v in arr)
+            () {
+              if (v is! String) return null;
+              final c = _stripQuotes(stripAIReasoning(v));
+              if (c.isEmpty || looksLikeAIReasoning(c) || looksLikeGuardOutput(c)) {
+                return null;
+              }
+              return c;
+            }(),
+        ];
+      }
+      if (st == 404 || st == 405) {
+        _rvBatchOff = true;
+      } else if (st == 429 || st == 402) {
+        _rvPausedUntil = DateTime.now().millisecondsSinceEpoch + 5 * 60 * 1000;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<({String text, bool approved})> _verifyWithAIQ(
     String source,
     String target,
@@ -1406,7 +1550,7 @@ class TranslationService {
     // 🧠 اول مسیرِ بازبینیِ Worker (/api/translate-text با draft): زنجیره‌ی DeepSeek + ذخیره در D1 برای همه.
     // اگر Workerِ قدیمی بود/نشد، همان مسیرِ قبلیِ /api/generate ادامه می‌یابد.
     if (viaWorker) {
-      final w = await _viaSharedCache(source, target, sourceLang, settings,
+      final w = await _aiBatched(source, target, sourceLang, settings,
           draft: draft);
       if (w != null &&
           w.trim().isNotEmpty &&
@@ -1533,4 +1677,21 @@ class _Winner {
   final String result;
   final _Provider provider;
   _Winner(this.result, this.provider);
+}
+
+class _RvItem {
+  _RvItem(this.text, this.draft);
+  final String text;
+  final String draft;
+  final List<Completer<String?>> waiters = <Completer<String?>>[];
+}
+
+class _RvGroup {
+  _RvGroup(this.base, this.src, this.target, this.settings);
+  final String base;
+  final String src;
+  final String target;
+  final AiSettings settings;
+  final Map<String, _RvItem> items = <String, _RvItem>{};
+  Timer? timer;
 }
