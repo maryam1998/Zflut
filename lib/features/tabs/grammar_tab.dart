@@ -439,6 +439,15 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
       caseSensitive: false,
       multiLine: true);
 
+  /// جواب وسطِ جمله بریده شده؟ (آخرین نویسه علامتِ پایانی/بسته‌شدن نیست)
+  static bool _looksCutOff(String s) {
+    final t = s.trim();
+    if (t.length < 120) return false;
+    final last = t.codeUnitAt(t.length - 1);
+    if (last > 0x2E00) return false; // ایموجی/CJK/علامت‌های خاص
+    return !'.!?؟…。)]»"”\'’*`:'.contains(t[t.length - 1]);
+  }
+
   /// پورتِ askGrammarTeacher در Hope — با تاریخچه‌ی خودِ یادداشت
   String _prompt(String question, {int? upTo}) {
     final note = widget.note;
@@ -476,7 +485,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         "Learner asks: \"${clip(question, 400)}\"\n\n"
         "Answer this follow-up directly in $label, without redoing the full breakdown. "
         "Example sentences must be in $langLabel, each with a short $label translation. "
-        "Be concise (under ~150 words), plain text.";
+        "Be concise (under ~150 words), plain text. Always finish every sentence completely.";
   }
 
   /// [index] = ایندکسِ پرسشی که ویرایش/رفرش می‌شود (پاسخ‌های بعدش حذف می‌شوند)؛
@@ -497,15 +506,33 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
     try {
       final svc = ref.read(translationServiceProvider);
       final ai = ref.read(aiSettingsProvider);
-      final text = await aiGenerate(
+      // ✂️ جوابِ فارسی/عربی توکنِ زیادی می‌خورد؛ سقفِ ۶۰۰ جواب را وسطِ جمله می‌برید (و جوابِ بریده در کشِ
+      // مشترکِ سرور برای همه می‌ماند). سقفِ بالاتر = کلیدِ کشِ جدید؛ مدل خودش کوتاه می‌نویسد (~۱۵۰ کلمه).
+      final qPrompt = _prompt(question, upTo: target);
+      var text = await aiGenerate(
         svc: svc,
         settings: ai,
-        prompt: _prompt(question, upTo: target),
-        maxTokens: 600,
+        prompt: qPrompt,
+        maxTokens: 1500,
         retries: 1,
         timeoutMs: 45000,
         feature: Feature.grammar, // 💎 سقفِ «کل عمر» نسخه‌ی رایگان
       );
+      // اگر باز هم وسطِ جمله تمام شده بود، یک بار با سقفِ بزرگ‌تر (کلیدِ کشِ جدا) دوباره
+      if (_looksCutOff(text)) {
+        try {
+          final t2 = await aiGenerate(
+            svc: svc,
+            settings: ai,
+            prompt: qPrompt,
+            maxTokens: 3000,
+            retries: 0,
+            timeoutMs: 45000,
+            feature: Feature.grammar,
+          );
+          if (t2.trim().isNotEmpty && !_looksCutOff(t2)) text = t2;
+        } catch (_) {}
+      }
       // جوابِ خالی/خراب (گارد، استدلال، پژواکِ پرامپت) → خطا؛ چیزی ذخیره نمی‌شود
       if (text.trim().isEmpty || aiOutputProblem(text) != null) {
         throw Exception('bad ai output');
