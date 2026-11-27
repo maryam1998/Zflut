@@ -19,6 +19,7 @@ import '../player_sync/sync_widgets.dart' show SyncAnchor, syncSpeakAdhoc;
 import '../tts/speech_state.dart';
 import 'selection_card.dart' show SelectableSyncText;
 import 'feature_coach.dart';
+import 'translation_alt_row.dart';
 import '../storage/local_storage.dart' show sharedPrefsProvider;
 import 'sync_item_card.dart' show NeuralPathButton;
 import '../theme/app_theme_colors.dart';
@@ -699,6 +700,7 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
             sourceLang: widget.langCode,
             aiSettings: ref.read(aiSettingsProvider),
             previous: _text,
+            keepPrevious: true,
           );
       if (!mounted) return;
       final v = t.trim();
@@ -730,6 +732,27 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
       }
     }
     final trId = 'ai-ex-tr-${widget.target}-${_text.hashCode}';
+    // 🗂️ ↻ ترجمه‌ی قبلی را نگه داشته و جدید «گزینه‌ی دوم» شده
+    Widget? altRow;
+    if (_text.isNotEmpty) {
+      final svc = ref.read(translationServiceProvider);
+      final alt = svc.alternative(widget.example.text, widget.target);
+      if (alt != null && alt.trim() != _text.trim()) {
+        altRow = TranslationAltRow(
+          alt: alt,
+          textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+          onChoose: () async {
+            final v = await svc.chooseAlternative(
+                widget.example.text, widget.langCode, widget.target);
+            if (v != null) await _apply(v.trim());
+          },
+          onDismiss: () async {
+            await svc.dismissAlternative(widget.example.text, widget.target);
+            if (mounted) setState(() {});
+          },
+        );
+      }
+    }
     return SyncAnchor(
       code: widget.target,
       id: trId,
@@ -751,7 +774,11 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Padding(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+            Padding(
               padding: const EdgeInsets.only(top: 5),
               child: _text.isEmpty
                   ? Text(_failed ? '—' : context.l10n.grammar_translating,
@@ -771,6 +798,9 @@ class _ExampleTranslationState extends ConsumerState<_ExampleTranslation> {
                               fontWeight: FontWeight.w800,
                               height: 1.45)),
                     ),
+            ),
+            if (altRow != null) altRow,
+              ],
             ),
           ),
           _ExActions(

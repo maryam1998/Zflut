@@ -14,6 +14,7 @@ import '../utils/html_entities.dart';
 import '../../features/reader/widgets/neural_path_dialog.dart';
 import 'sync_item_card.dart' show NeuralPathButton;
 import 'selection_card.dart' show SelectableSyncText;
+import 'translation_alt_row.dart';
 
 /// زبان‌هایی که زیر یک جوابِ AI دکمه‌ی ترجمه می‌گیرند:
 /// زبانِ مبدأ (مادریِ کاربر) + زبان‌های مقصدِ او، بدونِ تکرار، و بدونِ
@@ -61,6 +62,9 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
   final Set<String> _loading = {};
   final Set<String> _failed = {};
 
+  /// 🗂️ تکه‌های ترجمه‌شده‌ی هر زبان (برای «گزینه‌ی دوم»ِ ↻)
+  final Map<String, _SegData> _segData = {};
+
   @override
   void initState() {
     super.initState();
@@ -90,6 +94,7 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
       _results.clear();
       _loading.clear();
       _failed.clear();
+      _segData.clear();
     }
     if (widget.autoOpenLang != null &&
         (old.autoOpenLang != widget.autoOpenLang || old.text != widget.text)) {
@@ -171,7 +176,11 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
         try {
           final t = force
               ? await svc.retranslate(
-                  text: seg, targetLang: lang, sourceLang: from, aiSettings: ai)
+                  text: seg,
+                  targetLang: lang,
+                  sourceLang: from,
+                  aiSettings: ai,
+                  keepPrevious: true)
               : await svc.translate(
                   text: seg, targetLang: lang, sourceLang: from, aiSettings: ai);
           final v = decodeHtmlEntities(t.trim());
@@ -185,16 +194,20 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
       if (!mounted || original != widget.text) return;
       if (ok == 0) throw Exception('failed');
       final buf = <String>[];
+      final counts = <int>[];
       var k = 0;
       for (final l in lines) {
         if (l.trim().isEmpty) {
           buf.add('');
+          counts.add(0);
           continue;
         }
         final n = _chunks(l).length;
         buf.add(outs.sublist(k, k + n).join(' '));
+        counts.add(n);
         k += n;
       }
+      _segData[lang] = _SegData(jobs, List<String>.from(outs), counts);
       setState(() => _results[lang] = buf.join('\n').trim());
     } catch (_) {
       if (!mounted || original != widget.text) return;
@@ -238,6 +251,77 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
     }
     buf.write(line.substring(last));
     return buf.toString();
+  }
+
+  /// 🗂️ «گزینه‌ی دوم»: تکه‌هایی که ↻ ترجمه‌ی تازه‌ای برایشان آورده، جای قبلی نمی‌نشینند؛
+  /// اینجا متنِ کاملِ جایگزین ساخته می‌شود. null = گزینه‌ای نیست.
+  String? _altFor(String lang) {
+    final d = _segData[lang];
+    if (d == null) return null;
+    final svc = ref.read(translationServiceProvider);
+    var any = false;
+    final buf = <String>[];
+    var k = 0;
+    for (final n in d.lineCounts) {
+      if (n == 0) {
+        buf.add('');
+        continue;
+      }
+      final parts = <String>[];
+      for (var i = 0; i < n; i++) {
+        final cur = d.outs[k + i];
+        final a = svc.alternative(d.jobs[k + i], lang);
+        if (a != null) {
+          final v = decodeHtmlEntities(a.trim());
+          if (v.isNotEmpty && v != cur.trim()) {
+            any = true;
+            parts.add(v);
+            continue;
+          }
+        }
+        parts.add(cur);
+      }
+      buf.add(parts.join(' '));
+      k += n;
+    }
+    return any ? buf.join('\n').trim() : null;
+  }
+
+  Future<void> _chooseAlt(String lang) async {
+    final d = _segData[lang];
+    if (d == null) return;
+    final svc = ref.read(translationServiceProvider);
+    final from = _source;
+    for (var i = 0; i < d.jobs.length; i++) {
+      final a = svc.alternative(d.jobs[i], lang);
+      if (a == null || decodeHtmlEntities(a.trim()) == d.outs[i].trim()) continue;
+      final v = await svc.chooseAlternative(d.jobs[i], from, lang);
+      if (v != null && v.trim().isNotEmpty) {
+        d.outs[i] = decodeHtmlEntities(v.trim());
+      }
+    }
+    if (!mounted) return;
+    final buf = <String>[];
+    var k = 0;
+    for (final n in d.lineCounts) {
+      if (n == 0) {
+        buf.add('');
+        continue;
+      }
+      buf.add(d.outs.sublist(k, k + n).join(' '));
+      k += n;
+    }
+    setState(() => _results[lang] = buf.join('\n').trim());
+  }
+
+  Future<void> _dismissAlt(String lang) async {
+    final d = _segData[lang];
+    if (d == null) return;
+    final svc = ref.read(translationServiceProvider);
+    for (final seg in d.jobs) {
+      await svc.dismissAlternative(seg, lang);
+    }
+    if (mounted) setState(() {});
   }
 
   void _toggleLang(String lang) {
@@ -306,6 +390,7 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
     final loading = _loading.contains(lang);
     final failed = _failed.contains(lang);
     final rtl = dirFor(lang) == TextDirection.rtl;
+    final alt = (loading || failed || text == null) ? null : _altFor(lang);
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
@@ -314,7 +399,11 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: c.cardBorder, width: 0.8),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+      Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
@@ -372,8 +461,26 @@ class _AiAnswerToolsState extends ConsumerState<AiAnswerTools> {
           ],
         ],
       ),
+          if (alt != null)
+            TranslationAltRow(
+              alt: alt,
+              textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+              fontSize: 13,
+              onChoose: () => _chooseAlt(lang),
+              onDismiss: () => _dismissAlt(lang),
+            ),
+        ],
+      ),
     );
   }
+}
+
+/// تکه‌های ترجمه‌شده‌ی یک زبان: [jobs] متنِ مبدأ، [outs] ترجمه‌ی فعلی، [lineCounts] تعدادِ تکه در هر خط (۰ = خطِ خالی).
+class _SegData {
+  final List<String> jobs;
+  final List<String> outs;
+  final List<int> lineCounts;
+  _SegData(this.jobs, this.outs, this.lineCounts);
 }
 
 /// 🧬 و 🔊 که داخلِ کادرِ جوابِ AI، بالا سمتِ راست می‌نشینند (از راست به چپ: 🧬 ← 🔊).

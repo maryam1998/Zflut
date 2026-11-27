@@ -28,6 +28,7 @@ import '../../core/translate/translation_service.dart'
 import '../../core/widgets/selection_card.dart'
     show SelectableRun, SelectableSyncText;
 import '../../core/widgets/sync_item_card.dart' show NeuralPathButton;
+import '../../core/widgets/translation_alt_row.dart';
 import '../reader/widgets/neural_path_dialog.dart' show showNeuralPath;
 import '../tabs/_hope_panel.dart'
     show HopeChoiceChip, autoDir, uiContentDirection;
@@ -884,16 +885,22 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
     final key = _k(lang, src);
     if (_retrying.contains(key)) return;
     setState(() => _retrying.add(key));
+    final before = _tr[key]?.trim();
     try {
       final r = (await ref.read(translationServiceProvider).retranslate(
                 text: src,
                 targetLang: lang,
                 sourceLang: widget.langCode,
                 aiSettings: ref.read(aiSettingsProvider),
+                previous: before,
+                keepPrevious: true,
               ))
           .trim();
       if (!mounted) return;
-      if (r.isNotEmpty && r != src.trim()) {
+      if (before != null && before.isNotEmpty && r == before) {
+        // 🗂️ ترجمه همان قبلی ماند (تأیید / سقفِ روزانه / نتیجه‌ی جدید «گزینه‌ی دوم» شد)
+        setState(() => _failed.remove(key));
+      } else if (r.isNotEmpty && r != src.trim()) {
         var linked = const <_ParaUpdate>[];
         setState(() {
           _tr[key] = r;
@@ -918,6 +925,29 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
       if (mounted && !_tr.containsKey(key)) setState(() => _failed.add(key));
     } finally {
       if (mounted) setState(() => _retrying.remove(key));
+    }
+  }
+
+  /// 🗂️ کاربر «گزینه‌ی دوم» را برگزید → همان کاری که ↻ با ترجمه‌ی جدید می‌کرد.
+  Future<void> _chooseAlt(String lang, String src, {int? paraIdx}) async {
+    final key = _k(lang, src);
+    final v = (await ref
+            .read(translationServiceProvider)
+            .chooseAlternative(src, widget.langCode, lang))
+        ?.trim();
+    if (!mounted || v == null || v.isEmpty) return;
+    var linked = const <_ParaUpdate>[];
+    setState(() {
+      _tr[key] = v;
+      _failed.remove(key);
+      linked = _linkUnits(lang, src, v, overwrite: true);
+    });
+    if (paraIdx != null) {
+      widget.onParagraphRetranslated?.call(lang, paraIdx, v);
+    }
+    for (final u in linked) {
+      if (u.pi == paraIdx && u.lang == lang) continue;
+      widget.onParagraphRetranslated?.call(u.lang, u.pi, u.text);
     }
   }
 
@@ -1628,6 +1658,27 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
             ),
           );
 
+    // 🗂️ ↻ ترجمه‌ی قبلی را نگه داشته و جدید «گزینه‌ی دوم» شده
+    Widget? altRow;
+    if (t != null) {
+      final svc = ref.read(translationServiceProvider);
+      final alt = svc.alternative(src, lang);
+      if (alt != null && alt.trim() != t.trim()) {
+        altRow = Padding(
+          padding: const EdgeInsets.only(left: 36, right: 8),
+          child: TranslationAltRow(
+            alt: alt,
+            textDirection: dir,
+            onChoose: () => _chooseAlt(lang, src, paraIdx: paraIdx),
+            onDismiss: () async {
+              await svc.dismissAlternative(src, lang);
+              if (mounted) setState(() {});
+            },
+          ),
+        );
+      }
+    }
+
     // Builder: contextِ زیرِ SyncPlayScope لازم است (گزارشِ ترجمه به پلیر)
     return Builder(builder: (bctx) {
       if (t != null) syncReportTranslation(bctx, ref, lang, id, t);
@@ -1636,7 +1687,11 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
         id: id,
         child: Padding(
       padding: const EdgeInsets.only(top: 2),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+      Row(
         textDirection: TextDirection.ltr,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1723,6 +1778,9 @@ class _StoryReaderPanelState extends ConsumerState<StoryReaderPanel> {
               size: 16,
               padding: const EdgeInsets.all(5),
             ),
+        ],
+      ),
+          if (altRow != null) altRow,
         ],
       ),
         ),

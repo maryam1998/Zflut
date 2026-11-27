@@ -24,6 +24,7 @@ import '../providers/locale_provider.dart';
 import '../providers/reader_providers.dart';
 import '../providers/speech_provider.dart';
 import '../providers/translation_provider.dart';
+import 'translation_alt_row.dart';
 import '../theme/app_theme_colors.dart';
 import '../translate/translation_service.dart';
 import '../tts/speech_state.dart';
@@ -832,7 +833,12 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
     try {
       r = retry
           ? await service.retranslate(
-              text: text, targetLang: to, sourceLang: from, aiSettings: ai)
+              text: text,
+              targetLang: to,
+              sourceLang: from,
+              aiSettings: ai,
+              previous: _res,
+              keepPrevious: true)
           : await service.translate(
               text: text, targetLang: to, sourceLang: from, aiSettings: ai);
     } catch (_) {
@@ -913,6 +919,31 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
       );
     }
 
+    // 🗂️ ↻ ترجمه‌ی قبلی را نگه داشته و جدید «گزینه‌ی دوم» شده
+    Widget? altRow;
+    if (res != null) {
+      final svc = ref.read(translationServiceProvider);
+      final alt = svc.alternative(widget.text, widget.to);
+      if (alt != null && alt.trim() != res.trim()) {
+        altRow = TranslationAltRow(
+          alt: alt,
+          textDirection: dirFor(widget.to),
+          fontSize: 13,
+          color: kCardBorderGold,
+          dismissColor: Colors.white54,
+          onChoose: () async {
+            final v = await svc.chooseAlternative(
+                widget.text, widget.from, widget.to);
+            if (v != null) _accept(v);
+          },
+          onDismiss: () async {
+            await svc.dismissAlternative(widget.text, widget.to);
+            if (mounted) setState(() {});
+          },
+        );
+      }
+    }
+
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Padding(
@@ -944,7 +975,15 @@ class _TranslationLineState extends ConsumerState<_TranslationLine> {
               ),
               const SizedBox(width: 10),
             ],
-            Expanded(child: body),
+            Expanded(
+              child: altRow == null
+                  ? body
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [body, altRow],
+                    ),
+            ),
             // از راست به چپ: 🔊 ← 🧬 ← رفرش
             if (res != null || _failed)
               TourTarget(

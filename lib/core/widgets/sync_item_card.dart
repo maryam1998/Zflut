@@ -20,6 +20,7 @@ import '../storage/translation_cache_db.dart';
 
 import '../../features/reader/widgets/neural_path_dialog.dart';
 import 'selection_card.dart';
+import 'translation_alt_row.dart';
 import 'feature_coach.dart';
 import '../storage/local_storage.dart' show sharedPrefsProvider;
 import 'word_examples_panel.dart';
@@ -708,6 +709,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
         sourceLang: widget.sourceLang,
         aiSettings: ai,
         previous: _text,
+        keepPrevious: true,
       );
     } catch (_) {
       result = null;
@@ -749,6 +751,35 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
 
     final canRetry = !loading;
 
+    // 🗂️ ↻ ترجمه‌ی قبلی را نگه داشته و جدید «گزینه‌ی دوم» شده
+    Widget? altRow;
+    if (text != null) {
+      final svc = ref.read(translationServiceProvider);
+      final alt = svc.alternative(widget.en, widget.langCode);
+      if (alt != null && alt.trim() != text.trim()) {
+        altRow = Padding(
+          padding: const EdgeInsets.only(left: 36),
+          child: TranslationAltRow(
+            alt: alt,
+            textDirection: dirFor(widget.langCode),
+            onChoose: () async {
+              final v = await svc.chooseAlternative(
+                  widget.en, widget.sourceLang, widget.langCode);
+              if (v == null || !mounted) return;
+              await svc.cachePut(
+                  widget.en, widget.sourceLang, widget.langCode, v.trim());
+              if (!mounted) return;
+              setState(() => _text = v.trim());
+            },
+            onDismiss: () async {
+              await svc.dismissAlternative(widget.en, widget.langCode);
+              if (mounted) setState(() {});
+            },
+          ),
+        );
+      }
+    }
+
     return SyncAnchor(
       code: widget.langCode,
       id: widget.itemId,
@@ -756,7 +787,11 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
         textDirection: TextDirection.ltr,
         child: Padding(
           padding: EdgeInsets.only(top: tp.langGap.toDouble()),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            Row(
             children: [
               Container(
                 padding:
@@ -871,6 +906,9 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                           alignment: Alignment.centerLeft,
                           child: widget.sideActions),
                 ),
+            ],
+          ),
+            if (altRow != null) altRow,
             ],
           ),
         ),
