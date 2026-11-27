@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/language_selection.dart';
 import '../storage/local_storage.dart';
 import '../storage/prefs_keys.dart';
+import '../translate/romanization.dart';
 
 class LanguageSelectionNotifier extends StateNotifier<LanguageSelection> {
   final LocalStorage _storage;
 
-  LanguageSelectionNotifier(this._storage) : super(_read(_storage));
+  LanguageSelectionNotifier(this._storage) : super(_read(_storage)) {
+    Romanization.nativeCode = state.native; // 🔤 برای native_lang_code و پنهان‌کردنِ رومی‌سازیِ زبانِ خودش
+  }
 
   static LanguageSelection _read(LocalStorage s) {
     final json = s.readJson(PrefsKeys.languageSelection);
@@ -16,6 +19,7 @@ class LanguageSelectionNotifier extends StateNotifier<LanguageSelection> {
 
   Future<void> _persist(LanguageSelection next) async {
     state = next;
+    Romanization.nativeCode = next.native;
     await _storage.writeJson(PrefsKeys.languageSelection, next.toJson());
   }
 

@@ -243,8 +243,34 @@ def make_zh():
     return conv
 
 
-# ───────────────────────── ژاپنی (pykakasi) ─────────────────────────
-_JA_FIX = {  # قطعه‌هایی که pykakasi به‌صورتِ املا می‌نویسد (ha / he / wo) ولی تلفظ فرق دارد
+# ───────────────────────── ژاپنی (pykakasi + اصلاحِ ذرّه‌ها) ─────────────────────────
+# pykakasi «املا» را رومی می‌کند: は→ha ، へ→he ، を→wo. ولی تلفظِ ذرّه‌ها wa / e / o است (Hepburn).
+# چون pykakasi چند حرفِ هیراگانا را گاهی در یک قطعه می‌دهد («これは» = یک قطعه)، اصلاحِ سطحِ قطعه کافی نیست؛
+# پس «پیش از تبدیل» ذرّه‌ها را با حرفِ هم‌صدایشان عوض می‌کنیم (は→わ ، へ→え ، を→お) تا pykakasi خودش wa/e/o بنویسد.
+_KK = "\u3400-\u9FFF\u30A0-\u30FF\u30FC々"          # کانجی + کاتاکانا
+_JA_PARTICLE_WORDS = "これ|それ|あれ|どれ|ここ|そこ|あそこ|どこ|で|に|と|から|まで|より|だけ|さえ|なんか|さん|ちゃん|くん|たち|わたし|あなた|ぼく|おれ|かれ|かのじょ|きょう|あした|みんな"
+_JA_PUNCT_END = r"(?=$|[\s、。！？!?,.…」』）)]|[\u3400-\u9FFF\u30A0-\u30FF])"  # پایانِ عبارت، یا بعدش کانجی/کاتاکانا
+
+
+def _ja_pre(text: str) -> str:
+    text = unicodedata.normalize("NFKC", text)
+    # سلام‌ها: «こんにちは/こんばんは» = konnichiwa / konbanwa
+    text = text.replace("こんにちは", "こんにちわ").replace("こんばんは", "こんばんわ")
+    # を همیشه «o» (Hepburn ویرایش‌شده)
+    text = text.replace("を", "お")
+    # へ = «e» وقتی ذرّه است: بعدش حرفِ هیراگانا نیست (کانجی/کاتاکانا/علامت/پایان)، مثل 学校へ行く / うちへ
+    text = re.sub(r"(?<=[ぁ-んァ-ヶー" + _KK + r"])へ(?=$|[^ぁ-ん])", "え", text)
+    # は = «wa» وقتی ذرّه است:
+    #   ۱) بعد از کانجی/کاتاکانا (私は، 田中さんは نه؛ آن‌جا «さん» هیراگاناست و قاعده‌ی ۲ و ۳ می‌گیرد)
+    text = re.sub(r"(?<=[" + _KK + r"])は", "わ", text)
+    #   ۲) بعد از واژه‌های رایجِ هیراگانایی: これは / ここでは / どこには / ...
+    text = re.sub(r"(" + _JA_PARTICLE_WORDS + r")は", r"\1わ", text)
+    #   ۳) بعد از هیراگانا وقتی آخرِ عبارت است یا کانجی/کاتاکانا بعدش می‌آید (へやは広い) ؛ «はは/ははは» (خنده) و «は» وسطِ واژه دست‌نخورده
+    text = re.sub(r"(?<=[ぁ-ん])(?<!は)は" + _JA_PUNCT_END, "わ", text)
+    return text
+
+
+_JA_FIX = {  # قطعه‌هایی که باز هم املایی مانده‌اند (محافظ؛ بیشترِ کار را _ja_pre کرده)
     "は": "wa", "へ": "e", "を": "o",
     "こんにちは": "konnichiwa", "こんばんは": "konbanwa",
 }
@@ -255,7 +281,7 @@ def make_ja():
     kks = pykakasi.kakasi()
 
     def conv(text: str) -> str:
-        text = unicodedata.normalize("NFKC", text)
+        text = _ja_pre(text)
         parts = []
         for seg in kks.convert(text):
             orig = seg.get("orig", "")
@@ -297,6 +323,51 @@ SELFTEST = {
     "ru": ["Мне тоже приятно. Ты здесь новенький?", "Добро пожаловать! Ты откуда?", "Я из Чикаго."],
 }
 
+# بررسی‌های خودکارِ --selftest: «want» باید داخلِ خروجی (بدونِ فاصله/خط‌تیره، حروفِ کوچک) باشد.
+# ژاپنی: ذرّه‌ها (は→wa ، へ→e ، を→o) و سلام‌ها ؛ کره‌ای: تلفظِ واقعی (Revised Romanization).
+CHECKS = {
+    "ja": [
+        ("こんにちは！", "konnichiwa"),
+        ("こんばんは", "konbanwa"),
+        ("私は学生です。", "watashiwagakusei"),
+        ("これは本です。", "korewahon"),
+        ("あれはペンです", "arewapen"),
+        ("ここでは静かにしてください", "kokodewashizuka"),
+        ("本を読みます", "honoyomi"),
+        ("水をください", "mizuokudasai"),
+        ("学校へ行きます", "gakkoue"),
+        ("はじめまして", "hajimemashite"),
+        ("母は先生です", "hahawasensei"),
+        ("ははは、面白い", "hahaha"),
+    ],
+    "ko": [
+        ("안녕하세요", "annyeonghaseyo"),
+        ("감사합니다", "gamsahamnida"),
+        ("한국어", "hangugeo"),
+        ("좋아요", "joayo"),
+        ("같이 가요", "gachigayo"),
+        ("괜찮아요", "gwaenchanayo"),
+        ("없어요", "eopseoyo"),
+        ("맛있어요", "masisseoyo"),
+        ("학교", "hakgyo"),
+        ("먹어요", "meogeoyo"),
+        ("읽어요", "ilgeoyo"),
+        ("입니다", "imnida"),
+        ("만나서 반가워요", "mannaseobangawoyo"),
+        ("국물", "gungmul"),
+    ],
+    "hi": [
+        ("नमस्ते", "namaste"),
+        ("धन्यवाद", "dhanyavaad"),
+        ("मेरा नाम अली है।", "meranaam"),
+    ],
+    "ru": [
+        ("Спасибо большое!", "spasibobolsh"),
+        ("Я не понимаю", "yaneponimayu"),
+        ("Где находится вокзал?", "gdenakhoditsya"),
+    ],
+}
+
 
 def load_converters(langs):
     conv = {}
@@ -322,10 +393,18 @@ def main():
     conv = load_converters(langs)
 
     if args.selftest:
+        bad = 0
         for lang in langs:
             print(f"── {lang}")
             for s in SELFTEST.get(lang, []):
                 print(f"   {s}\n   → {conv[lang](s)}")
+            for s, want in CHECKS.get(lang, []):
+                got = conv[lang](s)
+                flat = re.sub(r"[\s\-'’]", "", got.lower())
+                ok = want in flat
+                bad += 0 if ok else 1
+                print(f"   {'✓' if ok else '✗'} {s}  →  {got}" + ("" if ok else f"    (انتظار: «{want}»)"))
+        print("\n" + ("✅ همه‌ی بررسی‌ها درست بود." if not bad else f"⚠️ {bad} مورد با انتظار نمی‌خواند — خروجی را برای برنامه‌نویس/Claude بفرست."))
         return
 
     src = Path(args.src)

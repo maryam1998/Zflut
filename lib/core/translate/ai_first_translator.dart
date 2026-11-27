@@ -25,6 +25,7 @@ import 'package:dio/dio.dart';
 import '../auth/worker_auth.dart';
 import '../storage/translation_cache_db.dart';
 import 'bundled_translations.dart';
+import 'romanization.dart';
 import 'known_translations.dart';
 import 'shared_translations.dart';
 import 'translation_service.dart';
@@ -749,6 +750,7 @@ class AiFirstTranslator {
                   'drafts': [for (final it in items) (it.job.draft ?? '').trim()],
                 'source_lang_code': g.from.isEmpty ? 'auto' : g.from,
                 'target_lang_code': g.to,
+                ...Romanization.nativeField, // 🔤
               },
               options: Options(
                 contentType: 'application/json',
@@ -765,6 +767,7 @@ class AiFirstTranslator {
             _badCall();
             return null;
           }
+          Romanization.ingestBatch(g.to, data); // 🔤 romans
           _okCall();
           return <String?>[
             for (var i = 0; i < items.length; i++) _acceptAi(items[i].job, arr[i]),
@@ -1033,6 +1036,7 @@ class AiFirstTranslator {
                 if ((j.draft ?? '').trim().isNotEmpty) 'draft': j.draft!.trim(),
                 'source_lang_code': j.from.isEmpty ? 'auto' : j.from,
                 'target_lang_code': j.to,
+                ...Romanization.nativeField, // 🔤
               },
               options: Options(
                 contentType: 'application/json',
@@ -1044,6 +1048,7 @@ class AiFirstTranslator {
         final st = res.statusCode ?? 0;
         if (st >= 200 && st < 300) {
           final data = res.data;
+          Romanization.ingestSingle(j.to, data); // 🔤 roman
           final out = data is Map ? data['text'] : null;
           if (out is! String) {
             _badCall();

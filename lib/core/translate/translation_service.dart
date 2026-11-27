@@ -9,6 +9,7 @@ import '../auth/worker_auth.dart';
 import '../native/native_bridge.dart';
 import '../storage/translation_cache_db.dart';
 import 'bundled_translations.dart';
+import 'romanization.dart';
 import 'shared_translations.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1480,6 +1481,7 @@ class TranslationService {
               'text': t,
               'source_lang_code': src,
               'target_lang_code': target,
+              ...Romanization.nativeField, // 🔤 زبانِ مادری: رومی‌سازیِ زبانِ خودش برنمی‌گردد
               // 🕵️ پیش‌نویسِ مشکوکِ رایگان: Worker (DeepSeek) آن را بازبینی/اصلاح می‌کند و در D1 برای همه می‌ماند
               if (draft != null && draft.trim().isNotEmpty) 'draft': draft.trim(),
             },
@@ -1493,6 +1495,7 @@ class TranslationService {
       final status = res.statusCode ?? 0;
       if (status < 200 || status >= 300) return null;
       final data = _json(res.data);
+      Romanization.ingestSingle(target, data); // 🔤 فیلدِ roman
       final out = data is Map ? data['text'] : null;
       if (out is! String) return null;
       final cleaned = _stripQuotes(stripAIReasoning(out));
@@ -1608,6 +1611,7 @@ class TranslationService {
               if (hasDraft) 'drafts': [for (final it in items) it.draft],
               'source_lang_code': g.src,
               'target_lang_code': g.target,
+              ...Romanization.nativeField,
             },
             options: Options(
               contentType: 'application/json',
@@ -1621,6 +1625,7 @@ class TranslationService {
         final data = _json(res.data);
         final arr = data is Map ? data['results'] : null;
         if (arr is! List || arr.length != items.length) return null;
+        Romanization.ingestBatch(g.target, data); // 🔤 آرایه‌ی romans
         return <String?>[
           for (final v in arr)
             () {

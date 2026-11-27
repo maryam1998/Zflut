@@ -21,6 +21,7 @@ import '../storage/translation_cache_db.dart';
 import '../../features/reader/widgets/neural_path_dialog.dart';
 import 'selection_card.dart';
 import 'translation_alt_row.dart';
+import 'roman_line.dart';
 import 'feature_coach.dart';
 import '../storage/local_storage.dart' show sharedPrefsProvider;
 import 'word_examples_panel.dart';
@@ -908,6 +909,13 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                 ),
             ],
           ),
+            // 🔤 خوانشِ لاتین (هندی/چینی/ژاپنی/کره‌ای/روسی) زیرِ متنِ ترجمه
+            if (text != null)
+              RomanLine(
+                langCode: widget.langCode,
+                text: text,
+                compact: widget.compact,
+              ),
             if (altRow != null) altRow,
             ],
           ),
