@@ -17,6 +17,10 @@ import 'package:record/record.dart';
 import '../../core/native/native_bridge.dart';
 import '../../core/providers/speech_provider.dart';
 import '../../core/providers/ai_settings_provider.dart';
+import '../../core/providers/app_prefs_provider.dart';
+import '../../core/providers/text_prefs_provider.dart';
+import '../../core/models/text_prefs.dart';
+import '../../core/constants/app_fonts.dart';
 import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/translation_provider.dart';
 import '../../core/translate/in_text_translation.dart';
@@ -3239,10 +3243,12 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                           langLabel,
                           textAlign: TextAlign.center,
                           textDirection: TextDirection.ltr,
-                          style: const TextStyle(
-                              color: Color(0xFFFCD34D),
-                              fontSize: 17,
+                          style: TextStyle(
+                              color: const Color(0xFFFCD34D),
+                              fontSize: 17 * _tp.scaleFactor,
                               fontWeight: FontWeight.w800,
+                              fontFamily: _ccFontFamily,
+                              fontFamilyFallback: _ccFontFallback,
                               height: 1.4,
                               shadows: _ccShadow),
                         ),
@@ -3256,16 +3262,20 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                                   : rtl)
                               ? TextDirection.rtl
                               : TextDirection.ltr,
-                          style: const TextStyle(
-                              color: Color(0xFFFCD34D),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
+                          style: TextStyle(
+                              color: const Color(0xFFFCD34D),
+                              fontSize: 15 * _tp.scaleFactor,
+                              fontWeight: _ccBoldText
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                              fontFamily: _ccFontFamily,
+                              fontFamilyFallback: _ccFontFallback,
                               height: 1.4,
                               shadows: _ccShadow),
                         ),
                       if (tr.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 4),
+                          padding: EdgeInsets.only(top: _tp.langGap.toDouble()),
                           child: Text(
                             tr,
                             textAlign: TextAlign.center,
@@ -3274,7 +3284,12 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
                                 : TextDirection.ltr,
                             style: TextStyle(
                                 color: Colors.white.withOpacity(0.8),
-                                fontSize: 12.5,
+                                fontSize: 12.5 * _tp.scaleFactor,
+                                fontWeight: _ccBoldTr
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                fontFamily: _ccFontFamily,
+                                fontFamilyFallback: _ccFontFallback,
                                 height: 1.35,
                                 shadows: _ccShadow),
                           ),
@@ -3418,7 +3433,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               'Call captions will appear here…'),
           style: TextStyle(
               color: Colors.white.withOpacity(0.6),
-              fontSize: 12,
+              fontSize: 12 * _tp.scaleFactor,
+              fontFamily: _ccFontFamily,
+              fontFamilyFallback: _ccFontFallback,
               shadows: _ccShadow),
         ),
       );
@@ -3435,7 +3452,8 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
           ? Colors.white.withOpacity(op * 0.85)
           : const Color(0xFFFCD34D).withOpacity(cur ? 1.0 : 0.5);
       items.add(Padding(
-        padding: EdgeInsets.only(top: i == 0 ? 0 : 8),
+        // فاصله‌ی بینِ جمله‌ها = اسلایدرِ «فاصله‌ی جمله‌ها» در تنظیمات
+        padding: EdgeInsets.only(top: i == 0 ? 0 : _tp.sentenceGap.toDouble()),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3452,23 +3470,29 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
               ]),
               style: TextStyle(
                 color: Colors.white.withOpacity(op),
-                fontSize: cur ? 14 : 12.5,
-                fontWeight: cur ? FontWeight.w700 : FontWeight.w400,
+                fontSize: (cur ? 14 : 12.5) * _tp.scaleFactor,
+                fontWeight: _ccBoldText ? FontWeight.w700 : FontWeight.w400,
+                fontFamily: _ccFontFamily,
+                fontFamilyFallback: _ccFontFallback,
                 height: 1.35,
                 shadows: _ccShadow,
               ),
             ),
             if (tr.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: 2),
+                // فاصله‌ی بینِ زبان‌ها = اسلایدرِ «فاصله‌ی زبان‌ها» در تنظیمات
+                padding: EdgeInsets.only(top: _tp.langGap.toDouble()),
                 child: Directionality(
                   textDirection: dir,
                   child: Text(
                     tr,
                     style: TextStyle(
                       color: Colors.white.withOpacity(cur ? 0.72 : 0.3),
-                      fontSize: cur ? 12 : 11,
-                      fontWeight: cur ? FontWeight.w600 : FontWeight.w400,
+                      fontSize: (cur ? 12 : 11) * _tp.scaleFactor,
+                      fontWeight:
+                          _ccBoldTr ? FontWeight.w600 : FontWeight.w400,
+                      fontFamily: _ccFontFamily,
+                      fontFamilyFallback: _ccFontFallback,
                       height: 1.35,
                       shadows: _ccShadow,
                     ),
@@ -3516,6 +3540,26 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
     Shadow(color: Color(0x99000000), blurRadius: 2, offset: Offset(0, 1)),
   ];
 
+  // ── 🔗 هماهنگ با تنظیماتِ متنِ اپ ──
+  TargetTextPrefs get _tp => ref.read(textPrefsProvider);
+
+  /// نوع فونتِ انتخاب‌شده در تنظیمات (همان فونتِ بقیه‌ی اپ)
+  String? get _ccFontFamily {
+    final f = kAppFonts[ref.read(appPrefsProvider).font];
+    return f?.faFamily;
+  }
+
+  List<String>? get _ccFontFallback {
+    final f = kAppFonts[ref.read(appPrefsProvider).font];
+    return f == null ? null : [f.latinFamily];
+  }
+
+  bool get _ccBoldText =>
+      _tp.bold == TargetBoldMode.both || _tp.bold == TargetBoldMode.text;
+  bool get _ccBoldTr =>
+      _tp.bold == TargetBoldMode.both ||
+      _tp.bold == TargetBoldMode.translation;
+
   Widget _fixLine(CallFix f, double op) => Text.rich(
         TextSpan(children: [
           TextSpan(
@@ -3536,7 +3580,11 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
             ),
           ),
         ]),
-        style: const TextStyle(fontSize: 12),
+        style: TextStyle(
+          fontSize: 12 * _tp.scaleFactor,
+          fontFamily: _ccFontFamily,
+          fontFamilyFallback: _ccFontFallback,
+        ),
       );
 
   /// آخرین جمله‌های شخصیت که روی صفحه‌ی «تماس پایان یافت» دیده می‌شوند.
@@ -4837,6 +4885,9 @@ class _SpeakingCallPanelState extends ConsumerState<SpeakingCallPanel>
         _phase == _Phase.recording ||
         _phase == _Phase.speaking;
     final photoFace = p.photoFace;
+    // 🔗 تنظیماتِ متن/فونتِ اپ (اندازه، بولد، فاصله‌ها، نوع فونت) → زیرنویسِ تماس هم تغییر کند
+    ref.watch(textPrefsProvider);
+    ref.watch(appPrefsProvider);
 
     if (_ended) return _endedView(c);
     if (_cc) WidgetsBinding.instance.addPostFrameCallback((_) => _prefetchTr());
