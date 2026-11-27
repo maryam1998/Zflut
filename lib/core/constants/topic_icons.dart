@@ -19,6 +19,9 @@ const _brown = Color(0xFF8B5E3C);
 TopicVisual visualForTopic(String topic) {
   final t = topic.toLowerCase();
 
+  // 🎤 IELTS Speaking Practice (قبل از قاعده‌های عمومی)
+  if (t.contains('ielts')) return const TopicVisual(Icons.record_voice_over_rounded, _purple);
+
   // ═══ Primary School ▸ A2 (قبل از قاعده‌های عمومیِ روزمره) ═══
   if (t.contains('shopping at a store')) return const TopicVisual(Icons.shopping_bag_rounded, _purple);
   if (t.contains('ordering food')) return const TopicVisual(Icons.restaurant_rounded, _orange);

@@ -29,6 +29,9 @@ class StageChips extends StatelessWidget {
   /// true (فقط تبِ مکالمه): [همه] + چیپ‌های جدیدِ مقاطعِ تحصیلی؛
   /// چیپ‌های جدیدِ مرحله‌ها (Preschool … Postgraduate) با کدِ 'P-A1' … 'P-C2'. (تبِ «همه» و سطح‌هایش دست‌نخورده می‌مانند)
   final bool levelsPlusPrimary;
+
+  /// false (فقط با [levelsPlusPrimary]): چیپِ «همه» نشان داده نشود — مثلِ تبِ لغات که «همه» فقط در ردیفِ CEFR است.
+  final bool showAll;
   const StageChips({
     super.key,
     required this.selected,
@@ -37,6 +40,7 @@ class StageChips extends StatelessWidget {
     this.practiceActive = false,
     this.practiceLevel = 'A2',
     this.levelsPlusPrimary = false,
+    this.showAll = true,
   });
 
   static const List<(String, String)> stages = [
@@ -70,13 +74,14 @@ class StageChips extends StatelessWidget {
         child: ListView(
           scrollDirection: Axis.horizontal,
           children: [
-            Center(
-              child: _StageChip(
-                label: allLabel,
-                active: selected == null,
-                onTap: () => onSelect(null),
+            if (showAll)
+              Center(
+                child: _StageChip(
+                  label: allLabel,
+                  active: selected == null,
+                  onTap: () => onSelect(null),
+                ),
               ),
-            ),
             for (final st in const <(String, String, IconData)>[
               ('A1', kPreschoolChipLabel, Icons.child_care_rounded),
               ('A2', kPrimaryChipLabel, Icons.school_rounded),
@@ -84,7 +89,7 @@ class StageChips extends StatelessWidget {
               ('B2', 'Sixth Form / College', Icons.workspace_premium_rounded),
               ('C1', 'University', Icons.workspace_premium_rounded),
             ]) ...[
-              const SizedBox(width: 7),
+              if (showAll || st.$1 != 'A1') const SizedBox(width: 7),
               Center(
                 child: _StageChip(
                   label: st.$2,

@@ -68,6 +68,10 @@ class LevelChipsMulti extends StatelessWidget {
   final double height;
   final String? allLabel;
 
+  /// null = رفتارِ قبلی («همه» وقتی فعال است که چیزی انتخاب نشده)؛ false = «همه» فعال نشان داده نشود
+  /// (مثلاً وقتی ردیفِ دیگری — مقطعِ تحصیلی — انتخاب شده است).
+  final bool? allActive;
+
   /// 💎 سطح‌هایی که فقط با Pro باز می‌شوند: قفل نشان می‌دهند و زدنشان [onLockedTap] را صدا می‌زند
   /// (انتخاب نمی‌شوند). خالی = بدونِ قفل (رفتارِ قبلی).
   final Set<String> lockedLevels;
@@ -87,6 +91,7 @@ class LevelChipsMulti extends StatelessWidget {
     required this.onChanged,
     this.height = 38,
     this.allLabel,
+    this.allActive,
     this.lockedLevels = const <String>{},
     this.onLockedTap,
     this.selectLocked = false,
@@ -110,7 +115,7 @@ class LevelChipsMulti extends StatelessWidget {
           return Center(
             child: LevelChip(
               level: lvl,
-              active: isAll ? selected.isEmpty : selected.contains(lvl),
+              active: isAll ? (allActive ?? selected.isEmpty) : selected.contains(lvl),
               allLabel: allLabel,
               locked: lockedLevels.contains(lvl),
               disabled: isDisabled,

@@ -255,7 +255,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
         _primary = v;
         _levels = <String>{}; // سطح در این نما معنا ندارد
         _rangeFrom = 1;
-        _rangeTo = 65;
+        _rangeTo = 9999; // بیشینه؛ با تعدادِ موضوع‌ها clamp می‌شود
       });
 
   // ───────────── 🔍 جستجوی سراسریِ تبِ Talk ─────────────
@@ -403,7 +403,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     return n;
   }
   int _rangeFrom = 1;
-  int _rangeTo = 65;
+  int _rangeTo = 9999; // بیشینه؛ با تعدادِ موضوع‌ها clamp می‌شود
 
   /// جای اسکرولِ لیستِ موضوع‌ها — وقتی موضوعی باز می‌شود ذخیره و با «بازگشت»
   /// دقیقاً همان‌جا برگردانده می‌شود (نه بالای لیست).
@@ -578,38 +578,60 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
     return _buildTopicsGrid(context, filtered, index);
   }
 
-  /// ردیف فیلتر سطح (A1–C2) بالای لیست موضوع‌ها.
-  Widget _levelBar() => Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ردیفِ اصلی: [همه] + مقاطعِ تحصیلیِ جدید (Preschool، Primary School، …)
-            StageChips(
-              levelsPlusPrimary: true,
-              selected: _primary ? 'P-$_primaryLevel' : null,
-              onSelect: (lv) {
-                if (lv != null && lv.startsWith('P-')) {
-                  _primaryLevel = lv.substring(2);
-                  _setPrimary(true);
-                } else if (_primary) {
-                  _setPrimary(false); // برگشت به «همه»
-                }
-              },
+  /// دو گروهِ جدا بالای لیست موضوع‌ها (مثلِ تبِ لغات):
+  ///  ۱) CEFR: [همه سطح‌ها] [A1] … [C2]  (چندانتخابی)
+  ///  ۲) مقطعِ تحصیلی: [Preschool] [Primary School] …  (محتوای جدا: موضوع‌های p-a1-…)
+  /// انتخابِ هر گروه، گروهِ دیگر را خاموش می‌کند.
+  Widget _levelBar() {
+    final c = context.appColors;
+    final ui = Localizations.localeOf(context).languageCode;
+    final fa = ui == 'fa' || ui == 'ar';
+    Widget heading(String text) => Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: c.inkSoft,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
             ),
-            // زیرمجموعه‌ی «همه»: سطح‌های قدیمی (همه سطح‌ها + A1…C2) — دست‌نخورده
-            if (!_primary) ...[
-              const SizedBox(height: 8),
-              LevelChipsMulti(
-                selected: _levels,
-                onChanged: (s) => setState(() => _levels = s),
-              ),
-            ],
-            const SizedBox(height: 8),
-            _searchField(),
-          ],
-        ),
-      );
+          ),
+        );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          heading(fa ? 'استاندارد CEFR' : 'CEFR level'),
+          LevelChipsMulti(
+            selected: _levels,
+            allActive: _primary ? false : null,
+            onChanged: (s) => setState(() {
+              _primary = false; // برگشت از «مقطعِ تحصیلی» به نمای CEFR
+              _levels = s;
+              _rangeFrom = 1;
+              _rangeTo = 9999; // بیشینه؛ با تعدادِ موضوع‌ها clamp می‌شود
+            }),
+          ),
+          const SizedBox(height: 10),
+          heading(fa ? 'مقطع تحصیلی' : 'Education stage'),
+          StageChips(
+            levelsPlusPrimary: true,
+            showAll: false,
+            selected: _primary ? 'P-$_primaryLevel' : null,
+            onSelect: (lv) {
+              if (lv != null && lv.startsWith('P-')) {
+                _primaryLevel = lv.substring(2);
+                _setPrimary(true);
+              }
+            },
+          ),
+          const SizedBox(height: 8),
+          _searchField(),
+        ],
+      ),
+    );
+  }
 
   /// 🔍 جستجوی مکالمه‌ها (عنوانِ موضوع، سناریو و جمله‌ها) — مثل جستجوی تبِ لغت‌ها.
   Widget _searchField() {
@@ -634,7 +656,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
                   setState(() {
                     _query = '';
                     _rangeFrom = 1;
-                    _rangeTo = 65;
+                    _rangeTo = 9999; // بیشینه؛ با تعدادِ موضوع‌ها clamp می‌شود
                   });
                 },
               ),
@@ -655,7 +677,7 @@ class _ConversationsTabState extends ConsumerState<ConversationsTab> {
           setState(() {
             _query = v;
             _rangeFrom = 1;
-            _rangeTo = 65;
+            _rangeTo = 9999; // بیشینه؛ با تعدادِ موضوع‌ها clamp می‌شود
           });
           if (v.trim().isNotEmpty) unawaited(_ensureIndex());
         },
