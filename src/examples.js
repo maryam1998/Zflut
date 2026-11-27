@@ -94,7 +94,8 @@ export async function handleWordExample(request, env, ctx, cors, session, helper
         return gate.capped ? jsonResp({ exhausted: true, total: pool.length }, 200, cors) : gate.deny;
       }
     }
-    const chain = helpers.getProviderChain(env);
+    // 🪙 امتیازِ ماهانه تمام شده → بی‌صدا مدل‌های رایگان (مثالِ تازه در استخرِ مشترک هم ذخیره می‌شود؛ مثالِ تک‌جمله‌ای است)
+    const chain = gate.degraded && helpers.getFreeChainFor ? helpers.getFreeChainFor(env, "example") : helpers.getProviderChain(env);
     const errors = [];
     try {
     for (const provider of chain) {

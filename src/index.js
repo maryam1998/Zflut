@@ -8,7 +8,7 @@ import { handleWordExample } from "./examples.js";
 import { authGate, handleSession, verifySessionToken, handleDevices, handleDevicesLogoutAll } from "./auth.js";
 import { handleUsage, featureOf, aiMissGate } from "./usage.js";
 import { handleContent } from "./content.js";
-import { recordUsage, handleAdminReport } from "./metrics.js";
+import { recordUsage, handleAdminReport, handleAdminCredits } from "./metrics.js";
 import { beginAi } from "./load.js";
 import { handleTrShare } from "./trshare.js";
 
@@ -62,6 +62,10 @@ export default {
     if (url.pathname === "/admin/usage-report" && request.method === "GET") {
       return handleAdminReport(request, env, url);
     }
+    // 🪙 پنلِ امتیازهای ماهانه (Metrics): مصرفِ هر کاربر + زمانِ رسیدن به سقف
+    if (url.pathname === "/admin/credits" && request.method === "GET") {
+      return handleAdminCredits(request, env, url);
+    }
 
     // 🔐 ورود: توکنِ Supabase → توکنِ نشستِ امضاشده (فقط همین مسیر بدونِ X-App-Token است)
     if (url.pathname === "/api/session" && request.method === "POST") {
@@ -112,7 +116,7 @@ export default {
       if (!sess) return json({ error: "login required" }, 401);
       return handleWordExample(request, env, ctx, CORS_HEADERS, sess, {
         buildPrompt: buildExamplePrompt,
-        getProviderChain, callProvider, withTimeout, sanitizeAiText, badAiOutputReason, recordUsage,
+        getProviderChain, getFreeChainFor, callProvider, withTimeout, sanitizeAiText, badAiOutputReason, recordUsage,
         beginAi: (kind, opts) => beginAi(request, env, kind, CORS_HEADERS, opts),
       });
     }
@@ -235,7 +239,9 @@ export default {
         // 🎚️ زنجیره‌ی ارزان برای کارهای ساده (چت/تصحیح/گرامر/ترجمه/...) و زنجیره‌ی
         // قوی فقط برای داستان؛ اگر AI_PROVIDER_LIGHT / AI_PROVIDER_STRONG ست نشده
         // باشد همان AI_PROVIDER قبلی استفاده می‌شود (رفتارِ فعلی بدونِ تغییر).
-        const chain = getProviderChainFor(env, featureOf(request, url));
+        // 🪙 امتیازِ ماهانه تمام شده؟ (gate.degraded) → بی‌صدا فقط مدل‌های رایگان؛ بدونِ هیچ پیامی برای کاربر
+        const feat = featureOf(request, url);
+        const chain = gate.degraded ? getFreeChainFor(env, feat) : getProviderChainFor(env, feat);
         const errors = [];
         // سقفِ زمانِ هر پرووایدر: یکی که کند/بی‌صدا شد، کلِ درخواست را معطل نکند و
         // زنجیره سریع برود سراغِ بعدی. متنِ کوتاه ≈ ۵ ثانیه؛ متنِ بلند (داستان) بیشتر.
@@ -248,7 +254,8 @@ export default {
             const text = sanitizeAiText(raw);
             const bad = badAiOutputReason(text, prompt);
             if (bad) throw new Error(`unusable output (${bad})`);
-            if (cacheKey) ctx.waitUntil(genCachePut(env, cacheKey, text, provider));
+            // خروجیِ مدلِ رایگان در کشِ مشترکِ همه‌ی کاربرها نوشته نمی‌شود (کیفیتِ کمتر نباید به بقیه برسد)
+            if (cacheKey && !gate.degraded) ctx.waitUntil(genCachePut(env, cacheKey, text, provider));
             ctx.waitUntil(recordUsage(env, request, { feature: "other", provider, cached: false, prompt, text }));
             return json({ text, provider });
           } catch (e) {
@@ -1231,6 +1238,7 @@ async function translateSubtitleChunk(body, env, ctx, gateFn) {
   }
 
   // ⚖️ کش جواب نداشت و واقعاً به AI می‌رود → سقفِ سراسریِ روزانه
+  let degraded = false;
   if (gateFn) {
     const g = await gateFn();
     if (g && g.deny) {
@@ -1238,23 +1246,24 @@ async function translateSubtitleChunk(body, env, ctx, gateFn) {
       err.gateResponse = g.deny;
       throw err;
     }
+    degraded = !!(g && g.degraded); // 🪙 امتیازِ ماهانه تمام شده → فقط مدل‌های رایگان (بی‌صدا)
   }
 
   // ⚡ به‌جای امتحانِ ترتیبیِ ~۲۰ پرووایدر (هر خرابی = چند ثانیه تأخیر)، «hedged»: اولی شروع می‌شود؛
   // اگر خطا داد، فوراً بعدی؛ اگر تا hedgeMs جواب نداد، بعدی هم‌زمان (حداکثر ۳ تا هم‌زمان). اولین جوابِ معتبر برنده است.
-  const chain = getProviderChain(env);
+  const chain = degraded ? getFreeChainFor(env, "ytsub") : getProviderChain(env);
   const { provider, value: arr } = await hedgedProviders(chain, prompt, maxTokens, env, (raw) => {
     const a = parseJsonStringArray(raw);
     if (!a || a.length !== subs.length) throw new Error(`bad shape (${a ? a.length : "no array"} vs ${subs.length})`);
     return a;
   });
 
-  if (d1Key) {
+  if (d1Key && !degraded) {
     const d1put = genCachePut(env, d1Key, JSON.stringify(arr), provider);
     if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(d1put);
     else await d1put;
   }
-  if (cache && cacheReq) {
+  if (cache && cacheReq && !degraded) {
     const put = cache
       .put(
         cacheReq,
@@ -1782,6 +1791,18 @@ function getProviderChainFor(env, feature) {
     if (chain.length) return chain;
   }
   return getProviderChain(env);
+}
+
+// 🆓 زنجیره‌ی «مدل‌های رایگان» — وقتی امتیازِ ماهانه‌ی کاربر تمام شده (بی‌صدا؛ کاربر چیزی نمی‌فهمد).
+// AI_PROVIDER_FREE = زنجیره‌ی عمومی (چت/داستان/گرامر/مثال/زیرنویس)، AI_PROVIDER_FREE_CALL = ویدیوکال (کوچک و سریع).
+// عمداً فقط پرووایدرهای رایگان؛ deepseek/gemini/openai/... هرگز در این زنجیره نیستند.
+const FREE_DEFAULT = "groq,cerebras,llm7,kilocode,ovhcloud,cloudflareai";
+const FREE_DEFAULT_CALL = "cerebras,groq,llm7,kilocode,ovhcloud,cloudflareai";
+function getFreeChainFor(env, feature) {
+  const raw = (feature === "videocall" ? env.AI_PROVIDER_FREE_CALL : "") || env.AI_PROVIDER_FREE ||
+    (feature === "videocall" ? FREE_DEFAULT_CALL : FREE_DEFAULT);
+  const chain = String(raw).toLowerCase().split(",").map((p) => p.trim()).filter((p) => VALID_PROVIDERS.includes(p));
+  return chain.length ? chain : FREE_DEFAULT.split(",");
 }
 
 async function callProvider(provider, prompt, maxTokens, env) {

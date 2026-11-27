@@ -100,9 +100,14 @@ PRO_QUEUE_WAIT_MS = "60000"
 #   سقفِ سراسریِ روزانه (همه‌ی کاربران، حتی Pro) — فقط درخواست‌هایی که واقعاً به AI/Whisper می‌رسند (نه کش/استخر).
 #   پر شد → فقط از کش و استخر جواب داده می‌شود. شمارنده در D1 (جدول global_daily) و هر روز (UTC) صفر می‌شود.
 GLOBAL_DAILY_AI = "30000"   # سقفِ کلِ درخواست‌های AIِ کش‌نشده در روز (با DeepSeek ≈ ۳ تا ۴ دلار؛ بر اساسِ بودجه‌ات تنظیم کن)
-PRO_MONTHLY_CREDITS = "9000"   # 🪙 امتیازِ ماهانه‌ی هر Pro (فقط سمتِ سرور، نامرئی؛ ۰ = خاموش). گزارش: /admin/usage-report
+PRO_MONTHLY_CREDITS = "9000"   # 🪙 امتیازِ ماهانه‌ی هر Pro (فقط سمتِ سرور، نامرئی؛ ۰ = خاموش). پنلِ ادمین: /admin/credits
 FREE_MONTHLY_CREDITS = "0"     # رایگان‌ها سقفِ روزانه‌ی خودشان را دارند؛ ۰ = بدونِ امتیازِ ماهانه
 CREDIT_COSTS = '{"translate":1,"videocall":2,"story":10,"ytsub":3,"grammar":2,"chat":1,"example":1}'
+# 🆓 وقتی امتیازِ ماهانه‌ی کاربر تمام شد، چت/ویدیوکال/داستان/گرامر/مثال/زیرنویس «بی‌صدا و بدونِ هیچ پیامی» فقط با این مدل‌های رایگان جواب می‌گیرند
+#    (ترجمه هم بی‌صدا به ML Kit/کشِ گوشی برمی‌گردد). فقط پرووایدرهای رایگان بگذار؛ deepseek/gemini/openai اینجا نیایند.
+#    AI_PROVIDER_FREE_CALL = زنجیره‌ی ویدیوکال (کوچک و سریع). ست‌نشده = همین پیش‌فرض‌ها.
+AI_PROVIDER_FREE = "groq,cerebras,llm7,kilocode,ovhcloud,cloudflareai"
+AI_PROVIDER_FREE_CALL = "cerebras,groq,llm7,kilocode,ovhcloud,cloudflareai"
 PRO_RESERVE_PCT = "20"      # ۲۰٪ سقف فقط برای Pro/VIP رزرو است؛ رایگان‌ها تا ۸۰٪
 REVIEW_OFF_PCT = "70"       # از ۷۰٪ مصرفِ سراسری، بازبینیِ ترجمه خاموش می‌شود
 AI_PROVIDER_REVIEW = "groq,cerebras,llm7,kilocode"   # بازبینی فقط با مدل‌های رایگان/ارزان (نه DeepSeek)

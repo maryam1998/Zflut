@@ -15,3 +15,20 @@ Worker  → npx wrangler deploy
 ۳) زنجیره: DeepSeek → رایگان‌ها → گران‌ها؛ gemini آخر (translate/strong/عمومی).
 ۴) لغات: node scripts/pretranslate-words.mjs [--upload|--upload-only|--report] [--max-cost=3.5]
    (قابلِ ادامه؛ پیشرفت در tr_seed/). آپلودِ D1 با سقفِ PRETR_D1_DAILY_ROWS (پیش‌فرض ۹۰ هزار ردیف).
+
+
+──────── پچ امتیاز (Credits) — نسخه‌ی کامل ────────
+Worker  → npx wrangler deploy
+  src/load.js  src/index.js  src/examples.js  src/metrics.js  wrangler.toml
+اپ      → نیازی به بیلد مجدد نیست (ترجمه از قبل با ۴۲۹ بی‌صدا به ML Kit می‌رود)
+
+قوانین: سقفِ ماهانه PRO_MONTHLY_CREDITS=9000 | ترجمه ۱، ویدیوکال ۲، داستان ۱۰ (CREDIT_COSTS)
+  (قابلیت‌های دیگر طبقِ CREDIT_COSTS: چت ۱، مثال ۱، گرامر ۲، زیرنویس ۳)
+وقتی امتیازِ کاربر تمام شد (بدونِ هیچ پیامی):
+  • ترجمه  → ۴۲۹ ai_busy → اپ بی‌صدا ML Kit/کش
+  • چت / ویدیوکال / داستان / گرامر / مثال / زیرنویس → همان درخواست با زنجیره‌ی مدل‌های رایگان جواب می‌گیرد
+    (AI_PROVIDER_FREE و AI_PROVIDER_FREE_CALL در wrangler.toml). این درخواست‌ها از سقفِ سراسریِ AI کم نمی‌شوند
+    و در کشِ مشترکِ D1 نوشته نمی‌شوند.
+پنلِ ادمین:  https://<worker>/admin/credits?key=<ADMIN_KEY>
+  (مصرفِ هر کاربر، درصد، زمانِ رسیدن به سقف، ریز مصرف به تفکیکِ قابلیت، تعدادِ درخواست‌های رایگانِ بعد از سقف؛ ?format=json هم دارد)
+  جدولِ جدید user_credit_features خودکار ساخته می‌شود؛ مصرفِ قبل از این پچ در ریز قابلیت نیست (جمعِ کل هست).

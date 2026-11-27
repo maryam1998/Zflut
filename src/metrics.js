@@ -10,7 +10,7 @@
 //   AI_PRICING         = {"gemini":[1.25,10.00],"deepseek":[0.28,0.42],"default":[0,0]}   [ورودی, خروجی] به دلار/۱M توکن
 //   AI_ALERT_COST_USD  = "0.50"   هشدار: هزینه‌ی تخمینیِ یک کاربر در یک روز بیشتر از این شد
 //   AI_ALERT_CALLS     = "400"    هشدار: تعدادِ درخواستِ API یک کاربر در یک روز بیشتر از این شد
-//   ADMIN_KEY (secret) = کلیدِ دسترسی به پنل:  /admin/usage-report?key=...
+//   ADMIN_KEY (secret) = کلیدِ دسترسی به پنل:  /admin/usage-report?key=...   و پنلِ امتیازها:  /admin/credits?key=...
 // ---------------------------------------------------------------------------
 import { verifySessionToken } from "./auth.js";
 
@@ -165,6 +165,102 @@ ${table("هر قابلیت", ["قابلیت", ...H.slice(1)], byFeature.map(row)
 ${table("هر ارائه‌دهنده (فقط درخواست‌های API)", ["ارائه‌دهنده", ...H.slice(1)], byProvider.map(row))}
 ${table("هر کاربر (۲۰۰ مورد اول؛ برای جزئیات ?user=email)", ["کاربر", ...H.slice(1)], byUser.map((r) => row({ ...r, k: r.k || r.uid })))}
 ${table("هر روز", ["روز", ...H.slice(1)], byDay.map(row))}</html>`;
+    return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  } catch (e) {
+    return plain("error: " + String(e), 500);
+  }
+}
+
+
+// ───────────── 🪙 پنلِ امتیازها (Credits Metrics) — فقط ادمین ─────────────
+/** GET /admin/credits?key=ADMIN_KEY[&month=YYYY-MM][&q=email][&sort=used|capped|recent][&format=json] */
+export async function handleAdminCredits(request, env, url) {
+  const plain = (t, s) => new Response(t, { status: s, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  if (!env.ADMIN_KEY) return plain("not found", 404);
+  const given = String(url.searchParams.get("key") || "");
+  const want = String(env.ADMIN_KEY);
+  let diff = given.length ^ want.length;
+  for (let i = 0; i < want.length; i++) diff |= (given.charCodeAt(i) || 0) ^ want.charCodeAt(i);
+  if (diff !== 0) return plain("forbidden", 403);
+  if (!env.TR_DB) return plain("D1 not configured", 500);
+  try {
+    await ensure(env);
+    await env.TR_DB.batch([
+      env.TR_DB.prepare(
+        "CREATE TABLE IF NOT EXISTS user_credits (user_id TEXT NOT NULL, month TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0, capped_at INTEGER, PRIMARY KEY (user_id, month))"
+      ),
+      env.TR_DB.prepare(
+        "CREATE TABLE IF NOT EXISTS user_credit_features (user_id TEXT NOT NULL, month TEXT NOT NULL, feature TEXT NOT NULL, " +
+          "credits INTEGER NOT NULL DEFAULT 0, calls INTEGER NOT NULL DEFAULT 0, free_calls INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (user_id, month, feature))"
+      ),
+    ]);
+    const month = /^\d{4}-\d{2}$/.test(url.searchParams.get("month") || "") ? url.searchParams.get("month") : new Date().toISOString().slice(0, 7);
+    const q = (url.searchParams.get("q") || "").trim().toLowerCase();
+    const sort = url.searchParams.get("sort") || "used";
+    const cap = Number(env.PRO_MONTHLY_CREDITS) > 0 ? Math.floor(Number(env.PRO_MONTHLY_CREDITS)) : 9000;
+
+    const em = "(SELECT email FROM ai_usage_daily u WHERE u.user_id = c.user_id AND u.email != '' LIMIT 1)";
+    const order = sort === "capped" ? "c.capped_at IS NULL, c.capped_at ASC" : sort === "recent" ? "c.rowid DESC" : "c.used DESC";
+    const users = ((await env.TR_DB.prepare(
+      `SELECT c.user_id uid, ${em} email, c.used, c.capped_at FROM user_credits c WHERE c.month = ?1 ORDER BY ${order} LIMIT 1000`
+    ).bind(month).all()).results || []).filter((r) => !q || String(r.email || "").toLowerCase().includes(q) || r.uid === q);
+
+    const feats = (await env.TR_DB.prepare(
+      "SELECT user_id uid, feature, credits, calls, free_calls FROM user_credit_features WHERE month = ?1"
+    ).bind(month).all()).results || [];
+    const byUser = new Map();
+    for (const f of feats) { if (!byUser.has(f.uid)) byUser.set(f.uid, []); byUser.get(f.uid).push(f); }
+
+    const featTotals = {};
+    for (const f of feats) {
+      const t = (featTotals[f.feature] ||= { credits: 0, calls: 0, free_calls: 0 });
+      t.credits += f.credits; t.calls += f.calls; t.free_calls += f.free_calls;
+    }
+    const totalUsed = users.reduce((a, r) => a + r.used, 0);
+    const cappedN = users.filter((r) => r.capped_at).length;
+    const freeCalls = Object.values(featTotals).reduce((a, t) => a + t.free_calls, 0);
+
+    const rows = users.map((r) => {
+      const fl = (byUser.get(r.uid) || []).sort((a, b) => b.credits - a.credits);
+      return {
+        user: r.email || r.uid, uid: r.uid, used: r.used, cap, pct: Math.round((r.used / cap) * 100),
+        capped_at: r.capped_at || null,
+        features: Object.fromEntries(fl.map((f) => [f.feature, { credits: f.credits, calls: f.calls, free_calls: f.free_calls }])),
+      };
+    });
+
+    if (url.searchParams.get("format") === "json") {
+      return new Response(JSON.stringify({ month, cap, users: rows.length, capped: cappedN, totalUsed, freeCallsAfterCap: freeCalls, featTotals, rows }, null, 1),
+        { headers: { "Content-Type": "application/json; charset=utf-8" } });
+    }
+
+    const fmtT = (ms) => (ms ? new Date(ms).toISOString().replace("T", " ").slice(0, 16) + " UTC" : "—");
+    const key = encodeURIComponent(given);
+    const base = `/admin/credits?key=${key}`;
+    const bar = (pct) => `<div class="bar"><i style="width:${Math.min(100, pct)}%" class="${pct >= 100 ? "full" : pct >= 80 ? "hi" : ""}"></i></div>`;
+    const featTxt = (o) => Object.entries(o.features).map(([k, v]) => `${esc(k)}: ${v.credits}${v.free_calls ? ` <span class="g">(+${v.free_calls} رایگان)</span>` : ""}`).join(" · ") || "—";
+    const body = rows.map((o) => `<tr class="${o.capped_at ? "cap" : ""}"><td class="l">${esc(o.user)}</td><td>${o.used} / ${o.cap}</td>` +
+      `<td>${bar(o.pct)}<small>${o.pct}٪</small></td><td>${o.capped_at ? "🔴 " + esc(fmtT(o.capped_at)) : "—"}</td><td class="l">${featTxt(o)}</td></tr>`).join("");
+    const ft = Object.entries(featTotals).sort((a, b) => b[1].credits - a[1].credits)
+      .map(([k, t]) => `<tr><td>${esc(k)}</td><td>${t.calls}</td><td>${t.credits}</td><td>${t.free_calls}</td></tr>`).join("");
+    const html = `<!doctype html><html lang="fa" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>پنل امتیازها</title><style>body{font:14px system-ui,sans-serif;margin:16px;background:#faf6ea;color:#222}h1{font-size:20px}h2{margin:22px 0 6px;font-size:16px}
+.cards{display:flex;flex-wrap:wrap;gap:10px}.card{background:#fff;border:1px solid #e3d8b8;border-radius:10px;padding:10px 16px;min-width:130px}.card b{display:block;font-size:22px}
+.w{overflow-x:auto}table{border-collapse:collapse;min-width:100%;background:#fff}th,td{border:1px solid #e3d8b8;padding:5px 8px;text-align:center;white-space:nowrap}th{background:#f1e6bf}
+td.l{text-align:right}tr.cap td{background:#fff1f0}.bar{width:90px;height:8px;background:#eee;border-radius:4px;display:inline-block;overflow:hidden;vertical-align:middle;margin-inline-end:6px}
+.bar i{display:block;height:100%;background:#4caf50}.bar i.hi{background:#ff9800}.bar i.full{background:#d32f2f}.g{color:#2e7d32}small{color:#666}
+form{margin:10px 0}input,select,button{padding:5px 8px;font:inherit}a{color:#1a5fb4}</style>
+<h1>🪙 پنل امتیازهای ماهانه — ${esc(month)}</h1>
+<form method="get" action="/admin/credits"><input type="hidden" name="key" value="${esc(given)}">
+ماه: <input name="month" value="${esc(month)}" size="8"> جست‌وجوی ایمیل: <input name="q" value="${esc(q)}">
+مرتب‌سازی: <select name="sort"><option value="used"${sort === "used" ? " selected" : ""}>بیشترین مصرف</option><option value="capped"${sort === "capped" ? " selected" : ""}>زمانِ رسیدن به سقف</option><option value="recent"${sort === "recent" ? " selected" : ""}>تازه‌ترین</option></select>
+<button>نمایش</button> <a href="${base}&month=${esc(month)}&format=json">JSON</a> · <a href="/admin/usage-report?key=${key}">گزارش هزینه‌ی AI</a></form>
+<div class="cards"><div class="card"><b>${users.length}</b>کاربرِ فعال</div><div class="card"><b>${cappedN}</b>رسیده به سقف (${cap})</div>
+<div class="card"><b>${totalUsed}</b>مجموع امتیازِ مصرفی</div><div class="card"><b>${freeCalls}</b>درخواستِ بعد از سقف (مدل رایگان/ML Kit)</div></div>
+<h2>مصرفِ هر کاربر</h2><div class="w"><table><tr><th>کاربر</th><th>مصرف / سقف</th><th>درصد</th><th>زمانِ رسیدن به سقف</th><th>ریز مصرف به تفکیکِ قابلیت (امتیاز)</th></tr>${body || '<tr><td colspan="5">داده‌ای نیست</td></tr>'}</table></div>
+<h2>جمعِ هر قابلیت</h2><div class="w"><table><tr><th>قابلیت</th><th>درخواستِ پولی</th><th>امتیازِ مصرفی</th><th>درخواستِ رایگان بعد از سقف</th></tr>${ft || '<tr><td colspan="4">—</td></tr>'}</table></div>
+<small>«درخواستِ رایگان بعد از سقف» = چند بار کاربری که امتیازش تمام شده بی‌صدا با مدل رایگان جواب گرفته؛ ترجمه‌ها در این عدد با ML Kit گوشی هم می‌روند ولی فقط درخواست‌هایی که به Worker رسیده‌اند شمرده می‌شوند.
+ساعتِ همه‌ی زمان‌ها UTC است و امتیازها اولِ هر ماهِ UTC صفر می‌شوند.</small></html>`;
     return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
   } catch (e) {
     return plain("error: " + String(e), 500);

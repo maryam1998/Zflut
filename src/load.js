@@ -104,8 +104,11 @@ async function takeUser(env, userId, pro) {
 // ───────────── ۱.۶) امتیازِ ماهانه‌ی هر کاربر (Credits) — فقط سمتِ سرور، نامرئی برای کاربر ─────────────
 // PRO_MONTHLY_CREDITS (پیش‌فرض ۹۰۰۰) / FREE_MONTHLY_CREDITS (پیش‌فرض ۰ = خاموش). ۰ = بدونِ سقف.
 // هزینه‌ی هر درخواستِ «واقعاً AI» (کش‌ها هیچ‌وقت شمرده نمی‌شوند): ترجمه ۱، ویدیوکال ۲، داستان ۱۰ (قابلِ تغییر با CREDIT_COSTS).
-// کاربر هیچ نشانگر/پیامی نمی‌بیند: وقتی تمام شد، ترجمه بی‌صدا به ML Kit/کش برمی‌گردد (۴۲۹ با کدِ «ai_busy» که اپ
-// بی‌صدا ۵ دقیقه مکث می‌کند)، بخش‌های بی‌جایگزین (داستان/ویدیوکال) همان پیامِ عمومیِ «AI موقتاً در دسترس نیست».
+// کاربر هیچ نشانگر/پیامی نمی‌بیند. وقتی امتیازِ ماهانه تمام شد:
+//   • ترجمه (silent:"translate") → ۴۲۹ با کدِ «ai_busy»؛ اپ بی‌صدا چند دقیقه مکث می‌کند و با ML Kit/کش ادامه می‌دهد.
+//   • چت / ویدیوکال / داستان / گرامر / مثال / زیرنویس → «خطا نمی‌دهد»: beginAi مقدارِ degraded:true برمی‌گرداند و
+//     صدازننده فقط از زنجیره‌ی «مدل‌های رایگان» (AI_PROVIDER_FREE) جواب می‌سازد. این درخواست‌ها هزینه‌ای ندارند، پس
+//     از سقفِ سراسریِ AI (که برای هزینه‌ی DeepSeek است) هم کم نمی‌شوند و در کشِ مشترک نوشته نمی‌شوند.
 // ادمین: ردیفِ user_credits (capped_at) و بخشِ «رسیده به سقفِ امتیاز» در /admin/usage-report.
 const DEFAULT_COSTS = { story: 10, videocall: 2, ytsub: 3, grammar: 2, chat: 1, example: 1, translate: 1 };
 function creditCostOf(env, feature, override) {
@@ -118,32 +121,58 @@ function creditCostOf(env, feature, override) {
 }
 
 let creditsReady = false;
-async function takeCredits(env, userId, pro, cost) {
+async function ensureCredits(env) {
+  if (creditsReady) return;
+  await env.TR_DB.batch([
+    env.TR_DB.prepare(
+      "CREATE TABLE IF NOT EXISTS user_credits (user_id TEXT NOT NULL, month TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0, " +
+        "capped_at INTEGER, PRIMARY KEY (user_id, month))"
+    ),
+    // 📒 دفترِ ریز مصرف (فقط برای پنلِ ادمین): هر کاربر × ماه × قابلیت
+    //   credits = امتیازِ مصرف‌شده، calls = تعدادِ درخواستِ پولی، free_calls = درخواست‌هایی که بعد از سقف با مدل‌های رایگان جواب گرفتند
+    env.TR_DB.prepare(
+      "CREATE TABLE IF NOT EXISTS user_credit_features (user_id TEXT NOT NULL, month TEXT NOT NULL, feature TEXT NOT NULL, " +
+        "credits INTEGER NOT NULL DEFAULT 0, calls INTEGER NOT NULL DEFAULT 0, free_calls INTEGER NOT NULL DEFAULT 0, " +
+        "PRIMARY KEY (user_id, month, feature))"
+    ),
+  ]);
+  creditsReady = true;
+}
+
+/** {ok:true, used} = امتیاز کم شد؛ {ok:false} = سقفِ ماهانه پر است (کاربر نباید چیزی بفهمد؛ بالادست به مدلِ رایگان می‌رود). */
+async function takeCredits(env, userId, pro, cost, feature) {
   const cap = intVar(env, pro ? "PRO_MONTHLY_CREDITS" : "FREE_MONTHLY_CREDITS", pro ? 9000 : 0);
   if (!cap || !env.TR_DB || !userId) return { ok: true };
   try {
-    if (!creditsReady) {
-      await env.TR_DB.prepare(
-        "CREATE TABLE IF NOT EXISTS user_credits (user_id TEXT NOT NULL, month TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0, " +
-          "capped_at INTEGER, PRIMARY KEY (user_id, month))"
-      ).run();
-      creditsReady = true;
-    }
+    await ensureCredits(env);
     const month = new Date().toISOString().slice(0, 7);
     const r = await env.TR_DB.prepare(
       "INSERT INTO user_credits (user_id, month, used) VALUES (?1, ?2, ?3) " +
         "ON CONFLICT(user_id, month) DO UPDATE SET used = used + ?3 WHERE used + ?3 <= ?4 RETURNING used"
     ).bind(userId, month, cost, cap).first();
     if (!r) {
-      await env.TR_DB.prepare(
-        "UPDATE user_credits SET capped_at = COALESCE(capped_at, ?3) WHERE user_id = ?1 AND month = ?2"
-      ).bind(userId, month, Date.now()).run();
-      console.warn(`[CAP] credits user=${userId} month=${month} cap=${cap} pro=${pro}`);
+      await env.TR_DB.batch([
+        env.TR_DB.prepare(
+          "UPDATE user_credits SET capped_at = COALESCE(capped_at, ?3) WHERE user_id = ?1 AND month = ?2"
+        ).bind(userId, month, Date.now()),
+        env.TR_DB.prepare(
+          "INSERT INTO user_credit_features (user_id, month, feature, free_calls) VALUES (?1, ?2, ?3, 1) " +
+            "ON CONFLICT(user_id, month, feature) DO UPDATE SET free_calls = free_calls + 1"
+        ).bind(userId, month, feature || "other"),
+      ]);
+      console.warn(`[CAP] credits user=${userId} month=${month} cap=${cap} pro=${pro} feature=${feature}`);
       return { ok: false };
     }
+    await env.TR_DB.prepare(
+      "INSERT INTO user_credit_features (user_id, month, feature, credits, calls) VALUES (?1, ?2, ?3, ?4, 1) " +
+        "ON CONFLICT(user_id, month, feature) DO UPDATE SET credits = credits + ?4, calls = calls + 1"
+    ).bind(userId, month, feature || "other", cost).run();
     if (Math.random() < 0.005) {
       const old = new Date(Date.now() - 100 * 86400000).toISOString().slice(0, 7);
-      await env.TR_DB.prepare("DELETE FROM user_credits WHERE month < ?1").bind(old).run();
+      await env.TR_DB.batch([
+        env.TR_DB.prepare("DELETE FROM user_credits WHERE month < ?1").bind(old),
+        env.TR_DB.prepare("DELETE FROM user_credit_features WHERE month < ?1").bind(old),
+      ]);
     }
     return { ok: true, used: r.used };
   } catch (e) {
@@ -292,19 +321,23 @@ export async function beginAi(request, env, kind, cors, opts = {}) {
     }
   }
   // 🪙 امتیازِ ماهانه (نامرئی): قبل از صف و سقفِ سراسری
+  let degraded = false;
   if (sess && !vip && kind !== "whisper") {
     let feat = opts.feature || "";
     if (!feat) {
       try { feat = featureOf(request, new URL(request.url)) || "translate"; } catch { feat = "translate"; }
     }
-    const c = await takeCredits(env, sess.sub, pro, creditCostOf(env, feat, opts.cost));
+    const c = await takeCredits(env, sess.sub, pro, creditCostOf(env, feat, opts.cost), feat);
     if (!c.ok) {
-      return {
-        deny: opts.silent === "translate"
-          ? jsonResp({ error: MSG_UNAVAILABLE, code: "ai_busy" }, 429, cors, { "Retry-After": "3600" })
-          : jsonResp({ error: MSG_UNAVAILABLE, code: "ai_unavailable" }, 503, cors),
-        release: noop,
-      };
+      // ترجمه: اپ با ۴۲۹ بی‌صدا به ML Kit/کش می‌رود
+      if (opts.silent === "translate") {
+        return {
+          deny: jsonResp({ error: MSG_UNAVAILABLE, code: "ai_busy" }, 429, cors, { "Retry-After": "3600" }),
+          release: noop,
+        };
+      }
+      // بقیه: خطا نمی‌دهیم؛ صدازننده با مدل‌های رایگان جواب می‌دهد
+      degraded = true;
     }
   }
   if (opts.queue !== false && env.TR_DB) {
@@ -321,7 +354,8 @@ export async function beginAi(request, env, kind, cors, opts = {}) {
     }
   }
   // 👑 VIP: سقفِ سراسریِ AI هم رویش اعمال نمی‌شود (Whisper مستثنا نیست چون سقفِ خودِ Cloudflare دارد)
-  const g = vip && kind !== "whisper" ? { ok: true } : await takeGlobal(env, kind, pro);
+  // 🆓 درخواستِ degraded (مدلِ رایگان) هزینه‌ای ندارد → از سقفِ سراسریِ هزینه کم نمی‌شود
+  const g = (vip || degraded) && kind !== "whisper" ? { ok: true } : await takeGlobal(env, kind, pro);
   if (!g.ok) {
     await release();
     return {
@@ -335,5 +369,5 @@ export async function beginAi(request, env, kind, cors, opts = {}) {
       capped: true,
     };
   }
-  return { deny: null, release, pct: g.pct, pro };
+  return { deny: null, release, pct: g.pct, pro, degraded };
 }
