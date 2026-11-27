@@ -32,7 +32,7 @@ const Set<String> _kStop = {
   'where', 'how', 'why', 'than', 'then', 'too', 'very', 'just', 'there', 'here',
   // es / fr / de / it (پرتکرار)
   'los', 'las', 'una', 'uno', 'del', 'por', 'con', 'que', 'les', 'des', 'une',
-  'est', 'pas', 'der', 'die', 'das', 'und', 'ein', 'ist', 'nicht', 'che', 'una',
+  'est', 'pas', 'der', 'die', 'das', 'und', 'ein', 'ist', 'nicht', 'che',
   'gli', 'per', 'non', 'bir', 'bu',
 };
 
