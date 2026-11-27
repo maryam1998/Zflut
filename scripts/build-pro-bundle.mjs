@@ -8,8 +8,10 @@ const KEY = "lingova-pro-conv-v1";
 const KINDS = { daily: "daily_conversations", thematic: "thematic_conversations" };
 
 function topicId(kind, topic) {
-  const m = topic.match(/\(([^)]+)\)/);
-  const base = (m ? m[1] : topic).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  // «(IELTS style)» فقط برچسب است و جزو شناسه نیست (وگرنه همه‌ی موضوع‌های IELTS یک شناسه می‌گیرند)
+  const name = topic.replace(/\s*\(IELTS style\)\s*$/i, "");
+  const m = name.match(/\(([^)]+)\)/);
+  const base = (m ? m[1] : name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return (kind === "daily" ? "d-" : "t-") + base;
 }
 

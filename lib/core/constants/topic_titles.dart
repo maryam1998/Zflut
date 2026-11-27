@@ -98,7 +98,7 @@ const Map<String, String> _kDailyFa = {
   'Asking for Directions / Landmarks': 'پرسیدن آدرس / مکان‌های شاخص',
   'Plans and Free Time (Hobbies)': 'برنامه‌ها و اوقات فراغت (سرگرمی‌ها)',
   'Work and Workplace': 'کار و محل کار',
-  'IELTS Speaking Practice': 'تمرین اسپیکینگ IELTS',
+  'Home and Travel (IELTS style)': 'خانه و سفر (IELTS style)',
   'Time and Appointments': 'زمان و قرار ملاقات',
   'Expressing Opinions and Feelings': 'بیان نظر و احساسات',
   'Asking for Help and Clarification': 'درخواست کمک و توضیح',

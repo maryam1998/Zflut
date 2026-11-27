@@ -52,8 +52,10 @@ const q = (s) => "'" + String(s).replace(/'/g, "''") + "'";
 // daily: «Greetings and Small Talk» → d-greetings-and-small-talk
 // thematic: «طبیعت (Nature)» → t-nature   (از متنِ داخلِ پرانتز)
 function topicId(kind, topic) {
-  const m = topic.match(/\(([^)]+)\)/);
-  const base = (m ? m[1] : topic)
+  // «(IELTS style)» فقط برچسب است و جزو شناسه نیست (وگرنه همه‌ی موضوع‌های IELTS یک شناسه می‌گیرند)
+  const name = topic.replace(/\s*\(IELTS style\)\s*$/i, "");
+  const m = name.match(/\(([^)]+)\)/);
+  const base = (m ? m[1] : name)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
