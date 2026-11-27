@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/app_prefs_provider.dart';
+import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/storage/local_storage.dart' show sharedPrefsProvider;
 import '../../../core/theme/app_theme_colors.dart';
+import '../../../core/translate/mlkit_prefetch.dart';
 
 const String _kIntroSeenKey = 'zflut-intro-seen-v1';
 
@@ -164,6 +166,11 @@ class _IntroOverlayState extends ConsumerState<IntroOverlay> {
   void _finish() {
     try {
       ref.read(sharedPrefsProvider).setBool(_kIntroSeenKey, true);
+    } catch (_) {}
+    // 📥 پایانِ معرفی (اولین ورود): مدل‌های ML Kitِ زبان‌های انتخاب‌شده را همین حالا در پس‌زمینه دانلود کن
+    try {
+      final sel = ref.read(languageSelectionProvider);
+      MlKitPrefetch.schedule(sel.native, sel.targets);
     } catch (_) {}
     if (mounted) setState(() => _visible = false);
   }

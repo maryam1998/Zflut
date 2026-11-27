@@ -368,7 +368,20 @@ async function handleTranslateText(request, env, ctx) {
   const flight = new Promise((res, rej) => { settle = res; fail = rej; });
   flight.catch(() => {});
   TT_INFLIGHT.set(cacheKey, flight);
+  let lease = null;
   try {
+    // 🤝 بین‌isolate: اگر isolateِ دیگری همین متن را همین الان ترجمه می‌کند، منتظرِ کشِ او بمان (بدونِ AI و سهمیه)
+    lease = await trLeaseAcquire(env, [cacheKey]);
+    if (!lease.owned.has(cacheKey)) {
+      const got = await trWaitCache(env, [cacheKey]);
+      const v = got.get(cacheKey);
+      if (v) {
+        settle({ text: v, provider: "cache" });
+        ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
+        return json({ text: v, provider: "cache", cached: true, coalesced: true });
+      }
+      // رهبر شکست خورد/دیر کرد → خودمان امتحان می‌کنیم (بدونِ قفل؛ fail-open)
+    }
     const { resp, result } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft });
     if (result) settle(result); else fail(new Error("leader-failed"));
     return resp;
@@ -377,6 +390,7 @@ async function handleTranslateText(request, env, ctx) {
     throw e;
   } finally {
     TT_INFLIGHT.delete(cacheKey);
+    await trLeaseRelease(env, lease);
   }
 }
 
@@ -439,7 +453,7 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
         const rleft = deadline - Date.now();
         if (rleft > 1500) out = await trReviewFree(env, text, out, label, target, maxTokens, rleft);
       }
-      ctx.waitUntil(genCachePut(env, cacheKey, out, provider));
+      await genCachePut(env, cacheKey, out, provider); // 🤝 قبل از آزادشدنِ اجاره‌ی D1 باید نوشته شده باشد
       ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider, cached: false, prompt, text: out }));
       return { resp: json({ text: out, provider }), result: { text: out, provider } };
     } catch (e) {
@@ -523,6 +537,22 @@ async function handleTranslateBatch(request, env, ctx) {
     return json({ results, provider: "cache", cached: true });
   }
 
+  // 🤝 ادغامِ هم‌زمان‌ها (بین isolateها): برای هر کلیدِ کش‌نشده اجاره می‌گیریم؛ آن‌هایی که دستِ دیگری است منتظر می‌مانیم (بدونِ AI/سهمیه).
+  const lease = await trLeaseAcquire(env, miss.map((idx) => keys[idx]));
+  const waitIdx = miss.filter((idx) => !lease.owned.has(keys[idx]));
+  miss = miss.filter((idx) => lease.owned.has(keys[idx]));
+  const waitP = waitIdx.length ? trWaitCache(env, waitIdx.map((idx) => keys[idx])) : null;
+  const mergeWaited = async () => {
+    if (!waitP) return;
+    const got = await waitP;
+    for (const idx of waitIdx) { const v = got.get(keys[idx]); if (v) results[idx] = v; } // نرسیده = null (اپ بی‌صدا ML Kit/تلاشِ بعدی)
+  };
+  if (!miss.length) {
+    await mergeWaited();
+    ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
+    return json({ results, provider: "cache", cached: true, coalesced: true });
+  }
+  try {
   // ۲) سهمیه‌ها فقط برای کش‌نشده‌ها
   const over = await missGate(request, env);
   if (over) return over;
@@ -576,11 +606,14 @@ async function handleTranslateBatch(request, env, ctx) {
         const revised = await trReviewBatchFree(env, okIdx.map((n) => ({ src: texts[miss[n]], out: outs[n] })), label, target, maxTokens, rleft);
         okIdx.forEach((n, k) => { outs[n] = revised[k]; });
       }
+      const puts = [];
       miss.forEach((idx, n) => {
         if (!outs[n]) return;
         results[idx] = outs[n];
-        ctx.waitUntil(genCachePut(env, keys[idx], outs[n], provider));
+        puts.push(genCachePut(env, keys[idx], outs[n], provider));
       });
+      await Promise.all(puts); // 🤝 قبل از آزادشدنِ اجاره‌ها در کش نوشته شود
+      await mergeWaited();
       ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider, cached: false, prompt, text: outs.filter(Boolean).join("\n") }));
       return json({ results, provider });
     } catch (e) {
@@ -590,6 +623,9 @@ async function handleTranslateBatch(request, env, ctx) {
   }
   console.error("[AI-FAIL] /api/translate-batch همه‌ی پرووایدرها خطا دادند:", errors.join(" | ").slice(0, 900));
   return json({ error: errors.join(" | ") }, 502);
+  } finally {
+    await trLeaseRelease(env, lease);
+  }
 }
 
 // 🔎 بازبینیِ دسته‌ایِ ترجمه با مدل‌های رایگان؛ هر خطا/مورد مشکوک = همان ترجمه‌ی اول. خروجی هم‌طولِ ورودی.
@@ -777,6 +813,82 @@ async function genCachePut(env, key, text, provider) {
   } catch {
     // خطای کش نباید جواب را خراب کند
   }
+}
+
+// 🤝 ادغامِ درخواست‌های هم‌زمان «بین isolateها» (Coalescing با قفلِ D1) -------------------------------
+// مشکل: TT_INFLIGHT فقط داخلِ «یک» isolate کار می‌کند؛ ۱۰۰۰ کاربرِ هم‌زمان روی چند isolate پخش می‌شوند و هرکدام AI را صدا می‌زنند.
+// راه‌حل: قبل از صدا زدنِ AI، برای هر کلیدِ کش‌نشده یک «اجاره» (ردیف در جدولِ tr_lock) می‌گیریم.
+//   • اجاره را گرفتی = رهبر: AI را صدا بزن، در کش بنویس، بعد اجاره را آزاد کن.
+//   • اجاره دستِ دیگری است = منتظر بمان و کش را poll کن (بدونِ AI، بدونِ مصرفِ سهمیه).
+//   • قفل پرید/رهبر شکست خورد = منتظرها بی‌صدا null می‌گیرند (اپ می‌رود سراغ ML Kit/تلاشِ بعدی).
+// ایمن در برابرِ خطا (fail-open): هر خطای D1 یعنی «همه را خودم دارم» → رفتارِ قبلی.
+// تنظیم (اختیاری، در wrangler.toml):  TR_COALESCE="0" خاموش | TR_LOCK_TTL_MS (پیش‌فرض ۳۰۰۰۰) | TR_LOCK_WAIT_MS (پیش‌فرض ۱۵۰۰۰)
+let trLockReady = false;
+const trSleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function trLockInit(env) {
+  if (trLockReady) return;
+  await env.TR_DB.prepare(
+    "CREATE TABLE IF NOT EXISTS tr_lock (k TEXT PRIMARY KEY, ts INTEGER NOT NULL)"
+  ).run();
+  trLockReady = true;
+}
+
+/** @returns {{owned:Set<string>, ts:number, active:boolean}} */
+async function trLeaseAcquire(env, keys) {
+  const now = Date.now();
+  const all = new Set(keys);
+  if (!env.TR_DB || !keys.length || String(env.TR_COALESCE ?? "1") === "0") return { owned: all, ts: now, active: false };
+  try {
+    await trLockInit(env);
+    const ttl = numVar(env, "TR_LOCK_TTL_MS", 30000);
+    const uniq = [...all];
+    // قفلِ منقضی‌شده (رهبرِ مرده) بازپس‌گرفته می‌شود؛ قفلِ زنده changes=0 می‌دهد
+    const res = await env.TR_DB.batch(uniq.map((k) =>
+      env.TR_DB.prepare(
+        "INSERT INTO tr_lock (k, ts) VALUES (?1, ?2) ON CONFLICT(k) DO UPDATE SET ts = excluded.ts WHERE tr_lock.ts < ?3"
+      ).bind(k, now, now - ttl)
+    ));
+    const got = new Set();
+    uniq.forEach((k, i) => { if ((res[i]?.meta?.changes ?? 1) > 0) got.add(k); });
+    return { owned: got, ts: now, active: true };
+  } catch {
+    return { owned: all, ts: now, active: false };
+  }
+}
+
+async function trLeaseRelease(env, lease) {
+  if (!lease || !lease.active || !lease.owned.size) return;
+  try {
+    await env.TR_DB.batch([...lease.owned].map((k) =>
+      env.TR_DB.prepare("DELETE FROM tr_lock WHERE k = ?1 AND ts = ?2").bind(k, lease.ts)
+    ));
+  } catch { /* منقضی می‌شود */ }
+}
+
+/** منتظرِ ظاهرشدنِ کلیدها در gen_cache می‌ماند. Map(key→value) برای آن‌هایی که رسیدند. */
+async function trWaitCache(env, keys) {
+  const got = new Map();
+  let left = [...new Set(keys)];
+  if (!env.TR_DB || !left.length) return got;
+  const end = Date.now() + numVar(env, "TR_LOCK_WAIT_MS", 15000);
+  let delay = 350;
+  while (left.length && Date.now() < end) {
+    await trSleep(delay + Math.random() * 150);
+    delay = Math.min(Math.round(delay * 1.4), 1200);
+    try {
+      const ph = left.map((_, i) => `?${i + 1}`).join(",");
+      // ترتیب مهم است: اول قفل‌ها، بعد کش. رهبر «اول کش را می‌نویسد، بعد قفل را آزاد می‌کند»؛ پس اگر قفل نبود، کش حتماً (اگر موفق بوده) پر است.
+      const lk = await env.TR_DB.prepare(`SELECT k FROM tr_lock WHERE k IN (${ph})`).bind(...left).all();
+      const held = new Set((lk.results || []).map((r) => r.k));
+      const ch = await env.TR_DB.prepare(`SELECT k, v FROM gen_cache WHERE k IN (${ph})`).bind(...left).all();
+      for (const r of ch.results || []) if (r.v) got.set(r.k, r.v);
+      left = left.filter((k) => !got.has(k) && held.has(k)); // قفلِ آزادشده و بدونِ کش = رهبر شکست خورد → دیگر منتظر نمان
+    } catch {
+      break;
+    }
+  }
+  return got;
 }
 
 function json(data, status = 200) {

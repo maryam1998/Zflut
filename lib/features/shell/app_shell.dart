@@ -8,12 +8,16 @@ import 'package:go_router/go_router.dart';
 import '../../app.dart';
 import '../../core/constants/supported_languages.dart';
 import '../../core/mascot/mascot_pin_provider.dart';
+import '../../core/models/language_selection.dart';
 import '../../core/practice/practice_follow.dart' show PinnedCallSlot;
 import '../../core/providers/app_prefs_provider.dart';
+import '../../core/providers/language_selection_provider.dart';
 import '../../core/providers/player_prefs_provider.dart';
 import '../../core/router/app_router.dart' show kLastTabPrefKey, kRestorableTabs;
 import '../../core/router/back_handlers.dart';
-import '../../core/storage/local_storage.dart' show sharedPrefsProvider;
+import '../../core/storage/local_storage.dart' show localStorageProvider, sharedPrefsProvider;
+import '../../core/storage/prefs_keys.dart';
+import '../../core/translate/mlkit_prefetch.dart';
 import '../../core/sync/cloud_sync.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../grammar/widgets/practice_sheet.dart';
@@ -55,6 +59,13 @@ class _AppShellState extends ConsumerState<AppShell> {
       final saved = ref.read(sharedPrefsProvider).getStringList(_historyPrefKey);
       if (saved != null) {
         _history.addAll(saved.where(kRestorableTabs.contains));
+      }
+    } catch (_) {}
+    // 📥 کاربری که قبلاً زبان‌هایش را انتخاب کرده: مدل‌های ML Kitِ جامانده را فقط با Wi‑Fi و بی‌صدا کامل کن
+    try {
+      if (ref.read(localStorageProvider).readJson(PrefsKeys.languageSelection).isNotEmpty) {
+        final sel = ref.read(languageSelectionProvider);
+        MlKitPrefetch.schedule(sel.native, sel.targets, wifiOnly: true);
       }
     } catch (_) {}
   }
@@ -104,6 +115,12 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget build(BuildContext context) {
     final c = context.appColors;
     _track(GoRouter.of(context).routeInformationProvider.value.uri.path);
+
+    // 📥 کاربر زبان‌ها را انتخاب/عوض کرد → همان موقع مدل‌های ML Kitِ آن زبان‌ها در پس‌زمینه دانلود شود
+    ref.listen<LanguageSelection>(languageSelectionProvider, (prev, next) {
+      if (prev == null) return;
+      MlKitPrefetch.schedule(next.native, next.targets);
+    });
 
     // ☁️ مدل‌هایی که با حساب دانلود شده بودند ولی روی این دستگاه نیستند
     ref.listen<List<String>>(missingPacksProvider, (prev, next) {
