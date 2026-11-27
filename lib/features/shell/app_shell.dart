@@ -61,11 +61,11 @@ class _AppShellState extends ConsumerState<AppShell> {
         _history.addAll(saved.where(kRestorableTabs.contains));
       }
     } catch (_) {}
-    // 📥 کاربری که قبلاً زبان‌هایش را انتخاب کرده: مدل‌های ML Kitِ جامانده را فقط با Wi‑Fi و بی‌صدا کامل کن
+    // 📥 کاربری که قبلاً زبان‌هایش را انتخاب کرده: مدل‌های ML Kitِ جامانده را بی‌صدا (با Wi‑Fi یا داده‌ی موبایل) کامل کن
     try {
       if (ref.read(localStorageProvider).readJson(PrefsKeys.languageSelection).isNotEmpty) {
         final sel = ref.read(languageSelectionProvider);
-        MlKitPrefetch.schedule(sel.native, sel.targets, wifiOnly: true);
+        MlKitPrefetch.schedule(sel.native, sel.targets);
       }
     } catch (_) {}
   }
