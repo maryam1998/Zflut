@@ -1,3 +1,4 @@
+import '../../core/ai/cutoff_guard.dart';
 import '../../core/usage/pro_status.dart';
 import '../shell/widgets/spotlight_tour.dart' show TourTarget, SpotlightTour;
 import '../../core/usage/free_limit.dart';
@@ -696,6 +697,8 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           .replaceAll('**', '')
           .replaceAll(RegExp(r'^#+\s*', multiLine: true), '')
           .trim();
+      // ✂️ اگر سقفِ توکن تمام شده و داستان وسطِ جمله بریده، جمله‌ی ناقصِ آخر حذف می‌شود (بدونِ تماسِ دوباره)
+      text = trimIncompleteTail(text);
       if (title.isEmpty) {
         // عنوان را AI نمی‌سازد (صرفه‌جویی در توکن): چند کلمه‌ی اولِ متن، بدونِ علامت‌های دورش
         final first = text.split(RegExp(r'\s+')).take(6).join(' ');
