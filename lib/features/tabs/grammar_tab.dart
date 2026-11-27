@@ -17,6 +17,7 @@ import '../../core/translate/translation_service.dart'
     show englishLangName, looksLikeGuardOutput;
 import '../../core/providers/reader_providers.dart';
 import '../../core/ai/ai_gateway.dart';
+import '../../core/ai/cutoff_guard.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../../core/utils/html_entities.dart';
 import '../../core/widgets/ai_answer_tools.dart';
@@ -439,15 +440,6 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
       caseSensitive: false,
       multiLine: true);
 
-  /// جواب وسطِ جمله بریده شده؟ (آخرین نویسه علامتِ پایانی/بسته‌شدن نیست)
-  static bool _looksCutOff(String s) {
-    final t = s.trim();
-    if (t.length < 120) return false;
-    final last = t.codeUnitAt(t.length - 1);
-    if (last > 0x2E00) return false; // ایموجی/CJK/علامت‌های خاص
-    return !'.!?؟…。)]»"”\'’*`:'.contains(t[t.length - 1]);
-  }
-
   /// پورتِ askGrammarTeacher در Hope — با تاریخچه‌ی خودِ یادداشت
   String _prompt(String question, {int? upTo}) {
     final note = widget.note;
@@ -519,7 +511,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         feature: Feature.grammar, // 💎 سقفِ «کل عمر» نسخه‌ی رایگان
       );
       // اگر باز هم وسطِ جمله تمام شده بود، یک بار با سقفِ بزرگ‌تر (کلیدِ کشِ جدا) دوباره
-      if (_looksCutOff(text)) {
+      if (aiLooksCutOff(text)) {
         try {
           final t2 = await aiGenerate(
             svc: svc,
@@ -530,7 +522,7 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
             timeoutMs: 45000,
             feature: Feature.grammar,
           );
-          if (t2.trim().isNotEmpty && !_looksCutOff(t2)) text = t2;
+          if (t2.trim().isNotEmpty && !aiLooksCutOff(t2)) text = t2;
         } catch (_) {}
       }
       // جوابِ خالی/خراب (گارد، استدلال، پژواکِ پرامپت) → خطا؛ چیزی ذخیره نمی‌شود

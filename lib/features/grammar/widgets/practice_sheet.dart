@@ -2,6 +2,7 @@ import '../../../core/usage/free_limit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/ai/cutoff_guard.dart';
 import '../../../core/providers/ai_settings_provider.dart';
 import '../../../core/providers/language_selection_provider.dart';
 import '../../../core/providers/translation_provider.dart';
@@ -249,7 +250,7 @@ class _GrammarPracticeContentState
         "- Otherwise, just answer naturally, like a normal, capable AI assistant would — any topic, any question, no restriction. Weave in an example phrase in $langLabel with translation only if it genuinely fits.\n"
         "- Default to $langLabel for any language-practice content (translated into $label); only bring in other languages or English if the learner specifically asks about them or it clearly helps.\n"
         "- CRITICAL: this learner is practicing $langLabel, NOT English. Every example sentence in your reply MUST be in $langLabel (unless $langLabel literally is English, or the learner explicitly asked about English/another language). Never default to English examples just out of habit — that is a mistake.\n"
-        "- Write in $label. Keep sentences in both languages clean and well-ordered, never jumbled. Keep the reply clear, well-organized, and not too long.";
+        "- Write in $label. Keep sentences in both languages clean and well-ordered, never jumbled. Keep the reply clear, well-organized, and not too long. Always finish every sentence completely.";
   }
 
   Future<void> _ask(String sentence, List<_ChatMsg> history) async {
@@ -264,20 +265,40 @@ class _GrammarPracticeContentState
     try {
       final svc = ref.read(translationServiceProvider);
       final ai = ref.read(aiSettingsProvider);
-      final raw = await svc.callAI(
-        prompt: _prompt(
-          sentence: sentence,
-          langCode: langCode,
-          nativeCode: sel.native,
-          targets: sel.targets,
-          history: history,
-        ),
-        maxTokens: 700,
+      // ✂️ سقفِ ۷۰۰ جوابِ فارسی/عربیِ مفصل (توضیح + اصلاح + مثال) را وسطِ جمله می‌برید و جوابِ بریده
+      // در کشِ مشترکِ سرور هم می‌ماند. سقفِ بالاتر = کلیدِ کشِ جدید.
+      final qPrompt = _prompt(
+        sentence: sentence,
+        langCode: langCode,
+        nativeCode: sel.native,
+        targets: sel.targets,
+        history: history,
+      );
+      var raw = await svc.callAI(
+        prompt: qPrompt,
+        maxTokens: 1800,
         retries: 1,
         timeoutMs: 45000,
         settings: ai,
         feature: Feature.grammar, // 💎 سقفِ «کل عمر» نسخه‌ی رایگان
       );
+      // باز هم وسطِ جمله تمام شده؟ یک بار با سقفِ بزرگ‌تر (کلیدِ کشِ جدا) دوباره
+      if (aiLooksCutOff(_stripThink(raw))) {
+        try {
+          final raw2 = await svc.callAI(
+            prompt: qPrompt,
+            maxTokens: 3500,
+            retries: 0,
+            timeoutMs: 45000,
+            settings: ai,
+            feature: Feature.grammar,
+          );
+          final t2 = _stripThink(raw2);
+          if (t2.isNotEmpty && !_reasoningRe.hasMatch(t2) && !aiLooksCutOff(t2)) {
+            raw = raw2;
+          }
+        } catch (_) {}
+      }
       final text = _stripThink(raw);
       if (text.isEmpty || _reasoningRe.hasMatch(text)) {
         throw Exception('empty');
