@@ -29,6 +29,7 @@ import 'bundled_translations.dart';
 import 'romanization.dart';
 import 'known_translations.dart';
 import 'shared_translations.dart';
+import 'translate_hints.dart';
 import 'translation_service.dart';
 
 const int _kMaxChars = 300; // سقفِ Worker برای /api/translate-text
@@ -762,6 +763,11 @@ class AiFirstTranslator {
                 // 🕵️ پیش‌نویس‌های مشکوکِ رایگان برای بازبینیِ DeepSeek ('' = بدونِ پیش‌نویس)
                 if (items.any((it) => (it.job.draft ?? '').trim().isNotEmpty))
                   'drafts': [for (final it in items) (it.job.draft ?? '').trim()],
+                // 🎓 سطحِ جمله و خطِ قبلیِ مکالمه (اختیاری؛ '' = ندارد)
+                if (items.any((it) => TranslateHints.level(it.job.text).isNotEmpty))
+                  'levels': [for (final it in items) TranslateHints.level(it.job.text)],
+                if (items.any((it) => TranslateHints.context(it.job.text).isNotEmpty))
+                  'contexts': [for (final it in items) TranslateHints.context(it.job.text)],
                 'source_lang_code': g.from.isEmpty ? 'auto' : g.from,
                 'target_lang_code': g.to,
                 ...Romanization.nativeField, // 🔤
@@ -1048,6 +1054,9 @@ class AiFirstTranslator {
               data: {
                 'text': j.text.trim(),
                 if ((j.draft ?? '').trim().isNotEmpty) 'draft': j.draft!.trim(),
+                // 🎓 سطحِ جمله و خطِ قبلیِ مکالمه (اختیاری)
+                if (TranslateHints.level(j.text).isNotEmpty) 'level': TranslateHints.level(j.text),
+                if (TranslateHints.context(j.text).isNotEmpty) 'context': TranslateHints.context(j.text),
                 'source_lang_code': j.from.isEmpty ? 'auto' : j.from,
                 'target_lang_code': j.to,
                 ...Romanization.nativeField, // 🔤

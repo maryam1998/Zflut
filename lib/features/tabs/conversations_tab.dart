@@ -1,3 +1,4 @@
+import '../../core/translate/translate_hints.dart';
 import '../../core/data/paid_content.dart' show PaidContent;
 import '../../core/usage/free_limit.dart';
 import '../../core/usage/conversations_index.dart';
@@ -1504,6 +1505,9 @@ class _LineRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sel = ref.watch(languageSelectionProvider);
+
+    // 🎓 سطح + خطِ قبلی برای Worker (قبل از ساختنِ کارت؛ ترجمه‌ها بعد از build شروع می‌شوند)
+    TranslateHints.put(line.en, level: line.level, context: prevEn);
 
     // مبدأ و مقصدِ یکسان (مثلاً هر دو عربی) → هر زبان فقط یک‌بار
     final langsToShow = <String>[
