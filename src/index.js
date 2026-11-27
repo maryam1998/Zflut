@@ -355,6 +355,23 @@ async function handleTranslateText(request, env, ctx) {
   if (source !== "auto" && !TT_LANGS[source]) return json({ error: "unsupported source language" }, 400);
 
   const cacheKey = await trCacheKey(env, source, target, text);
+  const level = parseLevel(body?.level);
+  const context = cleanCtx(body?.context);
+  // 🔁 ↻ کاربر: ترجمه‌ی ردشده (reject) را به مدل می‌گوییم و کش را دور می‌زنیم. سقفِ بازتولید برای هر متن (TR_REJECT_MAX در ۲۴ ساعت،
+  //    برای همه‌ی کاربرها) تا هزینه بالا نرود؛ بعد از سقف همان ترجمه‌ی کش برمی‌گردد (confirmed). نتیجه‌ی تازه جای ردیفِ قدیمیِ کش می‌نشیند.
+  const reject = String(body?.reject ?? "").trim().slice(0, 600);
+  if (reject) {
+    const cur = await genCacheGet(env, cacheKey);
+    if (cur && cur.trim() !== reject) {
+      // کسی قبلاً اصلاحش کرده؛ همان را بده (بدونِ AI)
+      return json({ text: cur, provider: "cache", cached: true, ...(await romanField(env, target, native, cur)) });
+    }
+    if (cur && !(await rejectBudget(env, cacheKey))) {
+      return json({ text: cur, provider: "cache", cached: true, confirmed: true, ...(await romanField(env, target, native, cur)) });
+    }
+    const { resp } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft: "", native, level, context, reject: cur ? reject : "" });
+    return resp;
+  }
   const hit = await genCacheGet(env, cacheKey);
   if (hit) {
     ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
@@ -390,7 +407,7 @@ async function handleTranslateText(request, env, ctx) {
       }
       // رهبر شکست خورد/دیر کرد → خودمان امتحان می‌کنیم (بدونِ قفل؛ fail-open)
     }
-    const { resp, result } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft, native });
+    const { resp, result } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft, native, level, context });
     if (result) settle(result); else fail(new Error("leader-failed"));
     return resp;
   } catch (e) {
@@ -402,7 +419,7 @@ async function handleTranslateText(request, env, ctx) {
   }
 }
 
-async function translateLeader(request, env, ctx, { text, target, source, cacheKey, draft = "", native = "" }) {
+async function translateLeader(request, env, ctx, { text, target, source, cacheKey, draft = "", native = "", level = "", context = "", reject = "" }) {
   const none = (resp) => ({ resp, result: null });
 
   // 🌐 فقط ترجمه‌ی کش‌نشده (واقعاً AI) از سقفِ روزانه‌ی DAILY_TRANSLATE مصرف می‌کند
@@ -420,20 +437,25 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
     ? `Respond with ONLY a JSON object {"t":"<the translation>","r":"<its romanization>"} — "t" is the ${label} translation itself (no quotes around it, no explanation, no original text); ` +
       `"r" is the romanization of that same translation in Latin letters only: ${ROMAN_STYLE[target]}. Nothing else.`
     : null;
+  const idiom = idiomRule(label, level);
+  const ctxTxt = ctxLine(context);
+  const rejectNote = reject
+    ? `A learner flagged this earlier ${label} translation as possibly wrong: ${reject}\n` +
+      `Translate again carefully from the meaning of the source text. If the earlier translation is in fact correct, output it exactly unchanged; otherwise output the correct translation. `
+    : "";
   const prompt = draft
     ? `You are a strict ${label} translation reviewer for a language-learning app.\n` +
-      `Source text: ${text}\n` +
+      `Source text: ${text}\n` + ctxTxt +
       `Draft ${label} translation (made by a free machine translator, suspected to be literal, unnatural or wrong): ${draft}\n` +
       `If the draft is accurate, complete and natural, output it unchanged. Otherwise output the natural ${label} translation a native speaker would actually say. ` +
-      `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` +
-      `(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). ` +
+      idiom +
       trStyle(target) +
       (tail || "Respond with ONLY the final translation itself — no quotes, no explanation, no original text, nothing else.")
     : `Translate the following text into ${label} by meaning, the way a native speaker would naturally say it. ` +
-      `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` +
-      `(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). ` +
+      idiom + rejectNote +
       trStyle(target) +
       (tail || "Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.") + "\n\n" +
+      ctxTxt +
       `Text: ${text}`;
   const maxTokens = romanTarget
     ? Math.min(Math.max(Math.floor(text.length * 1.5) + 224, 320), 1000) // ترجمه + رومی‌سازی + ساختارِ JSON
@@ -477,7 +499,7 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
       if (String(env.TR_REVIEW || "") === "1" && !loadHigh && !draft) { // با draft خودِ DeepSeek بازبین است؛ بازبینیِ دوم لازم نیست
         const rleft = deadline - Date.now();
         if (rleft > 1500) {
-          const reviewed = await trReviewFree(env, text, out, label, target, maxTokens, rleft);
+          const reviewed = await trReviewFree(env, text, out, label, target, maxTokens, rleft, level, context);
           if (reviewed !== out) roman = ""; // ترجمه عوض شد → رومی‌سازیِ نسخه‌ی قبلی دیگر درست نیست
           out = reviewed;
         }
@@ -533,6 +555,11 @@ async function handleTranslateBatch(request, env, ctx) {
   // 🕵️ drafts[i] (اختیاری): پیش‌نویسِ مشکوکِ رایگانِ مورد i برای بازبینی/اصلاح ('' = ترجمه از صفر)
   const rawDrafts = Array.isArray(body?.drafts) ? body.drafts.slice(0, TB_MAX) : [];
   const drafts = texts.map((_, i) => String(rawDrafts[i] ?? "").trim().slice(0, 2400));
+  // 🎓 levels[i] / contexts[i] (اختیاری): سطحِ جمله و خطِ قبلیِ مکالمه ('' = ندارد)
+  const rawLv = Array.isArray(body?.levels) ? body.levels.slice(0, TB_MAX) : [];
+  const rawCx = Array.isArray(body?.contexts) ? body.contexts.slice(0, TB_MAX) : [];
+  const levels = texts.map((_, i) => parseLevel(rawLv[i]));
+  const ctxs = texts.map((_, i) => cleanCtx(rawCx[i]));
   if (!valid.some(Boolean)) return json({ results, provider: "none" });
 
   // ۱) کش: یک کوئری برای همه
@@ -601,10 +628,22 @@ async function handleTranslateBatch(request, env, ctx) {
   // ۳) یک تماسِ AI برای همه‌ی کش‌نشده‌ها
   const label = TT_LANGS[target];
   const romanTarget = romanOn(env, target);
-  const list = miss.map((idx, n) => (drafts[idx] ? { i: n, text: texts[idx], draft: drafts[idx] } : { i: n, text: texts[idx] }));
+  const list = miss.map((idx, n) => {
+    const it = { i: n, text: texts[idx] };
+    if (drafts[idx]) it.draft = drafts[idx];
+    if (levels[idx]) it.level = levels[idx];
+    if (ctxs[idx]) it.context = ctxs[idx];
+    return it;
+  });
   const prompt =
     `Translate every item below into ${label} by meaning, the way a native speaker would naturally say it. ` +
     `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word. ` +
+    (list.some((x) => isBeginner(x.level))
+      ? `Exception: items with "level":"A1" or "A2" are simple beginner sentences — translate them plainly and literally as meant in the dialogue; do NOT treat them as idioms or figures of speech unless unmistakably a fixed expression, and never invent another meaning. `
+      : "") +
+    (list.some((x) => x.context)
+      ? `An item's "context" is the previous line of the same dialogue, for understanding only — never translate or output it. `
+      : "") +
     trStyle(target) +
     (list.some((x) => x.draft)
       ? `Items that include a "draft" carry a free machine translation suspected to be literal, unnatural or wrong: review it — keep it unchanged only if it is accurate and natural, otherwise correct it. `
@@ -649,7 +688,7 @@ async function handleTranslateBatch(request, env, ctx) {
       const rleft = deadline - Date.now();
       if (String(env.TR_REVIEW || "") === "1" && !loadHigh && rleft > 1500) {
         const okIdx = outs.map((o, n) => (o ? n : -1)).filter((n) => n >= 0);
-        const revised = await trReviewBatchFree(env, okIdx.map((n) => ({ src: texts[miss[n]], out: outs[n] })), label, target, maxTokens, rleft);
+        const revised = await trReviewBatchFree(env, okIdx.map((n) => ({ src: texts[miss[n]], out: outs[n], level: levels[miss[n]] })), label, target, maxTokens, rleft);
         okIdx.forEach((n, k) => {
           if (revised[k] !== outs[n]) romAI[n] = ""; // ترجمه عوض شد → رومی‌سازیِ نسخه‌ی قبلی دیگر درست نیست
           outs[n] = revised[k];
@@ -692,9 +731,12 @@ async function trReviewBatchFree(env, pairs, label, target, maxTokens, leftMs) {
   const rp =
     `You are a strict ${label} translation reviewer. For each item, if the proposed translation is accurate, complete and sounds natural to a native ${label} speaker, return it exactly unchanged; ` +
     `otherwise return a corrected ${label} translation (by meaning; idioms and slang rendered naturally, never word for word). ` +
+    (pairs.some((p) => isBeginner(p.level))
+      ? `Exception: for items with "level":"A1" or "A2" (simple beginner sentences) change the translation ONLY if it is clearly wrong; a plain, literal, accurate translation must stay exactly unchanged — never rephrase it for style or turn it into an idiom. `
+      : "") +
     trStyle(target) +
     `Return ONLY a JSON object {"t":[...]} with exactly ${pairs.length} strings, in the same order, no explanations.\n\n` +
-    JSON.stringify(pairs.map((p, i) => ({ i, source: p.src, translation: p.out })));
+    JSON.stringify(pairs.map((p, i) => (p.level ? { i, level: p.level, source: p.src, translation: p.out } : { i, source: p.src, translation: p.out })));
   let tried = 0;
   for (const provider of chain) {
     if (tried >= 2) break;
@@ -755,6 +797,30 @@ function romanOn(env, target) {
 function showRoman(env, target, native) {
   return romanOn(env, target) && target !== native;
 }
+// 🎓 سطح و زمینه‌ی جمله (اختیاری، از اپ): جمله‌های ساده‌ی A1/A2 باید «ساده و تحت‌اللفظیِ درست» ترجمه شوند، نه اصطلاح‌محور.
+//    context = خطِ قبلیِ همان مکالمه (فقط برای فهمِ معنی). کلیدِ کش عوض نمی‌شود (کشِ مشترک همان می‌ماند).
+function parseLevel(v) {
+  const s = String(v ?? "").trim().toUpperCase();
+  return /^(A1|A2|B1|B2|C1|C2)$/.test(s) ? s : "";
+}
+function cleanCtx(v) {
+  return String(v ?? "").replace(/[\u0000-\u001f\u007f"]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
+}
+function isBeginner(level) { return level === "A1" || level === "A2"; }
+const IDIOM_EXAMPLE = `(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). `;
+function idiomRule(label, level) {
+  if (isBeginner(level)) {
+    return `This is a simple beginner-level (${level}) sentence from a dialogue: translate it plainly and literally, as the words are meant in the conversation. ` +
+      `Do NOT treat it as an idiom, joke or figure of speech unless it is unmistakably a fixed expression (e.g. "See you later, alligator!"); never invent an extra or different meaning. `;
+  }
+  return `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` + IDIOM_EXAMPLE;
+}
+function ctxLine(context) {
+  return context ? `Context — the previous line of the same dialogue, for understanding only (do NOT translate or output it): "${context}"\n` : "";
+}
+// بازبین برای A1/A2: فقط خطای واقعی را درست کند؛ ترجمه‌ی درست را برای «طبیعی‌تر شدن» یا اصطلاح‌سازی عوض نکند
+const BEGINNER_REVIEW = `For simple beginner (A1/A2) sentences, change the translation ONLY if it is clearly wrong (wrong meaning, wrong grammar, wrong language); ` +
+  `a plain, literal and accurate translation must be kept exactly unchanged — never rephrase it for style and never turn it into an idiom. `;
 function nativeLang(body) {
   const n = String(body?.native_lang_code ?? "").toLowerCase();
   return TT_LANGS[n] ? n : "";
@@ -822,7 +888,7 @@ function reviewSetup(env) {
   return { chain, env: e };
 }
 
-async function trReviewFree(env, text, out, label, target, maxTokens, leftMs) {
+async function trReviewFree(env, text, out, label, target, maxTokens, leftMs, level = "", context = "") {
   const { chain, env: rEnv } = reviewSetup(env);
   const timeoutMs = Math.min(numVar(env, "TR_REVIEW_TIMEOUT_MS", 3500), leftMs);
   let tried = 0;
@@ -831,7 +897,7 @@ async function trReviewFree(env, text, out, label, target, maxTokens, leftMs) {
     if (cbOpen(provider)) continue;
     tried++;
     try {
-      const rev = await trReviewOnce(provider, rEnv, text, out, label, target, timeoutMs, maxTokens);
+      const rev = await trReviewOnce(provider, rEnv, text, out, label, target, timeoutMs, maxTokens, level, context);
       cbOk(provider);
       return rev;
     } catch {
@@ -842,13 +908,15 @@ async function trReviewFree(env, text, out, label, target, maxTokens, leftMs) {
 }
 
 // خطای پرووایدر (تایم‌اوت، بدونِ کلید، …) را پرتاب می‌کند؛ خروجیِ مشکوک = همان out.
-async function trReviewOnce(provider, rEnv, text, out, label, target, timeoutMs, maxTokens) {
+async function trReviewOnce(provider, rEnv, text, out, label, target, timeoutMs, maxTokens, level = "", context = "") {
   const rp =
     `You are a strict ${label} translation reviewer.\n` +
-    `Source text: ${text}\n` +
+    `Source text: ${text}\n` + ctxLine(context) +
     `Proposed ${label} translation: ${out}\n` +
     `If the translation is accurate, complete and sounds natural to a native ${label} speaker, output it exactly unchanged. ` +
-    `Otherwise output a corrected ${label} translation (by meaning; idioms and slang rendered naturally, never word for word). ` +
+    (isBeginner(level)
+      ? BEGINNER_REVIEW
+      : `Otherwise output a corrected ${label} translation (by meaning; idioms and slang rendered naturally, never word for word). `) +
     trStyle(target) +
     `Output ONLY the final ${label} text — no quotes, no explanation, nothing else.`;
   const raw = await withTimeout(callProvider(provider, rp, maxTokens, rEnv), timeoutMs, provider);
@@ -921,6 +989,24 @@ async function genCacheGet(env, key) {
     return row.v;
   } catch {
     return null;
+  }
+}
+
+// 🔁 سقفِ بازتولیدِ «ردِ کاربر» برای هر ترجمه (همه‌ی کاربرها با هم): TR_REJECT_MAX بار در ۲۴ ساعت. true = اجازه دارد.
+async function rejectBudget(env, cacheKey) {
+  if (!env.TR_DB) return true;
+  try {
+    await genCacheInit(env);
+    const k = await genCacheKey(`reject|${cacheKey}`, 0);
+    const row = await env.TR_DB.prepare("SELECT v, created FROM gen_cache WHERE k = ?1").bind(k).first();
+    const fresh = !!row && Date.now() - row.created < 24 * 60 * 60 * 1000;
+    const n = fresh ? parseInt(row.v, 10) || 0 : 0;
+    if (n >= numVar(env, "TR_REJECT_MAX", 2)) return false;
+    await env.TR_DB.prepare("INSERT OR REPLACE INTO gen_cache (k, v, provider, created) VALUES (?1, ?2, ?3, ?4)")
+      .bind(k, String(n + 1), "reject", fresh ? row.created : Date.now()).run();
+    return true;
+  } catch {
+    return true; // خطای کش نباید ↻ را بشکند
   }
 }
 
