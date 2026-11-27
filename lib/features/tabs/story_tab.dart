@@ -38,7 +38,7 @@ import '../../core/translate/translation_service.dart'
     show runWithConcurrencyLimit, kLastAiError, looksLikelyMistranslated, RetryFlag;
 import '../../core/translate/ai_first_translator.dart' show AiFirstTranslator;
 import '../../core/translate/reviewed_translate.dart'
-    show isSuspiciousTranslation;
+    show isSuspiciousTranslation, reviewedTranslate;
 import '../../core/web/reading_io_stub.dart'
     if (dart.library.html) '../../core/web/reading_io_web.dart';
 import 'package:flutter/gestures.dart';
@@ -269,6 +269,12 @@ class _StoryTabState extends ConsumerState<StoryTab> {
   final TransformationController _pdfZoomT = TransformationController(); // زومِ مستقلِ عکسِ ترجمه
   bool _translating = false;
   String _note = '';
+  // 🔄 ↻ کنارِ نوتِ «ترجمه‌ی لغتِ واردشده» (ترجمه‌ی تازه‌ی AI؛ سقفِ روزانه و رای‌گیریِ ۳ نفره)
+  String _noteRaw = '';
+  String _noteWord = '';
+  String _noteLang = '';
+  bool _noteSaved = false;
+  bool _noteBusy = false;
 
   bool _generating = false;
   String _error = '';
@@ -483,6 +489,7 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     setState(() {
       _translating = true;
       _note = '';
+      _noteRaw = '';
     });
     var word = raw;
     try {
@@ -521,7 +528,9 @@ class _StoryTabState extends ConsumerState<StoryTab> {
     if (!mounted) return;
     // لغت/جمله‌ی واردشده در «ذخیره برای داستان بعدی» هم ذخیره می‌شود
     final savedNotifier = ref.read(savedWordsProvider.notifier);
+    var savedHere = false;
     if (!savedNotifier.isSaved(word, lang)) {
+      savedHere = true;
       savedNotifier.toggleSave(SavedWord(
         word: word,
         langCode: lang,
@@ -534,6 +543,65 @@ class _StoryTabState extends ConsumerState<StoryTab> {
       if (!_words.contains(word)) _words.add(word);
       _custom.clear();
       _note = word != raw ? '«$raw» ← «$word»' : '';
+      _noteRaw = word != raw ? raw : '';
+      _noteWord = word != raw ? word : '';
+      _noteLang = lang;
+      _noteSaved = savedHere;
+    });
+  }
+
+  /// ↻ ترجمه‌ی تازه‌ی لغتِ واردشده (reviewedTranslate با fresh): سقفِ روزانه‌ی هر متن، تأییدِ هوشمند
+  /// (همان ترجمه → بدونِ AI) و فقط به‌عنوان «رای» برای کشِ مشترک.
+  Future<void> _refreshNote() async {
+    if (_noteBusy || _noteRaw.isEmpty) return;
+    final raw = _noteRaw;
+    final old = _noteWord;
+    final lang = _noteLang;
+    setState(() => _noteBusy = true);
+    final hasArabicScript = RegExp(r'[\u0600-\u06FF]').hasMatch(raw);
+    final from = (hasArabicScript && lang != 'ar' && lang != 'fa') ? 'fa' : 'auto';
+    var nw = old;
+    try {
+      nw = (await reviewedTranslate(
+        svc: ref.read(translationServiceProvider),
+        ai: ref.read(aiSettingsProvider),
+        text: raw,
+        from: from,
+        to: lang,
+        fresh: true,
+        previous: old,
+      ))
+          .trim();
+    } catch (_) {}
+    if (!mounted) return;
+    if (nw.isEmpty || nw == old || nw.toLowerCase() == raw.toLowerCase()) {
+      setState(() => _noteBusy = false);
+      return;
+    }
+    // لغتِ قبلی را (اگر همین ورودی ذخیره‌اش کرده بود) با تازه عوض کن
+    final sn = ref.read(savedWordsProvider.notifier);
+    var savedHere = _noteSaved;
+    if (_noteSaved && sn.isSaved(old, lang)) {
+      sn.toggleSave(SavedWord(
+          word: old, langCode: lang, meaning: '', savedAt: DateTime.now()));
+      savedHere = false;
+    }
+    if (!sn.isSaved(nw, lang)) {
+      savedHere = true;
+      sn.toggleSave(SavedWord(
+          word: nw, langCode: lang, meaning: raw, savedAt: DateTime.now()));
+    }
+    setState(() {
+      _noteBusy = false;
+      final i = _words.indexOf(old);
+      if (i >= 0) {
+        _words[i] = nw;
+      } else if (!_words.contains(nw)) {
+        _words.add(nw);
+      }
+      _noteWord = nw;
+      _noteSaved = savedHere;
+      _note = '«$raw» ← «$nw»';
     });
   }
 
@@ -2022,8 +2090,31 @@ class _StoryTabState extends ConsumerState<StoryTab> {
           if (_note.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(_note,
-                  style: TextStyle(color: c.inkSoft, fontSize: 11)),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(_note,
+                        style: TextStyle(color: c.inkSoft, fontSize: 11)),
+                  ),
+                  if (_noteRaw.isNotEmpty)
+                    InkResponse(
+                      onTap: _noteBusy ? null : _refreshNote,
+                      radius: 16,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: _noteBusy
+                            ? SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 1.6, color: c.inkSoft),
+                              )
+                            : Icon(Icons.refresh,
+                                size: 16, color: c.inkSoft.withOpacity(0.7)),
+                      ),
+                    ),
+                ],
+              ),
             ),
           const SizedBox(height: 8),
           TextField(

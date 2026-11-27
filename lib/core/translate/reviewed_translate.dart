@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../ai/ai_gateway.dart';
+import 'shared_translations.dart';
 import 'translation_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -151,6 +152,17 @@ Future<String> _run(TranslationService svc, AiSettings? ai, String text,
     if (pin != null) return pin;
   }
 
+  // 🚦 ↻: سقفِ روزانه‌ی هر متن «قبل از هر تماسِ شبکه/AI» (همان سقفِ ↻ بقیه‌ی جاها)
+  var base = '';
+  if (fresh) {
+    base = (previous?.trim().isNotEmpty ?? false)
+        ? previous!.trim()
+        : (svc.pinned(src, to)?.trim() ?? '');
+    if (base.isNotEmpty && base.toLowerCase() != src.toLowerCase()) {
+      if (!await svc.takeRefreshSlot(src, to)) return base; // سقف پر شد (پیامِ limit از سرویس می‌آید)
+    }
+  }
+
   // ۱. ترجمه‌ی رایگان (بدونِ ناظرِ داخلیِ سرویس؛ ناظرِ ما پایین است)
   var draft = '';
   try {
@@ -158,11 +170,15 @@ Future<String> _run(TranslationService svc, AiSettings? ai, String text,
         ? (await svc.retranslate(
                 text: src,
                 targetLang: to,
-                sourceLang: from.isEmpty || from == 'auto' ? 'en' : from))
+                sourceLang: from.isEmpty || from == 'auto' ? 'en' : from,
+                previous: base.isEmpty ? null : base,
+                skipQuota: true))
             .trim()
         : (await svc.translate(text: src, targetLang: to, sourceLang: from))
             .trim();
   } catch (_) {}
+  // ✅ تأییدِ هوشمند: همان ترجمه‌ی قبلی دوباره آمد → بدونِ AIِ اضافه همان می‌ماند
+  if (fresh && base.isNotEmpty && draft == base) return base;
 
   final suspicious = _suspicious(src, draft, from, to);
   final draftUsable = draft.isNotEmpty && draft != src;
@@ -180,6 +196,12 @@ Future<String> _run(TranslationService svc, AiSettings? ai, String text,
     if (reviewed.isNotEmpty) {
       if (fresh) {
         await svc.pinPut(src, _ns(from), to, reviewed);
+        // 🗳️ فقط به‌عنوان «رای»؛ هرگز مستقیم وارد D1 نمی‌شود (سرور با ۳ کاربرِ متفاوت و وزن‌دهی تصمیم می‌گیرد)
+        if (reviewed != base) {
+          SharedTranslations.share(
+              ai.baseUrl, src, from == 'auto' ? '' : from, to, reviewed,
+              aiVerified: true);
+        }
       } else {
         await svc.cachePut(src, _ns(from), to, reviewed);
       }

@@ -734,12 +734,28 @@ class TranslationService {
   Future<void> dismissAlternative(String text, String to) =>
       _db.put(_altKey(text, to), '');
 
+  /// 🚦 یک «سهمِ ↻» برای این متن (و زبانِ مقصد) برمی‌دارد. false = سقفِ روزانه پر است (پیامِ 'limit' هم می‌آید)
+  /// و نباید هیچ تماسِ شبکه/AI زده شود. برای مسیرهایی که خودشان قبل از AI سقف را چک می‌کنند
+  /// (مثل reviewedTranslate) و بعد retranslate را با skipQuota صدا می‌زنند تا دوبار نشمرد.
+  Future<bool> takeRefreshSlot(String text, String to) async {
+    final ck = _refreshCountKey(text, to);
+    final n = int.tryParse(await _db.get(ck) ?? '') ?? 0;
+    if (n >= kRefreshPerTextPerDay) {
+      refreshNotices.add('limit');
+      return false;
+    }
+    await _db.put(ck, '${n + 1}');
+    return true;
+  }
+
   Future<String> retranslate({
     required String text,
     required String targetLang,
     String sourceLang = 'en',
     AiSettings? aiSettings,
     String? previous,
+    // true = سقفِ روزانه را خودِ صدازننده قبلاً شمرده (takeRefreshSlot)؛ اینجا دوباره نشمار.
+    bool skipQuota = false,
     // true = ترجمه‌ی جدید جایگزینِ قبلی نمی‌شود؛ به‌عنوان «گزینه‌ی دوم» ذخیره می‌شود (alternative) و قبلی برمی‌گردد.
     bool keepPrevious = false,
   }) async {
@@ -756,7 +772,7 @@ class TranslationService {
     final hasBase = base.isNotEmpty && base.toLowerCase() != text.trim().toLowerCase();
 
     // 🚦 سقفِ روزانه برای هر متن: بعد از N بار، بدونِ هیچ تماسِ شبکه/AI همان ترجمه‌ی فعلی
-    if (hasBase) {
+    if (hasBase && !skipQuota) {
       final ck = _refreshCountKey(text, targetLang);
       final n = int.tryParse(await _db.get(ck) ?? '') ?? 0;
       if (n >= kRefreshPerTextPerDay) {
