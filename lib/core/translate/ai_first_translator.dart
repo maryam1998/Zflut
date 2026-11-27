@@ -24,6 +24,7 @@ import 'package:dio/dio.dart';
 
 import '../auth/worker_auth.dart';
 import '../storage/translation_cache_db.dart';
+import 'back_translate_check.dart';
 import 'bundled_translations.dart';
 import 'romanization.dart';
 import 'known_translations.dart';
@@ -286,6 +287,10 @@ class AiFirstTranslator {
   static String _marker(String from, String to, String text) =>
       '__aifinal__::${from.isEmpty ? 'auto' : from}>$to::$text';
 
+  // «نشانه‌ی مشکوکِ برگشتی»: ترجمه‌ی رایگان در چکِ برگشتی رد شد (تا AI بازبینی نکرده نهایی حساب نشود)
+  static String _btBadMarker(String from, String to, String text) =>
+      '__btbad__::${from.isEmpty ? 'auto' : from}>$to::$text';
+
   static bool _eligible(String text, String from, String to) {
     final t = text.trim();
     if (t.isEmpty || t.length > _kMaxChars) return false;
@@ -324,7 +329,11 @@ class AiFirstTranslator {
       return null;
     }
     // 💸 ترجمه‌ی رایگانِ سالم و غیرمشکوک (و نه اصطلاح) نهایی است؛ AI فقط برای مشکوک‌ها
-    return (text: t, isFinal: !needsAiReview(text, t, from, to));
+    return (
+      text: t,
+      isFinal: !needsAiReview(text, t, from, to) &&
+          db.peek(_btBadMarker(from, to, text)) == null
+    );
   }
 
   /// شروع/پیوستن به ترجمه‌ی یک متن. نتیجه همیشه ناهمگام (microtask) تحویل داده می‌شود.
@@ -466,6 +475,11 @@ class AiFirstTranslator {
       if (pv != null) {
         draft = pv;
         healthy = !needsAiReview(j.text, pv, j.from, j.to);
+        // 🔁 غربالگریِ رایگانِ برگشتی (ML Kit روی گوشی): سالم‌به‌نظر ولی معنی‌اش با برگشت عوض می‌شود → مشکوک
+        if (healthy && await backTranslationLooksBroken(j.text, pv, j.from, j.to)) {
+          healthy = false;
+          unawaited(TranslationCacheDb.instance.put(_btBadMarker(j.from, j.to, j.text), '1'));
+        }
         return true;
       }
       if (j.softDraft != null) {
