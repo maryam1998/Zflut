@@ -346,6 +346,7 @@ async function handleTranslateText(request, env, ctx) {
   const text = String(body?.text ?? "").trim();
   const target = String(body?.target_lang_code ?? "").toLowerCase();
   const source = String(body?.source_lang_code ?? "auto").toLowerCase() || "auto";
+  const native = nativeLang(body); // زبانِ بومیِ کاربر (اختیاری) — برای نمایش‌ندادنِ رومی‌سازیِ زبانِ خودش
   if (!text) return json({ error: "text is required" }, 400);
   if (text.length > 300) return json({ error: "text too long" }, 400);
   // 🕵️ پیش‌نویسِ مشکوکِ رایگان (ML Kit/مترجمِ آنلاین) از اپ: اگر باشد، AI «بازبینی/اصلاح» می‌کند نه ترجمه از صفر
@@ -357,7 +358,7 @@ async function handleTranslateText(request, env, ctx) {
   const hit = await genCacheGet(env, cacheKey);
   if (hit) {
     ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
-    return json({ text: hit, provider: "cache", cached: true });
+    return json({ text: hit, provider: "cache", cached: true, ...(await romanField(env, target, native, hit)) });
   }
 
   // 🤝 اگر همین متن همین الان در همین isolate در حالِ ترجمه است، منتظرِ همان بمان (بدونِ مصرفِ سهمیه/AI)
@@ -366,7 +367,7 @@ async function handleTranslateText(request, env, ctx) {
     try {
       const r = await pending;
       ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
-      return json({ text: r.text, provider: r.provider, cached: true, coalesced: true });
+      return json({ text: r.text, provider: r.provider, cached: true, coalesced: true, ...(await romanField(env, target, native, r.text, r.roman)) });
     } catch {
       // رهبر شکست خورد/رد شد → خودمان امتحان می‌کنیم (سهمیه‌ی خودمان را هم می‌دهیم)
     }
@@ -385,11 +386,11 @@ async function handleTranslateText(request, env, ctx) {
       if (v) {
         settle({ text: v, provider: "cache" });
         ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
-        return json({ text: v, provider: "cache", cached: true, coalesced: true });
+        return json({ text: v, provider: "cache", cached: true, coalesced: true, ...(await romanField(env, target, native, v)) });
       }
       // رهبر شکست خورد/دیر کرد → خودمان امتحان می‌کنیم (بدونِ قفل؛ fail-open)
     }
-    const { resp, result } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft });
+    const { resp, result } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft, native });
     if (result) settle(result); else fail(new Error("leader-failed"));
     return resp;
   } catch (e) {
@@ -401,7 +402,7 @@ async function handleTranslateText(request, env, ctx) {
   }
 }
 
-async function translateLeader(request, env, ctx, { text, target, source, cacheKey, draft = "" }) {
+async function translateLeader(request, env, ctx, { text, target, source, cacheKey, draft = "", native = "" }) {
   const none = (resp) => ({ resp, result: null });
 
   // 🌐 فقط ترجمه‌ی کش‌نشده (واقعاً AI) از سقفِ روزانه‌ی DAILY_TRANSLATE مصرف می‌کند
@@ -413,6 +414,12 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
   if (capGate.deny) return none(capGate.deny);
 
   const label = TT_LANGS[target];
+  const romanTarget = romanOn(env, target);
+  // 🔤 زبان‌های غیرلاتین: خروجی JSON {"t": ترجمه, "r": رومی‌سازی}؛ بقیه مثلِ قبل «فقط متنِ ترجمه»
+  const tail = romanTarget
+    ? `Respond with ONLY a JSON object {"t":"<the translation>","r":"<its romanization>"} — "t" is the ${label} translation itself (no quotes around it, no explanation, no original text); ` +
+      `"r" is the romanization of that same translation in Latin letters only: ${ROMAN_STYLE[target]}. Nothing else.`
+    : null;
   const prompt = draft
     ? `You are a strict ${label} translation reviewer for a language-learning app.\n` +
       `Source text: ${text}\n` +
@@ -421,14 +428,16 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
       `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` +
       `(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). ` +
       trStyle(target) +
-      "Respond with ONLY the final translation itself — no quotes, no explanation, no original text, nothing else."
+      (tail || "Respond with ONLY the final translation itself — no quotes, no explanation, no original text, nothing else.")
     : `Translate the following text into ${label} by meaning, the way a native speaker would naturally say it. ` +
       `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` +
       `(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). ` +
       trStyle(target) +
-      "Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.\n\n" +
+      (tail || "Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.") + "\n\n" +
       `Text: ${text}`;
-  const maxTokens = Math.min(Math.max(Math.floor(text.length / 2) + 96, 128), 600);
+  const maxTokens = romanTarget
+    ? Math.min(Math.max(Math.floor(text.length * 1.5) + 224, 320), 1000) // ترجمه + رومی‌سازی + ساختارِ JSON
+    : Math.min(Math.max(Math.floor(text.length / 2) + 96, 128), 600);
   // 🧠 ترجمه با مدل‌های قوی‌تر (فقط وقتی AI_PROVIDER_TRANSLATE / *_MODEL_TRANSLATE ست شده)؛ نتیجه در D1 برای همه می‌ماند
   const { chain: trChain, env: trEnv, strong } = translateSetup(env);
   const perProviderMs = Math.min(30000, (strong ? 12000 : 4000) + maxTokens * 10);
@@ -444,13 +453,22 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
       // Gemini 2.5 Pro «فکر» می‌کند و فکر از سقفِ توکن کم می‌شود → سقفِ بیشتر تا خروجی خالی نشود
       const mt = strong && provider === "gemini" ? maxTokens + 2000 : maxTokens;
       const raw = await withTimeout(callProvider(provider, prompt, mt, trEnv), Math.min(perProviderMs, left), provider);
-      let out = sanitizeAiText(raw).trim();
+      let rawTr = raw;
+      let roman = "";
+      if (romanTarget) {
+        const obj = parseJsonObject(raw);
+        if (obj && typeof obj.t === "string") { rawTr = obj.t; roman = typeof obj.r === "string" ? obj.r : ""; }
+        else if (/^\s*[{\[]/.test(sanitizeAiText(raw))) throw new Error("unusable output (bad-json)"); // JSON خراب را به‌عنوانِ ترجمه نپذیر
+        // مدل JSON نداد و متنِ ساده داد → همان ترجمه است، بدونِ رومی‌سازی
+      }
+      let out = sanitizeAiText(rawTr).trim();
       // گیومه‌ی دورِ خروجی را بردار
       out = out.replace(/^["“”«»]+|["“”«»]+$/g, "").trim();
       const bad = badAiOutputReason(out, prompt);
       if (bad) throw new Error(`unusable output (${bad})`);
       // 🛡️ قبل از ورود به کشِ مشترکِ همه‌ی کاربرها: خروجی باید واقعاً به زبانِ مقصد باشد
       if (!trScriptOk(target, text, out)) throw new Error("unusable output (wrong-script)");
+      roman = romanTarget ? cleanRoman(target, out, roman) : "";
       cbOk(provider);
       // 🔎 بازبینیِ دوم (TR_REVIEW="1") — با «مدل‌های رایگان/ارزان» (AI_PROVIDER_REVIEW)، نه همان مدلِ ترجمه:
       //   • وقتی مصرفِ سراسری ≥ REVIEW_OFF_PCT (پیش‌فرض ۷۰٪) خاموش است (افتِ تدریجی؛ اول بازبینی قطع می‌شود)
@@ -458,11 +476,19 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
       const loadHigh = typeof capGate.pct === "number" && capGate.pct >= numVar(env, "REVIEW_OFF_PCT", 70);
       if (String(env.TR_REVIEW || "") === "1" && !loadHigh && !draft) { // با draft خودِ DeepSeek بازبین است؛ بازبینیِ دوم لازم نیست
         const rleft = deadline - Date.now();
-        if (rleft > 1500) out = await trReviewFree(env, text, out, label, target, maxTokens, rleft);
+        if (rleft > 1500) {
+          const reviewed = await trReviewFree(env, text, out, label, target, maxTokens, rleft);
+          if (reviewed !== out) roman = ""; // ترجمه عوض شد → رومی‌سازیِ نسخه‌ی قبلی دیگر درست نیست
+          out = reviewed;
+        }
       }
       await genCachePut(env, cacheKey, out, provider); // 🤝 قبل از آزادشدنِ اجاره‌ی D1 باید نوشته شده باشد
+      if (roman) await genCachePut(env, await trRomanKey(target, out), roman, provider);
       ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider, cached: false, prompt, text: out }));
-      return { resp: json({ text: out, provider }), result: { text: out, provider } };
+      return {
+        resp: json({ text: out, provider, ...(roman && showRoman(env, target, native) ? { roman } : {}) }),
+        result: { text: out, provider, roman },
+      };
     } catch (e) {
       cbFail(env, provider);
       errors.push(`${provider}: ${e.message}`);
@@ -496,6 +522,7 @@ async function handleTranslateBatch(request, env, ctx) {
   try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
   const target = String(body?.target_lang_code ?? "").toLowerCase();
   const source = String(body?.source_lang_code ?? "auto").toLowerCase() || "auto";
+  const native = nativeLang(body); // زبانِ بومیِ کاربر (اختیاری) — برای نمایش‌ندادنِ رومی‌سازیِ زبانِ خودش
   if (!TT_LANGS[target]) return json({ error: "unsupported target language" }, 400);
   if (source !== "auto" && !TT_LANGS[source]) return json({ error: "unsupported source language" }, 400);
   const raw = Array.isArray(body?.items) ? body.items.slice(0, TB_MAX) : [];
@@ -541,7 +568,8 @@ async function handleTranslateBatch(request, env, ctx) {
   }
   if (!miss.length) {
     ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
-    return json({ results, provider: "cache", cached: true });
+    const romans = await batchRomans(env, target, native, results);
+    return json({ results, provider: "cache", cached: true, ...(romans ? { romans } : {}) });
   }
 
   // 🤝 ادغامِ هم‌زمان‌ها (بین isolateها): برای هر کلیدِ کش‌نشده اجاره می‌گیریم؛ آن‌هایی که دستِ دیگری است منتظر می‌مانیم (بدونِ AI/سهمیه).
@@ -557,7 +585,8 @@ async function handleTranslateBatch(request, env, ctx) {
   if (!miss.length) {
     await mergeWaited();
     ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider: "cache", cached: true }));
-    return json({ results, provider: "cache", cached: true, coalesced: true });
+    const romans = await batchRomans(env, target, native, results);
+    return json({ results, provider: "cache", cached: true, coalesced: true, ...(romans ? { romans } : {}) });
   }
   try {
   // ۲) سهمیه‌ها فقط برای کش‌نشده‌ها
@@ -571,6 +600,7 @@ async function handleTranslateBatch(request, env, ctx) {
 
   // ۳) یک تماسِ AI برای همه‌ی کش‌نشده‌ها
   const label = TT_LANGS[target];
+  const romanTarget = romanOn(env, target);
   const list = miss.map((idx, n) => (drafts[idx] ? { i: n, text: texts[idx], draft: drafts[idx] } : { i: n, text: texts[idx] }));
   const prompt =
     `Translate every item below into ${label} by meaning, the way a native speaker would naturally say it. ` +
@@ -579,10 +609,16 @@ async function handleTranslateBatch(request, env, ctx) {
     (list.some((x) => x.draft)
       ? `Items that include a "draft" carry a free machine translation suspected to be literal, unnatural or wrong: review it — keep it unchanged only if it is accurate and natural, otherwise correct it. `
       : "") +
-    `Return ONLY a JSON object {"t":[...]} with exactly ${miss.length} strings (no quotes around them, no explanations, no original text), in the same order as the items.\n\n` +
+    (romanTarget
+      ? `Return ONLY a JSON object {"t":[...],"r":[...]} where both arrays have exactly ${miss.length} strings, in the same order as the items: ` +
+        `t[i] is the ${label} translation (no quotes around it, no explanations, no original text) and r[i] is the romanization of that same t[i] in Latin letters only: ${ROMAN_STYLE[target]}.\n\n`
+      : `Return ONLY a JSON object {"t":[...]} with exactly ${miss.length} strings (no quotes around them, no explanations, no original text), in the same order as the items.\n\n`) +
     JSON.stringify(list);
   const totalLen = miss.reduce((a, idx) => a + texts[idx].length, 0);
-  const maxTokens = Math.min(Math.max(totalLen + 64 * miss.length, 400), Math.max(1000, numVar(env, "TB_MAX_TOKENS", 6000)));
+  const maxTokens = Math.min(
+    Math.max(totalLen * (romanTarget ? 3 : 1) + (romanTarget ? 120 : 64) * miss.length, 400),
+    Math.max(1000, numVar(env, "TB_MAX_TOKENS", 6000)) + (romanTarget ? 2000 : 0)
+  );
   const { chain: trChain, env: trEnv, strong } = translateSetup(env);
   const perProviderMs = Math.min(30000, 8000 + maxTokens * 8);
   const deadline = Date.now() + numVar(env, "TB_TOTAL_BUDGET_MS", Math.max(22000, numVar(env, "TR_TOTAL_BUDGET_MS", 22000)));
@@ -604,6 +640,9 @@ async function handleTranslateBatch(request, env, ctx) {
         return o;
       });
       if (!outs.some(Boolean)) throw new Error("unusable output (all-invalid)");
+      // 🔤 رومی‌سازیِ هر مورد (r[i]؛ نامعتبر/نبودن = "" و فقط ترجمه می‌ماند)
+      const rarr = romanTarget && Array.isArray(obj.r) ? obj.r : [];
+      const romAI = outs.map((o, n) => (o && romanTarget ? cleanRoman(target, o, rarr[n]) : ""));
       cbOk(provider);
       // 🔎 بازبینیِ دسته‌ایِ رایگان (بارِ بالا = خاموش)
       const loadHigh = typeof capGate.pct === "number" && capGate.pct >= numVar(env, "REVIEW_OFF_PCT", 70);
@@ -611,18 +650,27 @@ async function handleTranslateBatch(request, env, ctx) {
       if (String(env.TR_REVIEW || "") === "1" && !loadHigh && rleft > 1500) {
         const okIdx = outs.map((o, n) => (o ? n : -1)).filter((n) => n >= 0);
         const revised = await trReviewBatchFree(env, okIdx.map((n) => ({ src: texts[miss[n]], out: outs[n] })), label, target, maxTokens, rleft);
-        okIdx.forEach((n, k) => { outs[n] = revised[k]; });
+        okIdx.forEach((n, k) => {
+          if (revised[k] !== outs[n]) romAI[n] = ""; // ترجمه عوض شد → رومی‌سازیِ نسخه‌ی قبلی دیگر درست نیست
+          outs[n] = revised[k];
+        });
       }
       const puts = [];
+      const knownRoman = new Map();
       miss.forEach((idx, n) => {
         if (!outs[n]) return;
         results[idx] = outs[n];
         puts.push(genCachePut(env, keys[idx], outs[n], provider));
+        if (romAI[n]) {
+          knownRoman.set(idx, romAI[n]);
+          puts.push(trRomanKey(target, outs[n]).then((k) => genCachePut(env, k, romAI[n], provider)));
+        }
       });
       await Promise.all(puts); // 🤝 قبل از آزادشدنِ اجاره‌ها در کش نوشته شود
       await mergeWaited();
       ctx.waitUntil(recordUsage(env, request, { feature: "translate", provider, cached: false, prompt, text: outs.filter(Boolean).join("\n") }));
-      return json({ results, provider });
+      const romans = await batchRomans(env, target, native, results, knownRoman);
+      return json({ results, provider, ...(romans ? { romans } : {}) });
     } catch (e) {
       cbFail(env, provider);
       errors.push(`${provider}: ${e.message}`);
@@ -682,6 +730,72 @@ function trScriptOk(target, text, out) {
   if (String(text).trim().split(/\s+/).length < 2) return true;
   if (!/\p{L}/u.test(text)) return true;
   return re.test(out);
+}
+
+// 🔤 رومی‌سازی (Romanization) --------------------------------------------------------------------------------
+// برای زبان‌هایی که الفبایشان لاتین نیست و کاربر نمی‌تواند بخواندشان (هندی، چینی، ژاپنی، کره‌ای، روسی)، AI «همزمان با ترجمه»
+// خوانشِ لاتینِ ترجمه را هم می‌دهد (همان تماسِ AI؛ فقط چند توکنِ بیشتر). TR_ROMAN="0" در wrangler.toml همه را خاموش می‌کند.
+//
+// 🗄️ کش: رومی‌سازی با کلیدِ «زبانِ مقصد + خودِ متنِ ترجمه‌شده» ذخیره می‌شود (نه متنِ مبدأ). پس اگر ترجمه بعداً اصلاح شد
+//    (↻ کاربر / seed)، رومی‌سازیِ قدیمی خودبه‌خود کنار می‌رود و ردیفِ ترجمه (کلیدِ قبلی) دست‌نخورده می‌ماند.
+//
+// 🙈 نمایش: اگر زبانِ مقصد = زبانِ بومیِ کاربر (native_lang_code در بدنه‌ی درخواست)، رومی‌سازی در پاسخ «نمی‌آید»
+//    (کاربرِ هندی که ترجمه‌ی هندی گرفته، دوناگری را می‌خواند). برای کشِ مشترک همیشه تولید و ذخیره می‌شود.
+const ROMAN_LANGS = new Set(["hi", "zh", "ja", "ko", "ru"]);
+const ROMAN_STYLE = {
+  hi: "Hinglish-style Latin spelling as Hindi is typed in English letters, e.g. «aap kaise hain?», «mera naam Ali hai» — plain ASCII, no diacritics",
+  zh: "Hanyu Pinyin with tone marks (e.g. «nǐ hǎo»), syllables of the same word joined, words separated by spaces",
+  ja: "Hepburn romaji, words separated by spaces, particles written as pronounced (は→wa, を→o, へ→e)",
+  ko: "Revised Romanization of Korean as pronounced (e.g. «annyeonghaseyo»), words separated by spaces",
+  ru: "simple ASCII transliteration of Russian (ж=zh, х=kh, ц=ts, ч=ch, ш=sh, щ=shch, ы=y, ю=yu, я=ya; no accents or stress marks)",
+};
+function romanOn(env, target) {
+  return ROMAN_LANGS.has(target) && String((env && env.TR_ROMAN) ?? "1") !== "0";
+}
+function showRoman(env, target, native) {
+  return romanOn(env, target) && target !== native;
+}
+function nativeLang(body) {
+  const n = String(body?.native_lang_code ?? "").toLowerCase();
+  return TT_LANGS[n] ? n : "";
+}
+async function trRomanKey(target, text) {
+  return genCacheKey(`roman|${target}|${text}`, 0);
+}
+// خروجیِ رومی‌سازیِ AI را بررسی می‌کند؛ نامعتبر = "" (ترجمه همچنان استفاده می‌شود، فقط رومی‌سازی ذخیره/نمایش داده نمی‌شود)
+function cleanRoman(target, out, raw) {
+  let r = typeof raw === "string" ? sanitizeAiText(raw).trim().replace(/^[\"“”«»]+|[\"“”«»]+$/g, "").trim() : "";
+  if (!r || r.length > out.length * 4 + 80) return "";
+  if (TR_SCRIPTS[target] && TR_SCRIPTS[target].test(r)) return ""; // هنوز الفبای اصلی دارد = رومی‌سازی نیست
+  if (!/[A-Za-z\u00C0-\u024F]/.test(r)) return ""; // حرفِ لاتین ندارد
+  if (/&#?\w+;|[{}\[\]]/.test(r)) return "";
+  if (r.toLowerCase() === out.toLowerCase()) return ""; // چیزِ جدیدی نیست (مثلِ «OK»)
+  return r;
+}
+// فیلدِ roman برای پاسخِ translate-text ({} یا {roman}). known = رومی‌سازیِ تازه‌ساخته؛ وگرنه از D1 می‌خوانیم.
+async function romanField(env, target, native, text, known = "") {
+  if (!showRoman(env, target, native)) return {};
+  const r = known || (await genCacheGet(env, await trRomanKey(target, text))) || "";
+  return r ? { roman: r } : {};
+}
+// رومی‌سازیِ «دسته‌ای» برای translate-batch: آرایه‌ی هم‌طولِ results ("" = ندارد) یا null اگر نباید نمایش داده شود.
+async function batchRomans(env, target, native, results, known = new Map()) {
+  if (!showRoman(env, target, native)) return null;
+  const romans = results.map((_, i) => known.get(i) || "");
+  const need = [];
+  results.forEach((r, i) => { if (r && !known.has(i)) need.push(i); });
+  if (need.length && env.TR_DB) {
+    try {
+      const keys = await Promise.all(need.map((i) => trRomanKey(target, results[i])));
+      const uniq = [...new Set(keys)];
+      await genCacheInit(env);
+      const ph = uniq.map((_, i) => `?${i + 1}`).join(",");
+      const res = await env.TR_DB.prepare(`SELECT k, v FROM gen_cache WHERE k IN (${ph})`).bind(...uniq).all();
+      const m = new Map((res.results || []).map((r) => [r.k, r.v]));
+      need.forEach((i, j) => { romans[i] = m.get(keys[j]) || ""; });
+    } catch { /* کش خراب = بدونِ رومی‌سازی */ }
+  }
+  return romans;
 }
 
 // 🎨 سبکِ ترجمه به فارسی: یک‌دست، محاوره‌ای‌ملایم و محترمانه؛ نه کلمه‌به‌کلمه، نه رسمی/کتابی در یک جمله و محاوره‌ای در جمله‌ی بعد.
