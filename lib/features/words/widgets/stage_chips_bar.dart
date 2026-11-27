@@ -307,17 +307,22 @@ class StageChipsBar extends ConsumerWidget {
       ],
     );
 
-    // دو گروه کنارِ هم (هر کدام عنوان + چیپ‌های زیرش)؛ با هم افقی اسکرول می‌شوند.
-    return SizedBox(
-      height: 108,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          cefrGroup,
-          const SizedBox(width: 22),
-          eduGroup,
-        ],
-      ),
+    // دو گروه «زیرِ هم» (CEFR بالا، مقطعِ تحصیلی پایین) تا فضای خالیِ کنارِ ردیفِ CEFR پر شود؛
+    // هر ردیف جداگانه افقی اسکرول می‌شود.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: cefrGroup,
+        ),
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: eduGroup,
+        ),
+      ],
     );
   }
 }
