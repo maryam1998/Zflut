@@ -15,6 +15,8 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'local_romanizer.dart';
+
 class Romanization {
   Romanization._();
 
@@ -126,7 +128,8 @@ class Romanization {
     final t = text.trim();
     if (t.isEmpty) return null;
     final k = _key(lang, t);
-    final r = _mem[k] ?? _byTranslated[k];
+    // ۱) پاسخِ Worker  ۲) فایلِ ثابت  ۳) رومی‌سازیِ محلیِ گوشی (هندی/روسی) وقتی هیچ‌کدام نبود
+    final r = _mem[k] ?? _byTranslated[k] ?? LocalRomanizer.convert(lang, t);
     if (r == null || r.trim().isEmpty) return null;
     return r;
   }
