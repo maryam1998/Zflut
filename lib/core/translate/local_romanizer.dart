@@ -6,12 +6,14 @@
 // کجا استفاده می‌شود: فقط به‌عنوانِ «جایگزینِ آخر» در Romanization.lookup؛
 // یعنی اگر Worker رومی‌سازی داده بود (یا در فایلِ ثابت بود) همان نشان داده می‌شود،
 // وگرنه (ترجمه از کش/فایلِ داخلِ اپ آمده و Worker صدا زده نشده) این جا خالی را پر می‌کند.
-// چینی/ژاپنی/کره‌ای فرهنگ‌لغت می‌خواهند؛ آن‌ها همچنان فقط از Worker/فایلِ ثابت می‌آیند.
+// چینی: پین‌یینِ همراهِ تُن با بسته‌ی lpinyin (فرهنگ‌لغتِ داخلِ بسته). ژاپنی/کره‌ای همچنان فقط از Worker/فایلِ ثابت.
+
+import 'package:lpinyin/lpinyin.dart';
 
 class LocalRomanizer {
   LocalRomanizer._();
 
-  static const Set<String> langs = {'hi', 'ru'};
+  static const Set<String> langs = {'hi', 'ru', 'zh'};
 
   static final Map<String, String> _memo = <String, String>{};
 
@@ -23,7 +25,7 @@ class LocalRomanizer {
     if (hit != null) return hit.isEmpty ? null : hit;
     String out;
     try {
-      out = lang == 'hi' ? _hi(text) : _ruConvert(text);
+      out = lang == 'hi' ? _hi(text) : (lang == 'zh' ? _zh(text) : _ruConvert(text));
     } catch (_) {
       out = '';
     }
@@ -202,6 +204,21 @@ class LocalRomanizer {
       out.write(u.on + v + u.nasal);
     }
     return out.toString();
+  }
+
+  // ───────────────────────── چینی (پین‌یین) ─────────────────────────
+  static final RegExp _hanRe = RegExp(r'[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]+');
+
+  static String _zh(String text) {
+    final r = text.replaceAllMapped(_hanRe, (m) {
+      final py = PinyinHelper.getPinyin(
+        m[0]!,
+        separator: ' ',
+        format: PinyinFormat.WITH_TONE_MARK,
+      );
+      return ' $py ';
+    });
+    return _tidy(r);
   }
 
   // ───────────────────────── روسی ─────────────────────────

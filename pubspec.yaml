@@ -47,6 +47,9 @@ dependencies:
   # ═══ ضبطِ صدای کاربر (shadowing) ═══
   record: ^5.1.2
 
+  # ═══ پین‌یینِ چینی روی خودِ گوشی (LocalRomanizer) ═══
+  lpinyin: ^2.0.3
+
   cupertino_icons: ^1.0.6
 
 # record_linux 0.7.x با record_platform_interface 1.6 سازگار نیست و بیلد اندروید را می‌شکند
