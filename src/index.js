@@ -341,6 +341,8 @@ async function handleTranslateText(request, env, ctx) {
   const source = String(body?.source_lang_code ?? "auto").toLowerCase() || "auto";
   if (!text) return json({ error: "text is required" }, 400);
   if (text.length > 300) return json({ error: "text too long" }, 400);
+  // 🕵️ پیش‌نویسِ مشکوکِ رایگان (ML Kit/مترجمِ آنلاین) از اپ: اگر باشد، AI «بازبینی/اصلاح» می‌کند نه ترجمه از صفر
+  const draft = String(body?.draft ?? "").trim().slice(0, 600);
   if (!TT_LANGS[target]) return json({ error: "unsupported target language" }, 400);
   if (source !== "auto" && !TT_LANGS[source]) return json({ error: "unsupported source language" }, 400);
 
@@ -367,7 +369,7 @@ async function handleTranslateText(request, env, ctx) {
   flight.catch(() => {});
   TT_INFLIGHT.set(cacheKey, flight);
   try {
-    const { resp, result } = await translateLeader(request, env, ctx, { text, target, source, cacheKey });
+    const { resp, result } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft });
     if (result) settle(result); else fail(new Error("leader-failed"));
     return resp;
   } catch (e) {
@@ -378,7 +380,7 @@ async function handleTranslateText(request, env, ctx) {
   }
 }
 
-async function translateLeader(request, env, ctx, { text, target, source, cacheKey }) {
+async function translateLeader(request, env, ctx, { text, target, source, cacheKey, draft = "" }) {
   const none = (resp) => ({ resp, result: null });
 
   // 🌐 فقط ترجمه‌ی کش‌نشده (واقعاً AI) از سقفِ روزانه‌ی DAILY_TRANSLATE مصرف می‌کند
@@ -390,13 +392,21 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
   if (capGate.deny) return none(capGate.deny);
 
   const label = TT_LANGS[target];
-  const prompt =
-    `Translate the following text into ${label} by meaning, the way a native speaker would naturally say it. ` +
-    `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` +
-    `(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). ` +
-    trStyle(target) +
-    "Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.\n\n" +
-    `Text: ${text}`;
+  const prompt = draft
+    ? `You are a strict ${label} translation reviewer for a language-learning app.\n` +
+      `Source text: ${text}\n` +
+      `Draft ${label} translation (made by a free machine translator, suspected to be literal, unnatural or wrong): ${draft}\n` +
+      `If the draft is accurate, complete and natural, output it unchanged. Otherwise output the natural ${label} translation a native speaker would actually say. ` +
+      `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` +
+      `(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). ` +
+      trStyle(target) +
+      "Respond with ONLY the final translation itself — no quotes, no explanation, no original text, nothing else."
+    : `Translate the following text into ${label} by meaning, the way a native speaker would naturally say it. ` +
+      `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` +
+      `(e.g. "See you later, alligator!" is just a playful goodbye: drop the animal and the rhyme). ` +
+      trStyle(target) +
+      "Respond with ONLY the translation itself — no quotes, no explanation, no original text, nothing else.\n\n" +
+      `Text: ${text}`;
   const maxTokens = Math.min(Math.max(Math.floor(text.length / 2) + 96, 128), 600);
   // 🧠 ترجمه با مدل‌های قوی‌تر (فقط وقتی AI_PROVIDER_TRANSLATE / *_MODEL_TRANSLATE ست شده)؛ نتیجه در D1 برای همه می‌ماند
   const { chain: trChain, env: trEnv, strong } = translateSetup(env);
@@ -425,7 +435,7 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
       //   • وقتی مصرفِ سراسری ≥ REVIEW_OFF_PCT (پیش‌فرض ۷۰٪) خاموش است (افتِ تدریجی؛ اول بازبینی قطع می‌شود)
       //   • بودجه‌ی زمانیِ محدود (TR_REVIEW_TIMEOUT_MS)؛ هر خطا/تایم‌اوت/خروجیِ مشکوک = همان ترجمه‌ی اول
       const loadHigh = typeof capGate.pct === "number" && capGate.pct >= numVar(env, "REVIEW_OFF_PCT", 70);
-      if (String(env.TR_REVIEW || "") === "1" && !loadHigh) {
+      if (String(env.TR_REVIEW || "") === "1" && !loadHigh && !draft) { // با draft خودِ DeepSeek بازبین است؛ بازبینیِ دوم لازم نیست
         const rleft = deadline - Date.now();
         if (rleft > 1500) out = await trReviewFree(env, text, out, label, target, maxTokens, rleft);
       }
@@ -472,6 +482,9 @@ async function handleTranslateBatch(request, env, ctx) {
   const itemMax = Math.max(300, Math.min(4000, numVar(env, "TB_MAX_ITEM_CHARS", 2000)));
   const valid = texts.map((t) => !!t && t.length <= itemMax && /\p{L}/u.test(t));
   const results = texts.map(() => null);
+  // 🕵️ drafts[i] (اختیاری): پیش‌نویسِ مشکوکِ رایگانِ مورد i برای بازبینی/اصلاح ('' = ترجمه از صفر)
+  const rawDrafts = Array.isArray(body?.drafts) ? body.drafts.slice(0, TB_MAX) : [];
+  const drafts = texts.map((_, i) => String(rawDrafts[i] ?? "").trim().slice(0, 2400));
   if (!valid.some(Boolean)) return json({ results, provider: "none" });
 
   // ۱) کش: یک کوئری برای همه
@@ -521,11 +534,14 @@ async function handleTranslateBatch(request, env, ctx) {
 
   // ۳) یک تماسِ AI برای همه‌ی کش‌نشده‌ها
   const label = TT_LANGS[target];
-  const list = miss.map((idx, n) => ({ i: n, text: texts[idx] }));
+  const list = miss.map((idx, n) => (drafts[idx] ? { i: n, text: texts[idx], draft: drafts[idx] } : { i: n, text: texts[idx] }));
   const prompt =
     `Translate every item below into ${label} by meaning, the way a native speaker would naturally say it. ` +
     `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word. ` +
     trStyle(target) +
+    (list.some((x) => x.draft)
+      ? `Items that include a "draft" carry a free machine translation suspected to be literal, unnatural or wrong: review it — keep it unchanged only if it is accurate and natural, otherwise correct it. `
+      : "") +
     `Return ONLY a JSON object {"t":[...]} with exactly ${miss.length} strings (no quotes around them, no explanations, no original text), in the same order as the items.\n\n` +
     JSON.stringify(list);
   const totalLen = miss.reduce((a, idx) => a + texts[idx].length, 0);

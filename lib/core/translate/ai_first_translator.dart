@@ -1,17 +1,18 @@
 // 📁 مسیر: lib/core/translate/ai_first_translator.dart
 //
-// ترجمه‌ی «اول AI» برای تب مکالمه (Talk). کاربر هیچ‌چیز متوجه نمی‌شود:
+// ترجمه‌ی تب مکالمه (Talk) — با «قانونِ طلاییِ هزینه». (نامِ فایل/کلاس برای سازگاری مانده؛ دیگر «اول AI» نیست.)
+// ترتیب (هر مرحله جواب داد، همان‌جا تمام و هیچ AIای صدا زده نمی‌شود):
 //
 //   ۱. 📌 ترجمه‌ی قفل‌شده‌ی کاربر (↻) همیشه مقدم است.
-//   ۲. 💾 اگر ترجمه‌ی AI قبلاً روی همین گوشی ذخیره شده («نشانه‌ی نهایی») → همان، بدون شبکه
-//      (بعد از آپدیت اپ هم می‌ماند؛ در همان دیتابیسِ کشِ ترجمه است).
-//   ۳. 🗄️ کشِ مشترکِ سرور (D1): اگر کاربرِ دیگری قبلاً گرفته → رایگان و بدون AI.
-//   ۴. 🤖 AI (/api/translate-text؛ Worker خودش نتیجه را در D1 برای همه ذخیره می‌کند).
-//   ۵. ⏱️ اگر AI/کشِ مشترک تا ~۱ ثانیه جواب نداد، پیش‌نویسِ ML Kit/آنلاین نشان داده می‌شود (نمره‌ی ۲ = خوب).
-//      پیش‌نویسِ «متوسط» (نمره‌ی ۱: نسبتِ طولِ مشکوک / عددِ گم‌شده) ~۱٫۵ ثانیه‌ی دیگر صبر می‌کند و اگر چیزِ
-//      بهتری نرسید نشان داده می‌شود؛ پیش‌نویسِ خراب (نمره‌ی ۰: تکرارِ بی‌معنی، ترجمه‌نشده) هیچ‌وقت. کاربر منتظر نمی‌ماند.
-//      وقتی کشِ مشترک/AI رسید بی‌صدا جایگزین می‌شود. اگر AI خطا داد یا مکث بود، در پس‌زمینه
-//      کشِ مشترک (رایگان، بدونِ سهمیه‌ی AI) دوره‌ای دوباره چک می‌شود و AI با تأخیرِ jitterدار تکرار می‌شود.
+//   ۲. 📦 ترجمه‌ی آماده‌ی داخلِ اپ (bundled) و 💾 کشِ گوشی (نهایی، یا سالمِ غیرمشکوک).
+//   ۳. 🗄️ کشِ مشترکِ سرور (D1): اگر کاربرِ دیگری قبلاً گرفته → رایگان.
+//   ۴. 📚 معنیِ آماده‌ی داده‌های اپ (known).
+//   ۵. 🆓 ML Kit روی گوشی ← مترجمِ آنلاینِ رایگان؛ اگر خروجی سالم بود همان نهایی است (بدونِ AI).
+//   ۶. 🕵️ فقط اگر اصطلاح (Idiom) بود یا فیلترها (looksLikelyMistranslated / looksSuspiciousDeep / نمره‌ی کیفیت)
+//      مشکوک تشخیص دادند → پیش‌نویسِ رایگان با «draft» به Worker (DeepSeek) فرستاده می‌شود تا بازبینی/اصلاح کند؛
+//      Worker نتیجه را در D1 برای همه نگه می‌دارد. تا رسیدنِ جواب پیش‌نویس نشان داده می‌شود (نمره‌ی ۰ هرگز).
+//   ✖️ اگر هیچ پیش‌نویسِ رایگانی نبود (مثلاً مدلِ ML Kit هنوز دانلود نشده) AI صدا زده نمی‌شود؛
+//      «نبودِ پیش‌نویس ≠ مشکوک». چند بار در پس‌زمینه دوباره امتحان می‌شود؛ کاربر هم با ↻ می‌تواند AI بخواهد.
 //
 // این فایل فقط از API عمومیِ TranslationService / SharedTranslations / TranslationCacheDb استفاده می‌کند
 // و به هیچ بخشِ دیگری دست نمی‌زند. بقیه‌ی تب‌ها مثل قبل کار می‌کنند.
@@ -24,6 +25,7 @@ import 'package:dio/dio.dart';
 import '../auth/worker_auth.dart';
 import '../storage/translation_cache_db.dart';
 import 'bundled_translations.dart';
+import 'known_translations.dart';
 import 'shared_translations.dart';
 import 'translation_service.dart';
 
@@ -33,7 +35,6 @@ const int _kProvConcurrency = 3; // هم‌زمانیِ ترجمه‌ی موقت
 const Duration _kGrace = Duration(milliseconds: 1000); // تا این‌قدر منتظرِ کش/AI؛ بعد پیش‌نویسِ خوب نشان داده می‌شود
 const int _kBatchMax = 20; // حداکثر متن در یک درخواستِ /api/translate-batch
 const Duration _kBatchWindow = Duration(milliseconds: 80); // جمع‌کردنِ درخواست‌های هم‌زمان
-const Duration _kSoftGrace = Duration(milliseconds: 1500); // پیش‌نویسِ «متوسط» فقط اگر بعد از این هم چیزِ بهتری نرسید
 // تلاش‌های خودکارِ پس‌زمینه: اول سریع (کاربر منتظر است)، بعد کم‌کم کندتر
 const List<Duration> _kRetryDelays = <Duration>[
   Duration(seconds: 3),
@@ -44,6 +45,14 @@ const List<Duration> _kRetryDelays = <Duration>[
   Duration(minutes: 3),
   Duration(minutes: 6),
   Duration(minutes: 10),
+];
+
+// وقتی هیچ پیش‌نویسِ رایگانی نبود: فقط مسیرِ رایگان (کشِ مشترک + ML Kit/آنلاین) دوباره امتحان می‌شود، نه AI
+const List<Duration> _kFreeRetryDelays = <Duration>[
+  Duration(seconds: 4),
+  Duration(seconds: 12),
+  Duration(seconds: 40),
+  Duration(seconds: 120),
 ];
 
 // ─── پاک‌سازیِ ترجمه‌ی موقت (ML Kit / MyMemory) ───
@@ -229,6 +238,7 @@ class _Job {
   bool latestFinal = false;
   bool gaveUp = false;
   int invalid = 0; // چند بار AI خروجیِ نامعتبر داد (بیش از ۲ بار → دیگر تلاش نکن)
+  String? draft; // پیش‌نویسِ رایگانِ مشکوک که برای بازبینی با AI (DeepSeek) فرستاده می‌شود
   String? softDraft; // پیش‌نویسِ «متوسط» (نمره‌ی ۱) — فقط اگر چیزِ بهتری نرسید نشان داده می‌شود
 }
 
@@ -311,7 +321,8 @@ class AiFirstTranslator {
         !_namesKept(text, t, to)) {
       return null;
     }
-    return (text: t, isFinal: false);
+    // 💸 ترجمه‌ی رایگانِ سالم و غیرمشکوک (و نه اصطلاح) نهایی است؛ AI فقط برای مشکوک‌ها
+    return (text: t, isFinal: !needsAiReview(text, t, from, to));
   }
 
   /// شروع/پیوستن به ترجمه‌ی یک متن. نتیجه همیشه ناهمگام (microtask) تحویل داده می‌شود.
@@ -427,41 +438,82 @@ class AiFirstTranslator {
       if (p.isFinal) return;
     }
 
-    // ۳ و ۴: کشِ مشترک (D1) و بعد AI
-    var aiDone = false;
-    Future<String?> aiPath() async {
-      try {
-        final shared = await SharedTranslations.fetchOne(
-            j.base, j.from, j.to, j.text);
-        if (shared != null && _good(j, shared)) return shared.trim();
-        return await _askAi(j);
-      } catch (_) {
-        return null;
+    // ۳: کشِ مشترک (D1) — رایگان
+    try {
+      final shared =
+          await SharedTranslations.fetchOne(j.base, j.from, j.to, j.text);
+      if (shared != null && _good(j, shared)) {
+        await _commit(j, shared.trim());
+        _emit(j, shared.trim(), true);
+        return;
       }
+    } catch (_) {}
+
+    // ۴: معنیِ آماده‌ی داده‌های اپ (known) — بدونِ AI (در کش نوشته نمی‌شود تا با آپدیتِ داده‌ها کهنه نماند)
+    final known = (KnownTranslations.get(j.text, j.from, j.to) ?? '').trim();
+    if (known.isNotEmpty && textMatchesScript(known, j.to)) {
+      _emit(j, known, true);
+      return;
     }
 
-    final aiFut = aiPath();
-    unawaited(aiFut.whenComplete(() => aiDone = true));
+    // ۵: ML Kit / مترجمِ آنلاینِ رایگان. سالم = نهایی (بدونِ AI)؛ مشکوک/اصطلاح = برای بازبینیِ AI.
+    String? draft;
+    var healthy = false;
+    Future<bool> tryFree() async {
+      final pv = await _provisional(j); // نمره‌ی ۲ (خوب) یا null
+      if (pv != null) {
+        draft = pv;
+        healthy = !needsAiReview(j.text, pv, j.from, j.to);
+        return true;
+      }
+      if (j.softDraft != null) {
+        draft = j.softDraft; // نمره‌ی ۱ (متوسط) = مشکوک
+        healthy = false;
+        return true;
+      }
+      return false;
+    }
 
-    // ۵: اگر چیزی برای نشان‌دادن نداریم و AI دیر کرد → ترجمه‌ی موقت
+    if (!await tryFree()) {
+      // هیچ پیش‌نویسِ رایگانی نیست → AI نه؛ فقط مسیرِ رایگان را چند بار دوباره امتحان کن
+      var tries = 0;
+      while (j.listeners.isNotEmpty && tries < _kFreeRetryDelays.length) {
+        await Future<void>.delayed(_jitter(_kFreeRetryDelays[tries]));
+        tries++;
+        if (j.listeners.isEmpty) break;
+        final sh = await _pollShared(j);
+        if (sh != null) {
+          await _commit(j, sh);
+          _emit(j, sh, true);
+          return;
+        }
+        if (await tryFree()) break;
+        // بعد از اولین شکست رابط «ترجمه نشد + ↻» نشان می‌دهد؛ تلاشِ رایگان بی‌صدا ادامه دارد
+        if (tries == 1 && j.latest == null) _giveUp(j);
+      }
+    }
+    final d = draft;
+    if (d == null) {
+      if (j.latest == null) _giveUp(j);
+      return;
+    }
+    if (healthy) {
+      await j.svc.cachePut(j.text, j.from, j.to, d);
+      _emit(j, d, true);
+      return;
+    }
+
+    // ۶: مشکوک/اصطلاح → فقط همین‌ها به Worker (DeepSeek) با پیش‌نویس می‌روند
+    j.draft = d;
+    var aiDone = false;
+    final aiFut = _askAi(j).then<String?>((v) => v, onError: (_) => null);
+    unawaited(aiFut.whenComplete(() => aiDone = true));
     if (j.latest == null) {
       await Future.any<void>(<Future<void>>[
         aiFut.then((_) {}),
         Future<void>.delayed(_kGrace),
       ]);
-      if (!aiDone) {
-        final prov = await _provisional(j);
-        if (prov != null) {
-          if (!aiDone && j.latest == null) _emit(j, prov, false);
-        } else if (j.softDraft != null) {
-          // پیش‌نویسِ متوسط: کمی صبر کن؛ اگر کش/AI نرسید همین نشان داده شود (کاربر خالی نمی‌ماند)
-          await Future.any<void>(<Future<void>>[
-            aiFut.then((_) {}),
-            Future<void>.delayed(_kSoftGrace),
-          ]);
-          if (!aiDone && j.latest == null) _emit(j, j.softDraft!, false);
-        }
-      }
+      if (!aiDone && j.latest == null) _emit(j, d, false);
     }
 
     var ai = await aiFut;
@@ -689,6 +741,9 @@ class AiFirstTranslator {
               '${g.base}/api/translate-batch',
               data: {
                 'items': [for (final it in items) it.job.text.trim()],
+                // 🕵️ پیش‌نویس‌های مشکوکِ رایگان برای بازبینیِ DeepSeek ('' = بدونِ پیش‌نویس)
+                if (items.any((it) => (it.job.draft ?? '').trim().isNotEmpty))
+                  'drafts': [for (final it in items) (it.job.draft ?? '').trim()],
                 'source_lang_code': g.from.isEmpty ? 'auto' : g.from,
                 'target_lang_code': g.to,
               },
@@ -972,6 +1027,7 @@ class AiFirstTranslator {
               '${j.base}/api/translate-text',
               data: {
                 'text': j.text.trim(),
+                if ((j.draft ?? '').trim().isNotEmpty) 'draft': j.draft!.trim(),
                 'source_lang_code': j.from.isEmpty ? 'auto' : j.from,
                 'target_lang_code': j.to,
               },

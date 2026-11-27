@@ -26,6 +26,11 @@ import 'shared_translations.dart';
 /// همان DEFAULT_BACKEND_URL وب‌اپ (app/ai/callAI.js)
 const String kDefaultBackendUrl = kBackendBaseUrl;
 
+/// 💸 قانونِ طلاییِ هزینه: true = AI فقط برای ترجمه‌ی «مشکوک/اصطلاح» صدا زده می‌شود؛
+/// نبودِ پیش‌نویسِ رایگان (ML Kit/مترجمِ آنلاین) ≠ مشکوک، پس AI نمی‌رود و متنِ اصلی برمی‌گردد (کاربر با ↻ می‌تواند AI بخواهد).
+/// برای برگشت به رفتارِ قبلی (AI به‌عنوان آخرین چاره) false کن.
+const bool kAiOnlyIfSuspiciousDefault = true;
+
 /// false = انتشار تجاری: سرویس‌های غیررسمی (Google gtx / Lingva / LibreTranslate عمومی) خاموش‌اند. true = مثل قبل.
 const bool kAllowUnofficialTranslators = false;
 
@@ -192,11 +197,33 @@ final RegExp _idiomRe = RegExp(
   r'|back to square one|blessing in disguise|easier said than done|the ball is in your court'
   r'|out of the blue|a dime a dozen|speak of the devil|let sleeping dogs lie'
   r'|barking up the wrong tree|the last straw|add insult to injury|over the moon|on cloud nine'
-  r'|in hot water|throw in the towel|jump on the bandwagon|miss the boat|go the extra mile)\b',
+  r'|in hot water|throw in the towel|jump on the bandwagon|miss the boat|go the extra mile'
+  r'|cost(?:s|ing)? a fortune|cut corners|cross that bridge|devil\x27s advocate|face the music'
+  r'|fall head over heels|get out of hand|hang in there'
+  r'|hit the nail on the head|in the same boat|keep your fingers crossed'
+  r'|learn the ropes|make ends meet|no pain,? no gain|on the fence|once and for all'
+  r'|play it by ear|pull yourself together|rule of thumb|see eye to eye'
+  r'|sit tight|take it easy|the whole nine yards|through thick and thin|time flies'
+  r'|up in the air|walk on eggshells|water under the bridge'
+  r'|you can\x27t judge a book by its cover|when pigs fly|your guess is as good as mine'
+  r'|long time no see|how come|what\x27s up|no worries|fingers crossed)\b',
   caseSensitive: false,
 );
 
 bool _looksIdiomatic(String text) => _idiomRe.hasMatch(text);
+
+/// اصطلاح/عبارتِ ثابت؟ (برای بخش‌های دیگر: اگر true، ترجمه‌ی ماشینی مشکوک است و AI بازبینی می‌کند)
+bool looksIdiomatic(String text) => _looksIdiomatic(text);
+
+/// 🔎 «مشکوک» بودنِ یک ترجمه‌ی رایگان (ML Kit / مترجم آنلاین) — تنها منبعِ تصمیم برای رفتن سراغ AI.
+/// true اگر: اصطلاح باشد، یا فیلترِ سبک (looksLikelyMistranslated) یا فیلترِ عمیق (looksSuspiciousDeep) رد کند.
+/// ترجمه‌ی سالم = false = هیچ هزینه‌ی AI.
+bool needsAiReview(String src, String draft, String from, String to) {
+  if (_looksIdiomatic(src)) return true;
+  if (looksLikelyMistranslated(src, draft, to, sourceLang: from)) return true;
+  // فیلترِ عمیق مثلِ بقیه‌ی مسیرها فقط برای Pro فعال است (همان _deepReviewOn)
+  return ProStatus.isPro && looksSuspiciousDeep(src, draft, from, to);
+}
 
 /// کنترل کیفیتِ سبک — همان looksLikelyMistranslated وب
 bool looksLikelyMistranslated(
@@ -605,7 +632,7 @@ class TranslationService {
     String sourceLang = 'auto',
     AiSettings? aiSettings,
     bool forceVerify = false,
-    bool aiOnlyIfSuspicious = false,
+    bool aiOnlyIfSuspicious = kAiOnlyIfSuspiciousDefault,
   }) async {
     if (text.trim().isEmpty || targetLang.isEmpty) return text;
     if (sourceLang.isNotEmpty &&
@@ -746,7 +773,8 @@ class TranslationService {
       var approved = false;
       if (ai != null && result.trim().isNotEmpty &&
           (bad(result) || same(result))) {
-        final v = await _verifyWithAIQ(text, targetLang, result, ai);
+        final v = await _verifyWithAIQ(text, targetLang, result, ai,
+            sourceLang: sourceLang, viaWorker: false);
         result = v.text;
         approved = v.approved;
       }
@@ -788,7 +816,7 @@ class TranslationService {
     required String sourceLang,
     AiSettings? aiSettings,
     bool forceVerify = false,
-    bool aiOnlyIfSuspicious = false,
+    bool aiOnlyIfSuspicious = kAiOnlyIfSuspiciousDefault,
   }) async {
     final hard = _hardcodedFarewell(text, sourceLang, targetLang);
     if (hard != null) return hard;
@@ -809,7 +837,7 @@ class TranslationService {
     required String sourceLang,
     AiSettings? aiSettings,
     bool forceVerify = false,
-    bool aiOnlyIfSuspicious = false,
+    bool aiOnlyIfSuspicious = kAiOnlyIfSuspiciousDefault,
   }) async {
     // ۰. ML Kit روی گوشی: آنی، رایگان، بدون سقف و بدون هزینه‌ی Worker. اگر مدل آماده نبود
     //    دانلود در پس‌زمینه شروع می‌شود و همین‌بار از مسیر معمولِ زیر ترجمه می‌شود.
@@ -821,11 +849,13 @@ class TranslationService {
       }
       if (ml != null &&
           ml.trim().isNotEmpty &&
-          !(aiSettings != null && _looksIdiomatic(text)) &&
           !looksLikelyMistranslated(text, ml, targetLang,
               sourceLang: sourceLang)) {
-        if (_deepReviewOn(aiSettings) &&
-            looksSuspiciousDeep(text, ml, sourceLang, targetLang)) {
+        // اصطلاح یا مشکوکِ عمیق: پیش‌نویسِ ML Kit نگه داشته می‌شود (برای بازبینیِ AI و به‌عنوان پشتیبان)،
+        // نه دور ریخته؛ وگرنه اگر مترجمِ آنلاین هم جواب نمی‌داد، AI هیچ‌وقت صدا زده نمی‌شد.
+        if ((aiSettings != null && _looksIdiomatic(text)) ||
+            (_deepReviewOn(aiSettings) &&
+                looksSuspiciousDeep(text, ml, sourceLang, targetLang))) {
           mlDraft = ml.trim();
         } else {
           await cachePut(text, sourceLang, targetLang, ml.trim());
@@ -854,7 +884,8 @@ class TranslationService {
                   looksSuspiciousDeep(
                       text, result, sourceLang, targetLang)))) {
         final before = result;
-        result = await _verifyWithAI(text, targetLang, result, aiSettings);
+        result = await _verifyWithAI(text, targetLang, result, aiSettings,
+            sourceLang: sourceLang);
         aiFixed = result.trim() != before.trim();
       }
 
@@ -1322,7 +1353,8 @@ class TranslationService {
   /// ترجمه‌ی متنِ کوتاه از طریقِ Worker با کشِ مشترکِ همه‌ی کاربرها (/api/translate-text).
   /// null = استفاده نشد یا نشد (متنِ بلند، زبانِ پشتیبانی‌نشده، خطای شبکه/سرور) → مسیرِ قبلیِ AI ادامه می‌یابد.
   Future<String?> _viaSharedCache(
-      String text, String target, String source, AiSettings settings) async {
+      String text, String target, String source, AiSettings settings,
+      {String? draft}) async {
     final t = text.trim();
     if (t.isEmpty || t.length > _kSharedMaxChars) return null;
     if (!_englishNames.containsKey(target)) return null;
@@ -1336,6 +1368,8 @@ class TranslationService {
               'text': t,
               'source_lang_code': src,
               'target_lang_code': target,
+              // 🕵️ پیش‌نویسِ مشکوکِ رایگان: Worker (DeepSeek) آن را بازبینی/اصلاح می‌کند و در D1 برای همه می‌ماند
+              if (draft != null && draft.trim().isNotEmpty) 'draft': draft.trim(),
             },
             options: Options(
               contentType: 'application/json',
@@ -1365,8 +1399,21 @@ class TranslationService {
     String source,
     String target,
     String draft,
-    AiSettings settings,
-  ) async {
+    AiSettings settings, {
+    String sourceLang = 'auto',
+    bool viaWorker = true,
+  }) async {
+    // 🧠 اول مسیرِ بازبینیِ Worker (/api/translate-text با draft): زنجیره‌ی DeepSeek + ذخیره در D1 برای همه.
+    // اگر Workerِ قدیمی بود/نشد، همان مسیرِ قبلیِ /api/generate ادامه می‌یابد.
+    if (viaWorker) {
+      final w = await _viaSharedCache(source, target, sourceLang, settings,
+          draft: draft);
+      if (w != null &&
+          w.trim().isNotEmpty &&
+          !(draft.isNotEmpty && w.length > draft.length * 3 + 20)) {
+        return (text: w, approved: true);
+      }
+    }
     try {
       final targetLabel = englishLangName(target);
       final prompt =
@@ -1411,9 +1458,12 @@ class TranslationService {
     String source,
     String target,
     String draft,
-    AiSettings settings,
-  ) async =>
-      (await _verifyWithAIQ(source, target, draft, settings)).text;
+    AiSettings settings, {
+    String sourceLang = 'auto',
+  }) async =>
+      (await _verifyWithAIQ(source, target, draft, settings,
+              sourceLang: sourceLang))
+          .text;
 
   // ═══════════════════════════════════════════════════════════════
   // ترجمه‌ی «داخل جمله»ی یک کلمه — معادلِ translateWordInContext وب
