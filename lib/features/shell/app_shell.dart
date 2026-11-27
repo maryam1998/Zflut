@@ -18,6 +18,7 @@ import '../../core/router/back_handlers.dart';
 import '../../core/storage/local_storage.dart' show localStorageProvider, sharedPrefsProvider;
 import '../../core/storage/prefs_keys.dart';
 import '../../core/translate/mlkit_prefetch.dart';
+import '../../core/translate/translation_service.dart' show TranslationService;
 import '../../core/sync/cloud_sync.dart';
 import '../../core/theme/app_theme_colors.dart';
 import '../grammar/widgets/practice_sheet.dart';
@@ -51,6 +52,35 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   static const String _historyPrefKey = 'tab-history';
 
+  StreamSubscription<String>? _refreshSub;
+
+  static const Map<String, Map<String, String>> _refreshMsgs = {
+    'confirmed': {
+      'fa': 'همین ترجمه تأیید شده است ✓',
+      'en': 'This translation is confirmed ✓',
+      'ar': 'تم تأكيد هذه الترجمة ✓',
+      'es': 'Esta traducción está confirmada ✓',
+      'de': 'Diese Übersetzung ist bestätigt ✓',
+      'fr': 'Cette traduction est confirmée ✓',
+    },
+    'limit': {
+      'fa': 'برای این متن امروز دیگر نمی‌شود رفرش کرد (حداکثر ۲ بار در روز)',
+      'en': 'No more refreshes for this text today (max 2 per day)',
+      'ar': 'لا مزيد من التحديث لهذا النص اليوم (حد أقصى مرتان يوميًا)',
+      'es': 'No hay más actualizaciones para este texto hoy (máx. 2 al día)',
+      'de': 'Für diesen Text heute keine weitere Aktualisierung (max. 2 pro Tag)',
+      'fr': 'Plus d’actualisation pour ce texte aujourd’hui (max. 2 par jour)',
+    },
+    'alt': {
+      'fa': 'ترجمه‌ی جدید به‌عنوان «گزینه‌ی دوم» آمد؛ خودت انتخاب کن',
+      'en': 'The new translation is shown as a second option — your choice',
+      'ar': 'ظهرت الترجمة الجديدة كخيار ثانٍ — اختر ما تفضله',
+      'es': 'La nueva traducción aparece como segunda opción: tú eliges',
+      'de': 'Die neue Übersetzung steht als zweite Option bereit – du entscheidest',
+      'fr': 'La nouvelle traduction apparaît comme deuxième option : à toi de choisir',
+    },
+  };
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +91,21 @@ class _AppShellState extends ConsumerState<AppShell> {
         _history.addAll(saved.where(kRestorableTabs.contains));
       }
     } catch (_) {}
+    // 💬 پیامِ کوتاهِ ↻ (تأییدِ هوشمند / سقفِ روزانه / گزینه‌ی دوم)
+    _refreshSub = TranslationService.refreshNotices.stream.listen((kind) {
+      if (!mounted) return;
+      final m = _refreshMsgs[kind];
+      if (m == null) return;
+      final ui = ref.read(appPrefsProvider).uiLang;
+      final msg = m[ui] ?? m['en']!;
+      final sm = ScaffoldMessenger.maybeOf(context);
+      sm?.hideCurrentSnackBar();
+      sm?.showSnackBar(SnackBar(
+        content: Text(msg),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ));
+    });
     // 📥 کاربری که قبلاً زبان‌هایش را انتخاب کرده: مدل‌های ML Kitِ جامانده را بی‌صدا (با Wi‑Fi یا داده‌ی موبایل) کامل کن
     try {
       if (ref.read(localStorageProvider).readJson(PrefsKeys.languageSelection).isNotEmpty) {
@@ -68,6 +113,12 @@ class _AppShellState extends ConsumerState<AppShell> {
         MlKitPrefetch.schedule(sel.native, sel.targets);
       }
     } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _refreshSub?.cancel();
+    super.dispose();
   }
 
   void _persistNav() {

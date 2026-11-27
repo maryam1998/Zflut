@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/ai_settings_provider.dart';
+import '../providers/app_prefs_provider.dart';
 import '../providers/language_selection_provider.dart';
 import '../providers/speech_provider.dart';
 import '../providers/translation_provider.dart';
@@ -88,6 +89,7 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
         sourceLang: widget.langCode,
         aiSettings: ai,
         previous: _res[l],
+        keepPrevious: true,
       ))
           .trim();
     } catch (_) {}
@@ -101,6 +103,65 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
         _res = {..._res, l: r};
       }
     });
+  }
+
+  static const Map<String, String> _altLabel = {
+    'fa': 'گزینه‌ی دوم',
+    'en': 'Second option',
+    'ar': 'خيار ثانٍ',
+    'es': 'Segunda opción',
+    'de': 'Zweite Option',
+    'fr': 'Deuxième option',
+  };
+
+  /// 🗂️ ↻ ترجمه‌ی قبلی را نگه داشته و جدید را «گزینه‌ی دوم» کرده؛ کاربر خودش انتخاب می‌کند.
+  Widget? _altRow(String l, String current) {
+    final svc = ref.read(translationServiceProvider);
+    final alt = svc.alternative(widget.word, l);
+    if (alt == null || alt.trim() == current.trim()) return null;
+    final ui = ref.read(appPrefsProvider).uiLang;
+    final label = _altLabel[ui] ?? _altLabel['en']!;
+    final small = (widget.style.fontSize ?? 12) * 0.85;
+    return Padding(
+      padding: const EdgeInsets.only(top: 2, bottom: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text('$label: $alt',
+                textDirection: _dirOf(alt),
+                style: widget.style.copyWith(
+                    fontSize: small,
+                    fontStyle: FontStyle.italic,
+                    color: const Color(0xFFC9972B))),
+          ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () async {
+              final v = await svc.chooseAlternative(widget.word, widget.langCode, l);
+              if (!mounted || v == null) return;
+              _trCache['${widget.langCode}|$l|${widget.word}'] = v;
+              setState(() => _res = {..._res, l: v});
+            },
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(Icons.check_circle_outline, size: 18, color: Color(0xFF2E9E6B)),
+            ),
+          ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () async {
+              await svc.dismissAlternative(widget.word, l);
+              if (mounted) setState(() {});
+            },
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(Icons.close, size: 16, color: Color(0xFF9A9A9A)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _rowRefreshButton(String l) {
@@ -140,6 +201,7 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
           sourceLang: widget.langCode,
           aiSettings: ai,
           previous: _res[l],
+          keepPrevious: true,
         ))
             .trim();
       } catch (_) {}
@@ -289,7 +351,8 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
               ],
             )
           : txt;
-      lines.add(widget.speakable || widget.refreshable
+      final altW = widget.refreshable ? _altRow(l, t) : null;
+      final Widget mainRow = widget.speakable || widget.refreshable
           ? Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -306,7 +369,16 @@ class _WordTranslationsState extends ConsumerState<WordTranslations> {
                 if (widget.refreshable) _rowRefreshButton(l),
               ],
             )
-          : line);
+          : line;
+      lines.add(altW == null
+          ? mainRow
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: widget.centered
+                  ? CrossAxisAlignment.center
+                  : CrossAxisAlignment.start,
+              children: [mainRow, altW],
+            ));
     }
     return Column(
       mainAxisSize: MainAxisSize.min,

@@ -505,6 +505,14 @@ class TranslationService {
   static final StreamController<void> pinEvents =
       StreamController<void>.broadcast();
 
+  /// پیامِ کوتاه بعد از ↻ (AppShell نشانش می‌دهد): 'confirmed' = ترجمه‌ی جدید با قبلی یکی بود (بدونِ AI تأیید شد)،
+  /// 'limit' = سقفِ روزانه‌ی ↻ برای این متن پر شده، 'alt' = ترجمه‌ی جدید به‌عنوان «گزینه‌ی دوم» کنارِ قبلی ماند.
+  static final StreamController<String> refreshNotices =
+      StreamController<String>.broadcast();
+
+  /// سقفِ ↻ برای هر متن (و هر زبانِ مقصد) در روز، روی همین دستگاه.
+  static const int kRefreshPerTextPerDay = 2;
+
   TranslationService()
       : _dio = Dio(BaseOptions(
           connectTimeout: const Duration(milliseconds: _kProviderTimeoutMs),
@@ -698,23 +706,97 @@ class TranslationService {
   /// مشکوک بود (یا عیناً همان ترجمه‌ی قبلی بود) یک AI به‌عنوان ناظر بررسی/اصلاح
   /// می‌کند؛ اگر باز هم نشد، آخرین چاره ترجمه‌ی مستقیم با AI. سقفِ زمانیِ کل
   /// ۲۵ ثانیه است تا دکمه هیچ‌وقت گیر نکند.
+  // ═══ ↻ حرفه‌ای: تأییدِ هوشمند + سقفِ روزانه + نگه‌داشتنِ ترجمه‌ی قبلی ═══
+  String _refreshCountKey(String text, String to) {
+    final d = DateTime.now().toUtc();
+    final day = '${d.year}${d.month.toString().padLeft(2, '0')}${d.day.toString().padLeft(2, '0')}';
+    return '__rf__::$day::$to::${_normPin(text)}';
+  }
+
+  String _altKey(String text, String to) => '__alt__::$to::${_normPin(text)}';
+
+  /// «گزینه‌ی دوم» (ترجمه‌ی جدیدِ ↻ که جایگزینِ قبلی نشد). null = نیست.
+  String? alternative(String text, String to) {
+    final v = _db.peek(_altKey(text, to));
+    return (v == null || v.trim().isEmpty) ? null : v;
+  }
+
+  /// کاربر گزینه‌ی دوم را برگزید → قفل می‌شود و جای قبلی را می‌گیرد.
+  Future<String?> chooseAlternative(String text, String from, String to) async {
+    final v = alternative(text, to);
+    if (v == null) return null;
+    await pinPut(text, from, to, v);
+    await _db.put(_altKey(text, to), '');
+    return v;
+  }
+
+  /// کاربر گزینه‌ی دوم را نخواست → کنار گذاشته می‌شود (ترجمه‌ی قبلی می‌ماند).
+  Future<void> dismissAlternative(String text, String to) =>
+      _db.put(_altKey(text, to), '');
+
   Future<String> retranslate({
     required String text,
     required String targetLang,
     String sourceLang = 'en',
     AiSettings? aiSettings,
     String? previous,
+    // true = ترجمه‌ی جدید جایگزینِ قبلی نمی‌شود؛ به‌عنوان «گزینه‌ی دوم» ذخیره می‌شود (alternative) و قبلی برمی‌گردد.
+    bool keepPrevious = false,
   }) async {
     final hard = _hardcodedFarewell(text, sourceLang, targetLang);
     if (hard != null) return hard;
+
+    // ترجمه‌ی فعلی (برای مقایسه/سقف): آنچه UI نشان می‌دهد، وگرنه قفل‌شده/کش
+    var base = previous?.trim() ?? '';
+    if (base.isEmpty) {
+      base = pinned(text, targetLang)?.trim() ??
+          _db.peek(_cacheKey(text, sourceLang, targetLang))?.trim() ??
+          '';
+    }
+    final hasBase = base.isNotEmpty && base.toLowerCase() != text.trim().toLowerCase();
+
+    // 🚦 سقفِ روزانه برای هر متن: بعد از N بار، بدونِ هیچ تماسِ شبکه/AI همان ترجمه‌ی فعلی
+    if (hasBase) {
+      final ck = _refreshCountKey(text, targetLang);
+      final n = int.tryParse(await _db.get(ck) ?? '') ?? 0;
+      if (n >= kRefreshPerTextPerDay) {
+        refreshNotices.add('limit');
+        return base;
+      }
+      await _db.put(ck, '${n + 1}');
+    }
+
+    var sameHit = false;
     final r0 = await _retranslate0(
       text: text,
       targetLang: targetLang,
       sourceLang: sourceLang,
       aiSettings: aiSettings,
-      previous: previous,
+      previous: hasBase ? base : previous,
+      onSame: () => sameHit = true,
     );
-    final out = _fixFarewell(text, sourceLang, targetLang, r0.text);
+    // ✅ تأییدِ هوشمند: ترجمه‌ی جدید با قبلی یکی بود → AI صدا زده نشد
+    if (sameHit && hasBase) {
+      refreshNotices.add('confirmed');
+      return base;
+    }
+    final out0 = _fixFarewell(text, sourceLang, targetLang, r0.text);
+
+    // 🗂️ نگه‌داشتنِ قبلی: جدید فقط «گزینه‌ی دوم» می‌شود
+    if (keepPrevious && hasBase) {
+      final o = out0.trim();
+      // _retranslate0 در کشِ عادی نوشته بود؛ قبلی را برگردان (قفل‌شده‌ها که دست‌نخورده‌اند)
+      await _db.put(_cacheKey(text, sourceLang, targetLang), base);
+      if (o.isNotEmpty &&
+          o != base &&
+          o.toLowerCase() != text.trim().toLowerCase() &&
+          !looksLikelyMistranslated(text, o, targetLang, sourceLang: sourceLang)) {
+        await _db.put(_altKey(text, targetLang), o);
+        refreshNotices.add('alt');
+      }
+      return base;
+    }
+    final out = out0;
     // 📌 نتیجه‌ی ↻ برای همیشه روی دستگاه قفل می‌شود (حتی بعد از بستن/آپدیتِ برنامه)
     final o = out.trim();
     if (o.isNotEmpty &&
@@ -740,6 +822,7 @@ class TranslationService {
     String sourceLang = 'en',
     AiSettings? aiSettings,
     String? previous,
+    void Function()? onSame,
   }) async {
     if (text.trim().isEmpty) return (text: text, aiApproved: false);
     final ai = aiSettings;
@@ -771,6 +854,12 @@ class TranslationService {
           _markCognate(text, result, targetLang, sourceLang);
         }
       } catch (_) {}
+
+      // ✅ تأییدِ هوشمند: مترجم‌ها همان ترجمه‌ی قبلیِ سالم را دادند → AI لازم نیست
+      if (onSame != null && result.trim().isNotEmpty && !bad(result) && same(result)) {
+        onSame();
+        return (text: result, aiApproved: false);
+      }
 
       // ۲. ناظر AI: فقط اگر مشکوک بود یا همان ترجمه‌ی قبلی تکرار شد
       var approved = false;
