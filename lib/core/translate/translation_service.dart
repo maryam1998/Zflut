@@ -749,6 +749,9 @@ class TranslationService {
     return true;
   }
 
+  // 🛟 آخرین _retranslate0 با «چاره‌ی آخر» (ML Kit/کش) جواب داد؛ چنین ترجمه‌ای برای همیشه قفل (pin) نمی‌شود
+  bool _retranslateWeak = false;
+
   Future<String> retranslate({
     required String text,
     required String targetLang,
@@ -797,6 +800,7 @@ class TranslationService {
       refreshNotices.add('confirmed');
       return base;
     }
+    final weak = _retranslateWeak;
     final out0 = _fixFarewell(text, sourceLang, targetLang, r0.text);
 
     // 🗂️ نگه‌داشتنِ قبلی: جدید فقط «گزینه‌ی دوم» می‌شود
@@ -816,7 +820,8 @@ class TranslationService {
     final out = out0;
     // 📌 نتیجه‌ی ↻ برای همیشه روی دستگاه قفل می‌شود (حتی بعد از بستن/آپدیتِ برنامه)
     final o = out.trim();
-    if (o.isNotEmpty &&
+    if (!weak &&
+        o.isNotEmpty &&
         o.toLowerCase() != text.trim().toLowerCase() &&
         !looksLikelyMistranslated(text, o, targetLang,
             sourceLang: sourceLang)) {
@@ -841,6 +846,7 @@ class TranslationService {
     String? previous,
     void Function()? onSame,
   }) async {
+    _retranslateWeak = false;
     if (text.trim().isEmpty) return (text: text, aiApproved: false);
     final ai = aiSettings;
     final prev = previous?.trim();
@@ -851,11 +857,26 @@ class TranslationService {
     bool same(String r) =>
         prev != null && prev.isNotEmpty && r.trim() == prev;
 
+    // 🛟 چاره‌ی آخر وقتی مترجم‌های رایگان/AI هیچ‌کدام جواب ندادند (مثلاً اینترنتِ محدود یا AI در دسترس نیست):
+    // ۱) ترجمه‌ی ML Kit روی گوشی  ۲) ترجمه‌ی موجود در کش. فقط وقتی ترجمه‌ی قبلی‌ای در کار نیست
+    // (ردیفِ «ترجمه نشد»)؛ وگرنه ↻ نباید ترجمه‌ی ضعیف‌تر را به‌عنوان گزینه‌ی دوم بیاورد.
+    String? mlSaved;
+    String? lastResort() {
+      if (prev != null && prev.isNotEmpty) return null;
+      final m = mlSaved?.trim() ?? '';
+      if (m.isNotEmpty && !bad(m)) return m;
+      final c =
+          _db.peek(_cacheKey(text, sourceLang, targetLang))?.trim() ?? '';
+      if (c.isNotEmpty && !bad(c)) return c;
+      return null;
+    }
+
     Future<({String text, bool aiApproved})> run() async {
-      // ۰. ML Kit (فقط برای تشخیصِ لغتِ هم‌شکل مثل hospital؛ نتیجه‌اش جایگزین نمی‌شود)
+      // ۰. ML Kit (برای تشخیصِ لغتِ هم‌شکل مثل hospital؛ و نگه‌داشتن به‌عنوانِ چاره‌ی آخر)
       try {
         final ml = await _viaMlKit(text, targetLang, sourceLang);
         if (ml != null) {
+          mlSaved = ml;
           _markCognate(text, ml, targetLang, sourceLang, strict: false);
         }
       } catch (_) {}
@@ -903,16 +924,21 @@ class TranslationService {
           }
         } catch (_) {}
       }
-      // اگر ترجمه‌ی سالمی هست (حتی تکراری) همان را بده؛ وگرنه متن اصلی
-      return (result.trim().isNotEmpty && !bad(result))
-          ? (text: result, aiApproved: false)
-          : (text: text, aiApproved: false);
+      // اگر ترجمه‌ی سالمی هست (حتی تکراری) همان را بده؛ وگرنه ML Kit/کش؛ وگرنه متن اصلی
+      if (result.trim().isNotEmpty && !bad(result)) {
+        return (text: result, aiApproved: false);
+      }
+      final lr = lastResort();
+      if (lr != null) _retranslateWeak = true;
+      return (text: lr ?? text, aiApproved: false);
     }
 
     try {
       return await run().timeout(const Duration(seconds: 25));
     } catch (_) {
-      return (text: text, aiApproved: false);
+      final lr = lastResort();
+      if (lr != null) _retranslateWeak = true;
+      return (text: lr ?? text, aiApproved: false);
     }
   }
 
