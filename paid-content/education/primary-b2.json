@@ -4293,6 +4293,630 @@
      "fa": ""
     }
    ]
+  },
+  {
+   "key": "law",
+   "fa": "حقوق و قانون",
+   "en": "Law & Rights",
+   "group": "life",
+   "words": [
+    {
+     "id": 702202,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "legal",
+     "fa": ""
+    },
+    {
+     "id": 701907,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "illegal",
+     "fa": ""
+    },
+    {
+     "id": 702205,
+     "level": "C1",
+     "pos": "noun",
+     "en": "legislation",
+     "fa": ""
+    },
+    {
+     "id": 703178,
+     "level": "B2",
+     "pos": "noun",
+     "en": "regulation",
+     "fa": ""
+    },
+    {
+     "id": 703177,
+     "level": "B2",
+     "pos": "verb",
+     "en": "regulate",
+     "fa": ""
+    },
+    {
+     "id": 703313,
+     "level": "C1",
+     "pos": "noun",
+     "en": "ruling",
+     "fa": ""
+    },
+    {
+     "id": 700803,
+     "level": "C1",
+     "pos": "noun",
+     "en": "constitution",
+     "fa": ""
+    },
+    {
+     "id": 701632,
+     "level": "B2",
+     "pos": "noun",
+     "en": "freedom",
+     "fa": ""
+    },
+    {
+     "id": 702224,
+     "level": "C1",
+     "pos": "noun",
+     "en": "liberty",
+     "fa": ""
+    },
+    {
+     "id": 702975,
+     "level": "C1",
+     "pos": "noun",
+     "en": "privilege",
+     "fa": ""
+    },
+    {
+     "id": 702596,
+     "level": "B2",
+     "pos": "noun",
+     "en": "obligation",
+     "fa": ""
+    },
+    {
+     "id": 702221,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "liable",
+     "fa": ""
+    },
+    {
+     "id": 700897,
+     "level": "B1",
+     "pos": "noun",
+     "en": "court",
+     "fa": ""
+    },
+    {
+     "id": 702126,
+     "level": "B2",
+     "pos": "noun",
+     "en": "jury",
+     "fa": ""
+    },
+    {
+     "id": 704126,
+     "level": "C1",
+     "pos": "noun",
+     "en": "verdict",
+     "fa": ""
+    },
+    {
+     "id": 702180,
+     "level": "C1",
+     "pos": "noun",
+     "en": "lawsuit",
+     "fa": ""
+    },
+    {
+     "id": 703734,
+     "level": "C1",
+     "pos": "verb",
+     "en": "sue",
+     "fa": ""
+    },
+    {
+     "id": 705336,
+     "level": "C1",
+     "pos": "other",
+     "en": "plaintiff",
+     "fa": ""
+    },
+    {
+     "id": 703025,
+     "level": "C1",
+     "pos": "noun",
+     "en": "prosecutor",
+     "fa": ""
+    },
+    {
+     "id": 703024,
+     "level": "C1",
+     "pos": "noun",
+     "en": "prosecution",
+     "fa": ""
+    },
+    {
+     "id": 700285,
+     "level": "C1",
+     "pos": "noun",
+     "en": "attorney",
+     "fa": ""
+    },
+    {
+     "id": 703859,
+     "level": "C1",
+     "pos": "noun",
+     "en": "testimony",
+     "fa": ""
+    },
+    {
+     "id": 703858,
+     "level": "C1",
+     "pos": "verb",
+     "en": "testify",
+     "fa": ""
+    },
+    {
+     "id": 702005,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "innocent",
+     "fa": ""
+    },
+    {
+     "id": 700847,
+     "level": "C1",
+     "pos": "verb",
+     "en": "convict",
+     "fa": ""
+    },
+    {
+     "id": 700848,
+     "level": "C1",
+     "pos": "noun",
+     "en": "conviction",
+     "fa": ""
+    },
+    {
+     "id": 704340,
+     "level": "C1",
+     "pos": "verb",
+     "en": "acquit",
+     "fa": ""
+    },
+    {
+     "id": 702774,
+     "level": "B2",
+     "pos": "noun",
+     "en": "penalty",
+     "fa": ""
+    },
+    {
+     "id": 701937,
+     "level": "C1",
+     "pos": "noun",
+     "en": "imprisonment",
+     "fa": ""
+    },
+    {
+     "id": 101102,
+     "level": "C1",
+     "pos": "noun",
+     "en": "custody",
+     "fa": ""
+    },
+    {
+     "id": 700320,
+     "level": "C1",
+     "pos": "noun",
+     "en": "bail",
+     "fa": ""
+    },
+    {
+     "id": 700235,
+     "level": "B1",
+     "pos": "noun",
+     "en": "arrest",
+     "fa": ""
+    },
+    {
+     "id": 701074,
+     "level": "C1",
+     "pos": "noun",
+     "en": "detention",
+     "fa": ""
+    },
+    {
+     "id": 700046,
+     "level": "B2",
+     "pos": "verb",
+     "en": "accuse",
+     "fa": ""
+    },
+    {
+     "id": 700137,
+     "level": "C1",
+     "pos": "noun",
+     "en": "allegation",
+     "fa": ""
+    },
+    {
+     "id": 702618,
+     "level": "B2",
+     "pos": "noun",
+     "en": "offence",
+     "fa": ""
+    },
+    {
+     "id": 704148,
+     "level": "C1",
+     "pos": "noun",
+     "en": "violation",
+     "fa": ""
+    },
+    {
+     "id": 704147,
+     "level": "C1",
+     "pos": "verb",
+     "en": "violate",
+     "fa": ""
+    },
+    {
+     "id": 700732,
+     "level": "C1",
+     "pos": "noun",
+     "en": "compliance",
+     "fa": ""
+    },
+    {
+     "id": 701321,
+     "level": "C1",
+     "pos": "noun",
+     "en": "enforcement",
+     "fa": ""
+    },
+    {
+     "id": 700004,
+     "level": "C1",
+     "pos": "verb",
+     "en": "abolish",
+     "fa": ""
+    },
+    {
+     "id": 700162,
+     "level": "C1",
+     "pos": "verb",
+     "en": "amend",
+     "fa": ""
+    },
+    {
+     "id": 700163,
+     "level": "C1",
+     "pos": "noun",
+     "en": "amendment",
+     "fa": ""
+    },
+    {
+     "id": 702125,
+     "level": "C1",
+     "pos": "noun",
+     "en": "jurisdiction",
+     "fa": ""
+    },
+    {
+     "id": 702913,
+     "level": "C1",
+     "pos": "noun",
+     "en": "precedent",
+     "fa": ""
+    },
+    {
+     "id": 700203,
+     "level": "B2",
+     "pos": "noun",
+     "en": "appeal",
+     "fa": ""
+    },
+    {
+     "id": 702700,
+     "level": "C1",
+     "pos": "verb",
+     "en": "overturn",
+     "fa": ""
+    },
+    {
+     "id": 704088,
+     "level": "C1",
+     "pos": "verb",
+     "en": "uphold",
+     "fa": ""
+    },
+    {
+     "id": 703417,
+     "level": "C1",
+     "pos": "noun",
+     "en": "settlement",
+     "fa": ""
+    },
+    {
+     "id": 700719,
+     "level": "C1",
+     "pos": "noun",
+     "en": "compensation",
+     "fa": ""
+    },
+    {
+     "id": 700637,
+     "level": "B1",
+     "pos": "noun",
+     "en": "clause",
+     "fa": ""
+    },
+    {
+     "id": 703007,
+     "level": "B2",
+     "pos": "verb",
+     "en": "prohibit",
+     "fa": ""
+    },
+    {
+     "id": 700328,
+     "level": "B1",
+     "pos": "noun",
+     "en": "ban",
+     "fa": ""
+    },
+    {
+     "id": 703253,
+     "level": "B2",
+     "pos": "noun",
+     "en": "restriction",
+     "fa": ""
+    },
+    {
+     "id": 700860,
+     "level": "C1",
+     "pos": "noun",
+     "en": "copyright",
+     "fa": ""
+    },
+    {
+     "id": 702759,
+     "level": "C1",
+     "pos": "noun",
+     "en": "patent",
+     "fa": ""
+    },
+    {
+     "id": 703963,
+     "level": "C1",
+     "pos": "noun",
+     "en": "trademark",
+     "fa": ""
+    },
+    {
+     "id": 701134,
+     "level": "C1",
+     "pos": "noun",
+     "en": "discrimination",
+     "fa": ""
+    },
+    {
+     "id": 701357,
+     "level": "C1",
+     "pos": "noun",
+     "en": "equality",
+     "fa": ""
+    },
+    {
+     "id": 500329,
+     "level": "B1",
+     "pos": "noun",
+     "en": "justice",
+     "fa": ""
+    },
+    {
+     "id": 702001,
+     "level": "C1",
+     "pos": "noun",
+     "en": "injustice",
+     "fa": ""
+    },
+    {
+     "id": 940243,
+     "level": "B2",
+     "pos": "noun",
+     "en": "rights",
+     "fa": ""
+    },
+    {
+     "id": 940244,
+     "level": "B2",
+     "pos": "noun",
+     "en": "human rights",
+     "fa": ""
+    },
+    {
+     "id": 940245,
+     "level": "B2",
+     "pos": "noun",
+     "en": "civil rights",
+     "fa": ""
+    },
+    {
+     "id": 940246,
+     "level": "B2",
+     "pos": "noun",
+     "en": "freedom of speech",
+     "fa": ""
+    },
+    {
+     "id": 940247,
+     "level": "C1",
+     "pos": "noun",
+     "en": "right to privacy",
+     "fa": ""
+    },
+    {
+     "id": 940248,
+     "level": "C1",
+     "pos": "noun",
+     "en": "rule of law",
+     "fa": ""
+    },
+    {
+     "id": 940250,
+     "level": "B2",
+     "pos": "noun",
+     "en": "lawmaker",
+     "fa": ""
+    },
+    {
+     "id": 940251,
+     "level": "C1",
+     "pos": "noun",
+     "en": "statute",
+     "fa": ""
+    },
+    {
+     "id": 940252,
+     "level": "C1",
+     "pos": "verb",
+     "en": "repeal",
+     "fa": ""
+    },
+    {
+     "id": 940253,
+     "level": "C1",
+     "pos": "verb",
+     "en": "ratify",
+     "fa": ""
+    },
+    {
+     "id": 940256,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "legally binding",
+     "fa": ""
+    },
+    {
+     "id": 940257,
+     "level": "C1",
+     "pos": "noun",
+     "en": "entitlement",
+     "fa": ""
+    },
+    {
+     "id": 940258,
+     "level": "C1",
+     "pos": "noun",
+     "en": "liability",
+     "fa": ""
+    },
+    {
+     "id": 940260,
+     "level": "C1",
+     "pos": "noun",
+     "en": "infringement",
+     "fa": ""
+    },
+    {
+     "id": 940261,
+     "level": "C1",
+     "pos": "noun",
+     "en": "intellectual property",
+     "fa": ""
+    },
+    {
+     "id": 940262,
+     "level": "B2",
+     "pos": "noun",
+     "en": "terms and conditions",
+     "fa": ""
+    },
+    {
+     "id": 940263,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "confidential",
+     "fa": ""
+    },
+    {
+     "id": 940264,
+     "level": "C1",
+     "pos": "noun",
+     "en": "confidentiality",
+     "fa": ""
+    },
+    {
+     "id": 940265,
+     "level": "C1",
+     "pos": "noun",
+     "en": "defendant",
+     "fa": ""
+    },
+    {
+     "id": 940266,
+     "level": "C1",
+     "pos": "noun",
+     "en": "acquittal",
+     "fa": ""
+    },
+    {
+     "id": 940268,
+     "level": "B2",
+     "pos": "noun",
+     "en": "fair trial",
+     "fa": ""
+    },
+    {
+     "id": 940269,
+     "level": "C1",
+     "pos": "noun",
+     "en": "due process",
+     "fa": ""
+    },
+    {
+     "id": 940270,
+     "level": "C1",
+     "pos": "noun",
+     "en": "burden of proof",
+     "fa": ""
+    },
+    {
+     "id": 940274,
+     "level": "B2",
+     "pos": "noun",
+     "en": "criminal record",
+     "fa": ""
+    },
+    {
+     "id": 940275,
+     "level": "B2",
+     "pos": "noun",
+     "en": "criminal law",
+     "fa": ""
+    },
+    {
+     "id": 940277,
+     "level": "B2",
+     "pos": "noun",
+     "en": "international law",
+     "fa": ""
+    },
+    {
+     "id": 940281,
+     "level": "B2",
+     "pos": "noun",
+     "en": "law enforcement",
+     "fa": ""
+    }
+   ]
   }
  ]
 }
