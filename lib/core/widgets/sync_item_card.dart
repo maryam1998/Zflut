@@ -488,6 +488,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
   bool _failed = false;
   bool _retrying = false;
   bool _retryFailed = false;
+  bool _forceBack = false; // بعد از ↻: ترجمه‌ی برگشتی همیشه نشان داده شود تا کاربر نتیجه را بسنجد
   final GlobalKey _refreshKey = GlobalKey();
   int _gen = 0;
   bool _fromKnown = false; // متنِ فعلی از فایلِ داده آمده و هنوز AI جایگزینش نکرده
@@ -512,6 +513,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       _failed = false;
       _retryFailed = false;
       _retrying = false;
+      _forceBack = false;
       _resolve();
     }
   }
@@ -701,6 +703,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
     setState(() {
       _retrying = true;
       _retryFailed = false;
+      _forceBack = true;
     });
 
     String? result;
@@ -941,6 +944,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                 text: text,
                 en: widget.en,
                 sourceLang: widget.sourceLang,
+                alwaysShow: _forceBack,
                 compact: widget.compact,
               ),
             if (altRow != null) altRow,
