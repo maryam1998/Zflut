@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'core/auth/worker_auth.dart';
 import 'core/config/app_config.dart';
+import 'core/data/paid_content.dart' show PaidContent;
 import 'core/storage/durable_store.dart';
 import 'core/storage/local_storage.dart' show sharedPrefsProvider;
 import 'core/sync/app_restarter.dart';
@@ -86,6 +87,7 @@ Future<void> main() async {
     if (supabaseError == null) {
       WorkerAuth.listen();
       unawaited(WorkerAuth.ensureFresh());
+      PaidContent.startEarlyPrefetch(); // 🚀 پیش‌دانلودِ محتوای پولی از همان لحظه‌ی Pro بودن
     }
 
     // نسخه‌ی دائمیِ داده‌های کاربر (IndexedDB روی وب / فایل روی موبایل):

@@ -266,6 +266,63 @@ class PaidContent {
     if (gotAny && ProStatus.isPro) revision.value++;
   }
 
+  // ───────────── 🚀 پیش‌دانلودِ زودهنگام (همان لحظه‌ای که اپ می‌فهمد کاربر Pro است) ─────────────
+  // قبلاً پیش‌دانلود فقط بعد از بارگذاریِ تبِ مکالمه شروع می‌شد. حالا با اولین لحظه‌ای که
+  // وضعیتِ Pro معلوم شود (باز شدنِ اپ با Pro ذخیره‌شده، یا Pro شدن/ورود) در پس‌زمینه شروع می‌شود.
+  // خودِ دانلودها همان prefetchTopics/prefetchEducation هستند (قفلِ تکراری‌نشدن دارند).
+  static bool _earlyHooked = false;
+
+  /// یک‌بار در شروعِ اپ صدا زده شود؛ بعد از آن خودکار به تغییرِ وضعیتِ Pro گوش می‌دهد.
+  static void startEarlyPrefetch() {
+    if (_earlyHooked) return;
+    _earlyHooked = true;
+    ProStatus.pro.addListener(() {
+      if (ProStatus.isPro) unawaited(_earlyPrefetchNow());
+    });
+    if (ProStatus.isPro) unawaited(_earlyPrefetchNow());
+  }
+
+  static Future<void> _earlyPrefetchNow() async {
+    try {
+      // چند ثانیه صبر تا بالا آمدنِ اولیه‌ی اپ کند نشود
+      await Future<void>.delayed(const Duration(seconds: 2));
+      if (!ProStatus.isPro) return;
+      final ids = await _allTopicIds();
+      await Future.wait([
+        if (ids.isNotEmpty) prefetchTopics(ids),
+        prefetchEducation(),
+      ]);
+    } catch (e) {
+      debugPrint('PaidContent.earlyPrefetch: $e');
+    }
+  }
+
+  /// شناسه‌ی همه‌ی موضوع‌های مکالمه (همان فهرستی که ConversationRepository می‌سازد).
+  static Future<List<String>> _allTopicIds() async {
+    final ids = <String>[];
+    for (final f in const [
+      'assets/data/conversations_index.json',
+      'assets/data/primary_conversations_index.json',
+      'assets/data/primary_a2_conversations_index.json',
+      'assets/data/primary_b1_conversations_index.json',
+      'assets/data/primary_b2_conversations_index.json',
+    ]) {
+      try {
+        final j = jsonDecode(await rootBundle.loadString(f));
+        final l = j is Map ? j['list'] : null;
+        if (l is! List) continue;
+        for (final e in l) {
+          if (e is! Map) continue;
+          final id = e['id']?.toString() ?? '';
+          if (id.isNotEmpty) ids.add(id);
+        }
+      } catch (e) {
+        debugPrint('PaidContent.allTopicIds($f): $e');
+      }
+    }
+    return ids;
+  }
+
   static bool _existsSync(String id) {
     try {
       return File('${_convDirPath ?? ''}/$id.json').existsSync();
