@@ -1,0 +1,285 @@
+{
+  "topic": "News and Current Events Analysis",
+  "scenarios": [
+    {
+      "scenario": "Headlines and framing",
+      "context": "Two colleagues notice how one event is described in very different words.",
+      "speakerA": [
+        {
+          "en": "Look at these two headlines about the strike. One says 'Workers demand fair pay' and the other says 'Strikers paralyse the city'.",
+          "level": "B2"
+        },
+        {
+          "en": "So neither headline is exactly false, but each one nudges the reader towards a conclusion.",
+          "level": "B2"
+        },
+        {
+          "en": "Isn't that a bit cynical? Surely journalists simply need short, eye-catching titles.",
+          "level": "B2"
+        },
+        {
+          "en": "Fair enough. I suppose the quotations they select matter just as much.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a useful checklist. I'll try applying it to tomorrow's front pages.",
+          "level": "B2"
+        },
+        {
+          "en": "Then reading critically is less about spotting lies and more about noticing what has been left out.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "The facts are probably identical. It's the framing that differs, and the choice of words shapes how we feel about the event.",
+          "level": "B2"
+        },
+        {
+          "en": "Precisely. That's why I always read beyond the headline and ask who benefits from a particular emphasis.",
+          "level": "B2"
+        },
+        {
+          "en": "Partly, but the choice of verbs and adjectives is rarely accidental. Had the editor wanted a neutral headline, 'Transport strike begins' would have been enough.",
+          "level": "B2"
+        },
+        {
+          "en": "They do. Look at who is quoted first, who gets the last word, and whose voice is missing altogether.",
+          "level": "B2"
+        },
+        {
+          "en": "Do. You'll be surprised how often two reports of one event tell almost two different stories.",
+          "level": "B2"
+        },
+        {
+          "en": "Well put. That's the difference between consuming the news and analysing it.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Breaking news: facts versus speculation",
+      "context": "Two friends follow a developing story about a factory fire.",
+      "speakerA": [
+        {
+          "en": "Have you seen the news about the factory fire? Some reports say it was an accident, while others suggest sabotage.",
+          "level": "B2"
+        },
+        {
+          "en": "But one channel quotes an anonymous source who says the alarm system had been switched off.",
+          "level": "B2"
+        },
+        {
+          "en": "Doesn't that make the news less useful? By the time it's confirmed, everyone has moved on.",
+          "level": "B2"
+        },
+        {
+          "en": "That's true. A story was retracted last year, yet thousands of people had already passed it on.",
+          "level": "B2"
+        },
+        {
+          "en": "So what should I do while the facts are still unclear?",
+          "level": "B2"
+        },
+        {
+          "en": "That sounds sensible. I'll follow the official updates instead of the rumours.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "It's too early to say. With breaking news, the first reports are often incomplete, and sometimes they're simply wrong.",
+          "level": "B2"
+        },
+        {
+          "en": "That's worth noting, but a single unnamed source isn't proof. I'd wait until a second source or an official investigation confirms it.",
+          "level": "B2"
+        },
+        {
+          "en": "Speed and accuracy pull in opposite directions. Not only do rushed stories contain mistakes, but corrections rarely attract as much attention as the original claim.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Were journalists more patient, there would be fewer retractions, though they might lose readers to faster websites.",
+          "level": "B2"
+        },
+        {
+          "en": "Separate what has been confirmed from what is speculation, and be prepared to change your mind as new evidence emerges.",
+          "level": "B2"
+        },
+        {
+          "en": "Good. And if you can't resist sharing something, at least say that it's unconfirmed.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Analysing a new government policy",
+      "context": "Two students discuss the likely effects of a proposed tax on sugary drinks.",
+      "speakerA": [
+        {
+          "en": "Did you hear that the government plans to tax sugary drinks? Supporters say it will improve public health.",
+          "level": "B2"
+        },
+        {
+          "en": "The evidence from other countries suggests otherwise. Consumption fell significantly after similar taxes were introduced.",
+          "level": "B2"
+        },
+        {
+          "en": "A fair objection. Were the revenue invested in school meals, though, the policy could end up benefiting those same families.",
+          "level": "B2"
+        },
+        {
+          "en": "So the real question is not whether the tax works, but whether the funds are used transparently.",
+          "level": "B2"
+        },
+        {
+          "en": "Which would be the best outcome. Should that happen, the tax would achieve its goal without hurting consumers.",
+          "level": "B2"
+        },
+        {
+          "en": "I suppose we won't know for certain until we've seen the results over several years.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "In principle I agree, but I wonder whether it will change behaviour. People may simply pay more and carry on as before.",
+          "level": "B2"
+        },
+        {
+          "en": "That's encouraging, but critics argue that the burden falls hardest on low-income families, who spend a larger share of their income on food.",
+          "level": "B2"
+        },
+        {
+          "en": "Provided the money is spent as promised. Governments don't always keep such commitments.",
+          "level": "B2"
+        },
+        {
+          "en": "Right. It would also help to know how manufacturers will react. They might reduce the sugar content rather than raise their prices.",
+          "level": "B2"
+        },
+        {
+          "en": "Unless companies replace sugar with something equally unhealthy. Unintended consequences are always a risk with new legislation.",
+          "level": "B2"
+        },
+        {
+          "en": "Which is why I'd like a review after two years, with the data made public.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Understanding an economic news report",
+      "context": "Two colleagues try to make sense of a story about inflation and interest rates.",
+      "speakerA": [
+        {
+          "en": "The headline says inflation has fallen to three per cent, yet prices in the shops still feel higher than ever.",
+          "level": "B2"
+        },
+        {
+          "en": "So a falling rate doesn't mean things are getting cheaper.",
+          "level": "B2"
+        },
+        {
+          "en": "The article also says the central bank may raise interest rates again. What's the reasoning behind that?",
+          "level": "B2"
+        },
+        {
+          "en": "But doesn't that hurt people with mortgages? For some households, the cure may be worse than the disease.",
+          "level": "B2"
+        },
+        {
+          "en": "I notice the article quotes only one economist. Shouldn't a balanced report include a range of views?",
+          "level": "B2"
+        },
+        {
+          "en": "Then next time I'll look for analysis that compares the main arguments.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "That's a common misunderstanding. Inflation measures how quickly prices rise, so they can still be climbing, just more slowly.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Prices would only fall in a period of deflation, which brings its own problems for the economy.",
+          "level": "B2"
+        },
+        {
+          "en": "Higher rates make borrowing more expensive, which should reduce spending and bring prices under control.",
+          "level": "B2"
+        },
+        {
+          "en": "It certainly does, and that's the dilemma. Had the economy been stronger, the bank would probably have acted more aggressively.",
+          "level": "B2"
+        },
+        {
+          "en": "Ideally, yes. Economists often interpret the same figures differently, so a single expert can give a misleading impression.",
+          "level": "B2"
+        },
+        {
+          "en": "A sensible approach. Figures rarely speak for themselves; they need context and careful interpretation.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Opinion, reporting and press freedom",
+      "context": "Two friends discuss the difference between news and commentary, and the role of a free press.",
+      "speakerA": [
+        {
+          "en": "I read an editorial this morning that attacked the mayor's plan. It was convincing, but is it really journalism?",
+          "level": "B2"
+        },
+        {
+          "en": "The trouble is that the two often look alike online. Many readers can't tell the difference.",
+          "level": "B2"
+        },
+        {
+          "en": "Some governments restrict the press altogether. Do you think that's ever justified, for example on grounds of national security?",
+          "level": "B2"
+        },
+        {
+          "en": "Yet journalists have also been criticised for publishing information that put people at risk.",
+          "level": "B2"
+        },
+        {
+          "en": "And with falling advertising revenue, many newspapers depend on clicks. Doesn't that encourage sensational stories?",
+          "level": "B2"
+        },
+        {
+          "en": "So independent, well-funded journalism is a public good, not just a business.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "It's commentary, not reporting. An editorial is meant to argue a position, whereas a news report should stick to verifiable facts.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a real concern. Clear labels such as 'opinion' or 'analysis' would help, but not every website uses them.",
+          "level": "B2"
+        },
+        {
+          "en": "Only in very narrow circumstances. Once the authorities decide what may be published, the public can no longer hold them accountable.",
+          "level": "B2"
+        },
+        {
+          "en": "True, which is why responsible outlets weigh the public interest against the possible harm before they publish.",
+          "level": "B2"
+        },
+        {
+          "en": "It does. The more a newspaper relies on clicks, the stronger the temptation to put drama before depth.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd go further: a healthy democracy can hardly function without it. Were reliable reporting to disappear, rumours would fill the gap.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

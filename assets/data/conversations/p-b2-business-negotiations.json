@@ -1,0 +1,285 @@
+{
+  "topic": "Business Negotiations",
+  "scenarios": [
+    {
+      "scenario": "Negotiating a salary and benefits package",
+      "context": "A manager and a candidate discuss the final offer for a new post.",
+      "speakerA": [
+        {
+          "en": "We're delighted to offer you the position, with a starting salary of 42,000 a year. How does that sound?",
+          "level": "B2"
+        },
+        {
+          "en": "I see your point, but that is the top of the pay band for this role. Would you accept a lower salary if we improved the benefits?",
+          "level": "B2"
+        },
+        {
+          "en": "Flexible hours are possible. Training is harder, although we could fund one course a year, provided it's relevant to your work.",
+          "level": "B2"
+        },
+        {
+          "en": "I can't go that far, but I could offer 44,000 and a review after six months. Were your performance strong, we would revisit the figure.",
+          "level": "B2"
+        },
+        {
+          "en": "That's reasonable. I'll ask HR to put the targets and the review date in your contract.",
+          "level": "B2"
+        },
+        {
+          "en": "Excellent. You'll receive the revised offer by email this afternoon, so take your time to read it carefully.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Thank you, I'm very pleased. However, it's slightly below what I had in mind, given my five years of experience in logistics.",
+          "level": "B2"
+        },
+        {
+          "en": "That depends on what's on offer. Not only would I need flexible working hours, but I'd also like a budget for professional training.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a fair compromise. If you could raise the salary to 45,000, I'd accept straight away.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd prefer that review to be in writing, so that we both know exactly what the targets are.",
+          "level": "B2"
+        },
+        {
+          "en": "In that case, we have a deal. I'm looking forward to starting.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. I appreciate your being so open to discussion.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Negotiating terms with a supplier",
+      "context": "A buyer and a supplier argue over price and delivery times.",
+      "speakerA": [
+        {
+          "en": "Your latest quote is almost fifteen per cent higher than last year's. We can't justify that increase to our board.",
+          "level": "B2"
+        },
+        {
+          "en": "I understand, but we're ordering twice our usual volume. Surely that deserves a bulk discount.",
+          "level": "B2"
+        },
+        {
+          "en": "A whole year is a long commitment. Would you accept a six-month trial with an option to renew?",
+          "level": "B2"
+        },
+        {
+          "en": "Agreed, as long as delivery times are guaranteed. Late shipments have cost us dearly in the past.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd like that written in as a penalty clause rather than left as a verbal promise.",
+          "level": "B2"
+        },
+        {
+          "en": "Fine. I'll draft the amendments tonight and send them over for your legal team to review.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Raw material costs have risen sharply, so our margins are already very tight. Were it not for those costs, we would have kept the price unchanged.",
+          "level": "B2"
+        },
+        {
+          "en": "A discount is possible if you commit to a twelve-month contract. We can't offer it on a single order.",
+          "level": "B2"
+        },
+        {
+          "en": "Only if the price per unit stays fixed. Otherwise, we would be taking all the risk.",
+          "level": "B2"
+        },
+        {
+          "en": "We can promise delivery within ten working days. Should we miss that deadline, we'll cover the extra transport costs.",
+          "level": "B2"
+        },
+        {
+          "en": "That's acceptable, provided the penalty is capped at five per cent of the order value.",
+          "level": "B2"
+        },
+        {
+          "en": "Good. If everything is in order, we can sign by the end of the week.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Renegotiating a deadline with a client",
+      "context": "A project manager tells a client that the delivery date may have to change.",
+      "speakerA": [
+        {
+          "en": "Before we go on, I have to be honest with you. The software won't be ready by the original deadline on the fifteenth.",
+          "level": "B2"
+        },
+        {
+          "en": "I realise that, and I apologise. The testing phase revealed serious security flaws that we couldn't ignore.",
+          "level": "B2"
+        },
+        {
+          "en": "Realistically, three extra weeks. Had we spotted the flaws earlier, we could have warned you sooner.",
+          "level": "B2"
+        },
+        {
+          "en": "That's feasible. We could deliver the core system by the fifteenth and the reporting tools early next month.",
+          "level": "B2"
+        },
+        {
+          "en": "There's no extra charge for the delay, since it's our responsibility. The staged release would cost a small additional fee, however.",
+          "level": "B2"
+        },
+        {
+          "en": "Of course. I'll send you the revised plan tomorrow morning.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "That's very disappointing. We've already announced the launch date to our customers.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd rather have a safe product than a fast one, but a delay like this is costly. How long are we talking about?",
+          "level": "B2"
+        },
+        {
+          "en": "Three weeks is too long. Could you release the main features on time and add the rest later?",
+          "level": "B2"
+        },
+        {
+          "en": "That would limit the damage. What would it mean for the budget, though?",
+          "level": "B2"
+        },
+        {
+          "en": "I can accept that, as long as we receive a weekly progress report so there are no more surprises.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. Your honesty has helped to preserve our trust, so let's make this work.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Setting up a joint venture",
+      "context": "Two entrepreneurs negotiate the terms of a partnership.",
+      "speakerA": [
+        {
+          "en": "Let's be clear about how we divide the profits. I suggest sixty per cent for us, since we're providing most of the investment.",
+          "level": "B2"
+        },
+        {
+          "en": "That's valuable, but it's hard to put a figure on it. Our money is a guaranteed contribution.",
+          "level": "B2"
+        },
+        {
+          "en": "I can live with that split, but I'd want the final say on major financial decisions.",
+          "level": "B2"
+        },
+        {
+          "en": "That seems balanced. What if one of us wants to leave the partnership?",
+          "level": "B2"
+        },
+        {
+          "en": "A wise idea. Were there a serious dispute, would you be willing to try mediation before going to court?",
+          "level": "B2"
+        },
+        {
+          "en": "Then I think we're close. Let's ask our lawyers to turn these points into a draft agreement.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I see the logic, but our company brings the local contacts and the distribution network. Without them, the product would never reach the market.",
+          "level": "B2"
+        },
+        {
+          "en": "Then perhaps fifty-five per cent for you and forty-five for us, with a guaranteed minimum payment in the first year.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd accept that if decisions about hiring and marketing stay with us. Neither side should control everything.",
+          "level": "B2"
+        },
+        {
+          "en": "We should agree on an exit clause now rather than argue about it later. The remaining partner would have the first right to buy the shares.",
+          "level": "B2"
+        },
+        {
+          "en": "Absolutely. Court is slow and expensive, and it damages relationships.",
+          "level": "B2"
+        },
+        {
+          "en": "Agreed. It's been a constructive discussion, and I think we'll work well together.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Breaking a deadlock",
+      "context": "Two negotiators are stuck and look for a way to close the deal.",
+      "speakerA": [
+        {
+          "en": "We seem to be going round in circles. You won't lower your price, and we can't afford to pay it.",
+          "level": "B2"
+        },
+        {
+          "en": "Cash flow. Were we to pay everything upfront, we'd have to postpone other projects.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. If we paid in three instalments, would you consider keeping the original price?",
+          "level": "B2"
+        },
+        {
+          "en": "Twenty per cent is the most I can authorise without approval from head office.",
+          "level": "B2"
+        },
+        {
+          "en": "That's generous. To be honest, we had another offer from a competitor, so I was prepared to walk away.",
+          "level": "B2"
+        },
+        {
+          "en": "I agree. Let's shake hands on twenty-five per cent and finalise the details in writing.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "That's true, and I don't want to waste your time. What is the real obstacle for you?",
+          "level": "B2"
+        },
+        {
+          "en": "I hadn't realised that. If the problem is timing rather than price, we may have more room to manoeuvre than I thought.",
+          "level": "B2"
+        },
+        {
+          "en": "Possibly, but I'd need a thirty per cent deposit on signing. Otherwise, I'd be carrying the risk alone.",
+          "level": "B2"
+        },
+        {
+          "en": "Let me think. Make it twenty-five per cent, and I'll include free maintenance for the first year as a gesture of goodwill.",
+          "level": "B2"
+        },
+        {
+          "en": "I suspected as much. I'm glad we kept talking, because losing this deal would have been a mistake for both of us.",
+          "level": "B2"
+        },
+        {
+          "en": "Deal. Let's hope this is the first of many agreements between our companies.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}
