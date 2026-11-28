@@ -584,6 +584,630 @@
      "fa": ""
     }
    ]
+  },
+  {
+   "key": "business",
+   "fa": "کسب‌وکار",
+   "en": "Business & Entrepreneurship",
+   "group": "life",
+   "words": [
+    {
+     "id": 700501,
+     "level": "A1",
+     "pos": "noun",
+     "en": "business",
+     "fa": ""
+    },
+    {
+     "id": 700864,
+     "level": "B2",
+     "pos": "noun",
+     "en": "corporation",
+     "fa": ""
+    },
+    {
+     "id": 701338,
+     "level": "C1",
+     "pos": "noun",
+     "en": "enterprise",
+     "fa": ""
+    },
+    {
+     "id": 701350,
+     "level": "B2",
+     "pos": "noun",
+     "en": "entrepreneur",
+     "fa": ""
+    },
+    {
+     "id": 701619,
+     "level": "B2",
+     "pos": "noun",
+     "en": "founder",
+     "fa": ""
+    },
+    {
+     "id": 704362,
+     "level": "B2",
+     "pos": "noun",
+     "en": "startup",
+     "fa": ""
+    },
+    {
+     "id": 701038,
+     "level": "A2",
+     "pos": "noun",
+     "en": "department",
+     "fa": ""
+    },
+    {
+     "id": 702704,
+     "level": "A2",
+     "pos": "noun",
+     "en": "owner",
+     "fa": ""
+    },
+    {
+     "id": 702746,
+     "level": "B2",
+     "pos": "noun",
+     "en": "partnership",
+     "fa": ""
+    },
+    {
+     "id": 702320,
+     "level": "B1",
+     "pos": "noun",
+     "en": "management",
+     "fa": ""
+    },
+    {
+     "id": 702188,
+     "level": "B2",
+     "pos": "noun",
+     "en": "leadership",
+     "fa": ""
+    },
+    {
+     "id": 701805,
+     "level": "B2",
+     "pos": "noun",
+     "en": "headquarters",
+     "fa": ""
+    },
+    {
+     "id": 703155,
+     "level": "B2",
+     "pos": "noun",
+     "en": "recruitment",
+     "fa": ""
+    },
+    {
+     "id": 700809,
+     "level": "B2",
+     "pos": "noun",
+     "en": "consultant",
+     "fa": ""
+    },
+    {
+     "id": 700725,
+     "level": "B1",
+     "pos": "noun",
+     "en": "competitor",
+     "fa": ""
+    },
+    {
+     "id": 701181,
+     "level": "B2",
+     "pos": "verb",
+     "en": "dominate",
+     "fa": ""
+    },
+    {
+     "id": 702457,
+     "level": "C1",
+     "pos": "noun",
+     "en": "monopoly",
+     "fa": ""
+    },
+    {
+     "id": 702542,
+     "level": "C1",
+     "pos": "noun",
+     "en": "niche",
+     "fa": ""
+    },
+    {
+     "id": 702292,
+     "level": "C1",
+     "pos": "noun",
+     "en": "loyalty",
+     "fa": ""
+    },
+    {
+     "id": 702340,
+     "level": "B1",
+     "pos": "noun",
+     "en": "marketing",
+     "fa": ""
+    },
+    {
+     "id": 700095,
+     "level": "A2",
+     "pos": "noun",
+     "en": "advertising",
+     "fa": ""
+    },
+    {
+     "id": 703012,
+     "level": "B2",
+     "pos": "noun",
+     "en": "promotion",
+     "fa": ""
+    },
+    {
+     "id": 500227,
+     "level": "B1",
+     "pos": "noun",
+     "en": "campaign",
+     "fa": ""
+    },
+    {
+     "id": 703525,
+     "level": "B2",
+     "pos": "noun",
+     "en": "slogan",
+     "fa": ""
+    },
+    {
+     "id": 703255,
+     "level": "B2",
+     "pos": "noun",
+     "en": "retail",
+     "fa": ""
+    },
+    {
+     "id": 704359,
+     "level": "B2",
+     "pos": "noun",
+     "en": "wholesale",
+     "fa": ""
+    },
+    {
+     "id": 701972,
+     "level": "A2",
+     "pos": "noun",
+     "en": "industry",
+     "fa": ""
+    },
+    {
+     "id": 702329,
+     "level": "B2",
+     "pos": "noun",
+     "en": "manufacturing",
+     "fa": ""
+    },
+    {
+     "id": 702687,
+     "level": "B2",
+     "pos": "noun",
+     "en": "output",
+     "fa": ""
+    },
+    {
+     "id": 703451,
+     "level": "C1",
+     "pos": "noun",
+     "en": "shipping",
+     "fa": ""
+    },
+    {
+     "id": 704175,
+     "level": "C1",
+     "pos": "noun",
+     "en": "warehouse",
+     "fa": ""
+    },
+    {
+     "id": 701258,
+     "level": "C1",
+     "pos": "noun",
+     "en": "efficiency",
+     "fa": ""
+    },
+    {
+     "id": 500394,
+     "level": "B1",
+     "pos": "noun",
+     "en": "strategy",
+     "fa": ""
+    },
+    {
+     "id": 702437,
+     "level": "B2",
+     "pos": "noun",
+     "en": "mission",
+     "fa": ""
+    },
+    {
+     "id": 704156,
+     "level": "B2",
+     "pos": "noun",
+     "en": "vision",
+     "fa": ""
+    },
+    {
+     "id": 701431,
+     "level": "B2",
+     "pos": "noun",
+     "en": "expansion",
+     "fa": ""
+    },
+    {
+     "id": 701372,
+     "level": "B2",
+     "pos": "verb",
+     "en": "establish",
+     "fa": ""
+    },
+    {
+     "id": 500339,
+     "level": "B1",
+     "pos": "verb",
+     "en": "negotiate",
+     "fa": ""
+    },
+    {
+     "id": 702523,
+     "level": "B2",
+     "pos": "noun",
+     "en": "negotiation",
+     "fa": ""
+    },
+    {
+     "id": 704565,
+     "level": "B2",
+     "pos": "noun",
+     "en": "milestone",
+     "fa": ""
+    },
+    {
+     "id": 702397,
+     "level": "C1",
+     "pos": "verb",
+     "en": "merge",
+     "fa": ""
+    },
+    {
+     "id": 702398,
+     "level": "C1",
+     "pos": "noun",
+     "en": "merger",
+     "fa": ""
+    },
+    {
+     "id": 700051,
+     "level": "C1",
+     "pos": "noun",
+     "en": "acquisition",
+     "fa": ""
+    },
+    {
+     "id": 704360,
+     "level": "C1",
+     "pos": "noun",
+     "en": "takeover",
+     "fa": ""
+    },
+    {
+     "id": 701628,
+     "level": "C1",
+     "pos": "noun",
+     "en": "franchise",
+     "fa": ""
+    },
+    {
+     "id": 704025,
+     "level": "C1",
+     "pos": "noun",
+     "en": "turnover",
+     "fa": ""
+    },
+    {
+     "id": 704123,
+     "level": "C1",
+     "pos": "noun",
+     "en": "venture",
+     "fa": ""
+    },
+    {
+     "id": 703907,
+     "level": "C1",
+     "pos": "verb",
+     "en": "thrive",
+     "fa": ""
+    },
+    {
+     "id": 705056,
+     "level": "C1",
+     "pos": "other",
+     "en": "lucrative",
+     "fa": ""
+    },
+    {
+     "id": 940025,
+     "level": "B2",
+     "pos": "noun",
+     "en": "entrepreneurship",
+     "fa": ""
+    },
+    {
+     "id": 940026,
+     "level": "B2",
+     "pos": "noun",
+     "en": "small business",
+     "fa": ""
+    },
+    {
+     "id": 940027,
+     "level": "B2",
+     "pos": "noun",
+     "en": "business plan",
+     "fa": ""
+    },
+    {
+     "id": 940028,
+     "level": "B2",
+     "pos": "noun",
+     "en": "business model",
+     "fa": ""
+    },
+    {
+     "id": 940029,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "self-employed",
+     "fa": ""
+    },
+    {
+     "id": 940030,
+     "level": "B2",
+     "pos": "noun",
+     "en": "freelancer",
+     "fa": ""
+    },
+    {
+     "id": 940031,
+     "level": "B2",
+     "pos": "noun",
+     "en": "CEO",
+     "fa": ""
+    },
+    {
+     "id": 940032,
+     "level": "B2",
+     "pos": "noun",
+     "en": "human resources",
+     "fa": ""
+    },
+    {
+     "id": 940033,
+     "level": "B2",
+     "pos": "noun",
+     "en": "teamwork",
+     "fa": ""
+    },
+    {
+     "id": 940034,
+     "level": "C1",
+     "pos": "noun",
+     "en": "stakeholder",
+     "fa": ""
+    },
+    {
+     "id": 940035,
+     "level": "C1",
+     "pos": "noun",
+     "en": "subsidiary",
+     "fa": ""
+    },
+    {
+     "id": 940036,
+     "level": "C1",
+     "pos": "noun",
+     "en": "joint venture",
+     "fa": ""
+    },
+    {
+     "id": 940037,
+     "level": "B2",
+     "pos": "noun",
+     "en": "market share",
+     "fa": ""
+    },
+    {
+     "id": 940038,
+     "level": "B2",
+     "pos": "noun",
+     "en": "market research",
+     "fa": ""
+    },
+    {
+     "id": 940039,
+     "level": "C1",
+     "pos": "noun",
+     "en": "competitive advantage",
+     "fa": ""
+    },
+    {
+     "id": 940040,
+     "level": "B2",
+     "pos": "noun",
+     "en": "target market",
+     "fa": ""
+    },
+    {
+     "id": 940041,
+     "level": "B2",
+     "pos": "noun",
+     "en": "customer base",
+     "fa": ""
+    },
+    {
+     "id": 940042,
+     "level": "B2",
+     "pos": "noun",
+     "en": "customer satisfaction",
+     "fa": ""
+    },
+    {
+     "id": 940043,
+     "level": "B2",
+     "pos": "noun",
+     "en": "brand awareness",
+     "fa": ""
+    },
+    {
+     "id": 940044,
+     "level": "B2",
+     "pos": "noun",
+     "en": "public relations",
+     "fa": ""
+    },
+    {
+     "id": 940045,
+     "level": "B2",
+     "pos": "noun",
+     "en": "sales",
+     "fa": ""
+    },
+    {
+     "id": 940046,
+     "level": "B2",
+     "pos": "noun",
+     "en": "e-commerce",
+     "fa": ""
+    },
+    {
+     "id": 940047,
+     "level": "B2",
+     "pos": "noun",
+     "en": "supplier",
+     "fa": ""
+    },
+    {
+     "id": 940048,
+     "level": "B2",
+     "pos": "noun",
+     "en": "retailer",
+     "fa": ""
+    },
+    {
+     "id": 940049,
+     "level": "C1",
+     "pos": "noun",
+     "en": "distributor",
+     "fa": ""
+    },
+    {
+     "id": 940050,
+     "level": "C1",
+     "pos": "noun",
+     "en": "supply chain",
+     "fa": ""
+    },
+    {
+     "id": 940051,
+     "level": "C1",
+     "pos": "noun",
+     "en": "logistics",
+     "fa": ""
+    },
+    {
+     "id": 940052,
+     "level": "C1",
+     "pos": "noun",
+     "en": "inventory",
+     "fa": ""
+    },
+    {
+     "id": 940053,
+     "level": "B2",
+     "pos": "noun",
+     "en": "invoice",
+     "fa": ""
+    },
+    {
+     "id": 940054,
+     "level": "C1",
+     "pos": "verb",
+     "en": "outsource",
+     "fa": ""
+    },
+    {
+     "id": 940055,
+     "level": "C1",
+     "pos": "noun",
+     "en": "cash flow",
+     "fa": ""
+    },
+    {
+     "id": 940056,
+     "level": "C1",
+     "pos": "noun",
+     "en": "profit margin",
+     "fa": ""
+    },
+    {
+     "id": 940057,
+     "level": "C1",
+     "pos": "verb",
+     "en": "break even",
+     "fa": ""
+    },
+    {
+     "id": 940058,
+     "level": "C1",
+     "pos": "noun",
+     "en": "bottom line",
+     "fa": ""
+    },
+    {
+     "id": 940059,
+     "level": "C1",
+     "pos": "noun",
+     "en": "venture capital",
+     "fa": ""
+    },
+    {
+     "id": 940060,
+     "level": "C1",
+     "pos": "verb",
+     "en": "diversify",
+     "fa": ""
+    },
+    {
+     "id": 940061,
+     "level": "C1",
+     "pos": "verb",
+     "en": "restructure",
+     "fa": ""
+    },
+    {
+     "id": 940062,
+     "level": "C1",
+     "pos": "verb",
+     "en": "downsize",
+     "fa": ""
+    },
+    {
+     "id": 940063,
+     "level": "C1",
+     "pos": "verb",
+     "en": "streamline",
+     "fa": ""
+    }
+   ]
   }
  ]
 }
