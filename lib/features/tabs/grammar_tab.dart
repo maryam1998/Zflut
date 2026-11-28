@@ -477,7 +477,11 @@ class _NoteCardState extends ConsumerState<_NoteCard> {
         "Learner asks: \"${clip(question, 400)}\"\n\n"
         "Answer this follow-up directly in $label, without redoing the full breakdown. "
         "Example sentences must be in $langLabel, each with a short $label translation. "
-        "Be concise (under ~150 words), plain text. Always finish every sentence completely.";
+        "Format with simple Markdown: put **bold** around the key words/phrases the learner asked about, "
+        "the names of grammar rules or terms, and the target word/structure inside every example sentence. "
+        "Explain the rule in short numbered points (1. 2. 3.), then a bold heading for the examples "
+        "followed by a bullet list (- ). No tables, no headers with #. "
+        "Be concise (under ~150 words). Always finish every sentence completely.";
   }
 
   /// [index] = ایندکسِ پرسشی که ویرایش/رفرش می‌شود (پاسخ‌های بعدش حذف می‌شوند)؛
