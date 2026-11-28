@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/language_selection_provider.dart';
 import '../providers/text_prefs_provider.dart';
 import '../theme/app_theme_colors.dart';
+import '../translate/local_romanizer.dart';
 import '../translate/romanization.dart';
 
 class RomanLine extends ConsumerStatefulWidget {
@@ -35,11 +36,23 @@ class _RomanLineState extends ConsumerState<RomanLine> {
   @override
   void initState() {
     super.initState();
+    // ژاپنی: رومی‌سازیِ محلی غیرهمگام است؛ وقتی آماده شد دوباره بساز
+    if (widget.langCode == 'ja') LocalRomanizer.updates.addListener(_onLocalUpdate);
     if (!Romanization.isLoaded && Romanization.langs.contains(widget.langCode)) {
       Romanization.ensureLoaded().then((_) {
         if (mounted) setState(() {});
       });
     }
+  }
+
+  void _onLocalUpdate() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    LocalRomanizer.updates.removeListener(_onLocalUpdate);
+    super.dispose();
   }
 
   @override

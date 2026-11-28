@@ -6,20 +6,25 @@
 // کجا استفاده می‌شود: فقط به‌عنوانِ «جایگزینِ آخر» در Romanization.lookup؛
 // یعنی اگر Worker رومی‌سازی داده بود (یا در فایلِ ثابت بود) همان نشان داده می‌شود،
 // وگرنه (ترجمه از کش/فایلِ داخلِ اپ آمده و Worker صدا زده نشده) این جا خالی را پر می‌کند.
-// چینی: پین‌یینِ همراهِ تُن با بسته‌ی lpinyin (فرهنگ‌لغتِ داخلِ بسته). ژاپنی/کره‌ای همچنان فقط از Worker/فایلِ ثابت.
+// چینی: پین‌یینِ همراهِ تُن با بسته‌ی lpinyin (فرهنگ‌لغتِ داخلِ بسته).
+// ژاپنی: روماجی با بسته‌ی kuroshiro (غیرهمگام). convert برای ژاپنی اولین بار null می‌دهد، تبدیل را در پس‌زمینه انجام می‌دهد،
+// و بعد با LocalRomanizer.updates به RomanLine خبر می‌دهد تا دوباره بسازد. کره‌ای همچنان فقط از Worker/فایلِ ثابت.
 
+import 'package:flutter/foundation.dart' show ValueNotifier, debugPrint;
+import 'package:kuroshiro/kuroshiro.dart';
 import 'package:lpinyin/lpinyin.dart';
 
 class LocalRomanizer {
   LocalRomanizer._();
 
-  static const Set<String> langs = {'hi', 'ru', 'zh'};
+  static const Set<String> langs = {'hi', 'ru', 'zh', 'ja'};
 
   static final Map<String, String> _memo = <String, String>{};
 
   /// خوانشِ لاتینِ [text] یا null. همگام و سریع (نتیجه کش می‌شود).
   static String? convert(String lang, String text) {
     if (!langs.contains(lang)) return null;
+    if (lang == 'ja') return _jaLookup(text); // غیرهمگام: از کش، وگرنه null + تبدیل در پس‌زمینه
     final key = '$lang|$text';
     final hit = _memo[key];
     if (hit != null) return hit.isEmpty ? null : hit;
@@ -219,6 +224,57 @@ class LocalRomanizer {
       return ' $py ';
     });
     return _tidy(r);
+  }
+
+  // ───────────────────────── ژاپنی (روماجی با kuroshiro) ─────────────────────────
+  /// هر بار که یک رومی‌سازیِ ژاپنی آماده شد یک واحد زیاد می‌شود (RomanLine گوش می‌دهد).
+  static final ValueNotifier<int> updates = ValueNotifier<int>(0);
+
+  static final Map<String, String> _jaMemo = <String, String>{};
+  static final Set<String> _jaPending = <String>{};
+  static Kuroshiro? _kuro;
+  static Future<void>? _kuroInit;
+  static DateTime _jaRetryAfter = DateTime.fromMillisecondsSinceEpoch(0);
+  static final RegExp _jaRe =
+      RegExp(r'[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\uFF66-\uFF9F]');
+
+  static String? _jaLookup(String text) {
+    if (!_jaRe.hasMatch(text)) return null; // هیچ حرفِ ژاپنی‌ای نیست
+    final hit = _jaMemo[text];
+    if (hit != null) return hit.isEmpty ? null : hit;
+    _jaSchedule(text);
+    return null;
+  }
+
+  static void _jaSchedule(String text) {
+    if (_jaPending.contains(text)) return;
+    if (DateTime.now().isBefore(_jaRetryAfter)) return; // بعد از خطا چند ثانیه صبر
+    _jaPending.add(text);
+    () async {
+      try {
+        if (_kuro == null) {
+          final k = Kuroshiro();
+          _kuroInit ??= k.init();
+          await _kuroInit;
+          _kuro = k;
+        }
+        final r = await _kuro!.convert(
+          text,
+          to: ConvertTo.romaji,
+          mode: ConvertMode.spaced,
+        );
+        final out = _tidy(r);
+        if (_jaMemo.length > 800) _jaMemo.remove(_jaMemo.keys.first);
+        _jaMemo[text] = out;
+        updates.value++;
+      } catch (e) {
+        debugPrint('LocalRomanizer(ja): $e');
+        _kuroInit = null; // دفعه‌ی بعد دوباره تلاش شود
+        _jaRetryAfter = DateTime.now().add(const Duration(seconds: 30));
+      } finally {
+        _jaPending.remove(text);
+      }
+    }();
   }
 
   // ───────────────────────── روسی ─────────────────────────

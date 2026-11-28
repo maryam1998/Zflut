@@ -49,6 +49,8 @@ dependencies:
 
   # ═══ پین‌یینِ چینی روی خودِ گوشی (LocalRomanizer) ═══
   lpinyin: ^2.0.3
+  # ژاپنی → روماجی روی خودِ گوشی (kuroshiro + kuromoji؛ غیرهمگام است)
+  kuroshiro: ^1.0.5
 
   cupertino_icons: ^1.0.6
 
