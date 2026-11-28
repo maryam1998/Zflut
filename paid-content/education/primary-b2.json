@@ -1825,6 +1825,637 @@
      "fa": ""
     }
    ]
+  },
+  {
+   "key": "science",
+   "fa": "علم و پژوهش",
+   "en": "Science & Research",
+   "group": "life",
+   "words": [
+    {
+     "id": 703230,
+     "level": "A2",
+     "pos": "noun",
+     "en": "researcher",
+     "fa": ""
+    },
+    {
+     "id": 700973,
+     "level": "A2",
+     "pos": "noun",
+     "en": "data",
+     "fa": ""
+    },
+    {
+     "id": 700170,
+     "level": "B1",
+     "pos": "noun",
+     "en": "analysis",
+     "fa": ""
+    },
+    {
+     "id": 702404,
+     "level": "C1",
+     "pos": "noun",
+     "en": "methodology",
+     "fa": ""
+    },
+    {
+     "id": 703824,
+     "level": "B1",
+     "pos": "noun",
+     "en": "technique",
+     "fa": ""
+    },
+    {
+     "id": 701439,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "experimental",
+     "fa": ""
+    },
+    {
+     "id": 703358,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "scientific",
+     "fa": ""
+    },
+    {
+     "id": 701891,
+     "level": "B2",
+     "pos": "noun",
+     "en": "hypothesis",
+     "fa": ""
+    },
+    {
+     "id": 701544,
+     "level": "B2",
+     "pos": "noun",
+     "en": "finding",
+     "fa": ""
+    },
+    {
+     "id": 702598,
+     "level": "B2",
+     "pos": "noun",
+     "en": "observation",
+     "fa": ""
+    },
+    {
+     "id": 702370,
+     "level": "B2",
+     "pos": "noun",
+     "en": "measurement",
+     "fa": ""
+    },
+    {
+     "id": 500347,
+     "level": "B1",
+     "pos": "noun",
+     "en": "outcome",
+     "fa": ""
+    },
+    {
+     "id": 700460,
+     "level": "C1",
+     "pos": "noun",
+     "en": "breakthrough",
+     "fa": ""
+    },
+    {
+     "id": 700043,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "accurate",
+     "fa": ""
+    },
+    {
+     "id": 700042,
+     "level": "B2",
+     "pos": "noun",
+     "en": "accuracy",
+     "fa": ""
+    },
+    {
+     "id": 702915,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "precise",
+     "fa": ""
+    },
+    {
+     "id": 702917,
+     "level": "C1",
+     "pos": "noun",
+     "en": "precision",
+     "fa": ""
+    },
+    {
+     "id": 704110,
+     "level": "C1",
+     "pos": "noun",
+     "en": "validity",
+     "fa": ""
+    },
+    {
+     "id": 700869,
+     "level": "C1",
+     "pos": "noun",
+     "en": "correlation",
+     "fa": ""
+    },
+    {
+     "id": 703652,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "statistical",
+     "fa": ""
+    },
+    {
+     "id": 700394,
+     "level": "B2",
+     "pos": "noun",
+     "en": "bias",
+     "fa": ""
+    },
+    {
+     "id": 700268,
+     "level": "B2",
+     "pos": "noun",
+     "en": "assumption",
+     "fa": ""
+    },
+    {
+     "id": 700750,
+     "level": "B2",
+     "pos": "noun",
+     "en": "concept",
+     "fa": ""
+    },
+    {
+     "id": 702965,
+     "level": "B2",
+     "pos": "noun",
+     "en": "principle",
+     "fa": ""
+    },
+    {
+     "id": 703016,
+     "level": "B2",
+     "pos": "noun",
+     "en": "proof",
+     "fa": ""
+    },
+    {
+     "id": 701029,
+     "level": "B2",
+     "pos": "verb",
+     "en": "demonstrate",
+     "fa": ""
+    },
+    {
+     "id": 703997,
+     "level": "B2",
+     "pos": "noun",
+     "en": "trial",
+     "fa": ""
+    },
+    {
+     "id": 701381,
+     "level": "B2",
+     "pos": "verb",
+     "en": "evaluate",
+     "fa": ""
+    },
+    {
+     "id": 700257,
+     "level": "B2",
+     "pos": "verb",
+     "en": "assess",
+     "fa": ""
+    },
+    {
+     "id": 700258,
+     "level": "B2",
+     "pos": "noun",
+     "en": "assessment",
+     "fa": ""
+    },
+    {
+     "id": 702082,
+     "level": "B2",
+     "pos": "noun",
+     "en": "investigation",
+     "fa": ""
+    },
+    {
+     "id": 702009,
+     "level": "B2",
+     "pos": "noun",
+     "en": "inquiry",
+     "fa": ""
+    },
+    {
+     "id": 702269,
+     "level": "C1",
+     "pos": "noun",
+     "en": "logic",
+     "fa": ""
+    },
+    {
+     "id": 702270,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "logical",
+     "fa": ""
+    },
+    {
+     "id": 703132,
+     "level": "C1",
+     "pos": "noun",
+     "en": "reasoning",
+     "fa": ""
+    },
+    {
+     "id": 701980,
+     "level": "B2",
+     "pos": "verb",
+     "en": "infer",
+     "fa": ""
+    },
+    {
+     "id": 702068,
+     "level": "B2",
+     "pos": "verb",
+     "en": "interpret",
+     "fa": ""
+    },
+    {
+     "id": 702069,
+     "level": "B2",
+     "pos": "noun",
+     "en": "interpretation",
+     "fa": ""
+    },
+    {
+     "id": 703598,
+     "level": "B2",
+     "pos": "verb",
+     "en": "speculate",
+     "fa": ""
+    },
+    {
+     "id": 703599,
+     "level": "B2",
+     "pos": "noun",
+     "en": "speculation",
+     "fa": ""
+    },
+    {
+     "id": 702497,
+     "level": "B2",
+     "pos": "noun",
+     "en": "myth",
+     "fa": ""
+    },
+    {
+     "id": 701660,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "fundamental",
+     "fa": ""
+    },
+    {
+     "id": 703877,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "theoretical",
+     "fa": ""
+    },
+    {
+     "id": 701300,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "empirical",
+     "fa": ""
+    },
+    {
+     "id": 702114,
+     "level": "B1",
+     "pos": "noun",
+     "en": "journal",
+     "fa": ""
+    },
+    {
+     "id": 703046,
+     "level": "B2",
+     "pos": "noun",
+     "en": "publication",
+     "fa": ""
+    },
+    {
+     "id": 700018,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "academic",
+     "fa": ""
+    },
+    {
+     "id": 703354,
+     "level": "B2",
+     "pos": "noun",
+     "en": "scholar",
+     "fa": ""
+    },
+    {
+     "id": 700621,
+     "level": "B2",
+     "pos": "verb",
+     "en": "cite",
+     "fa": ""
+    },
+    {
+     "id": 703885,
+     "level": "B2",
+     "pos": "noun",
+     "en": "thesis",
+     "fa": ""
+    },
+    {
+     "id": 702814,
+     "level": "A2",
+     "pos": "noun",
+     "en": "physics",
+     "fa": ""
+    },
+    {
+     "id": 700603,
+     "level": "A2",
+     "pos": "noun",
+     "en": "chemistry",
+     "fa": ""
+    },
+    {
+     "id": 700402,
+     "level": "A2",
+     "pos": "noun",
+     "en": "biology",
+     "fa": ""
+    },
+    {
+     "id": 701689,
+     "level": "B2",
+     "pos": "noun",
+     "en": "gene",
+     "fa": ""
+    },
+    {
+     "id": 701694,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "genetic",
+     "fa": ""
+    },
+    {
+     "id": 701396,
+     "level": "B2",
+     "pos": "noun",
+     "en": "evolution",
+     "fa": ""
+    },
+    {
+     "id": 701923,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "immune",
+     "fa": ""
+    },
+    {
+     "id": 703090,
+     "level": "B2",
+     "pos": "noun",
+     "en": "radiation",
+     "fa": ""
+    },
+    {
+     "id": 704376,
+     "level": "C1",
+     "pos": "noun",
+     "en": "quantum",
+     "fa": ""
+    },
+    {
+     "id": 940095,
+     "level": "B2",
+     "pos": "noun",
+     "en": "research paper",
+     "fa": ""
+    },
+    {
+     "id": 940096,
+     "level": "B2",
+     "pos": "noun",
+     "en": "research method",
+     "fa": ""
+    },
+    {
+     "id": 940097,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "evidence-based",
+     "fa": ""
+    },
+    {
+     "id": 940098,
+     "level": "B2",
+     "pos": "noun",
+     "en": "scientific method",
+     "fa": ""
+    },
+    {
+     "id": 940099,
+     "level": "B2",
+     "pos": "noun",
+     "en": "scientific theory",
+     "fa": ""
+    },
+    {
+     "id": 940100,
+     "level": "B2",
+     "pos": "noun",
+     "en": "case study",
+     "fa": ""
+    },
+    {
+     "id": 940101,
+     "level": "C1",
+     "pos": "noun",
+     "en": "data set",
+     "fa": ""
+    },
+    {
+     "id": 940102,
+     "level": "C1",
+     "pos": "noun",
+     "en": "sample size",
+     "fa": ""
+    },
+    {
+     "id": 940103,
+     "level": "B2",
+     "pos": "noun",
+     "en": "control group",
+     "fa": ""
+    },
+    {
+     "id": 940104,
+     "level": "C1",
+     "pos": "noun",
+     "en": "clinical trial",
+     "fa": ""
+    },
+    {
+     "id": 940105,
+     "level": "C1",
+     "pos": "noun",
+     "en": "peer review",
+     "fa": ""
+    },
+    {
+     "id": 940106,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "peer-reviewed",
+     "fa": ""
+    },
+    {
+     "id": 940107,
+     "level": "C1",
+     "pos": "noun",
+     "en": "literature review",
+     "fa": ""
+    },
+    {
+     "id": 940108,
+     "level": "B2",
+     "pos": "noun",
+     "en": "statistics",
+     "fa": ""
+    },
+    {
+     "id": 940109,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "statistically significant",
+     "fa": ""
+    },
+    {
+     "id": 940110,
+     "level": "C1",
+     "pos": "noun",
+     "en": "margin of error",
+     "fa": ""
+    },
+    {
+     "id": 940111,
+     "level": "B2",
+     "pos": "noun",
+     "en": "cause and effect",
+     "fa": ""
+    },
+    {
+     "id": 940112,
+     "level": "B2",
+     "pos": "noun",
+     "en": "criteria",
+     "fa": ""
+    },
+    {
+     "id": 940113,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "subjective",
+     "fa": ""
+    },
+    {
+     "id": 940114,
+     "level": "C1",
+     "pos": "noun",
+     "en": "inference",
+     "fa": ""
+    },
+    {
+     "id": 940115,
+     "level": "C1",
+     "pos": "verb",
+     "en": "deduce",
+     "fa": ""
+    },
+    {
+     "id": 940116,
+     "level": "C1",
+     "pos": "verb",
+     "en": "replicate",
+     "fa": ""
+    },
+    {
+     "id": 940117,
+     "level": "C1",
+     "pos": "noun",
+     "en": "citation",
+     "fa": ""
+    },
+    {
+     "id": 940118,
+     "level": "C1",
+     "pos": "noun",
+     "en": "dissertation",
+     "fa": ""
+    },
+    {
+     "id": 940119,
+     "level": "C1",
+     "pos": "noun",
+     "en": "fieldwork",
+     "fa": ""
+    },
+    {
+     "id": 940120,
+     "level": "C1",
+     "pos": "noun",
+     "en": "genome",
+     "fa": ""
+    },
+    {
+     "id": 940121,
+     "level": "B2",
+     "pos": "noun",
+     "en": "DNA",
+     "fa": ""
+    },
+    {
+     "id": 940122,
+     "level": "B2",
+     "pos": "noun",
+     "en": "molecule",
+     "fa": ""
+    },
+    {
+     "id": 940123,
+     "level": "B2",
+     "pos": "noun",
+     "en": "particle",
+     "fa": ""
+    },
+    {
+     "id": 940124,
+     "level": "B2",
+     "pos": "noun",
+     "en": "organism",
+     "fa": ""
+    }
+   ]
   }
  ]
 }
