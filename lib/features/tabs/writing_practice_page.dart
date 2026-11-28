@@ -1,8 +1,7 @@
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 
+import '../../core/data/paid_content.dart';
 import '../../core/theme/app_theme_colors.dart';
 
 /// ✍️ تمرین نوشتن پیام کوتاه و ایمیل (Primary School ▸ A2)
@@ -53,9 +52,9 @@ RegExp? _safeRx(String s) {
 
 Future<List<_WSet>> _loadWritingSets([String level = 'A2']) async {
   try {
-    final raw =
-        await rootBundle.loadString('assets/data/primary_${level.toLowerCase()}_writing.json');
-    final j = jsonDecode(raw) as Map<String, dynamic>;
+    // 🎒 Education stage پولی است: از Worker (کشِ گوشی) می‌آید، نه از داخلِ APK
+    final j = await PaidContent.blob('primary-${level.toLowerCase()}-writing');
+    if (j == null) return const <_WSet>[];
     return [
       for (final s in (j['sets'] as List<dynamic>))
         _WSet(
@@ -257,6 +256,13 @@ class _WritingPracticePageState extends State<WritingPracticePage> {
     );
   }
 
+  void _reload() {
+    setState(() => _sets = null);
+    _loadWritingSets(widget.level).then((v) {
+      if (mounted) setState(() => _sets = v);
+    });
+  }
+
   Widget _body(BuildContext context) {
     final c = context.appColors;
     final sets = _sets;
@@ -264,9 +270,27 @@ class _WritingPracticePageState extends State<WritingPracticePage> {
       return Center(child: CircularProgressIndicator(color: c.gold));
     }
     if (sets.isEmpty) {
+      // 🎒 تمرین‌ها Pro‌اند و از سرور می‌آیند؛ اگر دانلود نشد، دکمه‌ی تلاشِ دوباره (نه چرخشِ بی‌پایان)
       return Center(
-        child: Text(_t('تمرینی پیدا نشد', 'No exercises found'),
-            style: TextStyle(color: c.inkSoft)),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                  _t('تمرین‌ها دریافت نشد. اینترنت را بررسی کن و دوباره تلاش کن.',
+                      "Couldn't load the exercises. Check your connection and try again."),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: c.inkSoft, height: 1.5)),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _reload,
+                icon: const Icon(Icons.refresh_rounded),
+                label: Text(_t('تلاش دوباره', 'Try again')),
+              ),
+            ],
+          ),
+        ),
       );
     }
     if (_set == null) return _setList(context, sets);

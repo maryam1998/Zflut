@@ -158,7 +158,7 @@ Future<ConversationsIndex?> _load() async {
     final raw =
         await rootBundle.loadString('assets/data/conversations_index.json');
     final j = jsonDecode(raw) as Map<String, dynamic>;
-    // 🎒 شمارشِ موضوع‌های Primary School ▸ A1 و A2 (همه رایگان)
+    // 🎒 شمارشِ موضوع‌های Education stage (پولی؛ فقط عدد، نه متن)
     for (final pf in const [
       'assets/data/primary_conversations_index.json',
       'assets/data/primary_a2_conversations_index.json',
@@ -170,7 +170,18 @@ Future<ConversationsIndex?> _load() async {
         final pj = jsonDecode(pr) as Map<String, dynamic>;
         final pt = pj['topics'];
         final base = j['topics'];
-        if (pt is Map && base is Map) base.addAll(pt);
+        if (pt is Map && base is Map) {
+          // 🔒 Education stage پولی است: هیچ جمله‌ای رایگان نیست (f = صفر) تا بنرِ قفل درست بشمارد
+          for (final e in pt.entries) {
+            final v = e.value;
+            base[e.key] = v is Map
+                ? {
+                    ...v,
+                    'f': List<int>.filled(kIndexLevels.length, 0),
+                  }
+                : v;
+          }
+        }
       } catch (_) {}
     }
     return ConversationsIndex.fromJson(j);

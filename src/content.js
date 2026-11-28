@@ -10,6 +10,8 @@
 //   GET /api/content/words?list=daily|slang|vocab  → {version, words:[…]}
 //   GET /api/content/conversations?kind=daily|thematic → {version, topics:[…]}
 //   GET /api/content/conversation?id=<شناسه>        → {version, topic:{…}}   (لود تنبل: فقط یک موضوع)
+//   GET /api/content/blob?key=<کلید>                → {version, data:<همان JSON فایل>}   (مرحله‌های تحصیلی: لغات و تمرین‌های primary-*)
+//   GET /api/content/conv-bundle[?kind=primary]    → همه‌ی موضوع‌ها (یا فقط مکالمه‌های مرحله‌های تحصیلی) با یک درخواست
 //   GET /api/content/key                           → {key}  (کلیدِ AES برای conv_enc داخلِ اپ)
 //   پارامترِ اختیاریِ v=<نسخه‌ی کشِ گوشی>: اگر یکی باشد فقط {notModified:true, version} برمی‌گردد.
 // غیرِ Pro: 403 {code:"pro_required"}
@@ -18,6 +20,8 @@ import { isPro } from "./usage.js";
 
 const WORD_LISTS = new Set(["daily", "slang", "vocab"]);
 const CONV_KINDS = new Set(["daily", "thematic"]);
+// 🎒 مرحله‌های تحصیلی (Education stage): لغات و تمرین‌ها به‌صورت «بلاب» (کل فایل JSON، تکه‌تکه در D1)
+const BLOB_KEY_RE = /^[a-z0-9-]{1,60}$/;
 const MSG_FA = "این محتوا مخصوص نسخه‌ی Pro است.";
 
 function jsonResp(body, status, cors) {
@@ -106,13 +110,38 @@ export async function handleContent(request, env, url, cors, session) {
       return jsonResp(`{"version":${JSON.stringify(row.version)},"topic":${row.data}}`, 200, cors);
     }
 
+    // 🎒 بلابِ مرحله‌های تحصیلی (primary-a1 / primary-a2-listening / …): کلِ فایل JSON، تکه‌تکه در D1.
+    //   تکه‌ها فقط رشته‌ی خامِ فایل‌اند و با هم چسبانده می‌شوند (بدونِ parse کردن) → پاسخ دقیقاً همان فایل است.
+    if (path === "/api/content/blob") {
+      const key = (url.searchParams.get("key") || "").trim();
+      if (!BLOB_KEY_RE.test(key)) return jsonResp({ error: "bad key" }, 400, cors);
+      const meta = await metaOf(env, "blob:" + key);
+      if (!meta) return jsonResp({ error: "content not seeded", code: "not_ready" }, 503, cors);
+      if (have && have === meta.version) return jsonResp({ notModified: true, version: meta.version }, 200, cors);
+      const { results } = await env.TR_DB.prepare(
+        "SELECT data FROM paid_blob WHERE key = ?1 ORDER BY chunk"
+      ).bind(key).all();
+      const rows = results || [];
+      // 🛟 seed نیمه‌کاره (تعدادِ تکه‌ها با meta نمی‌خواند) → ۵۰۳؛ اپ از کشِ گوشی استفاده می‌کند یا دوباره تلاش می‌کند
+      if (!rows.length || (meta.count && rows.length !== meta.count)) {
+        return jsonResp({ error: "content incomplete", code: "not_ready" }, 503, cors);
+      }
+      const body = rows.map((r) => String(r.data)).join("");
+      return jsonResp(`{"version":${JSON.stringify(meta.version)},"data":${body}}`, 200, cors);
+    }
+
     // 📦 همه‌ی موضوع‌های مکالمه با «یک درخواست» (پیش‌دانلودِ گوشی؛ یک کوئری D1)
     //   → {version, count, topics:{<id>:{version, topic}}}  ·  v=<نسخه> یکی باشد → {notModified:true}
     if (path === "/api/content/conv-bundle") {
+      // 🎒 kind=primary → فقط مکالمه‌های مرحله‌های تحصیلی؛ بدونِ kind → بقیه (مثلِ قبل، تا نسخه‌های قبلیِ اپ و حجمِ بسته عوض نشود)
+      const eduOnly = (url.searchParams.get("kind") || "") === "primary";
       const { results } = await env.TR_DB.prepare(
-        "SELECT id, version, data FROM paid_conv_topics ORDER BY kind, idx"
+        eduOnly
+          ? "SELECT id, version, data FROM paid_conv_topics WHERE kind = 'primary' ORDER BY idx"
+          : "SELECT id, version, data FROM paid_conv_topics WHERE kind != 'primary' ORDER BY kind, idx"
       ).all();
       const rows = results || [];
+      if (eduOnly && !rows.length) return jsonResp({ error: "content not seeded", code: "not_ready" }, 503, cors);
       let h = 5381;
       const sig = rows.map((r) => r.id + ":" + r.version).join("|");
       for (let i = 0; i < sig.length; i++) h = ((h * 33) ^ sig.charCodeAt(i)) >>> 0;

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/data/paid_content.dart';
 import '../../core/models/daily_word.dart';
 import '../../core/theme/app_theme_colors.dart';
+import '../../core/usage/free_limit.dart';
+import '../../core/usage/pro_status.dart';
 import '../../core/providers/primary_school_provider.dart';
 import '../../core/providers/words_filter_provider.dart';
 import '../../core/widgets/category_grid.dart';
@@ -14,12 +17,14 @@ import 'writing_practice_page.dart';
 
 /// نمای «Primary School ▸ A1» در تبِ دیکشنری من:
 /// شبکه‌ی موضوع‌ها (الفبا، اعداد، رنگ‌ها، حیوان‌ها، ...) و داخلِ هر موضوع لیستِ لغات.
-/// این لغات برای همه‌ی کاربران (رایگان و Pro) بازند.
+/// 💎 Education stage پولی است: Pro کلِ لغات را (از سرور/کشِ گوشی) می‌بیند؛ کاربرِ رایگان
+/// شبکه‌ی موضوع‌ها را با کارت‌های قفل‌شده می‌بیند و با لمس، پنجره‌ی «مخصوص Pro» باز می‌شود.
 class PrimarySchoolView extends ConsumerWidget {
   const PrimarySchoolView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isPro = ref.watch(isProProvider);
     final async = ref.watch(primaryTopicsProvider);
     final level = ref.watch(primaryLevelProvider);
     final topics = async.valueOrNull ?? const <PrimaryTopic>[];
@@ -33,7 +38,12 @@ class PrimarySchoolView extends ConsumerWidget {
     final searching = q.isNotEmpty;
     final allOpen = ref.watch(categoryAllOpenProvider('primary'));
     final practice = ref.watch(primaryPracticeOpenProvider);
-    final gridMode = practice || (topicKey == null && !allOpen && !searching);
+    // 🔒 کاربرِ رایگان همیشه فقط شبکه‌ی قفل‌شده را می‌بیند (لیستِ لغات/جستجو ندارد)
+    final loadFailed = isPro && async.hasError && topics.isEmpty;
+    final gridMode = !isPro ||
+        loadFailed ||
+        practice ||
+        (topicKey == null && !allOpen && !searching);
 
     PrimaryTopic? current;
     for (final t in topics) {
@@ -74,41 +84,70 @@ class PrimarySchoolView extends ConsumerWidget {
               title: (ui == 'fa' || ui == 'ar')
                   ? 'تمرین درک شنیداری'
                   : 'Listening Practice',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                    builder: (_) => ListeningPracticePage(level: level)),
-              ),
+              locked: !isPro,
+              onTap: () {
+                if (FreeLimit.blockUnlessPro()) return;
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) => ListeningPracticePage(level: level)),
+                );
+              },
             ),
             _PracticeCard(
               icon: Icons.quiz_rounded,
               title: (ui == 'fa' || ui == 'ar')
                   ? 'تمرین ساخت سؤال'
                   : 'Build the Question',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                    builder: (_) => QuestionPracticePage(level: level)),
-              ),
+              locked: !isPro,
+              onTap: () {
+                if (FreeLimit.blockUnlessPro()) return;
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) => QuestionPracticePage(level: level)),
+                );
+              },
             ),
             _PracticeCard(
               icon: Icons.edit_note_rounded,
               title: (ui == 'fa' || ui == 'ar')
                   ? 'تمرین نوشتن پیام و ایمیل'
                   : 'Writing Practice',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                    builder: (_) => WritingPracticePage(level: level)),
-              ),
+              locked: !isPro,
+              onTap: () {
+                if (FreeLimit.blockUnlessPro()) return;
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) => WritingPracticePage(level: level)),
+                );
+              },
             ),
           ],
           if (practice)
             const SizedBox(height: 90)
+          else if (loadFailed)
+            _RetryCard(
+              ui: ui,
+              onRetry: () {
+                ref.invalidate(primaryA1TopicsProvider);
+                ref.invalidate(primaryA2TopicsProvider);
+                ref.invalidate(primaryB1TopicsProvider);
+                PaidContent.prefetchEducation();
+              },
+            )
           else if (gridMode)
             ..._gridSections(
               topics: topics,
-              allTotal: all.length,
+              allTotal: isPro
+                  ? all.length
+                  : topics.fold<int>(0, (a, t) => a + t.count),
               allLabel: allLabel,
               ui: ui,
+              locked: !isPro,
               onTap: (k) {
+                if (!isPro) {
+                  FreeLimit.reportLocked();
+                  return;
+                }
                 if (k == null) {
                   ref.read(categoryAllOpenProvider('primary').notifier).state =
                       true;
@@ -130,7 +169,7 @@ class PrimarySchoolView extends ConsumerWidget {
             ),
         ],
       ),
-      // همه‌ی لغاتِ Primary برای همه بازند (قفلی نیست)
+      // لغاتِ Education stage فقط برای Pro‌اند (برای رایگان اصلاً لیستی نیست)
       freeSource: all,
       lockedInfo: null,
       levelAvailability: null,
@@ -143,8 +182,12 @@ class _PracticeCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
+  final bool locked;
   const _PracticeCard(
-      {required this.icon, required this.title, required this.onTap});
+      {required this.icon,
+      required this.title,
+      required this.onTap,
+      this.locked = false});
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +215,8 @@ class _PracticeCard extends StatelessWidget {
                       color: c.ink, fontWeight: FontWeight.w800, fontSize: 15),
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: c.inkSoft),
+              Icon(locked ? Icons.lock : Icons.chevron_right_rounded,
+                  color: locked ? c.gold : c.inkSoft),
             ],
           ),
         ),
@@ -189,14 +233,18 @@ List<Widget> _gridSections({
   required int allTotal,
   required String allLabel,
   required String ui,
+  required bool locked,
   required ValueChanged<String?> onTap,
 }) {
+  // free = 0 → کارتِ قفل‌شده‌ی طلایی با تعدادِ لغات؛ null = کارتِ عادی (Pro)
   CategoryItem item(PrimaryTopic t) => CategoryItem(
         key: t.key,
         label: t.label(ui),
-        total: t.words.length,
+        total: t.count,
+        free: locked ? 0 : null,
       );
-  final allItem = CategoryItem(key: null, label: allLabel, total: allTotal);
+  final allItem = CategoryItem(
+      key: null, label: allLabel, total: allTotal, free: locked ? 0 : null);
   return [
     CategoryGrid(
       list: 'daily',
@@ -204,4 +252,39 @@ List<Widget> _gridSections({
       onTap: onTap,
     ),
   ];
+}
+
+/// وقتی لغاتِ Pro نه در کشِ گوشی هست و نه دانلود شد: به‌جای چرخشِ بی‌پایان، دکمه‌ی تلاشِ دوباره.
+class _RetryCard extends StatelessWidget {
+  final String ui;
+  final VoidCallback onRetry;
+  const _RetryCard({required this.ui, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.appColors;
+    final fa = ui == 'fa' || ui == 'ar';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 36, 24, 90),
+      child: Column(
+        children: [
+          Icon(Icons.cloud_off_rounded, size: 40, color: c.inkSoft),
+          const SizedBox(height: 12),
+          Text(
+            fa
+                ? 'دریافتِ لغات انجام نشد. اینترنت را بررسی کن و دوباره تلاش کن. (بعد از اولین دانلود، لغات روی گوشی می‌مانند و آفلاین هم باز می‌شوند.)'
+                : "Couldn't load the words. Check your connection and try again. (After the first download they stay on your phone and work offline.)",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: c.inkSoft, fontSize: 13.5, height: 1.5),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(fa ? 'تلاش دوباره' : 'Try again'),
+          ),
+        ],
+      ),
+    );
+  }
 }

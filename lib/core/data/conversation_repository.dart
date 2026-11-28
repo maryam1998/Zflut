@@ -14,6 +14,8 @@ import 'paid_content.dart';
 ///   • متنِ هر موضوع فقط وقتی کاربر آن را باز می‌کند لود می‌شود ([loadTopic]):
 ///       رایگان → assets/data/conversations/<id>.json (فقط موضوع‌های رایگان، جمله‌های A1)
 ///       Pro    → Worker `/api/content/conversation?id=` + کشِ گوشی (هر موضوع یک فایل)
+///   🎒 مکالمه‌های مرحله‌های تحصیلی (p-…) هم Pro‌اند و فقط از Worker می‌آیند (داخلِ APK نیستند)؛
+///      فهرستِ نامشان داخلِ اپ است تا کاربرِ رایگان کارتِ قفل‌شده را ببیند.
 class ConversationRepository {
   ConversationRepository._() {
     PaidContent.onTopicUpdated = (id) => _cache.remove(id);
@@ -47,9 +49,11 @@ class ConversationRepository {
     _cache.clear();
     _pending.clear();
     if (_loaded && ProStatus.isPro) {
-      final ids = [for (final t in _all) if (t.kind != 'primary') t.id];
-      Future.delayed(const Duration(seconds: 1),
-          () => unawaited(PaidContent.prefetchTopics(ids)));
+      final ids = [for (final t in _all) t.id];
+      Future.delayed(const Duration(seconds: 1), () {
+        unawaited(PaidContent.prefetchTopics(ids));
+        unawaited(PaidContent.prefetchEducation());
+      });
     }
   }
 
@@ -82,7 +86,7 @@ class ConversationRepository {
             scenarios: const [],
           ),
       ];
-      // 🎒 مکالمه‌های Primary School ▸ A1 و A2 (+ Lower Secondary ▸ B1) (فایل‌های جدا؛ برای همه باز)
+      // 🎒 مکالمه‌های Education stage (A1/A2/B1/B2): فقط «نام» داخلِ اپ است (پولی؛ متنشان فقط روی سرور)
       for (final pf in const [
         'assets/data/primary_conversations_index.json',
         'assets/data/primary_a2_conversations_index.json',
@@ -99,7 +103,6 @@ class ConversationRepository {
               final m = e as Map;
               final name = m['topic']?.toString() ?? '';
               if (name.isEmpty) continue;
-              ProStatus.freeExtraTopics.add(name);
               extra.add(ConversationTopic(
                 id: m['id']?.toString() ?? '',
                 kind: 'primary',
@@ -117,9 +120,11 @@ class ConversationRepository {
       _error = null;
       // 🚀 Pro: متنِ موضوع‌ها را در پس‌زمینه پیش‌دانلود کن تا با لمس فوری باز شوند
       if (ProStatus.isPro) {
-        final ids = [for (final t in _all) if (t.kind != 'primary') t.id];
-        Future.delayed(const Duration(seconds: 1),
-            () => unawaited(PaidContent.prefetchTopics(ids)));
+        final ids = [for (final t in _all) t.id];
+        Future.delayed(const Duration(seconds: 1), () {
+          unawaited(PaidContent.prefetchTopics(ids));
+          unawaited(PaidContent.prefetchEducation());
+        });
       }
     } catch (e) {
       _error = e.toString();

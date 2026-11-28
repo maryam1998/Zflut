@@ -32,10 +32,27 @@ class PaidContent {
   static final Dio _dio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 10),
   ));
-  static const List<String> _keys = [
+  /// 🎒 بلاب‌های مرحله‌های تحصیلی (Education stage): لغات + تمرین‌ها. کلید = کلیدِ `/api/content/blob`.
+  static const List<String> eduBlobKeys = [
+    'primary-a1',
+    'primary-a2',
+    'primary-b1',
+    'primary-a1-listening',
+    'primary-a1-questions',
+    'primary-a1-writing',
+    'primary-a2-listening',
+    'primary-a2-questions',
+    'primary-a2-writing',
+    'primary-b1-listening',
+    'primary-b1-questions',
+    'primary-b1-writing',
+  ];
+
+  static final List<String> _keys = [
     'words:daily',
     'words:slang',
     'words:vocab',
+    for (final k in eduBlobKeys) 'blob:$k',
   ];
 
   static String _fileName(String key) => '${key.replaceAll(':', '_')}.json';
@@ -157,6 +174,7 @@ class PaidContent {
         final d = Directory('${(await _dir()).path}/conv');
         if (await d.exists()) await d.delete(recursive: true);
         await p.remove(_bundleVerPref);
+        await p.remove(_eduBundleVerPref);
         await p.setString(_fpPref, fp);
         _topicChecked.clear();
       }
@@ -208,9 +226,14 @@ class PaidContent {
         }
         if (todo.isEmpty) break;
         final before = todo.length;
-        if (await _downloadBundle()) {
-          // آنچه هنوز نیامده (مثلاً موضوعِ تازه) یکی‌یکی
-          todo.removeWhere((id) => _existsSync(id));
+        // 🎒 مکالمه‌های مرحله‌های تحصیلی (p-…) بسته‌ی جدا دارند؛ بقیه مثلِ قبل
+        final hasEdu = todo.any((id) => id.startsWith('p-'));
+        final hasOther = todo.any((id) => !id.startsWith('p-'));
+        if (hasOther && await _downloadBundle()) {
+          todo.removeWhere((id) => !id.startsWith('p-') && _existsSync(id));
+        }
+        if (hasEdu && await _downloadBundle(kind: 'primary')) {
+          todo.removeWhere((id) => id.startsWith('p-') && _existsSync(id));
         }
         var next = 0;
         Future<void> worker() async {
@@ -258,12 +281,16 @@ class PaidContent {
   /// پس بقیه‌ی کد بدون تغییر کار می‌کند. نسخه‌ی بسته در SharedPreferences است؛ اگر عوض نشده باشد
   /// سرور فقط {notModified} برمی‌گرداند. اگر endpoint نبود (سرورِ قدیمی) false برمی‌گردد.
   static const String _bundleVerPref = 'paid_v:conv-bundle';
+  static const String _eduBundleVerPref = 'paid_v:conv-bundle-primary';
 
-  static Future<bool> _downloadBundle() async {
+  static Future<bool> _downloadBundle({String? kind}) async {
     try {
+      final verPref = kind == 'primary' ? _eduBundleVerPref : _bundleVerPref;
       final p = await SharedPreferences.getInstance();
-      final have = p.getString(_bundleVerPref);
-      final r = await _fetch('/api/content/conv-bundle?f=1', have);
+      final have = p.getString(verPref);
+      final r = await _fetch(
+          '/api/content/conv-bundle?f=1${kind != null ? '&kind=$kind' : ''}',
+          have);
       if (r == null) return false;
       if (r['notModified'] == true) return true;
       final topics = r['topics'];
@@ -291,7 +318,7 @@ class PaidContent {
         await tmp.rename(f.path); // اتمی
         if (old != null && old != v['version']?.toString()) changedIds.add(id);
       }
-      await p.setString(_bundleVerPref, r['version']?.toString() ?? '');
+      await p.setString(verPref, r['version']?.toString() ?? '');
       for (final id in changedIds) {
         onTopicUpdated?.call(id);
       }
@@ -369,6 +396,142 @@ class PaidContent {
     await p.setString(_verKey(key), version);
   }
 
+  // ─────────── 🎒 مرحله‌های تحصیلی (Education stage): لغات و تمرین‌ها ───────────
+  // کلِ فایلِ JSON از `/api/content/blob?key=` می‌آید و روی گوشی کش می‌شود (paid_content/blob_<key>.json).
+  // ✅ قواعدِ «هیچ‌وقت گیر نکن»:
+  //   ۱) کش اول: اگر یک‌بار دانلود شده باشد، همیشه فوری و آفلاین باز می‌شود؛ نسخه فقط در پس‌زمینه چک می‌شود.
+  //   ۲) دانلودِ هم‌زمانِ یک کلید یک‌بار انجام می‌شود (prefetch و بازکردنِ صفحه یک درخواست را شریک می‌شوند).
+  //   ۳) فایلِ کشِ خراب پاک می‌شود و دوباره دانلود می‌شود؛ نوشتن اتمی است (tmp → rename).
+  //   ۴) پیش‌دانلودِ پس‌زمینه با تلاشِ دوباره (۰/۲۰/۶۰/۱۲۰/۳۰۰/۶۰۰ ثانیه)؛ شکستِ آن هیچ خطایی به کاربر نشان نمی‌دهد.
+
+  static final Map<String, Future<Map<String, dynamic>?>> _blobInflight = {};
+  static final Map<String, DateTime> _blobChecked = {};
+
+  /// داده‌ی یک بلاب (همان JSON فایل) یا null اگر Pro نیستی / کش نیست و دانلود نشد.
+  static Future<Map<String, dynamic>?> blob(String key) async {
+    if (!ProStatus.isPro) return null;
+    try {
+      final cached = await _readBlobCache(key);
+      if (cached != null) {
+        final last = _blobChecked[key];
+        if (last == null ||
+            DateTime.now().difference(last) > const Duration(minutes: 10)) {
+          _blobChecked[key] = DateTime.now();
+          unawaited(_refreshBlob(key));
+        }
+        return cached['data'] as Map<String, dynamic>;
+      }
+      final r = await _downloadBlob(key)
+          .timeout(const Duration(seconds: 40), onTimeout: () => null);
+      return r;
+    } catch (e) {
+      debugPrint('PaidContent.blob($key): $e');
+      return null;
+    }
+  }
+
+  static Future<File> _blobFile(String key) async =>
+      File('${(await _dir()).path}/${_fileName('blob:$key')}');
+
+  static Future<bool> _blobCached(String key) async {
+    try {
+      return await (await _blobFile(key)).exists();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// {version, data} از کش، یا null (نبود/خراب).
+  static Future<Map<String, dynamic>?> _readBlobCache(String key) async {
+    final f = await _blobFile(key);
+    try {
+      if (!await f.exists()) return null;
+      final m = await compute(_decodeMap, await f.readAsString());
+      if (m['data'] is Map<String, dynamic>) return m;
+      throw const FormatException('no data');
+    } catch (e) {
+      debugPrint('PaidContent.blobCache($key) corrupt: $e');
+      try {
+        await f.delete();
+      } catch (_) {}
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> _downloadBlob(String key,
+      {String? have}) {
+    return _blobInflight[key] ??= _downloadBlobRaw(key, have)
+        .whenComplete(() => _blobInflight.remove(key));
+  }
+
+  static Future<Map<String, dynamic>?> _downloadBlobRaw(
+      String key, String? have) async {
+    final r = await _fetch(
+        '/api/content/blob?key=${Uri.encodeQueryComponent(key)}', have);
+    if (r == null || r['notModified'] == true) return null;
+    final d = r['data'];
+    if (d is! Map<String, dynamic>) return null;
+    final f = await _blobFile(key);
+    final tmp = File('${f.path}.tmp');
+    await tmp.writeAsString(r['__raw'] as String, flush: true);
+    await tmp.rename(f.path); // اتمی
+    final p = await SharedPreferences.getInstance();
+    await p.setString(_verKey('blob:$key'), r['version']?.toString() ?? '');
+    return d;
+  }
+
+  /// نسخه را چک می‌کند؛ اگر تازه‌تر بود کش را عوض می‌کند و لیست‌ها دوباره بارگذاری می‌شوند.
+  static Future<void> _refreshBlob(String key) async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final have = p.getString(_verKey('blob:$key'));
+      final d = await _downloadBlob(key, have: have);
+      if (d != null && ProStatus.isPro) revision.value++;
+    } catch (e) {
+      debugPrint('PaidContent.refreshBlob($key): $e');
+    }
+  }
+
+  static bool _eduPrefetching = false;
+
+  /// 🚀 لغات/تمرین‌های مرحله‌های تحصیلی را در پس‌زمینه می‌گیرد تا لمسِ کاربر فوری باز شود.
+  /// با اینترنتِ ضعیف/خطای سرور بی‌صدا چند بار با فاصله دوباره تلاش می‌کند.
+  static Future<void> prefetchEducation() async {
+    if (_eduPrefetching || !ProStatus.isPro) return;
+    _eduPrefetching = true;
+    var gotAny = false;
+    try {
+      const waits = [0, 20, 60, 120, 300, 600]; // ثانیه
+      for (final w in waits) {
+        if (!ProStatus.isPro) break;
+        if (w > 0) await Future<void>.delayed(Duration(seconds: w));
+        var left = 0;
+        for (final k in eduBlobKeys) {
+          if (!ProStatus.isPro) break;
+          if (await _blobCached(k)) continue;
+          while (_userWaiting > 0) {
+            await Future<void>.delayed(const Duration(milliseconds: 400));
+          }
+          try {
+            final d = await _downloadBlob(k);
+            if (d != null) {
+              gotAny = true;
+            } else {
+              left++;
+            }
+          } catch (e) {
+            left++;
+            debugPrint('PaidContent.prefetchEducation($k): $e');
+          }
+        }
+        if (left == 0) break;
+      }
+    } finally {
+      _eduPrefetching = false;
+    }
+    if (gotAny && ProStatus.isPro) revision.value++;
+  }
+
   // ─────────── شبکه ───────────
 
   /// پاسخِ سرور (به‌همراهِ '__raw' = متنِ خام برای ذخیره در کش) یا null.
@@ -432,11 +595,15 @@ class PaidContent {
         final rv = remote['version']?.toString() ?? '';
         final have = prefs.getString(_verKey(key));
         if (have == rv) continue;
+        // 🎒 بلابِ تحصیلی که هنوز دانلود نشده را اینجا نمی‌گیریم (prefetchEducation/باز کردنِ صفحه می‌گیرد)
+        if (key.startsWith('blob:') && have == null) continue;
         final isWords = key.startsWith('words:');
         final name = key.split(':')[1];
-        final path = isWords
-            ? '/api/content/words?list=$name'
-            : '/api/content/conversations?kind=$name';
+        final path = key.startsWith('blob:')
+            ? '/api/content/blob?key=$name'
+            : isWords
+                ? '/api/content/words?list=$name'
+                : '/api/content/conversations?kind=$name';
         final r = await _fetch(path, have);
         if (r == null || r['notModified'] == true) continue;
         await _writeCache(key, r['version']?.toString() ?? rv, r['__raw'] as String);
@@ -473,8 +640,10 @@ class PaidContent {
       for (final k in _keys) {
         await p.remove(_verKey(k));
       }
+      await p.remove(_eduBundleVerPref);
       await p.remove(_bundleVerPref); // وگرنه بعد از ورودِ دوباره «notModified» می‌آید ولی فایل‌ها پاک شده‌اند
       _topicChecked.clear();
+      _blobChecked.clear();
     } catch (e) {
       debugPrint('PaidContent.clearCache: $e');
     }

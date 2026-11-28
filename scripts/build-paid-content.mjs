@@ -11,6 +11,13 @@
 //   node scripts/build-paid-content.mjs --sql content_seed
 //       ← فایل‌های SQL برای ریختنِ محتوای پولی در D1 (جدول‌های paid_words / paid_conversations / content_meta)
 //
+// 🎒 مرحله‌های تحصیلی (Education stage) — پولی و فقط روی سرور:
+//   paid-content/education/primary-{a1,a2,b1}.json                 لغات
+//   paid-content/education/primary-{a1,a2,b1}-{listening,questions,writing}.json   تمرین‌ها
+//   paid-content/education/conversations/p-*.json                  مکالمه‌ها (هر موضوع یک فایل؛ نامِ فایل = شناسه)
+//   --assets  → assets/data/primary_index.json (فقط نام و تعدادِ موضوع‌ها؛ برای نمایشِ کارتِ قفل به کاربرِ رایگان)
+//   --sql     → جدولِ paid_blob (لغات/تمرین‌ها) + ردیف‌های kind='primary' در paid_conv_topics
+//
 // برای تغییرِ محتوا: فایل‌های paid-content/ را عوض کن (نه assets/data) و دوباره اجرا کن.
 // ---------------------------------------------------------------------------
 import fs from "node:fs";
@@ -299,6 +306,62 @@ function buildIndex(prepared) {
   return out;
 }
 
+
+// ─────────── 🎒 مرحله‌های تحصیلی (Education stage) ───────────
+const EDU = path.join(SRC, "education");
+const EDU_LEVELS = ["a1", "a2", "b1"];
+
+/** بلاب‌ها: کلید → نامِ فایل (کلید همان کلیدِ /api/content/blob است) */
+function eduBlobs() {
+  const out = [];
+  for (const l of EDU_LEVELS) {
+    out.push([`primary-${l}`, path.join(EDU, `primary-${l}.json`)]);
+    for (const k of ["listening", "questions", "writing"]) out.push([`primary-${l}-${k}`, path.join(EDU, `primary-${l}-${k}.json`)]);
+  }
+  return out;
+}
+
+/** مکالمه‌های primary: [{id, idx, topic, ver, text}] به ترتیبِ نامِ فایل */
+function eduTopics() {
+  const dir = path.join(EDU, "conversations");
+  if (!fs.existsSync(dir)) return [];
+  const files = fs.readdirSync(dir).filter((f) => /^p-[a-z0-9-]+\.json$/.test(f)).sort();
+  return files.map((f, idx) => {
+    const id = f.replace(/\.json$/, "");
+    const obj = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
+    const text = JSON.stringify(obj);
+    return { id, idx, topic: obj.topic || id, ver: hash(text), text };
+  });
+}
+
+/** ✂️ رشته را به تکه‌های ≤ maxBytes (UTF-8) می‌شکند؛ وسطِ surrogate pair نمی‌برد، چسباندنِ تکه‌ها = رشته‌ی اصلی */
+function splitByBytes(str, maxBytes) {
+  const parts = [];
+  let cur = "", bytes = 0;
+  for (const ch of str) { // for…of روی code point می‌چرخد، نه code unit
+    const b = Buffer.byteLength(ch, "utf8");
+    if (bytes + b > maxBytes) { parts.push(cur); cur = ""; bytes = 0; }
+    cur += ch; bytes += b;
+  }
+  if (cur) parts.push(cur);
+  return parts;
+}
+
+/** assets/data/primary_index.json: نام و تعدادِ موضوع‌های هر سطح (بدونِ هیچ لغتی) */
+function buildPrimaryIndex() {
+  const out = { v: 1, levels: {} };
+  for (const l of EDU_LEVELS) {
+    const j = JSON.parse(fs.readFileSync(path.join(EDU, `primary-${l}.json`), "utf8"));
+    out.levels[l.toUpperCase()] = j.topics.map((t) => {
+      const e = { key: t.key, fa: t.fa, en: t.en };
+      if (t.group) e.group = t.group;
+      e.n = (t.words || []).length;
+      return e;
+    });
+  }
+  return out;
+}
+
 const args = process.argv.slice(2);
 
 const tools = buildTopicTools();
@@ -324,6 +387,8 @@ if (args.includes("--assets")) {
     fs.writeFileSync(path.join(convDir, `${t.id}.json`), JSON.stringify(free));
   }
   fs.writeFileSync("assets/data/conversations_index.json", JSON.stringify(buildConvIndex()));
+  // 🎒 مرحله‌های تحصیلی: فقط ایندکسِ نام/تعداد داخلِ اپ می‌آید؛ لغات/تمرین/مکالمه‌ها فقط روی سرور هستند.
+  fs.writeFileSync("assets/data/primary_index.json", JSON.stringify(buildPrimaryIndex()));
   console.log("assets/data: free words + conversations/<id>.json (free topics) + indexes written");
 }
 
@@ -337,10 +402,12 @@ if (si >= 0) {
     "CREATE TABLE IF NOT EXISTS paid_words (list TEXT NOT NULL, chunk INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (list, chunk))",
     "CREATE TABLE IF NOT EXISTS paid_conversations (kind TEXT NOT NULL, idx INTEGER NOT NULL, topic TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY (kind, idx))",
     "CREATE TABLE IF NOT EXISTS paid_conv_topics (id TEXT PRIMARY KEY, kind TEXT NOT NULL, idx INTEGER NOT NULL, topic TEXT NOT NULL, version TEXT NOT NULL, data TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS paid_blob (key TEXT NOT NULL, chunk INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (key, chunk))",
     "CREATE TABLE IF NOT EXISTS content_meta (key TEXT PRIMARY KEY, version TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0)",
     "DELETE FROM paid_words",
     "DELETE FROM paid_conversations",
     "DELETE FROM paid_conv_topics",
+    "DELETE FROM paid_blob",
     "DELETE FROM content_meta",
   ];
 
@@ -367,6 +434,32 @@ if (si >= 0) {
     const s = JSON.stringify(t.full);
     if (Buffer.byteLength(s, "utf8") > 90000) throw new Error(`topic too large for one D1 statement: ${t.topic}`);
     stmts.push(`INSERT INTO paid_conv_topics (id, kind, idx, topic, version, data) VALUES (${q(t.id)}, ${q(t.kind)}, ${t.idx}, ${q(t.topic)}, ${q(t.ver)}, ${q(s)})`);
+  }
+
+  // 🎒 مرحله‌های تحصیلی: مکالمه‌ها (kind='primary'؛ در conv-bundle?kind=primary و /conversation?id= می‌آیند)
+  const eduT = eduTopics();
+  for (const t of eduT) {
+    if (Buffer.byteLength(t.text, "utf8") > 90000) throw new Error(`topic too large for one D1 statement: ${t.id}`);
+    stmts.push(`INSERT INTO paid_conv_topics (id, kind, idx, topic, version, data) VALUES (${q(t.id)}, 'primary', ${t.idx}, ${q(t.topic)}, ${q(t.ver)}, ${q(t.text)})`);
+  }
+  // 🎒 لغات و تمرین‌ها: کلِ فایل (فشرده) → تکه‌های ≤ ۵۵KB (سقفِ هر دستورِ D1 صد کیلوبایت است)
+  for (const [key, file] of eduBlobs()) {
+    const text = JSON.stringify(JSON.parse(fs.readFileSync(file, "utf8")));
+    const parts = splitByBytes(text, 55000);
+    parts.forEach((p, i) => stmts.push(`INSERT INTO paid_blob (key, chunk, data) VALUES (${q(key)}, ${i}, ${q(p)})`));
+    // count = تعدادِ تکه‌ها (Worker با آن مطمئن می‌شود seed کامل است)
+    stmts.push(`INSERT INTO content_meta (key, version, count) VALUES (${q("blob:" + key)}, ${q(hash(text))}, ${parts.length})`);
+  }
+  // 🧪 هر موضوعِ فهرستِ primary باید فایل داشته باشد (و برعکس) — وگرنه همین‌جا هشدار می‌دهد
+  {
+    const have = new Set(eduT.map((t) => t.id));
+    for (const f of ["primary_conversations_index", "primary_a2_conversations_index", "primary_b1_conversations_index", "primary_b2_conversations_index"]) {
+      const fp = path.join("assets", "data", f + ".json");
+      if (!fs.existsSync(fp)) continue;
+      for (const e of JSON.parse(fs.readFileSync(fp, "utf8")).list || []) {
+        if (!have.has(e.id)) console.warn(`⚠️ ${f}: «${e.id}» فایلِ مکالمه ندارد (paid-content/education/conversations/${e.id}.json)`);
+      }
+    }
   }
 
   // ⚠️ مسیرِ قدیمی (نسخه‌های قدیمیِ اپ): کلِ لیست در یک پاسخ — برای سازگاری نگه داشته شده
