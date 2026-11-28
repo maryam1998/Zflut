@@ -790,6 +790,8 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                 BackTranslationLine(
                   langCode: widget.langCode,
                   text: alt,
+                  en: widget.en,
+                  sourceLang: widget.sourceLang,
                   alwaysShow: true,
                   compact: widget.compact,
                   leftInset: 0,

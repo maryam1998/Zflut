@@ -8,7 +8,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../ai/ai_gateway.dart';
 import '../providers/language_selection_provider.dart';
+import '../providers/ai_settings_provider.dart';
+import '../storage/translation_cache_db.dart';
+import '../translate/translation_service.dart' show englishLangName;
+import '../usage/free_limit.dart';
 import '../providers/text_prefs_provider.dart';
 import '../providers/translation_provider.dart';
 import '../theme/app_theme_colors.dart';
@@ -49,6 +54,8 @@ class _BackTranslationLineState extends ConsumerState<BackTranslationLine> {
   String? _back;
   String _forKey = '';
   int _gen = 0;
+  String? _meaning; // «معنی دقیق» (AI، فقط وقتی کاربر بخواهد)؛ روی گوشی کش می‌شود
+  bool _loadingMeaning = false;
 
   static const Set<String> _rtlLangs = {'fa', 'ar', 'he', 'ur'};
 
@@ -66,6 +73,8 @@ class _BackTranslationLineState extends ConsumerState<BackTranslationLine> {
     if (key == _forKey) return;
     _forKey = key;
     _back = null;
+    _meaning = TranslationCacheDb.instance.peek(_mKey(native));
+    _loadingMeaning = false;
     final gen = ++_gen;
     if (txt.isEmpty || native.isEmpty || native == widget.langCode) return;
     () async {
@@ -120,6 +129,83 @@ class _BackTranslationLineState extends ConsumerState<BackTranslationLine> {
     return 2 * hit / ((x.length - 1) + (y.length - 1));
   }
 
+  static const Map<String, String> _literalLabel = {
+    'fa': 'تحت‌اللفظی',
+    'en': 'Literal',
+    'ar': 'حرفي',
+    'es': 'Literal',
+    'de': 'Wörtlich',
+    'fr': 'Littéral',
+  };
+  static const Map<String, String> _meaningBtn = {
+    'fa': 'معنی دقیق؟',
+    'en': 'Exact meaning?',
+    'ar': 'المعنى الدقيق؟',
+    'es': '¿Significado exacto?',
+    'de': 'Genaue Bedeutung?',
+    'fr': 'Sens exact ?',
+  };
+
+  String _mKey(String native) =>
+      '__mean__::$native::${widget.langCode}::${widget.en.trim()}::${widget.text.trim()}';
+
+  /// 💡 «معنی دقیق؟»: یک‌بار AI می‌گوید این ترجمه برای یک بومی واقعاً چه معنایی دارد (نه کلمه‌به‌کلمه)
+  /// و اگر غلط/غیرطبیعی است، ترجمه‌ی بهتر پیشنهاد می‌دهد. فقط Pro؛ جواب روی گوشی کش می‌شود.
+  Future<void> _askMeaning(String native) async {
+    if (_loadingMeaning) return;
+    if (FreeLimit.blockUnlessPro()) return;
+    final key = _mKey(native);
+    setState(() => _loadingMeaning = true);
+    String? out;
+    try {
+      final svc = ref.read(translationServiceProvider);
+      final ai = ref.read(aiSettingsProvider);
+      final nat = englishLangName(native);
+      final tgt = englishLangName(widget.langCode);
+      final en = widget.en.trim();
+      final prompt = StringBuffer()
+        ..writeln('You are a precise translation checker.');
+      if (en.isNotEmpty) {
+        prompt.writeln(
+            'Source (${englishLangName(widget.sourceLang)}): "$en"');
+      }
+      prompt
+        ..writeln('Translation ($tgt): "${widget.text.trim()}"')
+        ..writeln(
+            'In $nat, in ONE short sentence, say what this translation really means to a native $tgt speaker in this situation (the natural meaning, not word-for-word).')
+        ..writeln(
+            'If the translation is wrong or unnatural, add a second line starting with ⚠ that gives a better $tgt translation.')
+        ..write('Output only these lines, plain text.');
+      out = (await aiGenerate(
+        svc: svc,
+        settings: ai,
+        prompt: prompt.toString(),
+        maxTokens: 300,
+        retries: 1,
+        timeoutMs: 20000,
+        feature: Feature.chat,
+      ))
+          .trim();
+    } catch (_) {}
+    if (out != null && out.isNotEmpty) {
+      await TranslationCacheDb.instance.put(key, out);
+    }
+    if (!mounted) return;
+    final ok = out != null && out.isNotEmpty;
+    setState(() {
+      _loadingMeaning = false;
+      if (ok && key == _mKey(native)) _meaning = out;
+    });
+    if (!ok) {
+      final fa = native == 'fa';
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+        content: Text(fa ? 'پاسخی نیامد، دوباره امتحان کن' : 'No response, try again'),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final native =
@@ -147,29 +233,107 @@ class _BackTranslationLineState extends ConsumerState<BackTranslationLine> {
     final c = context.appColors;
     final tp = ref.watch(textPrefsProvider);
     final rtl = _rtlLangs.contains(native);
+    final fs = (widget.compact ? 10.5 : 11) * tp.scaleFactor;
+    final base = TextStyle(
+      color: c.inkSoft.withOpacity(0.8),
+      fontSize: fs,
+      height: 1.3,
+    );
+    final label = _literalLabel[native] ?? _literalLabel['en']!;
+    final btn = _meaningBtn[native] ?? _meaningBtn['en']!;
+    final m = _meaning;
     return Padding(
       padding: EdgeInsets.only(left: widget.leftInset, top: 1, bottom: 2),
       child: Align(
         alignment: rtl ? Alignment.centerRight : Alignment.centerLeft,
         child: Directionality(
           textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
-          child: Row(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.subdirectory_arrow_left_rounded,
-                  size: 12, color: c.inkSoft.withOpacity(0.55)),
-              const SizedBox(width: 3),
-              Flexible(
-                child: Text(
-                  b,
-                  textAlign: rtl ? TextAlign.right : TextAlign.left,
-                  style: TextStyle(
-                    color: c.inkSoft.withOpacity(0.8),
-                    fontSize: (widget.compact ? 10.5 : 11) * tp.scaleFactor,
-                    height: 1.3,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.subdirectory_arrow_left_rounded,
+                      size: 12, color: c.inkSoft.withOpacity(0.55)),
+                  const SizedBox(width: 3),
+                  Flexible(
+                    child: Text.rich(
+                      TextSpan(children: [
+                        // ↩ برچسب: این ترجمه‌ی برگشتیِ کلمه‌به‌کلمه است، نه معنیِ اصطلاحی
+                        TextSpan(
+                          text: '$label: ',
+                          style: base.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontStyle: FontStyle.italic,
+                            fontSize: fs - 1,
+                          ),
+                        ),
+                        TextSpan(text: b),
+                      ]),
+                      textAlign: rtl ? TextAlign.right : TextAlign.left,
+                      style: base,
+                    ),
+                  ),
+                ],
+              ),
+              if (m != null && m.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.lightbulb_outline_rounded,
+                          size: 12, color: c.gold),
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(
+                          m,
+                          textAlign: rtl ? TextAlign.right : TextAlign.left,
+                          style: base.copyWith(
+                            color: c.inkSoft,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                InkWell(
+                  onTap: _loadingMeaning ? null : () => _askMeaning(native),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_loadingMeaning)
+                          SizedBox(
+                            width: 11,
+                            height: 11,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 1.6, color: c.gold),
+                          )
+                        else
+                          Icon(Icons.help_outline_rounded,
+                              size: 12, color: c.gold),
+                        const SizedBox(width: 4),
+                        Text(
+                          btn,
+                          style: base.copyWith(
+                            color: c.gold,
+                            fontWeight: FontWeight.w700,
+                            fontSize: fs - 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
