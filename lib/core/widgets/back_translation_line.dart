@@ -80,10 +80,13 @@ class _BackTranslationLineState extends ConsumerState<BackTranslationLine> {
     () async {
       String r = '';
       try {
+        // 🏷️ نام‌های خاص (Kim, Tom…) در ترجمه‌ی برگشتی خراب می‌شدند (金 → «گائو»):
+        // معادلِ نام در متنِ ترجمه با خودِ نام جایگزین می‌شود تا برگشتی هم درست بماند.
+        final send = await _protectNames(txt);
         r = decodeHtmlEntities((await ref
                 .read(translationServiceProvider)
                 .translate(
-                  text: txt,
+                  text: send,
                   targetLang: native,
                   sourceLang: widget.langCode,
                   aiSettings: null, // فقط رایگان؛ هزینه‌ی AI ندارد
@@ -145,6 +148,95 @@ class _BackTranslationLineState extends ConsumerState<BackTranslationLine> {
     'de': 'Genaue Bedeutung?',
     'fr': 'Sens exact ?',
   };
+
+  static const Set<String> _titleWords = {
+    'miss', 'mr', 'mrs', 'ms', 'mister', 'dr', 'doctor', 'professor', 'prof',
+    'teacher', 'sir', 'madam', 'uncle', 'aunt', 'coach', 'captain',
+  };
+  static const Set<String> _notNames = {
+    'i', "i'm", "i'll", "i've", "i'd", 'monday', 'tuesday', 'wednesday',
+    'thursday', 'friday', 'saturday', 'sunday', 'january', 'february',
+    'march', 'april', 'may', 'june', 'july', 'august', 'september',
+    'october', 'november', 'december', 'english', 'spanish', 'german',
+    'french', 'chinese', 'persian', 'arabic', 'christmas', 'ok', 'okay',
+  };
+
+  /// نام‌های خاصِ جمله‌ی مبدأ: واژه‌ی بزرگ‌حرفِ وسطِ جمله (نه اولِ جمله، نه عنوان مثل Miss/Mr).
+  /// فهرستِ نام‌ها و عنوانِ قبلِ آن‌ها (یا '') برمی‌گردد.
+  List<({String name, String title})> _properNames(String en) {
+    final out = <({String name, String title})>[];
+    final seen = <String>{};
+    final re = RegExp(r"[\p{L}][\p{L}'’.\-]*", unicode: true);
+    String prev = '';
+    for (final m in re.allMatches(en)) {
+      var w = m.group(0)!;
+      w = w.replaceAll(RegExp(r"(['’]s)$"), '').replaceAll(RegExp(r'[.\-]+$'), '');
+      if (w.isEmpty) continue;
+      final lw = w.toLowerCase();
+      final before = en.substring(0, m.start).trimRight();
+      final sentenceStart =
+          before.isEmpty || RegExp(r'[.!?…؟]$').hasMatch(before);
+      final upper = w[0] != w[0].toLowerCase();
+      final allCaps = w.length > 1 && w == w.toUpperCase();
+      if (upper &&
+          !allCaps &&
+          !sentenceStart &&
+          w.length >= 2 &&
+          !_titleWords.contains(lw) &&
+          !_notNames.contains(lw) &&
+          seen.add(lw)) {
+        out.add((name: w, title: _titleWords.contains(prev) ? prev : ''));
+      }
+      prev = lw;
+    }
+    return out;
+  }
+
+  /// معادلِ نام در متنِ ترجمه را پیدا و با خودِ نام عوض می‌کند (فقط اگر پیدا شد؛ وگرنه متن دست‌نخورده).
+  Future<String> _protectNames(String txt) async {
+    final en = widget.en.trim();
+    if (en.isEmpty || widget.sourceLang == widget.langCode) return txt;
+    final names = _properNames(en);
+    if (names.isEmpty) return txt;
+    final svc = ref.read(translationServiceProvider);
+    Future<String> tr(String t) async {
+      try {
+        return decodeHtmlEntities((await svc.translate(
+          text: t,
+          targetLang: widget.langCode,
+          sourceLang: widget.sourceLang,
+          aiSettings: null,
+          aiOnlyIfSuspicious: true,
+        ))
+            .trim());
+      } catch (_) {
+        return '';
+      }
+    }
+
+    var send = txt;
+    for (final n in names) {
+      final cands = <String>[];
+      final c1 = await tr(n.name);
+      if (c1.isNotEmpty && c1 != n.name) cands.add(c1);
+      if (n.title.isNotEmpty) {
+        // «Miss Kim» → «金小姐» منهای «Miss» → «小姐» = «金»
+        final phrase = await tr('${n.title[0].toUpperCase()}${n.title.substring(1)} ${n.name}');
+        final tOnly = await tr('${n.title[0].toUpperCase()}${n.title.substring(1)}');
+        if (phrase.isNotEmpty && tOnly.isNotEmpty && phrase.contains(tOnly)) {
+          final rest = phrase.replaceFirst(tOnly, '').replaceAll(RegExp(r'[\s،,.。]'), '');
+          if (rest.isNotEmpty && rest != n.name) cands.add(rest);
+        }
+      }
+      for (final cnd in cands) {
+        if (cnd.length >= 1 && send.contains(cnd)) {
+          send = send.replaceAll(cnd, ' ${n.name} ');
+          break;
+        }
+      }
+    }
+    return send.replaceAll(RegExp(r'[ ]{2,}'), ' ').trim();
+  }
 
   String _mKey(String native) =>
       '__mean__::$native::${widget.langCode}::${widget.en.trim()}::${widget.text.trim()}';

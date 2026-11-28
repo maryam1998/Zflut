@@ -110,6 +110,8 @@ class _AppShellState extends ConsumerState<AppShell> {
     // 💬 پیامِ کوتاهِ ↻ (تأییدِ هوشمند / سقفِ روزانه / گزینه‌ی دوم)
     _refreshSub = TranslationService.refreshNotices.stream.listen((kind) {
       if (!mounted) return;
+      // 🤫 پیامِ «سقفِ رفرش پر شد» دیگر نشان داده نمی‌شود (کاربر را کلافه می‌کرد)
+      if (kind == 'limit') return;
       final m = _refreshMsgs[kind];
       if (m == null) return;
       final ui = ref.read(appPrefsProvider).uiLang;
