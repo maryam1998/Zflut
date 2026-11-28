@@ -155,6 +155,7 @@ class PaidContent {
   // با محتوای عوض‌شده نصب شود، اثرانگشت فرق می‌کند و کشِ قدیمی پاک می‌شود تا
   // محتوای تازه‌ی APK دیده شود (کشِ قدیمی نسخه‌ی جدید را پنهان نکند).
   static const String _fpPref = 'conv_cache_fp_v1';
+  static const String _revalPref = 'conv_cache_reval_pending';
   static Future<void>? _fpCheck;
 
   static Future<void> _ensureCacheMatchesApp() =>
@@ -171,10 +172,12 @@ class PaidContent {
       final fp = '$h:${raw.length}';
       final p = await SharedPreferences.getInstance();
       if (p.getString(_fpPref) != fp) {
-        final d = Directory('${(await _dir()).path}/conv');
-        if (await d.exists()) await d.delete(recursive: true);
+        // ⚡ کش پاک نمی‌شود (موضوع‌ها همچنان فوری باز می‌شوند)؛ فقط نسخه‌ی بسته‌ها فراموش
+        // می‌شود و در پس‌زمینه با سرور هم‌خوان می‌شود (فایلِ هر موضوع فقط اگر نسخه‌اش عوض
+        // شده باشد جایگزین می‌شود). فایلِ خراب هم مثلِ قبل خودکار پاک و دوباره گرفته می‌شود.
         await p.remove(_bundleVerPref);
         await p.remove(_eduBundleVerPref);
+        await p.setBool(_revalPref, true);
         await p.setString(_fpPref, fp);
         _topicChecked.clear();
       }
@@ -214,6 +217,19 @@ class PaidContent {
     var gotAny = false;
     try {
       await _ensureCacheMatchesApp();
+      // 🔄 بعد از آپدیتِ اپ: کش حفظ شده؛ نسخه‌ها در پس‌زمینه با سرور هم‌خوان می‌شوند
+      // (اگر شبکه نبود، پرچم می‌ماند و دفعه‌ی بعد دوباره تلاش می‌شود)
+      final sp = await SharedPreferences.getInstance();
+      if (sp.getBool(_revalPref) == true) {
+        final r = await Future.wait([
+          _downloadBundle(kind: 'primary'),
+          _downloadBundle(),
+        ]);
+        if (r.every((e) => e)) {
+          await sp.remove(_revalPref);
+          gotAny = true;
+        }
+      }
       // 🔁 اگر سرور/شبکه جواب نداد، با فاصله‌های بیشتر دوباره تلاش می‌شود (تا ۶ دور)
       const waits = [0, 20, 60, 120, 300, 600]; // ثانیه
       for (final w in waits) {
@@ -229,11 +245,17 @@ class PaidContent {
         // 🎒 مکالمه‌های مرحله‌های تحصیلی (p-…) بسته‌ی جدا دارند؛ بقیه مثلِ قبل
         final hasEdu = todo.any((id) => id.startsWith('p-'));
         final hasOther = todo.any((id) => !id.startsWith('p-'));
-        if (hasOther && await _downloadBundle()) {
-          todo.removeWhere((id) => !id.startsWith('p-') && _existsSync(id));
-        }
-        if (hasEdu && await _downloadBundle(kind: 'primary')) {
+        // 🎒 مکالمه‌های تحصیلی نسخه‌ی داخلِ اپ ندارند (فقط روی سرورند) پس اولویت با آن‌هاست؛
+        // هر دو بسته هم‌زمان گرفته می‌شوند
+        final eduF = hasEdu
+            ? _downloadBundle(kind: 'primary')
+            : Future<bool>.value(false);
+        final otherF = hasOther ? _downloadBundle() : Future<bool>.value(false);
+        if (await eduF) {
           todo.removeWhere((id) => id.startsWith('p-') && _existsSync(id));
+        }
+        if (await otherF) {
+          todo.removeWhere((id) => !id.startsWith('p-') && _existsSync(id));
         }
         var next = 0;
         Future<void> worker() async {
