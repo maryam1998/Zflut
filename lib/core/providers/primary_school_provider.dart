@@ -126,9 +126,14 @@ final primaryA2TopicsProvider = _levelProvider('A2');
 /// موضوع‌های Lower Secondary ▸ B1 (لغاتِ جدید: ۹۳۰۰۰۱ به بالا).
 final primaryB1TopicsProvider = _levelProvider('B1');
 
+/// موضوع‌های Upper Secondary ▸ B2 (لغاتِ جدید: ۹۴۰۰۰۱ به بالا).
+final primaryB2TopicsProvider = _levelProvider('B2');
+
 /// موضوع‌های سطحِ انتخاب‌شده (A1، A2 یا B1)
 final primaryTopicsProvider = Provider<AsyncValue<List<PrimaryTopic>>>((ref) {
   switch (ref.watch(primaryLevelProvider)) {
+    case 'B2':
+      return ref.watch(primaryB2TopicsProvider);
     case 'B1':
       return ref.watch(primaryB1TopicsProvider);
     case 'A2':

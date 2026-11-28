@@ -37,6 +37,7 @@ class PaidContent {
     'primary-a1',
     'primary-a2',
     'primary-b1',
+    'primary-b2',
     'primary-a1-listening',
     'primary-a1-questions',
     'primary-a1-writing',

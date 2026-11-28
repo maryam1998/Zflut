@@ -309,14 +309,17 @@ function buildIndex(prepared) {
 
 // ─────────── 🎒 مرحله‌های تحصیلی (Education stage) ───────────
 const EDU = path.join(SRC, "education");
-const EDU_LEVELS = ["a1", "a2", "b1"];
+const EDU_LEVELS = ["a1", "a2", "b1", "b2"];
 
 /** بلاب‌ها: کلید → نامِ فایل (کلید همان کلیدِ /api/content/blob است) */
 function eduBlobs() {
   const out = [];
   for (const l of EDU_LEVELS) {
     out.push([`primary-${l}`, path.join(EDU, `primary-${l}.json`)]);
-    for (const k of ["listening", "questions", "writing"]) out.push([`primary-${l}-${k}`, path.join(EDU, `primary-${l}-${k}.json`)]);
+    for (const k of ["listening", "questions", "writing"]) {
+      const f = path.join(EDU, `primary-${l}-${k}.json`);
+      if (fs.existsSync(f)) out.push([`primary-${l}-${k}`, f]); // b2: هنوز تمرین ندارد
+    }
   }
   return out;
 }

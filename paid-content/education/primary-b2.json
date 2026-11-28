@@ -1,0 +1,589 @@
+{
+ "v": 1,
+ "stage": "primary",
+ "level": "B2",
+ "topics": [
+  {
+   "key": "economy",
+   "fa": "اقتصاد و دارایی",
+   "en": "Economy & Finance",
+   "group": "life",
+   "words": [
+    {
+     "id": 500275,
+     "level": "B1",
+     "pos": "noun",
+     "en": "economy",
+     "fa": ""
+    },
+    {
+     "id": 701242,
+     "level": "B2",
+     "pos": "noun",
+     "en": "economics",
+     "fa": ""
+    },
+    {
+     "id": 701243,
+     "level": "B2",
+     "pos": "noun",
+     "en": "economist",
+     "fa": ""
+    },
+    {
+     "id": 701241,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "economic",
+     "fa": ""
+    },
+    {
+     "id": 500297,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "financial",
+     "fa": ""
+    },
+    {
+     "id": 940001,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "fiscal",
+     "fa": ""
+    },
+    {
+     "id": 940002,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "monetary",
+     "fa": ""
+    },
+    {
+     "id": 940003,
+     "level": "B2",
+     "pos": "noun",
+     "en": "GDP",
+     "fa": ""
+    },
+    {
+     "id": 940004,
+     "level": "B2",
+     "pos": "noun",
+     "en": "economic growth",
+     "fa": ""
+    },
+    {
+     "id": 701761,
+     "level": "B1",
+     "pos": "noun",
+     "en": "growth",
+     "fa": ""
+    },
+    {
+     "id": 702995,
+     "level": "C1",
+     "pos": "noun",
+     "en": "productivity",
+     "fa": ""
+    },
+    {
+     "id": 703378,
+     "level": "B2",
+     "pos": "noun",
+     "en": "sector",
+     "fa": ""
+    },
+    {
+     "id": 940005,
+     "level": "B2",
+     "pos": "noun",
+     "en": "public sector",
+     "fa": ""
+    },
+    {
+     "id": 940006,
+     "level": "B2",
+     "pos": "noun",
+     "en": "private sector",
+     "fa": ""
+    },
+    {
+     "id": 701981,
+     "level": "B2",
+     "pos": "noun",
+     "en": "inflation",
+     "fa": ""
+    },
+    {
+     "id": 940007,
+     "level": "B2",
+     "pos": "noun",
+     "en": "deflation",
+     "fa": ""
+    },
+    {
+     "id": 940008,
+     "level": "B2",
+     "pos": "noun",
+     "en": "interest rate",
+     "fa": ""
+    },
+    {
+     "id": 704545,
+     "level": "B1",
+     "pos": "noun",
+     "en": "exchange rate",
+     "fa": ""
+    },
+    {
+     "id": 940009,
+     "level": "B2",
+     "pos": "noun",
+     "en": "stock market",
+     "fa": ""
+    },
+    {
+     "id": 703671,
+     "level": "B2",
+     "pos": "noun",
+     "en": "stock",
+     "fa": ""
+    },
+    {
+     "id": 703436,
+     "level": "C1",
+     "pos": "noun",
+     "en": "shareholder",
+     "fa": ""
+    },
+    {
+     "id": 704391,
+     "level": "C1",
+     "pos": "noun",
+     "en": "dividend",
+     "fa": ""
+    },
+    {
+     "id": 702084,
+     "level": "B2",
+     "pos": "noun",
+     "en": "investment",
+     "fa": ""
+    },
+    {
+     "id": 702085,
+     "level": "B2",
+     "pos": "noun",
+     "en": "investor",
+     "fa": ""
+    },
+    {
+     "id": 940010,
+     "level": "B2",
+     "pos": "noun",
+     "en": "foreign investment",
+     "fa": ""
+    },
+    {
+     "id": 700259,
+     "level": "B2",
+     "pos": "noun",
+     "en": "asset",
+     "fa": ""
+    },
+    {
+     "id": 500412,
+     "level": "B1",
+     "pos": "noun",
+     "en": "wealth",
+     "fa": ""
+    },
+    {
+     "id": 703263,
+     "level": "B2",
+     "pos": "noun",
+     "en": "revenue",
+     "fa": ""
+    },
+    {
+     "id": 701436,
+     "level": "C1",
+     "pos": "noun",
+     "en": "expenditure",
+     "fa": ""
+    },
+    {
+     "id": 500289,
+     "level": "B1",
+     "pos": "noun",
+     "en": "expense",
+     "fa": ""
+    },
+    {
+     "id": 702282,
+     "level": "B1",
+     "pos": "noun",
+     "en": "loss",
+     "fa": ""
+    },
+    {
+     "id": 701012,
+     "level": "C1",
+     "pos": "noun",
+     "en": "deficit",
+     "fa": ""
+    },
+    {
+     "id": 703768,
+     "level": "C1",
+     "pos": "noun",
+     "en": "surplus",
+     "fa": ""
+    },
+    {
+     "id": 701659,
+     "level": "B2",
+     "pos": "noun",
+     "en": "fund",
+     "fa": ""
+    },
+    {
+     "id": 701662,
+     "level": "B2",
+     "pos": "noun",
+     "en": "funding",
+     "fa": ""
+    },
+    {
+     "id": 701542,
+     "level": "B2",
+     "pos": "noun",
+     "en": "finance",
+     "fa": ""
+    },
+    {
+     "id": 702466,
+     "level": "B2",
+     "pos": "noun",
+     "en": "mortgage",
+     "fa": ""
+    },
+    {
+     "id": 940011,
+     "level": "B2",
+     "pos": "noun",
+     "en": "taxation",
+     "fa": ""
+    },
+    {
+     "id": 703714,
+     "level": "C1",
+     "pos": "noun",
+     "en": "subsidy",
+     "fa": ""
+    },
+    {
+     "id": 703669,
+     "level": "C1",
+     "pos": "noun",
+     "en": "stimulus",
+     "fa": ""
+    },
+    {
+     "id": 704388,
+     "level": "C1",
+     "pos": "noun",
+     "en": "austerity",
+     "fa": ""
+    },
+    {
+     "id": 103193,
+     "level": "B2",
+     "pos": "noun",
+     "en": "pension",
+     "fa": ""
+    },
+    {
+     "id": 704199,
+     "level": "B2",
+     "pos": "noun",
+     "en": "welfare",
+     "fa": ""
+    },
+    {
+     "id": 940012,
+     "level": "B2",
+     "pos": "noun",
+     "en": "minimum wage",
+     "fa": ""
+    },
+    {
+     "id": 940013,
+     "level": "B2",
+     "pos": "noun",
+     "en": "living wage",
+     "fa": ""
+    },
+    {
+     "id": 940014,
+     "level": "B2",
+     "pos": "noun",
+     "en": "cost of living",
+     "fa": ""
+    },
+    {
+     "id": 940015,
+     "level": "B2",
+     "pos": "noun",
+     "en": "standard of living",
+     "fa": ""
+    },
+    {
+     "id": 940016,
+     "level": "B2",
+     "pos": "noun",
+     "en": "disposable income",
+     "fa": ""
+    },
+    {
+     "id": 940017,
+     "level": "B2",
+     "pos": "noun",
+     "en": "purchasing power",
+     "fa": ""
+    },
+    {
+     "id": 700812,
+     "level": "B1",
+     "pos": "noun",
+     "en": "consumer",
+     "fa": ""
+    },
+    {
+     "id": 700813,
+     "level": "B2",
+     "pos": "noun",
+     "en": "consumption",
+     "fa": ""
+    },
+    {
+     "id": 703754,
+     "level": "B1",
+     "pos": "noun",
+     "en": "supply",
+     "fa": ""
+    },
+    {
+     "id": 500263,
+     "level": "B1",
+     "pos": "noun",
+     "en": "demand",
+     "fa": ""
+    },
+    {
+     "id": 940018,
+     "level": "B2",
+     "pos": "noun",
+     "en": "supply and demand",
+     "fa": ""
+    },
+    {
+     "id": 700704,
+     "level": "C1",
+     "pos": "noun",
+     "en": "commodity",
+     "fa": ""
+    },
+    {
+     "id": 500386,
+     "level": "B1",
+     "pos": "noun",
+     "en": "shortage",
+     "fa": ""
+    },
+    {
+     "id": 703962,
+     "level": "B1",
+     "pos": "noun",
+     "en": "trade",
+     "fa": ""
+    },
+    {
+     "id": 701452,
+     "level": "B1",
+     "pos": "noun",
+     "en": "export",
+     "fa": ""
+    },
+    {
+     "id": 701928,
+     "level": "B1",
+     "pos": "noun",
+     "en": "import",
+     "fa": ""
+    },
+    {
+     "id": 704315,
+     "level": "B2",
+     "pos": "noun",
+     "en": "tariff",
+     "fa": ""
+    },
+    {
+     "id": 940019,
+     "level": "B2",
+     "pos": "noun",
+     "en": "trade deficit",
+     "fa": ""
+    },
+    {
+     "id": 704263,
+     "level": "B2",
+     "pos": "noun",
+     "en": "workforce",
+     "fa": ""
+    },
+    {
+     "id": 704057,
+     "level": "B1",
+     "pos": "noun",
+     "en": "unemployment",
+     "fa": ""
+    },
+    {
+     "id": 702900,
+     "level": "B1",
+     "pos": "noun",
+     "en": "poverty",
+     "fa": ""
+    },
+    {
+     "id": 700101,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "affordable",
+     "fa": ""
+    },
+    {
+     "id": 940020,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "overpriced",
+     "fa": ""
+    },
+    {
+     "id": 940021,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "cost-effective",
+     "fa": ""
+    },
+    {
+     "id": 703001,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "profitable",
+     "fa": ""
+    },
+    {
+     "id": 700435,
+     "level": "C1",
+     "pos": "noun",
+     "en": "boom",
+     "fa": ""
+    },
+    {
+     "id": 940022,
+     "level": "B2",
+     "pos": "noun",
+     "en": "downturn",
+     "fa": ""
+    },
+    {
+     "id": 703143,
+     "level": "B2",
+     "pos": "noun",
+     "en": "recession",
+     "fa": ""
+    },
+    {
+     "id": 940023,
+     "level": "B2",
+     "pos": "noun",
+     "en": "slump",
+     "fa": ""
+    },
+    {
+     "id": 700922,
+     "level": "B2",
+     "pos": "noun",
+     "en": "crisis",
+     "fa": ""
+    },
+    {
+     "id": 704361,
+     "level": "C1",
+     "pos": "noun",
+     "en": "bankruptcy",
+     "fa": ""
+    },
+    {
+     "id": 500201,
+     "level": "C2",
+     "pos": "adjective",
+     "en": "volatile",
+     "fa": ""
+    },
+    {
+     "id": 700436,
+     "level": "B2",
+     "pos": "noun",
+     "en": "boost",
+     "fa": ""
+    },
+    {
+     "id": 500259,
+     "level": "B1",
+     "pos": "verb",
+     "en": "decline",
+     "fa": ""
+    },
+    {
+     "id": 705178,
+     "level": "C1",
+     "pos": "other",
+     "en": "fluctuate",
+     "fa": ""
+    },
+    {
+     "id": 703544,
+     "level": "C1",
+     "pos": "verb",
+     "en": "soar",
+     "fa": ""
+    },
+    {
+     "id": 940024,
+     "level": "B2",
+     "pos": "verb",
+     "en": "plummet",
+     "fa": ""
+    },
+    {
+     "id": 703634,
+     "level": "C1",
+     "pos": "verb",
+     "en": "stabilize",
+     "fa": ""
+    },
+    {
+     "id": 704004,
+     "level": "B2",
+     "pos": "numeral",
+     "en": "trillion",
+     "fa": ""
+    }
+   ]
+  }
+ ]
+}

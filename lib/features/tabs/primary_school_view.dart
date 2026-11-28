@@ -131,6 +131,7 @@ class PrimarySchoolView extends ConsumerWidget {
                 ref.invalidate(primaryA1TopicsProvider);
                 ref.invalidate(primaryA2TopicsProvider);
                 ref.invalidate(primaryB1TopicsProvider);
+                ref.invalidate(primaryB2TopicsProvider);
                 PaidContent.prefetchEducation();
               },
             )

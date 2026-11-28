@@ -189,7 +189,7 @@ class StageChipsBar extends ConsumerWidget {
     final String? cefrSelected =
         (!inEdu && levels.length == 1) ? levels.first : null;
     final String? eduSelected = stage == kStagePrimary
-        ? primaryLevel
+        ? (primaryLevel == 'B2' ? kStageUpper : primaryLevel)
         : (stage == kStageUpper || stage == kStageUniversity ? stage : null);
 
     void reset() {
@@ -263,10 +263,12 @@ class StageChipsBar extends ConsumerWidget {
             onTap: () {
               reset();
               ref.read(wordsFilterProvider.notifier).setLevels(<String>{});
-              if (st.$1 == kStageUpper || st.$1 == kStageUniversity) {
+              if (st.$1 == kStageUniversity) {
                 ref.read(wordsStageProvider.notifier).state = st.$1;
               } else {
-                ref.read(primaryLevelProvider.notifier).state = st.$1;
+                // Upper Secondary = لغاتِ B2 در همان نمای Primary
+                ref.read(primaryLevelProvider.notifier).state =
+                    st.$1 == kStageUpper ? 'B2' : st.$1;
                 ref.read(wordsStageProvider.notifier).state = kStagePrimary;
               }
             },
