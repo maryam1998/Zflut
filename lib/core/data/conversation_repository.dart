@@ -87,6 +87,7 @@ class ConversationRepository {
         'assets/data/primary_conversations_index.json',
         'assets/data/primary_a2_conversations_index.json',
         'assets/data/primary_b1_conversations_index.json',
+        'assets/data/primary_b2_conversations_index.json',
       ]) {
         try {
           final pr = await rootBundle.loadString(pf);

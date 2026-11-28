@@ -1,0 +1,285 @@
+{
+  "topic": "Exams, Revision and Study Skills",
+  "scenarios": [
+    {
+      "scenario": "Planning a revision timetable",
+      "context": "Two classmates plan how to revise for their mock exams.",
+      "speakerA": [
+        {
+          "en": "I've got three mock exams in two weeks, and I haven't even started revising. I'm starting to panic.",
+          "level": "B2"
+        },
+        {
+          "en": "I usually leave the hardest subjects until the end, which is exactly the mistake I made last term.",
+          "level": "B2"
+        },
+        {
+          "en": "Good idea. If I tackle chemistry first, I'll feel much less anxious about everything else.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd rather study in the evenings, though. My concentration is better once the house is quiet.",
+          "level": "B2"
+        },
+        {
+          "en": "Fair enough. Shall we draw up a timetable together and check each other's progress every Friday?",
+          "level": "B2"
+        },
+        {
+          "en": "Brilliant. As long as we stick to it, I'm confident we'll both feel better prepared.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Don't panic yet. If we plan carefully, two weeks is enough to cover the main topics.",
+          "level": "B2"
+        },
+        {
+          "en": "Then let's put the subjects you find most difficult at the start of each day, when your mind is fresh.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. And remember to schedule short breaks, otherwise you'll burn out before the exams even begin.",
+          "level": "B2"
+        },
+        {
+          "en": "That's fine, but try not to stay up too late. Sleep matters more than people think when it comes to memory.",
+          "level": "B2"
+        },
+        {
+          "en": "Definitely. I'll set up a shared document so we can tick off each topic as we finish it.",
+          "level": "B2"
+        },
+        {
+          "en": "Agreed. And even if we fall behind one day, we can adjust the plan rather than give up.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Asking a teacher for feedback",
+      "context": "A student asks her teacher why her essay received a low grade.",
+      "speakerA": [
+        {
+          "en": "Excuse me, Mr Hughes, do you have a few minutes? I'd like to understand why my essay only got a C.",
+          "level": "B2"
+        },
+        {
+          "en": "I thought my argument was clear, but I see what you mean. Where exactly did I lose marks?",
+          "level": "B2"
+        },
+        {
+          "en": "I hadn't realised that. I assumed that including lots of quotations would impress the examiner.",
+          "level": "B2"
+        },
+        {
+          "en": "So I should analyse fewer examples in more depth instead of listing as many as possible?",
+          "level": "B2"
+        },
+        {
+          "en": "That's really helpful. Would you mind reading my next plan before I start writing?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. I'll bring it on Thursday, and I'll try to take your advice on board.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Of course. I'm glad you came, because that shows you take your progress seriously.",
+          "level": "B2"
+        },
+        {
+          "en": "Your ideas were interesting, but you rarely explained how your evidence supported your main point.",
+          "level": "B2"
+        },
+        {
+          "en": "Quotations are useful, but examiners want to see your own analysis rather than a summary of the text.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Choose three strong examples and explain each one thoroughly. Quality matters more than quantity.",
+          "level": "B2"
+        },
+        {
+          "en": "Certainly. A short plan is much easier to improve than a finished essay, so it saves us both time.",
+          "level": "B2"
+        },
+        {
+          "en": "Good. If you keep working like this, I'd expect your grade to improve noticeably by the end of term.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Dealing with exam nerves",
+      "context": "Two friends talk about feeling anxious before an important exam.",
+      "speakerA": [
+        {
+          "en": "I've felt sick all week. Every time I think about the physics exam, my mind goes blank.",
+          "level": "B2"
+        },
+        {
+          "en": "Not really. I know I've prepared properly, but I can't stop imagining everything going wrong.",
+          "level": "B2"
+        },
+        {
+          "en": "That's easier said than done, but I'll try. What helps you stay calm before an exam?",
+          "level": "B2"
+        },
+        {
+          "en": "I never thought of that. Maybe I should stop checking my notes right up until the last minute.",
+          "level": "B2"
+        },
+        {
+          "en": "You're right. Worrying won't improve my knowledge, but a clear head might improve my performance.",
+          "level": "B2"
+        },
+        {
+          "en": "Thanks for listening. Honestly, I feel a lot better than I did ten minutes ago.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "That sounds like exam anxiety, and it's far more common than you'd think. Have you told anyone?",
+          "level": "B2"
+        },
+        {
+          "en": "Try to look at the evidence. You've done the work, so the fear is probably worse than the reality.",
+          "level": "B2"
+        },
+        {
+          "en": "I take slow, deep breaths, and I arrive early so that I don't have to rush. It makes a huge difference.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes. Cramming the night before rarely helps. Reviewing a short summary and going to bed early works better.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. And if you do panic during the exam, just pause, breathe, and start with the question you find easiest.",
+          "level": "B2"
+        },
+        {
+          "en": "Any time. We're all in the same boat, so let's get a coffee together afterwards, whatever happens.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Comparing study methods",
+      "context": "Two students in a study group compare how they learn.",
+      "speakerA": [
+        {
+          "en": "I've been rereading my notes for hours, but I don't feel as if anything is sticking in my memory.",
+          "level": "B2"
+        },
+        {
+          "en": "Really? I always assumed that highlighting the important parts was the best method.",
+          "level": "B2"
+        },
+        {
+          "en": "So instead of reading, I should test myself and then check what I got wrong?",
+          "level": "B2"
+        },
+        {
+          "en": "That makes sense, because the exam itself is basically a test of how much you can recall.",
+          "level": "B2"
+        },
+        {
+          "en": "I'll give it a try. Could you show me how you make your flashcards?",
+          "level": "B2"
+        },
+        {
+          "en": "Great. If this works, I'll probably recommend it to the whole class.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Rereading feels productive, but research suggests it's one of the least effective ways to learn.",
+          "level": "B2"
+        },
+        {
+          "en": "Highlighting looks neat, but it doesn't force your brain to work. Active recall is far more powerful.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Close your notes, write down everything you remember, and then compare it with the original.",
+          "level": "B2"
+        },
+        {
+          "en": "It also shows you which topics you've genuinely mastered and which ones need more attention.",
+          "level": "B2"
+        },
+        {
+          "en": "Sure. I write a question on one side and the answer on the other, and I review them at increasing intervals.",
+          "level": "B2"
+        },
+        {
+          "en": "It worked for me. My history grade went up by two levels after I changed my approach.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Getting exam results",
+      "context": "Two friends meet at school on results day.",
+      "speakerA": [
+        {
+          "en": "Have you seen the results? I can't believe it. I got a B in maths, and I was expecting a D.",
+          "level": "B2"
+        },
+        {
+          "en": "Thanks. How about you? You look a little disappointed.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a shame, but an A is hardly a disaster. Most people would be delighted with that.",
+          "level": "B2"
+        },
+        {
+          "en": "In that case, you could ask the school to review your paper, or retake the exam if necessary.",
+          "level": "B2"
+        },
+        {
+          "en": "Well, why don't we celebrate together? We've both worked hard this year.",
+          "level": "B2"
+        },
+        {
+          "en": "Perfect. And next time, let's remember that one result doesn't define who we are.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Congratulations! You deserve it. You worked incredibly hard over the last few months.",
+          "level": "B2"
+        },
+        {
+          "en": "I am, a bit. I was aiming for an A star, so I can't help feeling that I've fallen short.",
+          "level": "B2"
+        },
+        {
+          "en": "I know, but I'd like to apply for a competitive course, and every mark counts.",
+          "level": "B2"
+        },
+        {
+          "en": "Maybe I will. First I need to calm down, because right now I'm only thinking about what went wrong.",
+          "level": "B2"
+        },
+        {
+          "en": "That would be nice. Let's invite the others and get a pizza after school.",
+          "level": "B2"
+        },
+        {
+          "en": "Well said. Right now, I'd rather enjoy the summer than keep worrying about grades.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

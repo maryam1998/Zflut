@@ -1,0 +1,285 @@
+{
+  "topic": "Media, Social Networks and Critical Thinking",
+  "scenarios": [
+    {
+      "scenario": "Spotting fake news",
+      "context": "Two friends check whether a story they saw online is true.",
+      "speakerA": [
+        {
+          "en": "Have you seen this article? It claims that a new law will ban all private cars in the city centre next month.",
+          "level": "B2"
+        },
+        {
+          "en": "I'm not sure. It was shared by a few of my friends, so I assumed it was true.",
+          "level": "B2"
+        },
+        {
+          "en": "So how can I tell whether a story is reliable?",
+          "level": "B2"
+        },
+        {
+          "en": "I've just searched, and nobody else has mentioned it. There's no official statement either.",
+          "level": "B2"
+        },
+        {
+          "en": "I'm a bit embarrassed. I nearly posted it on my profile.",
+          "level": "B2"
+        },
+        {
+          "en": "From now on I'll verify things before sharing them.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Hold on. Who published it? I've never heard of that website.",
+          "level": "B2"
+        },
+        {
+          "en": "That doesn't prove anything. Fake stories often spread quickly because they're designed to shock people.",
+          "level": "B2"
+        },
+        {
+          "en": "Check whether reputable news outlets are reporting the same thing, and look for the original source of the claim.",
+          "level": "B2"
+        },
+        {
+          "en": "Then it's almost certainly false. Notice also that the headline uses very emotional language.",
+          "level": "B2"
+        },
+        {
+          "en": "Don't be. Even experienced adults get fooled. What matters is that you stopped to question it.",
+          "level": "B2"
+        },
+        {
+          "en": "Good plan. If more people did that, misinformation would spread much more slowly.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Too much time on social media",
+      "context": "A mother and her son discuss how long he spends online.",
+      "speakerA": [
+        {
+          "en": "Sam, I'm worried that you spend almost five hours a day on social media. Don't you think that's excessive?",
+          "level": "B2"
+        },
+        {
+          "en": "I accept that, but you've been tired and distracted lately, and your grades have dropped.",
+          "level": "B2"
+        },
+        {
+          "en": "Possibly, but I'd like us to find a compromise. What if the phone stays out of your bedroom at night?",
+          "level": "B2"
+        },
+        {
+          "en": "You could buy a normal alarm clock, and you could still play music downstairs while you get ready for bed.",
+          "level": "B2"
+        },
+        {
+          "en": "Fair point. I hadn't noticed how often I do that. We should both be more careful.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. I'm not trying to control you. I just want you to be healthy.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I understand your concern, but it's how I keep in touch with my friends. It's not just wasted time.",
+          "level": "B2"
+        },
+        {
+          "en": "Maybe, but that could be because of the pressure at school rather than my phone.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a bit strict. I use it as an alarm clock, and I like listening to music before I fall asleep.",
+          "level": "B2"
+        },
+        {
+          "en": "All right, but only if you follow the same rule. You're on your phone at dinner too.",
+          "level": "B2"
+        },
+        {
+          "en": "Then I'm willing to try it for a month and see whether I sleep better.",
+          "level": "B2"
+        },
+        {
+          "en": "I know, and I appreciate that. Thanks for listening instead of simply giving orders.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Protecting your privacy online",
+      "context": "Two students in an IT class talk about passwords and personal data.",
+      "speakerA": [
+        {
+          "en": "Did you read about the data leak last week? Millions of users had their passwords exposed.",
+          "level": "B2"
+        },
+        {
+          "en": "That's risky. If a hacker gets one password, they can access all your accounts.",
+          "level": "B2"
+        },
+        {
+          "en": "Use a password manager, and turn on two-step verification wherever possible.",
+          "level": "B2"
+        },
+        {
+          "en": "In theory, yes, but the data is encrypted, so it's much safer than reusing weak passwords.",
+          "level": "B2"
+        },
+        {
+          "en": "It depends on whether the app really needs it. A map does, but a simple game doesn't.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Companies make money from your data, so the less you share, the better protected you are.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I did, and it made me realise how careless I've been. I use the same password for almost everything.",
+          "level": "B2"
+        },
+        {
+          "en": "What would you recommend? I can't remember dozens of different passwords.",
+          "level": "B2"
+        },
+        {
+          "en": "Isn't a password manager just as vulnerable? Everything is stored in one place.",
+          "level": "B2"
+        },
+        {
+          "en": "I see. What about the apps that ask for my location? Should I worry about those?",
+          "level": "B2"
+        },
+        {
+          "en": "So I should review my settings and delete anything I don't use.",
+          "level": "B2"
+        },
+        {
+          "en": "I'll spend this evening sorting it all out. Thanks for the advice.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Influencers and advertising",
+      "context": "Two friends talk about hidden advertising on social media.",
+      "speakerA": [
+        {
+          "en": "I can't believe how many influencers promote products without saying they're being paid.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. My cousin bought an expensive skincare product because her favourite influencer swore by it.",
+          "level": "B2"
+        },
+        {
+          "en": "Not at all. She got a rash and then discovered that the influencer had never even used it.",
+          "level": "B2"
+        },
+        {
+          "en": "The problem is that the rules aren't always enforced, and young people often don't notice the small print.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd agree with that. Learning to question what we see would protect us from all sorts of manipulation.",
+          "level": "B2"
+        },
+        {
+          "en": "True, and I don't want to generalise. I just think we should always ask who benefits from a recommendation.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Some do it openly, but others make it look like a personal recommendation, which is misleading.",
+          "level": "B2"
+        },
+        {
+          "en": "And did it work?",
+          "level": "B2"
+        },
+        {
+          "en": "That's awful. In many countries, creators are legally required to label sponsored posts.",
+          "level": "B2"
+        },
+        {
+          "en": "So perhaps we should be teaching media literacy at school, as well as maths and history.",
+          "level": "B2"
+        },
+        {
+          "en": "Still, not every influencer is dishonest. Some share genuinely useful information.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a sensible rule for life, not only for social media.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Comparing news sources",
+      "context": "A teacher and a student discuss how two newspapers reported the same event.",
+      "speakerA": [
+        {
+          "en": "Today I'd like each of you to compare how two newspapers reported the same event. Has anyone started?",
+          "level": "B2"
+        },
+        {
+          "en": "Interesting. Why do you think their opinions differed so much?",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Did either of them leave out important information?",
+          "level": "B2"
+        },
+        {
+          "en": "So neither article gave the full picture. How would you describe the writers' tone?",
+          "level": "B2"
+        },
+        {
+          "en": "Good observation. What conclusion can you draw about reading only one source?",
+          "level": "B2"
+        },
+        {
+          "en": "Precisely. Reading widely is the best defence against bias.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Yes, I chose the story about the new factory. One paper called it a great opportunity, while the other warned about pollution.",
+          "level": "B2"
+        },
+        {
+          "en": "I suppose each paper has its own audience and its own political stance, so they emphasise different facts.",
+          "level": "B2"
+        },
+        {
+          "en": "The first one didn't mention the environmental report, and the second didn't say how many jobs would be created.",
+          "level": "B2"
+        },
+        {
+          "en": "The first was enthusiastic, almost like an advertisement, whereas the second was quite alarming.",
+          "level": "B2"
+        },
+        {
+          "en": "That we'd end up with a one-sided view without even realising it.",
+          "level": "B2"
+        },
+        {
+          "en": "I'll try to compare at least two sources from now on, even if it takes longer.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

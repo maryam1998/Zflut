@@ -1,0 +1,285 @@
+{
+  "topic": "Global Issues and Debates",
+  "scenarios": [
+    {
+      "scenario": "Can individuals fight climate change?",
+      "context": "Two classmates prepare for a class debate on climate change.",
+      "speakerA": [
+        {
+          "en": "Our teacher wants us to debate whether individuals can really make a difference to climate change.",
+          "level": "B2"
+        },
+        {
+          "en": "I see your point, but if millions of people change their habits, companies have to respond to what customers want.",
+          "level": "B2"
+        },
+        {
+          "en": "True, but there are cheaper choices, such as using public transport, wasting less food and buying second-hand clothes.",
+          "level": "B2"
+        },
+        {
+          "en": "I agree that laws are essential. However, laws are passed because enough voters demand them.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Neither is enough on its own, and blaming one side only delays real progress.",
+          "level": "B2"
+        },
+        {
+          "en": "Which is all I'm claiming. A change in attitude often comes before a change in the rules.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I'd argue that they can't. Most emissions come from big companies and governments, so recycling at home hardly matters.",
+          "level": "B2"
+        },
+        {
+          "en": "That's optimistic. Many people can't afford electric cars or expensive organic food, however much they care.",
+          "level": "B2"
+        },
+        {
+          "en": "Those help a little, but surely the priority should be stricter laws rather than personal guilt.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a fair argument. So perhaps individual action and government policy need to work together.",
+          "level": "B2"
+        },
+        {
+          "en": "I'm still not convinced that small gestures are worth the effort, but I accept that they send a message.",
+          "level": "B2"
+        },
+        {
+          "en": "Alright. Let's present it as a partnership and see how the class reacts.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "The problem with fast fashion",
+      "context": "Two friends look at cheap clothes in a shop.",
+      "speakerA": [
+        {
+          "en": "Look at this dress. It only costs eight pounds, and it looks just like the designer version.",
+          "level": "B2"
+        },
+        {
+          "en": "I hadn't thought of that. I just assumed that mass production made things cheaper.",
+          "level": "B2"
+        },
+        {
+          "en": "Still, not everyone can afford expensive, ethical brands. Should they feel guilty for buying what they can afford?",
+          "level": "B2"
+        },
+        {
+          "en": "I've done that before, and I was surprised by how good the quality was.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a good point. I've thrown away clothes after wearing them only twice.",
+          "level": "B2"
+        },
+        {
+          "en": "Okay, you've convinced me. I'll put this dress back and look in the charity shop instead.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "That price should worry you. Someone, somewhere, is probably being paid very little to make it.",
+          "level": "B2"
+        },
+        {
+          "en": "It does, but fast fashion also relies on low wages, cheap materials and a huge amount of water.",
+          "level": "B2"
+        },
+        {
+          "en": "No, but there are alternatives, like second-hand shops or swapping clothes with friends.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Buying fewer, better items also saves money in the long run.",
+          "level": "B2"
+        },
+        {
+          "en": "Imagine how much waste that creates if millions of people do the same.",
+          "level": "B2"
+        },
+        {
+          "en": "Great. If you find something nice, I'll come with you next time.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Volunteering in the community",
+      "context": "A student asks a coordinator about volunteering at a community centre.",
+      "speakerA": [
+        {
+          "en": "Welcome to the community centre. Thank you for offering to volunteer with us.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a great attitude. We run a homework club for younger children, and we always need people who can explain things clearly.",
+          "level": "B2"
+        },
+        {
+          "en": "Excellent. You'd work on Tuesdays and Thursdays from four to six, and you'd be supervised by one of our teachers.",
+          "level": "B2"
+        },
+        {
+          "en": "We can be flexible during exam periods. We'd rather have a reliable volunteer for fewer hours than someone who keeps cancelling.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, there's a short session about safeguarding and how to deal with difficult behaviour.",
+          "level": "B2"
+        },
+        {
+          "en": "Many volunteers say that it helped them develop their patience and communication skills.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I'm glad to be here. I'd like to gain experience, and I also want to give something back to the neighbourhood.",
+          "level": "B2"
+        },
+        {
+          "en": "That sounds perfect. I've helped my younger brother with his maths, so I have some experience.",
+          "level": "B2"
+        },
+        {
+          "en": "That's manageable, as long as it doesn't clash with my exam revision.",
+          "level": "B2"
+        },
+        {
+          "en": "That's fair. Will I receive any training before I start?",
+          "level": "B2"
+        },
+        {
+          "en": "Good. I'd feel much more confident knowing what to do if something went wrong.",
+          "level": "B2"
+        },
+        {
+          "en": "That's exactly what I was hoping for. Where do I sign up?",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Artificial intelligence and jobs",
+      "context": "Two friends discuss how technology may change the job market.",
+      "speakerA": [
+        {
+          "en": "I read that artificial intelligence could replace millions of jobs within the next twenty years.",
+          "level": "B2"
+        },
+        {
+          "en": "That's what people said about factories, but many workers suffered badly during the transition.",
+          "level": "B2"
+        },
+        {
+          "en": "But who will pay for that training? Companies prefer to cut costs, and governments are slow to react.",
+          "level": "B2"
+        },
+        {
+          "en": "What worries me most is that young people may find it harder to get their first job if machines do the entry-level tasks.",
+          "level": "B2"
+        },
+        {
+          "en": "So it comes down to adapting. Which skills do you think will matter most?",
+          "level": "B2"
+        },
+        {
+          "en": "That's comforting. Maybe schools should focus less on memorising facts and more on those skills.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Some jobs will disappear, but history shows that new technology also creates new ones.",
+          "level": "B2"
+        },
+        {
+          "en": "True. The real challenge is helping people retrain, rather than trying to stop progress.",
+          "level": "B2"
+        },
+        {
+          "en": "Perhaps both should share the cost, since both benefit from a skilled workforce.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a real risk. On the other hand, those who learn to work with these tools could become far more productive.",
+          "level": "B2"
+        },
+        {
+          "en": "Creativity, critical thinking and the ability to communicate with others, because those are hard to automate.",
+          "level": "B2"
+        },
+        {
+          "en": "I couldn't agree more. Information is easy to find, but good judgment is much harder to replace.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Should sixteen-year-olds vote?",
+      "context": "Two classmates debate lowering the voting age.",
+      "speakerA": [
+        {
+          "en": "Our class debate is about whether sixteen-year-olds should be allowed to vote. Which side are you on?",
+          "level": "B2"
+        },
+        {
+          "en": "But are sixteen-year-olds mature enough? Many of them haven't even finished school or started paying taxes.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a fair point, but I worry that teenagers might be influenced too easily by their parents or by social media.",
+          "level": "B2"
+        },
+        {
+          "en": "I like that idea. If schools prepared students properly, my objection would be much weaker.",
+          "level": "B2"
+        },
+        {
+          "en": "Interesting. Do you know whether turnout among them was higher or lower than average?",
+          "level": "B2"
+        },
+        {
+          "en": "In that case, I may have to rethink my position. I'd still want strong safeguards in place.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I'm in favour. Decisions made today, especially about education and the climate, will affect young people longer than anyone else.",
+          "level": "B2"
+        },
+        {
+          "en": "Maturity isn't guaranteed at eighteen either. Plenty of adults vote without reading anything about the candidates.",
+          "level": "B2"
+        },
+        {
+          "en": "Adults are influenced too. A better solution is to teach politics and critical thinking at school so that everyone votes in an informed way.",
+          "level": "B2"
+        },
+        {
+          "en": "Some countries have already lowered the voting age, and several studies suggest that young voters take it seriously.",
+          "level": "B2"
+        },
+        {
+          "en": "Some studies found it was higher, probably because they were still living with their families and discussing issues at home.",
+          "level": "B2"
+        },
+        {
+          "en": "That's reasonable. A good debate is about weighing the evidence, not about winning.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

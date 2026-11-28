@@ -1,0 +1,285 @@
+{
+  "topic": "University Applications and Careers",
+  "scenarios": [
+    {
+      "scenario": "Choosing a degree",
+      "context": "A student asks a careers adviser which degree to choose.",
+      "speakerA": [
+        {
+          "en": "Good morning. I'm interested in studying engineering, but I'm not sure which branch to choose.",
+          "level": "B2"
+        },
+        {
+          "en": "I like solving practical problems, especially in physics. On the other hand, I'm also fascinated by computers.",
+          "level": "B2"
+        },
+        {
+          "en": "Would it be difficult to change course if I realised I'd made the wrong choice?",
+          "level": "B2"
+        },
+        {
+          "en": "Is it worth visiting the campus before I apply?",
+          "level": "B2"
+        },
+        {
+          "en": "What if my grades aren't high enough for my first-choice university?",
+          "level": "B2"
+        },
+        {
+          "en": "That's reassuring. I'll make a list and come back to you next week.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Good to hear you've already thought about it. What do you enjoy most about the subject?",
+          "level": "B2"
+        },
+        {
+          "en": "In that case, you might consider software or electrical engineering, since both combine maths with real-world applications.",
+          "level": "B2"
+        },
+        {
+          "en": "Some universities allow it during the first year, but it's wise to check their policies in advance.",
+          "level": "B2"
+        },
+        {
+          "en": "Absolutely. Open days let you talk to current students and get a feel for the atmosphere.",
+          "level": "B2"
+        },
+        {
+          "en": "That's why you should apply to a range of institutions, including a safer option you'd still be happy with.",
+          "level": "B2"
+        },
+        {
+          "en": "Do that. I'll also give you a leaflet about scholarships, which many students overlook.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Writing a personal statement",
+      "context": "Two friends help each other write their university applications.",
+      "speakerA": [
+        {
+          "en": "I've been staring at my personal statement for an hour, and I still can't get past the first sentence.",
+          "level": "B2"
+        },
+        {
+          "en": "But everything I've done seems so ordinary compared with other applicants.",
+          "level": "B2"
+        },
+        {
+          "en": "So instead of saying I'm hard-working, I should give an example that proves it?",
+          "level": "B2"
+        },
+        {
+          "en": "Could you read my draft once I've finished? I'd really value an honest opinion.",
+          "level": "B2"
+        },
+        {
+          "en": "I promise. Last time I ignored advice and my application suffered for it.",
+          "level": "B2"
+        },
+        {
+          "en": "Good idea. Mistakes in a personal statement would create a terrible first impression.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Start by listing what you've actually done, such as volunteering, projects and competitions, and decide what they say about you.",
+          "level": "B2"
+        },
+        {
+          "en": "It's not about being extraordinary. Admissions tutors want to see genuine curiosity and what you learned from your experiences.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Showing is always more convincing than claiming. Describe a specific problem you solved.",
+          "level": "B2"
+        },
+        {
+          "en": "Of course, but only if you promise to take my criticism seriously and not get defensive.",
+          "level": "B2"
+        },
+        {
+          "en": "Then you've already learned something. Also, ask a teacher to check your grammar and spelling.",
+          "level": "B2"
+        },
+        {
+          "en": "True. Give yourself a week, put it away for a couple of days, and then read it again with fresh eyes.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "A university interview",
+      "context": "An interviewer asks a candidate questions about an economics course.",
+      "speakerA": [
+        {
+          "en": "Thank you for coming in. To begin with, could you tell us why you chose this course?",
+          "level": "B2"
+        },
+        {
+          "en": "Interesting. What did you learn from it?",
+          "level": "B2"
+        },
+        {
+          "en": "Suppose a government raised taxes on sugary drinks. What effects might that have?",
+          "level": "B2"
+        },
+        {
+          "en": "Good. How would you weigh up those advantages and disadvantages?",
+          "level": "B2"
+        },
+        {
+          "en": "Finally, how do you deal with pressure and tight deadlines?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. Do you have any questions for us?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Certainly. I've always been interested in how economies work, and a local business project I followed last year changed my perspective.",
+          "level": "B2"
+        },
+        {
+          "en": "I learned that small decisions, like pricing, can affect a company's survival. It made me want to study the theory behind them.",
+          "level": "B2"
+        },
+        {
+          "en": "It could reduce consumption and improve public health, but it might also hurt small shops and affect lower-income families more.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd look at the evidence from other countries before deciding, because opinions alone don't tell us what actually works.",
+          "level": "B2"
+        },
+        {
+          "en": "I plan ahead, and I ask for help early rather than leaving problems until it's too late.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, I'd like to know whether students get opportunities to do work placements during the course.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Thinking about a gap year",
+      "context": "Two friends disagree about taking a year out before university.",
+      "speakerA": [
+        {
+          "en": "Have you decided yet? Are you going straight to university or taking a gap year?",
+          "level": "B2"
+        },
+        {
+          "en": "Wouldn't you fall behind, though? Everyone else will have started their careers while you're travelling.",
+          "level": "B2"
+        },
+        {
+          "en": "That's true, but it's risky. Some people never go back to education once they've started earning money.",
+          "level": "B2"
+        },
+        {
+          "en": "I suppose that does reduce the risk. How would you pay for it?",
+          "level": "B2"
+        },
+        {
+          "en": "Honestly, I'd be too nervous to travel alone for so long.",
+          "level": "B2"
+        },
+        {
+          "en": "Well, I admire your courage. Send me a postcard if you go!",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I'm leaning towards a gap year. I'm exhausted after the exams, and I'm not sure what I want to study.",
+          "level": "B2"
+        },
+        {
+          "en": "I don't see it as falling behind. If I work for six months and volunteer abroad, I'll return more mature and focused.",
+          "level": "B2"
+        },
+        {
+          "en": "Fair point. That's why I'd defer my place at university, so I'd have a guaranteed start afterwards.",
+          "level": "B2"
+        },
+        {
+          "en": "I've been saving from my part-time job, and I might teach English abroad to cover living costs.",
+          "level": "B2"
+        },
+        {
+          "en": "I was nervous too, but I'd rather regret something I tried than something I never dared to do.",
+          "level": "B2"
+        },
+        {
+          "en": "I will. And if you change your mind, you're welcome to join me for a month.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Paying for university",
+      "context": "A student and her father discuss tuition fees and student loans.",
+      "speakerA": [
+        {
+          "en": "Dad, I've been reading about tuition fees, and the total cost of university is higher than I expected.",
+          "level": "B2"
+        },
+        {
+          "en": "There are student loans, and some universities offer scholarships to students with good grades.",
+          "level": "B2"
+        },
+        {
+          "en": "I know. The repayments only start once I'm earning above a certain amount, which makes it less frightening.",
+          "level": "B2"
+        },
+        {
+          "en": "Living at home would save a lot, but the course at the local university isn't as good for my subject.",
+          "level": "B2"
+        },
+        {
+          "en": "I think it does. A strong degree should help me find a better job, and that outweighs the debt in the long run.",
+          "level": "B2"
+        },
+        {
+          "en": "Thanks, Dad. I'd feel more confident if we planned it as a family.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "It's a lot of money, I agree. Have you looked at what kind of financial support is available?",
+          "level": "B2"
+        },
+        {
+          "en": "Don't forget that you'd have to repay the loan eventually, so it's worth understanding the conditions.",
+          "level": "B2"
+        },
+        {
+          "en": "Even so, borrowing a large sum at your age is a serious decision. Have you compared it with studying locally?",
+          "level": "B2"
+        },
+        {
+          "en": "Then you'll have to decide whether a better course justifies the extra cost.",
+          "level": "B2"
+        },
+        {
+          "en": "You may be right. Let's sit down this weekend and go through the numbers together.",
+          "level": "B2"
+        },
+        {
+          "en": "That's what we're here for. We'll support you, as long as you stay realistic about the costs.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}
