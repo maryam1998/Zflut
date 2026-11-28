@@ -79,6 +79,14 @@ class _AppShellState extends ConsumerState<AppShell> {
       'de': 'Zurück zur ursprünglichen Übersetzung (Tageslimit erreicht)',
       'fr': 'Retour à la traduction d’origine (limite du jour atteinte)',
     },
+    'altfree': {
+      'fa': 'رفرشِ AIِ امروز تمام شد؛ ترجمه‌ی رایگان (ML Kit/آنلاین) به‌عنوان «گزینه‌ی دوم» آمد — با ترجمه‌ی برگشتی بسنج و انتخاب کن',
+      'en': 'Today\'s AI refreshes are used up; a free (on-device/online) translation is shown as a second option — check its back-translation and choose',
+      'ar': 'انتهت تحديثات الذكاء الاصطناعي اليوم؛ ظهرت ترجمة مجانية كخيار ثانٍ — تحقق من الترجمة العكسية ثم اختر',
+      'es': 'Se agotaron las actualizaciones de IA de hoy; aparece una traducción gratuita como segunda opción: compruébala con la traducción inversa y elige',
+      'de': 'Die KI-Aktualisierungen für heute sind aufgebraucht; eine kostenlose Übersetzung steht als zweite Option bereit – prüfe sie mit der Rückübersetzung und wähle',
+      'fr': 'Les actualisations IA du jour sont épuisées ; une traduction gratuite apparaît comme deuxième option — vérifie-la avec la rétro-traduction et choisis',
+    },
     'alt': {
       'fa': 'ترجمه‌ی جدید به‌عنوان «گزینه‌ی دوم» آمد؛ خودت انتخاب کن',
       'en': 'The new translation is shown as a second option — your choice',
@@ -110,7 +118,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       sm?.hideCurrentSnackBar();
       sm?.showSnackBar(SnackBar(
         content: Text(msg),
-        duration: const Duration(seconds: 3),
+        duration: Duration(seconds: kind == 'altfree' ? 6 : 3),
         behavior: SnackBarBehavior.floating,
       ));
     });

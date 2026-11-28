@@ -739,6 +739,34 @@ class TranslationService {
   Future<void> dismissAlternative(String text, String to) =>
       _db.put(_altKey(text, to), '');
 
+  /// 🆓 وقتی سقفِ روزانه‌ی ↻ پر شده: ترجمه‌ی «رایگان» (اول ML Kit، بعد مترجم‌های آنلاین) بدونِ AI،
+  /// بدونِ شمردنِ سقف و بدونِ نوشتن در کش. فقط اگر با ترجمه‌ی فعلی ([base]) فرق داشته باشد و سالم
+  /// باشد برمی‌گردد؛ وگرنه null. کاربر آن را به‌عنوان «گزینه‌ی دوم» همراهِ ترجمه‌ی برگشتی می‌بیند.
+  Future<String?> freeAlternative(
+      String text, String from, String to, String base) async {
+    bool ok(String x) =>
+        x.isNotEmpty &&
+        x != base.trim() &&
+        x.toLowerCase() != text.trim().toLowerCase() &&
+        !looksLikelyMistranslated(text, x, to, sourceLang: from);
+    try {
+      var r = '';
+      try {
+        r = (await _viaMlKit(text, to, from))?.trim() ?? '';
+      } catch (_) {}
+      if (!ok(r)) {
+        r = '';
+        try {
+          final w = await _raceProviders(_freeProviders(), text, to, from);
+          r = (w?.result ?? '').trim();
+        } catch (_) {}
+      }
+      return ok(r) ? r : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 🚦 یک «سهمِ ↻» برای این متن (و زبانِ مقصد) برمی‌دارد. false = سقفِ روزانه پر است (پیامِ 'limit' هم می‌آید)
   /// و نباید هیچ تماسِ شبکه/AI زده شود. برای مسیرهایی که خودشان قبل از AI سقف را چک می‌کنند
   /// (مثل reviewedTranslate) و بعد retranslate را با skipQuota صدا می‌زنند تا دوبار نشمرد.
@@ -787,6 +815,21 @@ class TranslationService {
       final orig = (await _db.get(ok))?.trim() ?? '';
       if (orig.isEmpty) await _db.put(ok, base); // اولین ↻ِ این متن: ترجمه‌ی اول را نگه دار
       if (n >= kRefreshPerTextPerDay) {
+        // 🆓 سقف پر است ولی کاربر نباید تا فردا گیر کند: ترجمه‌ی رایگانِ ML Kit/آنلاین به‌عنوان
+        // «گزینه‌ی دوم» (همراهِ ترجمه‌ی برگشتی) نشان داده می‌شود؛ انتخاب با خودش.
+        if (keepPrevious) {
+          if (alternative(text, targetLang) != null) {
+            refreshNotices.add('altfree');
+            return base;
+          }
+          final fa = await freeAlternative(text, sourceLang, targetLang, base)
+              .timeout(const Duration(seconds: 15), onTimeout: () => null);
+          if (fa != null) {
+            await _db.put(_altKey(text, targetLang), fa);
+            refreshNotices.add('altfree');
+            return base;
+          }
+        }
         // 🔙 بار سوم: اگر ترجمه‌ی فعلی با اولی فرق دارد، به ترجمه‌ی اول برگرد
         if (orig.isNotEmpty && orig != base) {
           await pinPut(text, sourceLang, targetLang, orig);
