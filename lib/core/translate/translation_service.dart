@@ -507,7 +507,7 @@ class TranslationService {
       StreamController<void>.broadcast();
 
   /// پیامِ کوتاه بعد از ↻ (AppShell نشانش می‌دهد): 'confirmed' = ترجمه‌ی جدید با قبلی یکی بود (بدونِ AI تأیید شد)،
-  /// 'limit' = سقفِ روزانه‌ی ↻ برای این متن پر شده، 'alt' = ترجمه‌ی جدید به‌عنوان «گزینه‌ی دوم» کنارِ قبلی ماند.
+  /// 'restored' = سقفِ ↻ پر بود و به ترجمه‌ی اول برگشتیم، 'limit' = سقفِ روزانه‌ی ↻ برای این متن پر شده، 'alt' = ترجمه‌ی جدید به‌عنوان «گزینه‌ی دوم» کنارِ قبلی ماند.
   static final StreamController<String> refreshNotices =
       StreamController<String>.broadcast();
 
@@ -716,6 +716,10 @@ class TranslationService {
 
   String _altKey(String text, String to) => '__alt__::$to::${_normPin(text)}';
 
+  /// ترجمه‌ی «اولِ» هر متن (قبل از اولین ↻). وقتی سقفِ ↻ پر شد و کاربر باز هم زد، به همین برمی‌گردیم:
+  /// کاربری که زبانِ مقصد را بلد نیست نمی‌تواند ترجمه‌ی ↻‌شده را بسنجد و نباید تا فردا گیرش بماند.
+  String _origKey(String text, String to) => '__orig__::$to::${_normPin(text)}';
+
   /// «گزینه‌ی دوم» (ترجمه‌ی جدیدِ ↻ که جایگزینِ قبلی نشد). null = نیست.
   String? alternative(String text, String to) {
     final v = _db.peek(_altKey(text, to));
@@ -779,7 +783,17 @@ class TranslationService {
     if (hasBase && !skipQuota) {
       final ck = _refreshCountKey(text, targetLang);
       final n = int.tryParse(await _db.get(ck) ?? '') ?? 0;
+      final ok = _origKey(text, targetLang);
+      final orig = (await _db.get(ok))?.trim() ?? '';
+      if (orig.isEmpty) await _db.put(ok, base); // اولین ↻ِ این متن: ترجمه‌ی اول را نگه دار
       if (n >= kRefreshPerTextPerDay) {
+        // 🔙 بار سوم: اگر ترجمه‌ی فعلی با اولی فرق دارد، به ترجمه‌ی اول برگرد
+        if (orig.isNotEmpty && orig != base) {
+          await pinPut(text, sourceLang, targetLang, orig);
+          await _db.put(_altKey(text, targetLang), '');
+          refreshNotices.add('restored');
+          return orig;
+        }
         refreshNotices.add('limit');
         return base;
       }

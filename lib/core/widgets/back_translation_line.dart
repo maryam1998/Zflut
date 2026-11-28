@@ -21,10 +21,21 @@ class BackTranslationLine extends ConsumerStatefulWidget {
   final bool compact;
   final double leftInset;
 
+  /// متنِ مبدأ و زبانِ آن: اگر ترجمه‌ی برگشتی با ترجمه‌ی زبانِ مادری (ردیفِ بالا) تقریباً یکی باشد
+  /// دیگر نشان داده نمی‌شود (شلوغی کم می‌شود)؛ فقط وقتی فرق دارد که ارزشِ دیدن دارد.
+  final String en;
+  final String sourceLang;
+
+  /// true = همیشه نشان بده (برای «گزینه‌ی دوم»: کاربر باید قبل از انتخاب بتواند چک کند).
+  final bool alwaysShow;
+
   const BackTranslationLine({
     super.key,
     required this.langCode,
     required this.text,
+    this.en = '',
+    this.sourceLang = 'en',
+    this.alwaysShow = false,
     this.compact = false,
     this.leftInset = 36,
   });
@@ -76,6 +87,39 @@ class _BackTranslationLineState extends ConsumerState<BackTranslationLine> {
     }();
   }
 
+  /// نرمال‌سازی برای مقایسه: بدونِ فاصله/علامت، یکسان‌سازیِ ی/ک عربی و حذفِ اعراب.
+  static String _norm(String s) {
+    var t = s
+        .toLowerCase()
+        .replaceAll('\u064A', '\u06CC')
+        .replaceAll('\u0643', '\u06A9')
+        .replaceAll(RegExp('[\u064B-\u065F\u0640\u200c\u200d]'), '');
+    return t.replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), '');
+  }
+
+  /// شباهتِ دو رشته (Dice روی دوحرفی‌ها) بین ۰ و ۱.
+  static double _sim(String a, String b) {
+    final x = _norm(a), y = _norm(b);
+    if (x.isEmpty || y.isEmpty) return 0;
+    if (x == y) return 1;
+    if (x.length < 2 || y.length < 2) return 0;
+    final m = <String, int>{};
+    for (var i = 0; i < x.length - 1; i++) {
+      final g = x.substring(i, i + 2);
+      m[g] = (m[g] ?? 0) + 1;
+    }
+    var hit = 0;
+    for (var i = 0; i < y.length - 1; i++) {
+      final g = y.substring(i, i + 2);
+      final n = m[g] ?? 0;
+      if (n > 0) {
+        hit++;
+        m[g] = n - 1;
+      }
+    }
+    return 2 * hit / ((x.length - 1) + (y.length - 1));
+  }
+
   @override
   Widget build(BuildContext context) {
     final native =
@@ -87,6 +131,19 @@ class _BackTranslationLineState extends ConsumerState<BackTranslationLine> {
     final b = _back;
     if (b == null) return const SizedBox.shrink();
 
+    // ترجمه‌ی برگشتی ≈ ترجمه‌ی زبانِ مادری → یعنی همه‌چیز درست است؛ چیزی نشان نده
+    if (!widget.alwaysShow && widget.en.trim().isNotEmpty) {
+      String? nat;
+      try {
+        nat = ref
+            .read(translationServiceProvider)
+            .peekCached(widget.en, widget.sourceLang, native);
+      } catch (_) {}
+      if (nat != null && nat.trim().isNotEmpty && _sim(b, nat) >= 0.5) {
+        return const SizedBox.shrink();
+      }
+    }
+
     final c = context.appColors;
     final tp = ref.watch(textPrefsProvider);
     final rtl = _rtlLangs.contains(native);
@@ -96,14 +153,24 @@ class _BackTranslationLineState extends ConsumerState<BackTranslationLine> {
         alignment: rtl ? Alignment.centerRight : Alignment.centerLeft,
         child: Directionality(
           textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
-          child: Text(
-            '↩ $b',
-            textAlign: rtl ? TextAlign.right : TextAlign.left,
-            style: TextStyle(
-              color: c.inkSoft,
-              fontSize: (widget.compact ? 11 : 12) * tp.scaleFactor,
-              height: 1.3,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.subdirectory_arrow_left_rounded,
+                  size: 12, color: c.inkSoft.withOpacity(0.55)),
+              const SizedBox(width: 3),
+              Flexible(
+                child: Text(
+                  b,
+                  textAlign: rtl ? TextAlign.right : TextAlign.left,
+                  style: TextStyle(
+                    color: c.inkSoft.withOpacity(0.8),
+                    fontSize: (widget.compact ? 10.5 : 11) * tp.scaleFactor,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

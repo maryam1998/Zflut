@@ -761,7 +761,11 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
       if (alt != null && alt.trim() != text.trim()) {
         altRow = Padding(
           padding: const EdgeInsets.only(left: 36),
-          child: TranslationAltRow(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TranslationAltRow(
             alt: alt,
             textDirection: dirFor(widget.langCode),
             onChoose: () async {
@@ -777,6 +781,17 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
               await svc.dismissAlternative(widget.en, widget.langCode);
               if (mounted) setState(() {});
             },
+              ),
+              // ↩ ترجمه‌ی برگشتیِ «گزینه‌ی دوم»: کاربر قبل از انتخاب بفهمد درست است یا نه
+              if (widget.aiFirst && widget.sourceLang != widget.langCode)
+                BackTranslationLine(
+                  langCode: widget.langCode,
+                  text: alt,
+                  alwaysShow: true,
+                  compact: widget.compact,
+                  leftInset: 0,
+                ),
+            ],
           ),
         );
       }
@@ -924,6 +939,8 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
               BackTranslationLine(
                 langCode: widget.langCode,
                 text: text,
+                en: widget.en,
+                sourceLang: widget.sourceLang,
                 compact: widget.compact,
               ),
             if (altRow != null) altRow,

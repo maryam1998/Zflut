@@ -71,6 +71,14 @@ class _AppShellState extends ConsumerState<AppShell> {
       'de': 'Für diesen Text heute keine weitere Aktualisierung (max. 2 pro Tag)',
       'fr': 'Plus d’actualisation pour ce texte aujourd’hui (max. 2 par jour)',
     },
+    'restored': {
+      'fa': 'به ترجمه‌ی اول برگشت (سقفِ رفرشِ امروز پر شده)',
+      'en': 'Back to the original translation (today\'s refresh limit reached)',
+      'ar': 'عادت الترجمة الأولى (تم بلوغ حد التحديث اليوم)',
+      'es': 'Se restauró la traducción original (límite de hoy alcanzado)',
+      'de': 'Zurück zur ursprünglichen Übersetzung (Tageslimit erreicht)',
+      'fr': 'Retour à la traduction d’origine (limite du jour atteinte)',
+    },
     'alt': {
       'fa': 'ترجمه‌ی جدید به‌عنوان «گزینه‌ی دوم» آمد؛ خودت انتخاب کن',
       'en': 'The new translation is shown as a second option — your choice',
