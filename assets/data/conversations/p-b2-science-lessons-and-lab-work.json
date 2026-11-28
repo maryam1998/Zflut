@@ -1,0 +1,285 @@
+{
+  "topic": "Science Lessons and Lab Work",
+  "scenarios": [
+    {
+      "scenario": "Planning an experiment",
+      "context": "Two students plan a chemistry experiment about reaction rates.",
+      "speakerA": [
+        {
+          "en": "Our teacher wants us to investigate how temperature affects the rate of a reaction. Where should we start?",
+          "level": "B2"
+        },
+        {
+          "en": "That sounds reasonable. What will our independent variable be, and what should we keep the same?",
+          "level": "B2"
+        },
+        {
+          "en": "Otherwise the results wouldn't be fair. How many temperatures should we test?",
+          "level": "B2"
+        },
+        {
+          "en": "Good point. What are the main safety precautions we should take?",
+          "level": "B2"
+        },
+        {
+          "en": "Shall I record the times while you measure the temperature?",
+          "level": "B2"
+        },
+        {
+          "en": "Perfect. If everything goes well, we should see a clear pattern in our graph.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "First we need a clear hypothesis. I'd suggest that the reaction will speed up as the temperature rises.",
+          "level": "B2"
+        },
+        {
+          "en": "The temperature is the independent variable. We must control the volume, the concentration and the type of acid.",
+          "level": "B2"
+        },
+        {
+          "en": "At least five, and we should repeat each one three times so that we can calculate a reliable average.",
+          "level": "B2"
+        },
+        {
+          "en": "We'll wear goggles and gloves, and we must be careful when we heat the water, because it can scald.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, and let's draw the results table in advance so that we don't forget anything.",
+          "level": "B2"
+        },
+        {
+          "en": "And if we don't, we'll discuss the possible sources of error in our evaluation.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Writing up a lab report",
+      "context": "A student asks her science teacher how to structure a lab report.",
+      "speakerA": [
+        {
+          "en": "Miss Clarke, I've finished the experiment, but I'm not sure how to structure my lab report.",
+          "level": "B2"
+        },
+        {
+          "en": "Should I write the method in the past tense, even though I used the present tense in my notes?",
+          "level": "B2"
+        },
+        {
+          "en": "I see. What should I include in the results section?",
+          "level": "B2"
+        },
+        {
+          "en": "Where do I explain why the rate increased?",
+          "level": "B2"
+        },
+        {
+          "en": "One of my readings was far too high. Should I just delete it?",
+          "level": "B2"
+        },
+        {
+          "en": "That makes sense. Finally, how long should the conclusion be?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Start with a short introduction that states your aim and your hypothesis, followed by the method.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, and use the passive voice, for example, \"the solution was heated to forty degrees\". That's the usual scientific style.",
+          "level": "B2"
+        },
+        {
+          "en": "Present your data in a clear table, add a graph, and describe the trend without explaining it yet.",
+          "level": "B2"
+        },
+        {
+          "en": "In the discussion. Link your results to the scientific theory, and comment on any anomalies you noticed.",
+          "level": "B2"
+        },
+        {
+          "en": "No, never remove data. Mark it as an anomaly and explain what might have caused it.",
+          "level": "B2"
+        },
+        {
+          "en": "A few sentences are enough, as long as they answer your original question clearly.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Ethics in biology",
+      "context": "Two classmates discuss genetic engineering after a biology lesson.",
+      "speakerA": [
+        {
+          "en": "In biology today we talked about genetic engineering. Do you think it's ethical to modify the genes of crops?",
+          "level": "B2"
+        },
+        {
+          "en": "I agree, but some people worry about the long-term effects on the environment and on human health.",
+          "level": "B2"
+        },
+        {
+          "en": "Even so, big companies control the seeds, which could make small farmers dependent on them.",
+          "level": "B2"
+        },
+        {
+          "en": "What about modifying human genes to prevent diseases?",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Who decides what counts as an improvement?",
+          "level": "B2"
+        },
+        {
+          "en": "I like that. Science can tell us what is possible, but not always what is right.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "It depends on the purpose. If it helps farmers grow food in dry regions, the benefits could be enormous.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a legitimate concern. That's why new crops are tested for years before they're approved.",
+          "level": "B2"
+        },
+        {
+          "en": "That's more of an economic problem than a scientific one, and it could be solved with regulation.",
+          "level": "B2"
+        },
+        {
+          "en": "Preventing a serious illness sounds acceptable, but it's difficult to draw a line between treatment and enhancement.",
+          "level": "B2"
+        },
+        {
+          "en": "Ideally, scientists, doctors and the public should debate it openly before any rules are made.",
+          "level": "B2"
+        },
+        {
+          "en": "Well put. That would be a good sentence to use in our essay.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Solving a physics problem",
+      "context": "Two students work through a question about force and energy.",
+      "speakerA": [
+        {
+          "en": "I'm stuck on this question. A car with a mass of one thousand kilograms accelerates at two metres per second squared. What force is acting on it?",
+          "level": "B2"
+        },
+        {
+          "en": "Of course. I forgot to check the units. And how do I find the kinetic energy if the speed is twenty metres per second?",
+          "level": "B2"
+        },
+        {
+          "en": "Why does the speed matter so much more than the mass?",
+          "level": "B2"
+        },
+        {
+          "en": "That explains why high speeds are so dangerous in car accidents.",
+          "level": "B2"
+        },
+        {
+          "en": "Could you check my working on the next question? I'm not sure I've rearranged the equation correctly.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a careless mistake. I'll underline the units next time.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Use Newton's second law. Force equals mass multiplied by acceleration, so the answer is two thousand newtons.",
+          "level": "B2"
+        },
+        {
+          "en": "The formula is half times the mass times the velocity squared, so you get two hundred thousand joules.",
+          "level": "B2"
+        },
+        {
+          "en": "Because the velocity is squared. If you double the speed, the kinetic energy increases fourfold.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. It also explains why the braking distance grows so quickly as the speed increases.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, but you've forgotten to convert grams into kilograms, so your answer is a thousand times too big.",
+          "level": "B2"
+        },
+        {
+          "en": "Good habit. Examiners often give marks for the method even if the final answer is wrong.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Comparing sources of energy",
+      "context": "Two students prepare a project on renewable and non-renewable energy.",
+      "speakerA": [
+        {
+          "en": "For our project, we have to compare renewable and non-renewable sources of energy. Where should we begin?",
+          "level": "B2"
+        },
+        {
+          "en": "And that contributes to global warming. What are the main drawbacks of renewable energy, then?",
+          "level": "B2"
+        },
+        {
+          "en": "Batteries are improving, but they're still expensive and require rare metals.",
+          "level": "B2"
+        },
+        {
+          "en": "So no source is perfect. Is nuclear power worth considering?",
+          "level": "B2"
+        },
+        {
+          "en": "Then perhaps the best solution is a mixture of different sources.",
+          "level": "B2"
+        },
+        {
+          "en": "Let's present a table with the advantages and disadvantages, and then give our own conclusion.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "We could start with fossil fuels. They're reliable and cheap, but they release carbon dioxide when they're burned.",
+          "level": "B2"
+        },
+        {
+          "en": "Solar and wind power depend on the weather, so we need ways to store the electricity for when it's needed.",
+          "level": "B2"
+        },
+        {
+          "en": "True. Hydroelectric power is more stable, but dams can damage ecosystems and force people to leave their homes.",
+          "level": "B2"
+        },
+        {
+          "en": "It produces very little carbon dioxide, but it creates radioactive waste that stays dangerous for thousands of years.",
+          "level": "B2"
+        },
+        {
+          "en": "That's what many experts recommend, along with reducing the amount of energy we use.",
+          "level": "B2"
+        },
+        {
+          "en": "Good idea. We should include data from reliable sources and mention where we found it.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,285 @@
+{
+  "topic": "Literature, History and Academic Writing",
+  "scenarios": [
+    {
+      "scenario": "Analysing a novel",
+      "context": "Two students discuss the main theme of a novel they have read.",
+      "speakerA": [
+        {
+          "en": "We're supposed to analyse the main theme of the novel we've just finished. What did you think it was about?",
+          "level": "B2"
+        },
+        {
+          "en": "Interesting. Can you give me some evidence from the text?",
+          "level": "B2"
+        },
+        {
+          "en": "That could be symbolic. The mirror might represent her uncertainty about who she is becoming.",
+          "level": "B2"
+        },
+        {
+          "en": "I hadn't noticed that. Do you think the ending is hopeful or pessimistic?",
+          "level": "B2"
+        },
+        {
+          "en": "That's what I thought. The author leaves the reader to decide, which makes the story more realistic.",
+          "level": "B2"
+        },
+        {
+          "en": "Right. Point, evidence, explanation, and then a link back to the question.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "On the surface, it's about a family moving to a new city, but I think the deeper theme is the search for identity.",
+          "level": "B2"
+        },
+        {
+          "en": "Several times, the main character is described looking at her reflection and not recognising herself.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. The author also uses the weather to reflect her mood, which is a technique called pathetic fallacy.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd say it's ambiguous. She finds a friend, but she still feels like an outsider.",
+          "level": "B2"
+        },
+        {
+          "en": "In our essay, we should always quote briefly and then explain what the quotation reveals.",
+          "level": "B2"
+        },
+        {
+          "en": "That structure is easy to remember, and it keeps your paragraphs focused.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Causes and effects in history",
+      "context": "A history teacher and a student discuss the Industrial Revolution.",
+      "speakerA": [
+        {
+          "en": "Today we're discussing why the Industrial Revolution began in Britain rather than somewhere else. Any ideas?",
+          "level": "B2"
+        },
+        {
+          "en": "Good. Was that the only reason?",
+          "level": "B2"
+        },
+        {
+          "en": "Would you say that one cause was more important than the others?",
+          "level": "B2"
+        },
+        {
+          "en": "That's a fair assessment. What were the consequences for ordinary people?",
+          "level": "B2"
+        },
+        {
+          "en": "And in the long term?",
+          "level": "B2"
+        },
+        {
+          "en": "So the historical picture is complex, and a simple judgement of good or bad wouldn't be accurate.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "One factor was the availability of coal and iron, which were essential for machines and steam engines.",
+          "level": "B2"
+        },
+        {
+          "en": "No, there were also political and economic factors. Britain had a stable government, a strong banking system and a growing overseas trade.",
+          "level": "B2"
+        },
+        {
+          "en": "It's hard to say, because they're closely connected. Without capital, for instance, factories couldn't have been built.",
+          "level": "B2"
+        },
+        {
+          "en": "In the short term, many suffered from long working hours, dangerous conditions and overcrowded cities.",
+          "level": "B2"
+        },
+        {
+          "en": "Living standards eventually improved, and new laws were introduced to protect workers and children.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly, and a good essay should consider several perspectives and use evidence to support its argument.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Avoiding plagiarism",
+      "context": "A student asks a tutor how to use sources honestly in an essay.",
+      "speakerA": [
+        {
+          "en": "I've found plenty of information online for my essay, but I'm worried about how to use it without plagiarising.",
+          "level": "B2"
+        },
+        {
+          "en": "Does that apply even if I change a few words?",
+          "level": "B2"
+        },
+        {
+          "en": "How do I reference the sources properly?",
+          "level": "B2"
+        },
+        {
+          "en": "And when is it appropriate to use direct quotations?",
+          "level": "B2"
+        },
+        {
+          "en": "What happens if a university catches a student plagiarising?",
+          "level": "B2"
+        },
+        {
+          "en": "That's a strong reason to be careful. Can software detect it?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Plagiarism means presenting someone else's ideas or words as your own, so you must always acknowledge your sources.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes. Simply rewording a sentence isn't enough. You have to express the idea in your own words and still cite the original author.",
+          "level": "B2"
+        },
+        {
+          "en": "Follow the system your school or university uses, and keep a list of every source as you read, so that you don't forget any.",
+          "level": "B2"
+        },
+        {
+          "en": "Only when the exact wording matters. Otherwise, paraphrase, and always include quotation marks and a page number.",
+          "level": "B2"
+        },
+        {
+          "en": "The consequences can be serious. You may fail the assignment or, in extreme cases, be asked to leave the course.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, most institutions use programs that compare your work with millions of documents.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Writing a formal essay",
+      "context": "A student asks her teacher for feedback on an essay introduction.",
+      "speakerA": [
+        {
+          "en": "I've written the first draft of my essay on whether social media does more harm than good. Could you look at my introduction?",
+          "level": "B2"
+        },
+        {
+          "en": "What exactly should the thesis include?",
+          "level": "B2"
+        },
+        {
+          "en": "So, \"Although social media has benefits, its negative effects on mental health outweigh them.\"",
+          "level": "B2"
+        },
+        {
+          "en": "Should I include a counterargument?",
+          "level": "B2"
+        },
+        {
+          "en": "And what about the conclusion?",
+          "level": "B2"
+        },
+        {
+          "en": "I also need to use more formal language. I wrote \"a lot of kids\", for example.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Certainly. It's a good start, but it takes too long to reach your thesis statement.",
+          "level": "B2"
+        },
+        {
+          "en": "A clear position and, ideally, a hint of the main arguments you intend to develop.",
+          "level": "B2"
+        },
+        {
+          "en": "Much better. It acknowledges the other side, but it still takes a stand. Now each paragraph must support that claim.",
+          "level": "B2"
+        },
+        {
+          "en": "Definitely. Present an opposing view, and then explain why it isn't convincing enough.",
+          "level": "B2"
+        },
+        {
+          "en": "Summarise your main points and restate your position in different words, without introducing new evidence.",
+          "level": "B2"
+        },
+        {
+          "en": "You could say \"many young people\" instead. Avoid contractions and slang in academic writing.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "The language of persuasion",
+      "context": "Two students revise the techniques used in persuasive speeches.",
+      "speakerA": [
+        {
+          "en": "In English today we studied the techniques that speakers use to persuade an audience. Do you remember the three main ones?",
+          "level": "B2"
+        },
+        {
+          "en": "And pathos appeals to the audience's emotions, for example by telling a moving personal story.",
+          "level": "B2"
+        },
+        {
+          "en": "Which of them do you think is the most effective?",
+          "level": "B2"
+        },
+        {
+          "en": "What other devices did we mention?",
+          "level": "B2"
+        },
+        {
+          "en": "Right. Think of an advertisement that says \"fast, simple and affordable\".",
+          "level": "B2"
+        },
+        {
+          "en": "So being able to recognise these techniques helps us resist manipulation.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Yes, ethos, pathos and logos. Ethos is about the speaker's credibility.",
+          "level": "B2"
+        },
+        {
+          "en": "While logos relies on logic, such as facts, statistics and clear reasoning.",
+          "level": "B2"
+        },
+        {
+          "en": "It depends on the audience, but the strongest speeches usually combine all three.",
+          "level": "B2"
+        },
+        {
+          "en": "Repetition, rhetorical questions and the rule of three, which makes a message sound memorable and complete.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. It sounds balanced and convincing even if it doesn't give any real evidence.",
+          "level": "B2"
+        },
+        {
+          "en": "It does, and it also helps us to become better speakers ourselves.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

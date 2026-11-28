@@ -1,0 +1,285 @@
+{
+  "topic": "Maths, Data and Graphs",
+  "scenarios": [
+    {
+      "scenario": "Describing a line graph",
+      "context": "A student asks her tutor how to describe a graph in English.",
+      "speakerA": [
+        {
+          "en": "Could you help me describe this line graph? It shows how the number of students in a city changed between 2010 and 2020.",
+          "level": "B2"
+        },
+        {
+          "en": "So I could say that the number of students rose steadily over the decade?",
+          "level": "B2"
+        },
+        {
+          "en": "It went up until 2015, then dropped slightly, and finally recovered.",
+          "level": "B2"
+        },
+        {
+          "en": "Which verbs should I use for changes? I keep repeating \"increase\".",
+          "level": "B2"
+        },
+        {
+          "en": "And adverbs like \"sharply\" and \"gradually\" would show how fast it changed?",
+          "level": "B2"
+        },
+        {
+          "en": "That helps a lot. Could I also compare it with the second graph?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Of course. First, give an overview. Say what the general trend is before you mention any figures.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, but check the details. Did it increase continuously, or were there any fluctuations?",
+          "level": "B2"
+        },
+        {
+          "en": "Then you could write that it peaked in 2015 before declining briefly and then climbing again.",
+          "level": "B2"
+        },
+        {
+          "en": "Try \"rise\", \"grow\" and \"climb\" for upward movements, and \"fall\", \"decline\" and \"drop\" for downward ones.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Use \"sharply\" for a big change in a short time and \"gradually\" for a slow one.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, point out the main similarities and differences, and support them with a few figures.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Mean, median and mode",
+      "context": "Two students revise statistics for a test.",
+      "speakerA": [
+        {
+          "en": "This question asks for the mean, median and mode of the test scores. I always mix them up.",
+          "level": "B2"
+        },
+        {
+          "en": "And the median is the middle value once the scores are arranged in order?",
+          "level": "B2"
+        },
+        {
+          "en": "What about the mode?",
+          "level": "B2"
+        },
+        {
+          "en": "Why would we use the median instead of the mean?",
+          "level": "B2"
+        },
+        {
+          "en": "That's a useful example. So the median gives a fairer picture of a typical value.",
+          "level": "B2"
+        },
+        {
+          "en": "The range is the difference between the highest and lowest scores, so it's thirty-two.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "The mean is the average, so you add all the scores and divide by the number of students.",
+          "level": "B2"
+        },
+        {
+          "en": "Correct. If there's an even number of scores, you take the mean of the two middle ones.",
+          "level": "B2"
+        },
+        {
+          "en": "It's simply the value that appears most often. A set of data can have more than one mode.",
+          "level": "B2"
+        },
+        {
+          "en": "Because extreme values affect the mean. For example, one very high salary can make a company seem richer than it is.",
+          "level": "B2"
+        },
+        {
+          "en": "In that case, yes. Now try the second part, where you have to find the range and comment on the spread.",
+          "level": "B2"
+        },
+        {
+          "en": "Right. A large range means that the results are widely spread, so the class is quite uneven.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Probability and risk",
+      "context": "Two friends talk about the chances of winning the lottery.",
+      "speakerA": [
+        {
+          "en": "My uncle buys a lottery ticket every week. He says that sooner or later he's bound to win.",
+          "level": "B2"
+        },
+        {
+          "en": "But if the chance of winning is one in ten million, doesn't it get more likely the more he plays?",
+          "level": "B2"
+        },
+        {
+          "en": "So in probability terms, is it a bad investment?",
+          "level": "B2"
+        },
+        {
+          "en": "Then why do people keep playing?",
+          "level": "B2"
+        },
+        {
+          "en": "That reminds me of people who are afraid of flying but never worry about driving.",
+          "level": "B2"
+        },
+        {
+          "en": "I'll explain that to my uncle, although I doubt that it will change his mind.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "That's a common misunderstanding. Each draw is independent, so the past results don't affect the next one.",
+          "level": "B2"
+        },
+        {
+          "en": "It increases slightly with every ticket, but it remains tiny. He'd spend far more money than he would ever win.",
+          "level": "B2"
+        },
+        {
+          "en": "In terms of expected value, yes. On average, players lose money, which is how the lottery makes a profit.",
+          "level": "B2"
+        },
+        {
+          "en": "Partly because of the excitement, and partly because we tend to overestimate unlikely events.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Statistically, driving is far more dangerous, but vivid news stories make plane crashes seem more common.",
+          "level": "B2"
+        },
+        {
+          "en": "Probably not, but at least you'll have used your maths for something practical.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Simple and compound interest",
+      "context": "Two students compare two savings accounts for a maths project.",
+      "speakerA": [
+        {
+          "en": "We've been asked to compare two savings accounts. One pays simple interest, and the other pays compound interest.",
+          "level": "B2"
+        },
+        {
+          "en": "With simple interest, you only earn interest on the original amount. With compound interest, you also earn it on the interest you've already received.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, especially over a long period. If you invest one thousand pounds at five percent for twenty years, you get much more with compound interest.",
+          "level": "B2"
+        },
+        {
+          "en": "Right. You multiply by one point zero five each year, so after twenty years the total is about two thousand six hundred and fifty pounds.",
+          "level": "B2"
+        },
+        {
+          "en": "That's why starting to save early matters so much, even if the amounts are small.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly, which is why it's dangerous to carry a balance from month to month.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "What's the difference? The names sound similar, but I assume the results aren't.",
+          "level": "B2"
+        },
+        {
+          "en": "So the money grows faster with compound interest?",
+          "level": "B2"
+        },
+        {
+          "en": "Let me calculate it. After one year it's one thousand and fifty, and then the next year is five percent of that new total.",
+          "level": "B2"
+        },
+        {
+          "en": "That's considerably more than simple interest, which would only give two thousand.",
+          "level": "B2"
+        },
+        {
+          "en": "And it works the other way round with debts, doesn't it? Interest on credit cards grows in the same way.",
+          "level": "B2"
+        },
+        {
+          "en": "Now I understand why my parents keep telling me to avoid borrowing money for things I don't need.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Misleading statistics",
+      "context": "Two friends question an advertisement that quotes survey results.",
+      "speakerA": [
+        {
+          "en": "Look at this headline: \"Nine out of ten dentists recommend our toothpaste.\" It sounds convincing, doesn't it?",
+          "level": "B2"
+        },
+        {
+          "en": "And who chose them? If the company selected them, the sample wouldn't be representative.",
+          "level": "B2"
+        },
+        {
+          "en": "Another thing I've noticed is that graphs can be misleading when the vertical axis doesn't start at zero.",
+          "level": "B2"
+        },
+        {
+          "en": "What about the difference between correlation and causation?",
+          "level": "B2"
+        },
+        {
+          "en": "That's a funny example, but it makes the point clearly.",
+          "level": "B2"
+        },
+        {
+          "en": "I'll make a checklist to help me remember all of those points.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "It does, but I'd want to know how many dentists were asked. Perhaps they only questioned ten.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. A good survey needs a large, random sample so that the results reflect the whole population.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, a small difference can look enormous if the scale is cut off. Always check the axes before you draw conclusions.",
+          "level": "B2"
+        },
+        {
+          "en": "Two things can rise together without one causing the other. Ice cream sales and sunburn both increase in summer, but ice cream doesn't cause sunburn.",
+          "level": "B2"
+        },
+        {
+          "en": "In an exam, you may be asked to criticise a statement like this, so mention the sample size, the source and possible bias.",
+          "level": "B2"
+        },
+        {
+          "en": "Good idea. It will also help you in everyday life when you read the news.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,285 @@
+{
+  "topic": "Settling into a New Country",
+  "scenarios": [
+    {
+      "scenario": "Viewing a flat to rent",
+      "context": "A newcomer visits a flat with a letting agent.",
+      "speakerA": [
+        {
+          "en": "Welcome. This is the flat I mentioned. It has two bedrooms, a living room and a small balcony.",
+          "level": "B2"
+        },
+        {
+          "en": "The rent is nine hundred a month, and water is included. You pay for electricity, gas and the internet separately.",
+          "level": "B2"
+        },
+        {
+          "en": "It's equal to one month's rent. It's returned at the end of the tenancy, provided that there's no damage.",
+          "level": "B2"
+        },
+        {
+          "en": "Certainly. The minimum contract is twelve months, and you must give one month's notice if you want to leave.",
+          "level": "B2"
+        },
+        {
+          "en": "It's partly furnished, with a kitchen, a wardrobe and a bed. Small pets are allowed, but you'd need written permission.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, and I recommend taking photos on the day you move in, so that you aren't charged for existing damage.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "It looks bright and spacious. How much is the monthly rent, and are bills included?",
+          "level": "B2"
+        },
+        {
+          "en": "I see. How much is the deposit, and when would I get it back?",
+          "level": "B2"
+        },
+        {
+          "en": "Could I take a look at the contract before signing? I'd like to understand the notice period.",
+          "level": "B2"
+        },
+        {
+          "en": "Is the flat furnished? And are pets allowed?",
+          "level": "B2"
+        },
+        {
+          "en": "That's fine. Would it be possible to see the inventory of everything in the flat?",
+          "level": "B2"
+        },
+        {
+          "en": "Good advice. I'd like to think it over and give you an answer by tomorrow.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Opening a bank account",
+      "context": "A newcomer opens a current account at a bank.",
+      "speakerA": [
+        {
+          "en": "Good afternoon. How can I help you today?",
+          "level": "B2"
+        },
+        {
+          "en": "Certainly. Do you have your passport and proof of address with you?",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, a signed tenancy agreement is fine. Are you working or studying?",
+          "level": "B2"
+        },
+        {
+          "en": "That would be helpful. Would you like a debit card and online banking as well?",
+          "level": "B2"
+        },
+        {
+          "en": "There's no monthly fee for this account, but international transfers have a small charge, depending on the amount.",
+          "level": "B2"
+        },
+        {
+          "en": "It should arrive by post within a week, and you'll receive the PIN separately for security reasons.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I've recently moved here, and I'd like to open a current account, please.",
+          "level": "B2"
+        },
+        {
+          "en": "I have my passport and my residence permit, but I don't have a utility bill yet. Would a tenancy agreement be acceptable?",
+          "level": "B2"
+        },
+        {
+          "en": "I'm starting a job next month. I can bring the employment contract later if that's necessary.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, both, please. Are there any monthly fees or charges for sending money abroad?",
+          "level": "B2"
+        },
+        {
+          "en": "I see. How long will it take before I can use the card?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. Could you also explain how to set up a direct debit for my rent?",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Registering with a doctor",
+      "context": "A newcomer registers as a patient at a health centre.",
+      "speakerA": [
+        {
+          "en": "Good morning, health centre. How can I help you?",
+          "level": "B2"
+        },
+        {
+          "en": "Of course. Have you brought some form of identification and proof of address?",
+          "level": "B2"
+        },
+        {
+          "en": "That's fine. Please fill in this form with your medical history and any medication you're taking.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, once the doctor has reviewed your records. I recommend booking a first appointment as soon as possible.",
+          "level": "B2"
+        },
+        {
+          "en": "There's a slot next Tuesday at ten fifteen, but if it's urgent, we also have a same-day phone consultation.",
+          "level": "B2"
+        },
+        {
+          "en": "You can call our out-of-hours number, and in an emergency, you should dial the emergency services immediately.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Hello. I've just moved to the area, and I'd like to register as a patient.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, I have my passport and a copy of my rental agreement. Is that sufficient?",
+          "level": "B2"
+        },
+        {
+          "en": "I take medication for high blood pressure. Will I be able to get a repeat prescription here?",
+          "level": "B2"
+        },
+        {
+          "en": "What is the earliest appointment available?",
+          "level": "B2"
+        },
+        {
+          "en": "Tuesday will be fine. And what should I do if I need medical help outside opening hours?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. Do I need to bring my medical records from my previous country?",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "At the immigration office",
+      "context": "A resident applies to extend a residence permit.",
+      "speakerA": [
+        {
+          "en": "Next, please. Good morning. What can I do for you?",
+          "level": "B2"
+        },
+        {
+          "en": "May I see your appointment confirmation and your passport, please?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. Have you got the application form, and is it completed in full?",
+          "level": "B2"
+        },
+        {
+          "en": "Everything seems to be in order, but I'll need your fingerprints. Please place your fingers on the scanner.",
+          "level": "B2"
+        },
+        {
+          "en": "Usually between four and eight weeks. You'll receive a letter when your permit is ready for collection.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, as long as your current permit was valid when you applied. Keep this receipt, and call the helpline on the leaflet if you have any problems.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Good morning. I have an appointment to apply for an extension of my residence permit.",
+          "level": "B2"
+        },
+        {
+          "en": "Here you are. I've also brought my employment contract, my recent payslips and proof of my address.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, I filled it in online and printed it. I also have two passport-sized photographs.",
+          "level": "B2"
+        },
+        {
+          "en": "Of course. How long does the process normally take?",
+          "level": "B2"
+        },
+        {
+          "en": "Am I allowed to continue working while my application is being processed?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. I'll keep it somewhere safe and call the helpline if I have any questions.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Choosing a phone plan",
+      "context": "A newcomer chooses a mobile phone plan in a shop.",
+      "speakerA": [
+        {
+          "en": "Good morning. I'd like to get a mobile phone plan, preferably one that doesn't require a long contract.",
+          "level": "B2"
+        },
+        {
+          "en": "What's the difference? I don't know how the system works here.",
+          "level": "B2"
+        },
+        {
+          "en": "And with a prepaid plan?",
+          "level": "B2"
+        },
+        {
+          "en": "I think the prepaid plan suits me better, since I'm not sure how long I'll stay in this city.",
+          "level": "B2"
+        },
+        {
+          "en": "I use quite a lot of data, and I call my family overseas every week.",
+          "level": "B2"
+        },
+        {
+          "en": "That sounds suitable. Do I need to show any identification to activate the SIM card?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "We have several options. Do you want a monthly contract or a prepaid plan?",
+          "level": "B2"
+        },
+        {
+          "en": "With a contract, you pay a fixed fee every month for twenty-four months, and you often get a new phone included.",
+          "level": "B2"
+        },
+        {
+          "en": "You top up your credit whenever you want, and you can cancel at any time, but the phone isn't included.",
+          "level": "B2"
+        },
+        {
+          "en": "Understood. How much data do you usually use? Do you make a lot of calls abroad?",
+          "level": "B2"
+        },
+        {
+          "en": "Then I'd recommend this plan. It includes unlimited data and cheap international calls to many countries.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, your passport and proof of address, please. It will only take a few minutes.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

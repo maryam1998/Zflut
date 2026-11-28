@@ -1,0 +1,285 @@
+{
+  "topic": "Presentations, Seminars and English Exams",
+  "scenarios": [
+    {
+      "scenario": "Preparing a group presentation",
+      "context": "Two students plan a ten-minute presentation.",
+      "speakerA": [
+        {
+          "en": "We have to give a ten-minute presentation on renewable energy next week. How should we divide the work?",
+          "level": "B2"
+        },
+        {
+          "en": "Sounds fair. I'll do the introduction and the part about solar power, and you can cover wind and hydroelectric energy.",
+          "level": "B2"
+        },
+        {
+          "en": "Should we use a lot of text on the slides?",
+          "level": "B2"
+        },
+        {
+          "en": "What if I forget what to say?",
+          "level": "B2"
+        },
+        {
+          "en": "Good advice. How can we start in an interesting way?",
+          "level": "B2"
+        },
+        {
+          "en": "I like that. Let's rehearse on Thursday and time ourselves.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I suggest that we each take one section, and then we practise the whole thing together.",
+          "level": "B2"
+        },
+        {
+          "en": "Fine. Then we'll finish with a joint conclusion and invite questions from the audience.",
+          "level": "B2"
+        },
+        {
+          "en": "No, keep it minimal. Use short phrases and clear images, and explain the details orally.",
+          "level": "B2"
+        },
+        {
+          "en": "Prepare some brief notes, but don't read them word for word. Eye contact makes you more convincing.",
+          "level": "B2"
+        },
+        {
+          "en": "A surprising statistic or a question usually works well, such as \"What would happen if the sun stopped shining tomorrow?\"",
+          "level": "B2"
+        },
+        {
+          "en": "Agreed. We can also ask a friend to listen and give us some honest feedback.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Taking part in a seminar",
+      "context": "A student contributes to a university-style seminar discussion.",
+      "speakerA": [
+        {
+          "en": "In the seminar today, I'd like to build on what Maria said earlier about the role of the government.",
+          "level": "B2"
+        },
+        {
+          "en": "I don't entirely disagree with her, but I'd argue that local communities also have an important role to play.",
+          "level": "B2"
+        },
+        {
+          "en": "Certainly. In my town, residents organised a recycling project that was more successful than the national campaign.",
+          "level": "B2"
+        },
+        {
+          "en": "Sorry, could you repeat the last part? I didn't quite catch it.",
+          "level": "B2"
+        },
+        {
+          "en": "I see what you mean. That's a valid objection, although some projects can be expanded.",
+          "level": "B2"
+        },
+        {
+          "en": "Funding, clear leadership and the support of the people involved, I'd say.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Please do. It would be helpful if you could explain how your view differs from hers.",
+          "level": "B2"
+        },
+        {
+          "en": "Interesting. Could you give us an example to illustrate that point?",
+          "level": "B2"
+        },
+        {
+          "en": "That's a useful example, although it suggests that local solutions don't always work on a larger scale.",
+          "level": "B2"
+        },
+        {
+          "en": "Of course. I said that success at a local level doesn't guarantee success nationally.",
+          "level": "B2"
+        },
+        {
+          "en": "Let's explore that further. What conditions would be necessary for a local project to succeed nationally?",
+          "level": "B2"
+        },
+        {
+          "en": "Excellent. Let's write those on the board and then discuss them in groups.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "An English speaking test: part one",
+      "context": "An examiner asks a candidate questions about themselves.",
+      "speakerA": [
+        {
+          "en": "Good morning. Could you tell me your full name and where you are from?",
+          "level": "B2"
+        },
+        {
+          "en": "Do you work or are you a student?",
+          "level": "B2"
+        },
+        {
+          "en": "What do you enjoy most about your studies?",
+          "level": "B2"
+        },
+        {
+          "en": "Let's talk about your free time. How do you usually relax after a busy day?",
+          "level": "B2"
+        },
+        {
+          "en": "Is there a hobby that you would like to take up in the future?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. Now I'm going to give you a topic, and I'd like you to speak about it for one to two minutes.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Good morning. My name is Elena Petrova, and I come from a small town near the coast.",
+          "level": "B2"
+        },
+        {
+          "en": "I'm a student at the moment. I'm studying computer science, although I'm also preparing to move abroad.",
+          "level": "B2"
+        },
+        {
+          "en": "I enjoy solving problems logically, and I like the fact that I can see practical results from what I create.",
+          "level": "B2"
+        },
+        {
+          "en": "Normally I go for a walk, or I listen to music. It helps me clear my mind.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, I'd love to learn the guitar, but I've never had enough time to practise regularly.",
+          "level": "B2"
+        },
+        {
+          "en": "Certainly. Should I take a few moments to make some notes before I begin?",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "An English speaking test: discussion",
+      "context": "An examiner asks a candidate for opinions about education and technology.",
+      "speakerA": [
+        {
+          "en": "Let's discuss the topic in more depth. Do you think technology has improved the way people learn?",
+          "level": "B2"
+        },
+        {
+          "en": "Are there any disadvantages?",
+          "level": "B2"
+        },
+        {
+          "en": "How do you think schools will change over the next twenty years?",
+          "level": "B2"
+        },
+        {
+          "en": "Some people say that teachers will eventually be replaced by computers. What's your opinion?",
+          "level": "B2"
+        },
+        {
+          "en": "Should education be free for everyone?",
+          "level": "B2"
+        },
+        {
+          "en": "Finally, what advice would you give to someone who wants to improve their English quickly?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Generally, yes. Students now have access to a huge amount of information, and they can learn at their own pace.",
+          "level": "B2"
+        },
+        {
+          "en": "Certainly. It's easy to get distracted, and some people lose the ability to concentrate for long periods.",
+          "level": "B2"
+        },
+        {
+          "en": "I suspect that classrooms will become more flexible, with a mixture of online and face-to-face lessons.",
+          "level": "B2"
+        },
+        {
+          "en": "I don't think that will happen, because teachers do much more than present information. They motivate and support students.",
+          "level": "B2"
+        },
+        {
+          "en": "Ideally, yes, since education is an investment in society. However, governments must find a sustainable way to pay for it.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd advise them to practise speaking every day, even if they make mistakes, and to listen to a wide range of accents.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Asking a lecturer for an extension",
+      "context": "A student explains to a lecturer why she needs more time.",
+      "speakerA": [
+        {
+          "en": "Excuse me, Dr Evans, do you have a moment? I'd like to ask about the deadline for my assignment.",
+          "level": "B2"
+        },
+        {
+          "en": "I've been ill for the last week, and I'm afraid I won't be able to submit the work on Friday.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, I have one from my doctor, and I can send you a copy by email this afternoon.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you so much. Would it be possible to have a little longer if I'm still unwell?",
+          "level": "B2"
+        },
+        {
+          "en": "I understand. I'll email you on Wednesday to let you know how I'm getting on.",
+          "level": "B2"
+        },
+        {
+          "en": "I will. I appreciate your understanding, and I apologise for the inconvenience.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Of course. What seems to be the problem?",
+          "level": "B2"
+        },
+        {
+          "en": "I'm sorry to hear that. Do you have a medical certificate?",
+          "level": "B2"
+        },
+        {
+          "en": "That would be helpful. In that case, I can give you an extension of five days.",
+          "level": "B2"
+        },
+        {
+          "en": "We'll see how it goes. Please keep me informed, and don't wait until the last moment to tell me.",
+          "level": "B2"
+        },
+        {
+          "en": "Good. In the meantime, make sure that you get plenty of rest.",
+          "level": "B2"
+        },
+        {
+          "en": "There's no need to apologise. Just focus on getting better.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

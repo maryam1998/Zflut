@@ -1,0 +1,285 @@
+{
+  "topic": "Work and Everyday Responsibilities Abroad",
+  "scenarios": [
+    {
+      "scenario": "A job interview",
+      "context": "An interviewer asks a candidate about her experience.",
+      "speakerA": [
+        {
+          "en": "Thank you for coming. Could you start by telling us a little about your background?",
+          "level": "B2"
+        },
+        {
+          "en": "What attracted you to this position?",
+          "level": "B2"
+        },
+        {
+          "en": "Can you describe a situation in which you had to solve a difficult problem at work?",
+          "level": "B2"
+        },
+        {
+          "en": "That sounds stressful. How do you usually handle pressure?",
+          "level": "B2"
+        },
+        {
+          "en": "What would you say is your greatest weakness?",
+          "level": "B2"
+        },
+        {
+          "en": "Where do you see yourself in five years' time?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Certainly. I graduated three years ago and have worked as a junior accountant, mainly dealing with invoices and monthly reports.",
+          "level": "B2"
+        },
+        {
+          "en": "The company has an excellent reputation, and the role would let me take on more responsibility and develop my skills.",
+          "level": "B2"
+        },
+        {
+          "en": "Last year, we discovered an error in a client's accounts just before a deadline. I stayed late, found the cause and corrected it with my manager.",
+          "level": "B2"
+        },
+        {
+          "en": "I prioritise the most urgent tasks, communicate clearly with my colleagues and take short breaks to stay focused.",
+          "level": "B2"
+        },
+        {
+          "en": "I sometimes spend too long perfecting small details, but I'm learning to set time limits for each task.",
+          "level": "B2"
+        },
+        {
+          "en": "I hope to be a senior member of the team, perhaps leading a small group and mentoring new employees.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Understanding a work contract",
+      "context": "A new employee goes through a contract with the HR manager.",
+      "speakerA": [
+        {
+          "en": "Before you sign, let me go through the main points of your contract. Please stop me if anything is unclear.",
+          "level": "B2"
+        },
+        {
+          "en": "Thirty-eight hours, from Monday to Friday. Overtime is paid at one and a half times your normal rate.",
+          "level": "B2"
+        },
+        {
+          "en": "Twenty-five days of paid leave, plus public holidays. You need to request time off at least two weeks in advance.",
+          "level": "B2"
+        },
+        {
+          "en": "You must inform your manager as early as possible. After three days, you need a doctor's note.",
+          "level": "B2"
+        },
+        {
+          "en": "During that time, either side can end the contract with a shorter notice period. After that, the notice period is two months.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, the company contributes to a pension scheme, and you'll also be covered by our health insurance.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Thank you. First, how many hours per week am I expected to work?",
+          "level": "B2"
+        },
+        {
+          "en": "What about holidays? How many days am I entitled to each year?",
+          "level": "B2"
+        },
+        {
+          "en": "And what happens if I'm ill and can't come to work?",
+          "level": "B2"
+        },
+        {
+          "en": "I noticed a probation period of six months. What does that mean in practice?",
+          "level": "B2"
+        },
+        {
+          "en": "I see. Are there any benefits besides the salary, such as a pension plan?",
+          "level": "B2"
+        },
+        {
+          "en": "That sounds fair. May I take the contract home and read it carefully before I sign?",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Understanding a payslip and taxes",
+      "context": "A new employee asks a colleague about deductions from her salary.",
+      "speakerA": [
+        {
+          "en": "Could you help me understand my payslip? I can't work out why the amount I received is lower than my salary.",
+          "level": "B2"
+        },
+        {
+          "en": "What exactly is deducted?",
+          "level": "B2"
+        },
+        {
+          "en": "So I don't have to pay the tax myself?",
+          "level": "B2"
+        },
+        {
+          "en": "How do I know whether I've paid too much?",
+          "level": "B2"
+        },
+        {
+          "en": "That's useful. Is there someone who can help if I get confused?",
+          "level": "B2"
+        },
+        {
+          "en": "I'll do some research this weekend, then. Thank you for your patience.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Of course. The gross salary is what you earn before deductions, and the net salary is what you actually receive.",
+          "level": "B2"
+        },
+        {
+          "en": "Income tax, and also contributions to social security and sometimes a pension. These are taken directly by the employer.",
+          "level": "B2"
+        },
+        {
+          "en": "Not usually, but you may have to submit a tax return once a year, especially if you have other sources of income.",
+          "level": "B2"
+        },
+        {
+          "en": "If you've overpaid, you can claim a refund, so it's important to keep your documents and receipts.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, the tax office has a helpline, and many people use an accountant for their first return.",
+          "level": "B2"
+        },
+        {
+          "en": "No problem. Just keep every payslip and your tax number somewhere safe.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Sorting out a disagreement",
+      "context": "Two colleagues resolve a misunderstanding about a report.",
+      "speakerA": [
+        {
+          "en": "Can I have a word? I feel that there's been a misunderstanding about who was responsible for the report.",
+          "level": "B2"
+        },
+        {
+          "en": "I did include it, but I forgot to mention your name in the final document, and I apologise for that.",
+          "level": "B2"
+        },
+        {
+          "en": "Let's agree to communicate more openly from now on. If either of us has a problem, we'll talk about it immediately.",
+          "level": "B2"
+        },
+        {
+          "en": "Good idea. We could write down who is responsible for each task and when it's due.",
+          "level": "B2"
+        },
+        {
+          "en": "Shall we correct the document and send it to her together?",
+          "level": "B2"
+        },
+        {
+          "en": "Perfect. I'm glad we sorted this out calmly.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Of course. To be honest, I was upset because I thought that you hadn't included my part of the work.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you for being honest. I should have asked you directly instead of complaining to others.",
+          "level": "B2"
+        },
+        {
+          "en": "That sounds sensible. I also think we need to clarify our roles at the beginning of each project.",
+          "level": "B2"
+        },
+        {
+          "en": "Then there would be no confusion, and our manager would see how we share the workload.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, I'll add my name and the missing paragraph, and you can check the final version.",
+          "level": "B2"
+        },
+        {
+          "en": "So am I. It's much better than letting the tension grow.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Handing in your notice",
+      "context": "An employee tells her manager that she is leaving.",
+      "speakerA": [
+        {
+          "en": "Do you have a minute? There's something important I'd like to discuss with you.",
+          "level": "B2"
+        },
+        {
+          "en": "I've been offered a position in another city, and after careful thought, I've decided to accept it.",
+          "level": "B2"
+        },
+        {
+          "en": "My contract requires two months' notice, so my last day would be at the end of January.",
+          "level": "B2"
+        },
+        {
+          "en": "Certainly. I'd like to leave everything in good order and hand over my projects properly.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, I'll send an email this afternoon. May I also ask for a reference letter?",
+          "level": "B2"
+        },
+        {
+          "en": "That means a lot. I've learnt so much here, and I'm grateful for the opportunities.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Of course. Please sit down. Is everything all right?",
+          "level": "B2"
+        },
+        {
+          "en": "I'm sorry to hear that, but I appreciate you telling me in person. When would you like to leave?",
+          "level": "B2"
+        },
+        {
+          "en": "Understood. Would you be willing to help us train your replacement before you go?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. Could you please put your resignation in writing so that I can forward it to the HR department?",
+          "level": "B2"
+        },
+        {
+          "en": "Absolutely. You've been a valuable member of the team, and I'll be happy to recommend you.",
+          "level": "B2"
+        },
+        {
+          "en": "We wish you every success, and the door will always be open if you ever want to return.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}
