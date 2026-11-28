@@ -23,6 +23,11 @@ import 'selection_card.dart';
 import 'translation_alt_row.dart';
 import 'roman_line.dart';
 import 'back_translation_line.dart';
+import '../ai/ai_gateway.dart';
+import '../translate/shared_translations.dart';
+import '../translate/translate_hints.dart';
+import '../usage/free_limit.dart' show Feature;
+import '../usage/pro_status.dart';
 import 'feature_coach.dart';
 import '../storage/local_storage.dart' show sharedPrefsProvider;
 import 'word_examples_panel.dart';
@@ -683,6 +688,89 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
     setState(() => _failed = true);
   }
 
+  // ═══ 🛠️ اصلاحِ خودکارِ ترجمه‌ی مشکوک (Pro) ═══
+  // وقتی ترجمه‌ی برگشتی با معنیِ زبانِ مادری فرق دارد، همان لحظه (بدونِ دکمه) به AI فرستاده می‌شود
+  // — همراهِ جمله‌ی قبلی و بعدیِ مکالمه — تا ترجمه‌ی درست را بدهد. هر متن فقط یک‌بار (روی گوشی ثبت می‌شود)،
+  // درخواست‌ها پشتِ‌هم (نه هم‌زمان) و بی‌صدا؛ ترجمه‌ی قفل‌شده/دستیِ کاربر هرگز عوض نمی‌شود.
+  static final Set<String> _fixTried = <String>{};
+  static Future<void> _fixQueue = Future<void>.value();
+
+  void _onBackMismatch(String back, String nat) {
+    if (!ProStatus.isPro || _forceBack) return;
+    final cur = _text;
+    final en = widget.en.trim();
+    final code = widget.langCode;
+    final src = widget.sourceLang;
+    if (cur == null || en.isEmpty || code == src) return;
+    final svc = ref.read(translationServiceProvider);
+    if (svc.pinned(en, code) != null) return;
+    final mk = '__autofix__::$code::$en';
+    if (TranslationCacheDb.instance.peek(mk) != null) return;
+    final tk = '$code|$en';
+    if (!_fixTried.add(tk)) return;
+    final ai = ref.read(aiSettingsProvider);
+    final native = ref.read(languageSelectionProvider).native;
+
+    _fixQueue = _fixQueue.then((_) async {
+      if (!mounted) {
+        _fixTried.remove(tk); // از صفحه رفته؛ دفعه‌ی بعد دوباره
+        return;
+      }
+      final prev = TranslateHints.context(en);
+      final next = TranslateHints.next(en);
+      final level = TranslateHints.level(en);
+      final b = StringBuffer()
+        ..writeln('You are a professional translator checking one line of a dialogue.')
+        ..writeln('Source language: ${englishLangName(src)}. Target language: ${englishLangName(code)}.');
+      if (prev.isNotEmpty) b.writeln('Previous line: "$prev"');
+      b.writeln('Line to translate: "$en"');
+      if (next.isNotEmpty) b.writeln('Next line: "$next"');
+      if (level.isNotEmpty) {
+        b.writeln('Learner level: $level (keep the wording natural but simple).');
+      }
+      b
+        ..writeln('Current ${englishLangName(code)} translation: "$cur"')
+        ..writeln('A machine back-translation of it into ${englishLangName(native)} reads: "$back"')
+        ..writeln('while the intended meaning in ${englishLangName(native)} is: "$nat"')
+        ..writeln('If the current translation is correct, natural and fits the dialogue, reply exactly: OK')
+        ..write('Otherwise reply with ONLY the corrected ${englishLangName(code)} translation of the line to translate — one line, no quotes, no explanation. Keep names unchanged.');
+      String out = '';
+      try {
+        out = (await aiGenerate(
+          svc: svc,
+          settings: ai,
+          prompt: b.toString(),
+          maxTokens: 300,
+          retries: 1,
+          timeoutMs: 25000,
+          feature: Feature.chat,
+          reportLimit: false,
+        ))
+            .trim();
+      } catch (_) {
+        return; // بی‌صدا؛ همین نشست دوباره تلاش نمی‌شود
+      }
+      final o = out.replaceAll(RegExp(r'^["“«]+|["”»]+$'), '').trim();
+      if (RegExp(r'^ok\.?$', caseSensitive: false).hasMatch(o)) {
+        await TranslationCacheDb.instance.put(mk, 'ok');
+        return;
+      }
+      if (o.isEmpty ||
+          o.contains('\n') ||
+          o == cur.trim() ||
+          o.length > cur.length * 3 + 24 ||
+          looksLikelyMistranslated(en, o, code, sourceLang: src)) {
+        return;
+      }
+      await svc.pinPut(en, src, code, o);
+      await TranslationCacheDb.instance.put(mk, 'fixed');
+      // 🗳️ فقط به‌عنوان «رای» برای کشِ مشترک (سرور خودش تصمیم می‌گیرد)
+      SharedTranslations.share(ai.baseUrl, en, src, code, o, aiVerified: true);
+      if (!mounted) return;
+      setState(() => _text = o);
+    }).catchError((_) {});
+  }
+
   /// اولین بار که کاربر دکمه‌ی رفرش را می‌زند، همان دکمه روشن و توضیح داده می‌شود.
   Future<void> _retryWithCoach() async {
     if (_retrying) return;
@@ -947,6 +1035,7 @@ class _SyncTranslationRowState extends ConsumerState<SyncTranslationRow> {
                 en: widget.en,
                 sourceLang: widget.sourceLang,
                 alwaysShow: _forceBack,
+                onMismatch: _onBackMismatch,
                 compact: widget.compact,
               ),
             if (altRow != null) altRow,
