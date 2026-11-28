@@ -1,0 +1,173 @@
+{
+  "topic": "Work and Study (IELTS style)",
+  "scenarios": [
+    {
+      "scenario": "Work and Study - Part 1: Your studies and job (IELTS style)",
+      "context": "The examiner asks about the candidate's studies and work; the candidate answers with reasons and personal examples.",
+      "speakerA": [
+        {
+          "en": "Let's talk about your work or studies. Are you currently working or studying?",
+          "level": "B2"
+        },
+        {
+          "en": "What made you choose that subject?",
+          "level": "B2"
+        },
+        {
+          "en": "What do you find most challenging about it?",
+          "level": "B2"
+        },
+        {
+          "en": "Do you prefer studying alone or with other people?",
+          "level": "B2"
+        },
+        {
+          "en": "Is there anything about your job that you'd like to change?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. What would you like to do after you finish your studies?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I'm studying at university at the moment, and I also work part-time at a bookshop at weekends.",
+          "level": "B2"
+        },
+        {
+          "en": "I've always been fascinated by how society works, so I chose sociology. I wanted something that would help me understand people as well as numbers.",
+          "level": "B2"
+        },
+        {
+          "en": "Time management, mainly. Juggling lectures, assignments and a job can be exhausting, especially before exams.",
+          "level": "B2"
+        },
+        {
+          "en": "It depends. I concentrate better on my own, but group study helps when a topic is difficult, because friends often explain things in a different way.",
+          "level": "B2"
+        },
+        {
+          "en": "The pay, obviously, but also the schedule. I'd prefer fixed hours so that I could plan my studying more efficiently.",
+          "level": "B2"
+        },
+        {
+          "en": "Ideally, I'd like to work in research or in a public organisation, although I'm keeping an open mind because the job market changes quickly.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Work and Study - Part 2: Describe a person who taught you something important (IELTS style)",
+      "context": "The candidate speaks for about two minutes about a person who taught them an important lesson, then answers follow-up questions.",
+      "speakerA": [
+        {
+          "en": "Now I'm going to give you a topic. Describe a person who taught you something important. You should say who the person was, what they taught you, how you learned it, and explain why it was important to you. You have one minute to prepare.",
+          "level": "B2"
+        },
+        {
+          "en": "Please start speaking whenever you're ready.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. Do you still keep in touch with her?",
+          "level": "B2"
+        },
+        {
+          "en": "Do you think you will teach others in the same way in the future?",
+          "level": "B2"
+        },
+        {
+          "en": "Would you say a good teacher and a good boss have similar qualities?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. That is the end of Part 2.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Certainly. I'm going to talk about my first manager at the bookshop.",
+          "level": "B2"
+        },
+        {
+          "en": "The person I'd like to talk about is Mrs Karimi, who was my first manager when I started working at a bookshop two years ago. I was extremely shy at the time, and I could hardly look customers in the eye. She never criticised me in front of others. Instead, she showed me how to greet people, how to ask questions that help them find what they need, and how to stay calm when someone is rude. I learned mostly by watching her, and she let me make small mistakes so that I could correct them myself. What she taught me was that confidence isn't something you're born with; it grows with practice. That lesson has been important in my studies as well, because I now speak up in seminars, which I would never have dared to do before.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, occasionally. We exchange messages during the holidays, and she still recommends books to me. I'd like to thank her properly one day.",
+          "level": "B2"
+        },
+        {
+          "en": "I hope so. If I ever become a manager, I'd try to be patient, because I know how much of a difference that makes to a new employee.",
+          "level": "B2"
+        },
+        {
+          "en": "To some extent, yes. Both need to be fair, clear and willing to listen, although a teacher is usually more focused on long-term growth than on immediate results.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Work and Study - Part 3: Education and the workplace (IELTS style)",
+      "context": "The examiner asks abstract questions about education and work; the candidate gives balanced, developed answers.",
+      "speakerA": [
+        {
+          "en": "Let's discuss education and work more generally. Do you think university is still the best route to a successful career?",
+          "level": "B2"
+        },
+        {
+          "en": "How important is it for employees to keep learning throughout their careers?",
+          "level": "B2"
+        },
+        {
+          "en": "Some people say working from home is more productive than working in an office. What's your view?",
+          "level": "B2"
+        },
+        {
+          "en": "Should employers or governments be responsible for training workers?",
+          "level": "B2"
+        },
+        {
+          "en": "Do you think people today are under more pressure at work than in the past?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. How might the workplace change over the next twenty years?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Not necessarily. A degree remains valuable in fields such as medicine or law, but in others, practical skills and experience can matter just as much, and vocational training is often undervalued.",
+          "level": "B2"
+        },
+        {
+          "en": "Increasingly important. Technology changes so rapidly that skills can become outdated within a few years, so people who refuse to adapt may find it hard to stay employable.",
+          "level": "B2"
+        },
+        {
+          "en": "It varies from person to person. Many people save commuting time and can concentrate better, but others miss the social contact, and creativity often depends on spontaneous conversations.",
+          "level": "B2"
+        },
+        {
+          "en": "Ideally both. Governments can fund basic education and retraining schemes, whereas employers know which specific skills they need, so sharing the cost seems the fairest approach.",
+          "level": "B2"
+        },
+        {
+          "en": "In some respects, yes. Constant connectivity makes it difficult to switch off, and competition has intensified, although working conditions are safer and hours are shorter in many countries.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd expect more flexible arrangements, with shorter weeks and project-based contracts, while automation will probably take over routine tasks and leave humans to focus on creative and interpersonal work.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

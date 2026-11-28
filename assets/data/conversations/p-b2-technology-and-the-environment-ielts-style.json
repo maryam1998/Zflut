@@ -1,0 +1,173 @@
+{
+  "topic": "Technology and the Environment (IELTS style)",
+  "scenarios": [
+    {
+      "scenario": "Technology - Part 1: Your use of technology (IELTS style)",
+      "context": "The examiner asks about the candidate's use of technology; the candidate answers with reasons and personal examples.",
+      "speakerA": [
+        {
+          "en": "Let's talk about technology. How often do you use the internet?",
+          "level": "B2"
+        },
+        {
+          "en": "What technology do you use most in your daily life?",
+          "level": "B2"
+        },
+        {
+          "en": "Do you think you spend too much time on your phone?",
+          "level": "B2"
+        },
+        {
+          "en": "Did you use different technology when you were younger?",
+          "level": "B2"
+        },
+        {
+          "en": "Is there any technology you find difficult to use?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. Would you like to try any new technology in the future?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Every day, and for many hours. I use it for study, for keeping in touch with friends and, honestly, for a lot of entertainment as well.",
+          "level": "B2"
+        },
+        {
+          "en": "My smartphone, without a doubt. It's my alarm clock, my map, my dictionary and my camera, so I'd feel lost without it.",
+          "level": "B2"
+        },
+        {
+          "en": "Probably, yes. I often check it without thinking, so I've started turning off notifications in the evening to help me concentrate.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, quite different. We had a shared family computer and a basic mobile phone, and the idea of watching films on a handheld device seemed like science fiction.",
+          "level": "B2"
+        },
+        {
+          "en": "Some banking apps, to be honest. They're often so complicated that I need a friend to explain how they work.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd love to try virtual reality for travelling, since it might let me visit places that I can't afford to see in person.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Technology - Part 2: Describe a piece of technology you find useful (IELTS style)",
+      "context": "The candidate speaks for about two minutes about a useful piece of technology, then answers follow-up questions.",
+      "speakerA": [
+        {
+          "en": "Now I'm going to give you a topic. Describe a piece of technology that you find useful. You should say what it is, how often you use it, what you use it for, and explain why it is useful to you. You have one minute to prepare.",
+          "level": "B2"
+        },
+        {
+          "en": "Please begin whenever you're ready.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. Do you think people are too dependent on technology?",
+          "level": "B2"
+        },
+        {
+          "en": "How do you decide which technology is worth buying?",
+          "level": "B2"
+        },
+        {
+          "en": "Would you recommend your laptop to a friend?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. That is the end of Part 2.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Of course. I'm going to talk about my laptop.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd like to talk about my laptop, which is probably the most useful piece of technology I own. I bought it three years ago with money I saved from a summer job, and I use it nearly every day. Mainly, I use it for university work, such as writing essays and doing research, but I also edit photos and watch lectures online. What makes it so useful is its versatility: it can be a library, a cinema and an office at the same time. I remember when it crashed just before an important deadline. I panicked, and that moment made me realise how dependent I'd become on it. Since then, I've been backing up my files regularly. All in all, it's not just a device but a tool that lets me learn, create and stay connected, and I honestly can't imagine my life without it.",
+          "level": "B2"
+        },
+        {
+          "en": "To a degree. We rely on devices for memory, navigation and even basic calculations, which makes us efficient but may weaken some skills. The key is to use technology as a tool rather than a crutch.",
+          "level": "B2"
+        },
+        {
+          "en": "I read reviews, compare prices and ask myself whether it will solve a real problem. I try to avoid buying something simply because it's fashionable.",
+          "level": "B2"
+        },
+        {
+          "en": "Definitely, although I'd advise them to check the battery life, since that's its weakest point.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Technology and the Environment - Part 3: Society and the planet (IELTS style)",
+      "context": "The examiner asks abstract questions about technology, the environment and society; the candidate gives balanced, developed answers.",
+      "speakerA": [
+        {
+          "en": "Let's discuss technology and its effects on society. Do you think technology has made our lives better overall?",
+          "level": "B2"
+        },
+        {
+          "en": "Can technology help solve environmental problems?",
+          "level": "B2"
+        },
+        {
+          "en": "Some people argue that new gadgets are harmful because of the waste they create. What do you think?",
+          "level": "B2"
+        },
+        {
+          "en": "Who should take the main responsibility for protecting the environment: governments, companies or individuals?",
+          "level": "B2"
+        },
+        {
+          "en": "Do you think children should learn about the environment at school?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. What do you think the world will be like in fifty years?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "On balance, yes. It has improved healthcare, communication and access to information, although it has also created new problems, such as addiction to screens and a loss of privacy.",
+          "level": "B2"
+        },
+        {
+          "en": "To some extent. Renewable energy, electric transport and smarter farming all reduce pollution, but technology alone isn't enough; we also need to change our consumption habits.",
+          "level": "B2"
+        },
+        {
+          "en": "They have a point. Electronic waste is a growing problem, and manufacturers often design products to be replaced rather than repaired. Stricter laws on repair and recycling could make a real difference.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd say governments, because they can set rules that apply to everyone. Individuals matter too, but it's unrealistic to expect people to make sacrifices if companies keep polluting freely.",
+          "level": "B2"
+        },
+        {
+          "en": "Absolutely. Habits formed in childhood tend to last, and young people often influence their parents, so environmental education can have effects far beyond the classroom.",
+          "level": "B2"
+        },
+        {
+          "en": "It's hard to say. If we act now, we could have cleaner cities and mostly renewable energy; otherwise, extreme weather and shortages could become a daily reality.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}
