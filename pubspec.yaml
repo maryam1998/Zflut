@@ -51,6 +51,8 @@ dependencies:
   lpinyin: ^2.0.3
   # ژاپنی → روماجی روی خودِ گوشی (kuroshiro + kuromoji؛ غیرهمگام است)
   kuroshiro: ^1.0.5
+  # کره‌ای → رومی‌سازی روی خودِ گوشی (همگام و آفلاین)
+  korean_romanization_converter: ^0.0.1
 
   cupertino_icons: ^1.0.6
 

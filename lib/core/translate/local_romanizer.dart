@@ -8,16 +8,17 @@
 // وگرنه (ترجمه از کش/فایلِ داخلِ اپ آمده و Worker صدا زده نشده) این جا خالی را پر می‌کند.
 // چینی: پین‌یینِ همراهِ تُن با بسته‌ی lpinyin (فرهنگ‌لغتِ داخلِ بسته).
 // ژاپنی: روماجی با بسته‌ی kuroshiro (غیرهمگام). convert برای ژاپنی اولین بار null می‌دهد، تبدیل را در پس‌زمینه انجام می‌دهد،
-// و بعد با LocalRomanizer.updates به RomanLine خبر می‌دهد تا دوباره بسازد. کره‌ای همچنان فقط از Worker/فایلِ ثابت.
+// و بعد با LocalRomanizer.updates به RomanLine خبر می‌دهد تا دوباره بسازد. کره‌ای: بسته‌ی korean_romanization_converter (همگام).
 
 import 'package:flutter/foundation.dart' show ValueNotifier, debugPrint;
+import 'package:korean_romanization_converter/korean_romanization_converter.dart';
 import 'package:kuroshiro/kuroshiro.dart';
 import 'package:lpinyin/lpinyin.dart';
 
 class LocalRomanizer {
   LocalRomanizer._();
 
-  static const Set<String> langs = {'hi', 'ru', 'zh', 'ja'};
+  static const Set<String> langs = {'hi', 'ru', 'zh', 'ja', 'ko'};
 
   static final Map<String, String> _memo = <String, String>{};
 
@@ -30,7 +31,11 @@ class LocalRomanizer {
     if (hit != null) return hit.isEmpty ? null : hit;
     String out;
     try {
-      out = lang == 'hi' ? _hi(text) : (lang == 'zh' ? _zh(text) : _ruConvert(text));
+      out = lang == 'hi'
+          ? _hi(text)
+          : (lang == 'zh'
+              ? _zh(text)
+              : (lang == 'ko' ? _ko(text) : _ruConvert(text)));
     } catch (_) {
       out = '';
     }
@@ -223,6 +228,15 @@ class LocalRomanizer {
       );
       return ' $py ';
     });
+    return _tidy(r);
+  }
+
+  // ───────────────────────── کره‌ای ─────────────────────────
+  static final RegExp _hangulRe = RegExp(r'[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]+');
+  static final KoreanRomanizationConverter _koConv = KoreanRomanizationConverter();
+
+  static String _ko(String text) {
+    final r = text.replaceAllMapped(_hangulRe, (m) => ' ${_koConv.romanize(m[0]!)} ');
     return _tidy(r);
   }
 
