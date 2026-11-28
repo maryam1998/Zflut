@@ -1208,6 +1208,623 @@
      "fa": ""
     }
    ]
+  },
+  {
+   "key": "politics",
+   "fa": "سیاست و جامعه",
+   "en": "Politics & Society",
+   "group": "life",
+   "words": [
+    {
+     "id": 702868,
+     "level": "B1",
+     "pos": "noun",
+     "en": "politics",
+     "fa": ""
+    },
+    {
+     "id": 702866,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "political",
+     "fa": ""
+    },
+    {
+     "id": 702867,
+     "level": "B1",
+     "pos": "noun",
+     "en": "politician",
+     "fa": ""
+    },
+    {
+     "id": 702865,
+     "level": "B1",
+     "pos": "noun",
+     "en": "policy",
+     "fa": ""
+    },
+    {
+     "id": 701026,
+     "level": "B2",
+     "pos": "noun",
+     "en": "democracy",
+     "fa": ""
+    },
+    {
+     "id": 701027,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "democratic",
+     "fa": ""
+    },
+    {
+     "id": 500277,
+     "level": "B1",
+     "pos": "noun",
+     "en": "election",
+     "fa": ""
+    },
+    {
+     "id": 500228,
+     "level": "B1",
+     "pos": "noun",
+     "en": "candidate",
+     "fa": ""
+    },
+    {
+     "id": 700327,
+     "level": "C1",
+     "pos": "noun",
+     "en": "ballot",
+     "fa": ""
+    },
+    {
+     "id": 702869,
+     "level": "C1",
+     "pos": "noun",
+     "en": "poll",
+     "fa": ""
+    },
+    {
+     "id": 703161,
+     "level": "C1",
+     "pos": "noun",
+     "en": "referendum",
+     "fa": ""
+    },
+    {
+     "id": 702733,
+     "level": "B2",
+     "pos": "noun",
+     "en": "parliament",
+     "fa": ""
+    },
+    {
+     "id": 702426,
+     "level": "B2",
+     "pos": "noun",
+     "en": "minister",
+     "fa": ""
+    },
+    {
+     "id": 702944,
+     "level": "A2",
+     "pos": "noun",
+     "en": "president",
+     "fa": ""
+    },
+    {
+     "id": 700509,
+     "level": "C1",
+     "pos": "noun",
+     "en": "cabinet",
+     "fa": ""
+    },
+    {
+     "id": 700883,
+     "level": "B2",
+     "pos": "noun",
+     "en": "council",
+     "fa": ""
+    },
+    {
+     "id": 700297,
+     "level": "B1",
+     "pos": "noun",
+     "en": "authority",
+     "fa": ""
+    },
+    {
+     "id": 700495,
+     "level": "C1",
+     "pos": "noun",
+     "en": "bureaucracy",
+     "fa": ""
+    },
+    {
+     "id": 701514,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "federal",
+     "fa": ""
+    },
+    {
+     "id": 703577,
+     "level": "C1",
+     "pos": "noun",
+     "en": "sovereignty",
+     "fa": ""
+    },
+    {
+     "id": 102268,
+     "level": "B2",
+     "pos": "noun",
+     "en": "independence",
+     "fa": ""
+    },
+    {
+     "id": 704386,
+     "level": "C1",
+     "pos": "noun",
+     "en": "monarchy",
+     "fa": ""
+    },
+    {
+     "id": 703226,
+     "level": "C1",
+     "pos": "noun",
+     "en": "republic",
+     "fa": ""
+    },
+    {
+     "id": 703170,
+     "level": "C1",
+     "pos": "noun",
+     "en": "regime",
+     "fa": ""
+    },
+    {
+     "id": 701089,
+     "level": "C1",
+     "pos": "noun",
+     "en": "dictator",
+     "fa": ""
+    },
+    {
+     "id": 702187,
+     "level": "A2",
+     "pos": "noun",
+     "en": "leader",
+     "fa": ""
+    },
+    {
+     "id": 701268,
+     "level": "B2",
+     "pos": "verb",
+     "en": "elect",
+     "fa": ""
+    },
+    {
+     "id": 702314,
+     "level": "B2",
+     "pos": "noun",
+     "en": "majority",
+     "fa": ""
+    },
+    {
+     "id": 702429,
+     "level": "B2",
+     "pos": "noun",
+     "en": "minority",
+     "fa": ""
+    },
+    {
+     "id": 702650,
+     "level": "B2",
+     "pos": "noun",
+     "en": "opposition",
+     "fa": ""
+    },
+    {
+     "id": 700660,
+     "level": "C1",
+     "pos": "noun",
+     "en": "coalition",
+     "fa": ""
+    },
+    {
+     "id": 703163,
+     "level": "C1",
+     "pos": "noun",
+     "en": "reform",
+     "fa": ""
+    },
+    {
+     "id": 703270,
+     "level": "B2",
+     "pos": "noun",
+     "en": "revolution",
+     "fa": ""
+    },
+    {
+     "id": 703032,
+     "level": "B1",
+     "pos": "noun",
+     "en": "protest",
+     "fa": ""
+    },
+    {
+     "id": 701030,
+     "level": "B2",
+     "pos": "noun",
+     "en": "demonstration",
+     "fa": ""
+    },
+    {
+     "id": 703098,
+     "level": "C1",
+     "pos": "noun",
+     "en": "rally",
+     "fa": ""
+    },
+    {
+     "id": 700059,
+     "level": "C1",
+     "pos": "noun",
+     "en": "activist",
+     "fa": ""
+    },
+    {
+     "id": 701903,
+     "level": "C1",
+     "pos": "noun",
+     "en": "ideology",
+     "fa": ""
+    },
+    {
+     "id": 700789,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "conservative",
+     "fa": ""
+    },
+    {
+     "id": 702222,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "liberal",
+     "fa": ""
+    },
+    {
+     "id": 703006,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "progressive",
+     "fa": ""
+    },
+    {
+     "id": 701107,
+     "level": "C1",
+     "pos": "noun",
+     "en": "diplomat",
+     "fa": ""
+    },
+    {
+     "id": 704329,
+     "level": "C1",
+     "pos": "noun",
+     "en": "diplomacy",
+     "fa": ""
+    },
+    {
+     "id": 701288,
+     "level": "C1",
+     "pos": "noun",
+     "en": "embassy",
+     "fa": ""
+    },
+    {
+     "id": 704328,
+     "level": "C1",
+     "pos": "noun",
+     "en": "ceasefire",
+     "fa": ""
+    },
+    {
+     "id": 701007,
+     "level": "B2",
+     "pos": "noun",
+     "en": "defence",
+     "fa": ""
+    },
+    {
+     "id": 703855,
+     "level": "B2",
+     "pos": "noun",
+     "en": "terrorism",
+     "fa": ""
+    },
+    {
+     "id": 700876,
+     "level": "C1",
+     "pos": "noun",
+     "en": "corruption",
+     "fa": ""
+    },
+    {
+     "id": 703346,
+     "level": "B2",
+     "pos": "noun",
+     "en": "scandal",
+     "fa": ""
+    },
+    {
+     "id": 704347,
+     "level": "C1",
+     "pos": "noun",
+     "en": "bribery",
+     "fa": ""
+    },
+    {
+     "id": 703984,
+     "level": "C1",
+     "pos": "noun",
+     "en": "transparency",
+     "fa": ""
+    },
+    {
+     "id": 700037,
+     "level": "C1",
+     "pos": "noun",
+     "en": "accountability",
+     "fa": ""
+    },
+    {
+     "id": 700623,
+     "level": "C1",
+     "pos": "noun",
+     "en": "citizenship",
+     "fa": ""
+    },
+    {
+     "id": 703619,
+     "level": "B2",
+     "pos": "noun",
+     "en": "spokesperson",
+     "fa": ""
+    },
+    {
+     "id": 705143,
+     "level": "C1",
+     "pos": "other",
+     "en": "incumbent",
+     "fa": ""
+    },
+    {
+     "id": 700894,
+     "level": "C1",
+     "pos": "noun",
+     "en": "coup",
+     "fa": ""
+    },
+    {
+     "id": 940064,
+     "level": "B2",
+     "pos": "noun",
+     "en": "prime minister",
+     "fa": ""
+    },
+    {
+     "id": 940065,
+     "level": "C1",
+     "pos": "noun",
+     "en": "head of state",
+     "fa": ""
+    },
+    {
+     "id": 940066,
+     "level": "B2",
+     "pos": "noun",
+     "en": "political party",
+     "fa": ""
+    },
+    {
+     "id": 940067,
+     "level": "B2",
+     "pos": "noun",
+     "en": "political system",
+     "fa": ""
+    },
+    {
+     "id": 940068,
+     "level": "B2",
+     "pos": "noun",
+     "en": "general election",
+     "fa": ""
+    },
+    {
+     "id": 940069,
+     "level": "B2",
+     "pos": "noun",
+     "en": "voter",
+     "fa": ""
+    },
+    {
+     "id": 940070,
+     "level": "C1",
+     "pos": "noun",
+     "en": "voter turnout",
+     "fa": ""
+    },
+    {
+     "id": 940071,
+     "level": "B2",
+     "pos": "noun",
+     "en": "polling station",
+     "fa": ""
+    },
+    {
+     "id": 940072,
+     "level": "B2",
+     "pos": "noun",
+     "en": "public opinion",
+     "fa": ""
+    },
+    {
+     "id": 940073,
+     "level": "B2",
+     "pos": "noun",
+     "en": "public service",
+     "fa": ""
+    },
+    {
+     "id": 940074,
+     "level": "B2",
+     "pos": "noun",
+     "en": "civil servant",
+     "fa": ""
+    },
+    {
+     "id": 940075,
+     "level": "B2",
+     "pos": "noun",
+     "en": "local government",
+     "fa": ""
+    },
+    {
+     "id": 940076,
+     "level": "B2",
+     "pos": "noun",
+     "en": "foreign policy",
+     "fa": ""
+    },
+    {
+     "id": 940077,
+     "level": "C1",
+     "pos": "noun",
+     "en": "welfare state",
+     "fa": ""
+    },
+    {
+     "id": 940078,
+     "level": "C1",
+     "pos": "noun",
+     "en": "term of office",
+     "fa": ""
+    },
+    {
+     "id": 940079,
+     "level": "C1",
+     "pos": "noun",
+     "en": "policymaker",
+     "fa": ""
+    },
+    {
+     "id": 940080,
+     "level": "C1",
+     "pos": "noun",
+     "en": "manifesto",
+     "fa": ""
+    },
+    {
+     "id": 940081,
+     "level": "C1",
+     "pos": "noun",
+     "en": "superpower",
+     "fa": ""
+    },
+    {
+     "id": 940082,
+     "level": "C1",
+     "pos": "noun",
+     "en": "sanctions",
+     "fa": ""
+    },
+    {
+     "id": 940083,
+     "level": "B2",
+     "pos": "noun",
+     "en": "peace talks",
+     "fa": ""
+    },
+    {
+     "id": 940084,
+     "level": "C1",
+     "pos": "noun",
+     "en": "dictatorship",
+     "fa": ""
+    },
+    {
+     "id": 940085,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "authoritarian",
+     "fa": ""
+    },
+    {
+     "id": 940086,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "left-wing",
+     "fa": ""
+    },
+    {
+     "id": 940087,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "right-wing",
+     "fa": ""
+    },
+    {
+     "id": 940088,
+     "level": "C1",
+     "pos": "noun",
+     "en": "nationalism",
+     "fa": ""
+    },
+    {
+     "id": 940089,
+     "level": "C1",
+     "pos": "noun",
+     "en": "populism",
+     "fa": ""
+    },
+    {
+     "id": 940090,
+     "level": "C1",
+     "pos": "noun",
+     "en": "extremism",
+     "fa": ""
+    },
+    {
+     "id": 940091,
+     "level": "C1",
+     "pos": "noun",
+     "en": "socialism",
+     "fa": ""
+    },
+    {
+     "id": 940092,
+     "level": "C1",
+     "pos": "noun",
+     "en": "activism",
+     "fa": ""
+    },
+    {
+     "id": 940093,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "bipartisan",
+     "fa": ""
+    },
+    {
+     "id": 940094,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "grassroots",
+     "fa": ""
+    }
+   ]
   }
  ]
 }
