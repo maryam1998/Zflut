@@ -2456,6 +2456,574 @@
      "fa": ""
     }
    ]
+  },
+  {
+   "key": "technology",
+   "fa": "فناوری",
+   "en": "Technology & Innovation",
+   "group": "life",
+   "words": [
+    {
+     "id": 704323,
+     "level": "C1",
+     "pos": "noun",
+     "en": "artificial intelligence",
+     "fa": ""
+    },
+    {
+     "id": 703825,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "technological",
+     "fa": ""
+    },
+    {
+     "id": 702006,
+     "level": "B2",
+     "pos": "noun",
+     "en": "innovation",
+     "fa": ""
+    },
+    {
+     "id": 702007,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "innovative",
+     "fa": ""
+    },
+    {
+     "id": 704324,
+     "level": "B2",
+     "pos": "noun",
+     "en": "algorithm",
+     "fa": ""
+    },
+    {
+     "id": 704374,
+     "level": "C1",
+     "pos": "noun",
+     "en": "automation",
+     "fa": ""
+    },
+    {
+     "id": 702299,
+     "level": "C1",
+     "pos": "noun",
+     "en": "machinery",
+     "fa": ""
+    },
+    {
+     "id": 701792,
+     "level": "C1",
+     "pos": "noun",
+     "en": "hardware",
+     "fa": ""
+    },
+    {
+     "id": 703005,
+     "level": "B2",
+     "pos": "noun",
+     "en": "programming",
+     "fa": ""
+    },
+    {
+     "id": 700974,
+     "level": "B2",
+     "pos": "noun",
+     "en": "database",
+     "fa": ""
+    },
+    {
+     "id": 704380,
+     "level": "B2",
+     "pos": "noun",
+     "en": "server",
+     "fa": ""
+    },
+    {
+     "id": 700481,
+     "level": "C1",
+     "pos": "noun",
+     "en": "browser",
+     "fa": ""
+    },
+    {
+     "id": 702059,
+     "level": "C1",
+     "pos": "noun",
+     "en": "interface",
+     "fa": ""
+    },
+    {
+     "id": 702988,
+     "level": "C1",
+     "pos": "noun",
+     "en": "processor",
+     "fa": ""
+    },
+    {
+     "id": 700475,
+     "level": "C1",
+     "pos": "noun",
+     "en": "broadband",
+     "fa": ""
+    },
+    {
+     "id": 705087,
+     "level": "C1",
+     "pos": "other",
+     "en": "compatible",
+     "fa": ""
+    },
+    {
+     "id": 702972,
+     "level": "B2",
+     "pos": "noun",
+     "en": "privacy",
+     "fa": ""
+    },
+    {
+     "id": 704327,
+     "level": "C1",
+     "pos": "noun",
+     "en": "cybersecurity",
+     "fa": ""
+    },
+    {
+     "id": 704381,
+     "level": "C1",
+     "pos": "noun",
+     "en": "encryption",
+     "fa": ""
+    },
+    {
+     "id": 703775,
+     "level": "C1",
+     "pos": "noun",
+     "en": "surveillance",
+     "fa": ""
+    },
+    {
+     "id": 701630,
+     "level": "B2",
+     "pos": "noun",
+     "en": "fraud",
+     "fa": ""
+    },
+    {
+     "id": 703579,
+     "level": "C1",
+     "pos": "noun",
+     "en": "spam",
+     "fa": ""
+    },
+    {
+     "id": 704151,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "virtual",
+     "fa": ""
+    },
+    {
+     "id": 703488,
+     "level": "C1",
+     "pos": "noun",
+     "en": "simulation",
+     "fa": ""
+    },
+    {
+     "id": 704087,
+     "level": "C1",
+     "pos": "noun",
+     "en": "upgrade",
+     "fa": ""
+    },
+    {
+     "id": 703570,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "sophisticated",
+     "fa": ""
+    },
+    {
+     "id": 703271,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "revolutionary",
+     "fa": ""
+    },
+    {
+     "id": 701148,
+     "level": "C1",
+     "pos": "verb",
+     "en": "disrupt",
+     "fa": ""
+    },
+    {
+     "id": 701149,
+     "level": "C1",
+     "pos": "noun",
+     "en": "disruption",
+     "fa": ""
+    },
+    {
+     "id": 701259,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "efficient",
+     "fa": ""
+    },
+    {
+     "id": 701274,
+     "level": "B2",
+     "pos": "noun",
+     "en": "electronics",
+     "fa": ""
+    },
+    {
+     "id": 704325,
+     "level": "B2",
+     "pos": "noun",
+     "en": "drone",
+     "fa": ""
+    },
+    {
+     "id": 704313,
+     "level": "C1",
+     "pos": "noun",
+     "en": "blockchain",
+     "fa": ""
+    },
+    {
+     "id": 704312,
+     "level": "C1",
+     "pos": "noun",
+     "en": "cryptocurrency",
+     "fa": ""
+    },
+    {
+     "id": 700488,
+     "level": "B2",
+     "pos": "noun",
+     "en": "bug",
+     "fa": ""
+    },
+    {
+     "id": 700314,
+     "level": "C1",
+     "pos": "noun",
+     "en": "backup",
+     "fa": ""
+    },
+    {
+     "id": 703674,
+     "level": "C1",
+     "pos": "noun",
+     "en": "storage",
+     "fa": ""
+    },
+    {
+     "id": 700527,
+     "level": "B2",
+     "pos": "noun",
+     "en": "capacity",
+     "fa": ""
+    },
+    {
+     "id": 701676,
+     "level": "B2",
+     "pos": "noun",
+     "en": "gaming",
+     "fa": ""
+    },
+    {
+     "id": 701326,
+     "level": "B1",
+     "pos": "noun",
+     "en": "engineering",
+     "fa": ""
+    },
+    {
+     "id": 940125,
+     "level": "B2",
+     "pos": "noun",
+     "en": "machine learning",
+     "fa": ""
+    },
+    {
+     "id": 940126,
+     "level": "C1",
+     "pos": "noun",
+     "en": "deep learning",
+     "fa": ""
+    },
+    {
+     "id": 940127,
+     "level": "C1",
+     "pos": "noun",
+     "en": "neural network",
+     "fa": ""
+    },
+    {
+     "id": 940128,
+     "level": "B2",
+     "pos": "noun",
+     "en": "chatbot",
+     "fa": ""
+    },
+    {
+     "id": 940129,
+     "level": "C1",
+     "pos": "verb",
+     "en": "automate",
+     "fa": ""
+    },
+    {
+     "id": 940130,
+     "level": "B2",
+     "pos": "noun",
+     "en": "robotics",
+     "fa": ""
+    },
+    {
+     "id": 940131,
+     "level": "C1",
+     "pos": "noun",
+     "en": "big data",
+     "fa": ""
+    },
+    {
+     "id": 940132,
+     "level": "B2",
+     "pos": "noun",
+     "en": "cloud computing",
+     "fa": ""
+    },
+    {
+     "id": 940133,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "open source",
+     "fa": ""
+    },
+    {
+     "id": 940134,
+     "level": "B2",
+     "pos": "noun",
+     "en": "programmer",
+     "fa": ""
+    },
+    {
+     "id": 940135,
+     "level": "B2",
+     "pos": "noun",
+     "en": "developer",
+     "fa": ""
+    },
+    {
+     "id": 940136,
+     "level": "B2",
+     "pos": "verb",
+     "en": "hack",
+     "fa": ""
+    },
+    {
+     "id": 940137,
+     "level": "C1",
+     "pos": "noun",
+     "en": "malware",
+     "fa": ""
+    },
+    {
+     "id": 940138,
+     "level": "C1",
+     "pos": "noun",
+     "en": "phishing",
+     "fa": ""
+    },
+    {
+     "id": 940139,
+     "level": "B2",
+     "pos": "noun",
+     "en": "scam",
+     "fa": ""
+    },
+    {
+     "id": 940140,
+     "level": "C1",
+     "pos": "noun",
+     "en": "firewall",
+     "fa": ""
+    },
+    {
+     "id": 940141,
+     "level": "C1",
+     "pos": "noun",
+     "en": "data breach",
+     "fa": ""
+    },
+    {
+     "id": 704326,
+     "level": "C1",
+     "pos": "noun",
+     "en": "cyberattack",
+     "fa": ""
+    },
+    {
+     "id": 940142,
+     "level": "C1",
+     "pos": "noun",
+     "en": "digital footprint",
+     "fa": ""
+    },
+    {
+     "id": 940143,
+     "level": "C1",
+     "pos": "noun",
+     "en": "bandwidth",
+     "fa": ""
+    },
+    {
+     "id": 940144,
+     "level": "C1",
+     "pos": "noun",
+     "en": "connectivity",
+     "fa": ""
+    },
+    {
+     "id": 940145,
+     "level": "B2",
+     "pos": "noun",
+     "en": "sensor",
+     "fa": ""
+    },
+    {
+     "id": 940146,
+     "level": "C1",
+     "pos": "noun",
+     "en": "wearable",
+     "fa": ""
+    },
+    {
+     "id": 940147,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "biometric",
+     "fa": ""
+    },
+    {
+     "id": 940148,
+     "level": "C1",
+     "pos": "noun",
+     "en": "facial recognition",
+     "fa": ""
+    },
+    {
+     "id": 940149,
+     "level": "B2",
+     "pos": "noun",
+     "en": "virtual reality",
+     "fa": ""
+    },
+    {
+     "id": 940150,
+     "level": "C1",
+     "pos": "noun",
+     "en": "augmented reality",
+     "fa": ""
+    },
+    {
+     "id": 940151,
+     "level": "B2",
+     "pos": "noun",
+     "en": "3D printing",
+     "fa": ""
+    },
+    {
+     "id": 940152,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "self-driving",
+     "fa": ""
+    },
+    {
+     "id": 940153,
+     "level": "B2",
+     "pos": "noun",
+     "en": "smart home",
+     "fa": ""
+    },
+    {
+     "id": 940154,
+     "level": "B2",
+     "pos": "noun",
+     "en": "prototype",
+     "fa": ""
+    },
+    {
+     "id": 940155,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "cutting-edge",
+     "fa": ""
+    },
+    {
+     "id": 940156,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "state-of-the-art",
+     "fa": ""
+    },
+    {
+     "id": 940157,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "user-friendly",
+     "fa": ""
+    },
+    {
+     "id": 940158,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "obsolete",
+     "fa": ""
+    },
+    {
+     "id": 940159,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "outdated",
+     "fa": ""
+    },
+    {
+     "id": 940160,
+     "level": "C1",
+     "pos": "noun",
+     "en": "glitch",
+     "fa": ""
+    },
+    {
+     "id": 940161,
+     "level": "B2",
+     "pos": "noun",
+     "en": "gadget",
+     "fa": ""
+    },
+    {
+     "id": 940162,
+     "level": "B2",
+     "pos": "noun",
+     "en": "notification",
+     "fa": ""
+    },
+    {
+     "id": 940163,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "viral",
+     "fa": ""
+    }
+   ]
   }
  ]
 }
