@@ -768,6 +768,8 @@ class AiFirstTranslator {
                   'levels': [for (final it in items) TranslateHints.level(it.job.text)],
                 if (items.any((it) => TranslateHints.context(it.job.text).isNotEmpty))
                   'contexts': [for (final it in items) TranslateHints.context(it.job.text)],
+                if (items.any((it) => TranslateHints.next(it.job.text).isNotEmpty))
+                  'nexts': [for (final it in items) TranslateHints.next(it.job.text)],
                 'source_lang_code': g.from.isEmpty ? 'auto' : g.from,
                 'target_lang_code': g.to,
                 ...Romanization.nativeField, // 🔤
@@ -1057,6 +1059,7 @@ class AiFirstTranslator {
                 // 🎓 سطحِ جمله و خطِ قبلیِ مکالمه (اختیاری)
                 if (TranslateHints.level(j.text).isNotEmpty) 'level': TranslateHints.level(j.text),
                 if (TranslateHints.context(j.text).isNotEmpty) 'context': TranslateHints.context(j.text),
+                if (TranslateHints.next(j.text).isNotEmpty) 'next': TranslateHints.next(j.text),
                 'source_lang_code': j.from.isEmpty ? 'auto' : j.from,
                 'target_lang_code': j.to,
                 ...Romanization.nativeField, // 🔤

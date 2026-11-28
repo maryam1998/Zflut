@@ -1474,8 +1474,9 @@ class _DialogueBox extends ConsumerWidget {
       if (!hasHear && !hasSay) continue;
       // 🎓 اولین خطِ نمایش‌داده‌شده هدفِ تورِ مکالمه است
       final firstLine = kids.isEmpty;
-      Widget lineRow(ConversationLine l, String lid, bool tour, String prev) {
-        final row = _LineRow(line: l, id: lid, prevEn: prev);
+      Widget lineRow(ConversationLine l, String lid, bool tour, String prev,
+          String next) {
+        final row = _LineRow(line: l, id: lid, prevEn: prev, nextEn: next);
         return tour ? TourTarget(id: 'cv_line', child: row) : row;
       }
 
@@ -1487,12 +1488,14 @@ class _DialogueBox extends ConsumerWidget {
             if (hasHear)
               _tagged(context, L.dialogs_you_hear, c.teal,
                   lineRow(hear[i], 'a$i', firstLine,
-                      i > 0 && i - 1 < say.length ? say[i - 1].en : '')),
+                      i > 0 && i - 1 < say.length ? say[i - 1].en : '',
+                      i < say.length ? say[i].en : '')),
             // جوابِ همین جمله دقیقاً زیرِ آن (کمی تورفته)
             if (hasSay)
               _tagged(context, L.dialogs_you_say, c.gold,
                   lineRow(say[i], 'b$i', firstLine && !hasHear,
-                      i < hear.length ? hear[i].en : (i > 0 ? say[i - 1].en : '')),
+                      i < hear.length ? hear[i].en : (i > 0 ? say[i - 1].en : ''),
+                      i + 1 < hear.length ? hear[i + 1].en : ''),
                   indent: 16),
           ],
         ),
@@ -1518,10 +1521,14 @@ class _LineRow extends ConsumerWidget {
 
   /// 🎓 خطِ قبلیِ همان مکالمه (انگلیسی) — زمینه برای ترجمه‌ی درست
   final String prevEn;
+
+  /// 🎓 خطِ بعدیِ همان مکالمه (انگلیسی) — زمینه‌ی دوم برای ترجمه‌ی درست
+  final String nextEn;
   const _LineRow({
     required this.line,
     required this.id,
     this.prevEn = '',
+    this.nextEn = '',
   });
 
   @override
@@ -1529,7 +1536,8 @@ class _LineRow extends ConsumerWidget {
     final sel = ref.watch(languageSelectionProvider);
 
     // 🎓 سطح + خطِ قبلی برای Worker (قبل از ساختنِ کارت؛ ترجمه‌ها بعد از build شروع می‌شوند)
-    TranslateHints.put(line.en, level: line.level, context: prevEn);
+    TranslateHints.put(line.en,
+        level: line.level, context: prevEn, next: nextEn);
 
     // مبدأ و مقصدِ یکسان (مثلاً هر دو عربی) → هر زبان فقط یک‌بار
     final langsToShow = <String>[

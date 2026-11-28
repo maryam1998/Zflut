@@ -357,6 +357,7 @@ async function handleTranslateText(request, env, ctx) {
   const cacheKey = await trCacheKey(env, source, target, text);
   const level = parseLevel(body?.level);
   const context = cleanCtx(body?.context);
+  const nextLine = cleanCtx(body?.next);
   // 🔁 ↻ کاربر: ترجمه‌ی ردشده (reject) را به مدل می‌گوییم و کش را دور می‌زنیم. سقفِ بازتولید برای هر متن (TR_REJECT_MAX در ۲۴ ساعت،
   //    برای همه‌ی کاربرها) تا هزینه بالا نرود؛ بعد از سقف همان ترجمه‌ی کش برمی‌گردد (confirmed). نتیجه‌ی تازه جای ردیفِ قدیمیِ کش می‌نشیند.
   const reject = String(body?.reject ?? "").trim().slice(0, 600);
@@ -369,7 +370,7 @@ async function handleTranslateText(request, env, ctx) {
     if (cur && !(await rejectBudget(env, cacheKey))) {
       return json({ text: cur, provider: "cache", cached: true, confirmed: true, ...(await romanField(env, target, native, cur)) });
     }
-    const { resp } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft: "", native, level, context, reject: cur ? reject : "" });
+    const { resp } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft: "", native, level, context, nextLine, reject: cur ? reject : "" });
     return resp;
   }
   const hit = await genCacheGet(env, cacheKey);
@@ -407,7 +408,7 @@ async function handleTranslateText(request, env, ctx) {
       }
       // رهبر شکست خورد/دیر کرد → خودمان امتحان می‌کنیم (بدونِ قفل؛ fail-open)
     }
-    const { resp, result } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft, native, level, context });
+    const { resp, result } = await translateLeader(request, env, ctx, { text, target, source, cacheKey, draft, native, level, context, nextLine });
     if (result) settle(result); else fail(new Error("leader-failed"));
     return resp;
   } catch (e) {
@@ -419,7 +420,7 @@ async function handleTranslateText(request, env, ctx) {
   }
 }
 
-async function translateLeader(request, env, ctx, { text, target, source, cacheKey, draft = "", native = "", level = "", context = "", reject = "" }) {
+async function translateLeader(request, env, ctx, { text, target, source, cacheKey, draft = "", native = "", level = "", context = "", nextLine = "", reject = "" }) {
   const none = (resp) => ({ resp, result: null });
 
   // 🌐 فقط ترجمه‌ی کش‌نشده (واقعاً AI) از سقفِ روزانه‌ی DAILY_TRANSLATE مصرف می‌کند
@@ -438,7 +439,7 @@ async function translateLeader(request, env, ctx, { text, target, source, cacheK
       `"r" is the romanization of that same translation in Latin letters only: ${ROMAN_STYLE[target]}. Nothing else.`
     : null;
   const idiom = idiomRule(label, level);
-  const ctxTxt = ctxLine(context);
+  const ctxTxt = ctxLine(context, nextLine);
   const rejectNote = reject
     ? `A learner flagged this earlier ${label} translation as possibly wrong: ${reject}\n` +
       `Translate again carefully from the meaning of the source text. If the earlier translation is in fact correct, output it exactly unchanged; otherwise output the correct translation. `
@@ -558,8 +559,10 @@ async function handleTranslateBatch(request, env, ctx) {
   // 🎓 levels[i] / contexts[i] (اختیاری): سطحِ جمله و خطِ قبلیِ مکالمه ('' = ندارد)
   const rawLv = Array.isArray(body?.levels) ? body.levels.slice(0, TB_MAX) : [];
   const rawCx = Array.isArray(body?.contexts) ? body.contexts.slice(0, TB_MAX) : [];
+  const rawNx = Array.isArray(body?.nexts) ? body.nexts.slice(0, TB_MAX) : [];
   const levels = texts.map((_, i) => parseLevel(rawLv[i]));
   const ctxs = texts.map((_, i) => cleanCtx(rawCx[i]));
+  const nxs = texts.map((_, i) => cleanCtx(rawNx[i]));
   if (!valid.some(Boolean)) return json({ results, provider: "none" });
 
   // ۱) کش: یک کوئری برای همه
@@ -633,6 +636,7 @@ async function handleTranslateBatch(request, env, ctx) {
     if (drafts[idx]) it.draft = drafts[idx];
     if (levels[idx]) it.level = levels[idx];
     if (ctxs[idx]) it.context = ctxs[idx];
+    if (nxs[idx]) it.next = nxs[idx];
     return it;
   });
   const prompt =
@@ -641,8 +645,8 @@ async function handleTranslateBatch(request, env, ctx) {
     (list.some((x) => isBeginner(x.level))
       ? `Exception: items with "level":"A1" or "A2" are simple beginner sentences — translate them plainly and literally as meant in the dialogue; do NOT treat them as idioms or figures of speech unless unmistakably a fixed expression, and never invent another meaning. `
       : "") +
-    (list.some((x) => x.context)
-      ? `An item's "context" is the previous line of the same dialogue, for understanding only — never translate or output it. `
+    (list.some((x) => x.context || x.next)
+      ? `An item's "context" is the previous line and "next" is the following line of the same dialogue, for understanding only (e.g. to pick the right sense of an ambiguous word such as "run", "play", "right") — never translate or output them. `
       : "") +
     trStyle(target) +
     (list.some((x) => x.draft)
@@ -815,8 +819,9 @@ function idiomRule(label, level) {
   }
   return `Idioms, slang, rhyming or fixed expressions and greeting/farewell formulas must be rendered with their real meaning or a natural ${label} equivalent, never word for word ` + IDIOM_EXAMPLE;
 }
-function ctxLine(context) {
-  return context ? `Context — the previous line of the same dialogue, for understanding only (do NOT translate or output it): "${context}"\n` : "";
+function ctxLine(context, next = "") {
+  return (context ? `Context — the previous line of the same dialogue, for understanding only (do NOT translate or output it): "${context}"\n` : "") +
+    (next ? `Context — the next line of the same dialogue, for understanding only (do NOT translate or output it): "${next}"\n` : "");
 }
 // بازبین برای A1/A2: فقط خطای واقعی را درست کند؛ ترجمه‌ی درست را برای «طبیعی‌تر شدن» یا اصطلاح‌سازی عوض نکند
 const BEGINNER_REVIEW = `For simple beginner (A1/A2) sentences, change the translation ONLY if it is clearly wrong (wrong meaning, wrong grammar, wrong language); ` +
