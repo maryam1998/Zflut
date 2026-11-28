@@ -1,0 +1,285 @@
+{
+  "topic": "Economic and Social Issues",
+  "scenarios": [
+    {
+      "scenario": "The housing affordability crisis",
+      "context": "Two friends in their twenties discuss why it is so hard to buy a home.",
+      "speakerA": [
+        {
+          "en": "House prices in this city have risen so fast that saving for a deposit seems almost impossible. How is anyone supposed to cope?",
+          "level": "B2"
+        },
+        {
+          "en": "Would rent controls help? At least renters would know what to expect.",
+          "level": "B2"
+        },
+        {
+          "en": "So what's the alternative? Surely we can't just wait for prices to fall.",
+          "level": "B2"
+        },
+        {
+          "en": "People don't want construction on their doorstep, and I can partly understand that.",
+          "level": "B2"
+        },
+        {
+          "en": "What about a tax on empty properties? There are thousands of flats nobody lives in.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd support that. It seems a fairer approach than forcing young people to leave the city.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "It's a structural problem. Wages have grown slowly, while prices have been pushed up by limited supply and investors buying second homes.",
+          "level": "B2"
+        },
+        {
+          "en": "In the short term, yes. But economists warn that landlords may stop maintaining their properties, or leave the market altogether.",
+          "level": "B2"
+        },
+        {
+          "en": "Building more homes is the most effective long-term solution, though that means overcoming local opposition to new developments.",
+          "level": "B2"
+        },
+        {
+          "en": "So can I, but it's a classic case of individual interest clashing with the common good. Had cities built more in the past, we wouldn't be in this situation.",
+          "level": "B2"
+        },
+        {
+          "en": "That would make owners think twice about leaving them vacant, and it wouldn't cost the public anything.",
+          "level": "B2"
+        },
+        {
+          "en": "Agreed. Without a combination of measures, the gap between homeowners and everyone else will only widen.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Flexibility or security in the gig economy",
+      "context": "A delivery rider and a university student discuss working through an app.",
+      "speakerA": [
+        {
+          "en": "You work for a delivery app, don't you? I've always wondered whether the flexibility is as good as it sounds.",
+          "level": "B2"
+        },
+        {
+          "en": "No sick pay or holiday pay, I assume?",
+          "level": "B2"
+        },
+        {
+          "en": "That seems unfair. Shouldn't the company be responsible for protecting its workers?",
+          "level": "B2"
+        },
+        {
+          "en": "Is there a middle way? Perhaps a minimum hourly rate plus basic insurance.",
+          "level": "B2"
+        },
+        {
+          "en": "But wouldn't higher costs lead to higher prices for customers?",
+          "level": "B2"
+        },
+        {
+          "en": "I'd certainly do so. It's easy to forget that a cheap delivery depends on someone's unstable job.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "In some ways it is. I choose my hours, so I can fit work around lectures. The downside is that nothing is guaranteed.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Officially I'm self-employed, so if I fall ill or have an accident, I lose my income immediately.",
+          "level": "B2"
+        },
+        {
+          "en": "Many riders think so, and there have been court cases about it. The companies argue that treating us as employees would destroy the flexibility.",
+          "level": "B2"
+        },
+        {
+          "en": "That would be a big improvement. Some countries have introduced a third category of worker with limited rights, which seems a sensible compromise.",
+          "level": "B2"
+        },
+        {
+          "en": "Probably, though many customers say they'd pay a little more if they knew workers were treated fairly.",
+          "level": "B2"
+        },
+        {
+          "en": "That's all I ask: that people think about the person behind the app.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Inequality and taxing the wealthy",
+      "context": "Two colleagues debate whether the richest citizens should pay higher taxes.",
+      "speakerA": [
+        {
+          "en": "A recent report shows that the richest one per cent now own more than the bottom half of the population combined. Isn't that unacceptable?",
+          "level": "B2"
+        },
+        {
+          "en": "Some governments have introduced exit taxes to prevent exactly that. Surely the real issue is political will.",
+          "level": "B2"
+        },
+        {
+          "en": "The evidence on that is mixed. Many countries with high taxes still have thriving economies and stronger public services.",
+          "level": "B2"
+        },
+        {
+          "en": "Fair enough. Yet inequality isn't only a moral problem; it can weaken social trust and even slow growth.",
+          "level": "B2"
+        },
+        {
+          "en": "Opportunity matters, but how can children from poorer families compete if their schools are underfunded?",
+          "level": "B2"
+        },
+        {
+          "en": "So we agree on more than we thought.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "It's certainly worrying, but I'm not sure higher taxes are the answer. Wealthy people can move their money abroad.",
+          "level": "B2"
+        },
+        {
+          "en": "Perhaps. But high taxes may also discourage investment and entrepreneurship, which create jobs for everyone.",
+          "level": "B2"
+        },
+        {
+          "en": "That's true, although they also have strong institutions and low corruption. Not every country can say the same.",
+          "level": "B2"
+        },
+        {
+          "en": "I accept that. Where we disagree is on the method. I'd focus on education and opportunity rather than redistribution.",
+          "level": "B2"
+        },
+        {
+          "en": "A strong point, and it shows that the two approaches aren't mutually exclusive. Taxes could pay for better schools.",
+          "level": "B2"
+        },
+        {
+          "en": "It seems so. The disagreement is about balance, not about the goal.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "An ageing population and pensions",
+      "context": "A grandfather and his granddaughter discuss the future of pensions.",
+      "speakerA": [
+        {
+          "en": "Grandad, my economics teacher says there will soon be too few workers to pay for everyone's pension. Is that really true?",
+          "level": "B2"
+        },
+        {
+          "en": "So will my generation ever receive a pension at all?",
+          "level": "B2"
+        },
+        {
+          "en": "That doesn't seem fair. You paid in for forty years and retired at sixty.",
+          "level": "B2"
+        },
+        {
+          "en": "What could be done now? Raise the retirement age?",
+          "level": "B2"
+        },
+        {
+          "en": "I'd rather save while I'm young, but my salary barely covers my rent.",
+          "level": "B2"
+        },
+        {
+          "en": "So the solution has to involve everyone, not just individuals.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "There's some truth in it. People live longer and have fewer children, so each worker supports more retirees than in my day.",
+          "level": "B2"
+        },
+        {
+          "en": "I expect so, but probably at an older age and on less generous terms than I enjoyed.",
+          "level": "B2"
+        },
+        {
+          "en": "I did, and I'm aware of how lucky I was. Had governments reformed the system earlier, the changes today would be less painful.",
+          "level": "B2"
+        },
+        {
+          "en": "That's one option, but it's hard on people in physically demanding jobs. Encouraging immigration and private savings could help too.",
+          "level": "B2"
+        },
+        {
+          "en": "I know, and that's the dilemma of your generation. Should wages continue to stagnate, saving for old age will become even harder.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. A pension system is a promise between generations, and it only works if both sides keep it.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Universal basic income",
+      "context": "Two students argue about giving every citizen a guaranteed monthly income.",
+      "speakerA": [
+        {
+          "en": "Some people propose a universal basic income, a fixed monthly payment to every citizen. Do you think it could ever work?",
+          "level": "B2"
+        },
+        {
+          "en": "Supporters say it would replace many existing benefits, which would reduce administration costs.",
+          "level": "B2"
+        },
+        {
+          "en": "Fair. What about the argument that it would make people lazy?",
+          "level": "B2"
+        },
+        {
+          "en": "That surprises me. I expected a bigger drop in employment.",
+          "level": "B2"
+        },
+        {
+          "en": "Then why hasn't any country adopted it permanently?",
+          "level": "B2"
+        },
+        {
+          "en": "Were the trials to run for longer, perhaps the evidence would persuade them.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "It's an attractive idea, but I'd want to know how it would be funded. Giving everyone money is extremely expensive.",
+          "level": "B2"
+        },
+        {
+          "en": "That's possible, but some people would lose out if their current support were worth more than the flat payment.",
+          "level": "B2"
+        },
+        {
+          "en": "The pilot projects I've read about don't support that. Most recipients kept working, and some used the security to retrain or start businesses.",
+          "level": "B2"
+        },
+        {
+          "en": "So did many economists. Stability seems to give people the confidence to take sensible risks rather than to give up.",
+          "level": "B2"
+        },
+        {
+          "en": "Mostly because of cost and politics. Voters are sceptical of anything that sounds like free money for everybody.",
+          "level": "B2"
+        },
+        {
+          "en": "Possibly. Until then, I think a targeted version for the most vulnerable groups may be more realistic.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

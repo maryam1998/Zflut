@@ -1,0 +1,285 @@
+{
+  "topic": "Presenting and Defending an Idea",
+  "scenarios": [
+    {
+      "scenario": "Pitching a new idea to your manager",
+      "context": "An employee proposes a four-day working week trial to her manager.",
+      "speakerA": [
+        {
+          "en": "Thank you for seeing me. I'd like to propose a three-month trial of a four-day working week for our team.",
+          "level": "B2"
+        },
+        {
+          "en": "Several companies that tried it reported higher productivity, because people were more focused and took fewer sick days.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a fair point, which is why I'd suggest staggering the days off so the office is always covered.",
+          "level": "B2"
+        },
+        {
+          "en": "We'd measure it carefully. If targets weren't met after three months, we'd return to the old schedule at no cost to the company.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, the idea is the same pay for the same results. Not only would it attract new talent, but it would also keep our current staff motivated.",
+          "level": "B2"
+        },
+        {
+          "en": "I'll prepare a one-page summary with the figures and the evaluation plan by Friday.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "That's an ambitious suggestion. What makes you think it would work here?",
+          "level": "B2"
+        },
+        {
+          "en": "Those were mostly small firms. Our clients expect us to be available five days a week.",
+          "level": "B2"
+        },
+        {
+          "en": "And what if output drops? I can't justify a trial that costs us money.",
+          "level": "B2"
+        },
+        {
+          "en": "That reduces the risk considerably. Would the salary stay the same?",
+          "level": "B2"
+        },
+        {
+          "en": "I'm not fully convinced, but I'm willing to take it to the directors if you put it in writing.",
+          "level": "B2"
+        },
+        {
+          "en": "Good. A clear plan will make it much harder for them to say no.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Answering difficult questions after a talk",
+      "context": "A researcher takes questions from the audience after presenting her findings.",
+      "speakerA": [
+        {
+          "en": "Thank you for an interesting talk. Your sample was only eighty people. Can you really draw such firm conclusions from it?",
+          "level": "B2"
+        },
+        {
+          "en": "Did you consider that the participants were all university students? They might not represent the wider population.",
+          "level": "B2"
+        },
+        {
+          "en": "So how confident are you that the effect is real?",
+          "level": "B2"
+        },
+        {
+          "en": "I'm not sure I follow your second graph. Could you explain the vertical axis again?",
+          "level": "B2"
+        },
+        {
+          "en": "What practical difference would this make for teachers?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. That was a clear and honest answer.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "A fair challenge. The sample is small, so I'd describe the results as indicative rather than conclusive, and I'd like to repeat the study with more participants.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, and I mention that as a limitation in the paper. Had resources allowed it, I would have recruited from a broader range of ages.",
+          "level": "B2"
+        },
+        {
+          "en": "Reasonably confident, since three separate tests pointed the same way, but I wouldn't claim certainty until others replicate it.",
+          "level": "B2"
+        },
+        {
+          "en": "Of course. It shows the average improvement in percentage points, so the taller the bar, the greater the benefit.",
+          "level": "B2"
+        },
+        {
+          "en": "If the results hold, teachers could adopt the method at almost no cost, which is why I think it's worth investigating further.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you for the questions. They've given me several ideas for the next stage of the research.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Responding to criticism of your proposal",
+      "context": "Two members of a design team discuss feedback on a written proposal.",
+      "speakerA": [
+        {
+          "en": "I read your proposal, and I think the idea is promising, but the budget section worries me. It seems very optimistic.",
+          "level": "B2"
+        },
+        {
+          "en": "The marketing costs. You've assumed they'll stay the same, even though your plan doubles the number of customers.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd also suggest including a worst-case scenario, so that readers see you've considered the risks.",
+          "level": "B2"
+        },
+        {
+          "en": "On the contrary, it shows you've been realistic, which makes the rest of your argument more credible.",
+          "level": "B2"
+        },
+        {
+          "en": "Most people feel like that at first. The trick is to separate the idea from your ego.",
+          "level": "B2"
+        },
+        {
+          "en": "Gladly. Send it over when it's ready, and I'll give you my comments within two days.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I can see why you say that. Which figures in particular do you find unrealistic?",
+          "level": "B2"
+        },
+        {
+          "en": "You're right. I hadn't taken that into account. I'll recalculate them using last year's actual figures.",
+          "level": "B2"
+        },
+        {
+          "en": "I wouldn't want the proposal to sound negative, though. Won't that weaken the overall message?",
+          "level": "B2"
+        },
+        {
+          "en": "That's a good point. I'd been treating criticism as a threat, when it's really a way of improving the idea.",
+          "level": "B2"
+        },
+        {
+          "en": "Easier said than done, but I'll try. Would you be willing to read the revised version?",
+          "level": "B2"
+        },
+        {
+          "en": "Thanks. Had you not read it first, I would have submitted a much weaker proposal.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Persuading a committee to fund a project",
+      "context": "A student society presents a funding request to a university committee.",
+      "speakerA": [
+        {
+          "en": "Thank you for coming. Please tell us why the society deserves funding, and how much you are requesting.",
+          "level": "B2"
+        },
+        {
+          "en": "There are already online courses available for free. What would your workshops offer that they don't?",
+          "level": "B2"
+        },
+        {
+          "en": "That's a reasonable argument, but how can we be sure that students will actually attend?",
+          "level": "B2"
+        },
+        {
+          "en": "Impressive. What would happen if you received only half of the amount?",
+          "level": "B2"
+        },
+        {
+          "en": "And how would you measure the success of the project?",
+          "level": "B2"
+        },
+        {
+          "en": "That sounds well thought out. We'll discuss your application and let you know by the end of next week.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "We're requesting 2,000 to run a series of free coding workshops for students from every faculty.",
+          "level": "B2"
+        },
+        {
+          "en": "Face-to-face support. Many beginners give up online because nobody is there to help when they get stuck.",
+          "level": "B2"
+        },
+        {
+          "en": "Our pilot session last term attracted sixty participants, and over ninety per cent said they would come again.",
+          "level": "B2"
+        },
+        {
+          "en": "We'd run fewer workshops and drop the printed materials, but the core programme would still go ahead.",
+          "level": "B2"
+        },
+        {
+          "en": "Through attendance figures and a short survey at the end of each session, and we'd report the results to this committee.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you for your time. We're confident that the benefits will far outweigh the cost.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Arguing the opposite side in a debate",
+      "context": "Two members of a debating club prepare for a motion they were assigned to argue.",
+      "speakerA": [
+        {
+          "en": "I've been assigned the side that says homework should be abolished, but I personally disagree. How do I argue convincingly?",
+          "level": "B2"
+        },
+        {
+          "en": "I suppose I could mention research showing that too much homework causes stress, especially for younger pupils.",
+          "level": "B2"
+        },
+        {
+          "en": "They'll say homework teaches responsibility and self-discipline. How should I respond?",
+          "level": "B2"
+        },
+        {
+          "en": "That's clever. Is it acceptable to concede a point, or does that make me look weak?",
+          "level": "B2"
+        },
+        {
+          "en": "I'll try that. What about my tone? I tend to sound too aggressive when I'm nervous.",
+          "level": "B2"
+        },
+        {
+          "en": "Thanks. Whether or not I win, arguing the opposite side has already changed how I see the issue.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Start by finding the strongest evidence for that position, rather than attacking it. You need to understand it from the inside.",
+          "level": "B2"
+        },
+        {
+          "en": "Good. Then anticipate the opposition's best objection and answer it before they raise it.",
+          "level": "B2"
+        },
+        {
+          "en": "You could argue that those skills can also be developed through projects in class, so homework isn't the only way.",
+          "level": "B2"
+        },
+        {
+          "en": "Conceding a minor point actually strengthens your credibility, provided you immediately explain why the main argument still stands.",
+          "level": "B2"
+        },
+        {
+          "en": "Slow down and speak calmly. Persuasion works better when the audience feels respected, not attacked.",
+          "level": "B2"
+        },
+        {
+          "en": "That's the real value of debating. You learn that few questions have only one reasonable answer.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}
