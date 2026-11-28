@@ -3599,6 +3599,700 @@
      "fa": ""
     }
    ]
+  },
+  {
+   "key": "psychology",
+   "fa": "روان‌شناسی",
+   "en": "Psychology & the Mind",
+   "group": "life",
+   "words": [
+    {
+     "id": 703043,
+     "level": "B2",
+     "pos": "noun",
+     "en": "psychology",
+     "fa": ""
+    },
+    {
+     "id": 703041,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "psychological",
+     "fa": ""
+    },
+    {
+     "id": 703042,
+     "level": "B2",
+     "pos": "noun",
+     "en": "psychologist",
+     "fa": ""
+    },
+    {
+     "id": 704495,
+     "level": "B2",
+     "pos": "noun",
+     "en": "psychiatrist",
+     "fa": ""
+    },
+    {
+     "id": 703880,
+     "level": "B2",
+     "pos": "noun",
+     "en": "therapy",
+     "fa": ""
+    },
+    {
+     "id": 703879,
+     "level": "B2",
+     "pos": "noun",
+     "en": "therapist",
+     "fa": ""
+    },
+    {
+     "id": 704496,
+     "level": "B2",
+     "pos": "noun",
+     "en": "counseling",
+     "fa": ""
+    },
+    {
+     "id": 701296,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "emotional",
+     "fa": ""
+    },
+    {
+     "id": 700372,
+     "level": "A2",
+     "pos": "noun",
+     "en": "behaviour",
+     "fa": ""
+    },
+    {
+     "id": 102851,
+     "level": "B2",
+     "pos": "noun",
+     "en": "motivation",
+     "fa": ""
+    },
+    {
+     "id": 102850,
+     "level": "B2",
+     "pos": "verb",
+     "en": "motivate",
+     "fa": ""
+    },
+    {
+     "id": 702782,
+     "level": "B2",
+     "pos": "noun",
+     "en": "perception",
+     "fa": ""
+    },
+    {
+     "id": 702780,
+     "level": "B2",
+     "pos": "verb",
+     "en": "perceive",
+     "fa": ""
+    },
+    {
+     "id": 700308,
+     "level": "B2",
+     "pos": "noun",
+     "en": "awareness",
+     "fa": ""
+    },
+    {
+     "id": 700782,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "conscious",
+     "fa": ""
+    },
+    {
+     "id": 704045,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "unconscious",
+     "fa": ""
+    },
+    {
+     "id": 704487,
+     "level": "C1",
+     "pos": "noun",
+     "en": "subconscious",
+     "fa": ""
+    },
+    {
+     "id": 700783,
+     "level": "C1",
+     "pos": "noun",
+     "en": "consciousness",
+     "fa": ""
+    },
+    {
+     "id": 702026,
+     "level": "C1",
+     "pos": "noun",
+     "en": "instinct",
+     "fa": ""
+    },
+    {
+     "id": 704488,
+     "level": "B2",
+     "pos": "noun",
+     "en": "intuition",
+     "fa": ""
+    },
+    {
+     "id": 700666,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "cognitive",
+     "fa": ""
+    },
+    {
+     "id": 703136,
+     "level": "B2",
+     "pos": "verb",
+     "en": "recall",
+     "fa": ""
+    },
+    {
+     "id": 703972,
+     "level": "B2",
+     "pos": "noun",
+     "en": "trait",
+     "fa": ""
+    },
+    {
+     "id": 704494,
+     "level": "B2",
+     "pos": "noun",
+     "en": "temperament",
+     "fa": ""
+    },
+    {
+     "id": 704493,
+     "level": "B2",
+     "pos": "noun",
+     "en": "self-esteem",
+     "fa": ""
+    },
+    {
+     "id": 700189,
+     "level": "B2",
+     "pos": "noun",
+     "en": "anxiety",
+     "fa": ""
+    },
+    {
+     "id": 701047,
+     "level": "B2",
+     "pos": "noun",
+     "en": "depression",
+     "fa": ""
+    },
+    {
+     "id": 703988,
+     "level": "C1",
+     "pos": "noun",
+     "en": "trauma",
+     "fa": ""
+    },
+    {
+     "id": 704511,
+     "level": "B2",
+     "pos": "noun",
+     "en": "coping",
+     "fa": ""
+    },
+    {
+     "id": 704475,
+     "level": "B2",
+     "pos": "noun",
+     "en": "phobia",
+     "fa": ""
+    },
+    {
+     "id": 700111,
+     "level": "C1",
+     "pos": "noun",
+     "en": "aggression",
+     "fa": ""
+    },
+    {
+     "id": 704489,
+     "level": "C1",
+     "pos": "noun",
+     "en": "empathy",
+     "fa": ""
+    },
+    {
+     "id": 104369,
+     "level": "B2",
+     "pos": "noun",
+     "en": "sympathy",
+     "fa": ""
+    },
+    {
+     "id": 700715,
+     "level": "C1",
+     "pos": "noun",
+     "en": "compassion",
+     "fa": ""
+    },
+    {
+     "id": 701768,
+     "level": "C1",
+     "pos": "noun",
+     "en": "guilt",
+     "fa": ""
+    },
+    {
+     "id": 103951,
+     "level": "B2",
+     "pos": "noun",
+     "en": "shame",
+     "fa": ""
+    },
+    {
+     "id": 103390,
+     "level": "B2",
+     "pos": "noun",
+     "en": "pride",
+     "fa": ""
+    },
+    {
+     "id": 701753,
+     "level": "C1",
+     "pos": "noun",
+     "en": "grief",
+     "fa": ""
+    },
+    {
+     "id": 704602,
+     "level": "C1",
+     "pos": "noun",
+     "en": "bereavement",
+     "fa": ""
+    },
+    {
+     "id": 704201,
+     "level": "C1",
+     "pos": "noun",
+     "en": "well-being",
+     "fa": ""
+    },
+    {
+     "id": 703338,
+     "level": "B2",
+     "pos": "noun",
+     "en": "satisfaction",
+     "fa": ""
+    },
+    {
+     "id": 702653,
+     "level": "C1",
+     "pos": "noun",
+     "en": "optimism",
+     "fa": ""
+    },
+    {
+     "id": 704513,
+     "level": "B2",
+     "pos": "noun",
+     "en": "pessimism",
+     "fa": ""
+    },
+    {
+     "id": 704506,
+     "level": "B2",
+     "pos": "noun",
+     "en": "mindset",
+     "fa": ""
+    },
+    {
+     "id": 702118,
+     "level": "B2",
+     "pos": "noun",
+     "en": "judgement",
+     "fa": ""
+    },
+    {
+     "id": 704522,
+     "level": "B2",
+     "pos": "noun",
+     "en": "conformity",
+     "fa": ""
+    },
+    {
+     "id": 704523,
+     "level": "B2",
+     "pos": "noun",
+     "en": "obedience",
+     "fa": ""
+    },
+    {
+     "id": 101305,
+     "level": "B2",
+     "pos": "noun",
+     "en": "discipline",
+     "fa": ""
+    },
+    {
+     "id": 704514,
+     "level": "C1",
+     "pos": "noun",
+     "en": "procrastination",
+     "fa": ""
+    },
+    {
+     "id": 704515,
+     "level": "B2",
+     "pos": "noun",
+     "en": "burnout",
+     "fa": ""
+    },
+    {
+     "id": 704516,
+     "level": "B2",
+     "pos": "noun",
+     "en": "fatigue",
+     "fa": ""
+    },
+    {
+     "id": 702543,
+     "level": "B2",
+     "pos": "noun",
+     "en": "nightmare",
+     "fa": ""
+    },
+    {
+     "id": 704521,
+     "level": "B2",
+     "pos": "noun",
+     "en": "hypnosis",
+     "fa": ""
+    },
+    {
+     "id": 700069,
+     "level": "B2",
+     "pos": "noun",
+     "en": "addiction",
+     "fa": ""
+    },
+    {
+     "id": 103761,
+     "level": "B2",
+     "pos": "noun",
+     "en": "reward",
+     "fa": ""
+    },
+    {
+     "id": 704499,
+     "level": "C1",
+     "pos": "noun",
+     "en": "reinforcement",
+     "fa": ""
+    },
+    {
+     "id": 704003,
+     "level": "B2",
+     "pos": "verb",
+     "en": "trigger",
+     "fa": ""
+    },
+    {
+     "id": 703839,
+     "level": "B2",
+     "pos": "noun",
+     "en": "tendency",
+     "fa": ""
+    },
+    {
+     "id": 704985,
+     "level": "B2",
+     "pos": "other",
+     "en": "nurture",
+     "fa": ""
+    },
+    {
+     "id": 102718,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "mature",
+     "fa": ""
+    },
+    {
+     "id": 704341,
+     "level": "B2",
+     "pos": "noun",
+     "en": "mental health",
+     "fa": ""
+    },
+    {
+     "id": 704525,
+     "level": "B2",
+     "pos": "noun",
+     "en": "self-awareness",
+     "fa": ""
+    },
+    {
+     "id": 704524,
+     "level": "C1",
+     "pos": "noun",
+     "en": "peer pressure",
+     "fa": ""
+    },
+    {
+     "id": 704520,
+     "level": "C1",
+     "pos": "noun",
+     "en": "mindfulness",
+     "fa": ""
+    },
+    {
+     "id": 700990,
+     "level": "C1",
+     "pos": "noun",
+     "en": "decision-making",
+     "fa": ""
+    },
+    {
+     "id": 940206,
+     "level": "B2",
+     "pos": "noun",
+     "en": "emotional intelligence",
+     "fa": ""
+    },
+    {
+     "id": 940207,
+     "level": "C1",
+     "pos": "noun",
+     "en": "cognitive bias",
+     "fa": ""
+    },
+    {
+     "id": 940208,
+     "level": "B2",
+     "pos": "noun",
+     "en": "self-confidence",
+     "fa": ""
+    },
+    {
+     "id": 940209,
+     "level": "B2",
+     "pos": "noun",
+     "en": "self-control",
+     "fa": ""
+    },
+    {
+     "id": 940210,
+     "level": "C1",
+     "pos": "noun",
+     "en": "self-image",
+     "fa": ""
+    },
+    {
+     "id": 940211,
+     "level": "B2",
+     "pos": "noun",
+     "en": "willpower",
+     "fa": ""
+    },
+    {
+     "id": 940212,
+     "level": "B2",
+     "pos": "noun",
+     "en": "comfort zone",
+     "fa": ""
+    },
+    {
+     "id": 940213,
+     "level": "C1",
+     "pos": "noun",
+     "en": "intrinsic motivation",
+     "fa": ""
+    },
+    {
+     "id": 940214,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "motivated",
+     "fa": ""
+    },
+    {
+     "id": 940215,
+     "level": "B2",
+     "pos": "noun",
+     "en": "introvert",
+     "fa": ""
+    },
+    {
+     "id": 940216,
+     "level": "B2",
+     "pos": "noun",
+     "en": "extrovert",
+     "fa": ""
+    },
+    {
+     "id": 940217,
+     "level": "B2",
+     "pos": "noun",
+     "en": "impulse",
+     "fa": ""
+    },
+    {
+     "id": 940218,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "insecure",
+     "fa": ""
+    },
+    {
+     "id": 940219,
+     "level": "C1",
+     "pos": "noun",
+     "en": "insecurity",
+     "fa": ""
+    },
+    {
+     "id": 940220,
+     "level": "B2",
+     "pos": "noun",
+     "en": "jealousy",
+     "fa": ""
+    },
+    {
+     "id": 940221,
+     "level": "B2",
+     "pos": "noun",
+     "en": "envy",
+     "fa": ""
+    },
+    {
+     "id": 940222,
+     "level": "B2",
+     "pos": "noun",
+     "en": "loneliness",
+     "fa": ""
+    },
+    {
+     "id": 940223,
+     "level": "B2",
+     "pos": "noun",
+     "en": "gratitude",
+     "fa": ""
+    },
+    {
+     "id": 940224,
+     "level": "C1",
+     "pos": "noun",
+     "en": "fulfillment",
+     "fa": ""
+    },
+    {
+     "id": 940225,
+     "level": "B2",
+     "pos": "noun",
+     "en": "distraction",
+     "fa": ""
+    },
+    {
+     "id": 940226,
+     "level": "B2",
+     "pos": "noun",
+     "en": "exhaustion",
+     "fa": ""
+    },
+    {
+     "id": 940227,
+     "level": "B2",
+     "pos": "noun",
+     "en": "temptation",
+     "fa": ""
+    },
+    {
+     "id": 940229,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "addictive",
+     "fa": ""
+    },
+    {
+     "id": 940230,
+     "level": "C1",
+     "pos": "noun",
+     "en": "conditioning",
+     "fa": ""
+    },
+    {
+     "id": 940233,
+     "level": "B2",
+     "pos": "noun",
+     "en": "upbringing",
+     "fa": ""
+    },
+    {
+     "id": 940234,
+     "level": "B2",
+     "pos": "noun",
+     "en": "adolescence",
+     "fa": ""
+    },
+    {
+     "id": 940235,
+     "level": "B2",
+     "pos": "noun",
+     "en": "maturity",
+     "fa": ""
+    },
+    {
+     "id": 940237,
+     "level": "C1",
+     "pos": "verb",
+     "en": "conform",
+     "fa": ""
+    },
+    {
+     "id": 940238,
+     "level": "C1",
+     "pos": "noun",
+     "en": "persuasion",
+     "fa": ""
+    },
+    {
+     "id": 940239,
+     "level": "C1",
+     "pos": "noun",
+     "en": "defense mechanism",
+     "fa": ""
+    },
+    {
+     "id": 940240,
+     "level": "B2",
+     "pos": "noun",
+     "en": "body language",
+     "fa": ""
+    },
+    {
+     "id": 940241,
+     "level": "B2",
+     "pos": "noun",
+     "en": "first impression",
+     "fa": ""
+    },
+    {
+     "id": 940242,
+     "level": "B2",
+     "pos": "noun",
+     "en": "gut feeling",
+     "fa": ""
+    }
+   ]
   }
  ]
 }
