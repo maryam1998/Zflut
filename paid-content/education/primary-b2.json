@@ -4917,6 +4917,1920 @@
      "fa": ""
     }
    ]
+  },
+  {
+   "key": "media",
+   "fa": "رسانه و روزنامه‌نگاری",
+   "en": "Media & Journalism",
+   "group": "life",
+   "words": [
+    {
+     "id": 702115,
+     "level": "B2",
+     "pos": "noun",
+     "en": "journalism",
+     "fa": ""
+    },
+    {
+     "id": 701247,
+     "level": "B1",
+     "pos": "noun",
+     "en": "editor",
+     "fa": ""
+    },
+    {
+     "id": 700477,
+     "level": "B2",
+     "pos": "noun",
+     "en": "broadcaster",
+     "fa": ""
+    },
+    {
+     "id": 700685,
+     "level": "C1",
+     "pos": "noun",
+     "en": "columnist",
+     "fa": ""
+    },
+    {
+     "id": 702946,
+     "level": "B1",
+     "pos": "noun",
+     "en": "press",
+     "fa": ""
+    },
+    {
+     "id": 940282,
+     "level": "B2",
+     "pos": "noun",
+     "en": "publisher",
+     "fa": ""
+    },
+    {
+     "id": 700619,
+     "level": "C1",
+     "pos": "noun",
+     "en": "circulation",
+     "fa": ""
+    },
+    {
+     "id": 700900,
+     "level": "B2",
+     "pos": "noun",
+     "en": "coverage",
+     "fa": ""
+    },
+    {
+     "id": 940283,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "biased",
+     "fa": ""
+    },
+    {
+     "id": 702595,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "objective",
+     "fa": ""
+    },
+    {
+     "id": 940284,
+     "level": "C1",
+     "pos": "noun",
+     "en": "objectivity",
+     "fa": ""
+    },
+    {
+     "id": 940285,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "impartial",
+     "fa": ""
+    },
+    {
+     "id": 700915,
+     "level": "C1",
+     "pos": "noun",
+     "en": "credibility",
+     "fa": ""
+    },
+    {
+     "id": 700916,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "credible",
+     "fa": ""
+    },
+    {
+     "id": 940286,
+     "level": "B2",
+     "pos": "noun",
+     "en": "misinformation",
+     "fa": ""
+    },
+    {
+     "id": 940287,
+     "level": "C1",
+     "pos": "noun",
+     "en": "disinformation",
+     "fa": ""
+    },
+    {
+     "id": 703017,
+     "level": "C1",
+     "pos": "noun",
+     "en": "propaganda",
+     "fa": ""
+    },
+    {
+     "id": 703314,
+     "level": "C1",
+     "pos": "noun",
+     "en": "rumour",
+     "fa": ""
+    },
+    {
+     "id": 704915,
+     "level": "B2",
+     "pos": "other",
+     "en": "hoax",
+     "fa": ""
+    },
+    {
+     "id": 940288,
+     "level": "B2",
+     "pos": "verb",
+     "en": "fact-check",
+     "fa": ""
+    },
+    {
+     "id": 704127,
+     "level": "C1",
+     "pos": "verb",
+     "en": "verify",
+     "fa": ""
+    },
+    {
+     "id": 940289,
+     "level": "C1",
+     "pos": "noun",
+     "en": "verification",
+     "fa": ""
+    },
+    {
+     "id": 940290,
+     "level": "C1",
+     "pos": "noun",
+     "en": "censorship",
+     "fa": ""
+    },
+    {
+     "id": 940291,
+     "level": "C1",
+     "pos": "verb",
+     "en": "censor",
+     "fa": ""
+    },
+    {
+     "id": 940292,
+     "level": "B2",
+     "pos": "noun",
+     "en": "press freedom",
+     "fa": ""
+    },
+    {
+     "id": 940293,
+     "level": "C1",
+     "pos": "noun",
+     "en": "investigative journalism",
+     "fa": ""
+    },
+    {
+     "id": 940294,
+     "level": "B2",
+     "pos": "noun",
+     "en": "interviewee",
+     "fa": ""
+    },
+    {
+     "id": 701418,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "exclusive",
+     "fa": ""
+    },
+    {
+     "id": 940295,
+     "level": "C1",
+     "pos": "noun",
+     "en": "tabloid",
+     "fa": ""
+    },
+    {
+     "id": 703083,
+     "level": "B1",
+     "pos": "noun",
+     "en": "quote",
+     "fa": ""
+    },
+    {
+     "id": 703221,
+     "level": "B2",
+     "pos": "noun",
+     "en": "reporting",
+     "fa": ""
+    },
+    {
+     "id": 700872,
+     "level": "C1",
+     "pos": "noun",
+     "en": "correspondent",
+     "fa": ""
+    },
+    {
+     "id": 940296,
+     "level": "B2",
+     "pos": "noun",
+     "en": "presenter",
+     "fa": ""
+    },
+    {
+     "id": 704144,
+     "level": "B1",
+     "pos": "noun",
+     "en": "viewer",
+     "fa": ""
+    },
+    {
+     "id": 940297,
+     "level": "C1",
+     "pos": "noun",
+     "en": "readership",
+     "fa": ""
+    },
+    {
+     "id": 703710,
+     "level": "C1",
+     "pos": "noun",
+     "en": "subscriber",
+     "fa": ""
+    },
+    {
+     "id": 703711,
+     "level": "C1",
+     "pos": "noun",
+     "en": "subscription",
+     "fa": ""
+    },
+    {
+     "id": 940298,
+     "level": "C1",
+     "pos": "noun",
+     "en": "paywall",
+     "fa": ""
+    },
+    {
+     "id": 400043,
+     "level": "C1",
+     "pos": "other",
+     "en": "clickbait",
+     "fa": ""
+    },
+    {
+     "id": 940299,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "trending",
+     "fa": ""
+    },
+    {
+     "id": 940300,
+     "level": "B2",
+     "pos": "noun",
+     "en": "hashtag",
+     "fa": ""
+    },
+    {
+     "id": 940301,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "sensational",
+     "fa": ""
+    },
+    {
+     "id": 940302,
+     "level": "C1",
+     "pos": "noun",
+     "en": "sensationalism",
+     "fa": ""
+    },
+    {
+     "id": 702325,
+     "level": "C1",
+     "pos": "verb",
+     "en": "manipulate",
+     "fa": ""
+    },
+    {
+     "id": 702326,
+     "level": "C1",
+     "pos": "noun",
+     "en": "manipulation",
+     "fa": ""
+    },
+    {
+     "id": 940303,
+     "level": "B2",
+     "pos": "verb",
+     "en": "mislead",
+     "fa": ""
+    },
+    {
+     "id": 702433,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "misleading",
+     "fa": ""
+    },
+    {
+     "id": 940304,
+     "level": "C1",
+     "pos": "verb",
+     "en": "retract",
+     "fa": ""
+    },
+    {
+     "id": 940305,
+     "level": "C1",
+     "pos": "noun",
+     "en": "retraction",
+     "fa": ""
+    },
+    {
+     "id": 700866,
+     "level": "C1",
+     "pos": "noun",
+     "en": "correction",
+     "fa": ""
+    },
+    {
+     "id": 701248,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "editorial",
+     "fa": ""
+    },
+    {
+     "id": 940306,
+     "level": "C1",
+     "pos": "noun",
+     "en": "op-ed",
+     "fa": ""
+    },
+    {
+     "id": 940307,
+     "level": "C1",
+     "pos": "noun",
+     "en": "whistleblower",
+     "fa": ""
+    },
+    {
+     "id": 702193,
+     "level": "C1",
+     "pos": "noun",
+     "en": "leak",
+     "fa": ""
+    },
+    {
+     "id": 500293,
+     "level": "B1",
+     "pos": "verb",
+     "en": "expose",
+     "fa": ""
+    },
+    {
+     "id": 940308,
+     "level": "C1",
+     "pos": "noun",
+     "en": "defamation",
+     "fa": ""
+    },
+    {
+     "id": 705334,
+     "level": "C1",
+     "pos": "other",
+     "en": "libel",
+     "fa": ""
+    },
+    {
+     "id": 940309,
+     "level": "B2",
+     "pos": "noun",
+     "en": "advertiser",
+     "fa": ""
+    },
+    {
+     "id": 703621,
+     "level": "B2",
+     "pos": "noun",
+     "en": "sponsor",
+     "fa": ""
+    },
+    {
+     "id": 703622,
+     "level": "B2",
+     "pos": "noun",
+     "en": "sponsorship",
+     "fa": ""
+    },
+    {
+     "id": 701315,
+     "level": "C1",
+     "pos": "verb",
+     "en": "endorse",
+     "fa": ""
+    },
+    {
+     "id": 701316,
+     "level": "C1",
+     "pos": "noun",
+     "en": "endorsement",
+     "fa": ""
+    },
+    {
+     "id": 940310,
+     "level": "B2",
+     "pos": "noun",
+     "en": "target audience",
+     "fa": ""
+    },
+    {
+     "id": 940311,
+     "level": "B2",
+     "pos": "noun",
+     "en": "breaking news",
+     "fa": ""
+    },
+    {
+     "id": 940312,
+     "level": "B2",
+     "pos": "noun",
+     "en": "news outlet",
+     "fa": ""
+    },
+    {
+     "id": 940313,
+     "level": "C1",
+     "pos": "noun",
+     "en": "eyewitness",
+     "fa": ""
+    },
+    {
+     "id": 940314,
+     "level": "B2",
+     "pos": "noun",
+     "en": "mass media",
+     "fa": ""
+    },
+    {
+     "id": 940315,
+     "level": "C1",
+     "pos": "noun",
+     "en": "fact-checker",
+     "fa": ""
+    },
+    {
+     "id": 940316,
+     "level": "B2",
+     "pos": "noun",
+     "en": "content creator",
+     "fa": ""
+    },
+    {
+     "id": 940317,
+     "level": "C1",
+     "pos": "noun",
+     "en": "media literacy",
+     "fa": ""
+    },
+    {
+     "id": 940318,
+     "level": "C1",
+     "pos": "noun",
+     "en": "echo chamber",
+     "fa": ""
+    },
+    {
+     "id": 940319,
+     "level": "C1",
+     "pos": "noun",
+     "en": "filter bubble",
+     "fa": ""
+    },
+    {
+     "id": 940320,
+     "level": "B2",
+     "pos": "noun",
+     "en": "press release",
+     "fa": ""
+    },
+    {
+     "id": 940321,
+     "level": "C1",
+     "pos": "noun",
+     "en": "newsroom",
+     "fa": ""
+    },
+    {
+     "id": 940322,
+     "level": "B2",
+     "pos": "noun",
+     "en": "news agency",
+     "fa": ""
+    },
+    {
+     "id": 940323,
+     "level": "B2",
+     "pos": "noun",
+     "en": "press conference",
+     "fa": ""
+    },
+    {
+     "id": 940324,
+     "level": "B2",
+     "pos": "noun",
+     "en": "broadcasting",
+     "fa": ""
+    },
+    {
+     "id": 940325,
+     "level": "C1",
+     "pos": "noun",
+     "en": "journalistic integrity",
+     "fa": ""
+    },
+    {
+     "id": 940326,
+     "level": "B2",
+     "pos": "noun",
+     "en": "freedom of expression",
+     "fa": ""
+    },
+    {
+     "id": 940327,
+     "level": "C1",
+     "pos": "noun",
+     "en": "satire",
+     "fa": ""
+    },
+    {
+     "id": 940328,
+     "level": "B2",
+     "pos": "noun",
+     "en": "caption",
+     "fa": ""
+    },
+    {
+     "id": 940329,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "unreliable",
+     "fa": ""
+    },
+    {
+     "id": 703193,
+     "level": "C1",
+     "pos": "noun",
+     "en": "reliability",
+     "fa": ""
+    },
+    {
+     "id": 940330,
+     "level": "C1",
+     "pos": "verb",
+     "en": "misreport",
+     "fa": ""
+    },
+    {
+     "id": 940331,
+     "level": "B2",
+     "pos": "noun",
+     "en": "false claim",
+     "fa": ""
+    },
+    {
+     "id": 940332,
+     "level": "C1",
+     "pos": "noun",
+     "en": "conspiracy theory",
+     "fa": ""
+    },
+    {
+     "id": 940333,
+     "level": "C1",
+     "pos": "verb",
+     "en": "debunk",
+     "fa": ""
+    },
+    {
+     "id": 940334,
+     "level": "C1",
+     "pos": "noun",
+     "en": "pundit",
+     "fa": ""
+    },
+    {
+     "id": 940335,
+     "level": "C1",
+     "pos": "noun",
+     "en": "paparazzi",
+     "fa": ""
+    },
+    {
+     "id": 940336,
+     "level": "B2",
+     "pos": "noun",
+     "en": "news story",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "culture",
+   "fa": "فرهنگ و هنر",
+   "en": "Culture & the Arts",
+   "group": "life",
+   "words": [
+    {
+     "id": 102110,
+     "level": "C1",
+     "pos": "noun",
+     "en": "heritage",
+     "fa": ""
+    },
+    {
+     "id": 703284,
+     "level": "C1",
+     "pos": "noun",
+     "en": "ritual",
+     "fa": ""
+    },
+    {
+     "id": 704445,
+     "level": "B2",
+     "pos": "noun",
+     "en": "folklore",
+     "fa": ""
+    },
+    {
+     "id": 702203,
+     "level": "B2",
+     "pos": "noun",
+     "en": "legend",
+     "fa": ""
+    },
+    {
+     "id": 940337,
+     "level": "C1",
+     "pos": "noun",
+     "en": "mythology",
+     "fa": ""
+    },
+    {
+     "id": 100192,
+     "level": "B2",
+     "pos": "noun",
+     "en": "ancestor",
+     "fa": ""
+    },
+    {
+     "id": 940338,
+     "level": "C1",
+     "pos": "noun",
+     "en": "ancestry",
+     "fa": ""
+    },
+    {
+     "id": 701901,
+     "level": "B1",
+     "pos": "noun",
+     "en": "identity",
+     "fa": ""
+    },
+    {
+     "id": 940339,
+     "level": "B2",
+     "pos": "noun",
+     "en": "cultural identity",
+     "fa": ""
+    },
+    {
+     "id": 701166,
+     "level": "B2",
+     "pos": "noun",
+     "en": "diversity",
+     "fa": ""
+    },
+    {
+     "id": 940340,
+     "level": "C1",
+     "pos": "noun",
+     "en": "multiculturalism",
+     "fa": ""
+    },
+    {
+     "id": 701378,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "ethnic",
+     "fa": ""
+    },
+    {
+     "id": 940341,
+     "level": "B2",
+     "pos": "noun",
+     "en": "ethnicity",
+     "fa": ""
+    },
+    {
+     "id": 701964,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "indigenous",
+     "fa": ""
+    },
+    {
+     "id": 702506,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "native",
+     "fa": ""
+    },
+    {
+     "id": 703197,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "religious",
+     "fa": ""
+    },
+    {
+     "id": 703614,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "spiritual",
+     "fa": ""
+    },
+    {
+     "id": 703320,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "sacred",
+     "fa": ""
+    },
+    {
+     "id": 704579,
+     "level": "B2",
+     "pos": "noun",
+     "en": "pilgrimage",
+     "fa": ""
+    },
+    {
+     "id": 703795,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "symbolic",
+     "fa": ""
+    },
+    {
+     "id": 700244,
+     "level": "B2",
+     "pos": "noun",
+     "en": "artwork",
+     "fa": ""
+    },
+    {
+     "id": 940342,
+     "level": "B2",
+     "pos": "noun",
+     "en": "masterpiece",
+     "fa": ""
+    },
+    {
+     "id": 940343,
+     "level": "C1",
+     "pos": "noun",
+     "en": "curator",
+     "fa": ""
+    },
+    {
+     "id": 940344,
+     "level": "C1",
+     "pos": "noun",
+     "en": "sculptor",
+     "fa": ""
+    },
+    {
+     "id": 702162,
+     "level": "B2",
+     "pos": "noun",
+     "en": "landscape",
+     "fa": ""
+    },
+    {
+     "id": 700014,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "abstract",
+     "fa": ""
+    },
+    {
+     "id": 702254,
+     "level": "B1",
+     "pos": "noun",
+     "en": "literature",
+     "fa": ""
+    },
+    {
+     "id": 702578,
+     "level": "B2",
+     "pos": "noun",
+     "en": "novelist",
+     "fa": ""
+    },
+    {
+     "id": 702857,
+     "level": "B1",
+     "pos": "noun",
+     "en": "poetry",
+     "fa": ""
+    },
+    {
+     "id": 702856,
+     "level": "B1",
+     "pos": "noun",
+     "en": "poet",
+     "fa": ""
+    },
+    {
+     "id": 704128,
+     "level": "C1",
+     "pos": "noun",
+     "en": "verse",
+     "fa": ""
+    },
+    {
+     "id": 940345,
+     "level": "C1",
+     "pos": "noun",
+     "en": "playwright",
+     "fa": ""
+    },
+    {
+     "id": 940346,
+     "level": "B2",
+     "pos": "noun",
+     "en": "folk music",
+     "fa": ""
+    },
+    {
+     "id": 702161,
+     "level": "C1",
+     "pos": "noun",
+     "en": "landmark",
+     "fa": ""
+    },
+    {
+     "id": 701847,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "historic",
+     "fa": ""
+    },
+    {
+     "id": 700627,
+     "level": "B2",
+     "pos": "noun",
+     "en": "civilization",
+     "fa": ""
+    },
+    {
+     "id": 704413,
+     "level": "B2",
+     "pos": "noun",
+     "en": "artifact",
+     "fa": ""
+    },
+    {
+     "id": 940347,
+     "level": "C1",
+     "pos": "noun",
+     "en": "relic",
+     "fa": ""
+    },
+    {
+     "id": 940348,
+     "level": "B2",
+     "pos": "noun",
+     "en": "antique",
+     "fa": ""
+    },
+    {
+     "id": 704547,
+     "level": "B2",
+     "pos": "noun",
+     "en": "handicraft",
+     "fa": ""
+    },
+    {
+     "id": 940349,
+     "level": "C1",
+     "pos": "noun",
+     "en": "calligraphy",
+     "fa": ""
+    },
+    {
+     "id": 704548,
+     "level": "B1",
+     "pos": "noun",
+     "en": "cuisine",
+     "fa": ""
+    },
+    {
+     "id": 700924,
+     "level": "B2",
+     "pos": "noun",
+     "en": "critic",
+     "fa": ""
+    },
+    {
+     "id": 940350,
+     "level": "B2",
+     "pos": "noun",
+     "en": "cultural exchange",
+     "fa": ""
+    },
+    {
+     "id": 940351,
+     "level": "C1",
+     "pos": "noun",
+     "en": "assimilation",
+     "fa": ""
+    },
+    {
+     "id": 104216,
+     "level": "C1",
+     "pos": "noun",
+     "en": "stereotype",
+     "fa": ""
+    },
+    {
+     "id": 104529,
+     "level": "C1",
+     "pos": "noun",
+     "en": "tolerance",
+     "fa": ""
+    },
+    {
+     "id": 705020,
+     "level": "C1",
+     "pos": "other",
+     "en": "taboo",
+     "fa": ""
+    },
+    {
+     "id": 940352,
+     "level": "B2",
+     "pos": "noun",
+     "en": "etiquette",
+     "fa": ""
+    },
+    {
+     "id": 702940,
+     "level": "C1",
+     "pos": "noun",
+     "en": "preservation",
+     "fa": ""
+    },
+    {
+     "id": 703250,
+     "level": "B2",
+     "pos": "verb",
+     "en": "restore",
+     "fa": ""
+    },
+    {
+     "id": 703249,
+     "level": "C1",
+     "pos": "noun",
+     "en": "restoration",
+     "fa": ""
+    },
+    {
+     "id": 940353,
+     "level": "B2",
+     "pos": "noun",
+     "en": "world heritage site",
+     "fa": ""
+    },
+    {
+     "id": 940354,
+     "level": "C1",
+     "pos": "noun",
+     "en": "oral tradition",
+     "fa": ""
+    },
+    {
+     "id": 940355,
+     "level": "B2",
+     "pos": "noun",
+     "en": "cultural heritage",
+     "fa": ""
+    },
+    {
+     "id": 940356,
+     "level": "B2",
+     "pos": "noun",
+     "en": "storytelling",
+     "fa": ""
+    },
+    {
+     "id": 940357,
+     "level": "B2",
+     "pos": "noun",
+     "en": "proverb",
+     "fa": ""
+    },
+    {
+     "id": 940358,
+     "level": "B2",
+     "pos": "noun",
+     "en": "folk tale",
+     "fa": ""
+    },
+    {
+     "id": 940359,
+     "level": "C1",
+     "pos": "noun",
+     "en": "mosaic",
+     "fa": ""
+    },
+    {
+     "id": 940360,
+     "level": "C1",
+     "pos": "noun",
+     "en": "tapestry",
+     "fa": ""
+    },
+    {
+     "id": 940361,
+     "level": "C1",
+     "pos": "noun",
+     "en": "textile",
+     "fa": ""
+    },
+    {
+     "id": 940362,
+     "level": "B2",
+     "pos": "noun",
+     "en": "pottery",
+     "fa": ""
+    },
+    {
+     "id": 940363,
+     "level": "C1",
+     "pos": "noun",
+     "en": "ceramics",
+     "fa": ""
+    },
+    {
+     "id": 701424,
+     "level": "B2",
+     "pos": "noun",
+     "en": "exhibit",
+     "fa": ""
+    },
+    {
+     "id": 703999,
+     "level": "B2",
+     "pos": "noun",
+     "en": "tribe",
+     "fa": ""
+    },
+    {
+     "id": 704416,
+     "level": "C1",
+     "pos": "noun",
+     "en": "nomad",
+     "fa": ""
+    },
+    {
+     "id": 940364,
+     "level": "B2",
+     "pos": "noun",
+     "en": "elder",
+     "fa": ""
+    },
+    {
+     "id": 702253,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "literary",
+     "fa": ""
+    },
+    {
+     "id": 700243,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "artistic",
+     "fa": ""
+    },
+    {
+     "id": 700097,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "aesthetic",
+     "fa": ""
+    },
+    {
+     "id": 702019,
+     "level": "C1",
+     "pos": "noun",
+     "en": "inspiration",
+     "fa": ""
+    },
+    {
+     "id": 702020,
+     "level": "B2",
+     "pos": "verb",
+     "en": "inspire",
+     "fa": ""
+    },
+    {
+     "id": 700912,
+     "level": "B2",
+     "pos": "noun",
+     "en": "creativity",
+     "fa": ""
+    },
+    {
+     "id": 940365,
+     "level": "C1",
+     "pos": "noun",
+     "en": "craftsmanship",
+     "fa": ""
+    },
+    {
+     "id": 940366,
+     "level": "B2",
+     "pos": "noun",
+     "en": "cultural diversity",
+     "fa": ""
+    },
+    {
+     "id": 940367,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "customary",
+     "fa": ""
+    },
+    {
+     "id": 940368,
+     "level": "B2",
+     "pos": "noun",
+     "en": "cultural norms",
+     "fa": ""
+    },
+    {
+     "id": 940369,
+     "level": "C1",
+     "pos": "noun",
+     "en": "rite of passage",
+     "fa": ""
+    },
+    {
+     "id": 940370,
+     "level": "B2",
+     "pos": "noun",
+     "en": "carnival",
+     "fa": ""
+    },
+    {
+     "id": 700325,
+     "level": "B2",
+     "pos": "noun",
+     "en": "ballet",
+     "fa": ""
+    },
+    {
+     "id": 702641,
+     "level": "B2",
+     "pos": "noun",
+     "en": "opera",
+     "fa": ""
+    },
+    {
+     "id": 940371,
+     "level": "C1",
+     "pos": "verb",
+     "en": "sculpt",
+     "fa": ""
+    },
+    {
+     "id": 940372,
+     "level": "C1",
+     "pos": "noun",
+     "en": "motif",
+     "fa": ""
+    },
+    {
+     "id": 940373,
+     "level": "C1",
+     "pos": "noun",
+     "en": "artisan",
+     "fa": ""
+    },
+    {
+     "id": 940374,
+     "level": "C1",
+     "pos": "noun",
+     "en": "embroidery",
+     "fa": ""
+    },
+    {
+     "id": 940375,
+     "level": "C1",
+     "pos": "noun",
+     "en": "ornament",
+     "fa": ""
+    },
+    {
+     "id": 940376,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "ancestral",
+     "fa": ""
+    },
+    {
+     "id": 704451,
+     "level": "B2",
+     "pos": "noun",
+     "en": "lineage",
+     "fa": ""
+    },
+    {
+     "id": 940377,
+     "level": "C1",
+     "pos": "noun",
+     "en": "reverence",
+     "fa": ""
+    },
+    {
+     "id": 940378,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "ceremonial",
+     "fa": ""
+    }
+   ]
+  },
+  {
+   "key": "global",
+   "fa": "مسائل جهانی",
+   "en": "Global Issues",
+   "group": "life",
+   "words": [
+    {
+     "id": 940379,
+     "level": "B2",
+     "pos": "noun",
+     "en": "extreme poverty",
+     "fa": ""
+    },
+    {
+     "id": 704339,
+     "level": "B2",
+     "pos": "noun",
+     "en": "famine",
+     "fa": ""
+    },
+    {
+     "id": 701885,
+     "level": "B2",
+     "pos": "noun",
+     "en": "hunger",
+     "fa": ""
+    },
+    {
+     "id": 704786,
+     "level": "C1",
+     "pos": "other",
+     "en": "malnutrition",
+     "fa": ""
+    },
+    {
+     "id": 940380,
+     "level": "C1",
+     "pos": "noun",
+     "en": "starvation",
+     "fa": ""
+    },
+    {
+     "id": 701973,
+     "level": "C1",
+     "pos": "noun",
+     "en": "inequality",
+     "fa": ""
+    },
+    {
+     "id": 701879,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "humanitarian",
+     "fa": ""
+    },
+    {
+     "id": 700118,
+     "level": "B2",
+     "pos": "noun",
+     "en": "aid",
+     "fa": ""
+    },
+    {
+     "id": 940381,
+     "level": "B2",
+     "pos": "noun",
+     "en": "humanitarian aid",
+     "fa": ""
+    },
+    {
+     "id": 103661,
+     "level": "B2",
+     "pos": "noun",
+     "en": "relief",
+     "fa": ""
+    },
+    {
+     "id": 701184,
+     "level": "C1",
+     "pos": "noun",
+     "en": "donor",
+     "fa": ""
+    },
+    {
+     "id": 703165,
+     "level": "B2",
+     "pos": "noun",
+     "en": "refugee",
+     "fa": ""
+    },
+    {
+     "id": 700272,
+     "level": "C1",
+     "pos": "noun",
+     "en": "asylum",
+     "fa": ""
+    },
+    {
+     "id": 940382,
+     "level": "B2",
+     "pos": "noun",
+     "en": "asylum seeker",
+     "fa": ""
+    },
+    {
+     "id": 704431,
+     "level": "B2",
+     "pos": "noun",
+     "en": "migrant",
+     "fa": ""
+    },
+    {
+     "id": 702410,
+     "level": "C1",
+     "pos": "noun",
+     "en": "migration",
+     "fa": ""
+    },
+    {
+     "id": 701921,
+     "level": "B2",
+     "pos": "noun",
+     "en": "immigration",
+     "fa": ""
+    },
+    {
+     "id": 701920,
+     "level": "B1",
+     "pos": "noun",
+     "en": "immigrant",
+     "fa": ""
+    },
+    {
+     "id": 940383,
+     "level": "C1",
+     "pos": "verb",
+     "en": "emigrate",
+     "fa": ""
+    },
+    {
+     "id": 940384,
+     "level": "C1",
+     "pos": "noun",
+     "en": "deportation",
+     "fa": ""
+    },
+    {
+     "id": 940385,
+     "level": "C1",
+     "pos": "noun",
+     "en": "displacement",
+     "fa": ""
+    },
+    {
+     "id": 940386,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "displaced",
+     "fa": ""
+    },
+    {
+     "id": 940387,
+     "level": "C1",
+     "pos": "noun",
+     "en": "peacekeeping",
+     "fa": ""
+    },
+    {
+     "id": 701108,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "diplomatic",
+     "fa": ""
+    },
+    {
+     "id": 703856,
+     "level": "B2",
+     "pos": "noun",
+     "en": "terrorist",
+     "fa": ""
+    },
+    {
+     "id": 701696,
+     "level": "C1",
+     "pos": "noun",
+     "en": "genocide",
+     "fa": ""
+    },
+    {
+     "id": 704149,
+     "level": "B2",
+     "pos": "noun",
+     "en": "violence",
+     "fa": ""
+    },
+    {
+     "id": 704150,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "violent",
+     "fa": ""
+    },
+    {
+     "id": 940388,
+     "level": "C1",
+     "pos": "noun",
+     "en": "human trafficking",
+     "fa": ""
+    },
+    {
+     "id": 703519,
+     "level": "C1",
+     "pos": "noun",
+     "en": "slavery",
+     "fa": ""
+    },
+    {
+     "id": 940389,
+     "level": "B2",
+     "pos": "noun",
+     "en": "child labour",
+     "fa": ""
+    },
+    {
+     "id": 940390,
+     "level": "C1",
+     "pos": "noun",
+     "en": "sweatshop",
+     "fa": ""
+    },
+    {
+     "id": 701713,
+     "level": "B2",
+     "pos": "noun",
+     "en": "globalization",
+     "fa": ""
+    },
+    {
+     "id": 940391,
+     "level": "B2",
+     "pos": "noun",
+     "en": "developing country",
+     "fa": ""
+    },
+    {
+     "id": 940392,
+     "level": "B2",
+     "pos": "noun",
+     "en": "developed country",
+     "fa": ""
+    },
+    {
+     "id": 940393,
+     "level": "C1",
+     "pos": "noun",
+     "en": "debt relief",
+     "fa": ""
+    },
+    {
+     "id": 701354,
+     "level": "C1",
+     "pos": "noun",
+     "en": "epidemic",
+     "fa": ""
+    },
+    {
+     "id": 704301,
+     "level": "C1",
+     "pos": "noun",
+     "en": "pandemic",
+     "fa": ""
+    },
+    {
+     "id": 702678,
+     "level": "C1",
+     "pos": "noun",
+     "en": "outbreak",
+     "fa": ""
+    },
+    {
+     "id": 704303,
+     "level": "B2",
+     "pos": "noun",
+     "en": "vaccination",
+     "fa": ""
+    },
+    {
+     "id": 940394,
+     "level": "C1",
+     "pos": "noun",
+     "en": "sanitation",
+     "fa": ""
+    },
+    {
+     "id": 940395,
+     "level": "B2",
+     "pos": "noun",
+     "en": "clean water",
+     "fa": ""
+    },
+    {
+     "id": 702251,
+     "level": "C1",
+     "pos": "noun",
+     "en": "literacy",
+     "fa": ""
+    },
+    {
+     "id": 940396,
+     "level": "C1",
+     "pos": "noun",
+     "en": "illiteracy",
+     "fa": ""
+    },
+    {
+     "id": 940397,
+     "level": "B2",
+     "pos": "noun",
+     "en": "gender equality",
+     "fa": ""
+    },
+    {
+     "id": 703087,
+     "level": "B2",
+     "pos": "noun",
+     "en": "racism",
+     "fa": ""
+    },
+    {
+     "id": 703088,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "racist",
+     "fa": ""
+    },
+    {
+     "id": 103355,
+     "level": "C1",
+     "pos": "noun",
+     "en": "prejudice",
+     "fa": ""
+    },
+    {
+     "id": 940398,
+     "level": "C1",
+     "pos": "noun",
+     "en": "oppression",
+     "fa": ""
+    },
+    {
+     "id": 940399,
+     "level": "C1",
+     "pos": "noun",
+     "en": "persecution",
+     "fa": ""
+    },
+    {
+     "id": 940400,
+     "level": "B2",
+     "pos": "noun",
+     "en": "natural disaster",
+     "fa": ""
+    },
+    {
+     "id": 940401,
+     "level": "C1",
+     "pos": "noun",
+     "en": "overpopulation",
+     "fa": ""
+    },
+    {
+     "id": 940402,
+     "level": "C1",
+     "pos": "noun",
+     "en": "urbanisation",
+     "fa": ""
+    },
+    {
+     "id": 940403,
+     "level": "C1",
+     "pos": "noun",
+     "en": "slum",
+     "fa": ""
+    },
+    {
+     "id": 940404,
+     "level": "B2",
+     "pos": "noun",
+     "en": "ngo",
+     "fa": ""
+    },
+    {
+     "id": 940405,
+     "level": "B2",
+     "pos": "noun",
+     "en": "united nations",
+     "fa": ""
+    },
+    {
+     "id": 940406,
+     "level": "B2",
+     "pos": "noun",
+     "en": "cooperation",
+     "fa": ""
+    },
+    {
+     "id": 703559,
+     "level": "C1",
+     "pos": "noun",
+     "en": "solidarity",
+     "fa": ""
+    },
+    {
+     "id": 940407,
+     "level": "C1",
+     "pos": "noun",
+     "en": "sustainable development",
+     "fa": ""
+    },
+    {
+     "id": 701712,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "global",
+     "fa": ""
+    },
+    {
+     "id": 704269,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "worldwide",
+     "fa": ""
+    },
+    {
+     "id": 701880,
+     "level": "C1",
+     "pos": "noun",
+     "en": "humanity",
+     "fa": ""
+    },
+    {
+     "id": 940408,
+     "level": "B2",
+     "pos": "noun",
+     "en": "living conditions",
+     "fa": ""
+    },
+    {
+     "id": 940409,
+     "level": "B2",
+     "pos": "noun",
+     "en": "gap between rich and poor",
+     "fa": ""
+    },
+    {
+     "id": 704637,
+     "level": "B2",
+     "pos": "noun",
+     "en": "life expectancy",
+     "fa": ""
+    },
+    {
+     "id": 701380,
+     "level": "C1",
+     "pos": "verb",
+     "en": "evacuate",
+     "fa": ""
+    },
+    {
+     "id": 700549,
+     "level": "C1",
+     "pos": "noun",
+     "en": "casualty",
+     "fa": ""
+    },
+    {
+     "id": 700626,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "civilian",
+     "fa": ""
+    },
+    {
+     "id": 702078,
+     "level": "B2",
+     "pos": "noun",
+     "en": "invasion",
+     "fa": ""
+    },
+    {
+     "id": 702609,
+     "level": "B2",
+     "pos": "noun",
+     "en": "occupation",
+     "fa": ""
+    },
+    {
+     "id": 940410,
+     "level": "B2",
+     "pos": "noun",
+     "en": "humanitarian crisis",
+     "fa": ""
+    },
+    {
+     "id": 940411,
+     "level": "B2",
+     "pos": "noun",
+     "en": "refugee camp",
+     "fa": ""
+    },
+    {
+     "id": 704352,
+     "level": "B2",
+     "pos": "noun",
+     "en": "border control",
+     "fa": ""
+    },
+    {
+     "id": 940412,
+     "level": "C1",
+     "pos": "noun",
+     "en": "human development",
+     "fa": ""
+    },
+    {
+     "id": 940413,
+     "level": "C1",
+     "pos": "noun",
+     "en": "poverty line",
+     "fa": ""
+    },
+    {
+     "id": 940414,
+     "level": "C1",
+     "pos": "noun",
+     "en": "income inequality",
+     "fa": ""
+    },
+    {
+     "id": 940415,
+     "level": "B2",
+     "pos": "noun",
+     "en": "world hunger",
+     "fa": ""
+    },
+    {
+     "id": 940416,
+     "level": "B2",
+     "pos": "noun",
+     "en": "armed conflict",
+     "fa": ""
+    },
+    {
+     "id": 940417,
+     "level": "B2",
+     "pos": "noun",
+     "en": "peace treaty",
+     "fa": ""
+    },
+    {
+     "id": 940418,
+     "level": "C1",
+     "pos": "noun",
+     "en": "war crime",
+     "fa": ""
+    },
+    {
+     "id": 940419,
+     "level": "C1",
+     "pos": "verb",
+     "en": "persecute",
+     "fa": ""
+    },
+    {
+     "id": 940420,
+     "level": "C1",
+     "pos": "verb",
+     "en": "oppress",
+     "fa": ""
+    },
+    {
+     "id": 940421,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "marginalised",
+     "fa": ""
+    },
+    {
+     "id": 940422,
+     "level": "B2",
+     "pos": "noun",
+     "en": "relief worker",
+     "fa": ""
+    },
+    {
+     "id": 940423,
+     "level": "B2",
+     "pos": "noun",
+     "en": "emergency aid",
+     "fa": ""
+    },
+    {
+     "id": 704351,
+     "level": "B2",
+     "pos": "noun",
+     "en": "foreign aid",
+     "fa": ""
+    },
+    {
+     "id": 940424,
+     "level": "B2",
+     "pos": "noun",
+     "en": "world leader",
+     "fa": ""
+    },
+    {
+     "id": 940425,
+     "level": "B2",
+     "pos": "noun",
+     "en": "international community",
+     "fa": ""
+    },
+    {
+     "id": 940426,
+     "level": "B2",
+     "pos": "noun",
+     "en": "global issue",
+     "fa": ""
+    },
+    {
+     "id": 940427,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "cross-border",
+     "fa": ""
+    }
+   ]
   }
  ]
 }
