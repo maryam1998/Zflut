@@ -1,0 +1,285 @@
+{
+  "topic": "Advanced Collocations for Discussion and Writing",
+  "scenarios": [
+    {
+      "scenario": "Building an argument",
+      "context": "Two classmates prepare for a class debate on banning cars from the city centre.",
+      "speakerA": [
+        {
+          "en": "Let's start by putting forward our main argument. I'd say the strongest point is that cars cause serious air pollution.",
+          "level": "B2"
+        },
+        {
+          "en": "Good point. Let's weigh up the pros and cons before we decide how to present our case.",
+          "level": "B2"
+        },
+        {
+          "en": "We should bear in mind that some cities have already done this successfully. Do you remember the example from the article?",
+          "level": "B2"
+        },
+        {
+          "en": "Then we can draw the conclusion that the benefits outweigh the drawbacks, as long as public transport improves.",
+          "level": "B2"
+        },
+        {
+          "en": "Right. Shall we divide the work, with you covering the economic side and me the environmental side?",
+          "level": "B2"
+        },
+        {
+          "en": "And let's rehearse our rebuttals, so we can respond quickly when the other side attacks our position.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Agreed, but we also need to take into account the shopkeepers who depend on drivers. Otherwise, the other team will raise concerns we haven't answered.",
+          "level": "B2"
+        },
+        {
+          "en": "On the plus side, a ban would reduce noise, improve safety and encourage people to walk. On the downside, it could hurt local businesses.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, shops there reported that sales rose once the streets became more pleasant. That could help us make a strong case.",
+          "level": "B2"
+        },
+        {
+          "en": "Precisely. We can't just ban cars and hope for the best; we have to provide a realistic alternative.",
+          "level": "B2"
+        },
+        {
+          "en": "Fine by me. I'll look for hard evidence, because a vague claim won't carry much weight.",
+          "level": "B2"
+        },
+        {
+          "en": "Good plan. If we prepare thoroughly, we should have a real chance of winning the argument.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Writing an argumentative essay",
+      "context": "A teacher gives a student feedback on a draft essay about online learning.",
+      "speakerA": [
+        {
+          "en": "Your introduction is clear, but you need to state your position more firmly. Right now, it reads like a neutral summary.",
+          "level": "B2"
+        },
+        {
+          "en": "Balance is important, but you still have to make a point. A strong essay strikes a balance between both views and a clear opinion.",
+          "level": "B2"
+        },
+        {
+          "en": "Both help. Back up each claim with evidence, and always explain why it matters instead of simply quoting figures.",
+          "level": "B2"
+        },
+        {
+          "en": "Not yet. It's a general statement. Draw attention to a specific group, such as parents working full time, and give a concrete example.",
+          "level": "B2"
+        },
+        {
+          "en": "Avoid that. Sum up your main arguments in fresh words, and end with a thought that leaves a lasting impression.",
+          "level": "B2"
+        },
+        {
+          "en": "It's essential. Acknowledging a counter-argument and then refuting it shows maturity and makes your case far more persuasive.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I wasn't sure whether to take a side. I thought a balanced view would look more academic.",
+          "level": "B2"
+        },
+        {
+          "en": "I see. Should I support my claims with statistics, or are examples enough?",
+          "level": "B2"
+        },
+        {
+          "en": "That makes sense. In my second paragraph, I wrote that online learning is more flexible. Is that a convincing case?",
+          "level": "B2"
+        },
+        {
+          "en": "Got it. What about the conclusion? I tend to repeat what I've already said.",
+          "level": "B2"
+        },
+        {
+          "en": "Is it acceptable to mention an opposing view that I disagree with?",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. I'll revise the draft and submit it again on Monday.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Collocations in the business world",
+      "context": "A start-up founder and an investor discuss the company's progress.",
+      "speakerA": [
+        {
+          "en": "Thank you for meeting me. Your product has attracted a lot of attention, but can you make a profit?",
+          "level": "B2"
+        },
+        {
+          "en": "What gives you a competitive edge over larger firms?",
+          "level": "B2"
+        },
+        {
+          "en": "That's impressive, but I notice you're working on a tight budget. Is that sustainable?",
+          "level": "B2"
+        },
+        {
+          "en": "Have you considered hiring more staff?",
+          "level": "B2"
+        },
+        {
+          "en": "Sounds ambitious. What's the biggest risk?",
+          "level": "B2"
+        },
+        {
+          "en": "I'll discuss it with my partners and get back to you by the end of the week.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Not yet, but we're on track to break even by the end of the year. Sales have been rising steadily.",
+          "level": "B2"
+        },
+        {
+          "en": "We respond to customers more quickly, and our prices are lower because we run a very lean operation.",
+          "level": "B2"
+        },
+        {
+          "en": "For now, yes. The heavy workload is a challenge, though, and the team is struggling to meet deadlines.",
+          "level": "B2"
+        },
+        {
+          "en": "We'd love to, but we need a steady income first. That's why we hope to secure funding this month to launch a major advertising campaign.",
+          "level": "B2"
+        },
+        {
+          "en": "A sudden drop in demand, honestly. But we've built up a loyal customer base, which should help us ride out any difficulties.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. We'll be waiting for your answer.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Society and the environment",
+      "context": "Two volunteers plan a campaign about plastic waste in their town.",
+      "speakerA": [
+        {
+          "en": "Plastic waste is a growing concern in our town. We need to raise awareness before the problem gets worse.",
+          "level": "B2"
+        },
+        {
+          "en": "The council says it's doing its best to tackle the issue, but I haven't noticed any real change.",
+          "level": "B2"
+        },
+        {
+          "en": "Do you think people will respond? Many of them seem indifferent.",
+          "level": "B2"
+        },
+        {
+          "en": "What about shops? They could reduce packaging if there were enough demand.",
+          "level": "B2"
+        },
+        {
+          "en": "In the foreseeable future, I'd like to see a ban on single-use bags.",
+          "level": "B2"
+        },
+        {
+          "en": "Then let's organise a meeting next week and invite the mayor.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I agree. If we don't take urgent action, it will pose a serious threat to the river and the wildlife.",
+          "level": "B2"
+        },
+        {
+          "en": "Public opinion could force their hand. A widespread campaign with posters and social media might make them act.",
+          "level": "B2"
+        },
+        {
+          "en": "Some will, and a small group of committed people can make a real difference. Change usually starts small.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Once customers start to demand plastic-free products, businesses will have to meet that demand or lose them.",
+          "level": "B2"
+        },
+        {
+          "en": "That's realistic. Several towns have already introduced one, and the results have been very encouraging.",
+          "level": "B2"
+        },
+        {
+          "en": "Good plan. Let's draft the invitation tonight and get things moving.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Expressing strong feelings with nuance",
+      "context": "Two friends discuss a film adaptation of their favourite novel.",
+      "speakerA": [
+        {
+          "en": "Did you see the film of our favourite novel? I was bitterly disappointed. They changed the ending completely.",
+          "level": "B2"
+        },
+        {
+          "en": "True, but the pace was painfully slow in the middle. I nearly fell asleep.",
+          "level": "B2"
+        },
+        {
+          "en": "It's widely believed that the book is untouchable, and I'm afraid I belong to that group.",
+          "level": "B2"
+        },
+        {
+          "en": "Would you strongly recommend it to someone who hasn't read the book?",
+          "level": "B2"
+        },
+        {
+          "en": "Maybe I'm being unfair. It's highly unlikely that any film could satisfy every reader.",
+          "level": "B2"
+        },
+        {
+          "en": "I might. I'm deeply attached to the characters, so I admit I'm biased.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I was deeply surprised too, but I wouldn't say it was a disaster. The acting was highly impressive.",
+          "level": "B2"
+        },
+        {
+          "en": "Fair enough. Still, the director was fully aware that he couldn't fit everything in. Adaptations always involve difficult choices.",
+          "level": "B2"
+        },
+        {
+          "en": "I can tell. There was a heated debate about it online, and some fans even signed a petition.",
+          "level": "B2"
+        },
+        {
+          "en": "Actually, yes. Without the comparison, I think they'd enjoy it. It's a thoroughly entertaining story.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Perhaps you should watch it again with an open mind and decide then.",
+          "level": "B2"
+        },
+        {
+          "en": "That's perfectly understandable. Honestly, your passion for the book is what makes your opinion interesting.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}
