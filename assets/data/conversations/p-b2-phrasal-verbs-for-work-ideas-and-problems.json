@@ -1,0 +1,285 @@
+{
+  "topic": "Phrasal Verbs for Work, Ideas and Problems",
+  "scenarios": [
+    {
+      "scenario": "Coming up with a new plan",
+      "context": "Two colleagues plan a campaign to reduce waste in their office.",
+      "speakerA": [
+        {
+          "en": "Our manager wants us to come up with a way of cutting paper use by half. Have you got any ideas?",
+          "level": "B2"
+        },
+        {
+          "en": "That sounds promising, but would people actually go along with it? Some of them hate change.",
+          "level": "B2"
+        },
+        {
+          "en": "Good thinking. Shall I put the proposal forward at Monday's meeting?",
+          "level": "B2"
+        },
+        {
+          "en": "I'll draw up a short report with the costs. Could you look it over before I send it?",
+          "level": "B2"
+        },
+        {
+          "en": "I won't. I'll have it ready by Thursday, so you'll have time to go through it.",
+          "level": "B2"
+        },
+        {
+          "en": "That would be great. Imagine how much waste we'd cut down on across the whole company.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I've been looking into it. We could set up a shared digital system, so nobody needs to print documents out.",
+          "level": "B2"
+        },
+        {
+          "en": "Most will once they see the benefits. We could carry out a small trial in one department before rolling it out to everyone.",
+          "level": "B2"
+        },
+        {
+          "en": "Yes, but make sure you point out the savings. Figures tend to win people over.",
+          "level": "B2"
+        },
+        {
+          "en": "Of course. Just don't leave it until the last minute, because I'm snowed under with work this week.",
+          "level": "B2"
+        },
+        {
+          "en": "Perfect. If the idea takes off, we could even help other offices set up the same system.",
+          "level": "B2"
+        },
+        {
+          "en": "Let's not get carried away. First we have to win over the sceptics.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Coping with a problem at work",
+      "context": "A team leader and a colleague deal with a server failure before an important deadline.",
+      "speakerA": [
+        {
+          "en": "The system broke down again this morning, and we've fallen behind on the report. What are we going to do?",
+          "level": "B2"
+        },
+        {
+          "en": "The technician says the data wasn't backed up, so we may have to start over.",
+          "level": "B2"
+        },
+        {
+          "en": "I'll ask the other team whether anyone can step in. They owe us a favour anyway.",
+          "level": "B2"
+        },
+        {
+          "en": "Won't that make us look unprofessional? I'd rather we tried to pull it off without telling them.",
+          "level": "B2"
+        },
+        {
+          "en": "You're right. It's better than letting them down at the last minute.",
+          "level": "B2"
+        },
+        {
+          "en": "Agreed. I'll set up automatic backups first thing tomorrow.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Stay calm. First, let's find out what went wrong, and then we can sort it out step by step.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a disaster. We'll have to take on extra help if we want to make up for the lost time.",
+          "level": "B2"
+        },
+        {
+          "en": "Good idea. Meanwhile, I'll ring the client and explain that we might not be able to hand the report in on time.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd rather be honest. Clients usually put up with a short delay if you warn them in advance.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Once this is over, we need to work out how to stop it from happening again.",
+          "level": "B2"
+        },
+        {
+          "en": "Brilliant. Let's get on with it, and hopefully we'll get through the rest of today without further trouble.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Disagreeing and reaching a decision",
+      "context": "Members of a student committee argue about how to spend their budget.",
+      "speakerA": [
+        {
+          "en": "I'd like to bring up the budget for the end-of-year party. I think we're spending far too much.",
+          "level": "B2"
+        },
+        {
+          "en": "I'm not suggesting we do away with it, only that we find a cheaper venue.",
+          "level": "B2"
+        },
+        {
+          "en": "Then what about asking local businesses to chip in? Some of them have sponsored events before.",
+          "level": "B2"
+        },
+        {
+          "en": "True. I'll talk to the cafe on the corner and see whether they'll come round to the idea.",
+          "level": "B2"
+        },
+        {
+          "en": "Maybe, as long as we can liven it up with decorations and a good playlist.",
+          "level": "B2"
+        },
+        {
+          "en": "Understood. Let's put it to a vote and abide by the result.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I see where you're coming from, but a good party brings people together. We shouldn't cut back on it too much.",
+          "level": "B2"
+        },
+        {
+          "en": "I'm afraid I can't go along with that. The school hall is boring, and nobody will turn up.",
+          "level": "B2"
+        },
+        {
+          "en": "It's worth a try. I'd rule out the cinema, though. They turned us down last year.",
+          "level": "B2"
+        },
+        {
+          "en": "And if they refuse, will you back down and accept the hall?",
+          "level": "B2"
+        },
+        {
+          "en": "That's a fair compromise. I won't give in on the food, though. That needs a proper budget.",
+          "level": "B2"
+        },
+        {
+          "en": "Agreed. It's better than falling out over a party.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Money and keeping a business going",
+      "context": "A shop owner talks to her accountant about a difficult year.",
+      "speakerA": [
+        {
+          "en": "Business has been slow, and we've almost run out of savings. I'm not sure how much longer we can carry on.",
+          "level": "B2"
+        },
+        {
+          "en": "We've already cut back on staff hours. I don't want to lay anyone off.",
+          "level": "B2"
+        },
+        {
+          "en": "Just about, but I've had to put off buying new stock, and that's hurting sales.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd love to, but there's hardly anything left over. Our main competitor has taken over half of our customers.",
+          "level": "B2"
+        },
+        {
+          "en": "I've looked into it, but I don't know where to start.",
+          "level": "B2"
+        },
+        {
+          "en": "That would be wonderful. I don't want to give up after all these years.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Let's go through the figures. The first step is to cut down on costs that aren't essential.",
+          "level": "B2"
+        },
+        {
+          "en": "Understandable. What about the loan? Are you managing to pay it off every month?",
+          "level": "B2"
+        },
+        {
+          "en": "Then consider setting aside a small amount each week, so you don't get caught out again.",
+          "level": "B2"
+        },
+        {
+          "en": "Then you need to stand out. Have you thought about selling online? It could bring in new customers.",
+          "level": "B2"
+        },
+        {
+          "en": "I can put you in touch with someone who set up a similar business last year. She might be able to help out.",
+          "level": "B2"
+        },
+        {
+          "en": "You won't have to. With a few changes, I think you can turn things around.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Relationships and personal change",
+      "context": "Two old friends talk about family, forgiveness and moving on.",
+      "speakerA": [
+        {
+          "en": "I've been thinking about my brother. We fell out years ago, and I still haven't got over it.",
+          "level": "B2"
+        },
+        {
+          "en": "I'm afraid he'll turn me down. I let him down badly when he needed me.",
+          "level": "B2"
+        },
+        {
+          "en": "You're probably right. I do look up to him. He's always been the one I could count on.",
+          "level": "B2"
+        },
+        {
+          "en": "How did you manage? Did you bring it up straight away?",
+          "level": "B2"
+        },
+        {
+          "en": "That gives me hope. I'm tired of putting up with this silence.",
+          "level": "B2"
+        },
+        {
+          "en": "I'll write to him tonight. Thanks for talking me round.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "That's hard. Have you tried getting in touch with him? Sometimes people are waiting for the other person to make the first move.",
+          "level": "B2"
+        },
+        {
+          "en": "People can forgive a lot if you own up to your mistakes. Apologise, and try to make up for it.",
+          "level": "B2"
+        },
+        {
+          "en": "Then tell him that. In my family, we grew apart for a while after my parents split up, but we sorted it out.",
+          "level": "B2"
+        },
+        {
+          "en": "No, I put it off for months. When I finally did, I found out that he had been feeling the same way.",
+          "level": "B2"
+        },
+        {
+          "en": "Then don't wait. The longer you leave it, the harder it becomes to face up to.",
+          "level": "B2"
+        },
+        {
+          "en": "Any time. And let me know how it turns out. I'll be rooting for you.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}

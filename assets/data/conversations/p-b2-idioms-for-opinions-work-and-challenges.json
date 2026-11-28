@@ -1,0 +1,285 @@
+{
+  "topic": "Idioms for Opinions, Work and Challenges",
+  "scenarios": [
+    {
+      "scenario": "Getting a project off the ground",
+      "context": "A team meets to launch a new app and agrees on a plan.",
+      "speakerA": [
+        {
+          "en": "Right, let's get the ball rolling. First of all, I want to make sure we're all on the same page about the deadline.",
+          "level": "B2"
+        },
+        {
+          "en": "I know, but the client won't budge. If we cut corners, though, the quality will suffer.",
+          "level": "B2"
+        },
+        {
+          "en": "That could save us weeks of work. Does anyone see a problem with that approach?",
+          "level": "B2"
+        },
+        {
+          "en": "Fair point. Let's ask Sara. She knows it like the back of her hand.",
+          "level": "B2"
+        },
+        {
+          "en": "While she checks, the rest of us can map out the main features and see how things stand.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Let's meet again on Thursday and see where we are.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "As far as I know, we have six weeks, but that's a tall order given the size of the team.",
+          "level": "B2"
+        },
+        {
+          "en": "Then we need to think outside the box. Why not reuse some code from our last app instead of starting from scratch?",
+          "level": "B2"
+        },
+        {
+          "en": "Only one: the old code is a mess. Fixing it might mean going back to the drawing board.",
+          "level": "B2"
+        },
+        {
+          "en": "Good idea. She's always willing to go the extra mile when we're in trouble.",
+          "level": "B2"
+        },
+        {
+          "en": "Sounds good. I'd rather bite the bullet now than panic at the end.",
+          "level": "B2"
+        },
+        {
+          "en": "Agreed. Let's hope everything goes smoothly.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Taking sides in a debate",
+      "context": "Two friends discuss whether schools should ban mobile phones.",
+      "speakerA": [
+        {
+          "en": "Let me play devil's advocate for a moment. Wouldn't a ban simply push the problem underground?",
+          "level": "B2"
+        },
+        {
+          "en": "Still, I tend to sit on the fence. Phones are distracting, but they can also be useful tools.",
+          "level": "B2"
+        },
+        {
+          "en": "So where do you stand? Don't beat around the bush.",
+          "level": "B2"
+        },
+        {
+          "en": "I don't see eye to eye with you entirely. Some teachers use apps in class, so a total ban in lessons would be unfair.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a decent solution. It would take a weight off the headteacher's shoulders.",
+          "level": "B2"
+        },
+        {
+          "en": "I'm on board with that. Shall we write it up and present it to the student council?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "You've hit the nail on the head. Students would hide their phones instead of using them responsibly.",
+          "level": "B2"
+        },
+        {
+          "en": "That's the elephant in the room. Nobody wants to admit that the same device can be both a help and a hindrance.",
+          "level": "B2"
+        },
+        {
+          "en": "I'd allow phones at break times and ban them in lessons. That seems a happy medium.",
+          "level": "B2"
+        },
+        {
+          "en": "Good point. Perhaps each teacher should have the final say, case by case.",
+          "level": "B2"
+        },
+        {
+          "en": "It would. In the end, it comes down to trust: you can't force respect, only encourage it.",
+          "level": "B2"
+        },
+        {
+          "en": "Why not? It's a long shot, but it's worth trying.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "A stressful week at work",
+      "context": "Two employees talk after a hard week.",
+      "speakerA": [
+        {
+          "en": "I'm completely worn out. This week has been a roller coaster, and I haven't had a minute to myself.",
+          "level": "B2"
+        },
+        {
+          "en": "The last straw was yesterday, when he asked me to redo the entire presentation an hour before the meeting.",
+          "level": "B2"
+        },
+        {
+          "en": "I bit my tongue. I'm still learning the ropes, and I don't want to rock the boat.",
+          "level": "B2"
+        },
+        {
+          "en": "Maybe, but the learning curve here is steep, and I don't want to make a bad impression.",
+          "level": "B2"
+        },
+        {
+          "en": "Really? That's the first good news I've had all week.",
+          "level": "B2"
+        },
+        {
+          "en": "Great idea. A break is just what I need to recharge my batteries.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "You and me both. I've been working under pressure ever since the new manager took over.",
+          "level": "B2"
+        },
+        {
+          "en": "That's unreasonable. Did you say anything, or did you just grin and bear it?",
+          "level": "B2"
+        },
+        {
+          "en": "I understand, but if you keep quiet, nothing will change. Sometimes you have to stick your neck out.",
+          "level": "B2"
+        },
+        {
+          "en": "You're doing better than you think. People have noticed how you stayed late to help the whole team on the last project.",
+          "level": "B2"
+        },
+        {
+          "en": "Trust me. Come on, let's grab a coffee and let off some steam.",
+          "level": "B2"
+        },
+        {
+          "en": "My treat. After this week, you've earned it.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Making ends meet",
+      "context": "A young couple discusses their finances before moving in together.",
+      "speakerA": [
+        {
+          "en": "Before we sign the lease, we should be honest about money. I'm barely making ends meet on my salary.",
+          "level": "B2"
+        },
+        {
+          "en": "So we'd have to tighten our belts. No more eating out every weekend.",
+          "level": "B2"
+        },
+        {
+          "en": "Good. And let's not break the bank on furniture. We can buy second-hand pieces.",
+          "level": "B2"
+        },
+        {
+          "en": "Fair enough. What about our debts? Mine are only a drop in the ocean compared with yours.",
+          "level": "B2"
+        },
+        {
+          "en": "We'll sort it out together. Once we're both earning more, we should be able to get back on our feet.",
+          "level": "B2"
+        },
+        {
+          "en": "I agree. Money is a touchy subject, but it's better to lay our cards on the table now.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Same here. Rent in this area costs an arm and a leg, and the bills keep going up.",
+          "level": "B2"
+        },
+        {
+          "en": "That's fine with me. I'd rather save for a rainy day than splash out on things we don't need.",
+          "level": "B2"
+        },
+        {
+          "en": "Agreed, although I'd like us to put a little aside for holidays. Otherwise we'll be tearing our hair out by the summer.",
+          "level": "B2"
+        },
+        {
+          "en": "Thanks for reminding me. I'm still paying off my student loan, and it feels like a never-ending story.",
+          "level": "B2"
+        },
+        {
+          "en": "I hope so. It's a relief to talk about all this openly, though.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Honesty now will save us trouble later.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Second chances",
+      "context": "A teacher talks to a student who failed an important exam.",
+      "speakerA": [
+        {
+          "en": "I was sorry to hear about your result. I know you were hoping for a better outcome.",
+          "level": "B2"
+        },
+        {
+          "en": "That happens to the best of us. Remember that one bad day doesn't define you.",
+          "level": "B2"
+        },
+        {
+          "en": "Not at all. You can retake the exam in the summer, and you'll be better prepared this time.",
+          "level": "B2"
+        },
+        {
+          "en": "Absolutely. You've shown real talent all year, and the ball is in your court now.",
+          "level": "B2"
+        },
+        {
+          "en": "That's the spirit. I'll give you some practice papers, and we can go over your mistakes together.",
+          "level": "B2"
+        },
+        {
+          "en": "Sometimes a setback is exactly what we need to turn over a new leaf.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I feel as if I've let everyone down. I studied for weeks, but my mind went blank during the exam.",
+          "level": "B2"
+        },
+        {
+          "en": "I know, but it feels like the end of the world. All my plans have gone down the drain.",
+          "level": "B2"
+        },
+        {
+          "en": "Do you really think I stand a chance? I don't want to get my hopes up.",
+          "level": "B2"
+        },
+        {
+          "en": "It would mean extra work, but I'm ready to roll up my sleeves.",
+          "level": "B2"
+        },
+        {
+          "en": "Thank you. I'd really appreciate it. Failing has been a wake-up call for me.",
+          "level": "B2"
+        },
+        {
+          "en": "I'll remember that. Once I've passed, this will all be water under the bridge.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}
