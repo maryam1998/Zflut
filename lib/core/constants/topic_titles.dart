@@ -127,6 +127,104 @@ const Map<String, String> _kDailyFa = {
   'Memories and Past Experiences': 'خاطرات و تجربه‌های گذشته',
 };
 
+// 🎓 Lower Secondary ▸ B1 و Upper Secondary ▸ B2 — فارسی
+const Map<String, String> _kSecondaryFa = {
+  "School Life and Studies": "زندگی مدرسه و تحصیل",
+  "Technology and Online Life": "فناوری و زندگی آنلاین",
+  "Health and Recovery": "سلامت و بهبودی",
+  "Plans, Suggestions and Solutions": "برنامه‌ها، پیشنهادها و راه‌حل‌ها",
+  "Our Community and Our Planet": "جامعه و سیاره‌ی ما",
+  "Part-Time Jobs and Interviews": "کار پاره‌وقت و مصاحبه‌ی شغلی",
+  "Personality and Character Traits": "شخصیت و ویژگی‌های اخلاقی",
+  "Achieving Goals and Improving Yourself": "رسیدن به اهداف و پیشرفت فردی",
+  "Phrasal Verbs in Daily Life": "افعال عبارتی در زندگی روزمره",
+  "Idioms and Everyday Expressions": "اصطلاحات و عبارات روزمره",
+  "Journeys and Holiday Accommodation": "سفرها و اقامت در تعطیلات",
+  "Accidents and Opportunities": "حوادث و فرصت‌ها",
+  "Culture, Traditions and Community Life": "فرهنگ، سنت‌ها و زندگی اجتماعی",
+  "Longer Conversations: Sharing Experiences": "مکالمه‌های بلندتر: تعریف تجربه‌ها",
+  "Longer Conversations: Giving Opinions": "مکالمه‌های بلندتر: بیان نظر",
+  "Longer Conversations: Problems and Decisions": "مکالمه‌های بلندتر: مشکلات و تصمیم‌ها",
+  "Phrasal Verbs: Home and School": "افعال عبارتی: خانه و مدرسه",
+  "Phrasal Verbs: Going Out and Travel": "افعال عبارتی: بیرون رفتن و سفر",
+  "Idioms: Feelings and Friendship": "اصطلاحات: احساسات و دوستی",
+  "Idioms: Study, Work and Money": "اصطلاحات: درس، کار و پول",
+  "Exams, Revision and Study Skills": "امتحان‌ها، مرور و مهارت‌های مطالعه",
+  "University Applications and Careers": "درخواست پذیرش دانشگاه و مسیر شغلی",
+  "Media, Social Networks and Critical Thinking": "رسانه، شبکه‌های اجتماعی و تفکر انتقادی",
+  "Global Issues and Debates": "مسائل جهانی و بحث‌ها",
+  "Science Lessons and Lab Work": "درس علوم و کار آزمایشگاهی",
+  "Maths, Data and Graphs": "ریاضی، داده و نمودار",
+  "Literature, History and Academic Writing": "ادبیات، تاریخ و نگارش آکادمیک",
+  "Presentations, Seminars and English Exams": "ارائه، سمینار و آزمون‌های انگلیسی",
+  "Settling into a New Country": "جا افتادن در کشوری تازه",
+  "Work and Everyday Responsibilities Abroad": "کار و مسئولیت‌های روزمره در خارج از کشور",
+  "AI and the Future of Work": "هوش مصنوعی و آینده‌ی کار",
+  "Big-City Life: Pros and Cons": "زندگی در کلان‌شهر: مزایا و معایب",
+  "Business Negotiations": "مذاکرات تجاری",
+  "News and Current Events Analysis": "تحلیل اخبار و رویدادهای روز",
+  "Migration, Culture and Identity": "مهاجرت، فرهنگ و هویت",
+  "Environmental Policy and the Green Economy": "سیاست‌های محیط زیستی و اقتصاد سبز",
+  "Presenting and Defending an Idea": "ارائه و دفاع از یک ایده",
+  "Economic and Social Issues": "مسائل اقتصادی و اجتماعی",
+  "Phrasal Verbs for Work, Ideas and Problems": "افعال عبارتی برای کار، ایده‌ها و مشکلات",
+  "Idioms for Opinions, Work and Challenges": "اصطلاحات برای نظر، کار و چالش‌ها",
+  "Advanced Collocations for Discussion and Writing": "هم‌نشینی‌های پیشرفته برای بحث و نوشتن",
+  "Work and Study (IELTS style)": "کار و تحصیل (IELTS style)",
+  "Technology and the Environment (IELTS style)": "فناوری و محیط زیست (IELTS style)",
+};
+
+// 🌍 نامِ موضوع‌ها به زبان‌های رابط — ترتیبِ فهرست: [ar, de, es, fr]
+const List<String> _kTrLangs = ['ar', 'de', 'es', 'fr'];
+const Map<String, List<String>> _kTopicTr = {
+  "Relationships and Feelings": ["العلاقات والمشاعر", "Beziehungen und Gefühle", "Relaciones y sentimientos", "Relations et sentiments"],
+  "Telling a Story: An Unexpected Event": ["سرد قصة: حدث غير متوقع", "Eine Geschichte erzählen: Ein unerwartetes Ereignis", "Contar una historia: un suceso inesperado", "Raconter une histoire : un événement inattendu"],
+  "Planning a Trip": ["التخطيط لرحلة", "Eine Reise planen", "Planificar un viaje", "Planifier un voyage"],
+  "School Life and Studies": ["الحياة المدرسية والدراسة", "Schulleben und Lernen", "La vida escolar y los estudios", "La vie scolaire et les études"],
+  "Technology and Online Life": ["التكنولوجيا والحياة على الإنترنت", "Technik und Leben im Netz", "Tecnología y vida en línea", "Technologie et vie en ligne"],
+  "Health and Recovery": ["الصحة والتعافي", "Gesundheit und Genesung", "Salud y recuperación", "Santé et rétablissement"],
+  "Plans, Suggestions and Solutions": ["الخطط والاقتراحات والحلول", "Pläne, Vorschläge und Lösungen", "Planes, sugerencias y soluciones", "Projets, suggestions et solutions"],
+  "Our Community and Our Planet": ["مجتمعنا وكوكبنا", "Unsere Gemeinschaft und unser Planet", "Nuestra comunidad y nuestro planeta", "Notre communauté et notre planète"],
+  "Part-Time Jobs and Interviews": ["الوظائف بدوام جزئي ومقابلات العمل", "Teilzeitjobs und Vorstellungsgespräche", "Trabajos a tiempo parcial y entrevistas", "Jobs à temps partiel et entretiens d'embauche"],
+  "Personality and Character Traits": ["الشخصية وسمات الطباع", "Persönlichkeit und Charaktereigenschaften", "Personalidad y rasgos de carácter", "Personnalité et traits de caractère"],
+  "Achieving Goals and Improving Yourself": ["تحقيق الأهداف وتطوير الذات", "Ziele erreichen und sich weiterentwickeln", "Alcanzar metas y superarse", "Atteindre ses objectifs et progresser"],
+  "Phrasal Verbs in Daily Life": ["الأفعال المركّبة في الحياة اليومية", "Phrasal Verbs im Alltag", "Phrasal verbs en la vida diaria", "Les verbes à particule au quotidien"],
+  "Idioms and Everyday Expressions": ["التعابير الاصطلاحية والعبارات اليومية", "Redewendungen und Alltagsausdrücke", "Modismos y expresiones cotidianas", "Expressions idiomatiques et courantes"],
+  "Journeys and Holiday Accommodation": ["الرحلات والإقامة في العطلات", "Reisen und Urlaubsunterkünfte", "Viajes y alojamiento de vacaciones", "Voyages et hébergement de vacances"],
+  "Accidents and Opportunities": ["الحوادث والفرص", "Unfälle und Chancen", "Accidentes y oportunidades", "Accidents et opportunités"],
+  "Culture, Traditions and Community Life": ["الثقافة والتقاليد والحياة المجتمعية", "Kultur, Traditionen und Gemeinschaftsleben", "Cultura, tradiciones y vida comunitaria", "Culture, traditions et vie communautaire"],
+  "Longer Conversations: Sharing Experiences": ["محادثات أطول: تبادل التجارب", "Längere Gespräche: Erfahrungen austauschen", "Conversaciones más largas: compartir experiencias", "Conversations plus longues : partager des expériences"],
+  "Longer Conversations: Giving Opinions": ["محادثات أطول: إبداء الرأي", "Längere Gespräche: Meinungen äußern", "Conversaciones más largas: dar opiniones", "Conversations plus longues : donner son avis"],
+  "Longer Conversations: Problems and Decisions": ["محادثات أطول: المشكلات والقرارات", "Längere Gespräche: Probleme und Entscheidungen", "Conversaciones más largas: problemas y decisiones", "Conversations plus longues : problèmes et décisions"],
+  "Phrasal Verbs: Home and School": ["الأفعال المركّبة: المنزل والمدرسة", "Phrasal Verbs: Zuhause und Schule", "Phrasal verbs: casa y escuela", "Verbes à particule : maison et école"],
+  "Phrasal Verbs: Going Out and Travel": ["الأفعال المركّبة: الخروج والسفر", "Phrasal Verbs: Ausgehen und Reisen", "Phrasal verbs: salir y viajar", "Verbes à particule : sorties et voyages"],
+  "Idioms: Feelings and Friendship": ["التعابير الاصطلاحية: المشاعر والصداقة", "Redewendungen: Gefühle und Freundschaft", "Modismos: sentimientos y amistad", "Expressions idiomatiques : sentiments et amitié"],
+  "Idioms: Study, Work and Money": ["التعابير الاصطلاحية: الدراسة والعمل والمال", "Redewendungen: Lernen, Arbeit und Geld", "Modismos: estudio, trabajo y dinero", "Expressions idiomatiques : études, travail et argent"],
+  "Exams, Revision and Study Skills": ["الامتحانات والمراجعة ومهارات الدراسة", "Prüfungen, Wiederholung und Lerntechniken", "Exámenes, repaso y técnicas de estudio", "Examens, révisions et méthodes de travail"],
+  "University Applications and Careers": ["طلبات الالتحاق بالجامعة والمسارات المهنية", "Studienbewerbung und Karriere", "Solicitudes universitarias y carreras profesionales", "Candidatures universitaires et carrières"],
+  "Media, Social Networks and Critical Thinking": ["الإعلام وشبكات التواصل والتفكير النقدي", "Medien, soziale Netzwerke und kritisches Denken", "Medios, redes sociales y pensamiento crítico", "Médias, réseaux sociaux et esprit critique"],
+  "Global Issues and Debates": ["القضايا العالمية والنقاشات", "Globale Themen und Debatten", "Problemas globales y debates", "Enjeux mondiaux et débats"],
+  "Science Lessons and Lab Work": ["دروس العلوم والعمل المخبري", "Naturwissenschaftsunterricht und Laborarbeit", "Clases de ciencias y trabajo de laboratorio", "Cours de sciences et travaux de laboratoire"],
+  "Maths, Data and Graphs": ["الرياضيات والبيانات والرسوم البيانية", "Mathe, Daten und Diagramme", "Matemáticas, datos y gráficos", "Maths, données et graphiques"],
+  "Literature, History and Academic Writing": ["الأدب والتاريخ والكتابة الأكاديمية", "Literatur, Geschichte und wissenschaftliches Schreiben", "Literatura, historia y escritura académica", "Littérature, histoire et rédaction académique"],
+  "Presentations, Seminars and English Exams": ["العروض التقديمية والندوات وامتحانات الإنجليزية", "Präsentationen, Seminare und Englischprüfungen", "Presentaciones, seminarios y exámenes de inglés", "Exposés, séminaires et examens d'anglais"],
+  "Settling into a New Country": ["الاستقرار في بلد جديد", "Sich in einem neuen Land einleben", "Instalarse en un país nuevo", "S'installer dans un nouveau pays"],
+  "Work and Everyday Responsibilities Abroad": ["العمل والمسؤوليات اليومية في الخارج", "Arbeit und Alltagspflichten im Ausland", "Trabajo y responsabilidades cotidianas en el extranjero", "Travail et responsabilités quotidiennes à l'étranger"],
+  "AI and the Future of Work": ["الذكاء الاصطناعي ومستقبل العمل", "KI und die Zukunft der Arbeit", "La IA y el futuro del trabajo", "L'IA et l'avenir du travail"],
+  "Big-City Life: Pros and Cons": ["الحياة في المدينة الكبيرة: الإيجابيات والسلبيات", "Leben in der Großstadt: Vor- und Nachteile", "La vida en la gran ciudad: pros y contras", "La vie en grande ville : avantages et inconvénients"],
+  "Business Negotiations": ["المفاوضات التجارية", "Geschäftsverhandlungen", "Negociaciones comerciales", "Négociations commerciales"],
+  "News and Current Events Analysis": ["تحليل الأخبار والأحداث الجارية", "Analyse von Nachrichten und aktuellen Ereignissen", "Análisis de noticias y actualidad", "Analyse de l'actualité"],
+  "Migration, Culture and Identity": ["الهجرة والثقافة والهوية", "Migration, Kultur und Identität", "Migración, cultura e identidad", "Migration, culture et identité"],
+  "Environmental Policy and the Green Economy": ["السياسات البيئية والاقتصاد الأخضر", "Umweltpolitik und grüne Wirtschaft", "Política ambiental y economía verde", "Politique environnementale et économie verte"],
+  "Presenting and Defending an Idea": ["عرض فكرة والدفاع عنها", "Eine Idee vorstellen und verteidigen", "Presentar y defender una idea", "Présenter et défendre une idée"],
+  "Economic and Social Issues": ["القضايا الاقتصادية والاجتماعية", "Wirtschaftliche und soziale Fragen", "Cuestiones económicas y sociales", "Questions économiques et sociales"],
+  "Phrasal Verbs for Work, Ideas and Problems": ["الأفعال المركّبة للعمل والأفكار والمشكلات", "Phrasal Verbs für Arbeit, Ideen und Probleme", "Phrasal verbs para el trabajo, las ideas y los problemas", "Verbes à particule pour le travail, les idées et les problèmes"],
+  "Idioms for Opinions, Work and Challenges": ["التعابير الاصطلاحية للآراء والعمل والتحديات", "Redewendungen für Meinungen, Arbeit und Herausforderungen", "Modismos para opiniones, trabajo y retos", "Expressions idiomatiques pour opinions, travail et défis"],
+  "Advanced Collocations for Discussion and Writing": ["المتلازمات اللفظية المتقدمة للنقاش والكتابة", "Fortgeschrittene Kollokationen für Diskussion und Schreiben", "Colocaciones avanzadas para debatir y escribir", "Collocations avancées pour débattre et rédiger"],
+  "Work and Study (IELTS style)": ["العمل والدراسة (بأسلوب IELTS)", "Arbeit und Studium (IELTS-Stil)", "Trabajo y estudios (estilo IELTS)", "Travail et études (style IELTS)"],
+  "Technology and the Environment (IELTS style)": ["التكنولوجيا والبيئة (بأسلوب IELTS)", "Technik und Umwelt (IELTS-Stil)", "Tecnología y medio ambiente (estilo IELTS)", "Technologie et environnement (style IELTS)"],
+};
+
 /// نامِ نمایشیِ موضوع. [uiLang] کدِ زبانِ رابط (مثلاً 'fa' یا 'en').
 String topicTitle(String raw, String uiLang) {
   final t = raw.trim();
@@ -139,6 +237,9 @@ String topicTitle(String raw, String uiLang) {
   } else if (_faChars.hasMatch(t)) {
     fa = t;
   }
-  if (uiLang == 'fa') return fa ?? _kDailyFa[en] ?? en;
+  if (uiLang == 'fa') return fa ?? _kDailyFa[en] ?? _kSecondaryFa[en] ?? en;
+  final tr = _kTopicTr[en];
+  final i = _kTrLangs.indexOf(uiLang);
+  if (tr != null && i >= 0) return tr[i];
   return en;
 }
