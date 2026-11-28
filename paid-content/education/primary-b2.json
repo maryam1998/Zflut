@@ -3024,6 +3024,581 @@
      "fa": ""
     }
    ]
+  },
+  {
+   "key": "environment",
+   "fa": "محیط‌زیست",
+   "en": "Environment & Sustainability",
+   "group": "life",
+   "words": [
+    {
+     "id": 704320,
+     "level": "B2",
+     "pos": "noun",
+     "en": "ecosystem",
+     "fa": ""
+    },
+    {
+     "id": 704319,
+     "level": "C1",
+     "pos": "noun",
+     "en": "biodiversity",
+     "fa": ""
+    },
+    {
+     "id": 704236,
+     "level": "B2",
+     "pos": "noun",
+     "en": "wildlife",
+     "fa": ""
+    },
+    {
+     "id": 704394,
+     "level": "B2",
+     "pos": "noun",
+     "en": "extinction",
+     "fa": ""
+    },
+    {
+     "id": 700788,
+     "level": "B2",
+     "pos": "noun",
+     "en": "conservation",
+     "fa": ""
+    },
+    {
+     "id": 702941,
+     "level": "B2",
+     "pos": "verb",
+     "en": "preserve",
+     "fa": ""
+    },
+    {
+     "id": 703029,
+     "level": "B2",
+     "pos": "noun",
+     "en": "protection",
+     "fa": ""
+    },
+    {
+     "id": 704395,
+     "level": "C1",
+     "pos": "noun",
+     "en": "pollutant",
+     "fa": ""
+    },
+    {
+     "id": 701294,
+     "level": "B2",
+     "pos": "noun",
+     "en": "emission",
+     "fa": ""
+    },
+    {
+     "id": 704177,
+     "level": "B2",
+     "pos": "noun",
+     "en": "warming",
+     "fa": ""
+    },
+    {
+     "id": 704355,
+     "level": "B2",
+     "pos": "noun",
+     "en": "geothermal",
+     "fa": ""
+    },
+    {
+     "id": 703553,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "solar",
+     "fa": ""
+    },
+    {
+     "id": 702582,
+     "level": "B1",
+     "pos": "adjective",
+     "en": "nuclear",
+     "fa": ""
+    },
+    {
+     "id": 701651,
+     "level": "B1",
+     "pos": "noun",
+     "en": "fuel",
+     "fa": ""
+    },
+    {
+     "id": 700659,
+     "level": "B1",
+     "pos": "noun",
+     "en": "coal",
+     "fa": ""
+    },
+    {
+     "id": 703783,
+     "level": "C1",
+     "pos": "verb",
+     "en": "sustain",
+     "fa": ""
+    },
+    {
+     "id": 704396,
+     "level": "C1",
+     "pos": "noun",
+     "en": "landfill",
+     "fa": ""
+    },
+    {
+     "id": 704318,
+     "level": "C1",
+     "pos": "noun",
+     "en": "deforestation",
+     "fa": ""
+    },
+    {
+     "id": 704570,
+     "level": "B2",
+     "pos": "noun",
+     "en": "glacier",
+     "fa": ""
+    },
+    {
+     "id": 702337,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "marine",
+     "fa": ""
+    },
+    {
+     "id": 700115,
+     "level": "B2",
+     "pos": "noun",
+     "en": "agriculture",
+     "fa": ""
+    },
+    {
+     "id": 701692,
+     "level": "B2",
+     "pos": "verb",
+     "en": "generate",
+     "fa": ""
+    },
+    {
+     "id": 701752,
+     "level": "C1",
+     "pos": "noun",
+     "en": "grid",
+     "fa": ""
+    },
+    {
+     "id": 700275,
+     "level": "B1",
+     "pos": "noun",
+     "en": "atmosphere",
+     "fa": ""
+    },
+    {
+     "id": 703958,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "toxic",
+     "fa": ""
+    },
+    {
+     "id": 701067,
+     "level": "B2",
+     "pos": "noun",
+     "en": "destruction",
+     "fa": ""
+    },
+    {
+     "id": 701447,
+     "level": "B2",
+     "pos": "verb",
+     "en": "exploit",
+     "fa": ""
+    },
+    {
+     "id": 701448,
+     "level": "C1",
+     "pos": "noun",
+     "en": "exploitation",
+     "fa": ""
+    },
+    {
+     "id": 703745,
+     "level": "C1",
+     "pos": "noun",
+     "en": "summit",
+     "fa": ""
+    },
+    {
+     "id": 700067,
+     "level": "C1",
+     "pos": "noun",
+     "en": "adaptation",
+     "fa": ""
+    },
+    {
+     "id": 500111,
+     "level": "C2",
+     "pos": "verb",
+     "en": "mitigate",
+     "fa": ""
+    },
+    {
+     "id": 704512,
+     "level": "B2",
+     "pos": "noun",
+     "en": "resilience",
+     "fa": ""
+    },
+    {
+     "id": 704169,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "vulnerable",
+     "fa": ""
+    },
+    {
+     "id": 703904,
+     "level": "B2",
+     "pos": "verb",
+     "en": "threaten",
+     "fa": ""
+    },
+    {
+     "id": 704093,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "urban",
+     "fa": ""
+    },
+    {
+     "id": 701122,
+     "level": "A2",
+     "pos": "noun",
+     "en": "disaster",
+     "fa": ""
+    },
+    {
+     "id": 940164,
+     "level": "B2",
+     "pos": "noun",
+     "en": "sustainability",
+     "fa": ""
+    },
+    {
+     "id": 940165,
+     "level": "B2",
+     "pos": "noun",
+     "en": "renewable energy",
+     "fa": ""
+    },
+    {
+     "id": 940166,
+     "level": "B2",
+     "pos": "noun",
+     "en": "clean energy",
+     "fa": ""
+    },
+    {
+     "id": 940167,
+     "level": "B2",
+     "pos": "noun",
+     "en": "wind farm",
+     "fa": ""
+    },
+    {
+     "id": 940168,
+     "level": "C1",
+     "pos": "noun",
+     "en": "hydropower",
+     "fa": ""
+    },
+    {
+     "id": 704317,
+     "level": "C1",
+     "pos": "noun",
+     "en": "fossil fuel",
+     "fa": ""
+    },
+    {
+     "id": 940169,
+     "level": "B2",
+     "pos": "noun",
+     "en": "climate change",
+     "fa": ""
+    },
+    {
+     "id": 940170,
+     "level": "B2",
+     "pos": "noun",
+     "en": "carbon emissions",
+     "fa": ""
+    },
+    {
+     "id": 704321,
+     "level": "C1",
+     "pos": "noun",
+     "en": "greenhouse gas",
+     "fa": ""
+    },
+    {
+     "id": 704322,
+     "level": "C1",
+     "pos": "noun",
+     "en": "carbon footprint",
+     "fa": ""
+    },
+    {
+     "id": 940171,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "carbon neutral",
+     "fa": ""
+    },
+    {
+     "id": 940172,
+     "level": "C1",
+     "pos": "noun",
+     "en": "net zero",
+     "fa": ""
+    },
+    {
+     "id": 940173,
+     "level": "B2",
+     "pos": "noun",
+     "en": "air pollution",
+     "fa": ""
+    },
+    {
+     "id": 940174,
+     "level": "B2",
+     "pos": "noun",
+     "en": "water pollution",
+     "fa": ""
+    },
+    {
+     "id": 940175,
+     "level": "C1",
+     "pos": "verb",
+     "en": "contaminate",
+     "fa": ""
+    },
+    {
+     "id": 940176,
+     "level": "C1",
+     "pos": "noun",
+     "en": "contamination",
+     "fa": ""
+    },
+    {
+     "id": 940177,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "hazardous",
+     "fa": ""
+    },
+    {
+     "id": 940178,
+     "level": "B2",
+     "pos": "noun",
+     "en": "smog",
+     "fa": ""
+    },
+    {
+     "id": 940179,
+     "level": "B2",
+     "pos": "noun",
+     "en": "ozone layer",
+     "fa": ""
+    },
+    {
+     "id": 940180,
+     "level": "C1",
+     "pos": "noun",
+     "en": "ecology",
+     "fa": ""
+    },
+    {
+     "id": 940181,
+     "level": "B2",
+     "pos": "noun",
+     "en": "environmentalist",
+     "fa": ""
+    },
+    {
+     "id": 940182,
+     "level": "B2",
+     "pos": "noun",
+     "en": "environmental impact",
+     "fa": ""
+    },
+    {
+     "id": 940183,
+     "level": "B2",
+     "pos": "noun",
+     "en": "coral reef",
+     "fa": ""
+    },
+    {
+     "id": 940184,
+     "level": "C1",
+     "pos": "noun",
+     "en": "overfishing",
+     "fa": ""
+    },
+    {
+     "id": 940185,
+     "level": "C1",
+     "pos": "noun",
+     "en": "logging",
+     "fa": ""
+    },
+    {
+     "id": 940186,
+     "level": "C1",
+     "pos": "noun",
+     "en": "sea level rise",
+     "fa": ""
+    },
+    {
+     "id": 940187,
+     "level": "B2",
+     "pos": "noun",
+     "en": "polar ice caps",
+     "fa": ""
+    },
+    {
+     "id": 940188,
+     "level": "C1",
+     "pos": "noun",
+     "en": "soil erosion",
+     "fa": ""
+    },
+    {
+     "id": 940189,
+     "level": "C1",
+     "pos": "noun",
+     "en": "pesticide",
+     "fa": ""
+    },
+    {
+     "id": 940190,
+     "level": "B2",
+     "pos": "noun",
+     "en": "fertilizer",
+     "fa": ""
+    },
+    {
+     "id": 940191,
+     "level": "C1",
+     "pos": "noun",
+     "en": "scarcity",
+     "fa": ""
+    },
+    {
+     "id": 940192,
+     "level": "B2",
+     "pos": "noun",
+     "en": "natural resources",
+     "fa": ""
+    },
+    {
+     "id": 940193,
+     "level": "C1",
+     "pos": "noun",
+     "en": "depletion",
+     "fa": ""
+    },
+    {
+     "id": 940194,
+     "level": "C1",
+     "pos": "verb",
+     "en": "deplete",
+     "fa": ""
+    },
+    {
+     "id": 940195,
+     "level": "B2",
+     "pos": "noun",
+     "en": "single-use plastic",
+     "fa": ""
+    },
+    {
+     "id": 940196,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "biodegradable",
+     "fa": ""
+    },
+    {
+     "id": 940197,
+     "level": "C1",
+     "pos": "noun",
+     "en": "waste management",
+     "fa": ""
+    },
+    {
+     "id": 940198,
+     "level": "B2",
+     "pos": "noun",
+     "en": "energy efficiency",
+     "fa": ""
+    },
+    {
+     "id": 940199,
+     "level": "C1",
+     "pos": "noun",
+     "en": "insulation",
+     "fa": ""
+    },
+    {
+     "id": 940200,
+     "level": "B2",
+     "pos": "noun",
+     "en": "electric vehicle",
+     "fa": ""
+    },
+    {
+     "id": 940201,
+     "level": "B2",
+     "pos": "adjective",
+     "en": "hybrid",
+     "fa": ""
+    },
+    {
+     "id": 940202,
+     "level": "C1",
+     "pos": "noun",
+     "en": "urban sprawl",
+     "fa": ""
+    },
+    {
+     "id": 940203,
+     "level": "C1",
+     "pos": "noun",
+     "en": "catastrophe",
+     "fa": ""
+    },
+    {
+     "id": 940204,
+     "level": "C1",
+     "pos": "adjective",
+     "en": "resilient",
+     "fa": ""
+    },
+    {
+     "id": 940205,
+     "level": "C1",
+     "pos": "noun",
+     "en": "mitigation",
+     "fa": ""
+    }
+   ]
   }
  ]
 }
