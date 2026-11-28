@@ -1,0 +1,285 @@
+{
+  "topic": "Environmental Policy and the Green Economy",
+  "scenarios": [
+    {
+      "scenario": "The carbon tax debate",
+      "context": "Two economics students argue over whether a carbon tax is the best way to cut emissions.",
+      "speakerA": [
+        {
+          "en": "Many economists argue that a carbon tax is the most efficient way to reduce emissions. Do you agree?",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. It lets the market decide where reductions are cheapest, instead of the government choosing winners.",
+          "level": "B2"
+        },
+        {
+          "en": "That's why some countries return the revenue to households as a dividend. Low-income families can end up better off.",
+          "level": "B2"
+        },
+        {
+          "en": "What about competitiveness? Firms may simply move production to countries without such a tax.",
+          "level": "B2"
+        },
+        {
+          "en": "Wouldn't that lead to trade disputes?",
+          "level": "B2"
+        },
+        {
+          "en": "Which seems unlikely in the near future.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "In theory, yes. If pollution has a price, companies have a strong incentive to cut it.",
+          "level": "B2"
+        },
+        {
+          "en": "The difficulty is political. Voters notice higher petrol and heating bills immediately, whereas the benefits appear gradually.",
+          "level": "B2"
+        },
+        {
+          "en": "Provided the scheme is well designed. Otherwise, the poorest people pay the highest price for a policy meant to protect everyone.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a genuine risk, known as carbon leakage. Some regions respond with a border charge on imported goods.",
+          "level": "B2"
+        },
+        {
+          "en": "Quite possibly. Were every major economy to adopt a similar tax, the problem would largely disappear.",
+          "level": "B2"
+        },
+        {
+          "en": "Perhaps, but a good policy doesn't need to be perfect to be worth trying. Doing nothing carries the highest cost of all.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Green jobs and the energy transition",
+      "context": "A union representative and a government adviser discuss workers in the coal industry.",
+      "speakerA": [
+        {
+          "en": "My members are worried. If the coal mines close, thousands of families will lose their only source of income.",
+          "level": "B2"
+        },
+        {
+          "en": "'Over time' is the problem. A miner of fifty-five can't easily retrain as a software engineer.",
+          "level": "B2"
+        },
+        {
+          "en": "We've heard promises like that before. Several towns were left with nothing once their factories closed.",
+          "level": "B2"
+        },
+        {
+          "en": "So what would be different this time?",
+          "level": "B2"
+        },
+        {
+          "en": "That would certainly help. Still, solar panels are mostly manufactured abroad, so the new jobs may not appear where we need them.",
+          "level": "B2"
+        },
+        {
+          "en": "If those incentives actually reach the workers, I could support the plan.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "I understand, and nobody wants to ignore that. Renewable energy is expected to create more jobs than it replaces over time.",
+          "level": "B2"
+        },
+        {
+          "en": "That's why the plan includes funded retraining and early retirement options, together with investment in the affected regions.",
+          "level": "B2"
+        },
+        {
+          "en": "That's a fair criticism. Had earlier governments planned the transition properly, there would be less distrust today.",
+          "level": "B2"
+        },
+        {
+          "en": "Binding commitments, with money set aside in advance, and a seat for the unions at the planning table.",
+          "level": "B2"
+        },
+        {
+          "en": "True, which is why we're offering incentives for companies to build factories in those very regions.",
+          "level": "B2"
+        },
+        {
+          "en": "Then let's agree on a timetable and monitor it together. A just transition needs trust on both sides.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Spotting greenwashing",
+      "context": "A consumer and a sustainability consultant discuss misleading environmental claims.",
+      "speakerA": [
+        {
+          "en": "This shampoo is labelled 'eco-friendly' and 'natural'. Does that actually mean anything?",
+          "level": "B2"
+        },
+        {
+          "en": "So it could just be clever marketing.",
+          "level": "B2"
+        },
+        {
+          "en": "How can an ordinary shopper tell the difference?",
+          "level": "B2"
+        },
+        {
+          "en": "Companies would argue that they're doing their best, and that some progress is better than none.",
+          "level": "B2"
+        },
+        {
+          "en": "Should the law be stricter?",
+          "level": "B2"
+        },
+        {
+          "en": "And consumers would have a better basis for their choices.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Not necessarily. Terms like that aren't regulated in many countries, so any company can use them freely.",
+          "level": "B2"
+        },
+        {
+          "en": "That's what we call greenwashing: presenting a product as environmentally friendly without real evidence.",
+          "level": "B2"
+        },
+        {
+          "en": "Look for specific, verifiable claims, such as a stated percentage of recycled content, and independent certification rather than a self-designed logo.",
+          "level": "B2"
+        },
+        {
+          "en": "That's partly fair. Yet a firm that advertises one small improvement while ignoring its biggest source of pollution is misleading the public.",
+          "level": "B2"
+        },
+        {
+          "en": "I believe so. Were companies required to publish audited data, the incentive to exaggerate would shrink considerably.",
+          "level": "B2"
+        },
+        {
+          "en": "Exactly. Informed customers are the most powerful form of pressure on businesses.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Electric cars: incentives and infrastructure",
+      "context": "Two colleagues debate whether subsidies for electric cars are money well spent.",
+      "speakerA": [
+        {
+          "en": "The government has extended its subsidy for electric cars. Isn't that just helping wealthy people buy expensive vehicles?",
+          "level": "B2"
+        },
+        {
+          "en": "Even so, a car is only as green as the electricity that charges it. If it runs on coal, where's the benefit?",
+          "level": "B2"
+        },
+        {
+          "en": "My real concern is charging. I live in a flat with no private parking, so I couldn't charge one at home.",
+          "level": "B2"
+        },
+        {
+          "en": "So the money would be better spent on public charging points?",
+          "level": "B2"
+        },
+        {
+          "en": "What about the environmental cost of making the batteries?",
+          "level": "B2"
+        },
+        {
+          "en": "I'm not completely convinced, but I can see that the picture is more complicated than I thought.",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "There's some truth in that, but early adopters make the technology cheaper for everyone else. Used electric cars are already more affordable.",
+          "level": "B2"
+        },
+        {
+          "en": "Over its lifetime an electric car still produces fewer emissions in most countries, and the gap widens as the grid becomes cleaner.",
+          "level": "B2"
+        },
+        {
+          "en": "That's the main obstacle, and it's why many experts say infrastructure matters more than subsidies.",
+          "level": "B2"
+        },
+        {
+          "en": "Arguably, yes. Were chargers as easy to find as petrol stations, many more people would make the switch.",
+          "level": "B2"
+        },
+        {
+          "en": "It's significant, but recycling technology is improving, and the damage is smaller than that of burning fuel for years.",
+          "level": "B2"
+        },
+        {
+          "en": "It always is. The best policy probably combines modest subsidies with serious investment in public transport.",
+          "level": "B2"
+        }
+      ]
+    },
+    {
+      "scenario": "Who should pay for climate action?",
+      "context": "Two students debate responsibility between rich and developing countries.",
+      "speakerA": [
+        {
+          "en": "Wealthy countries have produced most of the historical emissions. Shouldn't they pay more to tackle climate change?",
+          "level": "B2"
+        },
+        {
+          "en": "Yet those economies are trying to lift people out of poverty. Asking them to slow down seems unfair.",
+          "level": "B2"
+        },
+        {
+          "en": "Developing countries often say those promises are slow to materialise.",
+          "level": "B2"
+        },
+        {
+          "en": "Should agreements be legally binding, then, with penalties for those who fail to comply?",
+          "level": "B2"
+        },
+        {
+          "en": "So voluntary targets may be the only realistic option.",
+          "level": "B2"
+        },
+        {
+          "en": "That brings us back to individuals, doesn't it?",
+          "level": "B2"
+        }
+      ],
+      "speakerB": [
+        {
+          "en": "Morally, I think they should. But emissions from rapidly growing economies are now rising fastest, so everyone has a part to play.",
+          "level": "B2"
+        },
+        {
+          "en": "I agree it's delicate. That's why many proposals involve richer nations funding clean technology rather than demanding sacrifices.",
+          "level": "B2"
+        },
+        {
+          "en": "Indeed. Pledges of financial support have repeatedly fallen short, and that has damaged trust at international summits.",
+          "level": "B2"
+        },
+        {
+          "en": "In principle, yes, but enforcement is difficult. No country wants to hand its sovereignty to an outside authority.",
+          "level": "B2"
+        },
+        {
+          "en": "Perhaps, although voluntary targets rely on public pressure. Were citizens to demand results, governments would find it harder to ignore their promises.",
+          "level": "B2"
+        },
+        {
+          "en": "In a way, yes. Collective action starts with ordinary people insisting that leaders keep their word.",
+          "level": "B2"
+        }
+      ]
+    }
+  ]
+}
